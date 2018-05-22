@@ -29,6 +29,9 @@ module public OptionExtensions =
 
 module public FSharpOption =
 
+    let True = Some true
+    let False = Some false
+
     let Create value = value |> Some
 
     let CreateForReference value = 

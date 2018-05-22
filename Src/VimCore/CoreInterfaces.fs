@@ -761,7 +761,13 @@ type MotionResult = {
 
     /// In the case this MotionResult is the result of an exclusive promotion, this will 
     /// hold the original SnapshotSpan
-    OriginalSpan: SnapshotSpan
+    SpanBeforeExclusivePromotion: SnapshotSpan option
+
+    /// A linewise motion may also have a logical characterwise counter part. Consider for 
+    /// example motions like j and k. The motion can be described by the caret point and 
+    /// column above / below. This is useful when converting between linewise and characterwise
+    /// motions using v or V (:help o_v).
+    SpanBeforeLineWise: SnapshotSpan option
 
     /// Is the motion forward
     IsForward: bool
@@ -775,12 +781,9 @@ type MotionResult = {
     /// In addition to recording the Span, certain motions like j, k, and | also
     /// record data about the desired column within the span.  This value may or may not
     /// be a valid point within the line
-    DesiredColumn: CaretColumn
+    CaretColumn: CaretColumn
 
 } with
-
-    /// The possible column of the MotionResult
-    member x.CaretColumn = x.DesiredColumn
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.Span
@@ -808,7 +811,7 @@ type MotionResult = {
     /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
 
-    /// The Start or Last line depending on whether tho motion is forward or not.  The returned
+    /// The Start or Last line depending on whether the motion is forward or not.  The returned
     /// line will be in the document <see cref="ITextSnapshot">.  
     member x.DirectionLastLine = 
         if x.IsForward then
@@ -830,19 +833,60 @@ type MotionResult = {
 
     member x.LastOrStart = x.Last |> OptionUtil.getOrDefault x.Start
 
-    static member CreateExEx span isForward motionKind motionResultFlags desiredColumn = 
+    /// This will map every Span inside the MotionResult using the provided mapFunc value and 
+    /// return the resulting MotionResult.
+    member x.MapSpans mapFunc = 
+        let map s =
+            match s with
+            | None -> (true, None)
+            | Some s -> 
+                match mapFunc s with
+                | Some s -> (true, Some s)
+                | None -> (false, None)
+
+        match mapFunc x.Span, map x.SpanBeforeExclusivePromotion, map x.SpanBeforeLineWise with
+        | Some s, (true, e), (true, l) -> Some { x with Span = s; SpanBeforeExclusivePromotion = e; SpanBeforeLineWise = l }
+        | _ -> None
+
+    static member Create(span: SnapshotSpan, motionKind: MotionKind, ?isForward, ?motionResultFlags, ?caretColumn): MotionResult =
+        let isForward = defaultArg isForward true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
+        let caretColumn = defaultArg caretColumn CaretColumn.None
         {
             Span = span
-            OriginalSpan = span
+            SpanBeforeExclusivePromotion = None
+            SpanBeforeLineWise = None
             IsForward = isForward
             MotionKind = motionKind
-            MotionResultFlags = motionResultFlags 
-            DesiredColumn = desiredColumn }
+            MotionResultFlags = motionResultFlags
+            CaretColumn = caretColumn
+        }
 
-    static member CreateEx span isForward motionKind motionResultFlags = 
-        MotionResult.CreateExEx span isForward motionKind motionResultFlags CaretColumn.None
+    static member Create(span: SnapshotSpan, motionKind: MotionKind, isForward: bool) = MotionResult.Create(span, motionKind, isForward, MotionResultFlags.None, CaretColumn.None)
 
-    static member Create span isForward motionKind = MotionResult.CreateEx span isForward motionKind MotionResultFlags.None
+    static member CreateCharacterWise(span, ?isForward, ?isExclusive, ?motionResultFlags, ?caretColumn) = 
+        let isForward = defaultArg isForward true
+        let isExclusive = defaultArg isExclusive true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
+        let caretColumn = defaultArg caretColumn CaretColumn.None
+        let kind = 
+            if isExclusive then MotionKind.CharacterWiseExclusive
+            else MotionKind.CharacterWiseInclusive
+        MotionResult.Create(span, kind, isForward, motionResultFlags, caretColumn)
+
+    static member CreateLineWise(span, ?spanBeforeLineWise, ?isForward, ?motionResultFlags, ?caretColumn) =
+        let isForward = defaultArg isForward true
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None 
+        let caretColumn = defaultArg caretColumn CaretColumn.None
+        {
+            Span = span
+            SpanBeforeExclusivePromotion = None
+            SpanBeforeLineWise = spanBeforeLineWise
+            IsForward = isForward
+            MotionKind = MotionKind.LineWise
+            MotionResultFlags = motionResultFlags
+            CaretColumn = caretColumn
+        }
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -853,23 +897,26 @@ type MotionContext =
     | AfterOperator
 
 /// Arguments necessary to building a Motion
-type MotionArgument = {
+type MotionArgument
+    (
+        motionContext: MotionContext,
+        operatorCount: int option,
+        motionCount: int option
+    ) =
 
     /// Context of the Motion
-    MotionContext: MotionContext
+    member x.MotionContext = motionContext
 
     /// Count passed to the operator
-    OperatorCount: int option
+    member x.OperatorCount = operatorCount
 
     /// Count passed to the motion 
-    MotionCount: int option 
-
-} with
+    member x.MotionCount = motionCount
 
     /// Provides the raw count which is a combination of the OperatorCount
     /// and MotionCount values.  
     member x.Count = 
-        match x.MotionCount,x.OperatorCount with
+        match x.MotionCount, x.OperatorCount with
         | None, None -> None
         | Some c, None -> Some c
         | None, Some c  -> Some c
@@ -881,6 +928,8 @@ type MotionArgument = {
         match x.Count with
         | Some c -> c
         | None -> 1
+
+    new(motionContext) = MotionArgument(motionContext, None, None)
 
 /// Char searches are interesting because they are defined in one IVimBuffer
 /// and can be repeated in any IVimBuffer.  Use a discriminated union here 
@@ -1016,6 +1065,12 @@ type Motion =
 
     /// Find the first non-blank character on the (count - 1) line below this line
     | FirstNonBlankOnLine
+
+    /// Forces a line wise version of the specified motion 
+    | ForceLineWise of Motion
+
+    /// Forces a characterwise version of the specified motion
+    | ForceCharacterWise of Motion
 
     /// Inner word motion
     | InnerWord of WordKind
@@ -3413,25 +3468,23 @@ type MotionBinding =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | Simple of KeyInputSet * MotionFlags * Motion
+    | Static of KeyInputSet * MotionFlags * Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
-    /// the f,t,F and T commands all require at least one additional input.  The bool
-    /// in the middle of the tuple indicates whether or not the motion can be 
-    /// used as a cursor movement operation  
-    | Complex of KeyInputSet * MotionFlags * BindDataStorage<Motion>
+    /// the f,t,F and T commands all require at least one additional input.
+    | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
 
     with
 
     member x.KeyInputSet = 
         match x with
-        | Simple (name, _, _) -> name
-        | Complex (name, _, _) -> name
+        | Static (keyInputSet, _, _) -> keyInputSet
+        | Dynamic (keyInputSet, _, _) -> keyInputSet
 
     member x.MotionFlags =
         match x with 
-        | Simple (_, flags, _) -> flags
-        | Complex (_, flags, _) -> flags
+        | Static (_, flags, _) -> flags
+        | Dynamic (_, flags, _) -> flags
 
 /// The information about the particular run of a Command
 type CommandRunData = {
@@ -3444,7 +3497,6 @@ type CommandRunData = {
 
     /// The result of the Command Run
     CommandResult: CommandResult
-
 }
 
 type CommandRunDataEventArgs(_commandRunData: CommandRunData) =

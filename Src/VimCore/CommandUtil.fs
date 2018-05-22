@@ -1539,7 +1539,7 @@ type internal CommandUtil
 
     /// Move the caret to the result of the motion
     member x.MoveCaretToMotion motion count =
-        let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count}
+        let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = count)
         match _motionUtil.GetMotion motion argument with
         | None ->
             // If the motion couldn't be gotten then just beep
@@ -1622,7 +1622,7 @@ type internal CommandUtil
             if isInitialSelection then
                 // For an initial selection we just do a standard motion from the caret point
                 // and update the selection.
-                let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
+                let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = Some count)
                 match _motionUtil.GetMotion motion argument with
                 | None -> onError ()
                 | Some motionResult ->
@@ -1648,7 +1648,7 @@ type internal CommandUtil
                     CommandResult.Completed ModeSwitch.NoSwitch
 
         let moveBlock blockKind motion =
-            let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = Some count}
+            let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = Some count)
             match _motionUtil.GetMotion motion argument with
             | None -> onError ()
             | Some motionResult ->
@@ -2109,7 +2109,7 @@ type internal CommandUtil
                     | Some _ ->
                         let data = { data with Count = repeatCount }
                         let command = command.ChangeMotionData (fun motionData ->
-                            let argument = { motionData.MotionArgument with MotionCount = repeatCount; OperatorCount = None }
+                            let argument = MotionArgument(motionData.MotionArgument.MotionContext, operatorCount = None, motionCount = repeatCount)
                             { motionData with MotionArgument = argument })
                         (command, data)
                     | None -> (command, data)

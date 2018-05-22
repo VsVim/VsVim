@@ -156,7 +156,7 @@ type internal CommandRunner
 
         // Convert the motion information into a BindResult.Complete value
         let convertMotion motion motionCount =
-            let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = commandData.Count; MotionCount = motionCount }
+            let argument = MotionArgument(MotionContext.AfterOperator, operatorCount = commandData.Count, motionCount = motionCount)
             let data = { Motion = motion; MotionArgument = argument }
             let command = motionFunc data
             (Command.NormalCommand (command, commandData), commandBinding)

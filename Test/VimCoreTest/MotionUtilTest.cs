@@ -61,20 +61,30 @@ namespace Vim.UnitTest
             _motionUtil = new MotionUtil(vimBufferData, operations);
         }
 
-        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, CaretColumn desiredColumn = null)
+        public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
         {
-            if (span.HasValue)
+            if (span != null)
             {
                 Assert.Equal(span.Value, data.Span);
+            }
+            if (isForward != null)
+            {
+                Assert.Equal(isForward.Value, data.IsForward);
             }
             if (motionKind != null)
             {
                 Assert.Equal(motionKind, data.MotionKind);
             }
-            if (desiredColumn != null)
+            if (caretColumn != null)
             {
-                Assert.Equal(desiredColumn, data.DesiredColumn);
+                Assert.Equal(caretColumn, data.CaretColumn);
             }
+        }
+
+        public void AssertData(FSharpOption<MotionResult> data, SnapshotSpan? span = null, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
+        {
+            Assert.True(data.IsSome());
+            AssertData(data.value, span, motionKind, isForward, caretColumn);
         }
 
         public sealed class AdjustMotionResult : MotionUtilTest
@@ -103,7 +113,7 @@ namespace Vim.UnitTest
                 var result2 = _motionUtil.AdjustMotionResult(Motion.CharLeft, result1);
                 Assert.Equal(OperationKind.LineWise, result2.OperationKind);
                 Assert.Equal(_textView.GetLine(0).ExtentIncludingLineBreak, result2.Span);
-                Assert.Equal(span, result2.OriginalSpan);
+                Assert.Equal(span, result2.SpanBeforeExclusivePromotion.Value);
                 Assert.True(result2.MotionKind.IsLineWise);
             }
 
@@ -231,6 +241,39 @@ namespace Vim.UnitTest
                 // Make sure it's adjusted properly for the exclusive exception
                 data = _motionUtil.GetMotion(Motion.AllSentence).Value;
                 Assert.Equal("  " + Environment.NewLine, data.Span.GetText());
+            }
+        }
+
+        public sealed class ForcedCharacterWiseTest : MotionUtilTest
+        {
+            [WpfFact]
+            public void LineDown()
+            {
+                Create("the", "dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.LineDown, new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLine(0).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.CharacterWiseExclusive);
+            }
+
+            [WpfFact]
+            public void FlipExclusiveToInclusive()
+            {
+                Create("dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.CharRight, new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLineSpan(lineNumber: 0, length: 2),
+                    motionKind: MotionKind.CharacterWiseInclusive);
+            }
+
+            [WpfFact]
+            public void FlipInclusiveToExclusive()
+            {
+                Create("dog");
+                AssertData(
+                    _motionUtil.ForceCharacterWise(Motion.NewCharSearch(CharSearchKind.ToChar, SearchPath.Forward, 'o'), new MotionArgument(MotionContext.AfterOperator)),
+                    span: _textBuffer.GetLineSpan(lineNumber: 0, length: 1),
+                    motionKind: MotionKind.CharacterWiseExclusive);
             }
         }
 
@@ -2576,8 +2619,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2588,8 +2631,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2601,8 +2644,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -2614,8 +2657,8 @@ more";
                 AssertData(
                     data,
                     _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak,
-                    MotionKind.LineWise,
-                    CaretColumn.NewInLastLine(0));
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(0));
             }
 
             [WpfFact]
@@ -3529,7 +3572,7 @@ more";
                 Assert.True(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(3), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(3), data.CaretColumn);
             }
 
             /// <summary>
@@ -3545,7 +3588,7 @@ more";
                 Assert.False(data.IsForward);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(0), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(0), data.CaretColumn);
             }
 
             /// <summary>
@@ -3560,7 +3603,7 @@ more";
                 Assert.Equal(0, data.Span.Length);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(2), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(2), data.CaretColumn);
             }
 
             /// <summary>
@@ -3579,7 +3622,7 @@ more";
                 Assert.Equal("\t\t\t", data.Span.GetText());
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(1), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(1), data.CaretColumn);
             }
 
             /// <summary>
@@ -3595,7 +3638,7 @@ more";
                 Assert.Equal(data.Span.End, _textView.GetLine(0).End);
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
-                Assert.Equal(CaretColumn.NewScreenColumn(99), data.DesiredColumn);
+                Assert.Equal(CaretColumn.NewScreenColumn(99), data.CaretColumn);
             }
         }
     }

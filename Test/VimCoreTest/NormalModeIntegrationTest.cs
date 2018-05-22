@@ -1712,6 +1712,124 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ForceCharacterWiseMotionTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void ToggleExclusiveToInclusive()
+            {
+                Create("dog");
+                _vimBuffer.ProcessNotation("dvl");
+                Assert.Equal("g", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void ToggleExclusiveToInclusiveFailsAtEndOfLine()
+            {
+                Create("hi", "dog");
+                _vimBuffer.ProcessNotation("ldvl");
+                Assert.Equal(new[] { "hi", "dog" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ToggleExclusiveToInclusiveFailsAtEndOfLine2()
+            {
+                Create("hi", "dog");
+                _vimBuffer.ProcessNotation("lyvl");
+                Assert.Equal("", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void ToggleInclusiveToExclusive()
+            {
+                Create("the dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("dvfo");
+                Assert.Equal("the og", _textBuffer.GetLineText(0));
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ToggleInclusiveToExclusive2()
+            {
+                Create("the dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("dvfg");
+                Assert.Equal("the g", _textBuffer.GetLineText(0));
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseFirstColumn()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yvj");
+                Assert.Equal("the" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseSecondColumn()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("lyvj");
+                Assert.Equal("he" + Environment.NewLine + "d", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseCaretInMiddleOfFirstLine()
+            {
+                Create("the big", "dog");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("yvj");
+                Assert.Equal("big" + Environment.NewLine + "do", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void ToggleLineWiseBackwards()
+            {
+                Create("the", "dog");
+                _textView.MoveCaretToLine(lineNumber: 1, column: 1);
+                _vimBuffer.ProcessNotation("yvk");
+                Assert.Equal("he" + Environment.NewLine + "d", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void FailedConversionHasZeroSpan()
+            {
+                Create("the", "dog");
+                UnnamedRegister.UpdateValue("test");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("yvl");
+                Assert.Empty(UnnamedRegister.StringValue);
+            }
+        }
+
+        public sealed class ForceLineWiseMotionTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void LineWise()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yVj");
+                Assert.Equal("the" + Environment.NewLine + "dog" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void CharacterWiseExclusive()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yVl");
+                Assert.Equal("the" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void CharacterWiseInclusive()
+            {
+                Create("the", "dog");
+                _vimBuffer.ProcessNotation("yVfh");
+                Assert.Equal("the" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
+        }
+
         public abstract class KeyMappingTest : NormalModeIntegrationTest
         {
             public sealed class AmbiguousTest : KeyMappingTest
