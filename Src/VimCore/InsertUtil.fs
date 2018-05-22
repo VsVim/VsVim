@@ -331,35 +331,34 @@ type internal InsertUtil
         x.DeleteRight(s.Length - 1) |> ignore
         x.Insert s
 
-    member x.InsertCharacterCore msg lineNumber isReplace =
+    member x.InsertCharacterCore lineNumber isReplace =
         match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn.Column with
         | None -> 
             _operations.Beep()
             CommandResult.Error
         | Some point -> 
             let text = SnapshotPointUtil.GetChar point |> StringUtil.OfChar
-            x.EditWithUndoTransaction msg (fun () ->
-                let position = x.CaretPoint.Position
-                if isReplace then x.DeleteRight 1 |> ignore
-                _textBuffer.Insert(position, text) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView (position + 1))
+            let position = x.CaretPoint.Position
+            if isReplace then x.DeleteRight 1 |> ignore
+            _textBuffer.Insert(position, text) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView (position + 1)
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Insert the character immediately above the caret
     member x.InsertCharacterAboveCaret() = 
-        x.InsertCharacterCore "Insert Character Above" (x.CaretLineNumber - 1) false
+        x.InsertCharacterCore (x.CaretLineNumber - 1) false
 
     /// Insert the character immediately below the caret
     member x.InsertCharacterBelowCaret() = 
-        x.InsertCharacterCore "Insert Character Below" (x.CaretLineNumber + 1) false
+        x.InsertCharacterCore (x.CaretLineNumber + 1) false
 
     /// Replace the character immediately above the caret
     member x.ReplaceCharacterAboveCaret() = 
-        x.InsertCharacterCore "Replace Character Above" (x.CaretLineNumber - 1) true
+        x.InsertCharacterCore (x.CaretLineNumber - 1) true
 
     /// Replace the character immediately below the caret
     member x.ReplaceCharacterBelowCaret() = 
-        x.InsertCharacterCore "Replace Character Below" (x.CaretLineNumber + 1) true
+        x.InsertCharacterCore (x.CaretLineNumber + 1) true
 
     /// Insert a new line into the ITextBuffer.  Make sure to indent the text
     member x.InsertNewLine() =
