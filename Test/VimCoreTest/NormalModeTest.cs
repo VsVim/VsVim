@@ -181,6 +181,22 @@ namespace Vim.UnitTest
             Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
+        /// <summary>
+        /// Must be able to process non-ASCII punctuation otherwise
+        /// they will end up as input
+        /// </summary>
+        [WpfFact]
+        public void CanProcessPrintableNonAscii()
+        {
+            // Reported in issue #1793.
+            Create(s_defaultLines);
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¤')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¨')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('£')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('§')));
+            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('´')));
+        }
+
         #endregion
 
         #region Movement

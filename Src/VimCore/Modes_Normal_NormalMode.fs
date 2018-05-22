@@ -329,9 +329,10 @@ type internal NormalMode
         elif doesCommandStartWith keyInput then 
             true
         elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
-            // We can process any letter (think international input) or any character
-            // which is part of the standard Vim input set
-            CharUtil.IsLetter keyInput.Char || Set.contains keyInput.Char _coreCharSet
+
+            // We can process any printable character (think international input)
+            // or any character which is part of the standard Vim input set.
+            CharUtil.IsPrintable keyInput.Char || Set.contains keyInput.Char _coreCharSet
         else 
             false
     
