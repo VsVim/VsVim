@@ -3471,9 +3471,7 @@ type MotionBinding =
     | Static of KeyInputSet * MotionFlags * Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
-    /// the f,t,F and T commands all require at least one additional input.  The bool
-    /// in the middle of the tuple indicates whether or not the motion can be 
-    /// used as a cursor movement operation  
+    /// the f,t,F and T commands all require at least one additional input.
     | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
 
     with
