@@ -806,6 +806,7 @@ type Parser
             | LineCommand.Else -> noRangeCommand
             | LineCommand.ElseIf _ -> noRangeCommand
             | LineCommand.Execute _ -> noRangeCommand
+            | LineCommand.Files -> noRangeCommand
             | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
             | LineCommand.Function _ -> noRangeCommand
             | LineCommand.FunctionEnd _ -> noRangeCommand
