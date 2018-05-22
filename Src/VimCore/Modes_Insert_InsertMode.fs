@@ -1060,6 +1060,7 @@ type internal InsertMode
     /// ModeArgument value. 
     member x.OnEnter arg =
         x.EnsureCommandsBuilt()
+        _insertUtil.NewUndoSequence()
 
         // Record start point upon initial entry to insert mode
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
