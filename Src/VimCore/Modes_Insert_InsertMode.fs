@@ -751,6 +751,7 @@ type internal InsertMode
         ProcessResult.OfCommandResult result
 
     member x.BreakUndoSequence name =
+        _insertUtil.NewUndoSequence()
         match _sessionData.Transaction with
         | None -> ()
         | Some transaction ->

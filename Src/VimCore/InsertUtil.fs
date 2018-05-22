@@ -912,4 +912,5 @@ type internal InsertUtil
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RepeatEdit textChange addNewLines count = x.RepeatEdit textChange addNewLines count
         member x.RepeatBlock command atEndOfLine blockSpan = x.RepeatBlock command atEndOfLine blockSpan
+        member x.NewUndoSequence () = x.ClearReplaceUndoLine()
 

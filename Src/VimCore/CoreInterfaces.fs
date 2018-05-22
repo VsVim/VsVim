@@ -3380,6 +3380,9 @@ type internal IInsertUtil =
     /// Repeat the given edit series. 
     abstract RepeatBlock: command: InsertCommand -> atEndOfLine: bool -> blockSpan: BlockSpan -> string option
 
+    /// Notify that an new undo sequence is in effect
+    abstract NewUndoSequence: unit -> unit
+
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across
 /// multiple IVimBuffer instances so it must be buffer agnostic
