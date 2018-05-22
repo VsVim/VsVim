@@ -41,6 +41,7 @@ type internal InsertUtil
     let _vimHost = _vimBufferData.Vim.VimHost
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let mutable _combinedEditStartPoint: ITrackingPoint option = None
+    let mutable _replaceUndoLine: ITextSnapshotLine option = None
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -65,6 +66,36 @@ type internal InsertUtil
 
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
+
+    /// Reset the record of the current line
+    member x.ClearReplaceUndoLine () =
+        _replaceUndoLine <- None
+
+    /// Record snapshot of line before any replacements
+    member x.CheckRecordReplaceUndoLine () =
+        let recordLine =
+            match _replaceUndoLine with
+            | None -> true
+            | Some line -> line.LineNumber <> x.CaretLineNumber
+        if recordLine then
+            _replaceUndoLine <- SnapshotUtil.GetLine x.CurrentSnapshot x.CaretLineNumber |> Some
+
+    /// Get recorded character for the current line at the specified column
+    member x.TryGetRecordedCharacter (column: int) =
+        match _replaceUndoLine with
+            | None -> None
+            | Some line ->
+                if line.LineNumber <> x.CaretLineNumber then
+                    None
+                else
+                    let snapshotColumn =
+                        line.Start
+                        |> SnapshotColumnUtil.GetColumns SearchPath.Forward
+                        |> Seq.skipWhile (fun snapshotColumn -> snapshotColumn.Column <> column)
+                        |> Seq.tryHead
+                    match snapshotColumn with
+                    | None -> None
+                    | Some snapshotColumn -> snapshotColumn.Point.GetChar() |> Some
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -264,6 +295,7 @@ type internal InsertUtil
 
     /// Complete the insert mode session.
     member x.CompleteMode moveCaretLeft = 
+        x.ClearReplaceUndoLine()
 
         // If the caret is in virtual space we move regardless of the flag.
         let virtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
@@ -336,6 +368,8 @@ type internal InsertUtil
 
     /// Do a replacement under the caret of the specified char
     member x.Replace (c: char) =
+        x.CheckRecordReplaceUndoLine()
+
         // Typically we have the overwrite option set for all of replace mode so this
         // is a redundant check.  But during repeat we only see the commands and not
         // the mode changes so we need to check here
@@ -666,6 +700,13 @@ type internal InsertUtil
         if x.CaretColumn.Column > 0 then
             let point = x.CaretPoint.Subtract(1)
             TextViewUtil.MoveCaretToPosition _textView point.Position
+            match x.TryGetRecordedCharacter x.CaretColumn.Column with
+            | None -> ()
+            | Some character -> 
+                let span = SnapshotSpan(x.CaretPoint, 1)
+                let text = StringUtil.OfChar character
+                _textBuffer.Replace(span.Span, text) |> ignore
+                TextViewUtil.MoveCaretToPosition _textView point.Position
         else
             if _globalSettings.IsBackspaceEol && x.CaretLineNumber > 0 then
                 let previousLineNumber = x.CaretLineNumber - 1
@@ -675,7 +716,6 @@ type internal InsertUtil
                 _operations.Beep()
         CommandResult.Completed ModeSwitch.NoSwitch
         
-
     /// Delete the line before the cursor
     member x.DeleteLineBeforeCursor () =
         x.RunBackspacingCommand InsertCommand.DeleteLineBeforeCursor
