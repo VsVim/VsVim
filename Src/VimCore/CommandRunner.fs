@@ -354,6 +354,20 @@ type internal CommandRunner
                 x.ResetState()
                 BindResult.Error
             | BindResult.NeedMoreInput bindData ->
+
+                // If we were waiting for an operator and we need more input,
+                // stay waiting for an operator.
+                let bindData =
+                    match _runBindData with
+                    | None -> bindData
+                    | Some oldBindData ->
+                        let isNone = bindData.KeyRemapMode = KeyRemapMode.None
+                        let wasPending = oldBindData.KeyRemapMode = KeyRemapMode.OperatorPending
+                        if isNone && wasPending then
+                            { KeyRemapMode = oldBindData.KeyRemapMode; BindFunction = bindData.BindFunction }
+                        else
+                            bindData
+
                 _runBindData <- Some bindData
                 BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = x.Run }
             
