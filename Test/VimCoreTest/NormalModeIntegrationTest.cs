@@ -6675,6 +6675,24 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("yi(");
                 Assert.Equal("dog", UnnamedRegister.StringValue);
             }
+
+            /// <summary>
+            /// Ensure we stay in operator pending until we're not waiting for input
+            /// </summary>
+            [WpfFact]
+            public void Block_InnerParen_OperatorPending()
+            {
+                // Reported in issue #1903.
+                Create("cat (dog) bear");
+                _textView.MoveCaretTo(6);
+                Assert.Equal(KeyRemapMode.Normal, _vimBuffer.NormalMode.KeyRemapMode);
+                _vimBuffer.Process("y");
+                Assert.Equal(KeyRemapMode.OperatorPending, _vimBuffer.NormalMode.KeyRemapMode);
+                _vimBuffer.Process("i");
+                Assert.Equal(KeyRemapMode.OperatorPending, _vimBuffer.NormalMode.KeyRemapMode);
+                _vimBuffer.Process("(");
+                Assert.Equal(KeyRemapMode.Normal, _vimBuffer.NormalMode.KeyRemapMode);
+            }
         }
 
         public sealed class BackwardEndOfWordMotionTest : NormalModeIntegrationTest
