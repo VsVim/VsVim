@@ -1189,110 +1189,82 @@ type internal CommonOperations
 
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
-        // Actually do the replace line by line.
-        let doLineByLineReplace (regex: VimRegex) (edit: ITextEdit) =
+        // Actually do the replace using the given regex.
+        let doReplace (regex: VimRegex) = 
 
-            let replaceOne line (c: Capture) = 
-                let replaceData = x.GetReplaceData x.CaretPoint
-                let newText = regex.Replace c.Value replace replaceData _registerMap
-                let offset = 
-                    line
-                    |> SnapshotLineUtil.GetStart
-                    |> SnapshotPointUtil.GetPosition
-                edit.Replace(Span(c.Index + offset, c.Length), newText) |> ignore
+            let snapshot = _textView.TextSnapshot;
+            let startPosition = range.Start.Position
+            let endPosition = range.EndIncludingLineBreak.Position
 
-            let getMatches line = 
-                let text = 
-                    if regex.IncludesNewLine then
-                        SnapshotLineUtil.GetTextIncludingLineBreak line
-                    else 
-                        SnapshotLineUtil.GetText line
-                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                    regex.Regex.Matches(text) |> Seq.cast<Match>
-                else
-                    regex.Regex.Match(text) |> Seq.singleton
+            use edit = _textView.TextBuffer.CreateEdit()
+            let replacementRegion = range.ExtentIncludingLineBreak.GetText()
 
-            let matches = 
-                range.Lines
-                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)))
-                |> Seq.concat 
-                |> Seq.filter (fun (m, _) -> m.Success)
-                |> List.ofSeq
+            // Recursively replace from the specified starting point
+            // to the end of the replacement region.
+            let rec innerReplace (startAt: int) =
 
-            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                // Replace one match.
+                let replaceOne (matchSpan: SnapshotSpan) = 
+                    let replaceData = x.GetReplaceData x.CaretPoint
+                    let oldText = matchSpan.GetText()
+                    let newText = regex.Replace oldText replace replaceData _registerMap
+                    edit.Replace(matchSpan.Span, newText) |> ignore
 
-                // Actually do the edits.
-                matches |> Seq.iter (fun (m, line) -> replaceOne line m)
-
-            matches |> Seq.map (fun (_, line) -> line) |> Seq.toList
-
-        // Actually do the replace using the buffer.
-        let rec doBufferReplace (replacementSpan: SnapshotSpan) (regex: VimRegex) (edit: ITextEdit) =
-
-            let replaceOne (matchSpan: SnapshotSpan) = 
-                let replaceData = x.GetReplaceData x.CaretPoint
-                let oldText = matchSpan.GetText()
-                let newText = regex.Replace oldText replace replaceData _registerMap
-                edit.Replace(matchSpan.Span, newText) |> ignore
-
-            let getMatch (searchSpan: SnapshotSpan) = 
-                let search = _vim.SearchService
-                let searchData = SearchData(pattern, SearchPath.Forward, isWrap = false)
-                let wordNavigator = _vimTextBuffer.WordNavigator
-                let searchResult = search.FindNext searchSpan.Start searchData wordNavigator
-                match searchResult with
-                | SearchResult.Found (_, _, matchSpan, _) ->
-                    if matchSpan.Start.Position < searchSpan.End.Position then
-                        Some matchSpan
+                // Get the next match in the search region from the current starting index.
+                let getMatch () = 
+                    let capture = regex.Regex.Match(replacementRegion, startAt)
+                    if capture.Success then
+                        let matchStartPosition = startPosition + capture.Index
+                        let matchLength = capture.Length
+                        if matchStartPosition < endPosition then
+                            new SnapshotSpan(snapshot, matchStartPosition, matchLength)
+                            |> Some
+                        else
+                            None
                     else
                         None
-                | _ -> None
 
-            match getMatch replacementSpan with
-            | None -> List.empty
-            | Some matchSpan ->
-                let matchLine = SnapshotPointUtil.GetContainingLine matchSpan.Start
-                if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                // Match the pattern in the current replacement region.
+                match getMatch() with
+                | None -> List.empty
+                | Some matchSpan ->
+                    let matchLine = SnapshotPointUtil.GetContainingLine matchSpan.Start
+                    if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
 
-                    // Actually do the edit.
-                    replaceOne matchSpan
+                        // Actually do the edit.
+                        replaceOne matchSpan
 
-                let nextEndPoint = replacementSpan.End
-                let nextStartPoint = matchSpan.End
-                let nextStartPoint =
-                    if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    // Next consider only the portion of the replacement region
+                    // after the current match.
+                    let nextStartAt = matchSpan.End.Position - startPosition
 
-                        // Advance by one for zero-length matches.
-                        if matchSpan.Length = 0 then
-                            SnapshotPointUtil.AddOneOrCurrent nextStartPoint
+                    // Adjust the next start point.
+                    let nextStartAt =
+                        if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+
+                            // Advance by one for zero-length matches.
+                            if matchSpan.Length = 0 then
+                                nextStartAt + 1
+                            else
+                                nextStartAt
                         else
-                            nextStartPoint
+
+                            // Move to the beginning of the next line when
+                            // 'replace all' isn't specified.
+                            new SnapshotPoint(snapshot, startPosition + startAt)
+                            |> SnapshotPointUtil.GetContainingLine
+                            |> SnapshotLineUtil.GetEndIncludingLineBreak
+                            |> SnapshotPointUtil.GetPosition
+                            |> (fun position -> position - startPosition)
+
+                    // Continue replacing if we haven't reached the end of
+                    // the replacement region.
+                    if nextStartAt < replacementRegion.Length then
+                        matchLine :: innerReplace nextStartAt
                     else
+                        matchLine |> List.singleton
 
-                        // Move to the beginning of the next line.
-                        let containingLineNumber =
-                            SnapshotPointUtil.GetContainingLine nextStartPoint
-                            |> SnapshotLineUtil.GetLineNumber
-                        SnapshotUtil.GetLineOrLast replacementSpan.Snapshot (containingLineNumber + 1)
-                        |> SnapshotLineUtil.GetStart
-
-                if nextStartPoint.Position < nextEndPoint.Position then
-                    let remainingSpan = new SnapshotSpan(nextStartPoint, nextEndPoint)
-                    let remainingReplacements = doBufferReplace remainingSpan regex edit
-                    matchLine :: remainingReplacements
-                else
-                    matchLine |> List.singleton
-
-
-        // Actually do the replace with the given regex.
-        let doReplace (regex: VimRegex) = 
-            use edit = _textView.TextBuffer.CreateEdit()
-
-            let matches =
-                if not regex.IncludesNewLine then
-                    doLineByLineReplace regex edit
-                else
-                    doBufferReplace range.ExtentIncludingLineBreak regex edit
+            let matches = innerReplace 0
 
             // Update the status for the substitute operation
             let printMessage () = 
