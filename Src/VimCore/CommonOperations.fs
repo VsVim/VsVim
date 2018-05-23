@@ -1194,7 +1194,7 @@ type internal CommonOperations
 
             let replaceOne line (c: Capture) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
-                let newText =  regex.Replace c.Value replace replaceData _registerMap
+                let newText = regex.Replace c.Value replace replaceData _registerMap
                 let offset = 
                     line
                     |> SnapshotLineUtil.GetStart
@@ -1220,7 +1220,8 @@ type internal CommonOperations
                 |> List.ofSeq
 
             if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
-                // Actually do the edits
+
+                // Actually do the edits.
                 matches |> Seq.iter (fun (m, line) -> replaceOne line m)
 
             matches |> Seq.map (fun (_, line) -> line)
@@ -1228,38 +1229,38 @@ type internal CommonOperations
         // Actually do the replace using the buffer.
         let doBufferReplace (regex: VimRegex) (edit: ITextEdit) =
 
-            let replaceOne line (c: Capture) = 
+            let replaceOne (matchSpan: SnapshotSpan) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
-                let newText =  regex.Replace c.Value replace replaceData _registerMap
-                let offset = 
-                    line
-                    |> SnapshotLineUtil.GetStart
-                    |> SnapshotPointUtil.GetPosition
-                edit.Replace(Span(c.Index + offset, c.Length), newText) |> ignore
+                let oldText = matchSpan.GetText()
+                let newText = regex.Replace oldText replace replaceData _registerMap
+                edit.Replace(matchSpan.Span, newText) |> ignore
 
-            let getMatches line = 
-                let text = 
-                    if regex.IncludesNewLine then
-                        SnapshotLineUtil.GetTextIncludingLineBreak line
-                    else 
-                        SnapshotLineUtil.GetText line
-                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                    regex.Regex.Matches(text) |> Seq.cast<Match>
-                else
-                    regex.Regex.Match(text) |> Seq.singleton
+            let getMatch (searchSpan: SnapshotSpan) = 
+                let search = _vim.SearchService
+                let searchData = SearchData(pattern, SearchPath.Forward)
+                let wordNavigator = _vimTextBuffer.WordNavigator
+                let searchResult = search.FindNext searchSpan.Start searchData wordNavigator
+                match searchResult with
+                | SearchResult.Found (_, _, matchSpan, _) ->
+                    if matchSpan.Start.Position < searchSpan.End.Position then
+                        Some matchSpan
+                    else
+                        None
+                | _ -> None
+                //if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                //    regex.Regex.Matches(text) |> Seq.cast<Match>
+                //else
+                //    regex.Regex.Match(text) |> Seq.singleton
 
-            let matches = 
-                range.Lines
-                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)))
-                |> Seq.concat 
-                |> Seq.filter (fun (m,_) -> m.Success)
-                |> List.ofSeq
+            match getMatch range.Extent with
+            | None -> Seq.empty
+            | Some matchSpan ->
+                if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
 
-            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
-                // Actually do the edits
-                matches |> Seq.iter (fun (m, line) -> replaceOne line m)
+                    // Actually do the edits.
+                    replaceOne matchSpan
 
-            matches |> Seq.map (fun (_, line) -> line)
+                SnapshotPointUtil.GetContainingLine matchSpan.Start |> Seq.singleton
 
         // Actually do the replace with the given regex.
         let doReplace (regex: VimRegex) = 
