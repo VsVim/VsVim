@@ -1189,9 +1189,8 @@ type internal CommonOperations
 
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
-        /// Actually do the replace with the given regex
-        let doReplace (regex: VimRegex) = 
-            use edit = _textView.TextBuffer.CreateEdit()
+        // Actually do the replace line by line.
+        let doLineByLineReplace (regex: VimRegex) (edit: ITextEdit) =
 
             let replaceOne line (c: Capture) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
@@ -1215,7 +1214,43 @@ type internal CommonOperations
 
             let matches = 
                 range.Lines
-                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)) )
+                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)))
+                |> Seq.concat 
+                |> Seq.filter (fun (m, _) -> m.Success)
+                |> List.ofSeq
+
+            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                // Actually do the edits
+                matches |> Seq.iter (fun (m, line) -> replaceOne line m)
+
+            matches |> Seq.map (fun (_, line) -> line)
+
+        // Actually do the replace using the buffer.
+        let doBufferReplace (regex: VimRegex) (edit: ITextEdit) =
+
+            let replaceOne line (c: Capture) = 
+                let replaceData = x.GetReplaceData x.CaretPoint
+                let newText =  regex.Replace c.Value replace replaceData _registerMap
+                let offset = 
+                    line
+                    |> SnapshotLineUtil.GetStart
+                    |> SnapshotPointUtil.GetPosition
+                edit.Replace(Span(c.Index + offset, c.Length), newText) |> ignore
+
+            let getMatches line = 
+                let text = 
+                    if regex.IncludesNewLine then
+                        SnapshotLineUtil.GetTextIncludingLineBreak line
+                    else 
+                        SnapshotLineUtil.GetText line
+                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    regex.Regex.Matches(text) |> Seq.cast<Match>
+                else
+                    regex.Regex.Match(text) |> Seq.singleton
+
+            let matches = 
+                range.Lines
+                |> Seq.map (fun line -> getMatches line |> Seq.map (fun m -> (m, line)))
                 |> Seq.concat 
                 |> Seq.filter (fun (m,_) -> m.Success)
                 |> List.ofSeq
@@ -1223,6 +1258,18 @@ type internal CommonOperations
             if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
                 // Actually do the edits
                 matches |> Seq.iter (fun (m, line) -> replaceOne line m)
+
+            matches |> Seq.map (fun (_, line) -> line)
+
+        // Actually do the replace with the given regex.
+        let doReplace (regex: VimRegex) = 
+            use edit = _textView.TextBuffer.CreateEdit()
+
+            let matches =
+                if not regex.IncludesNewLine then
+                    doLineByLineReplace regex edit
+                else
+                    doBufferReplace regex edit
 
             // Update the status for the substitute operation
             let printMessage () = 
@@ -1232,7 +1279,6 @@ type internal CommonOperations
                     let replaceCount = matches |> Seq.length
                     let lineCount = 
                         matches 
-                        |> Seq.map (fun (_, line) -> line.LineNumber)
                         |> Seq.distinct
                         |> Seq.length
                     if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
@@ -1249,7 +1295,7 @@ type internal CommonOperations
                     if Seq.isEmpty matches then 
                         None
                     else 
-                        let _, line = matches |> SeqUtil.last 
+                        let line = matches |> SeqUtil.last 
                         let span = line.ExtentIncludingLineBreak
                         let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
                         match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
