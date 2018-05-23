@@ -1218,44 +1218,15 @@ type internal CommonOperations
                 let newText = regex.Replace oldText replace replaceData _registerMap
                 edit.Replace(matchSpan.Span, newText) |> ignore
 
-            // Get all the matches in the replacement region.
-            let matches =
-                regex.Regex.Matches(replacementRegion)
-                |> Seq.cast<Match>
-                |> Seq.filter (fun capture -> capture.Success)
-                |> Seq.map (fun capture -> (capture, getLineForIndex capture.Index))
-                |> Seq.toList
-
-            // Obey the 'replace all' flag by using only the first
-            // match for each line.
-            let matches =
-                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                    matches
-                else
-                    matches
-                    |> Seq.groupBy (fun (_, line) -> line.LineNumber)
-                    |> Seq.map (fun (lineNumber, group) -> Seq.head group)
-                    |> Seq.toList
-
-            // Actually do the replace unless the 'report only' flag was specified.
-            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
-                matches |> Seq.iter (fun (capture, _) -> replaceOne capture)
-
-            // Discard the capture information.
-            let matches =
-                matches
-                |> Seq.map (fun (_, line) -> line)
-                |> Seq.toList
-
             // Update the status for the substitute operation
-            let printMessage () = 
+            let printMessage (matches: ITextSnapshotLine list) = 
 
-                // Get the replace message for multiple lines
+                // Get the replace message for multiple lines.
                 let replaceMessage = 
-                    let replaceCount = matches |> Seq.length
+                    let replaceCount = matches.Length
                     let lineCount = 
                         matches 
-                        |> Seq.distinct
+                        |> Seq.distinctBy (fun line -> line.LineNumber)
                         |> Seq.length
                     if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
                     else None
@@ -1296,12 +1267,41 @@ type internal CommonOperations
                         sprintf "%s$" (line.GetText()) |> printBoth 
                     else printReplaceMessage()
 
+            // Get all the matches in the replacement region.
+            let matches =
+                regex.Regex.Matches(replacementRegion)
+                |> Seq.cast<Match>
+                |> Seq.filter (fun capture -> capture.Success)
+                |> Seq.map (fun capture -> (capture, getLineForIndex capture.Index))
+                |> Seq.toList
+
+            // Obey the 'replace all' flag by using only the first
+            // match from each line group.
+            let matches =
+                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    matches
+                else
+                    matches
+                    |> Seq.groupBy (fun (_, line) -> line.LineNumber)
+                    |> Seq.map (fun (lineNumber, group) -> Seq.head group)
+                    |> Seq.toList
+
+            // Actually do the replace unless the 'report only' flag was specified.
+            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                matches |> Seq.iter (fun (capture, _) -> replaceOne capture)
+
+            // Discard the capture information.
+            let matches =
+                matches
+                |> Seq.map (fun (_, line) -> line)
+                |> Seq.toList
+
             if edit.HasEffectiveChanges then
                 edit.Apply() |> ignore                                
-                printMessage()
+                printMessage matches
             elif Util.IsFlagSet flags SubstituteFlags.ReportOnly then
                 edit.Cancel()
-                printMessage ()
+                printMessage matches
             elif Util.IsFlagSet flags SubstituteFlags.SuppressError then
                 edit.Cancel()
             else 
