@@ -1224,10 +1224,10 @@ type internal CommonOperations
                 // Actually do the edits.
                 matches |> Seq.iter (fun (m, line) -> replaceOne line m)
 
-            matches |> Seq.map (fun (_, line) -> line)
+            matches |> Seq.map (fun (_, line) -> line) |> Seq.toList
 
         // Actually do the replace using the buffer.
-        let doBufferReplace (regex: VimRegex) (edit: ITextEdit) =
+        let rec doBufferReplace (replacementSpan: SnapshotSpan) (regex: VimRegex) (edit: ITextEdit) =
 
             let replaceOne (matchSpan: SnapshotSpan) = 
                 let replaceData = x.GetReplaceData x.CaretPoint
@@ -1237,7 +1237,7 @@ type internal CommonOperations
 
             let getMatch (searchSpan: SnapshotSpan) = 
                 let search = _vim.SearchService
-                let searchData = SearchData(pattern, SearchPath.Forward)
+                let searchData = SearchData(pattern, SearchPath.Forward, isWrap = false)
                 let wordNavigator = _vimTextBuffer.WordNavigator
                 let searchResult = search.FindNext searchSpan.Start searchData wordNavigator
                 match searchResult with
@@ -1247,20 +1247,42 @@ type internal CommonOperations
                     else
                         None
                 | _ -> None
-                //if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                //    regex.Regex.Matches(text) |> Seq.cast<Match>
-                //else
-                //    regex.Regex.Match(text) |> Seq.singleton
 
-            match getMatch range.Extent with
-            | None -> Seq.empty
+            match getMatch replacementSpan with
+            | None -> List.empty
             | Some matchSpan ->
+                let matchLine = SnapshotPointUtil.GetContainingLine matchSpan.Start
                 if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
 
-                    // Actually do the edits.
+                    // Actually do the edit.
                     replaceOne matchSpan
 
-                SnapshotPointUtil.GetContainingLine matchSpan.Start |> Seq.singleton
+                let nextEndPoint = replacementSpan.End
+                let nextStartPoint = matchSpan.End
+                let nextStartPoint =
+                    if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+
+                        // Advance by one for zero-length matches.
+                        if matchSpan.Length = 0 then
+                            SnapshotPointUtil.AddOneOrCurrent nextStartPoint
+                        else
+                            nextStartPoint
+                    else
+
+                        // Move to the beginning of the next line.
+                        let containingLineNumber =
+                            SnapshotPointUtil.GetContainingLine nextStartPoint
+                            |> SnapshotLineUtil.GetLineNumber
+                        SnapshotUtil.GetLineOrLast replacementSpan.Snapshot (containingLineNumber + 1)
+                        |> SnapshotLineUtil.GetStart
+
+                if nextStartPoint.Position < nextEndPoint.Position then
+                    let remainingSpan = new SnapshotSpan(nextStartPoint, nextEndPoint)
+                    let remainingReplacements = doBufferReplace remainingSpan regex edit
+                    matchLine :: remainingReplacements
+                else
+                    matchLine |> List.singleton
+
 
         // Actually do the replace with the given regex.
         let doReplace (regex: VimRegex) = 
@@ -1270,7 +1292,7 @@ type internal CommonOperations
                 if not regex.IncludesNewLine then
                     doLineByLineReplace regex edit
                 else
-                    doBufferReplace regex edit
+                    doBufferReplace range.ExtentIncludingLineBreak regex edit
 
             // Update the status for the substitute operation
             let printMessage () = 
