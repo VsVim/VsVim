@@ -681,7 +681,7 @@ module VimRegexFactory =
                 | 's' -> data.AppendString @"\s"
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
-                | '.' -> data.AppendString @"(.|\n)"
+                | '.' -> data.AppendString (@"(.|" + NewLineRegex + @")")
                 | _ -> data.Break()
         | 'v' -> ConvertCharAsSpecial data c
         | 'V' -> ConvertCharAsSpecial data c
