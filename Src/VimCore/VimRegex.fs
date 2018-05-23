@@ -428,7 +428,7 @@ module VimRegexFactory =
             ("upper", "A-Z")
             ("xdigit", "A-Fa-f0-9")
             ("return", StringUtil.OfChar CharCodes.Enter)
-            ("tab", "`t")
+            ("tab", "\t")
             ("escape", StringUtil.OfChar CharCodes.Escape)
             ("backspace", StringUtil.OfChar CharCodes.Backspace)
         |] |> Map.ofArray
@@ -577,7 +577,7 @@ module VimRegexFactory =
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
-        | 's' -> data.AppendString "[ \t]" // Purposely not verbatim to get tab
+        | 's' -> data.AppendString ("[" + NamedCollectionMap.["space"] + "]")
         | 'S' -> data.AppendString @"\S"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
