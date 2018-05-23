@@ -577,7 +577,7 @@ module VimRegexFactory =
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
-        | 's' -> data.AppendString "[ \t]"
+        | 's' -> data.AppendString "[ \t]" // Purposely not verbatim to get tab
         | 'S' -> data.AppendString @"\S"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
