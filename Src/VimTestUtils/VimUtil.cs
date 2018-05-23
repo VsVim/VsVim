@@ -151,6 +151,8 @@ namespace Vim.UnitTest
             KeyRemapMode remapMode = null,
             CommandFlags flags = CommandFlags.None)
         {
+            remapMode = remapMode ?? KeyRemapMode.None;
+
             Func<KeyInput, BindResult<NormalCommand>> func = null;
             func = keyInput =>
             {
@@ -287,6 +289,8 @@ namespace Vim.UnitTest
         internal static BindData<T> CreateBindData<T>(Func<KeyInput, BindResult<T>> func = null, KeyRemapMode remapMode = null)
         {
             func = func ?? (x => BindResult<T>.Cancelled);
+            remapMode = remapMode ?? KeyRemapMode.None;
+
             return new BindData<T>(remapMode, func.ToFSharpFunc());
         }
 
