@@ -577,7 +577,7 @@ module VimRegexFactory =
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
-        | 's' -> data.AppendString @"\s"
+        | 's' -> data.AppendString "[ \t]"
         | 'S' -> data.AppendString @"\S"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
@@ -678,6 +678,7 @@ module VimRegexFactory =
             | Some c -> 
                 data.IncrementIndex 1
                 match c with 
+                | 's' -> data.AppendString @"\s"
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
                 | '.' -> data.AppendString @"(.|\n)"

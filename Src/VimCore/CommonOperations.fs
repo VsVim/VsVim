@@ -1191,80 +1191,61 @@ type internal CommonOperations
 
         // Actually do the replace using the given regex.
         let doReplace (regex: VimRegex) = 
+            use edit = _textView.TextBuffer.CreateEdit()
+            let replacementSpan = range.Extent
+            let replacementRegion = replacementSpan.GetText()
 
             let snapshot = _textView.TextSnapshot;
-            let startPosition = range.Start.Position
-            let endPosition = range.EndIncludingLineBreak.Position
+            let startPosition = replacementSpan.Start.Position
+            let endPosition = replacementSpan.End.Position
 
-            use edit = _textView.TextBuffer.CreateEdit()
-            let replacementRegion = range.ExtentIncludingLineBreak.GetText()
+            // Get a snapshot line corresponding to a replacement region index.
+            let getLineForIndex (index: int) =
+                new SnapshotPoint(snapshot, startPosition + index)
+                |> SnapshotPointUtil.GetContainingLine
 
-            // Recursively replace from the specified starting point
-            // to the end of the replacement region.
-            let rec innerReplace (startAt: int) =
+            // Get a snapshot span corresponding to a regex match.
+            let getSpanforCapture (capture: Capture) =
+                let matchStartPosition = startPosition + capture.Index
+                let matchLength = capture.Length
+                new SnapshotSpan(snapshot, matchStartPosition, matchLength)
 
-                // Replace one match.
-                let replaceOne (matchSpan: SnapshotSpan) = 
-                    let replaceData = x.GetReplaceData x.CaretPoint
-                    let oldText = matchSpan.GetText()
-                    let newText = regex.Replace oldText replace replaceData _registerMap
-                    edit.Replace(matchSpan.Span, newText) |> ignore
+            // Replace one match.
+            let replaceOne (capture: Capture) = 
+                let matchSpan = getSpanforCapture capture
+                let replaceData = x.GetReplaceData x.CaretPoint
+                let oldText = matchSpan.GetText()
+                let newText = regex.Replace oldText replace replaceData _registerMap
+                edit.Replace(matchSpan.Span, newText) |> ignore
 
-                // Get the next match in the search region from the current starting index.
-                let getMatch () = 
-                    let capture = regex.Regex.Match(replacementRegion, startAt)
-                    if capture.Success then
-                        let matchStartPosition = startPosition + capture.Index
-                        let matchLength = capture.Length
-                        if matchStartPosition < endPosition then
-                            new SnapshotSpan(snapshot, matchStartPosition, matchLength)
-                            |> Some
-                        else
-                            None
-                    else
-                        None
+            // Get all the matches in the replacement region.
+            let matches =
+                regex.Regex.Matches(replacementRegion)
+                |> Seq.cast<Match>
+                |> Seq.filter (fun capture -> capture.Success)
+                |> Seq.map (fun capture -> (capture, getLineForIndex capture.Index))
+                |> Seq.toList
 
-                // Match the pattern in the current replacement region.
-                match getMatch() with
-                | None -> List.empty
-                | Some matchSpan ->
-                    let matchLine = SnapshotPointUtil.GetContainingLine matchSpan.Start
-                    if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+            // Obey the 'replace all' flag by using only the first
+            // match for each line.
+            let matches =
+                if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    matches
+                else
+                    matches
+                    |> Seq.groupBy (fun (_, line) -> line.LineNumber)
+                    |> Seq.map (fun (lineNumber, group) -> Seq.head group)
+                    |> Seq.toList
 
-                        // Actually do the edit.
-                        replaceOne matchSpan
+            // Actually do the replace unless the 'report only' flag was specified.
+            if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                matches |> Seq.iter (fun (capture, _) -> replaceOne capture)
 
-                    // Next consider only the portion of the replacement region
-                    // after the current match.
-                    let nextStartAt = matchSpan.End.Position - startPosition
-
-                    // Adjust the next start point.
-                    let nextStartAt =
-                        if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
-
-                            // Advance by one for zero-length matches.
-                            if matchSpan.Length = 0 then
-                                nextStartAt + 1
-                            else
-                                nextStartAt
-                        else
-
-                            // Move to the beginning of the next line when
-                            // 'replace all' isn't specified.
-                            new SnapshotPoint(snapshot, startPosition + startAt)
-                            |> SnapshotPointUtil.GetContainingLine
-                            |> SnapshotLineUtil.GetEndIncludingLineBreak
-                            |> SnapshotPointUtil.GetPosition
-                            |> (fun position -> position - startPosition)
-
-                    // Continue replacing if we haven't reached the end of
-                    // the replacement region.
-                    if nextStartAt < replacementRegion.Length then
-                        matchLine :: innerReplace nextStartAt
-                    else
-                        matchLine |> List.singleton
-
-            let matches = innerReplace 0
+            // Discard the capture information.
+            let matches =
+                matches
+                |> Seq.map (fun (_, line) -> line)
+                |> Seq.toList
 
             // Update the status for the substitute operation
             let printMessage () = 
