@@ -1192,37 +1192,43 @@ type internal CommonOperations
         // Do the replace using the given regex.
         // This is complicated by the fact that vim allows patterns
         // to start within the range but extend beyond it arbitarily
-        // far into the buffer. So we two concepts in play here:
+        // far into the buffer. So we have two concepts in play here:
         // - The valid region for the search to start in
         // - The valid region for the search to end in
         // Both regions alway start at same place.  For normal
         // (non-multiline) patterns, the two regions are the same.
         // For multiline patterns, the second region extends to
         // the end of the buffer.
-        let doReplace (regex: VimRegex) = 
+        let doReplace (regex: VimRegex) =
             let snapshot = _textView.TextSnapshot;
 
             // Use an edit to apply all the changes at once after
             // we've found all the matches.
             use edit = _textView.TextBuffer.CreateEdit()
 
-            // Choose a replacement span and and ending offset within that span.
-            let replacementSpan, endPosition =
+            // The beginning of a match can occur within the search region.
+            let searchSpan = range.ExtentIncludingLineBreak
+
+            // The end of the match can occur within the replacement region.
+            let replacementSpan =
                 if regex.IncludesNewLine then
 
                     // Grow the replacement span to the end of the
                     // buffer if the regex could match a newline.
-                    let newLineRange =
-                        let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber snapshot
-                        SnapshotLineRangeUtil.CreateForLineNumberRange
-                            snapshot range.StartLineNumber lastLineNumber
-                    newLineRange.ExtentIncludingLineBreak, range.EndIncludingLineBreak.Position
+                    new SnapshotSpan(searchSpan.Start, SnapshotUtil.GetEndPoint snapshot)
                 else
-                    range.ExtentIncludingLineBreak, range.ExtentIncludingLineBreak.End.Position
+                    range.ExtentIncludingLineBreak
 
-            let startPosition = replacementSpan.Start.Position
+            // The start and end position delineate the bounds of the search region.
+            let startPosition = searchSpan.Start.Position
+            let endPosition = searchSpan.End.Position
+
             let replacementRegion = replacementSpan.GetText()
             let lastLineHasNoLineBreak = not (SnapshotUtil.AllLinesHaveLineBreaks snapshot)
+
+            // The following code assumes we can use indexes arising from
+            // the replacement region string as offsets into the snapshot.
+            Contract.Assert(replacementRegion.Length = replacementSpan.Length)
 
             // Get a snapshot line corresponding to a replacement region index.
             let getLineForIndex (index: int) =
@@ -1248,7 +1254,7 @@ type internal CommonOperations
                 new SnapshotSpan(snapshot, matchStartPosition, matchLength)
 
             // Replace one match.
-            let replaceOne (capture: Match) = 
+            let replaceOne (capture: Match) =
                 let matchSpan = getSpanforCapture capture
                 let replaceData = x.GetReplaceData x.CaretPoint
                 let oldText = matchSpan.GetText()
@@ -1256,37 +1262,37 @@ type internal CommonOperations
                 edit.Replace(matchSpan.Span, newText) |> ignore
 
             // Update the status for the substitute operation
-            let printMessage (matches: ITextSnapshotLine list) = 
+            let printMessage (matches: ITextSnapshotLine list) =
 
                 // Get the replace message for multiple lines.
-                let replaceMessage = 
+                let replaceMessage =
                     let replaceCount = matches.Length
-                    let lineCount = 
-                        matches 
+                    let lineCount =
+                        matches
                         |> Seq.distinctBy (fun line -> line.LineNumber)
                         |> Seq.length
                     if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
                     else None
 
                 let printReplaceMessage () =
-                    match replaceMessage with 
+                    match replaceMessage with
                     | None -> ()
                     | Some(msg) -> _statusUtil.OnStatus msg
 
-                // Find the last line in the replace sequence.  This is printed out to the 
+                // Find the last line in the replace sequence.  This is printed out to the
                 // user and needs to represent the current state of the line, not the previous
-                let lastLine = 
-                    if Seq.isEmpty matches then 
+                let lastLine =
+                    if Seq.isEmpty matches then
                         None
-                    else 
-                        let line = matches |> SeqUtil.last 
+                    else
+                        let line = matches |> SeqUtil.last
                         let span = line.ExtentIncludingLineBreak
                         let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
                         match TrackingSpanUtil.GetSpan _textView.TextSnapshot tracking with
                         | None -> None
                         | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
 
-                // Now consider the options 
+                // Now consider the options.
                 match lastLine with 
                 | None -> printReplaceMessage()
                 | Some(line) ->
