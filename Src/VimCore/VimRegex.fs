@@ -404,6 +404,9 @@ module VimRegexFactory =
     let ControlCharString = GenerateCharString CharUtil.IsControl
     let PunctuationCharString = GenerateCharString Char.IsPunctuation
     let SpaceCharString = GenerateCharString Char.IsWhiteSpace
+    let BlankCharString = " \t"
+
+    let BlankCharRegex = "[" + BlankCharString + "]"
 
     let PrintableGroupPattern = 
         let str = [0 .. 255] |> Seq.map (fun i -> char i) |> Seq.filter (fun c -> not (Char.IsControl c)) |> StringUtil.OfCharSeq
@@ -419,7 +422,7 @@ module VimRegexFactory =
         [|
             ("alnum", "A-Za-z0-9") 
             ("alpha", "A-Za-z") 
-            ("blank", " \t")
+            ("blank", BlankCharString)
             ("cntrl", ControlCharString)
             ("digit", "0-9")
             ("lower", "a-z")
@@ -432,6 +435,10 @@ module VimRegexFactory =
             ("escape", StringUtil.OfChar CharCodes.Escape)
             ("backspace", StringUtil.OfChar CharCodes.Backspace)
         |] |> Map.ofArray
+
+    /// Combine two patterns using alternation
+    let CombineAlternatives (pattern1: string) (pattern2: string) =
+        "(" + pattern1 + "|" + pattern2 + ")"
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 
     /// stream.  Can't determine if it's unmatched though until the string is fully 
@@ -577,7 +584,7 @@ module VimRegexFactory =
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
-        | 's' -> data.AppendString ("[" + NamedCollectionMap.["blank"] + "]")
+        | 's' -> data.AppendString BlankCharRegex
         | 'S' -> data.AppendString @"\S"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
@@ -678,10 +685,10 @@ module VimRegexFactory =
             | Some c -> 
                 data.IncrementIndex 1
                 match c with 
-                | 's' -> data.AppendString (@"([" + NamedCollectionMap.["blank"] + "]|" + NewLineRegex + @")")
+                | 's' -> data.AppendString (CombineAlternatives BlankCharRegex NewLineRegex)
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
-                | '.' -> data.AppendString (@"(.|" + NewLineRegex + @")")
+                | '.' -> data.AppendString (CombineAlternatives "." NewLineRegex)
                 | _ -> data.Break()
         | 'v' -> ConvertCharAsSpecial data c
         | 'V' -> ConvertCharAsSpecial data c
