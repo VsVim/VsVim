@@ -678,7 +678,7 @@ module VimRegexFactory =
             | Some c -> 
                 data.IncrementIndex 1
                 match c with 
-                | 's' -> data.AppendString @"\s"
+                | 's' -> data.AppendString (@"([" + NamedCollectionMap.["blank"] + "]|" + NewLineRegex + @")")
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
                 | '.' -> data.AppendString (@"(.|" + NewLineRegex + @")")
