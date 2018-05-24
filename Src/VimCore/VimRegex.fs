@@ -403,7 +403,7 @@ module VimRegexFactory =
 
     let ControlCharString = GenerateCharString CharUtil.IsControl
     let PunctuationCharString = GenerateCharString Char.IsPunctuation
-    let SpaceCharString = GenerateCharString Char.IsWhiteSpace
+    let SpaceCharString = (GenerateCharString Char.IsWhiteSpace).Replace("\n", "") // vim excludes newline
     let BlankCharString = " \t"
 
     let BlankCharRegex = "[" + BlankCharString + "]"
@@ -685,10 +685,14 @@ module VimRegexFactory =
             | Some c -> 
                 data.IncrementIndex 1
                 match c with 
-                | 's' -> data.AppendString (CombineAlternatives BlankCharRegex NewLineRegex)
+                | 's' ->
+                    data.AppendString (CombineAlternatives BlankCharRegex NewLineRegex)
+                    data.IncludesNewLine <- true
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
-                | '.' -> data.AppendString (CombineAlternatives "." NewLineRegex)
+                | '.' ->
+                    data.AppendString (CombineAlternatives "." NewLineRegex)
+                    data.IncludesNewLine <- true
                 | _ -> data.Break()
         | 'v' -> ConvertCharAsSpecial data c
         | 'V' -> ConvertCharAsSpecial data c
