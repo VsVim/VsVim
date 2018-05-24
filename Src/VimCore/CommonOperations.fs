@@ -1229,7 +1229,25 @@ type internal CommonOperations
 
                 // We can only match the very end of the replacement
                 // region if the last line doesn't have a linebreak.
-                index < length || (index = length && lastLineHasNoLineBreak && index = snapshot.Length)
+                if index < length || (index = length && lastLineHasNoLineBreak && index = snapshot.Length) then
+                    if regex.MatchesVisualSelection then
+
+                        // If the pattern includes '\%V', we need to check the match
+                        // against the last visual selection.
+                        let visualSelection = _vimTextBuffer.LastVisualSelection
+                        match visualSelection with
+                        | None -> false
+                        | Some visualSelection ->
+
+                            // Is the match entirely within the visual selection?
+                            let selectionStartIndex = visualSelection.VisualSpan.Start.Position - startPosition
+                            let selectionEndIndex = visualSelection.VisualSpan.End.Position - startPosition
+                            let isInSelection = index >= selectionStartIndex && index < selectionEndIndex
+                            isInSelection
+                    else
+                        true
+                else
+                    false
             else
                 false
 

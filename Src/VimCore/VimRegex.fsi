@@ -13,6 +13,9 @@ type VimRegex =
     /// The pattern includes a new line reference (\n not $).  
     member IncludesNewLine: bool
 
+    /// The pattern matches the visual selection.
+    member MatchesVisualSelection: bool
+
     /// Pattern of the BCL version of the regular expression
     member RegexPattern: string
 
