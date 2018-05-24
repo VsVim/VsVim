@@ -1080,6 +1080,14 @@ namespace Vim.UnitTest
                 }
 
                 [WpfFact]
+                public void MultilineReplaceWholeShebang()
+                {
+                    Create("foo", "bar", "baz", "qux");
+                    RunCommand(@"s/foo\_.*qux/xyzzy/");
+                    Assert.Equal(new[] { "xyzzy" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
                 public void FirstThroughLastWithTrailingLineBreak()
                 {
                     Create("cat", "dog", "");
