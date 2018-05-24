@@ -1228,7 +1228,8 @@ type internal CommonOperations
                 let length = endPosition - startPosition
 
                 // We can only match the very end of the replacement
-                // region if the last line doesn't have a linebreak.
+                // region if the last line doesn't have a linebreak
+                // and we're at the end of the buffer.
                 if index < length || (index = length && lastLineHasNoLineBreak && index = snapshot.Length) then
                     if regex.MatchesVisualSelection then
 
@@ -1240,12 +1241,9 @@ type internal CommonOperations
                         | Some visualSelection ->
 
                             // Is the match entirely within the visual selection?
-                            let startIndex = visualSelection.VisualSpan.Start.Position - startPosition
-                            let endIndex = visualSelection.VisualSpan.End.Position - startPosition
-                            let startsInSelection = index >= startIndex && index < endIndex
-                            let matchEndIndex = index + capture.Length
-                            let endsInSelection = matchEndIndex >= startIndex && matchEndIndex <= endIndex
-                            startsInSelection && endsInSelection
+                            let selectionStartIndex = visualSelection.VisualSpan.Start.Position - startPosition
+                            let selectionEndIndex = visualSelection.VisualSpan.End.Position - startPosition
+                            index >= selectionStartIndex && index + capture.Length <= selectionEndIndex
                     else
                         true
                 else
