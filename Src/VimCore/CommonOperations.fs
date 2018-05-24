@@ -1227,7 +1227,7 @@ type internal CommonOperations
                 let index = capture.Index
                 let length = endPosition - startPosition
 
-                // We can only match the very end of the replacement
+                // We can only match at the very end of the search
                 // region if the last line doesn't have a linebreak
                 // and we're at the end of the buffer.
                 if index < length || (index = length && lastLineHasNoLineBreak && index = snapshot.Length) then
