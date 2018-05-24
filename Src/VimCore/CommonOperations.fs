@@ -1240,10 +1240,12 @@ type internal CommonOperations
                         | Some visualSelection ->
 
                             // Is the match entirely within the visual selection?
-                            let selectionStartIndex = visualSelection.VisualSpan.Start.Position - startPosition
-                            let selectionEndIndex = visualSelection.VisualSpan.End.Position - startPosition
-                            let isInSelection = index >= selectionStartIndex && index < selectionEndIndex
-                            isInSelection
+                            let startIndex = visualSelection.VisualSpan.Start.Position - startPosition
+                            let endIndex = visualSelection.VisualSpan.End.Position - startPosition
+                            let startsInSelection = index >= startIndex && index < endIndex
+                            let matchEndIndex = index + capture.Length
+                            let endsInSelection = matchEndIndex >= startIndex && matchEndIndex <= endIndex
+                            startsInSelection && endsInSelection
                     else
                         true
                 else
