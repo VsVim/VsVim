@@ -1056,6 +1056,30 @@ namespace Vim.UnitTest
                 }
 
                 [WpfFact]
+                public void MultilineReplaceFirstLine()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"s/foo\nbar/qux/");
+                    Assert.Equal(new[] { "qux", "baz" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MultilineReplaceWholeBufferAtBeginning()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"%s/foo\nbar/qux/");
+                    Assert.Equal(new[] { "qux", "baz" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MultilineReplaceWholeBufferAtEnd()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"%s/bar\nbaz/qux/");
+                    Assert.Equal(new[] { "foo", "qux" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
                 public void FirstThroughLastWithTrailingLineBreak()
                 {
                     Create("cat", "dog", "");
