@@ -1189,15 +1189,36 @@ type internal CommonOperations
 
     member x.Substitute pattern replace (range: SnapshotLineRange) flags = 
 
-        // Actually do the replace using the given regex.
+        // Do the replace using the given regex.
         let doReplace (regex: VimRegex) = 
-            use edit = _textView.TextBuffer.CreateEdit()
-            let replacementSpan = range.Extent
-            let replacementRegion = replacementSpan.GetText()
-
             let snapshot = _textView.TextSnapshot;
+
+            // Use an edit to apply all the changes at once after
+            // we've found all the matches.
+            use edit = _textView.TextBuffer.CreateEdit()
+
+            // Choose a replacement span and and ending offset within that span.
+            let replacementSpan, endPosition =
+                if regex.IncludesNewLine then
+
+                    // Grow the replacement span by one line if the
+                    // the regex includes a newline.  This allows us to
+                    // substitute the linebreak of the final line.
+                    let followingLineNumber =
+                        SnapshotPointUtil.GetContainingLine range.EndIncludingLineBreak
+                        |> SnapshotLineUtil.GetLineNumber
+                    let newLineRange =
+                        SnapshotLineRangeUtil.CreateForLineNumberRange snapshot range.StartLineNumber followingLineNumber
+                    newLineRange.Extent, range.EndIncludingLineBreak.Position
+                else
+
+                    // Don't include the linebreak in the extent because the
+                    // regex would then match '^' at the beginning of the phantom
+                    // line.
+                    range.Extent, range.Extent.End.Position
+
             let startPosition = replacementSpan.Start.Position
-            let endPosition = replacementSpan.End.Position
+            let replacementRegion = replacementSpan.GetText()
 
             // Get a snapshot line corresponding to a replacement region index.
             let getLineForIndex (index: int) =
@@ -1272,6 +1293,7 @@ type internal CommonOperations
                 regex.Regex.Matches(replacementRegion)
                 |> Seq.cast<Match>
                 |> Seq.filter (fun capture -> capture.Success)
+                |> Seq.filter (fun capture -> capture.Index <= endPosition - startPosition)
                 |> Seq.map (fun capture -> (capture, getLineForIndex capture.Index))
                 |> Seq.toList
 
