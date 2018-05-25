@@ -581,10 +581,27 @@ type MatchingTokenUtil() =
             let length = SnapshotUtil.GetLength snapshot
             let mutable found: int option = None
             let mutable targetDepth: int option = None
+            let mutable quote: char option = None
             let mutable index = 0
             while index < length do
                 let c = SnapshotUtil.GetChar index snapshot
-                if c = startChar then 
+                if quote <> None then
+                    index <- index + 1
+
+                    // If we're in a string literal, just keep advancing until
+                    // we encounter the matching quote.
+                    match quote with
+                    | Some _ when c = '\\' ->
+                        if index < length then
+
+                            // Skip escaped character.
+                            index <- index + 1
+                    | Some quoteChar when quoteChar = c -> quote <- None
+                    | _ -> ()
+                elif c = '\'' || c = '\"' then
+                    quote <- Some c
+                    index <- index + 1
+                elif c = startChar then 
 
                     // If this is our starting character then the matching token occurs
                     // when the depth once again hits the current depth
