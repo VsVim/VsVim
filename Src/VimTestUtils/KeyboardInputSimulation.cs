@@ -269,7 +269,7 @@ namespace Vim.UnitTest
 
             if (!TryConvert(keyInput, out Key key, out ModifierKeys modifierKeys))
             {
-                throw new Exception(string.Format("Couldn't convert '{0}' to Wpf keys", keyInput));
+                throw new Exception($"Couldn't convert '{keyInput}' to Wpf keys");
             }
 
             try
@@ -433,7 +433,7 @@ namespace Vim.UnitTest
                 return StringToKey(keyInput.Char.ToString());
             }
 
-            throw new Exception(string.Format("Can't convert {0} to a Wpf Key", vimKey));
+            throw new Exception($"Can't convert {vimKey} to a Wpf Key");
         }
 
         private Key StringToKey(string str)

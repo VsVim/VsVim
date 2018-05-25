@@ -42,7 +42,7 @@ namespace Vim.VisualStudio
 
         public override string ToString()
         {
-            return string.Format("{0} - {1}", Group, Id);
+            return $"{Group} - {Id}";
         }
 
         public static bool operator ==(CommandId left, CommandId right)

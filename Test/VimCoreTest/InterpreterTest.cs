@@ -206,7 +206,7 @@ namespace Vim.UnitTest
 
             internal void Verify(char mark, int line, int column, int index = 1)
             {
-                var msg = string.Format(" {0}  {1,5}{2,5} test.txt", mark, line, column);
+                var msg = $" {mark}  {line,5}{column,5} test.txt";
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
@@ -319,7 +319,7 @@ namespace Vim.UnitTest
                 _fileSystem
                     .Setup(x => x.ReadAllLines(filePath))
                     .Returns(FSharpOption<string[]>.None);
-                ParseAndRun(string.Format(":source {0}", filePath));
+                ParseAndRun($":source {filePath}");
                 Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
             }
         }
@@ -972,7 +972,7 @@ namespace Vim.UnitTest
                 Assert.Equal(count + 1, found.Count);
                 for (var i = 1; i < found.Count; i++)
                 {
-                    var line = string.Format("{0,7} {1}", i, "cat" + (i - 1));
+                    var line = $"{i,7} cat{i - 1}";
                     Assert.Equal(line, found[i]);
                 }
             }
@@ -1330,7 +1330,7 @@ namespace Vim.UnitTest
                 Create("cat");
                 var filePath = "file<name>.txt";
                 VimHost.RunSaveTextAs = delegate { return false; };
-                ParseAndRun(string.Format("w {0}", filePath));
+                ParseAndRun($"w {filePath}");
             }
 
             [WpfFact]

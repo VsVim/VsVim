@@ -246,7 +246,7 @@ namespace Vim.UnitTest
                 foreach (var entry in list)
                 {
                     var pair = entry.Split('-');
-                    var name = string.Format("<{0}>", pair[0]);
+                    var name = $"<{pair[0]}>";
                     var c = (char)Int32.Parse(pair[1]);
                     var left = KeyNotationUtil.StringToKeyInput(name);
                     var right = KeyInputUtil.CharToKeyInput(c);

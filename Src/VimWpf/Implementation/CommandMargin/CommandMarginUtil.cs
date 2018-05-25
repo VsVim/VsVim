@@ -192,7 +192,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
             {
-                commandLine = string.Format("{0} \"{1}", commandLine, commandRunner.RegisterName.Char.Value);
+                commandLine = $"{commandLine} \"{commandRunner.RegisterName.Char.Value}";
             }
 
             return commandLine;

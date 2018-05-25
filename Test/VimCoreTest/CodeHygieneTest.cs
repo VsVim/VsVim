@@ -63,7 +63,7 @@ namespace Vim.UnitTest
                         continue;
                     }
 
-                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), string.Format("Type {0} has incorrect prefix", type.FullName));
+                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Type {type.FullName} has incorrect prefix");
                 }
             }
 
@@ -86,7 +86,7 @@ namespace Vim.UnitTest
                     var attrib = type.GetCustomAttributes(typeof(RequireQualifiedAccessAttribute), inherit: true);
                     if (attrib == null || attrib.Length != 1)
                     {
-                        list.Add(string.Format("{0} does not have [<RequiresQualifiedAccess>]", type.Name));
+                        list.Add($"{type.Name} does not have [<RequiresQualifiedAccess>]");
                     }
                 }
 

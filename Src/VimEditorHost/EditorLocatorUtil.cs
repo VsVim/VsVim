@@ -91,7 +91,7 @@ namespace Vim.EditorHost
         {
             try
             {
-                var subKeyPath = string.Format(@"Software\Microsoft\{0}\{1}.0", skuKeyName, majorVersion);
+                var subKeyPath = $@"Software\Microsoft\{skuKeyName}\{majorVersion}.0";
                 using (var key = Registry.LocalMachine.OpenSubKey(subKeyPath, writable: false))
                 {
                     if (key != null)

@@ -228,7 +228,7 @@ namespace VimApp
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
         {
-            var msg = string.Format("Host Command Name='{0}' Argument='{1}'", command, argument);
+            var msg = $"Host Command Name='{command}' Argument='{argument}'";
             _vim.ActiveStatusUtil.OnStatus(msg);
         }
 

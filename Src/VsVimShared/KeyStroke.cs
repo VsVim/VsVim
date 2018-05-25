@@ -80,7 +80,7 @@ namespace Vim.VisualStudio
 
         public override string ToString()
         {
-            return string.Format("{0} - {1}", KeyInput, KeyModifiers);
+            return $"{KeyInput} - {KeyModifiers}";
         }
 
         public bool Equals(KeyStroke other)

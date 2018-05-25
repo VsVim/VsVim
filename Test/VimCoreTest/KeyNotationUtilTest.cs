@@ -169,7 +169,7 @@ namespace Vim.UnitTest
                 Action<string, VimKey> assert =
                     (name, vimKey) =>
                     {
-                        var notation = string.Format("<CS-{0}>", name);
+                        var notation = $"<CS-{name}>";
                         var keyInput = KeyNotationUtil.StringToKeyInput(notation);
                         Assert.Equal(vimKey, keyInput.Key);
                         Assert.Equal(VimKeyModifiers.Shift | VimKeyModifiers.Control, keyInput.KeyModifiers);
@@ -346,7 +346,7 @@ namespace Vim.UnitTest
                 var baseCase = (int)'a';
                 for (var i = 0; i < 26; i++)
                 {
-                    var msg = string.Format("<Char-{0}>", baseCase + i);
+                    var msg = $"<Char-{baseCase + i}>";
                     var keyInput = KeyNotationUtil.StringToKeyInput(msg);
 
                     var target = (char)(baseCase + i);
@@ -446,8 +446,7 @@ namespace Vim.UnitTest
                         continue;
                     }
 
-                    var text = string.Format("<C-{0}>", c);
-                    Assert.Equal(text, KeyNotationUtil.GetDisplayName(keyInput));
+                    Assert.Equal($"<C-{c}>", KeyNotationUtil.GetDisplayName(keyInput));
                 }
             }
 
@@ -490,8 +489,7 @@ namespace Vim.UnitTest
                 foreach (var c in "()#")
                 {
                     var keyInput = KeyInputUtil.CharWithControlToKeyInput(c);
-                    var text = string.Format("<C-{0}>", c);
-                    Assert.Equal(text, KeyNotationUtil.GetDisplayName(keyInput));
+                    Assert.Equal($"<C-{c}>", KeyNotationUtil.GetDisplayName(keyInput));
                 }
             }
 

@@ -6765,9 +6765,8 @@ namespace Vim.UnitTest
 
             private void AssertPercentLine(int number, int expected)
             {
-                var motion = string.Format("{0}%", number);
+                var motion = $"{number}%";
                 _vimBuffer.ProcessNotation(motion);
-
                 var lineNumber = _textView.GetCaretLine().LineNumber + 1; // 0 based editor
                 Assert.Equal(expected, lineNumber);
             }

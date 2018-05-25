@@ -231,7 +231,7 @@ namespace Vim.VisualStudio
 
             if (version != VimConstants.VersionNumber)
             {
-                telemetry.WriteEvent(string.Format("VsVim Installed {0}", VimConstants.VersionNumber));
+                telemetry.WriteEvent($"VsVim Installed {VimConstants.VersionNumber}");
                 vimApplicationSettings.LastVersionUsed = VimConstants.VersionNumber;
             }
         }

@@ -393,7 +393,7 @@ namespace VimApp
         private void OnNewTabClick(object sender, RoutedEventArgs e)
         {
             // TODO: Move the title to IVimWindow
-            var name = string.Format("Empty Doc {0}", _vimWindowManager.VimWindowList.Count + 1);
+            var name = $"Empty Doc {_vimWindowManager.VimWindowList.Count + 1}";
             AddNewTab(name);
         }
 
