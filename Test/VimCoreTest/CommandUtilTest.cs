@@ -767,7 +767,7 @@ namespace Vim.UnitTest
                 var tss = _textView.TextSnapshot;
 
                 Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.EnterKey, 1).IsCompleted);
-                var withIndentedSecondLine = string.Format("    the food is{0}    especially good today", Environment.NewLine);
+                var withIndentedSecondLine = "    the food is" + Environment.NewLine + "    especially good today";
                 Assert.Equal(_textBuffer.GetExtent().GetText(), withIndentedSecondLine);
             }
 

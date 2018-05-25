@@ -65,7 +65,7 @@ namespace Vim.VisualStudio
 
         public override string ToString()
         {
-            return string.Format("{0} Key.{1}: {2} {3}", EditCommandKind, _keyInput.Key, Group, Id);
+            return $"{EditCommandKind} Key.{_keyInput.Key}: {Group} {Id}";
         }
     }
 }

@@ -154,7 +154,7 @@ namespace Vim.UnitTest
                 var all = new[] { "R", "O", "P" };
                 foreach (var suffix in all)
                 {
-                    var command = string.Format("<C-R><C-{0}>", suffix);
+                    var command = $"<C-R><C-{suffix}>";
                     _mode.ProcessNotation(command);
                     Assert.True(_mode.IsInPaste);
                     _mode.ProcessNotation("<Esc>");

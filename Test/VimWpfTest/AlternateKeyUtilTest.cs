@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 for (var i = 1; i <= 12; i++)
                 {
-                    var name = string.Format("F{0}", i);
+                    var name = $"F{i}";
                     var key = (Key)Enum.Parse(typeof(Key), name);
                     var vimKey = (VimKey)Enum.Parse(typeof(VimKey), name);
                     AssertMap(key, vimKey);

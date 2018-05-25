@@ -113,7 +113,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("q3@a");
                 for (var i = 0; i < 5; i++)
                 {
-                    var line = string.Format("{0}. Heading", i + 1);
+                    var line = $"{i + 1}. Heading";
                     Assert.Equal(line, _textView.GetLine(i).GetText());
                 }
             }

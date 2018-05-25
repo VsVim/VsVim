@@ -21,7 +21,7 @@ namespace Vim.VisualStudio.UnitTest
             const string prefix = "Vim.VisualStudio.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
-                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), string.Format("Wrong namespace prefix on {0}", type.FullName));
+                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Wrong namespace prefix on {type.FullName}");
             }
         }
 
@@ -43,7 +43,7 @@ namespace Vim.VisualStudio.UnitTest
                         continue;
                     }
 
-                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), string.Format("Wrong namespace prefix on {0}", type.FullName));
+                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Wrong namespace prefix on {type.FullName}");
                 }
             }
         }

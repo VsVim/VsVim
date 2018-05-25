@@ -77,7 +77,7 @@ namespace Vim.VisualStudio
                 keyBindingService.DumpKeyboard(streamWriter);
             }
 
-            var message = string.Format("Keyboard data dumped to: {0}", filePath);
+            var message = $"Keyboard data dumped to: {filePath}";
             PrintToCommandWindow(message);
         }
 
@@ -179,10 +179,10 @@ namespace Vim.VisualStudio
 
             if (!Enum.TryParse(name, out ModeKind mode))
             {
-                PrintToCommandWindow(string.Format("Invalid mode name: {0}", name));
+                PrintToCommandWindow($"Invalid mode name: {name}");
 
                 var all = string.Join(", ", Enum.GetNames(typeof(ModeKind)));
-                PrintToCommandWindow(string.Format("Valid names: {0}", all));
+                PrintToCommandWindow($"Valid names: {all}");
                 return VSConstants.E_INVALIDARG;
             }
 

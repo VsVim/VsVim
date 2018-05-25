@@ -116,7 +116,7 @@ namespace Vim.EditorHost
             AppDomain.CurrentDomain.AssemblyResolve += (sender, e) =>
                 {
                     var assemblyName = new AssemblyName(e.Name);
-                    var name = string.Format("{0}.dll", assemblyName.Name);
+                    var name = $"{assemblyName.Name}.dll";
                     foreach (var dir in dirList)
                     {
                         var fullName = Path.Combine(dir, name);
@@ -147,7 +147,7 @@ namespace Vim.EditorHost
 
         private static Assembly GetEditorAssembly(string assemblyName, Version version)
         {
-            var qualifiedName = string.Format("{0}, Version={1}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL", assemblyName, version);
+            var qualifiedName = $"{assemblyName}, Version={version}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL";
             return Assembly.Load(qualifiedName);
         }
     }

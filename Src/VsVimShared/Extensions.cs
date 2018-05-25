@@ -125,7 +125,7 @@ namespace Vim.VisualStudio
                     var name = command.Name;
                     if (string.IsNullOrEmpty(name))
                     {
-                        name = string.Format("<Unnamed> {0}", commandId.Id);
+                        name = $"<Unnamed> {commandId.Id}";
                     }
 
                     yield return new CommandKeyBinding(commandId, name, binding);
