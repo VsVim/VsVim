@@ -1595,12 +1595,31 @@ type Parser
                 moveNextChar()
                 if afterEscape then
                     match c with
+                    | 'e' -> builder.AppendChar (char 0x1b)
                     | 't' -> builder.AppendChar '\t'
                     | 'b' -> builder.AppendChar '\b'
                     | 'f' -> builder.AppendChar '\f'
                     | 'n' -> builder.AppendChar '\n'
                     | 'r' -> builder.AppendChar '\r'
-                    | '\\' -> builder.AppendChar '\\'
+                    | '<' ->
+
+                        // Escaped open angle bracket in a string literal
+                        // starts key notation.
+                        let notation = x.ParseWhile (fun token -> 
+                            match token.TokenKind with 
+                            | TokenKind.Character '>' -> false
+                            | _ -> true)
+                        if _tokenizer.CurrentChar = '>' then
+                            _tokenizer.MoveNextToken()
+                            match notation with
+                            | None -> ()
+                            | Some notation ->
+                                let notation = "<" + notation + ">"
+                                let keyInput = KeyNotationUtil.StringToKeyInput notation
+                                match keyInput.RawChar with
+                                | None -> ()
+                                | Some rawChar -> builder.AppendChar rawChar
+
                     | _ -> builder.AppendChar c
                     inner false
                 elif c = '\\' then
