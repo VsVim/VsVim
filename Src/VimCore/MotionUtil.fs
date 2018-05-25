@@ -589,16 +589,15 @@ type MatchingTokenUtil() =
                     index <- index + 1
 
                     // If we're in a string literal, just keep advancing until
-                    // we encounter the matching quote.
+                    // we encounter the matching quote (but not past end-of-line).
                     match quote with
-                    | Some _ when c = '\\' ->
-                        if index < length then
-
-                            // Skip escaped character.
-                            index <- index + 1
+                    | Some _ when c = '\\' -> if index < length then index <- index + 1
+                    | Some _ when c = '\n' -> quote <- None
                     | Some quoteChar when quoteChar = c -> quote <- None
                     | _ -> ()
                 elif c = '\'' || c = '\"' then
+
+                    // Starting a new string literal.
                     quote <- Some c
                     index <- index + 1
                 elif c = startChar then 
