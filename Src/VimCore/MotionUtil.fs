@@ -1090,14 +1090,19 @@ type internal MotionUtil
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
+        // Is the char at the given point double escaped?
         let isDoubleEscaped point = 
             match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
             | None, _
             | _, None -> false
             | Some point1, Some point2 -> SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
 
+        // Is the char at the given point unescaped and equal to the specified character?
         let isChar c point = SnapshotPointUtil.GetChar point = c && (not (isEscaped point) || isDoubleEscaped point)
 
+        // Given the specified block start and end characters, return a
+        // function that transform a tuple of a point and the current nesting
+        // count into a tuple of final success and the next nesting count.
         let findMatched plusChar minusChar = 
             let inner point count = 
                 let count = 
@@ -1112,6 +1117,8 @@ type internal MotionUtil
 
         let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
 
+        // Parse from the beginning of the line and return the target or
+        // the start of the containing string literal.
         let findStartOfStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote: (char option) = None
@@ -1136,6 +1143,7 @@ type internal MotionUtil
 
             result
 
+        // Parse backward skipping string literals.
         let skipStringLiteralsBackward (sequence: SnapshotPoint seq) =
             let mutable quote: char option = None
             seq {
@@ -1151,6 +1159,7 @@ type internal MotionUtil
                         yield point
             }
 
+        // Parse forward skipping string literals.
         let skipStringLiteralsForward (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote: char option = None
@@ -1171,24 +1180,28 @@ type internal MotionUtil
                         yield point
             }
 
+        // Choose a starting point within the block.
         let endPoint =
             if isChar startChar contextPoint then
                 SnapshotPointUtil.AddOneOrCurrent contextPoint
             else
                 contextPoint 
 
+        // Move the starting to the beginning of the containing string literal.
         let endPoint =
             SnapshotPointUtil.GetContainingLine endPoint
             |> SnapshotLineUtil.GetExtent
             |> SnapshotSpanUtil.GetPoints SearchPath.Forward
             |> findStartOfStringLiteral endPoint
 
+        // Search backward for the character that starts this block.
         let startPoint = 
             SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> skipStringLiteralsBackward
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
+        // Then search forward for the character that ends this block.
         let lastPoint = 
             match startPoint with
             | None -> None
@@ -1198,6 +1211,7 @@ type internal MotionUtil
                 |> skipStringLiteralsForward
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
+        // Return the same from the block start to block end.
         match startPoint, lastPoint with
         | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
