@@ -1123,7 +1123,7 @@ type internal MotionUtil
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote = None
-            let mutable currentResult = false, None
+            let mutable currentResult = false, None, quote
             let mutable result = currentResult
 
             for point in sequence do
@@ -1142,10 +1142,10 @@ type internal MotionUtil
                     if point = target then
                         result <- currentResult
                     elif c = startChar then
-                        currentResult <- true, None
+                        currentResult <- true, None, quote
                 elif c = '\'' || c = '\"' then
                     quote <- Some c
-                    currentResult <- true, Some point
+                    currentResult <- true, Some point, quote
 
             result
 
@@ -1158,22 +1158,23 @@ type internal MotionUtil
 
         // Go to the beginning of the line and then scan forward to
         // the beginning of the containing string literal, if any.
-        let endPoint, endPointIsInStringLiteral =
+        let endPoint, endPointIsInStringLiteral, endPointQuote =
             match
                 SnapshotPointUtil.GetContainingLine endPoint
                 |> SnapshotLineUtil.GetExtent
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> isInStringLiteral endPoint
                 with
-                | true, Some adjustedEndPoint -> adjustedEndPoint, false
-                | true, None -> endPoint, true
-                | false, _ -> endPoint, false
+                | true, Some adjustedEndPoint, _ -> adjustedEndPoint, false, None
+                | true, None, Some quoteChar -> endPoint, true, Some quoteChar
+                | _ -> endPoint, false, None
 
-        // Parse backward skipping string literals
-        // unless the context is a string literal.
-        let maybeSkipStringLiteralsBackward (sequence: SnapshotPoint seq) =
+        // Parse backward skipping non-string literals
+        // if the context is a string literal and skipping
+        // string literals otherwise.
+        let filterToContextBackward endPointQuote (sequence: SnapshotPoint seq) =
             if endPointIsInStringLiteral then sequence else
-            let mutable quote: char option = None
+            let mutable quote: char option = endPointQuote
             seq {
                 for point in sequence do
                     let c = SnapshotUtil.GetChar point.Position snapshot
@@ -1181,18 +1182,19 @@ type internal MotionUtil
                         match quote with
                         | Some quoteChar when isChar quoteChar point -> quote <- None
                         | _ -> ()
+                        if endPointIsInStringLiteral then yield point
                     elif c = '\'' || c = '\"' then
                         quote <- Some c
                     else
-                        yield point
+                        if not endPointIsInStringLiteral then yield point
             }
 
-        // Parse forward skipping string literals
-        // unless the context is a string literal.
-        let maybeSkipStringLiteralsForward (sequence: SnapshotPoint seq) =
-            if endPointIsInStringLiteral then sequence else
+        // Parse forward skipping non-string literals
+        // if the context is a string literal and skipping
+        // string literals otherwise.
+        let filterToContextForward endPointQuote (sequence: SnapshotPoint seq) =
             let mutable escape = false
-            let mutable quote: char option = None
+            let mutable quote: char option = endPointQuote
             seq {
                 for point in sequence do
                     let c = SnapshotUtil.GetChar point.Position snapshot
@@ -1204,17 +1206,18 @@ type internal MotionUtil
                             | Some quoteChar when c = quoteChar -> quote <- None
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
+                            if endPointIsInStringLiteral then yield point
                     elif c = '\'' || c = '\"' then
                         quote <- Some c
                     else
-                        yield point
+                        if not endPointIsInStringLiteral then yield point
             }
 
         // Search backward for the character that starts this block.
         let startPoint = 
             SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
-            |> maybeSkipStringLiteralsBackward
+            |> filterToContextBackward endPointQuote
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
         // Then search forward for the character that ends this block.
@@ -1224,7 +1227,7 @@ type internal MotionUtil
             | Some startPoint ->
                 SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint snapshot)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> maybeSkipStringLiteralsForward
+                |> filterToContextForward endPointQuote
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
         // Return the same from the block start to block end.
