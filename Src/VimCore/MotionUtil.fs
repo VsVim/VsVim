@@ -1080,18 +1080,55 @@ type internal MotionUtil
         MotionResult.Create(range.ExtentIncludingLineBreak, MotionKind.LineWise, isForward, flags, column)
 
     /// Get the block span for the specified char at the given context point
-    member x.GetBlock (blockKind: BlockKind) contextPoint = 
+    member x.GetBlock (blockKind: BlockKind) contextPoint =
+
+        // Blocks in vim are a messy combination of heuristics and
+        // a lot of special cases. The main complication is the
+        // handling of parentheses is string and character literals.
+        // The idea is to match parentheses the same way that the
+        // programming language would, that is if they are syntactic
+        // elements, match them that way, and if they are string
+        // elements, match them that way instead.
+
+        // If the context point for a block is outside a string literal,
+        // we don't want unbalanced parentheses in strings throwing us
+        // off. Likewise, if we are inside a string literal, we don't
+        // want a parenthesis inside the string to match a syntactic
+        // parenthesis outside the string. So if possible we want
+        // to allow valid blocks in, say, a regular expression in
+        // a string, as well as valid syntactic expression blocks.
+
+        // Likewise, unbalances parentheses or stray quote marks in
+        // comments can also be problematic, but vim does very little
+        // to accomodate those cases.
+
+        // However, this is an inexact science because different
+        // programming languages have different ways of representing
+        // and encoding strings. The goal is do the intuitive thing
+        // from a programming point of view in as many cases as
+        // possible.
+
+        // Our "univeral string" (covering common cases in C, C++, C#,
+        // F#, Python and Java, etc.) is text surrounded with single
+        // or double quotes and using backslash to escape the quote
+        // character.
+
+        // A more robust solution would be to use an abstract syntax
+        // tree supplied by a language service appropriate for the
+        // current buffer but even that approach has drawbacks. The
+        // current approach works as well for a programming snippet
+        // in a text file as it does in an actual source file.
 
         let startChar, endChar = blockKind.Characters
 
         // Is the char at the given point escaped?
-        let isEscaped point = 
+        let isEscaped point =
             match SnapshotPointUtil.TrySubtractOne point with
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
         // Is the char at the given point double escaped?
-        let isDoubleEscaped point = 
+        let isDoubleEscaped point =
             match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
             | None, _
             | _, None -> false
@@ -1103,14 +1140,14 @@ type internal MotionUtil
         // Given the specified block start and end characters, return a
         // function that transform a tuple of a point and the current nesting
         // count into a tuple of final success and the next nesting count.
-        let findMatched plusChar minusChar = 
-            let inner point count = 
-                let count = 
+        let findMatched plusChar minusChar =
+            let inner point count =
+                let count =
                     if isChar minusChar point then
                         count - 1
                     elif isChar plusChar point then
                         count + 1
-                    else 
+                    else
                         count
                 count = 0, count
             inner
@@ -1136,7 +1173,7 @@ type internal MotionUtil
                             escape <- true
                         else
                             match quote with
-                            | Some quoteChar when c = quoteChar -> quote <- None
+                            | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                     if point = target then
@@ -1154,7 +1191,7 @@ type internal MotionUtil
             if isChar startChar contextPoint then
                 SnapshotPointUtil.AddOneOrCurrent contextPoint
             else
-                contextPoint 
+                contextPoint
 
         // Go to the beginning of the line and then scan forward to
         // the beginning of the containing string literal, if any.
@@ -1180,7 +1217,7 @@ type internal MotionUtil
                     let c = SnapshotUtil.GetChar point.Position snapshot
                     if quote <> None then
                         match quote with
-                        | Some quoteChar when isChar quoteChar point -> quote <- None
+                        | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
                         | _ -> ()
                         if endPointIsInStringLiteral then yield point
                     elif c = '\'' || c = '\"' then
@@ -1203,7 +1240,7 @@ type internal MotionUtil
                             escape <- false
                         else
                             match quote with
-                            | Some quoteChar when c = quoteChar -> quote <- None
+                            | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                             if endPointIsInStringLiteral then yield point
@@ -1214,14 +1251,14 @@ type internal MotionUtil
             }
 
         // Search backward for the character that starts this block.
-        let startPoint = 
+        let startPoint =
             SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> filterToContextBackward endPointQuote
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
         // Then search forward for the character that ends this block.
-        let lastPoint = 
+        let lastPoint =
             match startPoint with
             | None -> None
             | Some startPoint ->
