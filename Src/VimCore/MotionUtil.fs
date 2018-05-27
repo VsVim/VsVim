@@ -448,7 +448,7 @@ type internal BlockUtil() =
                             escape <- true
                         else
                             match quote with
-                            | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
+                            | Some quoteChar when c = '\n' || c = quoteChar -> quote <- None
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                     if point = target then
@@ -520,7 +520,7 @@ type internal BlockUtil() =
                             escape <- false
                         else
                             match quote with
-                            | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
+                            | Some quoteChar when c = '\n' || c = quoteChar -> quote <- None
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                             if endPointIsInStringLiteral then yield point
