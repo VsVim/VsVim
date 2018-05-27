@@ -72,6 +72,25 @@ namespace VimApp
             _vim.VimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
+        public override void Close(ITextView textView)
+        {
+            foreach (var vimWindow in _vimWindowManager.VimWindowList)
+            {
+                foreach (var viewInfo in vimWindow.VimViewInfoList.ToList())
+                {
+                    if (viewInfo.TextView == textView)
+                    {
+                        viewInfo.VimBuffer.Close();
+                        viewInfo.TextView.Close();
+                        _viewMap.Remove(viewInfo.TextView);
+                        break;
+                    }
+                }
+                vimWindow.Clear();
+                break;
+            }
+        }
+
         public override void CloseAllOtherTabs(ITextView textView)
         {
             throw new NotImplementedException();
@@ -153,11 +172,10 @@ namespace VimApp
             if (TryLoadPath(filePath, out IWpfTextView createdTextView))
             {
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
-                foreach (var viewInfo in vimWindow.VimViewInfoList)
+                foreach (var viewInfo in vimWindow.VimViewInfoList.ToList())
                 {
-                    _viewMap.Remove(viewInfo.TextView);
+                    Close(viewInfo.TextView);
                 }
-                vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     (Action)(() =>
