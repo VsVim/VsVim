@@ -277,6 +277,8 @@ namespace VimApp
                         Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
                             {
                                 var textView = vimViewInfo.TextViewHost.TextView;
+                                textView.Caret.MoveTo(point);
+                                textView.Caret.EnsureVisible();
                                 Keyboard.Focus(textView.VisualElement);
                             }),
                             DispatcherPriority.ApplicationIdle);
