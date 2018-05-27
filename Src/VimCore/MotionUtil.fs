@@ -428,8 +428,8 @@ type internal BlockUtil() =
         // Compute a tuple of three quantities:
         // - Whether the target point is inside a string literal
         // - The start point of the string, as long as it there
-        //   is no unbalanced start character between the beginning
-        //   and the target
+        //   is no unmatched start character in string literals
+        //   before the target
         // - The quote character used to delineate the string
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
@@ -452,7 +452,7 @@ type internal BlockUtil() =
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                     if point = target then
-                        if depth = 0 then
+                        if depth <= 0 then
                             result <- true, start, quote
                         else
                             result <- true, None, quote
@@ -463,7 +463,6 @@ type internal BlockUtil() =
                 elif c = '\'' || c = '\"' then
                     quote <- Some c
                     start <- Some point
-                    depth <- 0
 
             result
 
