@@ -1419,17 +1419,18 @@ type internal CommandUtil
     member x.JumpToMarkCore mark exact =
         let before = x.CaretPoint
 
+        // If not exact, adjust point to first non-blank or start.
+        let adjustPointForExact point =
+            if exact then
+                point
+            else
+                point
+                |> VirtualSnapshotPointUtil.GetContainingLine
+                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> VirtualSnapshotPointUtil.OfPoint
+
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
-            let point =
-                if exact then
-                    point
-                else
-                    point
-                    |> VirtualSnapshotPointUtil.GetContainingLine
-                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                    |> VirtualSnapshotPointUtil.OfPoint
-
             _commonOperations.MoveCaretToPoint point.Position ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
@@ -1446,6 +1447,7 @@ type internal CommandUtil
             | None ->
                 markNotSet()
             | Some point ->
+                let point = adjustPointForExact point
                 if point.Position.Snapshot.TextBuffer = _textBuffer then
                     jumpLocal point
                 elif _commonOperations.NavigateToPoint point then
@@ -1457,15 +1459,15 @@ type internal CommandUtil
         | Mark.LocalMark localMark ->
             match _vimTextBuffer.GetLocalMark localMark with
             | None -> markNotSet()
-            | Some point -> jumpLocal point
+            | Some point -> adjustPointForExact point |> jumpLocal
         | Mark.LastJump ->
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
-            | Some point -> jumpLocal point
+            | Some point -> adjustPointForExact point |> jumpLocal
         | Mark.LastExitedPosition ->
             match _vimTextBuffer.Vim.MarkMap.GetMark Mark.LastExitedPosition _vimBufferData with
             | None -> markNotSet()
-            | Some point -> jumpLocal point
+            | Some point -> adjustPointForExact point |> jumpLocal
 
     /// Jump to the specified mark
     member x.JumpToMark mark =
