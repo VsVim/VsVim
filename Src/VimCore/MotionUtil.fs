@@ -355,7 +355,7 @@ type internal BlockUtil() =
 
         // Blocks in vim are a messy combination of heuristics and
         // a lot of special cases. The main complication is the
-        // handling of parentheses is string and character literals.
+        // handling of parentheses in string and character literals.
         // The idea is to match parentheses the same way that the
         // programming language would, that is if they are syntactic
         // elements, match them that way, and if they are string
@@ -373,9 +373,9 @@ type internal BlockUtil() =
         // comments can also be problematic, but vim does very little
         // to accomodate those cases.
 
-        // However, this is an inexact science because different
+        // In any case, this is an inexact science because different
         // programming languages have different ways of representing
-        // and encoding strings. The goal is do the intuitive thing
+        // and encoding strings. The goal is to do the intuitive thing
         // from a programming point of view in as many cases as
         // possible.
 
@@ -425,9 +425,12 @@ type internal BlockUtil() =
 
         let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
 
-        // Parse from the beginning of the line and return the
-        // start of the containing string literal if there are
-        // no preceding block start characters in the literal.
+        // Compute a tuple of three quantities:
+        // - Whether the target point is inside a string literal
+        // - The start point of the string, as long as it there
+        //   is not a start character between the beginning and
+        //   the target
+        // - The quote character used to delineate the string
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote = None
@@ -538,7 +541,7 @@ type internal BlockUtil() =
                 |> filterToContextForward endPointQuote
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
-        // Return the same from the block start to block end.
+        // Return the span from the block start to block end.
         match startPoint, lastPoint with
         | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
         | _ -> None
