@@ -744,25 +744,27 @@ type VimInterpreter
                 let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
                 sprintf " %c  %5d%5d %s" ident lineNum column name
             let getMark (mark: Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
+            let getGlobalMark letter =
+                let mark = Mark.GlobalMark letter
+                mark.Char, _markMap.GetGlobalMark letter
 
             // Do global marks separately because they may not
             // be associated with this buffer and so GetMark
             // wouldn't find them.
             seq {
-                yield Mark.LastJump
+                yield Mark.LastJump |> getMark
                 for letter in Letter.All do
-                    yield Mark.LocalMark (LocalMark.Letter letter)
+                    yield Mark.LocalMark (LocalMark.Letter letter) |> getMark
+                for letter in Letter.All do
+                    yield getGlobalMark letter
                 for number in NumberMark.All do
-                    yield Mark.LocalMark (LocalMark.Number number)
-                yield Mark.LastExitedPosition
-                yield Mark.LocalMark LocalMark.LastInsertExit
-                yield Mark.LocalMark LocalMark.LastEdit
-                yield Mark.LocalMark LocalMark.LastSelectionStart
-                yield Mark.LocalMark LocalMark.LastSelectionEnd
+                    yield Mark.LocalMark (LocalMark.Number number) |> getMark
+                yield Mark.LastExitedPosition |> getMark
+                yield Mark.LocalMark LocalMark.LastInsertExit |> getMark
+                yield Mark.LocalMark LocalMark.LastEdit |> getMark
+                yield Mark.LocalMark LocalMark.LastSelectionStart |> getMark
+                yield Mark.LocalMark LocalMark.LastSelectionEnd |> getMark
             }
-            |> Seq.map getMark
-            |> Seq.append (Letter.All |> Seq.map (fun letter ->
-                (Mark.GlobalMark letter).Char, _markMap.GetGlobalMark letter))
             |> Seq.filter (fun (_, option) -> option.IsSome)
             |> Seq.map (fun (c, option) -> (c, option.Value))
             |> Seq.map (fun (c, p) -> printMark c p)
