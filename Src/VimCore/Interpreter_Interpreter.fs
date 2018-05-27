@@ -743,14 +743,15 @@ type VimInterpreter
                 let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
                 let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
                 sprintf " %c  %5d%5d %s" ident lineNum column name
-            let getMark (mark:Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
+            let getMark (mark: Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
 
+            // Do global marks separately because they may not
+            // be associated with this buffer and so GetMark
+            // wouldn't find them.
             seq {
                 yield Mark.LastJump
                 for letter in Letter.All do
                     yield Mark.LocalMark (LocalMark.Letter letter)
-                for letter in Letter.All do
-                    yield Mark.GlobalMark letter
                 for number in NumberMark.All do
                     yield Mark.LocalMark (LocalMark.Number number)
                 yield Mark.LastExitedPosition
@@ -760,9 +761,11 @@ type VimInterpreter
                 yield Mark.LocalMark LocalMark.LastSelectionEnd
             }
             |> Seq.map getMark
-            |> Seq.filter (fun (c,option) -> option.IsSome)
+            |> Seq.append (Letter.All |> Seq.map (fun letter ->
+                (Mark.GlobalMark letter).Char, _markMap.GetGlobalMark letter))
+            |> Seq.filter (fun (_, option) -> option.IsSome)
             |> Seq.map (fun (c, option) -> (c, option.Value))
-            |> Seq.map (fun (c,p) -> printMark c p )
+            |> Seq.map (fun (c, p) -> printMark c p)
             |> Seq.append ("mark line  col file/text" |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 
