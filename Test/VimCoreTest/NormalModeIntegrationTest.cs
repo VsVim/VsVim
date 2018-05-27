@@ -969,6 +969,61 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("%");
                 Assert.Equal(_textView.GetPointInLine(3, 0), _textView.GetCaretPoint());
             }
+
+            [WpfFact]
+            public void ParensWithCharacterLiteral()
+            {
+                // Reported in issue #2159.
+                Create("if (\"hello\".IndexOf('(') == 0)");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 29), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void AroundBalancedString()
+            {
+                Create("fun(a, \"(foo)\", b) # bar");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 17), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void InBalancedString()
+            {
+                Create("fun(a, \"(foo)\", b) # bar");
+                _textView.MoveCaretTo(8);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 12), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void InSplitString()
+            {
+                Create("fun(a, \" ( \", b, \" ) \", c) # bar");
+                _textView.MoveCaretTo(9);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 19), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void AroundSplitString()
+            {
+                Create("fun(a, \" ( \", b, \" ) \", c) # bar");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 25), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void AroundSplitUnbalancedString()
+            {
+                Create("fun(a, \" ) \", b, \" ( \", c) # bar");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(0, 25), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class UnmatchedTokenTest : NormalModeIntegrationTest
