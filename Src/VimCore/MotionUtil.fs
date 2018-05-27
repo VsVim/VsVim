@@ -434,9 +434,9 @@ type internal BlockUtil() =
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote = None
-            let mutable currentResult = false, None, quote
-            let mutable result = currentResult
+            let mutable start = None
             let mutable depth = 0
+            let mutable result = false, None, None
 
             for point in sequence do
                 let c = SnapshotUtil.GetChar point.Position snapshot
@@ -453,7 +453,7 @@ type internal BlockUtil() =
                             | _ -> ()
                     if point = target then
                         if depth = 0 then
-                            result <- currentResult
+                            result <- true, start, quote
                         else
                             result <- true, None, quote
                     elif c = startChar then
@@ -462,8 +462,8 @@ type internal BlockUtil() =
                         depth <- depth - 1
                 elif c = '\'' || c = '\"' then
                     quote <- Some c
+                    start <- Some point
                     depth <- 0
-                    currentResult <- true, Some point, quote
 
             result
 
