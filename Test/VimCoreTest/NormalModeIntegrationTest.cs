@@ -977,7 +977,9 @@ namespace Vim.UnitTest
                 Create("if (\"hello\".IndexOf('(') == 0)");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 29), _textView.GetCaretPoint());
+                Assert.Equal(29, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
             [WpfFact]
@@ -986,7 +988,9 @@ namespace Vim.UnitTest
                 Create("fun(a, \"(foo)\", b) # bar");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 17), _textView.GetCaretPoint());
+                Assert.Equal(17, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
             [WpfFact]
@@ -995,7 +999,9 @@ namespace Vim.UnitTest
                 Create("fun(a, \"(foo)\", b) # bar");
                 _textView.MoveCaretTo(8);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 12), _textView.GetCaretPoint());
+                Assert.Equal(12, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(8, _textView.GetCaretPoint().Position);
             }
 
             [WpfFact]
@@ -1004,7 +1010,9 @@ namespace Vim.UnitTest
                 Create("fun(a, \" ( \", b, \" ) \", c) # bar");
                 _textView.MoveCaretTo(9);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 19), _textView.GetCaretPoint());
+                Assert.Equal(19, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(9, _textView.GetCaretPoint().Position);
             }
 
             [WpfFact]
@@ -1013,7 +1021,9 @@ namespace Vim.UnitTest
                 Create("fun(a, \" ( \", b, \" ) \", c) # bar");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 25), _textView.GetCaretPoint());
+                Assert.Equal(25, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
 
             [WpfFact]
@@ -1022,7 +1032,9 @@ namespace Vim.UnitTest
                 Create("fun(a, \" ) \", b, \" ( \", c) # bar");
                 _textView.MoveCaretTo(3);
                 _vimBuffer.Process("%");
-                Assert.Equal(_textView.GetPointInLine(0, 25), _textView.GetCaretPoint());
+                Assert.Equal(25, _textView.GetCaretPoint().Position);
+                _vimBuffer.Process("%");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
         }
 
