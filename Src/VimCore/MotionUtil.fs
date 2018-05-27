@@ -428,14 +428,15 @@ type internal BlockUtil() =
         // Compute a tuple of three quantities:
         // - Whether the target point is inside a string literal
         // - The start point of the string, as long as it there
-        //   is not a start character between the beginning and
-        //   the target
+        //   is no unbalanced start character between the beginning
+        //   and the target
         // - The quote character used to delineate the string
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
             let mutable escape = false
             let mutable quote = None
             let mutable currentResult = false, None, quote
             let mutable result = currentResult
+            let mutable depth = 0
 
             for point in sequence do
                 let c = SnapshotUtil.GetChar point.Position snapshot
@@ -451,11 +452,17 @@ type internal BlockUtil() =
                             | Some _ when c = '\\' -> escape <- true
                             | _ -> ()
                     if point = target then
-                        result <- currentResult
+                        if depth = 0 then
+                            result <- currentResult
+                        else
+                            result <- true, None, quote
                     elif c = startChar then
-                        currentResult <- true, None, quote
+                        depth <- depth + 1
+                    elif c = endChar then
+                        depth <- depth - 1
                 elif c = '\'' || c = '\"' then
                     quote <- Some c
+                    depth <- 0
                     currentResult <- true, Some point, quote
 
             result
@@ -484,7 +491,6 @@ type internal BlockUtil() =
         // if the context is a string literal and skipping
         // string literals otherwise.
         let filterToContextBackward endPointQuote (sequence: SnapshotPoint seq) =
-            if endPointIsInStringLiteral then sequence else
             let mutable quote: char option = endPointQuote
             seq {
                 for point in sequence do
