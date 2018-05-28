@@ -736,38 +736,29 @@ type VimInterpreter
         if not (List.isEmpty marks) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
         else
-            let printMark (ident: char) (point: VirtualSnapshotPoint) =
-                let textLine = point.Position.GetContainingLine()
-                let lineNum = textLine.LineNumber + 1
-                let column = point.Position.Position - textLine.Start.Position
-                let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
-                let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
+            let printMarkInfo info =
+                let ident, name, lineNum, column = info
                 sprintf " %c  %5d%5d %s" ident lineNum column name
-            let getMark (mark: Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
-            let getGlobalMark letter =
-                let mark = Mark.GlobalMark letter
-                mark.Char, _markMap.GetGlobalMark letter
+            let getMark (mark: Mark) = _markMap.GetMarkInfo mark _vimBufferData
 
-            // Do global marks separately because they may not
-            // be associated with this buffer and so GetMark
-            // wouldn't find them.
             seq {
-                yield Mark.LastJump |> getMark
+                yield Mark.LastJump
                 for letter in Letter.All do
-                    yield Mark.LocalMark (LocalMark.Letter letter) |> getMark
+                    yield Mark.LocalMark (LocalMark.Letter letter)
                 for letter in Letter.All do
-                    yield getGlobalMark letter
+                    yield Mark.GlobalMark letter
                 for number in NumberMark.All do
-                    yield Mark.LocalMark (LocalMark.Number number) |> getMark
-                yield Mark.LastExitedPosition |> getMark
-                yield Mark.LocalMark LocalMark.LastInsertExit |> getMark
-                yield Mark.LocalMark LocalMark.LastEdit |> getMark
-                yield Mark.LocalMark LocalMark.LastSelectionStart |> getMark
-                yield Mark.LocalMark LocalMark.LastSelectionEnd |> getMark
+                    yield Mark.LocalMark (LocalMark.Number number)
+                yield Mark.LastExitedPosition
+                yield Mark.LocalMark LocalMark.LastInsertExit
+                yield Mark.LocalMark LocalMark.LastEdit
+                yield Mark.LocalMark LocalMark.LastSelectionStart
+                yield Mark.LocalMark LocalMark.LastSelectionEnd
             }
-            |> Seq.filter (fun (_, option) -> option.IsSome)
-            |> Seq.map (fun (c, option) -> (c, option.Value))
-            |> Seq.map (fun (c, p) -> printMark c p)
+            |> Seq.map getMark
+            |> Seq.filter (fun option -> option.IsSome)
+            |> Seq.map (fun option -> option.Value)
+            |> Seq.map (fun info -> printMarkInfo info)
             |> Seq.append ("mark line  col file/text" |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 

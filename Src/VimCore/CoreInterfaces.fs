@@ -4509,6 +4509,9 @@ and IMarkMap =
     /// Get the mark for the given char for the IVimTextBuffer
     abstract GetMark: mark: Mark -> vimBufferData: IVimBufferData -> VirtualSnapshotPoint option
 
+    /// Get the mark info for the given char for the IVimTextBuffer
+    abstract GetMarkInfo: mark: Mark -> vimBufferData: IVimBufferData -> (char * string * int * int) option
+
     /// Get the current value of the specified global mark
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 

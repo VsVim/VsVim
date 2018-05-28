@@ -223,6 +223,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         member x.GlobalMarks = x.GlobalMarks
         member x.GetGlobalMark letter = x.GetGlobalMark letter
         member x.GetMark mark vimBufferData = x.GetMark mark vimBufferData
+        member x.GetMarkInfo mark vimBufferData = x.GetMarkInfo mark vimBufferData
         member x.SetGlobalMark letter vimBufferData line column = x.SetGlobalMark letter vimBufferData line column
         member x.SetMark mark vimBufferData line column = x.SetMark mark vimBufferData line column
         member x.UnloadBuffer vimBufferData line column = x.UnloadBuffer vimBufferData line column
