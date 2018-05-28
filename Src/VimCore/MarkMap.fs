@@ -15,10 +15,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Map.ofSeq
 
     /// This is the map from Letter to the ITextBuffer where the global mark
-    /// is stored.  The MarkMap table lives much longer than the individual marks 
-    /// so we hold them in a WeakReference<T> to prevent holding the ITextBuffer 
-    /// in memory.
-    let mutable _globalMarkMap: Map<Letter, WeakReference<ITextBuffer>> = Map.empty
+    /// is stored.
+    let mutable _globalMarkMap: Map<Letter, ITextBuffer> = Map.empty
 
     /// This is a map from a Letter to a buffer name (file path),
     /// row and column. It is used for unloaded buffers.
@@ -30,14 +28,11 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
         | None -> None
-        | Some weakReference -> 
-            match weakReference.Target with
+        | Some textBuffer -> 
+            let key = Map.find letter _letterToKeyMap
+            match PropertyCollectionUtil.GetValue<ITrackingLineColumn> key textBuffer.Properties with
             | None -> None
-            | Some textBuffer -> 
-                let key = Map.find letter _letterToKeyMap
-                match PropertyCollectionUtil.GetValue<ITrackingLineColumn> key textBuffer.Properties with
-                | None -> None
-                | Some trackingLineColumn -> Some (letter, trackingLineColumn, key)
+            | Some trackingLineColumn -> Some (letter, trackingLineColumn, key)
 
     /// Delete a global mark if it exists
     member x.RemoveGlobalMark letter = 
@@ -83,8 +78,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         let key = Map.find letter _letterToKeyMap
         vimTextBuffer.TextBuffer.Properties.AddProperty(key, trackingLineColumn)
 
-        let value = WeakReferenceUtil.Create vimTextBuffer.TextBuffer
-        _globalMarkMap <- Map.add letter value _globalMarkMap
+        let textBuffer = vimTextBuffer.TextBuffer
+        _globalMarkMap <- Map.add letter textBuffer _globalMarkMap
 
     /// Get the given mark in the context of the given IVimTextBuffer
     member x.GetMark mark (vimBufferData: IVimBufferData) =
