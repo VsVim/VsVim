@@ -169,9 +169,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             else
                 false
 
-    member x.UnloadBuffer (vimBufferData: IVimBufferData) line column =
+    member x.UnloadBuffer (vimBufferData: IVimBufferData) bufferName line column =
         let textBuffer = vimBufferData.TextBuffer
-        let bufferName = vimBufferData.Vim.VimHost.GetName textBuffer
 
         let unloadGlobalMark (letter: Letter) =
             let mark = Mark.GlobalMark letter
@@ -226,6 +225,6 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         member x.GetMarkInfo mark vimBufferData = x.GetMarkInfo mark vimBufferData
         member x.SetGlobalMark letter vimBufferData line column = x.SetGlobalMark letter vimBufferData line column
         member x.SetMark mark vimBufferData line column = x.SetMark mark vimBufferData line column
-        member x.UnloadBuffer vimBufferData line column = x.UnloadBuffer vimBufferData line column
+        member x.UnloadBuffer vimBufferData name line column = x.UnloadBuffer vimBufferData name line column
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()

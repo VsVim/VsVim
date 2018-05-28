@@ -4522,7 +4522,7 @@ and IMarkMap =
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
     /// Unload the buffer recording the last exited position
-    abstract UnloadBuffer: vimBufferData: IVimBufferData -> line: int -> column: int -> bool
+    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed
