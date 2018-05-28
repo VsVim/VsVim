@@ -41,6 +41,11 @@ namespace Vim.UI.Wpf
             get { return _textEditorFactoryService; }
         }
 
+        public IEditorOperationsFactoryService EditorOperationsFactoryService
+        {
+            get { return _editorOperationsFactoryService; }
+        }
+
         public virtual bool AutoSynchronizeSettings
         {
             get { return true; }
@@ -226,7 +231,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
-        public abstract bool LoadFileIntoNewWindow(string filePath);
+        public abstract bool LoadFileIntoNewWindow(string filePath, int line, int column);
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
@@ -642,9 +647,9 @@ namespace Vim.UI.Wpf
             return LoadFileIntoExistingWindow(filePath, textView);
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath)
+        bool IVimHost.LoadFileIntoNewWindow(string filePath, int line, int column)
         {
-            return LoadFileIntoNewWindow(filePath);
+            return LoadFileIntoNewWindow(filePath, line, column);
         }
 
         void IVimHost.Make(bool jumpToFirstError, string arguments)

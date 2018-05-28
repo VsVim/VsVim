@@ -448,7 +448,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override bool LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath, int line, int column)
         {
             try
             {

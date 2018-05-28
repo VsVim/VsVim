@@ -79,7 +79,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override bool LoadFileIntoNewWindow(string filePath)
+            public override bool LoadFileIntoNewWindow(string filePath, int line, int column)
             {
                 throw new NotImplementedException();
             }

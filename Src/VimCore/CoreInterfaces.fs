@@ -4230,7 +4230,7 @@ type IVimHost =
     abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
 
     /// Loads the new file into a new existing window
-    abstract LoadFileIntoNewWindow: filePath: string -> bool
+    abstract LoadFileIntoNewWindow: filePath: string -> line: int -> column: int -> bool
 
     /// Run the host specific make operation
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit

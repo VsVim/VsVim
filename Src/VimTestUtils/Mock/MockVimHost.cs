@@ -258,7 +258,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath)
+        bool IVimHost.LoadFileIntoNewWindow(string filePath, int line, int column)
         {
             throw new NotImplementedException();
         }

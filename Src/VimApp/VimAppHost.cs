@@ -198,7 +198,7 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath, int line, int column)
         {
             foreach (var pair in _viewMap)
             {
@@ -215,6 +215,19 @@ namespace VimApp
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
+
+                // Move the caret to its initial position.
+                wpfTextView.MoveCaretToLine(line, column);
+                if (column == 0)
+                {
+                    // Column zero implies moving to the first non-blank.
+                    var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                    editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                }
+
+                // Give the focus to the new buffer.
+                var point = wpfTextView.Caret.Position.VirtualBufferPosition;
+                NavigateTo(point);
 
                 _viewMap.Add(wpfTextView, filePath);
 
@@ -289,14 +302,23 @@ namespace VimApp
                     {
                         Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
                             {
+                                // Select the tab.
                                 vimWindow.TabItem.IsSelected = true;
                             }),
                             DispatcherPriority.ApplicationIdle);
                         Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
                             {
+                                // Move caret to point.
                                 var textView = vimViewInfo.TextViewHost.TextView;
                                 textView.Caret.MoveTo(point);
-                                textView.Caret.EnsureVisible();
+
+                                // Center the caret line in the window.
+                                var caretLine = textView.GetCaretLine();
+                                var span = caretLine.ExtentIncludingLineBreak;
+                                var option = EnsureSpanVisibleOptions.AlwaysCenter;
+                                textView.ViewScroller.EnsureSpanVisible(span, option);
+
+                                // Focus the window.
                                 Keyboard.Focus(textView.VisualElement);
                             }),
                             DispatcherPriority.ApplicationIdle);

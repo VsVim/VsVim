@@ -1445,7 +1445,16 @@ type internal CommandUtil
             let markMap = _vimTextBuffer.Vim.MarkMap
             match markMap.GetGlobalMark letter with
             | None ->
-                markNotSet()
+
+                // It's still possible that there is a global
+                // mark, but the buffer has been unloaded.
+                match markMap.GetMarkInfo mark _vimBufferData with
+                | None -> markNotSet()
+                | Some (ident, name, line, column) ->
+                    let vimHost = _vimBufferData.Vim.VimHost
+                    let column = if exact then column else 0
+                    vimHost.LoadFileIntoNewWindow name line column |> ignore
+                    CommandResult.Completed ModeSwitch.NoSwitch
             | Some point ->
                 let point = adjustPointForExact point
                 if point.Position.Snapshot.TextBuffer = _textBuffer then
