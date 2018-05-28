@@ -192,7 +192,6 @@ type internal VimBuffer
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
     let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
-    let bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
         // Adjust local settings.
@@ -355,7 +354,7 @@ type internal VimBuffer
             invalidOp Resources.VimBuffer_AlreadyClosed
 
         let line, column = SnapshotPointUtil.GetLineColumn (TextViewUtil.GetCaretPoint _textView)
-        _vim.MarkMap.SetLastExitedPosition bufferName line column |> ignore
+        _vim.MarkMap.UnloadBuffer _vimBufferData line column |> ignore
 
         // Run the closing event in a separate try / catch.  Don't want anyone to be able
         // to disrupt the necessary actions like removing a buffer from the global list

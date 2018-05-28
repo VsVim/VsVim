@@ -22,6 +22,10 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
     let mutable _globalLastExitedMap: Map<string, int * int> = Map.empty
 
+    /// This is a map from a Letter to a buffer name (file path),
+    /// row and column. It is used for unloaded buffers.
+    let mutable _globalUnloadedMarkMap: Map<Letter, string * int * int> = Map.empty
+
     /// Get the core information about the global mark represented by the letter
     member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
@@ -39,12 +43,16 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     member x.RemoveGlobalMark letter = 
         let result = 
             match x.GetGlobalMarkData letter with
-            | None -> false
             | Some (_, trackingLineColumn, key) ->
                 trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
                 trackingLineColumn.Close()
                 true
+            | None ->
+                match _globalUnloadedMarkMap.TryFind letter with
+                | Some _ -> true
+                | None -> false
         _globalMarkMap <- Map.remove letter _globalMarkMap
+        _globalUnloadedMarkMap <- _globalUnloadedMarkMap.Remove letter
         result
 
     /// Get all of the global mark letters and their associated VirtualSnapshotPoint
@@ -115,6 +123,30 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                     let snapshot = snapshotLine.Start.Add(column)
                     Some (VirtualSnapshotPointUtil.OfPoint snapshot)
 
+    /// Get the buffer name, line and column associated with a mark
+    member x.GetMarkInfo (mark: Mark) (vimBufferData: IVimBufferData) =
+
+        let getPointInfo (point: VirtualSnapshotPoint) =
+            let textLine = point.Position.GetContainingLine()
+            let lineNum = textLine.LineNumber + 1
+            let column = point.Position.Position - textLine.Start.Position
+            let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
+            let name = vimBufferData.Vim.VimHost.GetName point.Position.Snapshot.TextBuffer
+            Some (mark.Char, name, lineNum, column)
+
+        match mark with
+        | Mark.GlobalMark letter ->
+            match x.GetGlobalMark letter with
+            | Some point -> getPointInfo point
+            | None ->
+                match _globalUnloadedMarkMap.TryFind letter with
+                | Some (name, line, column) -> Some (mark.Char, name, line, column)
+                | None -> None
+        |_ ->
+            match x.GetMark mark vimBufferData with
+            | Some point -> getPointInfo point
+            | None -> None
+
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark (vimBufferData: IVimBufferData) line column = 
         let vimTextBuffer = vimBufferData.VimTextBuffer
@@ -137,7 +169,39 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             else
                 false
 
-    member x.SetLastExitedPosition bufferName line column =
+    member x.UnloadBuffer (vimBufferData: IVimBufferData) line column =
+        let textBuffer = vimBufferData.TextBuffer
+        let bufferName = vimBufferData.Vim.VimHost.GetName textBuffer
+
+        let unloadGlobalMark (letter: Letter) =
+            let mark = Mark.GlobalMark letter
+            match x.GetGlobalMarkData letter with
+            | None -> ()
+            | Some (_, trackingLineColumn, key) ->
+                if not (System.String.IsNullOrEmpty bufferName) then
+                    match trackingLineColumn.Point with
+                    | None -> ()
+                    | Some point ->
+
+                    // Add an unloaded mark corresponding to the current position.
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    _globalUnloadedMarkMap <-
+                        _globalUnloadedMarkMap.Remove letter
+                        |> Map.add letter (bufferName, line, column)
+
+                // Close the tracking item.
+                trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
+                trackingLineColumn.Close()
+
+            // Remove the mark from the global mark map.
+            _globalMarkMap <- Map.remove letter _globalMarkMap
+
+        // Unload all the global marks associated with the text buffer.
+        x.GlobalMarks
+        |> Seq.filter (fun (_, point) -> point.Position.Snapshot.TextBuffer = textBuffer)
+        |> Seq.iter (fun (letter, point) -> unloadGlobalMark letter)
+
+        // Record the last exited position.
         if not (System.String.IsNullOrEmpty bufferName) then
             _globalLastExitedMap <-
                 _globalLastExitedMap.Remove bufferName
@@ -153,13 +217,14 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Seq.iter (fun letter -> x.RemoveGlobalMark letter |> ignore)
 
         _globalMarkMap <- Map.empty
+        _globalUnloadedMarkMap <- Map.empty
 
     interface IMarkMap with
         member x.GlobalMarks = x.GlobalMarks
         member x.GetGlobalMark letter = x.GetGlobalMark letter
-        member x.GetMark mark vimTextBuffer = x.GetMark mark vimTextBuffer
-        member x.SetGlobalMark letter vimTextBuffer line column = x.SetGlobalMark letter vimTextBuffer line column
-        member x.SetMark mark vimTextBuffer line column = x.SetMark mark vimTextBuffer line column
-        member x.SetLastExitedPosition buffername line column = x.SetLastExitedPosition buffername line column
+        member x.GetMark mark vimBufferData = x.GetMark mark vimBufferData
+        member x.SetGlobalMark letter vimBufferData line column = x.SetGlobalMark letter vimBufferData line column
+        member x.SetMark mark vimBufferData line column = x.SetMark mark vimBufferData line column
+        member x.UnloadBuffer vimBufferData line column = x.UnloadBuffer vimBufferData line column
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()

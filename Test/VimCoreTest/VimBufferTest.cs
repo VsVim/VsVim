@@ -527,7 +527,7 @@ namespace Vim.UnitTest
             public ClosingSetsLastEditedPositionMark()
             {
                 OpenFakeVimBufferTestWindow();
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 0);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, 0, 0);
             }
 
             protected void OpenFakeVimBufferTestWindow()
@@ -576,7 +576,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReopeningTheWindowLastColumn()
             {
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 5);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, 0, 5);
                 OpenFakeVimBufferTestWindow();
 
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
@@ -586,7 +586,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReopeningTheWindowLastColumnAfterFirstLine()
             {
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 1, 6);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, 1, 6);
                 OpenFakeVimBufferTestWindow();
 
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);

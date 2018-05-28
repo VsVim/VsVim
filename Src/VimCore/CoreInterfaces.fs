@@ -4518,8 +4518,8 @@ and IMarkMap =
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
-    /// Set the last exited position before the window is closed
-    abstract SetLastExitedPosition: bufferName: string -> line: int -> column: int -> bool
+    /// Unload the buffer recording the last exited position
+    abstract UnloadBuffer: vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed

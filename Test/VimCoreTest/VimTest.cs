@@ -74,7 +74,7 @@ namespace Vim.UnitTest
             var creationListeners = new[] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
             var markMap = _factory.Create<IMarkMap>();
             markMap.Setup(x => x.SetMark(Mark.LastJump, It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
-            markMap.Setup(x => x.SetLastExitedPosition("VimTest.cs", 0, 0)).Returns(true);
+            markMap.Setup(x => x.UnloadBuffer(It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
