@@ -732,35 +732,33 @@ type VimInterpreter
         _statusUtil.OnStatusLong list
 
     /// Display the specified marks
-    member x.RunDisplayMarks (marks: Mark list) = 
-        if not (List.isEmpty marks) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
-        else
-            let printMarkInfo info =
-                let ident, name, lineNum, column = info
-                sprintf " %c  %5d%5d %s" ident lineNum column name
-            let getMark (mark: Mark) = _markMap.GetMarkInfo mark _vimBufferData
+    member x.RunDisplayMarks (marks: Mark list) =
+        let printMarkInfo info =
+            let ident, name, line, column = info
+            sprintf " %c  %5d%5d %s" ident line column name
+        let getMark (mark: Mark) = _markMap.GetMarkInfo mark _vimBufferData
 
-            seq {
-                yield Mark.LastJump
-                for letter in Letter.All do
-                    yield Mark.LocalMark (LocalMark.Letter letter)
-                for letter in Letter.All do
-                    yield Mark.GlobalMark letter
-                for number in NumberMark.All do
-                    yield Mark.LocalMark (LocalMark.Number number)
-                yield Mark.LastExitedPosition
-                yield Mark.LocalMark LocalMark.LastInsertExit
-                yield Mark.LocalMark LocalMark.LastEdit
-                yield Mark.LocalMark LocalMark.LastSelectionStart
-                yield Mark.LocalMark LocalMark.LastSelectionEnd
-            }
-            |> Seq.map getMark
-            |> Seq.filter (fun option -> option.IsSome)
-            |> Seq.map (fun option -> option.Value)
-            |> Seq.map (fun info -> printMarkInfo info)
-            |> Seq.append ("mark line  col file/text" |> Seq.singleton)
-            |> _statusUtil.OnStatusLong
+        seq {
+            yield Mark.LastJump
+            for letter in Letter.All do
+                yield Mark.LocalMark (LocalMark.Letter letter)
+            for letter in Letter.All do
+                yield Mark.GlobalMark letter
+            for number in NumberMark.All do
+                yield Mark.LocalMark (LocalMark.Number number)
+            yield Mark.LastExitedPosition
+            yield Mark.LocalMark LocalMark.LastInsertExit
+            yield Mark.LocalMark LocalMark.LastEdit
+            yield Mark.LocalMark LocalMark.LastSelectionStart
+            yield Mark.LocalMark LocalMark.LastSelectionEnd
+        }
+        |> Seq.filter (fun mark -> marks.Length = 0 || List.contains mark marks)
+        |> Seq.map getMark
+        |> Seq.filter (fun option -> option.IsSome)
+        |> Seq.map (fun option -> option.Value)
+        |> Seq.map (fun info -> printMarkInfo info)
+        |> Seq.append ("mark line  col file/text" |> Seq.singleton)
+        |> _statusUtil.OnStatusLong
 
     /// Run the echo command
     member x.RunEcho expression =
