@@ -460,7 +460,7 @@ namespace Vim.VisualStudio
                 var vsTextView = VsShellUtilities.GetTextView(windowFrame);
 
                 // Get the WPF text view for the VS text view.
-                var wpfTextView = _editorAdaptersFactoryService.GetWpfTextViewNoThrow(vsTextView);
+                var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
 
                 // Move the caret to its initial position.
                 var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);

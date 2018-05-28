@@ -205,6 +205,7 @@ type internal VimBuffer
         |> _bag.Add
 
         _vim.MarkMap.SetMark Mark.LastJump _vimBufferData 0 0 |> ignore
+        _vim.MarkMap.ReloadBuffer _vimBufferData _bufferName |> ignore
 
         // Subscribe to local settings changed events.
         _vimTextBuffer.LocalSettings.SettingChanged

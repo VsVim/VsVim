@@ -4516,13 +4516,16 @@ and IMarkMap =
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark: letter: Letter -> vimtextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
+    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
     /// Unload the buffer recording the last exited position
     abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
+
+    /// Reload the marks associated with a buffer
+    abstract ReloadBuffer: vimBufferData: IVimBufferData -> name: string -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed

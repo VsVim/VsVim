@@ -735,7 +735,7 @@ type VimInterpreter
     member x.RunDisplayMarks (marks: Mark list) =
         let printMarkInfo info =
             let ident, name, line, column = info
-            sprintf " %c  %5d%5d %s" ident line column name
+            sprintf " %c  %5d%5d %s" ident (line + 1) column name
         let getMark (mark: Mark) = _markMap.GetMarkInfo mark _vimBufferData
 
         seq {
