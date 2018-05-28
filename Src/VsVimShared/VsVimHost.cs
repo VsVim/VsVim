@@ -452,7 +452,27 @@ namespace Vim.VisualStudio
         {
             try
             {
-                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
+                // Open the document in a window.
+                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
+                    out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
+
+                // Get the VS text view for the window.
+                var vsTextView = VsShellUtilities.GetTextView(windowFrame);
+
+                // Get the WPF text view for the VS text view.
+                var wpfTextView = _editorAdaptersFactoryService.GetWpfTextViewNoThrow(vsTextView);
+
+                // Move the caret to its initial position.
+                var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);
+                var point = snapshotLine.Start.Add(column);
+                wpfTextView.Caret.MoveTo(new SnapshotPoint(wpfTextView.TextSnapshot, point.Position));
+                if (column == 0)
+                {
+                    // Column zero implies moving to the first non-blank.
+                    var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                    editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                }
+
                 return true;
             }
             catch (Exception e)
