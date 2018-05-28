@@ -465,7 +465,7 @@ namespace Vim.VisualStudio
                 // Move the caret to its initial position.
                 var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);
                 var point = snapshotLine.Start.Add(column);
-                wpfTextView.Caret.MoveTo(new SnapshotPoint(wpfTextView.TextSnapshot, point.Position));
+                wpfTextView.Caret.MoveTo(point);
                 if (column == 0)
                 {
                     // Column zero implies moving to the first non-blank.
