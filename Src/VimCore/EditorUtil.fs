@@ -33,6 +33,46 @@ module internal EditorCoreUtil =
         else
             point.Subtract(1)
 
+    /// Get the span of the character which is pointed to by the point.  Normally this is a 
+    /// trivial operation.  The only difficulty if the point exists at the end of a line
+    /// (in which case the span covers the linebreak) or if the character is part of a
+    /// surrogate pair.
+    let GetCharacterSpan (line: ITextSnapshotLine) (point: SnapshotPoint) = 
+
+        // We require that the point belong to the line.
+        Contract.Requires(point.Snapshot = line.Snapshot)
+        Contract.Requires(point.Position >= line.Start.Position)
+        Contract.Requires(point.Position <= line.EndIncludingLineBreak.Position)
+
+        let snapshot = point.Snapshot
+        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
+        if endSpan.Contains(point) then
+            endSpan
+        elif point.Position = snapshot.Length then
+            new SnapshotSpan(point, 0)
+        else
+            let c = point.GetChar()
+            let snapshot = point.Snapshot
+            if System.Char.IsHighSurrogate(c) then
+                let nextPoint = point.Add(1)
+                if IsEndPoint nextPoint then
+                    new SnapshotSpan(point, 1)
+                elif System.Char.IsLowSurrogate(nextPoint.GetChar()) then
+                    new SnapshotSpan(point, 2)
+                else
+                    new SnapshotSpan(point, 1)
+            elif System.Char.IsLowSurrogate(c) then
+                if point.Position = 0 then
+                    new SnapshotSpan(point, 1)
+                else
+                    let previousPoint = point.Subtract(1)
+                    if System.Char.IsHighSurrogate(previousPoint.GetChar()) then
+                        new SnapshotSpan(previousPoint, 2)
+                    else
+                        new SnapshotSpan(point, 1)
+            else
+                new SnapshotSpan(point, 1)
+
     let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 
             0
@@ -904,6 +944,9 @@ module SnapshotLineUtil =
 
     let GetExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
 
+    // Get the span of the character which is pointed to by the point
+    let GetCharacterSpan line point = EditorCoreUtil.GetCharacterSpan line point
+
     /// Get the points on the particular line in order 
     let GetPoints path line = line |> GetExtent |> SnapshotSpanUtil.GetPoints path
 
@@ -1283,37 +1326,10 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         line.ExtentIncludingLineBreak
 
-    // Get the span of the character which is pointed to by the point.  Normally this is a 
-    // trivial operation.  The only difficulty if the Point exists at the end of a line
-    // (in which case the span covers the linebreak) or if the character is part of a
-    // surrogate pair.
+    // Get the span of the character which is pointed to by the point
     let GetCharacterSpan point = 
-        let snapshot = GetSnapshot point
         let line = GetContainingLine point
-        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
-        if endSpan.Contains(point) then
-            endSpan
-        elif point.Position = snapshot.Length then
-            new SnapshotSpan(point, 0)
-        else
-            let c = point.GetChar()
-            let snapshot = point.Snapshot
-            if System.Char.IsHighSurrogate(c) then
-                if point.Position = snapshot.Length then
-                    new SnapshotSpan(point, 1)
-                elif System.Char.IsLowSurrogate(point.Add(1).GetChar()) then
-                    new SnapshotSpan(point, 2)
-                else
-                    new SnapshotSpan(point, 1)
-            elif System.Char.IsLowSurrogate(c) then
-                if point.Position = 0 then
-                    new SnapshotSpan(point, 1)
-                elif System.Char.IsHighSurrogate(point.Subtract(1).GetChar()) then
-                    new SnapshotSpan(point.Subtract(1), 2)
-                else
-                    new SnapshotSpan(point, 1)
-            else
-                new SnapshotSpan(point, 1)
+        SnapshotLineUtil.GetCharacterSpan line point
 
     /// Get the next point in the buffer with wrap
     let GetNextPointWithWrap point =
@@ -1321,7 +1337,7 @@ module SnapshotPointUtil =
         let nextPoint =
             GetCharacterSpan point
             |> SnapshotSpanUtil.GetEndPoint
-        if nextPoint.Position = snapshot.Length then
+        if EditorCoreUtil.IsEndPoint nextPoint then
             SnapshotUtil.GetStartPoint snapshot
         else
             nextPoint
@@ -1335,7 +1351,7 @@ module SnapshotPointUtil =
         if currentPoint.Position = 0 then
             SnapshotUtil.GetEndPoint snapshot
         else
-            currentPoint.Subtract(1)
+            SubtractOne currentPoint
             |> GetCharacterSpan
             |> SnapshotSpanUtil.GetStartPoint
 
