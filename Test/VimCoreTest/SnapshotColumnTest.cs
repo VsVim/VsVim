@@ -80,7 +80,7 @@ namespace Vim.UnitTest
                 var column = new SnapshotColumn(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(1, column.Column);
-                Assert.False(column.IsInsideLineBreak);
+                Assert.False(column.IsLineBreak);
             }
 
             [WpfFact]
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
                 var column = new SnapshotColumn(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(3, column.Column);
-                Assert.True(column.IsInsideLineBreak);
+                Assert.True(column.IsLineBreak);
                 Assert.Equal("cat", column.Line.GetText());
             }
         }

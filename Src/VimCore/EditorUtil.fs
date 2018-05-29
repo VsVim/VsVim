@@ -299,44 +299,75 @@ type SnapshotLineRange  =
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
-type SnapshotColumn 
-    (
-        _snapshotLine: ITextSnapshotLine,
-        _column: int
-    ) =
+type SnapshotColumn =
+
+    val private _line: ITextSnapshotLine
+    val private _positions: int array
+    val private _column: int
+
+    new (oldColumn: SnapshotColumn, column: int) =
+        Contract.Requires(column >= 0 && column < oldColumn.NumberOfColumns)
+        { _line = oldColumn._line; _positions = oldColumn._positions; _column = column }
 
     new (point: SnapshotPoint) = 
         let line = point.GetContainingLine()
-        let column = point.Position - line.Start.Position
-        SnapshotColumn(line, column)
+        let mutable currentPoint = line.Start
+        let endPoint = line.EndIncludingLineBreak
+        let positions =
+            seq {
+                while currentPoint.Position < endPoint.Position do
+                    yield currentPoint.Position
+                    let span =EditorCoreUtil.GetCharacterSpan line currentPoint
+                    currentPoint <- span.End
+                yield endPoint.Position
+            }
+            |> Seq.toArray
+        let position = point.Position
+        let column =
+            let mutable column = positions.Length - 1
+            for i = 0 to positions.Length - 2 do
+                if position >= positions.[i] && position < positions.[i + 1] then
+                    column <- i
+            column
+        { _line = line; _positions = positions; _column = column }
 
-    member x.IsStartOfLine = _column = 0
+    member x.NumberOfColumns = x._positions.Length - 1
 
-    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.Point x.Line
+    member x.Position = x._positions.[x._column]
 
-    member x.Line = _snapshotLine
+    member x.Offset = x.Position - x._positions.[0]
 
-    member x.LineNumber = _snapshotLine.LineNumber
+    member x.IsLineBreak = x.Position = x._line.End.Position
 
-    member x.Snapshot = _snapshotLine.Snapshot
+    member x.IsStartOfLine = x._column = 0
 
-    member x.Point = _snapshotLine.Start.Add(_column)
+    member x.Line = x._line
 
-    member x.Column = _column
+    member x.LineNumber = x._line.LineNumber
+
+    member x.Snapshot = x._line.Snapshot
+
+    member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
+
+    member x.Width = x._positions.[x._column + 1] - x.Position
+
+    member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
+
+    member x.Column = x._column
 
     member x.Add count = 
-        let column = _column + count
-        if column > 0 && column < _snapshotLine.LengthIncludingLineBreak then
-            SnapshotColumn(_snapshotLine, _column + count)
+        let column = x._column + count
+        if column >= 0 && column < x.NumberOfColumns then
+            SnapshotColumn(x, x._column + count)
         else
-            let point = x.Point.Add count
+            let point = x.Point.Add(x.Width)
             SnapshotColumn(point)
 
     member x.Subtract count = 
         x.Add -count
 
     override x.ToString() = 
-        x.Point.ToString()
+        x.Span.GetText()
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
@@ -955,23 +986,22 @@ module SnapshotLineUtil =
 
     /// Get the columns in the line in the path
     let private GetColumnsCore path includeLineBreak line = 
-        let length = 
-            if includeLineBreak then
-                GetLengthIncludingLineBreak line
-            else 
-                GetLength line
-        let max = length - 1
+        let startColumn = SnapshotColumn(GetStart line)
+        let max = startColumn.NumberOfColumns - 1
         match path with 
         | SearchPath.Forward ->
             seq { 
                 for i = 0 to max do
-                    yield SnapshotColumn(line, i)
+                    let column = SnapshotColumn(startColumn, i)
+                    if includeLineBreak || not (column.IsLineBreak) then
+                        yield column
             }
         | SearchPath.Backward ->
             seq { 
                 for i = 0 to max do
-                    let column = (length - 1) - i
-                    yield SnapshotColumn(line, column)
+                    let column = SnapshotColumn(startColumn, max - i)
+                    if includeLineBreak || not column.IsLineBreak then
+                        yield column
             }
 
     /// Get the columns in the specified direction 
@@ -1528,24 +1558,13 @@ module SnapshotPointUtil =
         /// Get the relative column in 'direction' using predicate 'isEnd'
         /// to stop the motion
         let GetRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
-
-            /// Adjust 'column' backward or forward if it is in the
-            /// middle of a line break
-            let AdjustLineBreak (column: SnapshotColumn) =
-                if column.Column <= column.Line.Length then
-                    column
-                else if direction = -1 then
-                    SnapshotColumn(column.Line, column.Line.Length)
-                else
-                    SnapshotColumn(column.Line.EndIncludingLineBreak)
-
             let mutable column = SnapshotColumn(startPoint)
             let mutable remaining = abs count
             while remaining > 0 && not (isEnd column.Point) do
-                column <- column.Add direction |> AdjustLineBreak
+                column <- column.Add direction
                 remaining <- remaining -
                     if skipLineBreaks then
-                        if column.Line.Length = 0 || not column.IsInsideLineBreak then
+                        if column.Line.Length = 0 || not column.IsLineBreak then
                             1
                         else
                             0

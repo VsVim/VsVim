@@ -2817,7 +2817,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("vi}");
 
                 var column = _textView.GetCaretColumn();
-                Assert.True(column.IsInsideLineBreak);
+                Assert.True(column.IsLineBreak);
             }
         }
 
