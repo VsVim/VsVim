@@ -303,11 +303,11 @@ type SnapshotColumn =
 
     val private _line: ITextSnapshotLine
     val private _positions: int array
-    val private _column: int
+    val private _columnNumber: int
 
-    new (oldColumn: SnapshotColumn, column: int) =
-        Contract.Requires(column >= 0 && column < oldColumn.NumberOfColumns)
-        { _line = oldColumn._line; _positions = oldColumn._positions; _column = column }
+    new (column: SnapshotColumn, columnNumber: int) =
+        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCount)
+        { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
 
     new (point: SnapshotPoint) = 
         let line = point.GetContainingLine()
@@ -323,23 +323,23 @@ type SnapshotColumn =
             }
             |> Seq.toArray
         let position = point.Position
-        let column =
-            let mutable column = positions.Length - 1
+        let columnNumber =
+            let mutable columnNumber = positions.Length - 1
             for i = 0 to positions.Length - 2 do
                 if position >= positions.[i] && position < positions.[i + 1] then
-                    column <- i
-            column
-        { _line = line; _positions = positions; _column = column }
+                    columnNumber <- i
+            columnNumber
+        { _line = line; _positions = positions; _columnNumber = columnNumber }
 
-    member x.NumberOfColumns = x._positions.Length - 1
+    member x.ColumnCount = x._positions.Length - 1
 
-    member x.Position = x._positions.[x._column]
+    member x.Position = x._positions.[x._columnNumber]
 
     member x.Offset = x.Position - x._positions.[0]
 
     member x.IsLineBreak = x.Position = x._line.End.Position
 
-    member x.IsStartOfLine = x._column = 0
+    member x.IsStartOfLine = x._columnNumber = 0
 
     member x.Line = x._line
 
@@ -349,19 +349,24 @@ type SnapshotColumn =
 
     member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
 
-    member x.Width = x._positions.[x._column + 1] - x.Position
+    member x.Width = x._positions.[x._columnNumber + 1] - x.Position
 
     member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
 
-    member x.Column = x._column
+    member x.Column = x._columnNumber
 
-    member x.Add count = 
-        let column = x._column + count
-        if column >= 0 && column < x.NumberOfColumns then
-            SnapshotColumn(x, x._column + count)
-        else
-            let point = x.Point.Add(x.Width)
-            SnapshotColumn(point)
+    member x.Add count =
+        let mutable column = x
+        let mutable columnNumber = x._columnNumber + count
+        while columnNumber < 0 && column.LineNumber > 0 do
+            column <- SnapshotColumn(column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1).Start)
+            columnNumber <- columnNumber + column.ColumnCount
+        columnNumber <- max 0 columnNumber
+        while columnNumber >= column.ColumnCount && column.LineNumber < column.Snapshot.LineCount - 1 do
+            columnNumber <- columnNumber - column.ColumnCount
+            column <- SnapshotColumn(column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1).Start)
+        columnNumber <- min columnNumber column.ColumnCount
+        SnapshotColumn(column, columnNumber)
 
     member x.Subtract count = 
         x.Add -count
@@ -987,7 +992,7 @@ module SnapshotLineUtil =
     /// Get the columns in the line in the path
     let private GetColumnsCore path includeLineBreak line = 
         let startColumn = SnapshotColumn(GetStart line)
-        let max = startColumn.NumberOfColumns - 1
+        let max = startColumn.ColumnCount - 1
         match path with 
         | SearchPath.Forward ->
             seq { 

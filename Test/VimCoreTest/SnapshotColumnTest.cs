@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetPoint(0));
-                var column = original.Add(5);
+                var column = original.Add(4);
                 Assert.Equal(0, column.Column);
                 Assert.Equal(1, column.LineNumber);
             }
@@ -44,7 +44,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
-                var column = original.Add(-3);
+                var column = original.Add(-2);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
             }
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
-                var column = original.Subtract(3);
+                var column = original.Subtract(2);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
             }
