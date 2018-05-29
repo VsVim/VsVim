@@ -1284,35 +1284,60 @@ module SnapshotPointUtil =
         line.ExtentIncludingLineBreak
 
     // Get the span of the character which is pointed to by the point.  Normally this is a 
-    // trivial operation.  The only difficulty if the Point exists on an empty line.  In that
-    // case it is the extent of the line
+    // trivial operation.  The only difficulty if the Point exists at the end of a line
+    // (in which case the span covers the linebreak) or if the character is part of a
+    // surrogate pair.
     let GetCharacterSpan point = 
+        let snapshot = GetSnapshot point
         let line = GetContainingLine point
         let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
-        match endSpan.Contains(point) with
-            | true -> endSpan
-            | false -> new SnapshotSpan(point,1)
+        if endSpan.Contains(point) then
+            endSpan
+        elif point.Position = snapshot.Length then
+            new SnapshotSpan(point, 0)
+        else
+            let c = point.GetChar()
+            let snapshot = point.Snapshot
+            if System.Char.IsHighSurrogate(c) then
+                if point.Position = snapshot.Length then
+                    new SnapshotSpan(point, 1)
+                elif System.Char.IsLowSurrogate(point.Add(1).GetChar()) then
+                    new SnapshotSpan(point, 2)
+                else
+                    new SnapshotSpan(point, 1)
+            elif System.Char.IsLowSurrogate(c) then
+                if point.Position = 0 then
+                    new SnapshotSpan(point, 1)
+                elif System.Char.IsHighSurrogate(point.Subtract(1).GetChar()) then
+                    new SnapshotSpan(point.Subtract(1), 2)
+                else
+                    new SnapshotSpan(point, 1)
+            else
+                new SnapshotSpan(point, 1)
 
     /// Get the next point in the buffer with wrap
-    let GetNextPointWithWrap point = 
-        let tss = GetSnapshot point
-        let line = GetContainingLine point
-        if point.Position >= line.End.Position then
-            let num = line.LineNumber+1
-            if num = tss.LineCount then SnapshotUtil.GetStartPoint tss
-            else tss.GetLineFromLineNumber(num).Start
+    let GetNextPointWithWrap point =
+        let snapshot = GetSnapshot point
+        let nextPoint =
+            GetCharacterSpan point
+            |> SnapshotSpanUtil.GetEndPoint
+        if nextPoint.Position = snapshot.Length then
+            SnapshotUtil.GetStartPoint snapshot
         else
-            point.Add(1)                    
+            nextPoint
 
     /// Get the previous point in the buffer with wrap
-    let GetPreviousPointWithWrap point = 
-        let tss = GetSnapshot point
-        let line = GetContainingLine point
-        if point.Position = line.Start.Position then
-            if line.LineNumber = 0 then SnapshotUtil.GetEndPoint tss
-            else tss.GetLineFromLineNumber(line.LineNumber-1).End
+    let GetPreviousPointWithWrap point =
+        let snapshot = GetSnapshot point
+        let currentPoint =
+            GetCharacterSpan point
+            |> SnapshotSpanUtil.GetStartPoint
+        if currentPoint.Position = 0 then
+            SnapshotUtil.GetEndPoint snapshot
         else
-            point.Subtract(1)
+            currentPoint.Subtract(1)
+            |> GetCharacterSpan
+            |> SnapshotSpanUtil.GetStartPoint
 
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
