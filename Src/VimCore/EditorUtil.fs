@@ -34,7 +34,7 @@ module internal EditorCoreUtil =
             point.Subtract(1)
 
     /// Get the span of the character which is pointed to by the point.  Normally this is a 
-    /// trivial operation.  The only difficulty if the point exists at the end of a line
+    /// trivial operation.  The only difficulty is if the point exists at the end of a line
     /// (in which case the span covers the linebreak) or if the character is part of a
     /// surrogate pair.
     let GetCharacterSpan (line: ITextSnapshotLine) (point: SnapshotPoint) = 
@@ -295,7 +295,13 @@ type SnapshotLineRange  =
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
 /// representation.  Finding the containing ITextSnapshotLine for a given 
 /// SnapshotPoint is an allocating operation and often shows up as a critical 
-/// metric in profiling.  This structure pairs the two together in a type safe fashion
+/// metric in profiling.  This structure pairs the two together in a type safe fashion.
+///
+/// Conceptually, a "column" corresponds to a single logical character:
+/// - a normal character
+/// - a line break (which may consist of one or more physical characters)
+/// - a UTF32 character (represented by two UTF16 characters called the "surrogate pair")
+/// Alteratively, a "column" represents the places where it is valid to set the caret.
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
@@ -305,14 +311,21 @@ type SnapshotColumn =
     val private _positions: int array
     val private _columnNumber: int
 
+    /// Constructor for a new column from the same line as another column
     new (column: SnapshotColumn, columnNumber: int) =
         Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCount)
         { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
 
+    /// Constructor for a column corresponding to a snapshot point
+    /// that "parses" the whole containing line and builds a lookup
+    // table of physical positions corresponding to logical columns
     new (point: SnapshotPoint) = 
         let line = point.GetContainingLine()
         let mutable currentPoint = line.Start
         let endPoint = line.EndIncludingLineBreak
+
+        // Build an array of positions (including an extra final position)
+        // that we can use to translate from column to position.
         let positions =
             seq {
                 while currentPoint.Position < endPoint.Position do
@@ -322,6 +335,8 @@ type SnapshotColumn =
                 yield endPoint.Position
             }
             |> Seq.toArray
+
+        // Scan the positions array for the column corresponding to point.
         let position = point.Position
         let columnNumber =
             let mutable columnNumber = positions.Length - 1
@@ -329,45 +344,79 @@ type SnapshotColumn =
                 if position >= positions.[i] && position < positions.[i + 1] then
                     columnNumber <- i
             columnNumber
+
+        // Once determined, the snapshot line and the position table
+        // are reused for other columns within the line.
         { _line = line; _positions = positions; _columnNumber = columnNumber }
 
+    // The number of columns in the line containing the column
     member x.ColumnCount = x._positions.Length - 1
 
+    /// The position or text buffer offset of the column
     member x.Position = x._positions.[x._columnNumber]
 
+    /// The position offset of the column relative the beginning of the line
     member x.Offset = x.Position - x._positions.[0]
 
+    /// Whether the "character" at column is a linebreak 
     member x.IsLineBreak = x.Position = x._line.End.Position
 
+    /// Whether this is the first column of the line
     member x.IsStartOfLine = x._columnNumber = 0
 
+    /// The snapshot line containing the column
     member x.Line = x._line
 
+    /// The line number of the line containing the column
     member x.LineNumber = x._line.LineNumber
 
+    /// The snapshot corresponding to the column
     member x.Snapshot = x._line.Snapshot
 
+    /// The point where the column begins
     member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
 
+    /// The width in terms of position of the column
     member x.Width = x._positions.[x._columnNumber + 1] - x.Position
 
+    /// The snapshot span covering the logical character at the column
     member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
 
+    /// The column number of the column
+    /// (Beware accidentally using the column number as a buffer position)
+    /// TODO: Rename this to "ColumnNumber" analogous to LineNumber.
     member x.Column = x._columnNumber
 
+    /// Go forward (positive) or backward (negative) by the specified number of
+    /// columns stopping at the beginning or end of the buffer
+    /// (note that linebreaks and surrogate pairs count as a single column)
     member x.Add count =
+
+        // Start with the line of the current column
+        // and adjust the column number by the specified amount.
         let mutable column = x
         let mutable columnNumber = x._columnNumber + count
+
+        // While the column number is negative and there is a preceeding line,
+        // move to that line and add its column count.
         while columnNumber < 0 && column.LineNumber > 0 do
             column <- SnapshotColumn(column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1).Start)
             columnNumber <- columnNumber + column.ColumnCount
         columnNumber <- max 0 columnNumber
+
+        // While the column number is past the end of the current line and there
+        // is a following line, subtract the current line's column count and
+        // move to that line.
         while columnNumber >= column.ColumnCount && column.LineNumber < column.Snapshot.LineCount - 1 do
             columnNumber <- columnNumber - column.ColumnCount
             column <- SnapshotColumn(column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1).Start)
         columnNumber <- min columnNumber column.ColumnCount
+
+        // Return a new snapshot column.
         SnapshotColumn(column, columnNumber)
 
+    /// Go backward (positive) or forward (negative) by the specified number of
+    /// columns
     member x.Subtract count = 
         x.Add -count
 
