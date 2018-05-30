@@ -1630,6 +1630,137 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class UnicodeTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void ForwardMotionNonWrap()
+            {
+                Create("'\U0001F47D'", "");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("l");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("l");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ForwardMotionArrows()
+            {
+                Create("'\U0001F47D'", "");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BackwardMotionNonWrap()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(3);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("h");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("h");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BackwardMotionArrows()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(3);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ForwardInsertArrowNoWrap()
+            {
+                Create("'\U0001F47D'", "");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("i");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BackwardInsertArrowNoWrap()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(3);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("a");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void ForwardInsertArrowWrap()
+            {
+                Create("'\U0001F47D'", "");
+                _globalSettings.WhichWrap = "[,]";
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("i");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BackwardInsertArrowWrap()
+            {
+                Create("'\U0001F47D'", "");
+                _globalSettings.WhichWrap = "[,]";
+                _textView.MoveCaretTo(3);
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("a");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DeleteForward()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("dl");
+                Assert.Equal(new[] { "''", "", }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void DeleteBackward()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("dh");
+                Assert.Equal(new[] { "''", "", }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class FilterTest : NormalModeIntegrationTest
         {
             private string _command;
