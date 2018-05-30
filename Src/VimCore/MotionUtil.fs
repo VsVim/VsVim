@@ -696,7 +696,16 @@ type MatchingTokenUtil() =
 
         let line, column =
             let data = SnapshotColumn(point)
-            data.Line, data.Offset
+            let line = data.Line
+
+            // The search should normalize caret's in the line break back to the last valid
+            // point of the line.
+            let column =
+                if data.IsLineBreak && line.Length > 0 then
+                    (data.Subtract 1).Offset
+                else
+                    data.Offset
+            line, column
 
         let found = 
             let lineText = SnapshotLineUtil.GetText line
