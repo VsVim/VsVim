@@ -303,7 +303,7 @@ type SnapshotLineRange  =
 /// - a normal character
 /// - a line break (which may consist of one or more physical characters)
 /// - a UTF32 character (represented by two UTF16 characters called the "surrogate pair")
-/// Alteratively, a "column" represents the places where it is valid to set the caret.
+/// Alternatively, a "column" represents the places where it is valid to set the caret.
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
@@ -423,8 +423,13 @@ type SnapshotColumn =
     member x.Subtract count =
         x.Add -count
 
-    override x.ToString() =
+    /// Get the text corresponding to the column
+    member x.GetText () =
         x.Span.GetText()
+
+    /// Debugger display
+    override x.ToString() =
+        sprintf "Point: %s Line: %d Column: %d" (x.Point.ToString()) x.LineNumber x.Column
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
