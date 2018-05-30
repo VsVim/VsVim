@@ -21,12 +21,14 @@ module internal EditorCoreUtil =
     let IsEndPoint (point: SnapshotPoint) = 
         point.Position = point.Snapshot.Length
 
+    /// TODO: Should this handle surrogate pairs and linebreaks?
     let AddOneOrCurrent (point: SnapshotPoint) =
         if IsEndPoint point then
             point
         else
             point.Add(1)
 
+    /// TODO: Should this handle surrogate pairs and linebreaks?
     let SubtractOneOrCurrent (point: SnapshotPoint) = 
         if point.Position = 0 then
             point
@@ -1591,7 +1593,7 @@ module SnapshotPointUtil =
         span |> SnapshotSpanUtil.GetPoints SearchPath.Backward
 
     /// Try and get the previous point on the same line.  If this is at the start of the line 
-    /// None will be returned
+    /// None will be returned (note this handles surrogate pairs)
     let TryGetPreviousPointOnLine point count = 
         let column = SnapshotColumn(point)
         if column.Column >= count then
@@ -1601,7 +1603,8 @@ module SnapshotPointUtil =
             None
 
     /// Try and get the next point on the same line.  If this is the end of the line or if
-    /// the point is within the line break then None will be returned
+    /// the point is within the line break then None will be returned (note this handles
+    /// surrogate pairs)
     let TryGetNextPointOnLine point count =
         let column = SnapshotColumn(point)
         if column.Column + count < column.ColumnCount then
