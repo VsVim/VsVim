@@ -1609,10 +1609,7 @@ module SnapshotPointUtil =
         let column = SnapshotColumn(point)
         if column.Column + count < column.ColumnCount then
             let nextColumn = column.Add count
-            if nextColumn.IsLineBreak then
-                None
-            else
-                Some nextColumn.Point
+            Some nextColumn.Point
         else
             None
 
