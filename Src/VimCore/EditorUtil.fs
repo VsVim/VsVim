@@ -998,7 +998,7 @@ module SnapshotLineUtil =
             seq { 
                 for i = 0 to max do
                     let column = SnapshotColumn(startColumn, i)
-                    if includeLineBreak || not (column.IsLineBreak) then
+                    if includeLineBreak || not column.IsLineBreak then
                         yield column
             }
         | SearchPath.Backward ->
@@ -1250,6 +1250,11 @@ module SnapshotPointUtil =
     let IsStartOfLine point =
         let line = GetContainingLine point
         line.Start.Position = point.Position
+
+    /// Is this the end of the containing line?
+    let IsEndOfLine point =
+        let line = GetContainingLine point
+        line.End.Position = point.Position
 
     /// Is this the start of th eSnapshot
     let IsStartPoint point = 0 = GetPosition point
@@ -1538,20 +1543,23 @@ module SnapshotPointUtil =
     /// Try and get the previous point on the same line.  If this is at the start of the line 
     /// None will be returned
     let TryGetPreviousPointOnLine point count = 
-        let line = GetContainingLine point
-        let position = point.Position - count
-        if position >= line.Start.Position then
-            SnapshotPoint(point.Snapshot, position) |> Some
+        let column = SnapshotColumn(point)
+        if column.Column >= count then
+            let previousColumn = column.Subtract count
+            Some previousColumn.Point
         else
             None
 
     /// Try and get the next point on the same line.  If this is the end of the line or if
     /// the point is within the line break then None will be returned
     let TryGetNextPointOnLine point count =
-        let line = GetContainingLine point
-        let position = point.Position + count
-        if position < line.End.Position then
-            SnapshotPoint(point.Snapshot, position) |> Some
+        let column = SnapshotColumn(point)
+        if column.Column + count < column.ColumnCount then
+            let nextColumn = column.Add count
+            if nextColumn.IsLineBreak then
+                None
+            else
+                Some nextColumn.Point
         else
             None
 
