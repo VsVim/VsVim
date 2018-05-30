@@ -1766,7 +1766,7 @@ type internal CommandUtil
             | OperationKind.LineWise ->
                 x.CaretLine.EndIncludingLineBreak
 
-        x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
+        x.PutCore point stringData stringData registerValue.OperationKind moveCaretAfterText
 
     /// Put the contents of the register into the buffer after the cursor and respect
     /// the indent of the current line.  Used for the ']p' command
@@ -1819,12 +1819,12 @@ type internal CommandUtil
             | OperationKind.CharacterWise -> x.CaretPoint
             | OperationKind.LineWise -> x.CaretLine.Start
 
-        x.PutCore point stringData registerValue.OperationKind moveCaretAfterText
+        x.PutCore point stringData stringData registerValue.OperationKind moveCaretAfterText
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// normal 'p', 'gp', 'P', 'gP', ']p' and '[p' commands.  For linewise put operations
     /// the point must be at the start of a line
-    member x.PutCore point stringData operationKind moveCaretAfterText =
+    member x.PutCore point originalStringData stringData operationKind moveCaretAfterText =
 
         // Save the point incase this is a linewise insertion and we need to
         // move after the inserted lines
@@ -1843,7 +1843,7 @@ type internal CommandUtil
             | OperationKind.CharacterWise ->
 
                 let point =
-                    match stringData with
+                    match originalStringData with
                     | StringData.Simple text ->
                         if EditUtil.HasNewLine text && not moveCaretAfterText then
                             // For multi-line operations which do not specify to move the caret after
@@ -1853,7 +1853,7 @@ type internal CommandUtil
                         else
                             // For characterwise we just increment the length of the first string inserted
                             // and possibily one more if moving after
-                            let offset = stringData.FirstString.Length - 1
+                            let offset = originalStringData.FirstString.Length - 1
                             let offset = max 0 offset
                             let point = SnapshotPointUtil.Add offset point
                             if moveCaretAfterText then SnapshotPointUtil.AddOneOrCurrent point else point
@@ -1923,7 +1923,7 @@ type internal CommandUtil
                     // Now do a standard put operation at the original start point in the current
                     // ITextSnapshot
                     let point = SnapshotUtil.GetPoint x.CurrentSnapshot characterSpan.Start.Position
-                    x.PutCore point stringData operationKind moveCaretAfterText
+                    x.PutCore point stringData stringData operationKind moveCaretAfterText
 
                     EditSpan.Single characterSpan.Span, OperationKind.CharacterWise)
             | VisualSpan.Line range ->
@@ -1952,7 +1952,7 @@ type internal CommandUtil
                     // Now do a standard put operation at the start of the SnapshotLineRange
                     // in the current ITextSnapshot
                     let point = SnapshotUtil.GetPoint x.CurrentSnapshot range.Start.Position
-                    x.PutCore point stringData operationKind moveCaretAfterText
+                    x.PutCore point stringData stringData operationKind moveCaretAfterText
 
                     EditSpan.Single range.ExtentIncludingLineBreak, OperationKind.LineWise)
 
@@ -1972,7 +1972,7 @@ type internal CommandUtil
 
                     // For character-wise put of simple text over a
                     // block selection, replicate the text into a block.
-                    let stringData =
+                    let newStringData =
                         match operationKind, stringData with
                         | OperationKind.CharacterWise, StringData.Simple text ->
                             seq { for _ in col do yield text }
@@ -1994,7 +1994,7 @@ type internal CommandUtil
                             let lastSpan = col |> SeqUtil.last
                             let number = lastSpan.Start.Point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
                             SnapshotUtil.GetLine x.CurrentSnapshot number |> SnapshotLineUtil.GetEndIncludingLineBreak
-                    x.PutCore point stringData operationKind moveCaretAfterText
+                    x.PutCore point stringData newStringData operationKind moveCaretAfterText
 
                     EditSpan.Block col, OperationKind.CharacterWise)
 
