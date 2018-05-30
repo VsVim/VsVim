@@ -381,6 +381,70 @@ namespace Vim.UnitTest
                 var span = _motionUtil.GetBlock(BlockKind.Bracket, _textBuffer.GetPoint(1));
                 Assert.True(span.IsNone());
             }
+
+            [WpfFact]
+            public void StringTrap_BeforeString()
+            {
+                Create("fun(a, \" (\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(3));
+                Assert.Equal(_textBuffer.GetSpan(3, 12), span);
+            }
+
+            [WpfFact]
+            public void StringTrap_AtStartOfString()
+            {
+                Create("fun(a, \" (\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(8));
+                Assert.Equal(_textBuffer.GetSpan(3, 12), span);
+            }
+
+            [WpfFact]
+            public void StringTrap_OnStartCharacter()
+            {
+                Create("fun(a, \" (\", b) # bar");
+                var span = _motionUtil.GetBlock(BlockKind.Paren, _textBuffer.GetPoint(9));
+                Assert.True(span.IsNone());
+            }
+
+            [WpfFact]
+            public void StringTrap_AfterString()
+            {
+                Create("fun(a, \" (\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(14));
+                Assert.Equal(_textBuffer.GetSpan(3, 12), span);
+            }
+
+            [WpfFact]
+            public void BeforeBalancedString()
+            {
+                Create("fun(a, \"(foo)\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(8));
+                Assert.Equal(_textBuffer.GetSpan(8, 5), span);
+            }
+
+            [WpfFact]
+            public void InBalancedString()
+            {
+                Create("fun(a, \"(foo)\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(10));
+                Assert.Equal(_textBuffer.GetSpan(8, 5), span);
+            }
+
+            [WpfFact]
+            public void AfterBalancedString()
+            {
+                Create("fun(a, \"(foo)\", b) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(13));
+                Assert.Equal(_textBuffer.GetSpan(3, 15), span);
+            }
+
+            [WpfFact]
+            public void InSplitString()
+            {
+                Create("fun(a, \" ( \", b, \" ) \", c) # bar");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(10));
+                Assert.Equal(_textBuffer.GetSpan(9, 11), span);
+            }
         }
 
         public sealed class AllBlockTest : MotionUtilTest

@@ -341,8 +341,8 @@ module internal SeqUtil =
                     yield e.Current }
         inner count
 
-    /// Same functionality as Seq.tryFind except it allows you to pass along a 
-    /// state value along 
+    /// Same functionality as Seq.tryFind except it allows you to pass
+    /// a state value along 
     let tryFind initialState predicate (sequence: 'a seq) =
         use e = sequence.GetEnumerator()
         let rec inner state = 
