@@ -1056,6 +1056,65 @@ namespace Vim.UnitTest
                 }
 
                 [WpfFact]
+                public void MultilineReplaceFirstLine()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"s/foo\nbar/qux/");
+                    Assert.Equal(new[] { "qux", "baz" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MultilineReplaceWholeBufferAtBeginning()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"%s/foo\nbar/qux/");
+                    Assert.Equal(new[] { "qux", "baz" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MultilineReplaceWholeBufferAtEnd()
+                {
+                    Create("foo", "bar", "baz");
+                    RunCommand(@"%s/bar\nbaz/qux/");
+                    Assert.Equal(new[] { "foo", "qux" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MultilineReplaceWholeShebang()
+                {
+                    Create("foo", "bar", "baz", "qux");
+                    RunCommand(@"s/foo\_.*qux/xyzzy/");
+                    Assert.Equal(new[] { "xyzzy" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void ReplaceInVisualSelection()
+                {
+                    // Reported in issue #2147.
+                    Create("    foo bar baz qux    ");
+                    _vimBuffer.Process("wv4e");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal("foo bar baz qux", _textView.GetSelectionSpan().GetText());
+                    RunCommand(@"s/\%V /_/g");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(new[] { "    foo_bar_baz_qux    " }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void ReplaceInPreviousVisualSelection()
+                {
+                    // Reported in issue #2147.
+                    Create("    foo bar baz qux    ");
+                    _vimBuffer.Process("wv4e");
+                    Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                    Assert.Equal("foo bar baz qux", _textView.GetSelectionSpan().GetText());
+                    _vimBuffer.ProcessNotation("<Esc>");
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    RunCommand(@"s/\%V /_/g");
+                    Assert.Equal(new[] { "    foo_bar_baz_qux    " }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
                 public void FirstThroughLastWithTrailingLineBreak()
                 {
                     Create("cat", "dog", "");
