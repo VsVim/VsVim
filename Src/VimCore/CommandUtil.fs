@@ -1970,6 +1970,18 @@ type internal CommandUtil
                     col |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
                     edit.Apply() |> ignore
 
+                    // For character-wise put of simple text over a
+                    // block selection, replicate the text into a block.
+                    let stringData =
+                        match operationKind, stringData with
+                        | OperationKind.CharacterWise, StringData.Simple text ->
+                            seq { for _ in col do yield text }
+                            |> NonEmptyCollectionUtil.OfSeq 
+                            |> Option.get
+                            |> StringData.Block
+                        | _ ->
+                            stringData
+
                     // Now do a standard put operation.  The point of the put varies a bit
                     // based on whether we're doing a linewise or characterwise insert
                     let point =
