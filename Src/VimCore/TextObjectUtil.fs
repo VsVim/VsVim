@@ -164,8 +164,7 @@ type internal TextObjectUtil
             //  a
             //  
             //  b
-            let line = columnBefore.Line
-            if SnapshotLineUtil.IsLastPointIncludingLineBreak line columnBefore.Point && x.IsSentenceLine line then
+            if columnBefore.IsLineBreak && x.IsSentenceLine columnBefore.Line then
                 true
             else
                 x.IsSentenceEndSimple sentenceKind column
