@@ -294,7 +294,7 @@ type SnapshotLineRange  =
 /// This is the representation of a point within a particular line.  It's common
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
 /// representation.  Finding the containing ITextSnapshotLine for a given 
-/// SnapshotPoint is an allocating operation and often shows up as a critical 
+/// SnapshotPoint is an allocating operation and often shows up as a critical
 /// metric in profiling.  This structure pairs the two together in a type safe fashion.
 ///
 /// Conceptually, a "column" corresponds to a single logical character:
@@ -311,15 +311,10 @@ type SnapshotColumn =
     val private _positions: int array
     val private _columnNumber: int
 
-    /// Constructor for a new column from the same line as another column
-    new (column: SnapshotColumn, columnNumber: int) =
-        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCount)
-        { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
-
     /// Constructor for a column corresponding to a snapshot point
     /// that "parses" the whole containing line and builds a lookup
     // table of physical positions corresponding to logical columns
-    new (point: SnapshotPoint) = 
+    new (point: SnapshotPoint) =
         let line = point.GetContainingLine()
         let mutable currentPoint = line.Start
         let endPoint = line.EndIncludingLineBreak
@@ -349,43 +344,49 @@ type SnapshotColumn =
         // are reused for other columns within the line.
         { _line = line; _positions = positions; _columnNumber = columnNumber }
 
-    // The number of columns in the line containing the column
-    member x.ColumnCount = x._positions.Length - 1
+    /// Constructor for a new column from the same line as another column
+    /// (Warning: requires that you have validated the column number)
+    new (column: SnapshotColumn, columnNumber: int) =
+        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCount)
+        { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
+
+    /// The snapshot line containing the column
+    member x.Line = x._line
+
+    /// The column number of the column
+    /// (Warning: don't use the column number as a buffer position offset)
+    /// TODO: Rename this to "ColumnNumber" analogous to LineNumber.
+    member x.Column = x._columnNumber
 
     /// The position or text buffer offset of the column
     member x.Position = x._positions.[x._columnNumber]
 
+    /// The point where the column begins
+    member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
+
     /// The position offset of the column relative the beginning of the line
     member x.Offset = x.Position - x._positions.[0]
 
-    /// Whether the "character" at column is a linebreak 
+    /// The width of the column in terms of position
+    member x.Width = x._positions.[x._columnNumber + 1] - x.Position
+
+    /// The snapshot span covering the logical character at the column
+    member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
+
+    // The number of columns in the line containing the column
+    member x.ColumnCount = x._positions.Length - 1
+
+    /// Whether the "character" at column is a linebreak
     member x.IsLineBreak = x.Position = x._line.End.Position
 
     /// Whether this is the first column of the line
     member x.IsStartOfLine = x._columnNumber = 0
-
-    /// The snapshot line containing the column
-    member x.Line = x._line
 
     /// The line number of the line containing the column
     member x.LineNumber = x._line.LineNumber
 
     /// The snapshot corresponding to the column
     member x.Snapshot = x._line.Snapshot
-
-    /// The point where the column begins
-    member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
-
-    /// The width in terms of position of the column
-    member x.Width = x._positions.[x._columnNumber + 1] - x.Position
-
-    /// The snapshot span covering the logical character at the column
-    member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
-
-    /// The column number of the column
-    /// (Beware accidentally using the column number as a buffer position)
-    /// TODO: Rename this to "ColumnNumber" analogous to LineNumber.
-    member x.Column = x._columnNumber
 
     /// Go forward (positive) or backward (negative) by the specified number of
     /// columns stopping at the beginning or end of the buffer
@@ -417,10 +418,10 @@ type SnapshotColumn =
 
     /// Go backward (positive) or forward (negative) by the specified number of
     /// columns
-    member x.Subtract count = 
+    member x.Subtract count =
         x.Add -count
 
-    override x.ToString() = 
+    override x.ToString() =
         x.Span.GetText()
 
 /// The Text Editor interfaces only have granularity down to the character in the 
