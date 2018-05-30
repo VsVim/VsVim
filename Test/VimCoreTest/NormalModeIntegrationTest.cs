@@ -1695,6 +1695,33 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("y$");
                 Assert.Equal("test", UnnamedRegister.StringValue);
             }
+
+            /// <summary>
+            /// Character-wise yank should leave the cursor at the beginning of what was yanked
+            /// </summary>
+            [WpfFact]
+            public void CharacterWiseYankCursor()
+            {
+                // Reported in issue #1900.
+                Create("cat dog", "");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("y^");
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat ", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
+            /// Line-wise yank should not move the cursor
+            /// </summary>
+            [WpfFact]
+            public void LineWiseYankCursor()
+            {
+                Create("cat dog", "");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("yy");
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat dog" + Environment.NewLine, UnnamedRegister.StringValue);
+            }
         }
 
         public sealed class FilterTest : NormalModeIntegrationTest
