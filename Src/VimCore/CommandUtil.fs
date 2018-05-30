@@ -3251,6 +3251,10 @@ type internal CommandUtil
     member x.YankMotion registerName (result: MotionResult) =
         let value = x.CreateRegisterValue (StringData.OfSpan result.Span) result.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
+        match result.OperationKind with
+        | OperationKind.CharacterWise ->
+            TextViewUtil.MoveCaretToPoint _textView result.Start
+        | _ -> ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
