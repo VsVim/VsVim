@@ -419,6 +419,21 @@ type VimInterpreter
     /// Get the count value or the default of 1
     member x.GetCountOrDefault count = Util.CountOrDefault count
 
+    /// Get the point after the specified range or the the default
+    member x.GetPointAfterOrDefault lineRange defaultLineRange =
+        match lineRange with
+        | LineRangeSpecifier.SingleLine (LineSpecifier.Number line) when line = 0 ->
+            SnapshotUtil.GetStartPoint _textView.TextSnapshot |> Some
+        | _ ->
+            match x.GetLineRangeOrDefault lineRange defaultLineRange with
+            | Some lineRange ->
+                lineRange.EndIncludingLineBreak |> Some
+            | None -> None
+
+    /// Get the point after the specified range or the the default
+    member x.GetPointAfter lineRange =
+        x.GetPointAfterOrDefault lineRange DefaultLineRange.None
+
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
         let builder = System.Collections.Generic.List<AutoCommand>()
@@ -1174,8 +1189,7 @@ type VimInterpreter
                 _commonOperations.CloseWindowUnlessDirty())
 
     /// Run the core parts of the read command
-    member x.RunReadCore (lineRange: SnapshotLineRange) (lines: string[]) = 
-        let point = lineRange.EndIncludingLineBreak
+    member x.RunReadCore (point: SnapshotPoint) (lines: string[]) = 
         let lineBreak = _commonOperations.GetNewLineText point
         let text = 
             let builder = System.Text.StringBuilder()
@@ -1192,7 +1206,7 @@ type VimInterpreter
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
         let filePath = x.ResolveVimPath filePath
-        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+        x.RunWithPointAfterOrDefault lineRange DefaultLineRange.CurrentLine (fun point ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
             else
@@ -1200,7 +1214,7 @@ type VimInterpreter
                 | None ->
                     _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
                 | Some lines ->
-                    x.RunReadCore lineRange lines)
+                    x.RunReadCore point lines)
 
     /// Run a single redo operation
     member x.RunRedo() = 
@@ -1465,13 +1479,13 @@ type VimInterpreter
                     command
 
             if isReadCommand then
-                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+                x.RunWithPointAfterOrDefault lineRange DefaultLineRange.CurrentLine (fun point ->
                     let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
                     let status = results.Error
                     let status = EditUtil.RemoveEndingNewLine status
                     _statusUtil.OnStatus status
                     let output = EditUtil.SplitLines results.Output
-                    x.RunReadCore lineRange output)
+                    x.RunReadCore point output)
             else
                 if lineRange = LineRangeSpecifier.None then
                     let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
@@ -1801,6 +1815,11 @@ type VimInterpreter
         match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
         | None -> _statusUtil.OnError Resources.Range_Invalid
         | Some lineRange -> func lineRange
+
+    member x.RunWithPointAfterOrDefault (lineRangeSpecifier: LineRangeSpecifier) defaultLineRange (func: SnapshotPoint -> unit) = 
+        match x.GetPointAfterOrDefault lineRangeSpecifier defaultLineRange with
+        | None -> _statusUtil.OnError Resources.Range_Invalid
+        | Some point -> func point
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
