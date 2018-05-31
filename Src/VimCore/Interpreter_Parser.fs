@@ -2049,6 +2049,7 @@ type Parser
             x.SkipBlanks()
             if _tokenizer.CurrentChar = '!' then
                 _tokenizer.MoveNextToken()
+                use resetFlags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
                 let command = x.ParseRestOfLine()
                 LineCommand.ReadCommand (lineRange, command)
             else

@@ -202,7 +202,7 @@ type internal CommonOperations
             let replacement = EditUtil.RemoveEndingNewLine replacement
 
             // Normalize linebreaks.
-            let replacement = Regex.Replace(replacement, @"\r?\n", newLine)
+            let replacement = EditUtil.NormalizeNewLines replacement newLine
 
             // Replace the old lines with the filtered lines.
             _textBuffer.Replace(range.Extent.Span, replacement) |> ignore

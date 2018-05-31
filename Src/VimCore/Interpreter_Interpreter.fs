@@ -281,11 +281,6 @@ type VimInterpreter
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    /// Execute the external command and return the lines of output
-    member x.ExecuteCommand (command: string): string[] option = 
-        // TODO: Implement
-        None
-
     /// Resolve the given path.  In the case the path contains illegal characters it 
     /// will be returned unaltered. 
     member x.ResolveVimPath (path: string) =
@@ -1192,12 +1187,7 @@ type VimInterpreter
 
     /// Run the read command command
     member x.RunReadCommand lineRange command = 
-        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            match x.ExecuteCommand command with
-            | None ->
-                _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
-            | Some lines ->
-                x.RunReadCore lineRange lines)
+        x.ExecuteCommand lineRange command true
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
@@ -1455,6 +1445,10 @@ type VimInterpreter
 
     /// Run the specified shell command
     member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
+        x.ExecuteCommand lineRange command false
+
+    /// Execute the external command
+    member x.ExecuteCommand (lineRange: LineRangeSpecifier) (command: string) (isReadCommand: bool) =
 
         // Actually run the command.
         let doRun (command: string) = 
@@ -1462,22 +1456,31 @@ type VimInterpreter
             // Save the last shell command for repeats.
             _vimData.LastShellCommand <- Some command
 
-            // Prepend the shell flag before the other arguments
+            // Prepend the shell flag before the other arguments.
+            let shell = _globalSettings.Shell
             let command =
                 if _globalSettings.ShellFlag.Length > 0 then
                     sprintf "%s %s" _globalSettings.ShellFlag command
                 else
                     command
 
-            if lineRange = LineRangeSpecifier.None then
-                let file = _globalSettings.Shell
-                let results = _vimHost.RunCommand _globalSettings.Shell command StringUtil.Empty _vimData
-                let status = results.Output + results.Error
-                let status = EditUtil.RemoveEndingNewLine status
-                _statusUtil.OnStatus status
+            if isReadCommand then
+                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let status = results.Error
+                    let status = EditUtil.RemoveEndingNewLine status
+                    _statusUtil.OnStatus status
+                    let output = EditUtil.SplitLines results.Output
+                    x.RunReadCore lineRange output)
             else
-                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
-                    _commonOperations.FilterLines lineRange command)
+                if lineRange = LineRangeSpecifier.None then
+                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let status = results.Output + results.Error
+                    let status = EditUtil.RemoveEndingNewLine status
+                    _statusUtil.OnStatus status
+                else
+                    x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
+                        _commonOperations.FilterLines lineRange command)
 
         // Build up the actual command replacing any non-escaped ! with the previous
         // shell command
