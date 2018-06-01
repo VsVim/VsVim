@@ -1595,7 +1595,9 @@ type internal CommandUtil
 
         let isInitialSelection =
             match visualSpan with
-            | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
+            | VisualSpan.Character characterSpan ->
+                let lineBreakSpan = SnapshotLineUtil.GetLineBreakSpan characterSpan.LastLine
+                characterSpan.Length <= 1 || characterSpan.Span = lineBreakSpan
             | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
             | VisualSpan.Line lineRange -> lineRange.Count = 1
 

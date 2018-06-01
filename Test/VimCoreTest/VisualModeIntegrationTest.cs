@@ -1262,6 +1262,16 @@ namespace Vim.UnitTest
                 }
 
                 [WpfFact]
+                public void InnerSimpleMultiLineFromBlankLine()
+                {
+                    // Reported in issue #2081.
+                    Create("<a>", "", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.Process("vity");
+                    Assert.Equal(Environment.NewLine + Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
+                }
+
+                [WpfFact]
                 public void InnerSimpleSingleLine()
                 {
                     Create("<a>blah</a>");
