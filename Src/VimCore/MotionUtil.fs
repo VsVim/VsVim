@@ -4,12 +4,12 @@ namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Formatting
 open Microsoft.VisualStudio.Text.Operations
 open System.Collections.Generic
 open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
-open Microsoft.VisualStudio.Text.Formatting
 
 type OptionBuilder() =
     member x.Bind (value, cont) = 
@@ -1145,12 +1145,12 @@ type internal MotionUtil
             |> SeqUtil.headOrDefault targetLine.Start
 
         let caretPoint = x.CaretPoint
-        if caretPoint.Position < targetPoint.Position then
-            let span = SnapshotSpan(x.CaretPoint, targetPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
-        else
-            let span = SnapshotSpan(targetPoint, x.CaretPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
+        let span, isForward =
+            if caretPoint.Position < targetPoint.Position then
+                SnapshotSpan(caretPoint, targetPoint), true
+            else
+                SnapshotSpan(targetPoint, caretPoint), false
+        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
     member x.DisplayLineFirstNonBlank() = 
         match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
