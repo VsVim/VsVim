@@ -624,10 +624,10 @@ namespace Vim.UnitTest
                         _arguments = arguments;
                         _input = input;
 
-                        if (arguments.StartsWith("/c echo "))
+                        if (arguments.StartsWith("/c echolines "))
                         {
-                            // Echo all arguments.
-                            var argString = arguments.Substring("/c echo ".Length);
+                            // Echo all arguments as lines.
+                            var argString = arguments.Substring("/c echolines ".Length);
                             var args = argString.Split(' ').Concat(new[] { "" });
                             var output = String.Join(Environment.NewLine, args);
                             return new RunCommandResults(0, output, "");
@@ -644,8 +644,8 @@ namespace Vim.UnitTest
             public void DefaultLine()
             {
                 Create("cat", "dog", "bat", "");
-                ParseAndRun(":r!echo foo bar");
-                Assert.Equal("/c echo foo bar", _arguments);
+                ParseAndRun(":r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
                 Assert.Equal(new[] { "cat", "foo", "bar", "dog", "bat", "", }, _textBuffer.GetLines());
             }
 
@@ -653,8 +653,8 @@ namespace Vim.UnitTest
             public void SpecificLine()
             {
                 Create("cat", "dog", "bat", "");
-                ParseAndRun(":2r!echo foo bar");
-                Assert.Equal("/c echo foo bar", _arguments);
+                ParseAndRun(":2r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
                 Assert.Equal(new[] { "cat", "dog", "foo", "bar", "bat", "", }, _textBuffer.GetLines());
             }
 
@@ -662,8 +662,8 @@ namespace Vim.UnitTest
             public void BeforeFirst()
             {
                 Create("cat", "dog", "bat", "");
-                ParseAndRun(":0r!echo foo bar");
-                Assert.Equal("/c echo foo bar", _arguments);
+                ParseAndRun(":0r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
                 Assert.Equal(new[] { "foo", "bar", "cat", "dog", "bat", "", }, _textBuffer.GetLines());
             }
         }
