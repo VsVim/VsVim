@@ -1139,7 +1139,7 @@ type internal MotionUtil
             targetLine.Extent
             |> SnapshotSpanUtil.GetPoints SearchPath.Forward
             |> Seq.map (fun point -> point, targetLine.GetCharacterBounds point)
-            |> Seq.map (fun (point, bounds) -> point, bounds.Left - caretCoordinate)
+            |> Seq.map (fun (point, bounds) -> point, (bounds.Left + bounds.Right) / 2.0 - caretCoordinate)
             |> Seq.filter (fun (_, coordinate) -> coordinate >= 0.0)
             |> Seq.map (fun (point, _) -> point)
             |> SeqUtil.headOrDefault targetLine.Start
