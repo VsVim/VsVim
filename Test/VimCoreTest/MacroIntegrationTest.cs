@@ -46,6 +46,24 @@ namespace Vim.UnitTest
             Assert.Null(history.CurrentTransaction);
         }
 
+        public sealed class RecordMacroTest : MacroIntegrationTest
+        {
+            /// <summary>
+            /// Record the running of a macro without recording the macro contents
+            /// </summary>
+            [WpfFact]
+            public void RunMacroDuringRecord()
+            {
+                // Reported in issues #2119 and #2173.
+                Create("hello world");
+                TestRegister.UpdateValue("dw");
+                _vimBuffer.Process("qa@cq");
+                Assert.Equal("world", _textView.GetLine(0).GetText());
+                Assert.Equal("dw", TestRegister.StringValue);
+                Assert.Equal("@c", _vimBuffer.GetRegister('a').StringValue);
+            }
+        }
+
         public sealed class RunMacroTest : MacroIntegrationTest
         {
             /// <summary>

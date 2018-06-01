@@ -15,6 +15,11 @@ type internal MacroRecorder (_registerMap: IRegisterMap) =
     /// keys which the recorder fully sees while recording should be considered
     let mutable _isKeyInputEndValid = false
 
+    /// This records the nesting depth of key input events. We don't
+    /// want to record nested key inputs, e.g. key inputs generated
+    /// by running one macro while recording another.
+    let mutable _nestingDepth = 0
+
     let _recordingStartedEvent = StandardEvent<RecordRegisterEventArgs>()
     let _recordingStoppedEvent = StandardEvent()
 
@@ -57,10 +62,12 @@ type internal MacroRecorder (_registerMap: IRegisterMap) =
         buffer.Closed.AddHandler (fun _ _ -> bag.DisposeAll())
 
     member x.OnKeyInputStart _ = 
+        _nestingDepth <- _nestingDepth + 1
         _isKeyInputEndValid <- Option.isSome _recordData
 
     member x.OnKeyInputEnd (args: KeyInputEventArgs) =
-        if _isKeyInputEndValid then
+        _nestingDepth <- _nestingDepth - 1
+        if _nestingDepth = 0 && _isKeyInputEndValid then
             match _recordData with
             | None -> () 
             | Some (register, list) -> 
