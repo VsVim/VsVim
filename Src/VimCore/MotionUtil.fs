@@ -2003,7 +2003,7 @@ type internal MotionUtil
                 | TagBlockKind.All -> tagBlock.FullSpan
                 | TagBlockKind.Inner -> tagBlock.InnerSpan
             let span = SnapshotSpan(x.CurrentSnapshot, span)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.SuppressAdjustment) |> Some
 
     /// Get the expanded tag block based on the current kind and point
     member x.GetExpandedTagBlock point kind = 
@@ -2897,7 +2897,9 @@ type internal MotionUtil
             let firstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart startLine
             let endsInColumnZero = SnapshotPointUtil.IsStartOfLine originalSpan.End
 
-            if endLine.LineNumber <= startLine.LineNumber then
+            if Util.IsFlagSet motionResult.MotionResultFlags MotionResultFlags.SuppressAdjustment then
+                motionResult
+            elif endLine.LineNumber <= startLine.LineNumber then
                 // No adjustment needed when everything is on the same line
                 motionResult
             elif not endsInColumnZero then

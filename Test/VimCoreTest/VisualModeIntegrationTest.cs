@@ -1261,6 +1261,19 @@ namespace Vim.UnitTest
                     Assert.Equal(Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
                 }
 
+                /// <summary>
+                /// Visual selection of a block from an empty line should not expand
+                /// </summary>
+                [WpfFact]
+                public void InnerSimpleMultiLineFromEmptyLine()
+                {
+                    // Reported in issue #2081.
+                    Create("<a>", "", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.Process("vity");
+                    Assert.Equal(Environment.NewLine + Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
+                }
+
                 [WpfFact]
                 public void InnerSimpleSingleLine()
                 {

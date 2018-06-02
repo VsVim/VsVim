@@ -5916,6 +5916,32 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("dit");
                     Assert.Equal("<a></A>", _textBuffer.GetLine(0).GetText());
                 }
+
+                /// <summary>
+                /// Delete of multiline inner tag block is never linewise
+                /// </summary>
+                [WpfFact]
+                public void DeleteInnerSimpleMultiLine()
+                {
+                    // Reported in issue #2081.
+                    Create("<a>", "", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.Process("dit");
+                    Assert.Equal(new[] { "<a></a>" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Change of multiline inner tag block doesn't leave a blank line
+                /// </summary>
+                [WpfFact]
+                public void ChangeInnerSimpleMultiLine()
+                {
+                    // Reported in issue #2081.
+                    Create("<a>", "", "blah", "</a>");
+                    _textView.MoveCaretToLine(1);
+                    _vimBuffer.ProcessNotation("citfoo<Esc>");
+                    Assert.Equal(new[] { "<a>foo</a>" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class YankTagBlockTest : TagBlocksMotionTest

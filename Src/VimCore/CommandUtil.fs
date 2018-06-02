@@ -358,7 +358,7 @@ type internal CommandUtil
                         |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
                     SnapshotSpan(result.Span.Start, endPoint)
                 | None -> result.Span
-            else
+            elif result.OperationKind = OperationKind.LineWise then
                 // If the change command ends inside a line break then the actual delete operation
                 // is backed up so that it leaves a single blank line after the delete operation.  This
                 // allows the insert to begin on a blank line
@@ -370,6 +370,8 @@ type internal CommandUtil
                     else
                         result.Span
                 | None -> result.Span
+            else
+                result.Span
 
         // Use an undo transaction to preserve the caret position.  Experiments show that the rules
         // for caret undo should be
@@ -1595,7 +1597,9 @@ type internal CommandUtil
 
         let isInitialSelection =
             match visualSpan with
-            | VisualSpan.Character characterSpan -> characterSpan.Length <= 1
+            | VisualSpan.Character characterSpan ->
+                let lineBreakSpan = SnapshotLineUtil.GetLineBreakSpan characterSpan.LastLine
+                characterSpan.Length <= 1 || characterSpan.Span = lineBreakSpan
             | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
             | VisualSpan.Line lineRange -> lineRange.Count = 1
 
