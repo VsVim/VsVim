@@ -56,7 +56,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             internal void Clear()
             {
-                Message = null;
+                if (!InEvent)
+                {
+                    // This might be a nested key input event, for example
+                    // if a macro is being replayed. Only clear the event
+                    // state for the outermost key input event so we don't
+                    // lose messages.
+                    Message = null;
+                }
                 SwitchModeEventArgs = null;
             }
         }
@@ -70,6 +77,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private bool _inUpdateVimBufferState;
         private bool _inCommandLineUpdate;
         private EditKind _editKind;
+        private bool _processingVirtualKeyInputs;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
@@ -516,7 +524,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// <summary>
         /// Update the current command from the given input
         /// </summary>
-        internal void UpdateVimBufferStateWithCommandText(string commandText)
+        internal string UpdateVimBufferStateWithCommandText(string commandText)
         {
             _inUpdateVimBufferState = true;
             try
@@ -554,6 +562,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 _inUpdateVimBufferState = false;
             }
+            return commandText;
         }
 
         /// <summary>
@@ -566,8 +575,31 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return;
             }
 
+            // Change the edit kind after updating the command text
+            // for the final time.
+            command = UpdateVimBufferStateWithCommandText(command);
             ChangeEditKind(EditKind.None);
-            UpdateVimBufferStateWithCommandText(command);
+
+            // Process virtual key inputs for the individual
+            // characters of the command to permit key input
+            // listeners (like the macro recorder) to see them.
+            // When processing virtual key input events, we
+            // mark them as handled so they don't get processed
+            // by the mode of the buffer.
+            _processingVirtualKeyInputs = true;
+            try
+            {
+                foreach (var c in command)
+                {
+                    _vimBuffer.Process(KeyInputUtil.CharToKeyInput(c));
+                }
+            }
+            finally
+            {
+                _processingVirtualKeyInputs = false;
+            }
+
+            // Process (for real) the enter key.
             _vimBuffer.Process(KeyInputUtil.EnterKey);
         }
 
@@ -585,12 +617,26 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnKeyInputStart(object sender, KeyInputStartEventArgs args)
         {
+            // If we generated a virtual key event, mark the event as handled
+            // to prevent the buffer's mode from processing it.
+            if (_processingVirtualKeyInputs)
+            {
+                args.Handled = true;
+                return;
+            }
+
             _vimBufferKeyEventState.KeyInputEventCount++;
             CheckEnableCommandLineEdit(args);
         }
 
         private void OnKeyInputEnd(object sender, KeyInputEventArgs args)
         {
+            // Ignore our own virtual key input events.
+            if (_processingVirtualKeyInputs)
+            {
+                return;
+            }
+
             Debug.Assert(_vimBufferKeyEventState.InEvent);
             var updateCommandLine = true;
             try
