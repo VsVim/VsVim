@@ -4,6 +4,7 @@ namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Formatting
 open Microsoft.VisualStudio.Text.Operations
 open System.Collections.Generic
 open Vim.Modes
@@ -1100,58 +1101,56 @@ type internal MotionUtil
             action snapshotData
 
     /// Motion for "count" display line downwards
-    member x.DisplayLineDown count = 
+    member x.DisplayLineDown count =
         match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
         | true, Some textViewLines ->
 
-            let startLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
-            let lastLine = 
-                let index = textViewLines.GetIndexOfTextLine startLine
-                let index = index + count 
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            let targetLine =
+                let index = textViewLines.GetIndexOfTextLine caretLine
+                let index = index + count
                 let index = min index (textViewLines.Count - 1)
                 textViewLines.[index]
-
-            // The point we use must be the same offset as the caret position in the final line.  Make
-            // sure not to jump off the line here though.  Also remember the column is the offset 
-            // from the display line, not the offset of the buffer line
-            let endPoint = 
-                let column = x.CaretPoint.Position - startLine.Start.Position
-                let column = min column lastLine.Length
-                match SnapshotPointUtil.TryAdd column lastLine.Start with
-                | Some point -> point
-                | None -> lastLine.End
-
-            let span = SnapshotSpan(x.CaretPoint, endPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
+            x.DisplayLineMotion caretLine targetLine
 
         | _ -> x.LineDown count
 
     /// Motion for "count" display line upwards
-    member x.DisplayLineUp count = 
+    member x.DisplayLineUp count =
         match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
         | true, Some textViewLines ->
 
-            let bottomLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
-            let topLine = 
-                let index = textViewLines.GetIndexOfTextLine bottomLine
-                let index = index - count 
+            let caretLine = textViewLines.GetTextViewLineContainingBufferPosition x.CaretPoint
+            let targetLine =
+                let index = textViewLines.GetIndexOfTextLine caretLine
+                let index = index - count
                 let index = max index 0
                 textViewLines.[index]
-
-            // The point we use must be the same offset as the caret position in the final line.  Make
-            // sure not to jump off the line here though.  Also remember the column is the offset 
-            // from the display line, not the offset of the buffer line
-            let topPoint = 
-                let column = x.CaretPoint.Position - bottomLine.Start.Position
-                let column = min column topLine.Length
-                match SnapshotPointUtil.TryAdd column topLine.Start with
-                | Some point -> point
-                | None -> topLine.End
-
-            let span = SnapshotSpan(topPoint, x.CaretPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
+            x.DisplayLineMotion caretLine targetLine
 
         | _ -> x.LineUp count
+
+    /// Move from caret line to target line preserving the y coordinate
+    member x.DisplayLineMotion (caretLine: ITextViewLine) (targetLine: ITextViewLine) =
+
+        // Find the point in the target line nearest to the y coordinate of the caret.
+        let caretCoordinate = caretLine.GetCharacterBounds(x.CaretPoint).Left
+        let targetPoint =
+            targetLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.map (fun point -> point, targetLine.GetCharacterBounds point)
+            |> Seq.map (fun (point, bounds) -> point, (bounds.Left + bounds.Right) / 2.0 - caretCoordinate)
+            |> Seq.filter (fun (_, coordinate) -> coordinate >= 0.0)
+            |> Seq.map (fun (point, _) -> point)
+            |> SeqUtil.headOrDefault targetLine.Start
+
+        let caretPoint = x.CaretPoint
+        let span, isForward =
+            if caretPoint.Position < targetPoint.Position then
+                SnapshotSpan(caretPoint, targetPoint), true
+            else
+                SnapshotSpan(targetPoint, caretPoint), false
+        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
     member x.DisplayLineFirstNonBlank() = 
         match TextViewUtil.IsWordWrapEnabled _textView, TextViewUtil.GetTextViewLines _textView with
