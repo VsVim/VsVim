@@ -5931,7 +5931,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// Change of multiline inner tag block doesn't leave an blank line
+                /// Change of multiline inner tag block doesn't leave a blank line
                 /// </summary>
                 [WpfFact]
                 public void ChangeInnerSimpleMultiLine()

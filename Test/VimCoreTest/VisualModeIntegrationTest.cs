@@ -1261,8 +1261,11 @@ namespace Vim.UnitTest
                     Assert.Equal(Environment.NewLine + "blah" + Environment.NewLine, UnnamedRegister.StringValue);
                 }
 
+                /// <summary>
+                /// Visual selection of a block from an empty line should not expand
+                /// </summary>
                 [WpfFact]
-                public void InnerSimpleMultiLineFromBlankLine()
+                public void InnerSimpleMultiLineFromEmptyLine()
                 {
                     // Reported in issue #2081.
                     Create("<a>", "", "blah", "</a>");
