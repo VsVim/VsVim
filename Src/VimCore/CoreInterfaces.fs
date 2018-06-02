@@ -742,6 +742,9 @@ type MotionResultFlags =
     /// When used as a delete argument force a big delete
     | BigDelete = 0x20
 
+    /// Suppress 'exclusive linewise' adjustment 
+    | SuppressAdjustment = 0x40
+
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
 [<NoComparison>]
