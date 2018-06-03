@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetPoint(0));
-                var column = original.Add(4);
+                var column = original.Add(5);
                 Assert.Equal(0, column.Column);
                 Assert.Equal(1, column.LineNumber);
             }
@@ -44,7 +44,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
-                var column = original.Add(-2);
+                var column = original.Add(-3);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
             }
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
-                var column = original.Subtract(2);
+                var column = original.Subtract(3);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
             }
@@ -80,7 +80,7 @@ namespace Vim.UnitTest
                 var column = new SnapshotColumn(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(1, column.Column);
-                Assert.False(column.IsLineBreak);
+                Assert.False(column.IsInsideLineBreak);
             }
 
             [WpfFact]
@@ -91,7 +91,7 @@ namespace Vim.UnitTest
                 var column = new SnapshotColumn(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(3, column.Column);
-                Assert.True(column.IsLineBreak);
+                Assert.True(column.IsInsideLineBreak);
                 Assert.Equal("cat", column.Line.GetText());
             }
         }
@@ -104,14 +104,14 @@ namespace Vim.UnitTest
                 // Extraterrestrial alien emoji from issue #1786.
                 Create("'\U0001F47D'", "");
                 Assert.Equal(6, _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText().Length);
-                var column = new SnapshotColumn(_textBuffer.GetLine(0).Start);
+                var column = new SnapshotCharacterSpan(_textBuffer.GetLine(0).Start);
                 Assert.Equal(4, column.ColumnCount);
                 Assert.Equal(1, column.Width);
-                column = new SnapshotColumn(column, 1);
+                column = new SnapshotCharacterSpan(column, 1);
                 Assert.Equal(2, column.Width);
-                column = new SnapshotColumn(column, 2);
+                column = new SnapshotCharacterSpan(column, 2);
                 Assert.Equal(1, column.Width);
-                column = new SnapshotColumn(column, 3);
+                column = new SnapshotCharacterSpan(column, 3);
                 Assert.Equal(Environment.NewLine.Length, column.Width);
             }
         }
