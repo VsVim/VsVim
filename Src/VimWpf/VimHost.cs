@@ -256,7 +256,7 @@ namespace Vim.UI.Wpf
             var timeout = 30 * 1000;
 
             // Avoid redirection for the 'start' command.
-            var doRedirect = !arguments.StartsWith("/c start ");
+            var doRedirect = !arguments.StartsWith("/c start ", StringComparison.CurrentCultureIgnoreCase);
 
             // Populate the start info.
             var startInfo = new ProcessStartInfo
