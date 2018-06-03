@@ -455,7 +455,8 @@ type SnapshotCharacterSpan =
         // While the column number is negative and there is a preceeding line,
         // move to that line and add its column count.
         while columnNumber < 0 && column.LineNumber > 0 do
-            column <- SnapshotCharacterSpan(column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1).Start)
+            let previousLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1)
+            column <- SnapshotCharacterSpan(previousLine)
             columnNumber <- columnNumber + column.ColumnCount
         columnNumber <- max 0 columnNumber
 
@@ -463,8 +464,9 @@ type SnapshotCharacterSpan =
         // is a following line, subtract the current line's column count and
         // move to that line.
         while columnNumber >= column.ColumnCount && column.LineNumber < column.Snapshot.LineCount - 1 do
+            let nextLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1)
             columnNumber <- columnNumber - column.ColumnCount
-            column <- SnapshotCharacterSpan(column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1).Start)
+            column <- SnapshotCharacterSpan(nextLine)
         columnNumber <- min columnNumber column.ColumnCount
 
         // Return a new snapshot column.
