@@ -1529,7 +1529,7 @@ module SnapshotPointUtil =
             point.Subtract(1)
 
     /// Get the next character span in the buffer with wrap
-    let GetNextCharacterSpan point =
+    let GetNextCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let nextPoint =
             GetCharacterSpan point

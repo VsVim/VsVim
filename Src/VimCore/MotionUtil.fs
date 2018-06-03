@@ -2162,7 +2162,7 @@ type internal MotionUtil
     /// the same line
     member x.CharLeftOnSameLine count = 
         let startPoint = 
-            SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint count
+            SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint count
             |> OptionUtil.getOrDefault x.CaretLine.Start
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
@@ -2176,7 +2176,7 @@ type internal MotionUtil
             elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
                 x.CaretLine.End
             else
-                SnapshotPointUtil.TryGetNextPointOnLine x.CaretPoint count 
+                SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint count 
                 |> OptionUtil.getOrDefault x.CaretLine.End
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
@@ -2185,7 +2185,7 @@ type internal MotionUtil
     /// through the buffer taking into acount 'virtualedit'
     member x.CharLeftWithLineWrap count =
         let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let startPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint -count skipLineBreaks
+        let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint -count skipLineBreaks
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
 
@@ -2193,7 +2193,7 @@ type internal MotionUtil
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
         let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let endPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint count skipLineBreaks
+        let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
