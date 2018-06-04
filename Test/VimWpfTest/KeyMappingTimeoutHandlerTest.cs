@@ -90,5 +90,25 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.Process('t');
             Assert.Equal("chase the cat", _vimBuffer.TextBuffer.GetLine(0).GetText());
         }
+
+        /// <summary>
+        /// Setting notimeout should prevent commands from timing out.
+        /// </summary>
+        [WpfFact]
+        public void NoTimeoutSetting()
+        {
+            _vimBuffer.Vim.GlobalSettings.TimeoutLength = 5;
+            _vimBuffer.Vim.GlobalSettings.Timeout = false;
+            _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
+            _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+            _vimBuffer.Process('c');
+            _vimBuffer.Process('a');
+            Thread.Sleep(10);
+            Dispatcher.CurrentDispatcher.DoEvents();
+            Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
+            _vimBuffer.Process('t');
+            Assert.Empty(_vimBuffer.BufferedKeyInputs);
+            Assert.Equal("chase the cat", _vimBuffer.TextBuffer.GetLine(0).GetText());
+        }
     }
 }
