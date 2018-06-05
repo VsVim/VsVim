@@ -610,7 +610,65 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class RunSearhTest : InterpreterTest
+        public sealed class RunReadCommandTest : InterpreterTest
+        {
+            private string _command;
+            private string _arguments;
+            private string _input;
+
+            public RunReadCommandTest()
+            {
+                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                    {
+                        _command = command;
+                        _arguments = arguments;
+                        _input = input;
+
+                        if (arguments.StartsWith("/c echolines "))
+                        {
+                            // Echo all arguments as lines.
+                            var argString = arguments.Substring("/c echolines ".Length);
+                            var args = argString.Split(' ').Concat(new[] { "" });
+                            var output = String.Join(Environment.NewLine, args);
+                            return new RunCommandResults(0, output, "");
+                        }
+                        else
+                        {
+                            Assert.True(false, "invalid arguments");
+                            return null;
+                        }
+                    };
+            }
+
+            [WpfFact]
+            public void DefaultLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
+                Assert.Equal(new[] { "cat", "foo", "bar", "dog", "bat", "", }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void SpecificLine()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":2r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
+                Assert.Equal(new[] { "cat", "dog", "foo", "bar", "bat", "", }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void BeforeFirst()
+            {
+                Create("cat", "dog", "bat", "");
+                ParseAndRun(":0r!echolines foo bar");
+                Assert.Equal("/c echolines foo bar", _arguments);
+                Assert.Equal(new[] { "foo", "bar", "cat", "dog", "bat", "", }, _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class RunSearchTest : InterpreterTest
         {
             [WpfFact]
             public void ForwardSearchUpdatesLastPattern()

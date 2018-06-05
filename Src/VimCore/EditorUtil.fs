@@ -2268,6 +2268,12 @@ module EditUtil =
                     inner (index + length)
         inner 0
 
+    /// Split a string into lines of text
+    let SplitLines (text: string) =
+        let text = RemoveEndingNewLine text
+        let text = NormalizeNewLines text "\n"
+        StringUtil.Split '\n' text
+
 /// In some cases we need to break a complete string into a series of text representations
 /// and new lines.  It's easiest to view this as a sequence of text values with their 
 /// associated line breaks

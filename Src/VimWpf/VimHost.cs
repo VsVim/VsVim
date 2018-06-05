@@ -255,15 +255,18 @@ namespace Vim.UI.Wpf
             // Use a (generous) timeout since we have no way to interrupt it.
             var timeout = 30 * 1000;
 
+            // Avoid redirection for the 'start' command.
+            var doRedirect = !arguments.StartsWith("/c start ", StringComparison.CurrentCultureIgnoreCase);
+
             // Populate the start info.
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
                 UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardInput = doRedirect,
+                RedirectStandardOutput = doRedirect,
+                RedirectStandardError = doRedirect,
                 CreateNoWindow = true,
                 WorkingDirectory = vimdata.CurrentDirectory
             };
@@ -272,20 +275,27 @@ namespace Vim.UI.Wpf
             try
             {
                 var process = Process.Start(startInfo);
-                var stdin = process.StandardInput;
-                var stdout = process.StandardOutput;
-                var stderr = process.StandardError;
-                var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
-                var stdoutTask = Task.Run(() => stdout.ReadToEnd());
-                var stderrTask = Task.Run(() => stderr.ReadToEnd());
-                if (process.WaitForExit(timeout))
+                if (doRedirect)
                 {
-                    return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                    var stdin = process.StandardInput;
+                    var stdout = process.StandardOutput;
+                    var stderr = process.StandardError;
+                    var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                    var stdoutTask = Task.Run(() => stdout.ReadToEnd());
+                    var stderrTask = Task.Run(() => stderr.ReadToEnd());
+                    if (process.WaitForExit(timeout))
+                    {
+                        return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                    }
                 }
                 else
                 {
-                    throw new TimeoutException();
+                    if (process.WaitForExit(timeout))
+                    {
+                        return new RunCommandResults(process.ExitCode, String.Empty, String.Empty);
+                    }
                 }
+                throw new TimeoutException();
             }
             catch (Exception ex)
             {

@@ -281,11 +281,6 @@ type VimInterpreter
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    /// Execute the external command and return the lines of output
-    member x.ExecuteCommand (command: string): string[] option = 
-        // TODO: Implement
-        None
-
     /// Resolve the given path.  In the case the path contains illegal characters it 
     /// will be returned unaltered. 
     member x.ResolveVimPath (path: string) =
@@ -423,6 +418,21 @@ type VimInterpreter
 
     /// Get the count value or the default of 1
     member x.GetCountOrDefault count = Util.CountOrDefault count
+
+    /// Get the point after the specified range or the the default
+    member x.GetPointAfterOrDefault lineRange defaultLineRange =
+        match lineRange with
+        | LineRangeSpecifier.SingleLine (LineSpecifier.Number line) when line = 0 ->
+            SnapshotUtil.GetStartPoint _textView.TextSnapshot |> Some
+        | _ ->
+            match x.GetLineRangeOrDefault lineRange defaultLineRange with
+            | Some lineRange ->
+                lineRange.EndIncludingLineBreak |> Some
+            | None -> None
+
+    /// Get the point after the specified range or the the default
+    member x.GetPointAfter lineRange =
+        x.GetPointAfterOrDefault lineRange DefaultLineRange.None
 
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
@@ -1179,8 +1189,7 @@ type VimInterpreter
                 _commonOperations.CloseWindowUnlessDirty())
 
     /// Run the core parts of the read command
-    member x.RunReadCore (lineRange: SnapshotLineRange) (lines: string[]) = 
-        let point = lineRange.EndIncludingLineBreak
+    member x.RunReadCore (point: SnapshotPoint) (lines: string[]) = 
         let lineBreak = _commonOperations.GetNewLineText point
         let text = 
             let builder = System.Text.StringBuilder()
@@ -1192,17 +1201,12 @@ type VimInterpreter
 
     /// Run the read command command
     member x.RunReadCommand lineRange command = 
-        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            match x.ExecuteCommand command with
-            | None ->
-                _statusUtil.OnError (Resources.Interpreter_CantRunCommand command)
-            | Some lines ->
-                x.RunReadCore lineRange lines)
+        x.ExecuteCommand lineRange command true
 
     /// Run the read file command.
     member x.RunReadFile lineRange fileOptionList filePath =
         let filePath = x.ResolveVimPath filePath
-        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+        x.RunWithPointAfterOrDefault lineRange DefaultLineRange.CurrentLine (fun point ->
             if not (List.isEmpty fileOptionList) then
                 _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
             else
@@ -1210,7 +1214,7 @@ type VimInterpreter
                 | None ->
                     _statusUtil.OnError (Resources.Interpreter_CantOpenFile filePath)
                 | Some lines ->
-                    x.RunReadCore lineRange lines)
+                    x.RunReadCore point lines)
 
     /// Run a single redo operation
     member x.RunRedo() = 
@@ -1455,6 +1459,10 @@ type VimInterpreter
 
     /// Run the specified shell command
     member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
+        x.ExecuteCommand lineRange command false
+
+    /// Execute the external command
+    member x.ExecuteCommand (lineRange: LineRangeSpecifier) (command: string) (isReadCommand: bool) =
 
         // Actually run the command.
         let doRun (command: string) = 
@@ -1462,22 +1470,31 @@ type VimInterpreter
             // Save the last shell command for repeats.
             _vimData.LastShellCommand <- Some command
 
-            // Prepend the shell flag before the other arguments
+            // Prepend the shell flag before the other arguments.
+            let shell = _globalSettings.Shell
             let command =
                 if _globalSettings.ShellFlag.Length > 0 then
                     sprintf "%s %s" _globalSettings.ShellFlag command
                 else
                     command
 
-            if lineRange = LineRangeSpecifier.None then
-                let file = _globalSettings.Shell
-                let results = _vimHost.RunCommand _globalSettings.Shell command StringUtil.Empty _vimData
-                let status = results.Output + results.Error
-                let status = EditUtil.RemoveEndingNewLine status
-                _statusUtil.OnStatus status
+            if isReadCommand then
+                x.RunWithPointAfterOrDefault lineRange DefaultLineRange.CurrentLine (fun point ->
+                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let status = results.Error
+                    let status = EditUtil.RemoveEndingNewLine status
+                    _statusUtil.OnStatus status
+                    let output = EditUtil.SplitLines results.Output
+                    x.RunReadCore point output)
             else
-                x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
-                    _commonOperations.FilterLines lineRange command)
+                if lineRange = LineRangeSpecifier.None then
+                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let status = results.Output + results.Error
+                    let status = EditUtil.RemoveEndingNewLine status
+                    _statusUtil.OnStatus status
+                else
+                    x.RunWithLineRangeOrDefault lineRange DefaultLineRange.None (fun lineRange ->
+                        _commonOperations.FilterLines lineRange command)
 
         // Build up the actual command replacing any non-escaped ! with the previous
         // shell command
@@ -1798,6 +1815,11 @@ type VimInterpreter
         match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
         | None -> _statusUtil.OnError Resources.Range_Invalid
         | Some lineRange -> func lineRange
+
+    member x.RunWithPointAfterOrDefault (lineRangeSpecifier: LineRangeSpecifier) defaultLineRange (func: SnapshotPoint -> unit) = 
+        match x.GetPointAfterOrDefault lineRangeSpecifier defaultLineRange with
+        | None -> _statusUtil.OnError Resources.Range_Invalid
+        | Some point -> func point
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
