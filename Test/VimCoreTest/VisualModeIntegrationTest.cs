@@ -2318,7 +2318,7 @@ namespace Vim.UnitTest
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("p");
                 Assert.Equal("dfishg", _textView.GetLine(0).GetText());
-                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal("cfisht", _textView.GetLine(1).GetText());
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
             }
 
@@ -2334,7 +2334,7 @@ namespace Vim.UnitTest
                 UnnamedRegister.UpdateValue("fish", OperationKind.CharacterWise);
                 _vimBuffer.Process("gp");
                 Assert.Equal("dfishg", _textView.GetLine(0).GetText());
-                Assert.Equal("ct", _textView.GetLine(1).GetText());
+                Assert.Equal("cfisht", _textView.GetLine(1).GetText());
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
 
