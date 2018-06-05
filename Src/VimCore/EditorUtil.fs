@@ -409,8 +409,7 @@ type SnapshotCharacterSpan =
 
     /// The column number of the column
     /// (Warning: don't use the column number as a buffer position offset)
-    /// TODO: Rename this to "ColumnNumber" analogous to LineNumber.
-    member x.Column = x._columnNumber
+    member x.ColumnNumber = x._columnNumber
 
     /// The position or text buffer offset of the column
     member x.Position = x._positions.[x._columnNumber]
@@ -487,7 +486,7 @@ type SnapshotCharacterSpan =
 
     /// Debugger display
     override x.ToString() =
-        sprintf "Point: %s Line: %d Column: %d" (x.Point.ToString()) x.LineNumber x.Column
+        sprintf "Point: %s Line: %d Column: %d" (x.Point.ToString()) x.LineNumber x.ColumnNumber
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
@@ -1726,7 +1725,7 @@ module SnapshotPointUtil =
     /// None will be returned (note this handles surrogate pairs)
     let TryGetPreviousCharacterSpanOnLine (point: SnapshotPoint) count =
         let column = SnapshotCharacterSpan(point)
-        if column.Column >= count then
+        if column.ColumnNumber >= count then
             let previousColumn = column.Subtract count
             Some previousColumn.Point
         else
@@ -1737,7 +1736,7 @@ module SnapshotPointUtil =
     /// surrogate pairs)
     let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
         let column = SnapshotCharacterSpan(point)
-        if column.Column + count <= column.ColumnCount then
+        if column.ColumnNumber + count <= column.ColumnCount then
             let nextColumn = column.Add count
             Some nextColumn.Point
         else
