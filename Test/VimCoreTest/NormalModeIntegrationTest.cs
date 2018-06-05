@@ -1768,6 +1768,23 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("axxx<Esc>");
                 Assert.Equal(new[] { "'\U0001F47Dxxx'", "", }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void ExclusiveToInclusive()
+            {
+                Create("foo \U0001F47D", "");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("dv^");
+                Assert.Equal(new[] { "", "", }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void InclusiveToExclusive()
+            {
+                Create("foo \U0001F47D", "");
+                _vimBuffer.ProcessNotation("dv$");
+                Assert.Equal(new[] { "\U0001F47D", "", }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class FilterTest : NormalModeIntegrationTest
