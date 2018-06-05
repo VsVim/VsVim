@@ -1282,14 +1282,10 @@ type internal CommandUtil
 
     /// Switch to insert mode after the caret
     member x.InsertAfterCaret count =
-        let point = x.CaretPoint
-        if SnapshotPointUtil.IsInsideLineBreak point then
-            ()
-        elif SnapshotPointUtil.IsEndPoint point then
-            ()
-        else
-            let point = point.Add(1)
-            TextViewUtil.MoveCaretToPoint _textView point
+        match SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint 1 with
+        | Some nextPoint ->
+            TextViewUtil.MoveCaretToPoint _textView nextPoint
+        | None -> ()
 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
 

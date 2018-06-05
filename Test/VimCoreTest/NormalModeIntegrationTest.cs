@@ -1759,6 +1759,15 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("dh");
                 Assert.Equal(new[] { "''", "", }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void AppendAfter()
+            {
+                Create("'\U0001F47D'", "");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("axxx<Esc>");
+                Assert.Equal(new[] { "'\U0001F47Dxxx'", "", }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class FilterTest : NormalModeIntegrationTest
