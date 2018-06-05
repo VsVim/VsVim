@@ -105,7 +105,7 @@ namespace Vim.UnitTest
                 Create("'\U0001F47D'", "");
                 Assert.Equal(6, _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText().Length);
                 var column = new SnapshotCharacterSpan(_textBuffer.GetLine(0).Start);
-                Assert.Equal(4, column.ColumnCount);
+                Assert.Equal(4, column.ColumnCountIncludingLineBreak);
                 Assert.Equal(1, column.Width);
                 column = new SnapshotCharacterSpan(column, 1);
                 Assert.Equal(2, column.Width);

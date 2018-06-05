@@ -401,7 +401,7 @@ type SnapshotCharacterSpan =
     /// Constructor for a new character span from the same line as another character span
     /// (Warning: requires that you have validated the column number)
     new (column: SnapshotCharacterSpan, columnNumber: int) =
-        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCount)
+        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCountIncludingLineBreak)
         { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
 
     /// The snapshot line containing the column
@@ -427,8 +427,12 @@ type SnapshotCharacterSpan =
     /// The snapshot span covering the logical character at the column
     member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
 
+    // The number of columns in the line containing the column including the linebreak
+    member x.ColumnCountIncludingLineBreak = x._positions.Length - 1
+
     // The number of columns in the line containing the column
-    member x.ColumnCount = x._positions.Length - 1
+    member x.ColumnCount =
+        if x._line.LineBreakLength = 0 then x._positions.Length - 1 else x._positions.Length - 2
 
     /// Whether the "character" at column is a linebreak
     member x.IsLineBreak = x.Position = x._line.End.Position
@@ -457,17 +461,17 @@ type SnapshotCharacterSpan =
         while columnNumber < 0 && column.LineNumber > 0 do
             let previousLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1)
             column <- SnapshotCharacterSpan(previousLine)
-            columnNumber <- columnNumber + column.ColumnCount
+            columnNumber <- columnNumber + column.ColumnCountIncludingLineBreak
         columnNumber <- max 0 columnNumber
 
         // While the column number is past the end of the current line and there
         // is a following line, subtract the current line's column count and
         // move to that line.
-        while columnNumber >= column.ColumnCount && column.LineNumber < column.Snapshot.LineCount - 1 do
+        while columnNumber >= column.ColumnCountIncludingLineBreak && column.LineNumber < column.Snapshot.LineCount - 1 do
             let nextLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1)
-            columnNumber <- columnNumber - column.ColumnCount
+            columnNumber <- columnNumber - column.ColumnCountIncludingLineBreak
             column <- SnapshotCharacterSpan(nextLine)
-        columnNumber <- min columnNumber column.ColumnCount
+        columnNumber <- min columnNumber column.ColumnCountIncludingLineBreak
 
         // Return a new snapshot column.
         SnapshotCharacterSpan(column, columnNumber)
@@ -1130,21 +1134,20 @@ module SnapshotLineUtil =
     /// Get the character spans in the line in the path
     let private GetCharacterSpansCore path includeLineBreak line =
         let startColumn = SnapshotCharacterSpan(GetStart line)
-        let max = startColumn.ColumnCount - 1
+        let columnCount =
+            if includeLineBreak then startColumn.ColumnCountIncludingLineBreak
+            else startColumn.ColumnCount
+        let max = columnCount - 1
         match path with
         | SearchPath.Forward ->
             seq {
                 for i = 0 to max do
-                    let column = SnapshotCharacterSpan(startColumn, i)
-                    if includeLineBreak || not column.IsLineBreak then
-                        yield column
+                    yield SnapshotCharacterSpan(startColumn, i)
             }
         | SearchPath.Backward ->
             seq {
                 for i = 0 to max do
-                    let column = SnapshotCharacterSpan(startColumn, max - i)
-                    if includeLineBreak || not column.IsLineBreak then
-                        yield column
+                    yield SnapshotCharacterSpan(startColumn, max - i)
             }
 
     /// Get the character spans in the specified direction
@@ -1734,7 +1737,7 @@ module SnapshotPointUtil =
     /// surrogate pairs)
     let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
         let column = SnapshotCharacterSpan(point)
-        if column.Column + count < column.ColumnCount then
+        if column.Column + count <= column.ColumnCount then
             let nextColumn = column.Add count
             Some nextColumn.Point
         else
