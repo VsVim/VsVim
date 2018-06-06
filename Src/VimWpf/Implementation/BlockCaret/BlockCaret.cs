@@ -401,16 +401,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var caretCharacter = tuple.Item3;
 
             var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
-            var foregroundBrush = properties.GetBackgroundBrush(SystemColors.WindowBrush);
-            var backgroundBrush = properties.GetForegroundBrush(SystemColors.WindowTextBrush);
+            var foregroundBrush = properties.GetForegroundBrush(SystemColors.WindowBrush);
+            var backgroundBrush = properties.GetBackgroundBrush(SystemColors.WindowTextBrush);
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
 
             if (_caretOpacity < 1.0 && backgroundBrush is SolidColorBrush solidBrush)
             {
-                var oldColor = solidBrush.Color;
                 var alpha = (byte)Math.Round(0xff * _caretOpacity);
+                var oldColor = solidBrush.Color;
                 var newColor = Color.FromArgb(alpha, oldColor.R, oldColor.G, oldColor.B);
                 backgroundBrush = new SolidColorBrush(newColor);
             }
