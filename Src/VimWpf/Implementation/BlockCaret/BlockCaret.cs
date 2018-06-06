@@ -18,19 +18,21 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             internal readonly CaretDisplay CaretDisplay;
             internal readonly double CaretOpacity;
-            internal readonly Image Image;
+            internal readonly UIElement Element;
             internal readonly Color? Color;
             internal readonly Size Size;
             internal readonly double YDisplayOffset;
+            internal readonly string CaretCharacter;
 
-            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, Image image, Color? color, Size size, double displayOffset)
+            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, UIElement element, Color? color, Size size, double displayOffset, string caretCharacter)
             {
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
-                Image = image;
+                Element = element;
                 Color = color;
                 Size = size;
                 YDisplayOffset = displayOffset;
+                CaretCharacter = caretCharacter;
             }
         }
 
@@ -224,7 +226,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
             {
                 var data = _caretData.Value;
-                data.Image.Opacity = data.Image.Opacity == 0.0 ? _caretOpacity : 0.0;
+                data.Element.Opacity = data.Element.Opacity == 0.0 ? _caretOpacity : 0.0;
             }
         }
 
@@ -245,7 +247,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             // If the caret is invisible, make it visible
             if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
             {
-                _caretData.Value.Image.Opacity = _caretOpacity;
+                _caretData.Value.Element.Opacity = _caretOpacity;
             }
 
             UpdateCaret();
@@ -291,11 +293,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return new Point(_textView.Caret.Left, _textView.Caret.Top);
         }
 
-        private void MoveCaretImageToCaret(CaretData caretData)
+        private void MoveCaretElementToCaret(CaretData caretData)
         {
             var point = GetRealCaretVisualPoint();
-            Canvas.SetLeft(caretData.Image, point.X);
-            Canvas.SetTop(caretData.Image, point.Y + caretData.YDisplayOffset);
+            Canvas.SetLeft(caretData.Element, point.X);
+            Canvas.SetTop(caretData.Element, point.Y + caretData.YDisplayOffset);
         }
 
         private FormattedText CreateFormattedText()
@@ -307,35 +309,40 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <summary>
         /// Calculate the dimensions of the caret
         /// </summary>
-        private Size CalculateCaretSize()
+        private Size CalculateCaretSize(out string caretCharacter)
         {
+            caretCharacter = "";
             var defaultWidth = FormattedText.Width;
 
             var caret = _textView.Caret;
             var line = caret.ContainingTextViewLine;
             var width = defaultWidth;
-            var height = caret.Height;
+            var height = line.TextHeight;
+
             if (IsRealCaretVisible)
             {
-                // Get the size of the character to which we need to paint the caret.  Special case
-                // tab here because it's too big.  When there is a tab we use the default height
-                // and width
+                // Get the size of the character to which we need to paint
+                // the caret.  Special case tab here because it's too big.
+                // When there is a tab we use the default height and width.
                 var point = caret.Position.BufferPosition;
-                if (point.Position >= _textView.TextSnapshot.Length || point.GetChar() == '\t')
+                if (point.Position < _textView.TextSnapshot.Length)
                 {
-                    width = defaultWidth;
-                }
-                else
-                {
-                    var bounds = line.GetCharacterBounds(point);
-                    if (_controlCharUtil.IsDisplayControlChar(point.GetChar()))
+                    var pointCharacter = point.GetChar();
+                    if (pointCharacter != '\t'
+                        && !_controlCharUtil.IsDisplayControlChar(pointCharacter))
                     {
-                        width = defaultWidth;
-                    }
-                    else
-                    {
-                        width = bounds.Width;
-                        height = bounds.TextHeight;
+                        // Handle surrogate pairs.
+                        if (Char.IsHighSurrogate(pointCharacter)
+                            && point.Position < _textView.TextSnapshot.Length - 1
+                            && Char.IsLowSurrogate(point.Add(1).GetChar()))
+                        {
+                            caretCharacter = new SnapshotSpan(point, 2).GetText();
+                        }
+                        else
+                        {
+                            caretCharacter = pointCharacter.ToString();
+                        }
+                        width = line.GetCharacterBounds(point).Width;
                     }
                 }
             }
@@ -343,45 +350,44 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return new Size(width, height);
         }
 
-        private Tuple<Rect, double> CalculateCaretRectAndDisplayOffset()
+        private Tuple<Rect, double, string> CalculateCaretRectAndDisplayOffset()
         {
+            var size = CalculateCaretSize(out string caretCharacter);
+            var caretPoint = GetRealCaretVisualPoint();
+            var blockPoint = caretPoint;
+
             switch (_caretDisplay)
             {
                 case CaretDisplay.Block:
-                    return Tuple.Create(new Rect(GetRealCaretVisualPoint(), CalculateCaretSize()), 0d);
+                    break;
+
                 case CaretDisplay.HalfBlock:
-                    {
-                        var size = CalculateCaretSize();
-                        size = new Size(size.Width, size.Height / 2);
+                    size = new Size(size.Width, size.Height / 2);
+                    blockPoint = new Point(blockPoint.X, blockPoint.Y + size.Height);
+                    break;
 
-                        var point = GetRealCaretVisualPoint();
-                        point = new Point(point.X, point.Y + size.Height);
-                        return Tuple.Create(new Rect(point, size), size.Height);
-                    }
                 case CaretDisplay.QuarterBlock:
-                    {
-                        var size = CalculateCaretSize();
-                        var quarter = size.Height / 4;
-                        size = new Size(size.Width, quarter);
+                    size = new Size(size.Width, size.Height / 4);
+                    blockPoint = new Point(blockPoint.X, blockPoint.Y + 3 * size.Height);
+                    break;
 
-                        var point = GetRealCaretVisualPoint();
-                        var offset = quarter * 3;
-                        point = new Point(point.X, point.Y + offset);
-                        return Tuple.Create(new Rect(point, size), offset);
-                    }
                 case CaretDisplay.Select:
-                    {
-                        var size = new Size(_textView.Caret.Width, _textView.Caret.Height);
-                        var point = GetRealCaretVisualPoint();
-                        return Tuple.Create(new Rect(point, size), 0d);
-                    }
+                    caretCharacter = null;
+                    size = new Size(_textView.Caret.Width, _textView.Caret.Height);
+                    break;
+
                 case CaretDisplay.Invisible:
                 case CaretDisplay.NormalCaret:
-                    return Tuple.Create(new Rect(GetRealCaretVisualPoint(), new Size(0, 0)), 0d);
+                    caretCharacter = null;
+                    size = new Size(0, 0);
+                    break;
 
                 default:
                     throw new InvalidOperationException("Invalid enum value");
             }
+            var rect = new Rect(blockPoint, size);
+            var offset = blockPoint.Y - caretPoint.Y;
+            return Tuple.Create(rect, offset, caretCharacter);
         }
 
         private CaretData CreateCaretData()
@@ -401,7 +407,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             drawingImage.Freeze();
 
             var image = new Image { Opacity = _caretOpacity, Source = drawingImage };
-            return new CaretData(_caretDisplay, _caretOpacity, image, color, rect.Size, tuple.Item2);
+            return new CaretData(_caretDisplay, _caretOpacity, image, color, rect.Size, tuple.Item2, tuple.Item3);
         }
 
         /// <summary>
@@ -452,7 +458,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             var caretData = _caretData.Value;
 
-            MoveCaretImageToCaret(caretData);
+            MoveCaretElementToCaret(caretData);
             if (!_isAdornmentPresent)
             {
                 var caretPoint = _textView.Caret.Position.BufferPosition;
@@ -461,7 +467,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     AdornmentPositioningBehavior.TextRelative,
                     new SnapshotSpan(caretPoint, 0),
                     _tag,
-                    caretData.Image,
+                    caretData.Element,
                     OnBlockCaretAdornmentRemoved);
             }
         }
