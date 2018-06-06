@@ -455,7 +455,7 @@ type SnapshotCharacterSpan =
         let mutable column = x
         let mutable columnNumber = x._columnNumber + count
 
-        // While the column number is negative and there is a preceeding line,
+        // While the column number is negative and there is a preceding line,
         // move to that line and add its column count.
         while columnNumber < 0 && column.LineNumber > 0 do
             let previousLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1)
