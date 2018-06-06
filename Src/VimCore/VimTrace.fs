@@ -3,11 +3,15 @@ namespace Vim
 open System
 open System.Diagnostics
 
-type VimTraceEventArgs (_message: string) =
+type VimTraceKind =
+    | Info
+    | Error
+
+type VimTraceEventArgs (_message: string, _kind: VimTraceKind) =
     inherit System.EventArgs()
 
     member x.Message = _message
-
+    member x.TraceKind = _kind
     override x.ToString() = _message
 
 [<AbstractClass>]
@@ -24,34 +28,39 @@ type VimTrace() =
     static member TraceInfo(msg: string) = 
         let msg = _prefixInfo + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceInfo, msg)
-        _traceEvent.Trigger _traceEvent (VimTraceEventArgs msg)
+        VimTrace.Raise msg VimTraceKind.Info
 
     [<Conditional("TRACE")>]
     static member TraceInfo(format: string, [<ParamArrayAttribute>] args: obj []) = 
         let msg = String.Format(format, args)
         let msg = _prefixInfo + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceInfo, msg)
-        _traceEvent.Trigger _traceEvent (VimTraceEventArgs msg)
+        VimTrace.Raise msg VimTraceKind.Info
 
     [<Conditional("TRACE")>]
     static member TraceError(ex: Exception) = 
         let msg = ex.Message + Environment.NewLine + ex.StackTrace
         VimTrace.TraceError(msg)
-        _traceEvent.Trigger _traceEvent (VimTraceEventArgs msg)
+        VimTrace.Raise msg VimTraceKind.Error
 
     [<Conditional("TRACE")>]
     static member TraceError(msg: string) = 
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
-        _traceEvent.Trigger _traceEvent (VimTraceEventArgs msg)
+        VimTrace.Raise msg VimTraceKind.Error
 
     [<Conditional("TRACE")>]
     static member TraceError(format: string, [<ParamArrayAttribute>] args: obj []) = 
         let msg = String.Format(format, args)
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
-        _traceEvent.Trigger _traceEvent (VimTraceEventArgs msg)
+        VimTrace.Raise msg VimTraceKind.Error
 
+    static member private Raise msg kind = 
+        let args = VimTraceEventArgs(msg, kind)
+        _traceEvent.Trigger _traceSwitch args
+
+    /// Raised when a tracing event occurs.
     [<CLIEvent>]
     static member Trace = _traceEvent.Publish
 

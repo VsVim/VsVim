@@ -218,16 +218,23 @@ namespace Vim.VisualStudio
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
-            InitOutputPane();
+            InitOutputPane(vimApplicationSettings);
         }
 
-        private void InitOutputPane()
+        /// <summary>
+        /// Hookup the output window to the vim trace data when it's requested by the developer
+        /// </summary>
+        private void InitOutputPane(IVimApplicationSettings vimApplicationSettings)
         {
             var outputWindow = ((DTE2)_dte).ToolWindows.OutputWindow;
             var outputPane = outputWindow.OutputWindowPanes.Add("VsVim");
+
             VimTrace.Trace += (_, e) =>
             {
-                outputPane.OutputString(e.Message + Environment.NewLine);
+                if (vimApplicationSettings.EnableOutputWindow)
+                {
+                    outputPane.OutputString(e.Message + Environment.NewLine);
+                }
             };
         }
 
