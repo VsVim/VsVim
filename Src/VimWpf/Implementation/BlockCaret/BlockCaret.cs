@@ -395,41 +395,45 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var color = TryCalculateCaretColor();
             var tuple = CalculateCaretRectAndDisplayOffset();
             var rect = tuple.Item1;
+            var width = rect.Size.Width;
+            var height = rect.Size.Height;
             var offset = tuple.Item2;
             var caretCharacter = tuple.Item3;
 
-            var textViewProperties = _editorFormatMap.GetProperties("TextView Background");
-            var backgroundBrush = textViewProperties.GetBackgroundBrush(SystemColors.WindowBrush);
             var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var foregroundBrush = properties.GetBackgroundBrush(SystemColors.WindowBrush);
+            var backgroundBrush = properties.GetForegroundBrush(SystemColors.WindowTextBrush);
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
             var typeface = textRunProperties.Typeface;
-
-            var line = _textView.Caret.ContainingTextViewLine;
+            var fontSize = textRunProperties.FontRenderingEmSize;
 
             var textBlock = new TextBlock
             {
                 Text = caretCharacter,
-                Foreground = backgroundBrush,
-                Background = properties.GetForegroundBrush(SystemColors.WindowTextBrush),
+                Foreground = foregroundBrush,
+                Background = backgroundBrush,
                 FontFamily = typeface.FontFamily,
                 FontStretch = typeface.Stretch,
                 FontWeight = typeface.Weight,
                 FontStyle = typeface.Style,
-                FontSize = textRunProperties.FontRenderingEmSize,
-            };
-
-            var border = new Border
-            {
-                Width = rect.Size.Width,
-                Height = rect.Size.Height,
+                FontSize = fontSize,
                 Opacity = _caretOpacity,
-                Child = textBlock,
+                Width = width,
+                Height = offset + height,
             };
 
-            Canvas.SetTop(border, _textView.Caret.Top);
-            Canvas.SetLeft(border, _textView.Caret.Left);
+            var element = new Canvas
+            {
+                Width = width,
+                Height = height,
+                ClipToBounds = true,
+            };
 
-            return new CaretData(_caretDisplay, _caretOpacity, border, color, rect.Size, offset, caretCharacter);
+            element.Children.Add(textBlock);
+            Canvas.SetTop(textBlock, -offset);
+            Canvas.SetLeft(textBlock, 0);
+
+            return new CaretData(_caretDisplay, _caretOpacity, element, color, rect.Size, offset, caretCharacter);
         }
 
         /// <summary>
