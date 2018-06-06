@@ -9,9 +9,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Resources.fs" />
-    <Compile Include="VimTrace.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="FSharpUtil.fs" />
+    <Compile Include="VimTrace.fs" />
     <Compile Include="StringUtil.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="VimKey.fs" />
