@@ -303,7 +303,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private FormattedText CreateFormattedText()
         {
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
-            return new FormattedText("^", CultureInfo.CurrentUICulture, FlowDirection.RightToLeft, textRunProperties.Typeface, textRunProperties.FontRenderingEmSize, Brushes.Black);
+            return new FormattedText("A", CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, textRunProperties.Typeface, textRunProperties.FontRenderingEmSize, Brushes.Black);
         }
 
         /// <summary>
