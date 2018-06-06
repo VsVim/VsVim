@@ -173,7 +173,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
         private static readonly ColorKey s_incrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
         private static readonly ColorKey s_highlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
-        private static readonly ColorKey s_blockCaretColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
+        private static readonly ColorKey s_blockCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
+        private static readonly ColorKey s_blockCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.BlockCaretFormatDefinitionName);
         private static readonly ColorKey s_controlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
         private static readonly ColorKey s_commandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
         private static readonly ColorKey s_commandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
@@ -186,7 +187,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 s_incrementalSearchColorKey,
                 s_highlightIncrementalSearchColorKey,
-                s_blockCaretColorKey,
+                s_blockCaretForegroundColorKey,
+                s_blockCaretBackgroundColorKey,
                 s_controlCharacterColorKey,
                 s_commandMarginForegroundColorKey,
                 s_commandMarginBackgroundColorKey,
@@ -257,12 +259,20 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [TypeConverter(typeof(WordWrapDisplaySettingConverter))]
         public WordWrapDisplay WordWrapDisplay { get; set; }
 
-        [DisplayName("Block Caret")]
+        [DisplayName("Block Caret Foreground")]
         [Category(CategoryColors)]
-        public Color BlockCaretColor
+        public Color BlockCaretForegroundColor
         {
-            get { return GetColor(s_blockCaretColorKey); }
-            set { SetColor(s_blockCaretColorKey, value); }
+            get { return GetColor(s_blockCaretForegroundColorKey); }
+            set { SetColor(s_blockCaretForegroundColorKey, value); }
+        }
+
+        [DisplayName("Block Caret Background")]
+        [Category(CategoryColors)]
+        public Color BlockCaretBackgroundColor
+        {
+            get { return GetColor(s_blockCaretBackgroundColorKey); }
+            set { SetColor(s_blockCaretBackgroundColorKey, value); }
         }
 
         [DisplayName("Incremental Search")]
