@@ -226,7 +226,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
             {
                 var data = _caretData.Value;
-                data.Element.Opacity = data.Element.Opacity == 0.0 ? _caretOpacity : 0.0;
+                data.Element.Opacity = data.Element.Opacity == 0.0 ? 1.0 : 0.0;
             }
         }
 
@@ -407,6 +407,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
 
+            if (_caretOpacity < 1.0 && backgroundBrush is SolidColorBrush solidBrush)
+            {
+                var oldColor = solidBrush.Color;
+                var alpha = (byte)Math.Round(0xff * _caretOpacity);
+                var newColor = Color.FromArgb(alpha, oldColor.R, oldColor.G, oldColor.B);
+                backgroundBrush = new SolidColorBrush(newColor);
+            }
+
             var textBlock = new TextBlock
             {
                 Text = caretCharacter,
@@ -417,7 +425,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 FontWeight = typeface.Weight,
                 FontStyle = typeface.Style,
                 FontSize = fontSize,
-                Opacity = _caretOpacity,
                 Width = width,
                 Height = offset + height,
             };
