@@ -393,21 +393,43 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private CaretData CreateCaretData()
         {
             var color = TryCalculateCaretColor();
-            var brush = new SolidColorBrush(color ?? Colors.Black);
-            brush.Freeze();
-
-            var pen = new Pen(brush, 1.0);
             var tuple = CalculateCaretRectAndDisplayOffset();
             var rect = tuple.Item1;
-            var geometry = new RectangleGeometry(rect);
-            var drawing = new GeometryDrawing(brush, pen, geometry);
-            drawing.Freeze();
+            var offset = tuple.Item2;
+            var caretCharacter = tuple.Item3;
 
-            var drawingImage = new DrawingImage(drawing);
-            drawingImage.Freeze();
+            var textViewProperties = _editorFormatMap.GetProperties("TextView Background");
+            var backgroundBrush = textViewProperties.GetBackgroundBrush(SystemColors.WindowBrush);
+            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+            var typeface = textRunProperties.Typeface;
 
-            var image = new Image { Opacity = _caretOpacity, Source = drawingImage };
-            return new CaretData(_caretDisplay, _caretOpacity, image, color, rect.Size, tuple.Item2, tuple.Item3);
+            var line = _textView.Caret.ContainingTextViewLine;
+
+            var textBlock = new TextBlock
+            {
+                Text = caretCharacter,
+                Foreground = backgroundBrush,
+                Background = properties.GetForegroundBrush(SystemColors.WindowTextBrush),
+                FontFamily = typeface.FontFamily,
+                FontStretch = typeface.Stretch,
+                FontWeight = typeface.Weight,
+                FontStyle = typeface.Style,
+                FontSize = textRunProperties.FontRenderingEmSize,
+            };
+
+            var border = new Border
+            {
+                Width = rect.Size.Width,
+                Height = rect.Size.Height,
+                Opacity = _caretOpacity,
+                Child = textBlock,
+            };
+
+            Canvas.SetTop(border, _textView.Caret.Top);
+            Canvas.SetLeft(border, _textView.Caret.Left);
+
+            return new CaretData(_caretDisplay, _caretOpacity, border, color, rect.Size, offset, caretCharacter);
         }
 
         /// <summary>
@@ -426,10 +448,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 return true;
             }
 
+            var tuple = CalculateCaretRectAndDisplayOffset();
+
             var epsilon = 0.001;
-            var size = CalculateCaretRectAndDisplayOffset().Item1.Size;
+            var size = tuple.Item1.Size;
             if (Math.Abs(size.Height - caretData.Size.Height) > epsilon ||
                 Math.Abs(size.Width - caretData.Size.Width) > epsilon)
+            {
+                return true;
+            }
+
+            var caretCharacter = tuple.Item3;
+            if (caretData.CaretCharacter != caretCharacter)
             {
                 return true;
             }

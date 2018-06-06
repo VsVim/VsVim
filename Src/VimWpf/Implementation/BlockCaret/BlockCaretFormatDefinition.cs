@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             DisplayName = "VsVim Block Caret";
             ForegroundColor = Colors.Black;
-            BackgroundCustomizable = false;
+            BackgroundColor = Colors.White;
         }
     }
 }
