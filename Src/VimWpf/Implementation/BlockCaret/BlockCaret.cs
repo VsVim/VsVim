@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private bool _isAdornmentPresent;
         private bool _isDestroyed;
         private bool _isUpdating;
-        private double _caretOpacity = 0.65;
+        private double _caretOpacity = 1.0;
 
         public ITextView TextView
         {
