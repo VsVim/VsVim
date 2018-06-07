@@ -52,11 +52,14 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 if (virtualPoint.IsSome())
                 {
                     var point = virtualPoint.Value.Position;
-                    var tag = new MarkGlyphTag(_currentMark.Char);
-                    var list = new List<ITagSpan<MarkGlyphTag>>();
-                    var tagSpan = new TagSpan<MarkGlyphTag>(new SnapshotSpan(point, 0), tag);
-                    list.Add(tagSpan);
-                    return list.ToReadOnlyCollectionShallow();
+                    if (point.Snapshot == span.Snapshot)
+                    {
+                        var tag = new MarkGlyphTag(_currentMark.Char);
+                        var list = new List<ITagSpan<MarkGlyphTag>>();
+                        var tagSpan = new TagSpan<MarkGlyphTag>(new SnapshotSpan(point, 0), tag);
+                        list.Add(tagSpan);
+                        return list.ToReadOnlyCollectionShallow();
+                    }
                 }
             }
             return s_emptyTagList;
