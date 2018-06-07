@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Vim.Extensions;
@@ -24,11 +25,13 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _lineNumberMap = new Dictionary<Mark, int>();
 
             _markMap.MarkChanged += OnMarkChanged;
+            _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
         }
 
         private void Dispose()
         {
             _markMap.MarkChanged -= OnMarkChanged;
+            _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
         }
 
         private void OnMarkChanged(object sender, MarkChangedEventArgs args)
@@ -38,6 +41,15 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 UpdateMark(args.Mark);
                 RaiseChanged();
             }
+        }
+
+        private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
+        {
+            foreach (var mark in _lineNumberMap.Keys.ToList())
+            {
+                UpdateMark(mark);
+            }
+            RaiseChanged();
         }
 
         private void UpdateMark(Mark mark)
@@ -50,7 +62,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
             else
             {
-                _lineNumberMap.Remove(mark);
+                _lineNumberMap[mark] = -1;
             }
         }
 
@@ -71,12 +83,15 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             {
                 var mark = pair.Key;
                 var lineNumber = pair.Value;
-                var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
-                if (span.Contains(lineSpan))
+                if (lineNumber != -1)
                 {
-                    var tag = new MarkGlyphTag(mark.Char);
-                    var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
-                    list.Add(tagSpan);
+                    var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
+                    if (span.Contains(lineSpan))
+                    {
+                        var tag = new MarkGlyphTag(mark.Char);
+                        var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
+                        list.Add(tagSpan);
+                    }
                 }
             }
             return list.ToReadOnlyCollectionShallow();
