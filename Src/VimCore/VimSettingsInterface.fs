@@ -34,6 +34,7 @@ module GlobalSettingNames =
     let SelectModeName = "selectmode"
     let ShellName = "shell"
     let ShellFlagName = "shellcmdflag"
+    let ShowCommandName = "showcmd"
     let SmartCaseName = "smartcase"
     let StartOfLineName = "startofline"
     let StatusLineName = "statusline"
@@ -420,6 +421,9 @@ and IVimGlobalSettings =
     /// The flag which is passed to the shell when executing shell commands
     abstract ShellFlag: string with get, set
 
+    /// The 'showcmd' setting as in Vim
+    abstract ShowCommand: bool with get, set
+    
     abstract StartOfLine: bool with get, set
 
     /// This option determines the content of the status line.

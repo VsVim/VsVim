@@ -173,6 +173,7 @@ type internal GlobalSettings() =
             (ScrollOffsetName, "so", SettingValue.Number 0, SettingOptions.None)
             (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
             (ShellFlagName, "shcf", SettingValue.String "/c", SettingOptions.None)
+            (ShowCommandName, "sc", SettingValue.Toggle true, SettingOptions.None)
             (SmartCaseName, "scs", SettingValue.Toggle false, SettingOptions.None)
             (StartOfLineName, "sol", SettingValue.Toggle true, SettingOptions.None)
             (StatusLineName, "stl", SettingValue.String "", SettingOptions.None)
@@ -406,6 +407,9 @@ type internal GlobalSettings() =
         member x.ShellFlag
             with get() = _map.GetStringValue ShellFlagName
             and set value = _map.TrySetValue ShellFlagName (SettingValue.String value) |> ignore
+        member x.ShowCommand
+            with get() = _map.GetBoolValue ShowCommandName
+            and set value = _map.TrySetValue ShowCommandName (SettingValue.Toggle value) |> ignore
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (SettingValue.Toggle value) |> ignore

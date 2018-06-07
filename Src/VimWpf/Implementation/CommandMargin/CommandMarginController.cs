@@ -689,6 +689,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void UpdateShowCommandText()
         {
+            if (!_vimBuffer.GlobalSettings.ShowCommand)
+            {
+                _margin.ShowCommandText.Visibility = Visibility.Collapsed;
+                return;
+            }
             string text = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             _margin.ShowCommandText.Text = text;
             _margin.ShowCommandText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
