@@ -143,7 +143,7 @@ type internal TrackingLineColumn
         | Some (version, lineNumber) ->
             let newSnapshot = e.After
             let newVersion = e.AfterVersion
-            if newVersion.ReiteratedVersionNumber = version && lineNumber <= newSnapshot.LineCount then 
+            if newVersion.ReiteratedVersionNumber <= version && lineNumber <= newSnapshot.LineCount then 
                 _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
                 _lastValidVersion <- None
         | None -> ()
