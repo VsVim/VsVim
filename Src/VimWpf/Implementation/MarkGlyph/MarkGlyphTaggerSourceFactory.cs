@@ -23,9 +23,9 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vim = vim;
         }
 
-        private MarkGlyphTaggerSource CreateMarkGlyphTaggerSource(IVimBuffer vimBuffer)
+        private MarkGlyphTaggerSource CreateMarkGlyphTaggerSource(IVimBufferData vimBufferData)
         {
-            return new MarkGlyphTaggerSource(vimBuffer.VimBufferData);
+            return new MarkGlyphTaggerSource(vimBufferData);
         }
 
         #region IViewTaggerProvider
@@ -36,8 +36,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             {
                 return null;
             }
+            var vimBufferData = vimBuffer.VimBufferData;
 
-            Func<IBasicTaggerSource<MarkGlyphTag>> func = () => CreateMarkGlyphTaggerSource(vimBuffer);
+            Func<IBasicTaggerSource<MarkGlyphTag>> func =
+                () => CreateMarkGlyphTaggerSource(vimBufferData);
             return TaggerUtil.CreateBasicTagger(
                 textView.Properties,
                 _key,

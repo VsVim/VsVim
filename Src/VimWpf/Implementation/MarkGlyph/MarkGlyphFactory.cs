@@ -9,17 +9,10 @@ using System.Windows.Shapes;
 
 namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
-    [Export(typeof(IGlyphFactoryProvider))]
-    [ContentType(VimConstants.AnyContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
-    [TagType(typeof(MarkGlyphTag))]
-    [Name("MarkGlyph")]
-    [Order(After = "VsTextMarker")]
     internal class MarkGlyphFactory : IGlyphFactory
     {
         private IVim _vim;
 
-        [ImportingConstructor]
         internal MarkGlyphFactory(IVim vim)
         {
             _vim = vim;
