@@ -69,7 +69,14 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             if (virtualPoint.IsSome())
             {
                 var line = virtualPoint.Value.Position.GetContainingLine();
-                _lineNumberMap[mark] = line.LineNumber;
+                if (line.Length != 0 || line.LineBreakLength != 0)
+                {
+                    _lineNumberMap[mark] = line.LineNumber;
+                }
+                else
+                {
+                    _lineNumberMap[mark] = -1;
+                }
             }
             else
             {
