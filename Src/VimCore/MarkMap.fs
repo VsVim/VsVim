@@ -3,6 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
+open System
 
 type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
@@ -13,6 +14,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         Letter.All
         |> Seq.map (fun letter -> letter, obj())
         |> Map.ofSeq
+
+    let _markChangedEvent = StandardEvent<EventArgs>()
 
     /// This is the map from Letter to the ITextBuffer where the global mark
     /// is stored.
@@ -145,24 +148,28 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
     member x.SetMark mark (vimBufferData: IVimBufferData) line column = 
         let vimTextBuffer = vimBufferData.VimTextBuffer
-        match mark with
-        | Mark.GlobalMark letter -> 
-            x.SetGlobalMark letter vimTextBuffer line column
-            true
-        | Mark.LocalMark localMark -> 
-            vimTextBuffer.SetLocalMark localMark line column
-        | Mark.LastJump ->
-            vimBufferData.JumpList.SetLastJumpLocation line column
-            true
-        | Mark.LastExitedPosition ->
-            let bufferName = vimBufferData.VimTextBuffer.Name
-            if not (System.String.IsNullOrEmpty bufferName) then
-                _globalLastExitedMap <-
-                    _globalLastExitedMap.Remove bufferName
-                    |> Map.add bufferName (line, column)
+        let result =
+            match mark with
+            | Mark.GlobalMark letter -> 
+                x.SetGlobalMark letter vimTextBuffer line column
                 true
-            else
-                false
+            | Mark.LocalMark localMark -> 
+                vimTextBuffer.SetLocalMark localMark line column
+            | Mark.LastJump ->
+                vimBufferData.JumpList.SetLastJumpLocation line column
+                true
+            | Mark.LastExitedPosition ->
+                let bufferName = vimBufferData.VimTextBuffer.Name
+                if not (System.String.IsNullOrEmpty bufferName) then
+                    _globalLastExitedMap <-
+                        _globalLastExitedMap.Remove bufferName
+                        |> Map.add bufferName (line, column)
+                    true
+                else
+                    false
+        if result then
+            _markChangedEvent.Trigger x EventArgs.Empty
+        result
 
     /// Unload the buffer recording the last exited position
     member x.UnloadBuffer (vimBufferData: IVimBufferData) bufferName line column =
@@ -246,3 +253,6 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         member x.ReloadBuffer vimBufferData name = x.ReloadBuffer vimBufferData name
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()
+
+        [<CLIEvent>]
+        member x.MarkChanged = _markChangedEvent.Publish

@@ -4565,6 +4565,9 @@ and IMarkMap =
     /// Delete all of the global marks 
     abstract Clear: unit -> unit
 
+    [<CLIEvent>]
+    abstract MarkChanged: IDelegateEvent<System.EventHandler<EventArgs>>
+
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
 and IVimTextBuffer = 
