@@ -49,7 +49,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             if (args.VimBufferData == _vimBufferData)
             {
-                _lineNumberMap.Remove(args.Mark);
+                RemoveMark(args.Mark);
                 RaiseChanged();
             }
         }
@@ -84,6 +84,11 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
+        private void RemoveMark(Mark mark)
+        {
+            _lineNumberMap.Remove(mark);
+        }
+
         private void RaiseChanged()
         {
             _changedEvent?.Invoke(this, EventArgs.Empty);
@@ -97,8 +102,9 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
 
             var list = new List<ITagSpan<MarkGlyphTag>>();
-            foreach (var pair in _lineNumberMap)
+            foreach (var grouping in _lineNumberMap.GroupBy(x => x.Value))
             {
+                var pair = grouping.OrderBy(x => x.Key.Char).First();
                 var mark = pair.Key;
                 var lineNumber = pair.Value;
                 if (lineNumber != -1)
