@@ -24,21 +24,32 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap = _vimBufferData.Vim.MarkMap;
             _lineNumberMap = new Dictionary<Mark, int>();
 
-            _markMap.MarkChanged += OnMarkChanged;
+            _markMap.MarkSet += OnMarkSet;
+            _markMap.MarkDeleted += OnMarkDeleted;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
         }
 
         private void Dispose()
         {
-            _markMap.MarkChanged -= OnMarkChanged;
+            _markMap.MarkSet -= OnMarkSet;
+            _markMap.MarkDeleted -= OnMarkDeleted;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
         }
 
-        private void OnMarkChanged(object sender, MarkChangedEventArgs args)
+        private void OnMarkSet(object sender, MarkChangedEventArgs args)
         {
             if (args.VimBufferData == _vimBufferData)
             {
                 UpdateMark(args.Mark);
+                RaiseChanged();
+            }
+        }
+
+        private void OnMarkDeleted(object sender, MarkChangedEventArgs args)
+        {
+            if (args.VimBufferData == _vimBufferData)
+            {
+                _lineNumberMap.Remove(args.Mark);
                 RaiseChanged();
             }
         }

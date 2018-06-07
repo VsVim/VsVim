@@ -4562,6 +4562,9 @@ and IMarkMap =
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
+    /// Delete the mark for the IVimTextBuffer
+    abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
+
     /// Unload the buffer recording the last exited position
     abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
 
@@ -4576,7 +4579,10 @@ and IMarkMap =
     abstract Clear: unit -> unit
 
     [<CLIEvent>]
-    abstract MarkChanged: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
+
+    [<CLIEvent>]
+    abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views

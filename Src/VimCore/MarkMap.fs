@@ -15,7 +15,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Seq.map (fun letter -> letter, obj())
         |> Map.ofSeq
 
-    let _markChangedEvent = StandardEvent<MarkChangedEventArgs>()
+    let _markSetEvent = StandardEvent<MarkChangedEventArgs>()
+    let _markDeletedEvent = StandardEvent<MarkChangedEventArgs>()
 
     /// This is the map from Letter to the ITextBuffer where the global mark
     /// is stored.
@@ -145,7 +146,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             | Some point -> getPointInfo point
             | None -> None
 
-    /// Set the given mark to the specified line and column in the context of the IVimTextBuffer
+    /// Set the given mark to the specified line and column in the context of the specified IVimBufferData
     member x.SetMark mark (vimBufferData: IVimBufferData) line column = 
         let vimTextBuffer = vimBufferData.VimTextBuffer
         let result =
@@ -169,7 +170,21 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                     false
         if result then
             let args = MarkChangedEventArgs(mark, vimBufferData)
-            _markChangedEvent.Trigger x args
+            _markSetEvent.Trigger x args
+        result
+
+    /// Delete the given mark in the context of the specified IVimBufferData
+    member x.DeleteMark mark (vimBufferData: IVimBufferData) =
+        let vimTextBuffer = vimBufferData.VimTextBuffer
+        let result =
+            match mark with 
+            | Mark.LocalMark localMark -> vimTextBuffer.RemoveLocalMark localMark
+            | Mark.GlobalMark letter -> x.RemoveGlobalMark letter
+            | Mark.LastJump -> false
+            | Mark.LastExitedPosition -> false
+        if result then
+            let args = MarkChangedEventArgs(mark, vimBufferData)
+            _markDeletedEvent.Trigger x args
         result
 
     /// Unload the buffer recording the last exited position
@@ -250,10 +265,14 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         member x.GetMarkInfo mark vimBufferData = x.GetMarkInfo mark vimBufferData
         member x.SetGlobalMark letter vimTextBuffer line column = x.SetGlobalMark letter vimTextBuffer line column
         member x.SetMark mark vimBufferData line column = x.SetMark mark vimBufferData line column
+        member x.DeleteMark mark vimBufferData = x.DeleteMark mark vimBufferData
         member x.UnloadBuffer vimBufferData name line column = x.UnloadBuffer vimBufferData name line column
         member x.ReloadBuffer vimBufferData name = x.ReloadBuffer vimBufferData name
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()
 
         [<CLIEvent>]
-        member x.MarkChanged = _markChangedEvent.Publish
+        member x.MarkSet = _markSetEvent.Publish
+
+        [<CLIEvent>]
+        member x.MarkDeleted = _markDeletedEvent.Publish
