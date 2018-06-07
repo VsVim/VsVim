@@ -1,12 +1,8 @@
-﻿using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Tagging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Tagging;
 using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.MarkGlyph
@@ -17,15 +13,16 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private readonly IVimBufferData _vimBufferData;
         private readonly IMarkMap _markMap;
+        private readonly Dictionary<Mark, int> _lineNumberMap;
 
         private EventHandler _changedEvent;
-
-        private Mark _currentMark = Mark.NewLocalMark(LocalMark.NewLetter(Letter.A));
 
         internal MarkGlyphTaggerSource(IVimBufferData vimBufferData)
         {
             _vimBufferData = vimBufferData;
             _markMap = _vimBufferData.Vim.MarkMap;
+            _lineNumberMap = new Dictionary<Mark, int>();
+
             _markMap.MarkChanged += OnMarkChanged;
         }
 
@@ -34,9 +31,27 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap.MarkChanged -= OnMarkChanged;
         }
 
-        private void OnMarkChanged(object sender, EventArgs args)
+        private void OnMarkChanged(object sender, MarkChangedEventArgs args)
         {
-            RaiseChanged();
+            if (args.VimBufferData == _vimBufferData)
+            {
+                UpdateMark(args.Mark);
+                RaiseChanged();
+            }
+        }
+
+        private void UpdateMark(Mark mark)
+        {
+            var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
+            if (virtualPoint.IsSome())
+            {
+                var line = virtualPoint.Value.Position.GetContainingLine();
+                _lineNumberMap[mark] = line.LineNumber;
+            }
+            else
+            {
+                _lineNumberMap.Remove(mark);
+            }
         }
 
         private void RaiseChanged()
@@ -46,23 +61,25 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         internal ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
         {
-            if (_currentMark != null)
+            if (_lineNumberMap.Count == 0)
             {
-                var virtualPoint = _markMap.GetMark(_currentMark, _vimBufferData);
-                if (virtualPoint.IsSome())
+                return s_emptyTagList;
+            }
+
+            var list = new List<ITagSpan<MarkGlyphTag>>();
+            foreach (var pair in _lineNumberMap)
+            {
+                var mark = pair.Key;
+                var lineNumber = pair.Value;
+                var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
+                if (span.Contains(lineSpan))
                 {
-                    var point = virtualPoint.Value.Position;
-                    if (point.Snapshot == span.Snapshot)
-                    {
-                        var tag = new MarkGlyphTag(_currentMark.Char);
-                        var list = new List<ITagSpan<MarkGlyphTag>>();
-                        var tagSpan = new TagSpan<MarkGlyphTag>(new SnapshotSpan(point, 0), tag);
-                        list.Add(tagSpan);
-                        return list.ToReadOnlyCollectionShallow();
-                    }
+                    var tag = new MarkGlyphTag(mark.Char);
+                    var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
+                    list.Add(tagSpan);
                 }
             }
-            return s_emptyTagList;
+            return list.ToReadOnlyCollectionShallow();
         }
 
         #region IBasicTaggerSource<MarkGlyphTag>

@@ -15,7 +15,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Seq.map (fun letter -> letter, obj())
         |> Map.ofSeq
 
-    let _markChangedEvent = StandardEvent<EventArgs>()
+    let _markChangedEvent = StandardEvent<MarkChangedEventArgs>()
 
     /// This is the map from Letter to the ITextBuffer where the global mark
     /// is stored.
@@ -168,7 +168,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                 else
                     false
         if result then
-            _markChangedEvent.Trigger x EventArgs.Empty
+            let args = MarkChangedEventArgs(mark, vimBufferData)
+            _markChangedEvent.Trigger x args
         result
 
     /// Unload the buffer recording the last exited position

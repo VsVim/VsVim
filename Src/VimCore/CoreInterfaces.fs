@@ -4534,6 +4534,14 @@ and SwitchModeEventArgs
     /// has no previous one
     member x.PreviousMode = _previousMode
 
+and MarkChangedEventArgs (_mark: Mark, _vimBufferData: IVimBufferData) = 
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.VimBufferData = _vimBufferData
+
+    override x.ToString() = _mark.ToString()
+
 and IMarkMap =
 
     /// The set of active global marks
@@ -4568,7 +4576,7 @@ and IMarkMap =
     abstract Clear: unit -> unit
 
     [<CLIEvent>]
-    abstract MarkChanged: IDelegateEvent<System.EventHandler<EventArgs>>
+    abstract MarkChanged: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
