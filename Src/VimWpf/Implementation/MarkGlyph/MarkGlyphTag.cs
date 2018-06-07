@@ -6,6 +6,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     {
         private readonly char _char;
 
+        internal char Char {  get { return _char; } }
+
         internal MarkGlyphTag(char c)
         {
             _char = c;

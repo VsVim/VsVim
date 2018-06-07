@@ -1,37 +1,45 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Formatting;
-using Microsoft.VisualStudio.Text.Tagging;
-using Microsoft.VisualStudio.Utilities;
-using System.ComponentModel.Composition;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Shapes;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
     internal class MarkGlyphFactory : IGlyphFactory
     {
-        private IVim _vim;
+        private readonly IVim _vim;
+        private readonly IClassificationFormatMap _classificationFormatMap;
 
-        internal MarkGlyphFactory(IVim vim)
+        internal MarkGlyphFactory(IVim vim, IClassificationFormatMap classificationFormatMap)
         {
             _vim = vim;
+            _classificationFormatMap = classificationFormatMap;
         }
-
-        const double m_glyphSize = 16.0;
 
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
             // Ensure we can draw a glyph for this marker.
             if (tag is MarkGlyphTag markTag)
             {
-                var ellipse = new Ellipse();
-                ellipse.Fill = Brushes.LightBlue;
-                ellipse.StrokeThickness = 2;
-                ellipse.Stroke = Brushes.DarkBlue;
-                ellipse.Height = m_glyphSize;
-                ellipse.Width = m_glyphSize;
-                return ellipse;
+                var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+                var foregroundBrush = textRunProperties.ForegroundBrush;
+                var typeface = textRunProperties.Typeface;
+                var fontSize = textRunProperties.FontRenderingEmSize;
+
+                var textBlock = new TextBlock
+                {
+                    Text = markTag.Char.ToString(),
+                    Foreground = foregroundBrush,
+                    Background = Brushes.Transparent,
+                    FontFamily = typeface.FontFamily,
+                    FontStretch = typeface.Stretch,
+                    FontWeight = typeface.Weight,
+                    FontStyle = typeface.Style,
+                    FontSize = fontSize,
+                };
+                return textBlock;
             }
             else
             {
