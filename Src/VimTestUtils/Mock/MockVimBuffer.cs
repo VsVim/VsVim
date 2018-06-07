@@ -23,6 +23,7 @@ namespace Vim.UnitTest.Mock
         public IVisualMode VisualCharacterModeImpl;
         public IVisualMode VisualLineModeImpl;
         public ICommandMode CommandModeImpl;
+        public FSharpList<KeyInput> BufferedKeyInputsImpl;
         public IDisabledMode DisabledModeImpl;
         public ISubstituteConfirmMode SubstituteConfirmModeImpl;
         public IIncrementalSearch IncrementalSearchImpl;
@@ -54,7 +55,7 @@ namespace Vim.UnitTest.Mock
 
         public FSharpList<KeyInput> BufferedKeyInputs
         {
-            get { throw new NotImplementedException(); }
+            get { return BufferedKeyInputsImpl; }
         }
 
         public bool CanProcess(KeyInput value)

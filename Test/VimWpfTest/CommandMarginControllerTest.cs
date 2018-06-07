@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Moq;
@@ -411,7 +412,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _vimBuffer.NormalModeImpl = mode.Object;
 
                 SimulateKeystroke();
-                Assert.Equal("foo", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo", _marginControl.ShowCommandText.Text);
                 mode.Verify();
                 _factory.Verify();
             }
@@ -508,7 +509,9 @@ namespace Vim.UI.Wpf.UnitTest
             public void Search_Visual_Complete()
             {
                 var mode = _factory.Create<IVisualMode>();
-                mode.Setup(x => x.CommandRunner).Returns(_factory.Create<ICommandRunner>(MockBehavior.Loose).Object);
+                var runner = _factory.Create<ICommandRunner>(MockBehavior.Loose);
+                mode.Setup(x => x.CommandRunner).Returns(runner.Object);
+                runner.Setup(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
                 mode.Setup(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
                 _vimBuffer.VisualCharacterModeImpl = mode.Object;
                 _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;

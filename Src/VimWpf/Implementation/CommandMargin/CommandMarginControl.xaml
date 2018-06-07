@@ -48,17 +48,40 @@
             Grid.Column="1"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Disabled">
-            <TextBox 
-                x:Name="_commandLineInput"
-                MaxHeight="200"
-                VerticalAlignment="Center"
-                IsReadOnly="{Binding Path=IsEditReadOnly}"
-                FontFamily="{Binding Path=TextFontFamily}"
-                FontSize="{Binding Path=TextFontSize}"
-                Foreground="{Binding Path=TextForeground}"
-                Background="{Binding Path=TextBackground}"
-                CaretBrush="{Binding Path=TextForeground}"
-                />
+            <Border BorderThickness="1" BorderBrush="{Binding ElementName=_commandLineInput, Path=BorderBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="_commandLineInput"
+                        MaxHeight="200"
+                        BorderThickness="0"
+                        VerticalAlignment="Center"
+                        IsReadOnly="{Binding Path=IsEditReadOnly}"
+                        FontFamily="{Binding Path=TextFontFamily}"
+                        FontSize="{Binding Path=TextFontSize}"
+                        Foreground="{Binding Path=TextForeground}"
+                        Background="{Binding Path=TextBackground}"
+                        CaretBrush="{Binding Path=TextForeground}" 
+                        />
+                    <TextBox
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        MinWidth="50"
+                        IsReadOnly="True"
+                        x:Name="_showCommandText"
+                        BorderThickness="0"
+                        VerticalAlignment="Center"
+                        FontFamily="{Binding Path=TextFontFamily}"
+                        FontSize="{Binding Path=TextFontSize}"
+                        Foreground="{Binding Path=TextForeground}"
+                        Background="{Binding Path=TextBackground}"
+                        CaretBrush="{Binding Path=TextForeground}" 
+                        />
+                </Grid>
+            </Border>
         </ScrollViewer>
     </Grid>
 </UserControl>

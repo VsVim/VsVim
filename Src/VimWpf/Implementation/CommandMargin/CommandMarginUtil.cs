@@ -83,9 +83,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case ModeKind.Command:
                     status = ":" + vimBuffer.CommandMode.Command + (InPasteWait(vimBuffer) ? "\"" : "");
                     break;
-                case ModeKind.Normal:
-                    status = vimBuffer.NormalMode.Command;
-                    break;
                 case ModeKind.SubstituteConfirm:
                     status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
                     break;
@@ -211,5 +208,38 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         }
 
         #endregion
+
+        public static string GetShowCommandText(IVimBuffer vimBuffer)
+        {
+            if (vimBuffer.IncrementalSearch.InSearch)
+                return string.Empty;
+
+            switch (vimBuffer.ModeKind)
+            {
+                case ModeKind.Normal:
+                    return string.IsNullOrEmpty(vimBuffer.NormalMode.Command) ? string.Concat(vimBuffer.BufferedKeyInputs.Select(x => x.Char)) : vimBuffer.NormalMode.Command;
+                case ModeKind.VisualCharacter:
+                case ModeKind.VisualBlock:
+                case ModeKind.VisualLine:
+                    var visualMode = (IVisualMode) vimBuffer.Mode;
+                    if (visualMode.CommandRunner.Inputs.Any())
+                        return string.Concat(visualMode.CommandRunner.Inputs.Select(x => x.Char));
+
+                    var span = visualMode.VisualSelection.VisualSpan;
+                    switch (span.VisualKind.VisualModeKind)
+                    {
+                        case ModeKind.VisualLine:
+                            return span.LineRange.Count.ToString();
+                        case ModeKind.VisualCharacter:
+                            return span.LineRange.Count > 1 ? span.LineRange.Count.ToString() : span.Spans.First().Length.ToString();
+                        case ModeKind.VisualBlock:
+                            return $"{span.LineRange.Count}x{span.Spans.First().Length}";
+                    }
+
+                    break;
+            }
+
+            return string.Empty;
+        }
     }
 }

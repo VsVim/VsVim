@@ -3563,6 +3563,8 @@ type ICommandRunner =
     /// When HasCount is true this has the associated count
     abstract Count: int 
 
+    abstract Inputs: KeyInput list
+    
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
     abstract Add: CommandBinding -> unit
