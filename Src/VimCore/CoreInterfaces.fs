@@ -4578,9 +4578,11 @@ and IMarkMap =
     /// Delete all of the global marks 
     abstract Clear: unit -> unit
 
+    /// Raised when a mark is set
     [<CLIEvent>]
     abstract MarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
+    /// Raised when a mark is deleted
     [<CLIEvent>]
     abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 

@@ -3,7 +3,6 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
-open System
 
 type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
