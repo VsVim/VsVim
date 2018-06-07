@@ -216,13 +216,20 @@ namespace VimApp
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
 
-                // Move the caret to its initial position.
-                wpfTextView.MoveCaretToLine(line, column);
-                if (column == 0)
+                if (line != -1)
                 {
-                    // Column zero implies moving to the first non-blank.
-                    var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
-                    editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    // Move the caret to its initial position.
+                    if (column != -1)
+                    {
+                        wpfTextView.MoveCaretToLine(line, column);
+                    }
+                    else
+                    {
+                        // Default column implies moving to the first non-blank.
+                        wpfTextView.MoveCaretToLine(line);
+                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    }
                 }
 
                 // Give the focus to the new buffer.

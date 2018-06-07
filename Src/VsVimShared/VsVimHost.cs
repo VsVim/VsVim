@@ -456,21 +456,29 @@ namespace Vim.VisualStudio
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
                     out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
 
-                // Get the VS text view for the window.
-                var vsTextView = VsShellUtilities.GetTextView(windowFrame);
-
-                // Get the WPF text view for the VS text view.
-                var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
-
-                // Move the caret to its initial position.
-                var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);
-                var point = snapshotLine.Start.Add(column);
-                wpfTextView.Caret.MoveTo(point);
-                if (column == 0)
+                if (line != -1)
                 {
-                    // Column zero implies moving to the first non-blank.
-                    var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
-                    editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    // Get the VS text view for the window.
+                    var vsTextView = VsShellUtilities.GetTextView(windowFrame);
+
+                    // Get the WPF text view for the VS text view.
+                    var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+
+                    // Move the caret to its initial position.
+                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);
+                    var point = snapshotLine.Start;
+                    if (column != -1)
+                    {
+                        point = point.Add(column);
+                        wpfTextView.Caret.MoveTo(point);
+                    }
+                    else
+                    {
+                        // Default column implies moving to the first non-blank.
+                        wpfTextView.Caret.MoveTo(point);
+                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    }
                 }
 
                 return true;

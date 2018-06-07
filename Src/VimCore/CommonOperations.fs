@@ -799,7 +799,7 @@ type internal CommonOperations
 
     /// No need to check for dirty since we are opening a new window
     member x.GoToFileInNewWindow name =
-        if not (_vimHost.LoadFileIntoNewWindow name 0 0) then
+        if not (_vimHost.LoadFileIntoNewWindow name 0 -1) then
             _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
 
     member x.GoToNextTab path count = 
