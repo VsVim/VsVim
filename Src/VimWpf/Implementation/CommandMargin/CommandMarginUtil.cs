@@ -231,9 +231,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         case ModeKind.VisualLine:
                             return span.LineRange.Count.ToString();
                         case ModeKind.VisualCharacter:
-                            return span.LineRange.Count > 1 ? span.LineRange.Count.ToString() : span.Spans.First().Length.ToString();
+                            return span.LineRange.Count > 1 ? span.LineRange.Count.ToString() : span.Spans.Max(x => x.Length).ToString();
                         case ModeKind.VisualBlock:
-                            return $"{span.LineRange.Count}x{span.Spans.First().Length}";
+                            return $"{span.LineRange.Count}x{span.Spans.Max(x => x.Length)}";
                     }
 
                     break;
