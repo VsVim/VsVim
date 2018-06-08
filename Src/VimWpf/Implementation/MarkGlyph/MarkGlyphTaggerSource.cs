@@ -10,7 +10,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
     internal sealed class MarkGlyphTaggerSource : IBasicTaggerSource<MarkGlyphTag>, IDisposable
     {
-        static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList = new ReadOnlyCollection<ITagSpan<MarkGlyphTag>>(new List<ITagSpan<MarkGlyphTag>>());
+        static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList =
+            new ReadOnlyCollection<ITagSpan<MarkGlyphTag>>(new List<ITagSpan<MarkGlyphTag>>());
 
         private readonly IVimBufferData _vimBufferData;
         private readonly IMarkMap _markMap;
@@ -25,12 +26,12 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap = _vimBufferData.Vim.MarkMap;
             _lineNumberMap = new Dictionary<Mark, int>();
 
+            LoadGlobalMarks();
+            CachePairs();
+
             _markMap.MarkSet += OnMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
-
-            LoadGlobalMarks();
-            CachePairs();
         }
 
         private void Dispose()
@@ -38,6 +39,19 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap.MarkSet -= OnMarkSet;
             _markMap.MarkDeleted -= OnMarkDeleted;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
+        }
+
+        private void LoadGlobalMarks()
+        {
+            foreach (var tuple in _markMap.GlobalMarks)
+            {
+                var letter = tuple.Item1;
+                var virtualPoint = tuple.Item2;
+                if (virtualPoint.Position.Snapshot.TextBuffer == _vimBufferData.TextBuffer)
+                {
+                    UpdateMark(Mark.NewGlobalMark(letter));
+                }
+            }
         }
 
         private void OnMarkSet(object sender, MarkChangedEventArgs args)
@@ -75,19 +89,6 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 if (wereMarksChanged)
                 {
                     RaiseChanged();
-                }
-            }
-        }
-
-        private void LoadGlobalMarks()
-        {
-            foreach (var tuple in _markMap.GlobalMarks)
-            {
-                var letter = tuple.Item1;
-                var virtualPoint = tuple.Item2;
-                if (virtualPoint.Position.Snapshot.TextBuffer == _vimBufferData.TextBuffer)
-                {
-                    UpdateMark(Mark.NewGlobalMark(letter));
                 }
             }
         }
@@ -143,7 +144,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _pairs.AddRange(pairs);
         }
 
-        internal ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
+        private ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
         {
             if (_pairs.Count == 0)
             {
