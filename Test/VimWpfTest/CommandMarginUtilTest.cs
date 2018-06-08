@@ -50,9 +50,11 @@ namespace Vim.UI.Wpf.UnitTest
             var mode = _factory.Create<INormalMode>();
             const string partialCommand = @"\s";
             mode.SetupGet(x => x.Command).Returns(string.Empty);
+            
             _vimBuffer.BufferedKeyInputsImpl = ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput));
             _vimBuffer.NormalModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.Normal;
+            
             var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             Assert.Equal(partialCommand, actual);
         }
@@ -71,6 +73,7 @@ namespace Vim.UI.Wpf.UnitTest
             runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
             mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
             
+            _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
             _vimBuffer.ModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
             
@@ -103,6 +106,7 @@ namespace Vim.UI.Wpf.UnitTest
             var mode = _factory.Create<IVisualMode>();
             var runner = _factory.Create<ICommandRunner>();
             runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
+            _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
             mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
             mode.SetupGet(x => x.VisualSelection).Returns(selection);
 
@@ -128,10 +132,29 @@ namespace Vim.UI.Wpf.UnitTest
             var selection = new VisualSelection.Line(new SnapshotLineRange(snapshot.Object, 0, expectedLineCount), SearchPath.Forward, 0);
             mode.SetupGet(x => x.VisualSelection).Returns(selection);
             
+            _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
             _vimBuffer.ModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.VisualLine;
+            
             var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             Assert.Equal(expectedLineCount.ToString(), actual);
+        }
+        
+        [WpfFact]
+        public void GetCommandStatusVisualModeCommandInputs()
+        {
+            _search.SetupGet(x => x.InSearch).Returns(false);
+            var mode = _factory.Create<IVisualMode>();
+            var runner = _factory.Create<ICommandRunner>();
+            const string partialCommand = @"3f";
+            mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
+            runner.SetupGet(x => x.Inputs).Returns(ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput)));
+            
+            _vimBuffer.ModeImpl = mode.Object;
+            _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+            
+            var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
+            Assert.Equal(partialCommand, actual);
         }
         
         [WpfFact]
@@ -140,11 +163,14 @@ namespace Vim.UI.Wpf.UnitTest
             _search.SetupGet(x => x.InSearch).Returns(false);
             var mode = _factory.Create<IVisualMode>();
             var runner = _factory.Create<ICommandRunner>();
-            const string partialCommand = @"3f";
+            const string partialCommand = @"\e";
             mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
-            runner.SetupGet(x => x.Inputs).Returns(ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput)));
+            runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
+            
+            _vimBuffer.BufferedKeyInputsImpl = ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput));
             _vimBuffer.ModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;
+            
             var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             Assert.Equal(partialCommand, actual);
         }

@@ -224,7 +224,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     var visualMode = (IVisualMode) vimBuffer.Mode;
                     if (visualMode.CommandRunner.Inputs.Any())
                         return string.Concat(visualMode.CommandRunner.Inputs.Select(x => x.Char));
-
+                    if (vimBuffer.BufferedKeyInputs.Any())
+                        return string.Concat(vimBuffer.BufferedKeyInputs.Select(x => x.Char));
                     var span = visualMode.VisualSelection.VisualSpan;
                     switch (span.VisualKind.VisualModeKind)
                     {
