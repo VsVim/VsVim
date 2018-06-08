@@ -1489,12 +1489,14 @@ type internal CommandUtil
         let startPoint = if count < 0 then caretLine.Start else caretLine.End
         let startPosition = startPoint.Position
 
-        // Determine a list of relative offsets of all the lettered marks
+        // Determine the relative offsets of all the lettered marks
         // in the file, sorted from most negative to most positive.
         let markOffsets =
             seq {
                 for letter in Letter.All do
                     yield Mark.LocalMark (LocalMark.Letter letter)
+                for letter in Letter.All do
+                    yield Mark.GlobalMark letter
             }
             |> Seq.map (fun letter -> _vimBufferData.Vim.MarkMap.GetMark letter _vimBufferData)
             |> Seq.filter (fun option -> option.IsSome)
@@ -1502,44 +1504,36 @@ type internal CommandUtil
             |> Seq.map (fun virtualPoint -> virtualPoint.Position.Position)
             |> Seq.sort
             |> Seq.map (fun markPosition -> markPosition - startPosition)
-            |> Seq.toList
 
-        // Try to find a buffer offset to jump to.
-        let offset =
-            if count < 0 then
+        // Try to find a mark offset to jump to.
+        let markOffset =
+            let candidates =
+                if count < 0 then
 
-                // If going backward, reverse the list and look at negative offsets.
-                let candidates =
+                    // If going backward, reverse the sequence and look at negative offsets.
                     markOffsets
                     |> Seq.rev
-                    |> Seq.filter (fun offset -> offset < 0)
+                    |> Seq.filter (fun markOffset -> markOffset < 0)
                     |> Seq.toList
-                if candidates.Length > -count - 1 then
-                    candidates
-                    |> Seq.skip (-count - 1)
-                    |> Seq.tryHead
                 else
-                    None
-            else
 
-                // If going foreward, look at positive offsets.
-                let candidates =
+                    // If going foreward, look at positive offsets.
                     markOffsets
-                    |> Seq.filter (fun offset -> offset > 0)
+                    |> Seq.filter (fun markOffset -> markOffset > 0)
                     |> Seq.toList
-                if candidates.Length > count - 1 then
-                    candidates
-                    |> Seq.skip (count - 1)
-                    |> Seq.tryHead
-                else
-                    None
 
-        // Try to move the caret (possibly exactly) to that offset.
-        match offset with
+            // Skip past the specified number of marks, or as many as possible.
+            let skipCount = (min (max 0 (candidates.Length - 1)) ((abs count) - 1))
+            candidates
+            |> Seq.skip skipCount
+            |> Seq.tryHead
+
+        // Try to move the caret (possibly exactly) to the offset of that mark.
+        match markOffset with
         | None ->
             CommandResult.Error
-        | Some offset ->
-            let point = startPoint.Add(offset)
+        | Some markOffset ->
+            let point = startPoint.Add(markOffset)
             let point =
                 if exact then
                     point
