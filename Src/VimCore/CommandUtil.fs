@@ -1465,6 +1465,26 @@ type internal CommandUtil
     member x.JumpToMarkLine mark =
         x.JumpToMarkCore mark false
 
+    /// Jump to the next lettered mark
+    member x.JumpToNextMark count =
+        x.JumpToNearestMark count true
+
+    /// Jump to the previous lettered mark
+    member x.JumpToPreviousMark count =
+        x.JumpToNearestMark -count true
+
+    /// Jump to the beginning of the line of next lettered mark
+    member x.JumpToNextMarkLine count =
+        x.JumpToNearestMark count false
+
+    /// Jump to the beginning of the line of previous lettered mark
+    member x.JumpToPreviousMarkLine count =
+        x.JumpToNearestMark -count false
+
+    /// Jump to the nth nearest lettered mark, possibly exactly
+    member x.JumpToNearestMark count exact =
+        CommandResult.Error
+
     /// Jumps to the specified
     member x.JumpToTagCore () =
         match _jumpList.Current with
@@ -2470,6 +2490,10 @@ type internal CommandUtil
         | NormalCommand.JumpToMarkLine c -> x.JumpToMarkLine c
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
+        | NormalCommand.JumpToNextMark -> x.JumpToNextMark count
+        | NormalCommand.JumpToPreviousMark -> x.JumpToPreviousMark count
+        | NormalCommand.JumpToNextMarkLine -> x.JumpToNextMarkLine count
+        | NormalCommand.JumpToPreviousMarkLine -> x.JumpToPreviousMarkLine count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()

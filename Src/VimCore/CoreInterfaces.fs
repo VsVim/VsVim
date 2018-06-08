@@ -2654,6 +2654,18 @@ type NormalCommand =
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
 
+    /// Jump to the next lettered mark
+    | JumpToNextMark
+
+    /// Jump to the previous lettered mark
+    | JumpToPreviousMark
+
+    /// Jump to the start of the line of the next lettered mark
+    | JumpToNextMarkLine
+
+    /// Jump to the start of the line of the previous lettered mark
+    | JumpToPreviousMarkLine
+
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
 
@@ -2859,6 +2871,10 @@ type NormalCommand =
         | NormalCommand.JumpToMarkLine _ -> None
         | NormalCommand.JumpToOlderPosition -> None
         | NormalCommand.JumpToNewerPosition -> None
+        | NormalCommand.JumpToNextMark -> None
+        | NormalCommand.JumpToPreviousMark -> None
+        | NormalCommand.JumpToNextMarkLine -> None
+        | NormalCommand.JumpToPreviousMarkLine -> None
         | NormalCommand.MoveCaretToMotion _ -> None
         | NormalCommand.Undo -> None
         | NormalCommand.UndoLine -> None
