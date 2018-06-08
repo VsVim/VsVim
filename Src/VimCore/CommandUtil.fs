@@ -1465,19 +1465,19 @@ type internal CommandUtil
     member x.JumpToMarkLine mark =
         x.JumpToMarkCore mark false
 
-    /// Jump to the next lettered mark
+    /// Jump to the next lowercase mark
     member x.JumpToNextMark count =
         x.JumpToNearestMark count true
 
-    /// Jump to the previous lettered mark
+    /// Jump to the previous lowercase mark
     member x.JumpToPreviousMark count =
         x.JumpToNearestMark -count true
 
-    /// Jump to the beginning of the line of next lettered mark
+    /// Jump to the beginning of the line of next lowercase mark
     member x.JumpToNextMarkLine count =
         x.JumpToNearestMark count false
 
-    /// Jump to the beginning of the line of previous lettered mark
+    /// Jump to the beginning of the line of previous lowercase mark
     member x.JumpToPreviousMarkLine count =
         x.JumpToNearestMark -count false
 
@@ -1489,14 +1489,12 @@ type internal CommandUtil
         let startPoint = if count < 0 then caretLine.Start else caretLine.End
         let startPosition = startPoint.Position
 
-        // Determine the relative offsets of all the lettered marks
+        // Determine the relative offsets of all the lowercase marks
         // in the file, sorted from most negative to most positive.
         let markOffsets =
             seq {
                 for letter in Letter.All do
                     yield Mark.LocalMark (LocalMark.Letter letter)
-                for letter in Letter.All do
-                    yield Mark.GlobalMark letter
             }
             |> Seq.map (fun letter -> _vimBufferData.Vim.MarkMap.GetMark letter _vimBufferData)
             |> Seq.filter (fun option -> option.IsSome)

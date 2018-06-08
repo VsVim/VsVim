@@ -2654,16 +2654,16 @@ type NormalCommand =
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
 
-    /// Jump to the next lettered mark
+    /// Jump to the next lowercase mark
     | JumpToNextMark
 
-    /// Jump to the previous lettered mark
+    /// Jump to the previous lowercase mark
     | JumpToPreviousMark
 
-    /// Jump to the start of the line of the next lettered mark
+    /// Jump to the start of the line of the next lowercase mark
     | JumpToNextMarkLine
 
-    /// Jump to the start of the line of the previous lettered mark
+    /// Jump to the start of the line of the previous lowercase mark
     | JumpToPreviousMarkLine
 
     /// Move the caret to the result of the given Motion.
