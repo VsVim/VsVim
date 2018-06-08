@@ -143,7 +143,7 @@ type internal TrackingLineColumn
         | Some (version, lineNumber) ->
             let newSnapshot = e.After
             let newVersion = e.AfterVersion
-            if newVersion.ReiteratedVersionNumber <= version && lineNumber <= newSnapshot.LineCount then 
+            if newVersion.ReiteratedVersionNumber = version && lineNumber <= newSnapshot.LineCount then 
                 _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
                 _lastValidVersion <- None
         | None -> ()
@@ -152,7 +152,7 @@ type internal TrackingLineColumn
     /// recover during an undo operation
     member x.MarkInvalid (snapshotLine: ITextSnapshotLine) =
         _line <- None
-        _lastValidVersion <- Some (snapshotLine.Snapshot.Version.VersionNumber, snapshotLine.LineNumber)
+        _lastValidVersion <- Some (snapshotLine.Snapshot.Version.ReiteratedVersionNumber, snapshotLine.LineNumber)
 
     override x.ToString() =
         match x.VirtualPoint with
