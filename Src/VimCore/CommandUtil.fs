@@ -1483,7 +1483,71 @@ type internal CommandUtil
 
     /// Jump to the nth nearest lettered mark, possibly exactly
     member x.JumpToNearestMark count exact =
-        CommandResult.Error
+
+        // Choose a starting position at the beginning or end of the caret line.
+        let caretLine = x.CaretLine
+        let startPoint = if count < 0 then caretLine.Start else caretLine.End
+        let startPosition = startPoint.Position
+
+        // Determine a list of relative offsets of all the lettered marks
+        // in the file, sorted from most negative to most positive.
+        let markOffsets =
+            seq {
+                for letter in Letter.All do
+                    yield Mark.LocalMark (LocalMark.Letter letter)
+            }
+            |> Seq.map (fun letter -> _vimBufferData.Vim.MarkMap.GetMark letter _vimBufferData)
+            |> Seq.filter (fun option -> option.IsSome)
+            |> Seq.map (fun option -> option.Value)
+            |> Seq.map (fun virtualPoint -> virtualPoint.Position.Position)
+            |> Seq.sort
+            |> Seq.map (fun markPosition -> markPosition - startPosition)
+            |> Seq.toList
+
+        // Try to find a buffer offset to jump to.
+        let offset =
+            if count < 0 then
+
+                // If going backward, reverse the list and look at negative offsets.
+                let candidates =
+                    markOffsets
+                    |> Seq.rev
+                    |> Seq.filter (fun offset -> offset < 0)
+                    |> Seq.toList
+                if candidates.Length > -count - 1 then
+                    candidates
+                    |> Seq.skip (-count - 1)
+                    |> Seq.tryHead
+                else
+                    None
+            else
+
+                // If going foreward, look at positive offsets.
+                let candidates =
+                    markOffsets
+                    |> Seq.filter (fun offset -> offset > 0)
+                    |> Seq.toList
+                if candidates.Length > count - 1 then
+                    candidates
+                    |> Seq.skip (count - 1)
+                    |> Seq.tryHead
+                else
+                    None
+
+        // Try to move the caret (possibly exactly) to that offset.
+        match offset with
+        | None ->
+            CommandResult.Error
+        | Some offset ->
+            let point = startPoint.Add(offset)
+            let point =
+                if exact then
+                    point
+                else
+                    SnapshotPointUtil.GetContainingLine point
+                    |> SnapshotLineUtil.GetFirstNonBlankOrEnd
+            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jumps to the specified
     member x.JumpToTagCore () =
