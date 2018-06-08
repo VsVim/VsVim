@@ -3043,7 +3043,7 @@ namespace Vim.UnitTest
             /// Jumping to the next mark with ' with no marks should beep and not move
             /// </summary>
             [WpfFact]
-            public void JumpToNearestMarkWithNoMarks()
+            public void JumpToNextMarkWithNoMarks()
             {
                 Create("cat", "dog", "bat");
                 _vimBuffer.Process("]'");
