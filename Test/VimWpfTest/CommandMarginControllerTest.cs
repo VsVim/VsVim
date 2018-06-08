@@ -23,6 +23,7 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly CommandMarginController _controller;
         private readonly MockVimBuffer _vimBuffer;
         private readonly Mock<IIncrementalSearch> _search;
+        private Mock<IVimGlobalSettings> _globalSettings;
 
         protected CommandMarginControllerTest()
         {
@@ -42,8 +43,8 @@ namespace Vim.UI.Wpf.UnitTest
             var textBuffer = CreateTextBuffer(new[] { "" });
             _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
 
-            var globalSettings = new Mock<IVimGlobalSettings>();
-            _vimBuffer.GlobalSettingsImpl = globalSettings.Object;
+            _globalSettings = new Mock<IVimGlobalSettings>();
+            _vimBuffer.GlobalSettingsImpl = _globalSettings.Object;
 
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
@@ -404,6 +405,7 @@ namespace Vim.UI.Wpf.UnitTest
             public void NoEvents1()
             {
                 var mode = new Mock<INormalMode>();
+                _globalSettings.SetupGet(x => x.ShowCommand).Returns(true);
                 _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
                 mode.SetupGet(x => x.Command).Returns("foo");
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
