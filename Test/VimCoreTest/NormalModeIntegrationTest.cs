@@ -3002,7 +3002,6 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Jumping to the next mark with ' shouldn't jump too far
-            /// occurs
             /// </summary>
             [WpfFact]
             public void JumpToFirstNextMarkLine()
@@ -3016,7 +3015,6 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Jumping to the next mark with ' should obey the count
-            /// occurs
             /// </summary>
             [WpfFact]
             public void JumpToSecondNextMarkLine()
@@ -3030,7 +3028,6 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Jumping to the next mark with ' should jump over as many marks as possible
-            /// occurs
             /// </summary>
             [WpfFact]
             public void JumpToTenthNextMarkLine()
@@ -3044,7 +3041,6 @@ namespace Vim.UnitTest
 
             /// <summary>
             /// Jumping to the next mark with ' with no marks should beep and not move
-            /// occurs
             /// </summary>
             [WpfFact]
             public void JumpToNearestMarkWithNoMarks()
