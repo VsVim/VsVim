@@ -161,11 +161,11 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 if (lineNumber < snapshot.LineCount)
                 {
                     var line = snapshot.GetLineFromLineNumber(lineNumber);
-                    var lineSpan = new SnapshotSpan(line.Start, 0);
-                    if (span.Contains(lineSpan))
+                    var startSpan = new SnapshotSpan(line.Start, 0);
+                    if (span.Contains(startSpan))
                     {
                         var tag = new MarkGlyphTag(mark.Char);
-                        var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
+                        var tagSpan = new TagSpan<MarkGlyphTag>(startSpan, tag);
                         list.Add(tagSpan);
                     }
                 }
