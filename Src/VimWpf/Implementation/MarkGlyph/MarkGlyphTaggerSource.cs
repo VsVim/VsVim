@@ -27,6 +27,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap.MarkSet += OnMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
+
+            LoadGlobalMarks();
         }
 
         private void Dispose()
@@ -61,6 +63,19 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 UpdateMark(mark);
             }
             RaiseChanged();
+        }
+
+        private void LoadGlobalMarks()
+        {
+            foreach (var tuple in _markMap.GlobalMarks)
+            {
+                var letter = tuple.Item1;
+                var virtualPoint = tuple.Item2;
+                if (virtualPoint.Position.Snapshot.TextBuffer == _vimBufferData.TextBuffer)
+                {
+                    UpdateMark(Mark.NewGlobalMark(letter));
+                }
+            }
         }
 
         private void UpdateMark(Mark mark)

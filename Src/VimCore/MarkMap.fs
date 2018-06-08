@@ -27,6 +27,16 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
     let mutable _globalLastExitedMap: Map<string, int * int> = Map.empty
 
+    /// Raise the mark set event
+    member x.RaiseMarkSet mark (vimBufferData: IVimBufferData) =
+        let args = MarkChangedEventArgs(mark, vimBufferData)
+        _markSetEvent.Trigger x args
+
+    /// Raise the mark deleted event
+    member x.RaiseMarkDeleted mark (vimBufferData: IVimBufferData) =
+        let args = MarkChangedEventArgs(mark, vimBufferData)
+        _markDeletedEvent.Trigger x args
+
     /// Get the core information about the global mark represented by the letter
     member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
@@ -168,8 +178,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                 else
                     false
         if result then
-            let args = MarkChangedEventArgs(mark, vimBufferData)
-            _markSetEvent.Trigger x args
+            x.RaiseMarkSet mark vimBufferData
         result
 
     /// Delete the given mark in the context of the specified IVimBufferData
@@ -182,8 +191,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             | Mark.LastJump -> false
             | Mark.LastExitedPosition -> false
         if result then
-            let args = MarkChangedEventArgs(mark, vimBufferData)
-            _markDeletedEvent.Trigger x args
+            x.RaiseMarkDeleted mark vimBufferData
         result
 
     /// Unload the buffer recording the last exited position
@@ -233,6 +241,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         let reloadGlobalMark letter line column =
             _globalUnloadedMarkMap.Remove letter |> ignore
             x.SetGlobalMark letter vimBufferData.VimTextBuffer line column
+            let mark = Mark.GlobalMark letter
+            x.RaiseMarkSet mark vimBufferData
 
         let unloadedMarks =
             _globalUnloadedMarkMap
