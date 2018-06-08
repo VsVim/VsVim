@@ -490,20 +490,20 @@ type internal CommonOperations
 
         /// Move the caret left.  Don't go past the start of the line 
         let moveLeft () = 
-            if x.CaretLine.Start.Position < x.CaretPoint.Position then
-                let point = SnapshotPointUtil.SubtractOne x.CaretPoint
+            match SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint 1 with
+            | Some point ->
                 x.MoveCaretToPoint point ViewFlags.Standard
                 true
-            else
+            | None ->
                 false
 
         /// Move the caret right.  Don't go off the end of the line
         let moveRight () =
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let point = SnapshotPointUtil.AddOne x.CaretPoint
+            match SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint 1 with
+            | Some point ->
                 x.MoveCaretToPoint point ViewFlags.Standard
                 true
-            else
+            | None ->
                 false
 
         let moveHome () =
@@ -569,7 +569,7 @@ type internal CommonOperations
                 if SnapshotPointUtil.IsStartPoint x.CaretPoint then
                     false
                 else
-                    let point = SnapshotPointUtil.GetPreviousPointWithWrap x.CaretPoint
+                    let point = SnapshotPointUtil.GetPreviousCharacterSpanWithWrap x.CaretPoint
                     x.MoveCaretToPoint point ViewFlags.Standard
                     true
             else
@@ -581,7 +581,7 @@ type internal CommonOperations
                 if SnapshotPointUtil.IsEndPoint x.CaretPoint then
                     false
                 else
-                    let point = SnapshotPointUtil.GetNextPointWithWrap x.CaretPoint
+                    let point = SnapshotPointUtil.GetNextCharacterSpanWithWrap x.CaretPoint
                     x.MoveCaretToPoint point ViewFlags.Standard
                     true
             else

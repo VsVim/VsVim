@@ -2279,7 +2279,7 @@ type internal MotionUtil
     /// the same line
     member x.CharLeftOnSameLine count = 
         let startPoint = 
-            SnapshotPointUtil.TryGetPreviousPointOnLine x.CaretPoint count
+            SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint count
             |> OptionUtil.getOrDefault x.CaretLine.Start
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
@@ -2293,7 +2293,7 @@ type internal MotionUtil
             elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
                 x.CaretLine.End
             else
-                SnapshotPointUtil.TryGetNextPointOnLine x.CaretPoint count 
+                SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint count 
                 |> OptionUtil.getOrDefault x.CaretLine.End
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
@@ -2302,7 +2302,7 @@ type internal MotionUtil
     /// through the buffer taking into acount 'virtualedit'
     member x.CharLeftWithLineWrap count =
         let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let startPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint -count skipLineBreaks
+        let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint -count skipLineBreaks
         let span = SnapshotSpan(startPoint, x.CaretPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
 
@@ -2310,7 +2310,7 @@ type internal MotionUtil
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
         let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let endPoint = SnapshotPointUtil.GetRelativePoint x.CaretPoint count skipLineBreaks
+        let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
         let span = SnapshotSpan(x.CaretPoint, endPoint)
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
@@ -2824,18 +2824,21 @@ type internal MotionUtil
             match motionResult.MotionKind with
             | MotionKind.CharacterWiseExclusive ->
                 // Extend the selection one character unless it goes into the line break. 
-                let s = motionResult.Span.Start
-                let p = motionResult.End
+                let span = motionResult.Span
                 let span = 
-                    if isInLineBreakOrEnd p then SnapshotSpan(s, 0)
-                    else SnapshotSpan(s, SnapshotPointUtil.AddOne p)
+                    if isInLineBreakOrEnd span.End then SnapshotSpan(span.Start, 0)
+                    else
+                        let characterSpan = span.End |> SnapshotPointUtil.GetCharacterSpan
+                        SnapshotSpan(span.Start, characterSpan.End)
                 MotionResult.Create(span, MotionKind.CharacterWiseInclusive, motionResult.IsForward)
             | MotionKind.CharacterWiseInclusive ->
                 // Shrink the selection a single character.
                 let span = motionResult.Span
                 let span = 
                     if span.IsEmpty then span
-                    else SnapshotSpan(span.Start, span.Length - 1)
+                    else
+                        let characterSpan = span.End.Subtract(1) |> SnapshotPointUtil.GetCharacterSpan
+                        SnapshotSpan(span.Start, characterSpan.Start)
                 MotionResult.Create(span, MotionKind.CharacterWiseExclusive, motionResult.IsForward)
             | MotionKind.LineWise ->
                 // Need to make this characterwise exclusive

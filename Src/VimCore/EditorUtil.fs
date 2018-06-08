@@ -33,6 +33,46 @@ module internal EditorCoreUtil =
         else
             point.Subtract(1)
 
+    /// Get the span of the character which is pointed to by the point.  Normally this is a 
+    /// trivial operation.  The only difficulty is if the point exists at the end of a line
+    /// (in which case the span covers the linebreak) or if the character is part of a
+    /// surrogate pair.
+    let GetCharacterSpan (line: ITextSnapshotLine) (point: SnapshotPoint) = 
+
+        // We require that the point belong to the line.
+        Contract.Requires(point.Snapshot = line.Snapshot)
+        Contract.Requires(point.Position >= line.Start.Position)
+        Contract.Requires(point.Position <= line.EndIncludingLineBreak.Position)
+
+        let snapshot = point.Snapshot
+        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
+        if endSpan.Contains(point) then
+            endSpan
+        elif point.Position = snapshot.Length then
+            new SnapshotSpan(point, 0)
+        else
+            let c = point.GetChar()
+            let snapshot = point.Snapshot
+            if System.Char.IsHighSurrogate(c) then
+                let nextPoint = point.Add(1)
+                if IsEndPoint nextPoint then
+                    new SnapshotSpan(point, 1)
+                elif System.Char.IsLowSurrogate(nextPoint.GetChar()) then
+                    new SnapshotSpan(point, 2)
+                else
+                    new SnapshotSpan(point, 1)
+            elif System.Char.IsLowSurrogate(c) then
+                if point.Position = 0 then
+                    new SnapshotSpan(point, 1)
+                else
+                    let previousPoint = point.Subtract(1)
+                    if System.Char.IsHighSurrogate(previousPoint.GetChar()) then
+                        new SnapshotSpan(previousPoint, 2)
+                    else
+                        new SnapshotSpan(point, 1)
+            else
+                new SnapshotSpan(point, 1)
+
     let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 
             0
@@ -297,6 +337,156 @@ type SnapshotColumn
 
     override x.ToString() = 
         x.Point.ToString()
+
+/// Conceptually, a character span corresponds to a single logical character:
+/// - a normal character
+/// - a line break (which may consist of one or more physical characters)
+/// - a UTF32 character (represented by two UTF16 characters called the "surrogate pair")
+/// Alternatively, a character span represents the places where it is valid to set the caret.
+[<Struct>]
+[<NoEquality>]
+[<NoComparison>]
+type SnapshotCharacterSpan =
+
+    val private _line: ITextSnapshotLine
+    val private _positions: int array
+    val private _columnNumber: int
+
+    /// Constructor for a character span corresponding to a point
+    new (point: SnapshotPoint) =
+        let line = point.GetContainingLine();
+        SnapshotCharacterSpan(line, point)
+
+    /// Constructor for a character span corresponding to a point within a line
+    /// that looks up the column number by searching the positions array
+    new (line: ITextSnapshotLine, point: SnapshotPoint) =
+
+        let startColumn = SnapshotCharacterSpan(line)
+        let positions = startColumn._positions
+
+        // Scan the positions array for the column corresponding to point.
+        let position = point.Position
+        let columnNumber =
+            let mutable columnNumber = positions.Length - 1
+            for i = 0 to positions.Length - 2 do
+                if position >= positions.[i] && position < positions.[i + 1] then
+                    columnNumber <- i
+            columnNumber
+
+        { _line = line; _positions = positions; _columnNumber = columnNumber }
+
+    /// Constructor for a character span corresponding to the first
+    /// column of a line that "parses" the line and builds a lookup
+    /// table of physical positions corresponding to logical columns
+    new (line: ITextSnapshotLine) =
+        let mutable currentPoint = line.Start
+        let endPoint = line.EndIncludingLineBreak
+
+        // Build an array of positions (including an extra final position)
+        // that we can use to efficiently translate from column to position.
+        /// Once determined, the snapshot line and the positions array
+        /// are reused for other character span within the line.
+        let positions =
+            seq {
+                while currentPoint.Position < endPoint.Position do
+                    yield currentPoint.Position
+                    let span =EditorCoreUtil.GetCharacterSpan line currentPoint
+                    currentPoint <- span.End
+                yield endPoint.Position
+            }
+            |> Seq.toArray
+
+        { _line = line; _positions = positions; _columnNumber = 0 }
+
+    /// Constructor for a new character span from the same line as another character span
+    /// (Warning: requires that you have validated the column number)
+    new (column: SnapshotCharacterSpan, columnNumber: int) =
+        Contract.Requires(columnNumber >= 0 && columnNumber <= column.ColumnCountIncludingLineBreak)
+        { _line = column._line; _positions = column._positions; _columnNumber = columnNumber }
+
+    /// The snapshot line containing the column
+    member x.Line = x._line
+
+    /// The column number of the column
+    /// (Warning: don't use the column number as a buffer position offset)
+    member x.ColumnNumber = x._columnNumber
+
+    /// The position or text buffer offset of the column
+    member x.Position = x._positions.[x._columnNumber]
+
+    /// The point where the column begins
+    member x.Point = new SnapshotPoint(x.Snapshot, x.Position)
+
+    /// The position offset of the column relative the beginning of the line
+    member x.Offset = x.Position - x._positions.[0]
+
+    /// The width of the column in terms of position
+    member x.Width = x._positions.[x._columnNumber + 1] - x.Position
+
+    /// The snapshot span covering the logical character at the column
+    member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
+
+    // The number of columns in the line containing the column including the linebreak
+    member x.ColumnCountIncludingLineBreak = x._positions.Length - 1
+
+    // The number of columns in the line containing the column
+    member x.ColumnCount =
+        if x._line.LineBreakLength = 0 then x._positions.Length - 1 else x._positions.Length - 2
+
+    /// Whether the "character" at column is a linebreak
+    member x.IsLineBreak = x.Position = x._line.End.Position
+
+    /// Whether this is the first column of the line
+    member x.IsStartOfLine = x._columnNumber = 0
+
+    /// The line number of the line containing the column
+    member x.LineNumber = x._line.LineNumber
+
+    /// The snapshot corresponding to the column
+    member x.Snapshot = x._line.Snapshot
+
+    /// Go forward (positive) or backward (negative) by the specified number of
+    /// columns stopping at the beginning or end of the buffer
+    /// (note that linebreaks and surrogate pairs count as a single column)
+    member x.Add count =
+
+        // Start with the line of the current column
+        // and adjust the column number by the specified amount.
+        let mutable column = x
+        let mutable columnNumber = x._columnNumber + count
+
+        // While the column number is negative and there is a preceding line,
+        // move to that line and add its column count.
+        while columnNumber < 0 && column.LineNumber > 0 do
+            let previousLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber - 1)
+            column <- SnapshotCharacterSpan(previousLine)
+            columnNumber <- columnNumber + column.ColumnCountIncludingLineBreak
+        columnNumber <- max 0 columnNumber
+
+        // While the column number is past the end of the current line and there
+        // is a following line, subtract the current line's column count and
+        // move to that line.
+        while columnNumber >= column.ColumnCountIncludingLineBreak && column.LineNumber < column.Snapshot.LineCount - 1 do
+            let nextLine = column.Snapshot.GetLineFromLineNumber(column.LineNumber + 1)
+            columnNumber <- columnNumber - column.ColumnCountIncludingLineBreak
+            column <- SnapshotCharacterSpan(nextLine)
+        columnNumber <- min columnNumber column.ColumnCountIncludingLineBreak
+
+        // Return a new snapshot column.
+        SnapshotCharacterSpan(column, columnNumber)
+
+    /// Go backward (positive) or forward (negative) by the specified number of
+    /// columns
+    member x.Subtract count =
+        x.Add -count
+
+    /// Get the text corresponding to the column
+    member x.GetText () =
+        x.Span.GetText()
+
+    /// Debugger display
+    override x.ToString() =
+        sprintf "Point: %s Line: %d Column: %d" (x.Point.ToString()) x.LineNumber x.ColumnNumber
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
@@ -904,6 +1094,9 @@ module SnapshotLineUtil =
 
     let GetExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
 
+    // Get the span of the character which is pointed to by the point
+    let GetCharacterSpan line point = EditorCoreUtil.GetCharacterSpan line point
+
     /// Get the points on the particular line in order 
     let GetPoints path line = line |> GetExtent |> SnapshotSpanUtil.GetPoints path
 
@@ -936,6 +1129,31 @@ module SnapshotLineUtil =
 
     /// Get the columns in the specified direction including the line break
     let GetColumnsIncludingLineBreak path line = GetColumnsCore path true line
+
+    /// Get the character spans in the line in the path
+    let private GetCharacterSpansCore path includeLineBreak line =
+        let startColumn = SnapshotCharacterSpan(GetStart line)
+        let columnCount =
+            if includeLineBreak then startColumn.ColumnCountIncludingLineBreak
+            else startColumn.ColumnCount
+        let max = columnCount - 1
+        match path with
+        | SearchPath.Forward ->
+            seq {
+                for i = 0 to max do
+                    yield SnapshotCharacterSpan(startColumn, i)
+            }
+        | SearchPath.Backward ->
+            seq {
+                for i = 0 to max do
+                    yield SnapshotCharacterSpan(startColumn, max - i)
+            }
+
+    /// Get the character spans in the specified direction
+    let GetCharacterSpans path line = GetCharacterSpansCore path false line
+
+    /// Get the character spans in the specified direction including the line break
+    let GetCharacterSpansIncludingLineBreak path line = GetCharacterSpansCore path true line
 
     /// Get the line break span 
     let GetLineBreakSpan line = 
@@ -1173,6 +1391,11 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         line.Start.Position = point.Position
 
+    /// Is this the end of the containing line?
+    let IsEndOfLine point =
+        let line = GetContainingLine point
+        line.End.Position = point.Position
+
     /// Is this the start of th eSnapshot
     let IsStartPoint point = 0 = GetPosition point
 
@@ -1283,15 +1506,10 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         line.ExtentIncludingLineBreak
 
-    // Get the span of the character which is pointed to by the point.  Normally this is a 
-    // trivial operation.  The only difficulty if the Point exists on an empty line.  In that
-    // case it is the extent of the line
-    let GetCharacterSpan point = 
+    // Get the span of the character which is pointed to by the point
+    let GetCharacterSpan point =
         let line = GetContainingLine point
-        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
-        match endSpan.Contains(point) with
-            | true -> endSpan
-            | false -> new SnapshotSpan(point,1)
+        SnapshotLineUtil.GetCharacterSpan line point
 
     /// Get the next point in the buffer with wrap
     let GetNextPointWithWrap point = 
@@ -1313,6 +1531,30 @@ module SnapshotPointUtil =
             else tss.GetLineFromLineNumber(line.LineNumber-1).End
         else
             point.Subtract(1)
+
+    /// Get the next character span in the buffer with wrap
+    let GetNextCharacterSpanWithWrap point =
+        let snapshot = GetSnapshot point
+        let nextPoint =
+            GetCharacterSpan point
+            |> SnapshotSpanUtil.GetEndPoint
+        if EditorCoreUtil.IsEndPoint nextPoint then
+            SnapshotUtil.GetStartPoint snapshot
+        else
+            nextPoint
+
+    /// Get the previous character span in the buffer with wrap
+    let GetPreviousCharacterSpanWithWrap point =
+        let snapshot = GetSnapshot point
+        let currentPoint =
+            GetCharacterSpan point
+            |> SnapshotSpanUtil.GetStartPoint
+        if currentPoint.Position = 0 then
+            SnapshotUtil.GetEndPoint snapshot
+        else
+            SubtractOne currentPoint
+            |> GetCharacterSpan
+            |> SnapshotSpanUtil.GetStartPoint
 
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
@@ -1479,6 +1721,27 @@ module SnapshotPointUtil =
         else
             None
 
+    /// Try and get the previous character span on the same line.  If this is at the start of the line
+    /// None will be returned (note this handles surrogate pairs)
+    let TryGetPreviousCharacterSpanOnLine (point: SnapshotPoint) count =
+        let column = SnapshotCharacterSpan(point)
+        if column.ColumnNumber >= count then
+            let previousColumn = column.Subtract count
+            Some previousColumn.Point
+        else
+            None
+
+    /// Try and get the next character span on the same line.  If this is the end of the line or if
+    /// the point is within the line break then None will be returned (note this handles
+    /// surrogate pairs)
+    let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
+        let column = SnapshotCharacterSpan(point)
+        if column.ColumnNumber + count <= column.ColumnCount then
+            let nextColumn = column.Add count
+            Some nextColumn.Point
+        else
+            None
+
     /// Get a point relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
     /// specified.  Goes as far as possible in the specified direction
@@ -1517,6 +1780,36 @@ module SnapshotPointUtil =
                 GetRelativeColumn -1 IsStartPoint
             else
                 GetRelativeColumn 1 IsEndPointOfLastLine
+
+        column.Point
+
+    /// Get a character span relative to a starting point backward or forward
+    /// 'count' characters skipping line breaks if 'skipLineBreaks' is
+    /// specified.  Goes as far as possible in the specified direction
+    let GetRelativeCharacterSpan (startPoint: SnapshotPoint) count skipLineBreaks =
+
+        /// Get the relative column in 'direction' using predicate 'isEnd'
+        /// to stop the motion
+        let getRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
+            let mutable column = SnapshotCharacterSpan(startPoint)
+            let mutable remaining = abs count
+            while remaining > 0 && not (isEnd column.Point) do
+                column <- column.Add direction
+                remaining <- remaining -
+                    if skipLineBreaks then
+                        if column.Line.Length = 0 || not column.IsLineBreak then
+                            1
+                        else
+                            0
+                    else
+                        1
+            column
+
+        let column =
+            if count < 0 then
+                getRelativeColumn -1 IsStartPoint
+            else
+                getRelativeColumn 1 IsEndPointOfLastLine
 
         column.Point
 
