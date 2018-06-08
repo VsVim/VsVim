@@ -3052,6 +3052,34 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Deleted to the next mark with ` should delete to the literal mark wherever it occurs
+            /// in the line
+            /// </summary>
+            [WpfFact]
+            public void DeleteToNextMark()
+            {
+                Create("cat", "  dog", "bat");
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d]`");
+                Assert.Equal(new[] { "caog", "bat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Deleted to the next mark with ' should delete linewise
+            /// in the line
+            /// </summary>
+            [WpfFact]
+            public void DeleteToNextMarkLine()
+            {
+                Create("cat", "  dog", "bat");
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d]'");
+                Assert.Equal(new[] { "bat", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// The delete character command should update the last edit point 
             /// </summary>
             [WpfFact]
