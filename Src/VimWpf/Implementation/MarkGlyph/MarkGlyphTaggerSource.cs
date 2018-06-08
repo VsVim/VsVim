@@ -150,18 +150,23 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 return s_emptyTagList;
             }
 
+            var snapshot = span.Snapshot;
             var list = new List<ITagSpan<MarkGlyphTag>>();
             foreach (var pair in _pairs)
             {
                 var mark = pair.Key;
                 var lineNumber = pair.Value;
 
-                var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
-                if (span.Contains(lineSpan))
+                if (lineNumber < snapshot.LineCount)
                 {
-                    var tag = new MarkGlyphTag(mark.Char);
-                    var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
-                    list.Add(tagSpan);
+                    var line = snapshot.GetLineFromLineNumber(lineNumber);
+                    var lineSpan = new SnapshotSpan(line.Start, 0);
+                    if (span.Contains(lineSpan))
+                    {
+                        var tag = new MarkGlyphTag(mark.Char);
+                        var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
+                        list.Add(tagSpan);
+                    }
                 }
             }
             return list.ToReadOnlyCollectionShallow();
