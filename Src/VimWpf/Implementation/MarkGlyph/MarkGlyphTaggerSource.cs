@@ -15,6 +15,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly IVimBufferData _vimBufferData;
         private readonly IMarkMap _markMap;
         private readonly Dictionary<Mark, int> _lineNumberMap;
+        private readonly List<KeyValuePair<Mark, int>> _pairs = new List<KeyValuePair<Mark, int>>();
 
         private EventHandler _changedEvent;
 
@@ -29,6 +30,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
 
             LoadGlobalMarks();
+            CachePairs();
         }
 
         private void Dispose()
@@ -42,8 +44,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             if (args.VimBufferData == _vimBufferData)
             {
-                UpdateMark(args.Mark);
-                RaiseChanged();
+                if (UpdateMark(args.Mark))
+                {
+                    RaiseChanged();
+                }
             }
         }
 
@@ -58,11 +62,21 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
         {
-            foreach (var mark in _lineNumberMap.Keys.ToList())
+            if (_lineNumberMap.Count != 0)
             {
-                UpdateMark(mark);
+                var wereMarksChanged = false;
+                foreach (var mark in _lineNumberMap.Keys.ToList())
+                {
+                    if (UpdateMark(mark))
+                    {
+                        wereMarksChanged = true;
+                    }
+                }
+                if (wereMarksChanged)
+                {
+                    RaiseChanged();
+                }
             }
-            RaiseChanged();
         }
 
         private void LoadGlobalMarks()
@@ -78,25 +92,27 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
-        private void UpdateMark(Mark mark)
+        private bool UpdateMark(Mark mark)
         {
             var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
+            var newLineNumber = -1;
             if (virtualPoint.IsSome())
             {
                 var line = virtualPoint.Value.Position.GetContainingLine();
                 if (line.Length != 0 || line.LineBreakLength != 0)
                 {
-                    _lineNumberMap[mark] = line.LineNumber;
-                }
-                else
-                {
-                    _lineNumberMap[mark] = -1;
+                    newLineNumber = line.LineNumber;
                 }
             }
-            else
+            if (_lineNumberMap.TryGetValue(mark, out int oldLineNumber))
             {
-                _lineNumberMap[mark] = -1;
+                if (oldLineNumber == newLineNumber)
+                {
+                    return false;
+                }
             }
+            _lineNumberMap[mark] = newLineNumber;
+            return true;
         }
 
         private void RemoveMark(Mark mark)
@@ -106,31 +122,46 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void RaiseChanged()
         {
+            CachePairs();
             _changedEvent?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void CachePairs()
+        {
+            _pairs.Clear();
+
+            if (_lineNumberMap.Count == 0)
+            {
+                return;
+            }
+
+            var pairs =
+                _lineNumberMap
+                .Where(pair => pair.Value != -1)
+                .GroupBy(pair => pair.Value)
+                .Select(grouping => grouping.OrderBy(pair => pair.Key.Char).First());
+            _pairs.AddRange(pairs);
         }
 
         internal ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
         {
-            if (_lineNumberMap.Count == 0)
+            if (_pairs.Count == 0)
             {
                 return s_emptyTagList;
             }
 
             var list = new List<ITagSpan<MarkGlyphTag>>();
-            foreach (var grouping in _lineNumberMap.GroupBy(x => x.Value))
+            foreach (var pair in _pairs)
             {
-                var pair = grouping.OrderBy(x => x.Key.Char).First();
                 var mark = pair.Key;
                 var lineNumber = pair.Value;
-                if (lineNumber != -1)
+
+                var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
+                if (span.Contains(lineSpan))
                 {
-                    var lineSpan = new SnapshotSpan(span.Snapshot.GetLineFromLineNumber(lineNumber).Start, 0);
-                    if (span.Contains(lineSpan))
-                    {
-                        var tag = new MarkGlyphTag(mark.Char);
-                        var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
-                        list.Add(tagSpan);
-                    }
+                    var tag = new MarkGlyphTag(mark.Char);
+                    var tagSpan = new TagSpan<MarkGlyphTag>(lineSpan, tag);
+                    list.Add(tagSpan);
                 }
             }
             return list.ToReadOnlyCollectionShallow();
