@@ -2947,7 +2947,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Jumping to the next mark with ` should jump to the literal mark wherever it occurs 
+            /// Jumping to the next mark with ` should jump to the literal mark wherever it occurs
             /// in the line
             /// </summary>
             [WpfFact]
@@ -2960,7 +2960,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Jumping to the next mark with ' should jump to the start of the line where the mark 
+            /// Jumping to the next mark with ' should jump to the start of the line where the mark
             /// occurs
             /// </summary>
             [WpfFact]
@@ -2973,7 +2973,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Jumping to the previous mark with ` should jump to the literal mark wherever it occurs 
+            /// Jumping to the previous mark with ` should jump to the literal mark wherever it occurs
             /// in the line
             /// </summary>
             [WpfFact]
@@ -2987,7 +2987,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Jumping to the previous mark with ' should jump to the start of the line where the mark 
+            /// Jumping to the previous mark with ' should jump to the start of the line where the mark
             /// occurs
             /// </summary>
             [WpfFact]

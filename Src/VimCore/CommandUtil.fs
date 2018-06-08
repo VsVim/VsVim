@@ -1465,83 +1465,6 @@ type internal CommandUtil
     member x.JumpToMarkLine mark =
         x.JumpToMarkCore mark false
 
-    /// Jump to the next lowercase mark
-    member x.JumpToNextMark count =
-        x.JumpToNearestMark count true
-
-    /// Jump to the previous lowercase mark
-    member x.JumpToPreviousMark count =
-        x.JumpToNearestMark -count true
-
-    /// Jump to the beginning of the line of the next lowercase mark
-    member x.JumpToNextMarkLine count =
-        x.JumpToNearestMark count false
-
-    /// Jump to the beginning of the line of the previous lowercase mark
-    member x.JumpToPreviousMarkLine count =
-        x.JumpToNearestMark -count false
-
-    /// Jump to the nth nearest lettered mark, possibly exactly
-    member x.JumpToNearestMark count exact =
-
-        // Choose a starting position at the beginning or end of the caret line.
-        let caretLine = x.CaretLine
-        let startPoint = if count < 0 then caretLine.Start else caretLine.End
-        let startPosition = startPoint.Position
-
-        // Determine the relative offsets of all the lowercase marks
-        // in the file, sorted from most negative to most positive.
-        let markOffsets =
-            seq {
-                for letter in Letter.All do
-                    yield Mark.LocalMark (LocalMark.Letter letter)
-            }
-            |> Seq.map (fun letter -> _vimBufferData.Vim.MarkMap.GetMark letter _vimBufferData)
-            |> Seq.filter (fun option -> option.IsSome)
-            |> Seq.map (fun option -> option.Value)
-            |> Seq.map (fun virtualPoint -> virtualPoint.Position.Position)
-            |> Seq.sort
-            |> Seq.map (fun markPosition -> markPosition - startPosition)
-
-        // Try to find a mark offset to jump to.
-        let markOffset =
-            let candidates =
-                if count < 0 then
-
-                    // If going backward, reverse the sequence and look at negative offsets.
-                    markOffsets
-                    |> Seq.rev
-                    |> Seq.filter (fun markOffset -> markOffset < 0)
-                    |> Seq.toList
-                else
-
-                    // If going foreward, look at positive offsets.
-                    markOffsets
-                    |> Seq.filter (fun markOffset -> markOffset > 0)
-                    |> Seq.toList
-
-            // Skip past the specified number of marks, or as many as possible.
-            let skipCount = (min (max 0 (candidates.Length - 1)) ((abs count) - 1))
-            candidates
-            |> Seq.skip skipCount
-            |> Seq.tryHead
-
-        // Try to move the caret (possibly exactly) to the offset of that mark.
-        match markOffset with
-        | None ->
-            _commonOperations.Beep()
-            CommandResult.Error
-        | Some markOffset ->
-            let point = startPoint.Add(markOffset)
-            let point =
-                if exact then
-                    point
-                else
-                    SnapshotPointUtil.GetContainingLine point
-                    |> SnapshotLineUtil.GetFirstNonBlankOrEnd
-            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-            CommandResult.Completed ModeSwitch.NoSwitch
-
     /// Jumps to the specified
     member x.JumpToTagCore () =
         match _jumpList.Current with
@@ -2547,10 +2470,6 @@ type internal CommandUtil
         | NormalCommand.JumpToMarkLine c -> x.JumpToMarkLine c
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
-        | NormalCommand.JumpToNextMark -> x.JumpToNextMark count
-        | NormalCommand.JumpToPreviousMark -> x.JumpToPreviousMark count
-        | NormalCommand.JumpToNextMarkLine -> x.JumpToNextMarkLine count
-        | NormalCommand.JumpToPreviousMarkLine -> x.JumpToPreviousMarkLine count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()

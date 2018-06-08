@@ -1138,6 +1138,12 @@ type Motion =
     /// If a number is specified, go to {count} percentage in the file
     | MatchingTokenOrDocumentPercent 
 
+    /// Get the motion to the nearest lowercase mark in the specified direction
+    | NextMark of SearchPath
+
+    /// Get the motion to the nearest lowercase mark line in the specified direction
+    | NextMarkLine of SearchPath
+
     /// Search for the next occurrence of the word under the caret
     | NextWord of SearchPath
 
@@ -2654,18 +2660,6 @@ type NormalCommand =
     /// Jump to the next new item in the tag list
     | JumpToNewerPosition
 
-    /// Jump to the next lowercase mark
-    | JumpToNextMark
-
-    /// Jump to the previous lowercase mark
-    | JumpToPreviousMark
-
-    /// Jump to the start of the line of the next lowercase mark
-    | JumpToNextMarkLine
-
-    /// Jump to the start of the line of the previous lowercase mark
-    | JumpToPreviousMarkLine
-
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion
 
@@ -2871,10 +2865,6 @@ type NormalCommand =
         | NormalCommand.JumpToMarkLine _ -> None
         | NormalCommand.JumpToOlderPosition -> None
         | NormalCommand.JumpToNewerPosition -> None
-        | NormalCommand.JumpToNextMark -> None
-        | NormalCommand.JumpToPreviousMark -> None
-        | NormalCommand.JumpToNextMarkLine -> None
-        | NormalCommand.JumpToPreviousMarkLine -> None
         | NormalCommand.MoveCaretToMotion _ -> None
         | NormalCommand.Undo -> None
         | NormalCommand.UndoLine -> None

@@ -2759,6 +2759,101 @@ type internal MotionUtil
             let searchData = SearchData(last.Pattern, last.Offset, searchKind, last.Options)
             x.SearchCore searchData x.CaretPoint count
 
+    /// Motion from the caret to the nearest lowercase mark
+    member x.NextMark path count =
+        match path with
+        | SearchPath.Forward -> x.NearestMark count true
+        | SearchPath.Backward -> x.NearestMark -count true
+
+    /// Motion from the caret to the nearest lowercase mark line
+    member x.NextMarkLine path count =
+        match path with
+        | SearchPath.Forward -> x.NearestMark count false
+        | SearchPath.Backward -> x.NearestMark -count false
+
+    member x.NearestMark count exact =
+        let isForward = count > 0
+
+        // Choose a starting position at the beginning or end of the caret line.
+        let caretLine = x.CaretLine
+        let caretPoint = x.CaretPoint
+        let startPoint =
+            if exact then
+                caretPoint
+            else
+                if isForward then caretLine.End else caretLine.Start
+        let startPosition = startPoint.Position
+
+        // Determine the relative offsets of all the lowercase marks
+        // in the file, sorted from most negative to most positive.
+        let markOffsets =
+            seq {
+                for letter in Letter.All do
+                    yield Mark.LocalMark (LocalMark.Letter letter)
+            }
+            |> Seq.map (fun letter -> _vimBufferData.Vim.MarkMap.GetMark letter _vimBufferData)
+            |> Seq.filter (fun option -> option.IsSome)
+            |> Seq.map (fun option -> option.Value)
+            |> Seq.map (fun virtualPoint -> virtualPoint.Position.Position)
+            |> Seq.sort
+            |> Seq.map (fun markPosition -> markPosition - startPosition)
+
+        // Try to find a mark offset to jump to.
+        let markOffset =
+            let candidates =
+                if isForward then
+
+                    // If going foreward, look at positive offsets.
+                    markOffsets
+                    |> Seq.filter (fun markOffset -> markOffset > 0)
+                    |> Seq.toList
+                else
+
+                    // If going backward, reverse the sequence and look at negative offsets.
+                    markOffsets
+                    |> Seq.rev
+                    |> Seq.filter (fun markOffset -> markOffset < 0)
+                    |> Seq.toList
+
+            // Skip past the specified number of marks, or as many as possible.
+            let skipCount = (min (max 0 (candidates.Length - 1)) ((abs count) - 1))
+            candidates
+            |> Seq.skip skipCount
+            |> Seq.tryHead
+
+        // Try to move the caret (possibly exactly) to the offset of that mark.
+        match markOffset with
+        | None ->
+            None
+        | Some markOffset ->
+            let endPoint = startPoint.Add(markOffset)
+            if exact then
+                let span =
+                    if isForward then
+                        SnapshotSpan(caretPoint, endPoint)
+                    else
+                        SnapshotSpan(endPoint, caretPoint)
+                let column =
+                    endPoint
+                    |> SnapshotPointUtil.GetColumn
+                    |> CaretColumn.InLastLine
+                MotionResult.CreateCharacterWise(span,
+                    isExclusive = true, isForward = isForward, caretColumn = column)
+            else
+                let endLine = SnapshotPointUtil.GetContainingLine endPoint
+                let lineRange =
+                    if isForward then
+                        SnapshotLineRangeUtil.CreateForLineRange caretLine endLine
+                    else
+                        SnapshotLineRangeUtil.CreateForLineRange endLine caretLine
+                let column =
+                    SnapshotLineUtil.GetFirstNonBlankOrStart endLine
+                    |> SnapshotPointUtil.GetColumn
+                    |> CaretColumn.InLastLine
+                MotionResult.CreateLineWise(lineRange.ExtentIncludingLineBreak,
+                    isForward = true, caretColumn = column)
+            |> Some
+
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
         x.NextWordCore path count false
@@ -2982,6 +3077,8 @@ type internal MotionUtil
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
             | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.Count
+            | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
+            | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
             | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
