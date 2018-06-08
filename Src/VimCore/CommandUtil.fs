@@ -1473,11 +1473,11 @@ type internal CommandUtil
     member x.JumpToPreviousMark count =
         x.JumpToNearestMark -count true
 
-    /// Jump to the beginning of the line of next lowercase mark
+    /// Jump to the beginning of the line of the next lowercase mark
     member x.JumpToNextMarkLine count =
         x.JumpToNearestMark count false
 
-    /// Jump to the beginning of the line of previous lowercase mark
+    /// Jump to the beginning of the line of the previous lowercase mark
     member x.JumpToPreviousMarkLine count =
         x.JumpToNearestMark -count false
 
