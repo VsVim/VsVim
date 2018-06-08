@@ -1531,6 +1531,7 @@ type internal CommandUtil
         // Try to move the caret (possibly exactly) to the offset of that mark.
         match markOffset with
         | None ->
+            _commonOperations.Beep()
             CommandResult.Error
         | Some markOffset ->
             let point = startPoint.Add(markOffset)

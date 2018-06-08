@@ -2947,6 +2947,115 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Jumping to the next mark with ` should jump to the literal mark wherever it occurs 
+            /// in the line
+            /// </summary>
+            [WpfFact]
+            public void JumpToNextMark()
+            {
+                Create("cat", "  dog");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("]`");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the next mark with ' should jump to the start of the line where the mark 
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToNextMarkLine()
+            {
+                Create("cat", "  dog");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("]'");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the previous mark with ` should jump to the literal mark wherever it occurs 
+            /// in the line
+            /// </summary>
+            [WpfFact]
+            public void JumpToPreviousMark()
+            {
+                Create("  cat", "dog");
+                _textView.MoveCaretToLine(1);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 0, 3);
+                _vimBuffer.Process("[`");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the previous mark with ' should jump to the start of the line where the mark 
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToPreviousMarkLine()
+            {
+                Create("  cat", "dog");
+                _textView.MoveCaretToLine(1);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 0, 3);
+                _vimBuffer.Process("['");
+                Assert.Equal(_textBuffer.GetPointInLine(0, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the next mark with ' shouldn't jump too far
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToFirstNextMarkLine()
+            {
+                Create("cat", "  dog", "  bat");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                Vim.MarkMap.SetLocalMark('b', _vimBufferData, 2, 3);
+                _vimBuffer.Process("1]'");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the next mark with ' should obey the count
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToSecondNextMarkLine()
+            {
+                Create("cat", "  dog", "  bat");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                Vim.MarkMap.SetLocalMark('b', _vimBufferData, 2, 3);
+                _vimBuffer.Process("2]'");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the next mark with ' should jump over as many marks as possible
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToTenthNextMarkLine()
+            {
+                Create("cat", "  dog", "  bat");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                Vim.MarkMap.SetLocalMark('b', _vimBufferData, 2, 3);
+                _vimBuffer.Process("10]'");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to the next mark with ' with no marks should beep and not move
+            /// occurs
+            /// </summary>
+            [WpfFact]
+            public void JumpToNearestMarkWithNoMarks()
+            {
+                Create("cat", "dog", "bat");
+                _vimBuffer.Process("]'");
+                Assert.Equal(1, VimHost.BeepCount);
+                Assert.Equal(_textBuffer.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// The delete character command should update the last edit point 
             /// </summary>
             [WpfFact]
