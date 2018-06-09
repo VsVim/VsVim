@@ -29,12 +29,12 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
     /// Raise the mark set event
     member x.RaiseMarkSet mark (vimBufferData: IVimBufferData) =
-        let args = MarkChangedEventArgs(mark, vimBufferData)
+        let args = MarkChangedEventArgs(mark, vimBufferData.TextBuffer)
         _markSetEvent.Trigger x args
 
     /// Raise the mark deleted event
     member x.RaiseMarkDeleted mark (vimBufferData: IVimBufferData) =
-        let args = MarkChangedEventArgs(mark, vimBufferData)
+        let args = MarkChangedEventArgs(mark, vimBufferData.TextBuffer)
         _markDeletedEvent.Trigger x args
 
     /// Get the core information about the global mark represented by the letter

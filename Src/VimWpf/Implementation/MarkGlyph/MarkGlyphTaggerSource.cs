@@ -31,6 +31,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
             _markMap.MarkSet += OnMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
+            _vimBufferData.VimTextBuffer.MarkSet += OnMarkSet;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
         }
 
@@ -38,6 +39,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             _markMap.MarkSet -= OnMarkSet;
             _markMap.MarkDeleted -= OnMarkDeleted;
+            _vimBufferData.VimTextBuffer.MarkSet -= OnMarkSet;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
         }
 
@@ -56,7 +58,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnMarkSet(object sender, MarkChangedEventArgs args)
         {
-            if (args.VimBufferData == _vimBufferData)
+            if (args.TextBuffer == _vimBufferData.TextBuffer)
             {
                 if (UpdateMark(args.Mark))
                 {
@@ -67,7 +69,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnMarkDeleted(object sender, MarkChangedEventArgs args)
         {
-            if (args.VimBufferData == _vimBufferData)
+            if (args.TextBuffer == _vimBufferData.TextBuffer)
             {
                 RemoveMark(args.Mark);
                 RaiseChanged();

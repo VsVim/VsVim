@@ -4534,11 +4534,11 @@ and SwitchModeEventArgs
     /// has no previous one
     member x.PreviousMode = _previousMode
 
-and MarkChangedEventArgs (_mark: Mark, _vimBufferData: IVimBufferData) = 
+and MarkChangedEventArgs (_mark: Mark, _textBuffer: ITextBuffer) = 
     inherit System.EventArgs()
 
     member x.Mark = _mark
-    member x.VimBufferData = _vimBufferData
+    member x.TextBuffer = _textBuffer
 
     override x.ToString() = _mark.ToString()
 
@@ -4659,6 +4659,10 @@ and IVimTextBuffer =
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

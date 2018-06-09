@@ -21,12 +21,19 @@ type internal VimTextBuffer
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
+    let _markSetEvent = StandardEvent<MarkChangedEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None
     let mutable _insertStartPoint: ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint: ITrackingLineColumn option = None
     let mutable _lastEditPoint: ITrackingLineColumn option = None
     let mutable _isSoftTabStopValidForBackspace = true
+
+    /// Raise the mark set event
+    member x.RaiseMarkSet localMark =
+        let mark = Mark.LocalMark localMark
+        let args = MarkChangedEventArgs(mark, _textBuffer)
+        _markSetEvent.Trigger x args
 
     member x.LastVisualSelection 
         with get() =
@@ -44,6 +51,9 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+
+            x.RaiseMarkSet LocalMark.LastSelectionStart
+            x.RaiseMarkSet LocalMark.LastSelectionEnd
 
     member x.InsertStartPoint
         with get() = 
@@ -85,6 +95,8 @@ type internal VimTextBuffer
                     let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
+            x.RaiseMarkSet LocalMark.LastInsertExit
+
      member x.LastEditPoint
         with get() = 
             match _lastEditPoint with
@@ -104,6 +116,8 @@ type internal VimTextBuffer
                     let line, column = SnapshotPointUtil.GetLineColumn point
                     let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
+
+            x.RaiseMarkSet LocalMark.LastEdit
 
     member x.IsSoftTabStopValidForBackspace 
         with get() = _isSoftTabStopValidForBackspace
@@ -228,3 +242,5 @@ type internal VimTextBuffer
         [<CLIEvent>]
         member x.SwitchedMode = _switchedModeEvent.Publish
 
+        [<CLIEvent>]
+        member x.MarkSet = _markSetEvent.Publish

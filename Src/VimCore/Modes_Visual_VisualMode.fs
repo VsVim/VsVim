@@ -196,6 +196,7 @@ type internal VisualMode
         // because if the command modifies the text buffer, the snapshot will be newer
         // than the one that was active when we created it which would interfere
         // with the tracking service.
+        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
         _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
 
         // Save the last visual selection at the global level for use with [count]V|v except
@@ -232,7 +233,14 @@ type internal VisualMode
                         _selectionTracker.UpdateSelection()
                     | CommandResult.Completed modeSwitch ->
                         match modeSwitch with
-                        | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                        | ModeSwitch.NoSwitch ->
+
+                            // Update the recorded visual selection so mark glyphs appear correctly.
+                            _vimTextBuffer.LastVisualSelection <-
+                                VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
+                                |> Some
+                            _selectionTracker.UpdateSelection()
+
                         | ModeSwitch.SwitchMode(_) -> ()
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
