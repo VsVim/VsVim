@@ -16,7 +16,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly IVimBufferData _vimBufferData;
         private readonly IMarkMap _markMap;
         private readonly Dictionary<Mark, int> _lineNumberMap;
-        private readonly List<Tuple<string, int>> _pairs = new List<Tuple<string, int>>();
+        private readonly List<Tuple<string, int>> _glyphPairs;
 
         private EventHandler _changedEvent;
 
@@ -25,6 +25,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vimBufferData = vimBufferData;
             _markMap = _vimBufferData.Vim.MarkMap;
             _lineNumberMap = new Dictionary<Mark, int>();
+            _glyphPairs = new List<Tuple<string, int>>();
 
             LoadGlobalMarks();
             CachePairs();
@@ -131,7 +132,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void CachePairs()
         {
-            _pairs.Clear();
+            _glyphPairs.Clear();
 
             if (_lineNumberMap.Count == 0)
             {
@@ -151,19 +152,19 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                         grouping.Key
                     )
                 );
-            _pairs.AddRange(pairs);
+            _glyphPairs.AddRange(pairs);
         }
 
         private ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
         {
-            if (_pairs.Count == 0)
+            if (_glyphPairs.Count == 0)
             {
                 return s_emptyTagList;
             }
 
             var snapshot = span.Snapshot;
             var list = new List<ITagSpan<MarkGlyphTag>>();
-            foreach (var pair in _pairs)
+            foreach (var pair in _glyphPairs)
             {
                 var chars = pair.Item1;
                 var lineNumber = pair.Item2;
