@@ -16,7 +16,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly IVimBufferData _vimBufferData;
         private readonly IMarkMap _markMap;
         private readonly Dictionary<Mark, int> _lineNumberMap;
-        private readonly List<KeyValuePair<Mark, int>> _pairs = new List<KeyValuePair<Mark, int>>();
+        private readonly List<Tuple<string, int>> _pairs = new List<Tuple<string, int>>();
 
         private EventHandler _changedEvent;
 
@@ -142,7 +142,15 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 _lineNumberMap
                 .Where(pair => pair.Value != -1)
                 .GroupBy(pair => pair.Value)
-                .Select(grouping => grouping.OrderBy(pair => pair.Key.Char).First());
+                .Select(grouping =>
+                    Tuple.Create(
+                        String.Concat(
+                            grouping
+                            .Select(pair => pair.Key.Char)
+                            .OrderBy(key => key)),
+                        grouping.First().Value
+                    )
+                );
             _pairs.AddRange(pairs);
         }
 
@@ -157,8 +165,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             var list = new List<ITagSpan<MarkGlyphTag>>();
             foreach (var pair in _pairs)
             {
-                var mark = pair.Key;
-                var lineNumber = pair.Value;
+                var chars = pair.Item1;
+                var lineNumber = pair.Item2;
 
                 if (lineNumber < snapshot.LineCount)
                 {
@@ -166,7 +174,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     var startSpan = new SnapshotSpan(line.Start, 0);
                     if (span.Contains(startSpan))
                     {
-                        var tag = new MarkGlyphTag(mark.Char);
+                        var tag = new MarkGlyphTag(chars);
                         var tagSpan = new TagSpan<MarkGlyphTag>(startSpan, tag);
                         list.Add(tagSpan);
                     }

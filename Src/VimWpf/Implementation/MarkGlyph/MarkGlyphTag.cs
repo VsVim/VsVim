@@ -4,13 +4,13 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
     internal sealed class MarkGlyphTag : IGlyphTag
     {
-        private readonly char _char;
+        private readonly string _chars;
 
-        internal char Char {  get { return _char; } }
+        internal string Chars {  get { return _chars; } }
 
-        internal MarkGlyphTag(char c)
+        internal MarkGlyphTag(string chars)
         {
-            _char = c;
+            _chars = chars;
         }
     }
 }

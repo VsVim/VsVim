@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
                 var textBlock = new TextBlock
                 {
-                    Text = markTag.Char.ToString(),
+                    Text = markTag.Chars,
                     Foreground = foregroundBrush,
                     Background = Brushes.Transparent,
                     FontFamily = typeface.FontFamily,
