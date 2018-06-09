@@ -148,7 +148,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                             grouping
                             .Select(pair => pair.Key.Char)
                             .OrderBy(key => key)),
-                        grouping.First().Value
+                        grouping.Key
                     )
                 );
             _pairs.AddRange(pairs);
