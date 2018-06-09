@@ -906,7 +906,9 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            x.ProcessCore keyInput
+            let result = x.ProcessCore keyInput
+            _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
+            result
         finally
             _isInProcess <- false
 

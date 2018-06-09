@@ -27,6 +27,8 @@ type internal VimTextBuffer
     let mutable _insertStartPoint: ITrackingLineColumn option = None
     let mutable _lastInsertExitPoint: ITrackingLineColumn option = None
     let mutable _lastEditPoint: ITrackingLineColumn option = None
+    let mutable _lastChangeOrYankStart: ITrackingLineColumn option = None
+    let mutable _lastChangeOrYankEnd: ITrackingLineColumn option = None
     let mutable _isSoftTabStopValidForBackspace = true
 
     /// Raise the mark set event
@@ -119,6 +121,50 @@ type internal VimTextBuffer
 
             x.RaiseMarkSet LocalMark.LastEdit
 
+     member x.LastChangeOrYankStart
+        with get() = 
+            match _lastChangeOrYankStart with
+            | None -> None
+            | Some trackingLineColumn -> trackingLineColumn.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastChangeOrYankStart with
+            | None -> ()
+            | Some trackingLineColumn -> trackingLineColumn.Close()
+
+            _lastChangeOrYankStart <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
+
+            x.RaiseMarkSet LocalMark.LastChangeOrYankStart
+
+     member x.LastChangeOrYankEnd
+        with get() = 
+            match _lastChangeOrYankEnd with
+            | None -> None
+            | Some trackingLineColumn -> trackingLineColumn.Point
+        and set value = 
+
+            // First clear out the previous information
+            match _lastChangeOrYankEnd with
+            | None -> ()
+            | Some trackingLineColumn -> trackingLineColumn.Close()
+
+            _lastChangeOrYankEnd <-
+                match value with
+                | None -> None
+                | Some point -> 
+                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    Some trackingLineColumn
+
+            x.RaiseMarkSet LocalMark.LastChangeOrYankEnd
+
     member x.IsSoftTabStopValidForBackspace 
         with get() = _isSoftTabStopValidForBackspace
         and set value = _isSoftTabStopValidForBackspace <- value
@@ -147,6 +193,8 @@ type internal VimTextBuffer
         x.IsSoftTabStopValidForBackspace <- true
         x.LastInsertExitPoint <- None
         x.LastVisualSelection <- None
+        x.LastChangeOrYankStart <- None
+        x.LastChangeOrYankEnd <- None
 
     /// Get the specified local mark value
     member x.GetLocalMark localMark =
@@ -168,6 +216,10 @@ type internal VimTextBuffer
         | LocalMark.LastSelectionEnd ->
             x.LastVisualSelection
             |> Option.map (fun visualSelection -> visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint)
+        | LocalMark.LastChangeOrYankStart ->
+            x.LastChangeOrYankStart |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastChangeOrYankEnd ->
+            x.LastChangeOrYankEnd |> Option.map VirtualSnapshotPointUtil.OfPoint
 
     /// Set the local mark at the given line and column
     member x.SetLocalMark localMark line column = 
@@ -185,6 +237,8 @@ type internal VimTextBuffer
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false
         | LocalMark.LastEdit -> false
+        | LocalMark.LastChangeOrYankStart -> false
+        | LocalMark.LastChangeOrYankEnd -> false
 
     member x.RemoveLocalMark localMark = 
         match localMark with
@@ -200,6 +254,8 @@ type internal VimTextBuffer
         | LocalMark.LastSelectionStart -> false
         | LocalMark.LastInsertExit -> false
         | LocalMark.LastEdit -> false
+        | LocalMark.LastChangeOrYankStart -> false
+        | LocalMark.LastChangeOrYankEnd -> false
 
     /// Switch to the desired mode
     member x.SwitchMode modeKind modeArgument =
@@ -226,6 +282,12 @@ type internal VimTextBuffer
         member x.LastEditPoint
             with get() = x.LastEditPoint
             and set value = x.LastEditPoint <- value
+        member x.LastChangeOrYankStart
+            with get() = x.LastChangeOrYankStart
+            and set value = x.LastChangeOrYankStart <- value
+        member x.LastChangeOrYankEnd
+            with get() = x.LastChangeOrYankEnd
+            and set value = x.LastChangeOrYankEnd <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind

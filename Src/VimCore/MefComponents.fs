@@ -72,7 +72,9 @@ type internal TrackingLineColumn
     /// Update the internal tracking information based on the new ITextSnapshot
     member x.OnBufferChanged (e: TextContentChangedEventArgs) =
         match _line with 
-        | Some snapshotLine -> x.AdjustForChange snapshotLine e
+        | Some snapshotLine ->
+            if e.AfterVersion <> snapshotLine.Snapshot.Version then
+                x.AdjustForChange snapshotLine e
         | None -> x.CheckForUndo e
 
     /// The change occurred and we are in a valid state.  Update our cached data against 

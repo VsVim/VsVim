@@ -135,7 +135,7 @@ type internal TextChangeTracker
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
-        x.UpdateLastEditPoint args
+        x.UpdateLastChange args
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -153,17 +153,23 @@ type internal TextChangeTracker
     /// Update the last edit point based on the latest change to the ITextBuffer.  Note that 
     /// this isn't necessarily a vim originated edit.  Can be done by another Visual Studio
     /// operation but we still treat it like a Vim edit
-    member x.UpdateLastEditPoint (args: TextContentChangedEventArgs) = 
+    member x.UpdateLastChange (args: TextContentChangedEventArgs) = 
 
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
-            let position = 
+            let editPosition = 
                 if change.Delta > 0 && change.NewEnd > 0 then
                     change.NewEnd - 1
                 else
                     change.NewPosition
-            let point = SnapshotPoint(args.After, position)
-            _vimTextBuffer.LastEditPoint <- Some point
+            let editPoint = SnapshotPoint(args.After, editPosition)
+            _vimTextBuffer.LastEditPoint <- Some editPoint
+            if change.Delta > 0 then
+                let startPoint = SnapshotPoint(args.After, change.NewPosition)
+                _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
+                let endPoint = SnapshotPoint(args.After, change.NewEnd)
+                let endPoint = if change.NewText.EndsWith("\n") then editPoint else endPoint
+                _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
         else
             // When there are multiple changes it is usually the result of a projection 
             // buffer edit coming from a web page edit.  For now that's unsupported

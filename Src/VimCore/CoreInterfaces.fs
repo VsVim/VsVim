@@ -4614,6 +4614,12 @@ and IVimTextBuffer =
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint: SnapshotPoint option with get, set
 
+    /// The start point of the last change or yank
+    abstract LastChangeOrYankStart: SnapshotPoint option with get, set
+
+    /// The end point of the last change or yank
+    abstract LastChangeOrYankEnd: SnapshotPoint option with get, set
+
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
 

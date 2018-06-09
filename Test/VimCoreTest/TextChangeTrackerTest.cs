@@ -27,6 +27,8 @@ namespace Vim.UnitTest
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
             _vimTextBuffer = _factory.Create<IVimTextBuffer>(MockBehavior.Strict);
             _vimTextBuffer.SetupProperty(x => x.LastEditPoint);
+            _vimTextBuffer.SetupProperty(x => x.LastChangeOrYankStart);
+            _vimTextBuffer.SetupProperty(x => x.LastChangeOrYankEnd);
             _trackerRaw = new TextChangeTracker(_vimTextBuffer.Object, _textView, _operations.Object)
             {
                 TrackCurrentChange = true

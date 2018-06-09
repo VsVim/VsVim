@@ -750,6 +750,8 @@ type VimInterpreter
             for number in NumberMark.All do
                 yield Mark.LocalMark (LocalMark.Number number)
             yield Mark.LastExitedPosition
+            yield Mark.LocalMark LocalMark.LastChangeOrYankStart
+            yield Mark.LocalMark LocalMark.LastChangeOrYankEnd
             yield Mark.LocalMark LocalMark.LastInsertExit
             yield Mark.LocalMark LocalMark.LastEdit
             yield Mark.LocalMark LocalMark.LastSelectionStart
