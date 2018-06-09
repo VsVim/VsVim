@@ -172,10 +172,15 @@ type internal VisualMode
 
             _builtCommands <- true
 
+    member x.RecordVisualSelection () =
+        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
+        _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
+
     member x.OnEnter modeArgument = 
         x.EnsureCommandsBuilt()
         _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
+        x.RecordVisualSelection()
 
     member x.OnClose() =
         _eventHandlers.DisposeAll()
@@ -190,23 +195,18 @@ type internal VisualMode
         // Save the VisualSelection before executing the command.  Many commands which exit
         // visual mode such as 'y' change the selection during execution.  We want to restore
         // to the selection before the command executed so save it now
-        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
-
-        // We can't wait until after the command to record the last visual selection
-        // because if the command modifies the text buffer, the snapshot will be newer
-        // than the one that was active when we created it which would interfere
-        // with the tracking service.
-        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
-        _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
+        x.RecordVisualSelection()
 
         // Save the last visual selection at the global level for use with [count]V|v except
         // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
         // experimentally. 
-        if ki <> KeyInputUtil.EscapeKey then
+        match ki, _vimTextBuffer.LastVisualSelection with
+        | keyInput, Some lastVisualSelection when keyInput <> KeyInputUtil.EscapeKey ->
             let vimData = _vimBufferData.Vim.VimData
             match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
             | None -> ()
             | Some v -> vimData.LastVisualSelection <- Some v
+        | _ -> ()
 
         let result = 
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
@@ -217,7 +217,9 @@ type internal VisualMode
                     // Commands like incremental search can move the caret and be incomplete.  Need to 
                     // update the selection while waiting for the next key
                     _selectionTracker.UpdateSelection()
+                    x.RecordVisualSelection()
                     ProcessResult.HandledNeedMoreInput
+
                 | BindResult.Complete commandRanData ->
 
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
@@ -234,13 +236,8 @@ type internal VisualMode
                     | CommandResult.Completed modeSwitch ->
                         match modeSwitch with
                         | ModeSwitch.NoSwitch ->
-
-                            // Update the recorded visual selection so mark glyphs appear correctly.
-                            _vimTextBuffer.LastVisualSelection <-
-                                VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
-                                |> Some
                             _selectionTracker.UpdateSelection()
-
+                            x.RecordVisualSelection()
                         | ModeSwitch.SwitchMode(_) -> ()
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
@@ -249,6 +246,7 @@ type internal VisualMode
                     ProcessResult.OfCommandResult commandRanData.CommandResult
                 | BindResult.Error ->
                     _selectionTracker.UpdateSelection()
+                    x.RecordVisualSelection()
                     _operations.Beep()
                     if ki.IsMouseKey then
                         ProcessResult.NotHandled
@@ -256,6 +254,7 @@ type internal VisualMode
                         ProcessResult.Handled ModeSwitch.NoSwitch
                 | BindResult.Cancelled -> 
                     _selectionTracker.UpdateSelection()
+                    x.RecordVisualSelection()
                     ProcessResult.Handled ModeSwitch.NoSwitch
 
         // If we are switching out Visual Mode then reset the selection.  Only do this if 
