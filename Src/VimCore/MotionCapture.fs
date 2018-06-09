@@ -125,6 +125,10 @@ type internal MotionCapture
                 yield (",", MotionFlags.CaretMovement, Motion.RepeatLastCharSearchOpposite)
                 yield ("*", MotionFlags.CaretMovement, Motion.NextWord SearchPath.Forward)
                 yield ("#", MotionFlags.CaretMovement, Motion.NextWord SearchPath.Backward)
+                yield ("]`", MotionFlags.CaretMovement, Motion.NextMark SearchPath.Forward)
+                yield ("[`", MotionFlags.CaretMovement, Motion.NextMark SearchPath.Backward)
+                yield ("]'", MotionFlags.CaretMovement, Motion.NextMarkLine SearchPath.Forward)
+                yield ("['", MotionFlags.CaretMovement, Motion.NextMarkLine SearchPath.Backward)
             } 
             
         motionSeq 

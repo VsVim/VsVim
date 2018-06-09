@@ -1138,6 +1138,12 @@ type Motion =
     /// If a number is specified, go to {count} percentage in the file
     | MatchingTokenOrDocumentPercent 
 
+    /// Get the motion to the nearest lowercase mark in the specified direction
+    | NextMark of SearchPath
+
+    /// Get the motion to the nearest lowercase mark line in the specified direction
+    | NextMarkLine of SearchPath
+
     /// Search for the next occurrence of the word under the caret
     | NextWord of SearchPath
 

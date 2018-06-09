@@ -2759,6 +2759,82 @@ type internal MotionUtil
             let searchData = SearchData(last.Pattern, last.Offset, searchKind, last.Options)
             x.SearchCore searchData x.CaretPoint count
 
+    /// Motion from the caret to the nearest lowercase mark
+    member x.NextMark path count =
+        match path with
+        | SearchPath.Forward -> x.NearestMark count true
+        | SearchPath.Backward -> x.NearestMark -count true
+
+    /// Motion from the caret to the nearest lowercase mark line
+    member x.NextMarkLine path count =
+        match path with
+        | SearchPath.Forward -> x.NearestMark count false
+        | SearchPath.Backward -> x.NearestMark -count false
+
+    /// Motion to the nth nearest mark, possibly exactly
+    member x.NearestMark count exact =
+        let isForward = count > 0
+
+        // Choose a starting position at the beginning or end of the caret line.
+        let caretLine = x.CaretLine
+        let caretPoint = x.CaretPoint
+        let startPoint =
+            if exact then
+                caretPoint
+            else
+                if isForward then caretLine.End else caretLine.Start
+        let startPosition = startPoint.Position
+
+        let getLocalMark localMark =
+            let mark = Mark.LocalMark localMark
+            _vimBufferData.Vim.MarkMap.GetMark mark _vimBufferData
+
+        // Determine the relative offsets of all the lowercase marks
+        // in the file, sorted from most negative to most positive.
+        let markOffsets =
+            seq {
+                for letter in Letter.All do
+                    yield LocalMark.Letter letter
+            }
+            |> Seq.map (fun localMark -> localMark, getLocalMark localMark)
+            |> Seq.filter (fun (_, option) -> option.IsSome)
+            |> Seq.map (fun (mark, option) -> mark, option.Value)
+            |> Seq.map (fun (mark, virtualPoint) -> mark, (virtualPoint.Position.Position - startPosition))
+            |> Seq.sortBy (fun (_, markOffset) -> markOffset)
+
+        // Try to find a mark offset to jump to.
+        let markOffset =
+            let candidates =
+                if isForward then
+
+                    // If going foreward, look at positive offsets.
+                    markOffsets
+                    |> Seq.filter (fun (_, markOffset) -> markOffset > 0)
+                    |> Seq.toList
+                else
+
+                    // If going backward, reverse the sequence and look at negative offsets.
+                    markOffsets
+                    |> Seq.rev
+                    |> Seq.filter (fun (_, markOffset) -> markOffset < 0)
+                    |> Seq.toList
+
+            // Skip past the specified number of marks, or as many as possible.
+            let skipCount = (min (max 0 (candidates.Length - 1)) ((abs count) - 1))
+            candidates
+            |> Seq.skip skipCount
+            |> Seq.tryHead
+
+        // Try to create a motion (possibly exactly) to that mark.
+        match markOffset with
+        | None ->
+            None
+        | Some (mark, _) ->
+            if exact then
+                x.Mark mark
+            else
+                x.MarkLine mark
+
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
         x.NextWordCore path count false
@@ -2982,6 +3058,8 @@ type internal MotionUtil
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
             | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.Count
+            | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
+            | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
             | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
