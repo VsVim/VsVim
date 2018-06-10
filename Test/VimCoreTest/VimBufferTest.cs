@@ -499,7 +499,7 @@ namespace Vim.UnitTest
 
                 _vimBuffer.ProcessNotation("kV<ESC>");
                 interpreter.RunDisplayMarks(s_emptyList);
-                
+
                 expectedMarks = new[] {
                     @"mark line  col file/text",
                     @" '      9    0 VimBufferTest.cs",
