@@ -4668,7 +4668,7 @@ and IVimTextBuffer =
 
     /// Raised when a mark is set
     [<CLIEvent>]
-    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
+    abstract SpecialMarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

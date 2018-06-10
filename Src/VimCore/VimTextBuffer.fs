@@ -21,7 +21,7 @@ type internal VimTextBuffer
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
-    let _markSetEvent = StandardEvent<MarkChangedEventArgs>()
+    let _specialMarkSetEvent = StandardEvent<MarkChangedEventArgs>()
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None
     let mutable _insertStartPoint: ITrackingLineColumn option = None
@@ -35,7 +35,7 @@ type internal VimTextBuffer
     member x.RaiseMarkSet localMark =
         let mark = Mark.LocalMark localMark
         let args = MarkChangedEventArgs(mark, _textBuffer)
-        _markSetEvent.Trigger x args
+        _specialMarkSetEvent.Trigger x args
 
     member x.LastVisualSelection 
         with get() =
@@ -305,4 +305,4 @@ type internal VimTextBuffer
         member x.SwitchedMode = _switchedModeEvent.Publish
 
         [<CLIEvent>]
-        member x.MarkSet = _markSetEvent.Publish
+        member x.SpecialMarkSet = _specialMarkSetEvent.Publish
