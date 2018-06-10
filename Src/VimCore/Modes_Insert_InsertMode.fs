@@ -906,10 +906,9 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            let result = x.ProcessCore keyInput
-            _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
-            result
+            x.ProcessCore keyInput
         finally
+            _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
             _isInProcess <- false
 
     member x.ProcessCore keyInput =
@@ -937,6 +936,14 @@ type internal InsertMode
 
         | ActiveEditItem.Undo ->
             x.ProcessUndo keyInput
+
+    /// Record special marks associate with a new insert point
+    member x.RecordNewInsertPoint () =
+        let insertPoint = Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- insertPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- insertPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
@@ -981,8 +988,9 @@ type internal InsertMode
         else
             x.BreakUndoSequence "Insert after motion" 
             x.ChangeCombinedEditCommand None
-        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
-        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
+
+        // This is now a separate insert.
+        x.RecordNewInsertPoint()
 
     member x.OnAfterRunInsertCommand (insertCommand: InsertCommand) =
 
@@ -1070,8 +1078,7 @@ type internal InsertMode
         _insertUtil.NewUndoSequence()
 
         // Record start point upon initial entry to insert mode
-        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
-        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
+        x.RecordNewInsertPoint()
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
