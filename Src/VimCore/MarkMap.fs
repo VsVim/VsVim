@@ -28,13 +28,13 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     let mutable _globalLastExitedMap: Map<string, int * int> = Map.empty
 
     /// Raise the mark set event
-    member x.RaiseMarkSet mark (vimBufferData: IVimBufferData) =
-        let args = MarkChangedEventArgs(mark, vimBufferData.TextBuffer)
+    member x.RaiseMarkSet mark textBuffer =
+        let args = MarkChangedEventArgs(mark, textBuffer)
         _markSetEvent.Trigger x args
 
     /// Raise the mark deleted event
-    member x.RaiseMarkDeleted mark (vimBufferData: IVimBufferData) =
-        let args = MarkChangedEventArgs(mark, vimBufferData.TextBuffer)
+    member x.RaiseMarkDeleted mark textBuffer =
+        let args = MarkChangedEventArgs(mark, textBuffer)
         _markDeletedEvent.Trigger x args
 
     /// Get the core information about the global mark represented by the letter
@@ -178,7 +178,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                 else
                     false
         if result then
-            x.RaiseMarkSet mark vimBufferData
+            x.RaiseMarkSet mark vimBufferData.TextBuffer
         result
 
     /// Delete the given mark in the context of the specified IVimBufferData
@@ -191,7 +191,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             | Mark.LastJump -> false
             | Mark.LastExitedPosition -> false
         if result then
-            x.RaiseMarkDeleted mark vimBufferData
+            x.RaiseMarkDeleted mark vimBufferData.TextBuffer
         result
 
     /// Unload the buffer recording the last exited position
@@ -242,7 +242,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             _globalUnloadedMarkMap.Remove letter |> ignore
             x.SetGlobalMark letter vimBufferData.VimTextBuffer line column
             let mark = Mark.GlobalMark letter
-            x.RaiseMarkSet mark vimBufferData
+            x.RaiseMarkSet mark vimBufferData.TextBuffer
 
         let unloadedMarks =
             _globalUnloadedMarkMap
@@ -268,6 +268,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         _globalUnloadedMarkMap <- Map.empty
 
     interface IMarkMap with
+        member x.RaiseMarkSet mark textBuffer = x.RaiseMarkSet mark textBuffer
         member x.GlobalMarks = x.GlobalMarks
         member x.GetGlobalMark letter = x.GetGlobalMark letter
         member x.GetMark mark vimBufferData = x.GetMark mark vimBufferData

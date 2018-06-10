@@ -4544,6 +4544,9 @@ and MarkChangedEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
 
 and IMarkMap =
 
+    /// Raise the mark set event
+    abstract RaiseMarkSet: mark: Mark -> textBuffer: ITextBuffer -> unit
+
     /// The set of active global marks
     abstract GlobalMarks: (Letter * VirtualSnapshotPoint) seq
 
@@ -4665,10 +4668,6 @@ and IVimTextBuffer =
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
-
-    /// Raised when a mark is set
-    [<CLIEvent>]
-    abstract SpecialMarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
