@@ -748,6 +748,9 @@ type internal InsertMode
                 // All other commands break the undo sequence.
                 x.BreakUndoSequence "Insert after motion" 
 
+        // Arrow keys start a new insert point.
+        if isMovement then x.RecordNewInsertPoint()
+
         ProcessResult.OfCommandResult result
 
     member x.BreakUndoSequence name =
