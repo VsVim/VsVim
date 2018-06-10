@@ -18,6 +18,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly Dictionary<Mark, int> _lineNumberMap;
         private readonly List<Tuple<string, int>> _glyphPairs;
 
+        private int _activeMarks;
         private string _hideMarks;
 
         private EventHandler _changedEvent;
@@ -28,6 +29,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap = _vimBufferData.Vim.MarkMap;
             _lineNumberMap = new Dictionary<Mark, int>();
             _glyphPairs = new List<Tuple<string, int>>();
+            _activeMarks = 0;
             _hideMarks = _vimBufferData.LocalSettings.HideMarks;
 
             LoadGlobalMarks();
@@ -82,20 +84,9 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
         {
-            if (_lineNumberMap.Count != 0)
+            if (UpdateAllMarks())
             {
-                var wereMarksChanged = false;
-                foreach (var mark in _lineNumberMap.Keys.ToList())
-                {
-                    if (UpdateMark(mark))
-                    {
-                        wereMarksChanged = true;
-                    }
-                }
-                if (wereMarksChanged)
-                {
-                    RaiseChanged();
-                }
+                RaiseChanged();
             }
         }
 
@@ -104,32 +95,74 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             if (e.Setting.Name == LocalSettingNames.HideMarksName)
             {
                 _hideMarks = _vimBufferData.LocalSettings.HideMarks;
-                CachePairs();
-                RaiseChanged();
+                if (UpdateAllMarks())
+                {
+                    RaiseChanged();
+                }
             }
         }
 
         private bool UpdateMark(Mark mark)
         {
+            if (_hideMarks.Contains(mark.Char))
+            {
+                if (_lineNumberMap.TryGetValue(mark, out int lineNumber) && lineNumber != -1)
+                {
+                    _lineNumberMap[mark] = -1;
+                    --_activeMarks;
+                    return true;
+                }
+                return false;
+            }
+
             var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
+            var oldLineNumber = -1;
             var newLineNumber = -1;
+            if (_lineNumberMap.TryGetValue(mark, out int currentLineNumber))
+            {
+                oldLineNumber = currentLineNumber;
+            }
             if (virtualPoint.IsSome())
             {
-                var line = virtualPoint.Value.Position.GetContainingLine();
-                if (line.Length != 0 || line.LineBreakLength != 0)
+                var point = virtualPoint.Value.Position;
+                var line = point.GetContainingLine();
+                if (line.Length != 0 || line.LineBreakLength != 0 || point.Snapshot.LineCount == 1)
                 {
                     newLineNumber = line.LineNumber;
                 }
             }
-            if (_lineNumberMap.TryGetValue(mark, out int oldLineNumber))
+            if (oldLineNumber == newLineNumber)
             {
-                if (oldLineNumber == newLineNumber)
-                {
-                    return false;
-                }
+                return false;
+            }
+            if (oldLineNumber == -1)
+            {
+                ++_activeMarks;
+            }
+            if (newLineNumber == -1)
+            {
+                --_activeMarks;
             }
             _lineNumberMap[mark] = newLineNumber;
             return true;
+        }
+
+        private bool UpdateAllMarks()
+        {
+            if (_lineNumberMap.Count == 0)
+            {
+                return false;
+            }
+
+            var wereMarksChanged = false;
+            foreach (var mark in _lineNumberMap.Keys.ToList())
+            {
+                if (UpdateMark(mark))
+                {
+                    wereMarksChanged = true;
+                }
+            }
+            return wereMarksChanged;
         }
 
         private void RemoveMark(Mark mark)
@@ -147,7 +180,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             _glyphPairs.Clear();
 
-            if (_lineNumberMap.Count == 0)
+            if (_activeMarks == 0)
             {
                 return;
             }
