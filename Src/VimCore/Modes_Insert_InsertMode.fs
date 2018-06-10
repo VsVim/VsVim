@@ -752,7 +752,7 @@ type internal InsertMode
 
         // Arrow keys start a new insert point.
         if isMovement then
-            x.RecordNewInsertPoint()
+            x.ResetInsertPoint()
         else
             _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
 
@@ -945,7 +945,7 @@ type internal InsertMode
             x.ProcessUndo keyInput
 
     /// Record special marks associated with a new insert point
-    member x.RecordNewInsertPoint () =
+    member x.ResetInsertPoint () =
         let insertPoint = Some x.CaretPoint
         _vimBuffer.VimTextBuffer.InsertStartPoint <- insertPoint
         _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- insertPoint
@@ -997,7 +997,7 @@ type internal InsertMode
             x.ChangeCombinedEditCommand None
 
         // This is now a separate insert.
-        x.RecordNewInsertPoint()
+        x.ResetInsertPoint()
 
     member x.OnAfterRunInsertCommand (insertCommand: InsertCommand) =
 
@@ -1084,10 +1084,10 @@ type internal InsertMode
         x.EnsureCommandsBuilt()
         _insertUtil.NewUndoSequence()
 
-        // Record start point upon initial entry to insert mode
-        x.RecordNewInsertPoint()
+        // Record start point upon initial entry to insert mode.
+        x.ResetInsertPoint()
 
-        // Suppress change marks, which would be too fine grained. We'll manually
+        // Suppress change marks, which would be too fine-grained. We'll manually
         // keep them updated and this will avoid a lot of tracking point churn.
         _textChangeTracker.SuppressLastChangeMarks <- true
 
@@ -1152,6 +1152,9 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
         _textChangeTracker.SuppressLastChangeMarks <- false
+
+        // Escape might have moved the caret back, but it recorded the correct value.
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- _vimBuffer.VimTextBuffer.LastInsertExitPoint
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 
