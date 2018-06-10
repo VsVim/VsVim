@@ -593,7 +593,9 @@ type internal InsertMode
             _broker.DismissDisplayWindows()
 
         // Save the last edit point before moving the column to the left
-        _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
+        let insertExitPoint = Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.LastInsertExitPoint <- insertExitPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertExitPoint
 
         // Save the last text edit
         match _sessionData.CombinedEditCommand with
@@ -909,16 +911,20 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            x.ProcessCore keyInput
+            let result = x.ProcessCore keyInput
+            match result with
+            | ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Normal) -> ()
+            | _ ->
+
+                // The individual text changes will automatically trigger the update
+                // of the last change or yank marks. Override those updates with
+                // the values appropriate for the whole insert so that the "live"
+                // values are correct.
+                _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
+                _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
+
+            result
         finally
-
-            // The individual text changes will automatically trigger the update
-            // of the last change or yank marks. Override those updates with
-            // the values appropriate for the whole insert so that the "live"
-            // values are correct.
-            _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
-            _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
-
             _isInProcess <- false
 
     member x.ProcessCore keyInput =
