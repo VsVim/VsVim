@@ -71,6 +71,11 @@ namespace Vim.VisualStudio
         bool IsWatchWindowView(ITextView textView);
 
         /// <summary>
+        /// Is this a Text Editor ITextView instance
+        /// </summary>
+        bool IsTextEditorView(ITextView textView);
+
+        /// <summary>
         /// Determine if this ITextView is readonly.  This needs to mimic the behavior of 
         /// the VsCodeWindowAdapter::IsReadOnly method
         /// </summary>

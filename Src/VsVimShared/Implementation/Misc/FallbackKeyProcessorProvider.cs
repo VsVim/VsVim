@@ -60,6 +60,11 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return null;
             }
 
+            if (!_vsAdapter.IsTextEditorView(wpfTextView))
+            {
+                return null;
+            }
+
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out IVimBuffer vimBuffer))
             {
                 vimBuffer = null;

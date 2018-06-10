@@ -318,6 +318,36 @@ namespace Vim.VisualStudio.Implementation.Misc
             return value.Equals(true) || value.Equals(1);
         }
 
+        internal bool IsTextEditorView(ITextView textView)
+        {
+            // Our fonts and colors won't work unless this view is in the "Text Editor"
+            // fonts and colors category.
+            var GUID_EditPropCategory_View_MasterSettings =
+                new Guid("{D1756E7C-B7FD-49a8-B48E-87B14A55655A}"); // see {VSIP}/Common/Inc/textmgr.h
+            var textEditorGuid =
+                new Guid("{A27B4E24-A735-4d1d-B8E7-9716E1E3D8E0}"); // Text editor category
+
+            var vsTextView = _editorAdaptersFactoryService.GetViewAdapter(textView);
+            if (vsTextView is IVsTextEditorPropertyCategoryContainer categoryContainer)
+            {
+                var guid = GUID_EditPropCategory_View_MasterSettings;
+                if (categoryContainer.GetPropertyCategory(ref guid, out IVsTextEditorPropertyContainer propertyContainer) == VSConstants.S_OK)
+                {
+                    if (propertyContainer.GetProperty(VSEDITPROPID.VSEDITPROPID_ViewGeneral_FontCategory, out object property) == VSConstants.S_OK)
+                    {
+                        if (property is Guid propertyGuid)
+                        {
+                            if (propertyGuid == textEditorGuid)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         internal bool IsReadOnly(ITextView textView)
         {
             var editorOptions = textView.Options;
@@ -519,6 +549,11 @@ namespace Vim.VisualStudio.Implementation.Misc
         bool IVsAdapter.IsWatchWindowView(ITextView textView)
         {
             return IsWatchWindowView(textView);
+        }
+
+        bool IVsAdapter.IsTextEditorView(ITextView textView)
+        {
+            return IsTextEditorView(textView);
         }
 
         bool IVsAdapter.IsReadOnly(ITextView textView)

@@ -39,6 +39,7 @@ namespace Vim.VisualStudio.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.Setup(x => x.IsWatchWindowView(It.IsAny<ITextView>())).Returns(false);
+            _adapter.Setup(x => x.IsTextEditorView(It.IsAny<ITextView>())).Returns(true);
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
