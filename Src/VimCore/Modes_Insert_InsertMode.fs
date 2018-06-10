@@ -911,7 +911,14 @@ type internal InsertMode
         try
             x.ProcessCore keyInput
         finally
+
+            // The individual text changes will automatically trigger the update
+            // of the last change or yank marks. Override those updates with
+            // the values appropriate for the whole insert so that the "live"
+            // values are correct.
             _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
+            _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
+
             _isInProcess <- false
 
     member x.ProcessCore keyInput =
