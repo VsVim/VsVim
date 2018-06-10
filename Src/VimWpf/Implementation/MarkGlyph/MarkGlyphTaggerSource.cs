@@ -18,6 +18,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly Dictionary<Mark, int> _lineNumberMap;
         private readonly List<Tuple<string, int>> _glyphPairs;
 
+        private string _hideMarks;
+
         private EventHandler _changedEvent;
 
         internal MarkGlyphTaggerSource(IVimBufferData vimBufferData)
@@ -26,6 +28,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap = _vimBufferData.Vim.MarkMap;
             _lineNumberMap = new Dictionary<Mark, int>();
             _glyphPairs = new List<Tuple<string, int>>();
+            _hideMarks = _vimBufferData.LocalSettings.HideMarks;
 
             LoadGlobalMarks();
             CachePairs();
@@ -34,6 +37,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap.MarkDeleted += OnMarkDeleted;
             _vimBufferData.VimTextBuffer.SpecialMarkSet += OnMarkSet;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
+            _vimBufferData.LocalSettings.SettingChanged += OnLocalSettingsChanged;
         }
 
         private void Dispose()
@@ -42,6 +46,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _markMap.MarkDeleted -= OnMarkDeleted;
             _vimBufferData.VimTextBuffer.SpecialMarkSet -= OnMarkSet;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
+            _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
         }
 
         private void LoadGlobalMarks()
@@ -96,6 +101,16 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
+        private void OnLocalSettingsChanged(object sender, SettingEventArgs e)
+        {
+            if (e.Setting.Name == LocalSettingNames.HideMarksName)
+            {
+                _hideMarks = _vimBufferData.LocalSettings.HideMarks;
+                CachePairs();
+                RaiseChanged();
+            }
+        }
+
         private bool UpdateMark(Mark mark)
         {
             var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
@@ -141,6 +156,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
             var pairs =
                 _lineNumberMap
+                .Where(pair => !_hideMarks.Contains(pair.Key.Char))
                 .Where(pair => pair.Value != -1)
                 .GroupBy(pair => pair.Value)
                 .Select(grouping =>
