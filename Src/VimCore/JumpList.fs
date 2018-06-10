@@ -10,7 +10,8 @@ open System.Collections.Generic
 type internal JumpList 
     ( 
         _textView: ITextView,
-        _bufferTrackingService: IBufferTrackingService
+        _bufferTrackingService: IBufferTrackingService,
+        _markMap: IMarkMap
     ) =
 
     let _textBuffer = _textView.TextBuffer
@@ -179,6 +180,7 @@ type internal JumpList
         | Some trackingLineColumn -> trackingLineColumn.Close()
 
         _lastJumpLocation <- Some (_bufferTrackingService.CreateLineColumn _textView.TextBuffer line column LineColumnTrackingMode.Default)
+        _markMap.RaiseMarkSet Mark.LastJump _textView.TextBuffer
 
     /// Start a traversal of the jump list
     member x.StartTraversal() = 

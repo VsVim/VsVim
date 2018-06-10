@@ -73,6 +73,7 @@ namespace Vim.UnitTest
         {
             var creationListeners = new[] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
             var markMap = _factory.Create<IMarkMap>();
+            markMap.Setup(x => x.RaiseMarkSet(It.IsAny<Mark>(), It.IsAny<ITextBuffer>()));
             markMap.Setup(x => x.SetMark(Mark.LastJump, It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
             markMap.Setup(x => x.UnloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs", 0, 0)).Returns(true);
             markMap.Setup(x => x.ReloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs")).Returns(true);

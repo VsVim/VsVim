@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _activeMarks = 0;
             _hideMarks = _vimBufferData.LocalSettings.HideMarks;
 
-            LoadGlobalMarks();
+            LoadNewBufferMarks();
             CachePairs();
 
             _markMap.MarkSet += OnMarkSet;
@@ -54,8 +54,12 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             return _hideMarks.Contains(mark.Char);
         }
 
-        private void LoadGlobalMarks()
+        private void LoadNewBufferMarks()
         {
+            // The last jump mark is set on all buffers.
+            UpdateMark(Mark.LastJump);
+
+            // Global marks are restored when a buffer is reloaded.
             foreach (var tuple in _markMap.GlobalMarks)
             {
                 var letter = tuple.Item1;
