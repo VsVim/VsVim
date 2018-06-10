@@ -947,7 +947,7 @@ type internal InsertMode
         | ActiveEditItem.Undo ->
             x.ProcessUndo keyInput
 
-    /// Record special marks associate with a new insert point
+    /// Record special marks associated with a new insert point
     member x.RecordNewInsertPoint () =
         let insertPoint = Some x.CaretPoint
         _vimBuffer.VimTextBuffer.InsertStartPoint <- insertPoint
