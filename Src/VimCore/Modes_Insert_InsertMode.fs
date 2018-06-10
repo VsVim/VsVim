@@ -751,7 +751,10 @@ type internal InsertMode
                 x.BreakUndoSequence "Insert after motion" 
 
         // Arrow keys start a new insert point.
-        if isMovement then x.RecordNewInsertPoint()
+        if isMovement then
+            x.RecordNewInsertPoint()
+        else
+            _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
 
         ProcessResult.OfCommandResult result
 
@@ -911,19 +914,7 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            let result = x.ProcessCore keyInput
-            match result with
-            | ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Normal) -> ()
-            | _ ->
-
-                // The individual text changes will automatically trigger the update
-                // of the last change or yank marks. Override those updates with
-                // the values appropriate for the whole insert so that the "live"
-                // values are correct.
-                _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- _vimBuffer.VimTextBuffer.InsertStartPoint
-                _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
-
-            result
+            x.ProcessCore keyInput
         finally
             _isInProcess <- false
 
@@ -1096,6 +1087,10 @@ type internal InsertMode
         // Record start point upon initial entry to insert mode
         x.RecordNewInsertPoint()
 
+        // Suppress change marks, which would be too fine grained. We'll manually
+        // keep them updated and this will avoid a lot of tracking point churn.
+        _textChangeTracker.SuppressLastChangeMarks <- true
+
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
         _textChangeTracker.TrackCurrentChange <- true
@@ -1156,6 +1151,7 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
+        _textChangeTracker.SuppressLastChangeMarks <- false
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 

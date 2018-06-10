@@ -17,6 +17,9 @@ type internal ITextChangeTracker =
     /// cause the current change to be completed
     abstract TrackCurrentChange: bool with get, set
 
+    /// Whether we should suppress updating last change marks
+    abstract SuppressLastChangeMarks: bool with get, set
+
     /// Current change
     abstract CurrentChange: TextChange option
 
@@ -48,6 +51,10 @@ type internal TextChangeTracker
 
     /// Whether or not tracking is currently enabled
     let mutable _trackCurrentChange = false
+
+    /// Whether we should suppress updating last change marks.
+    /// Insert mode turns this off and manages the marks itself
+    let mutable _suppressLastChangeMarks = false
 
     do
         // Listen to text buffer change events in order to track edits.  Don't respond to changes
@@ -135,7 +142,7 @@ type internal TextChangeTracker
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
-        x.UpdateLastChange args
+        x.UpdateLastChangeMarks args
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -150,10 +157,10 @@ type internal TextChangeTracker
         else
             x.CompleteChange()
 
-    /// Update the last edit point based on the latest change to the ITextBuffer.  Note that 
-    /// this isn't necessarily a vim originated edit.  Can be done by another Visual Studio
-    /// operation but we still treat it like a Vim edit
-    member x.UpdateLastChange (args: TextContentChangedEventArgs) = 
+    /// Update the last edit point and last change marks based on the latest change to the
+    /// ITextBuffer.  Note that this isn't necessarily a vim originated edit.  Can be done
+    /// by another Visual Studio operation but we still treat it like a Vim edit.
+    member x.UpdateLastChangeMarks (args: TextContentChangedEventArgs) = 
 
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
@@ -164,7 +171,10 @@ type internal TextChangeTracker
                     change.NewPosition
             let editPoint = SnapshotPoint(args.After, editPosition)
             _vimTextBuffer.LastEditPoint <- Some editPoint
-            if change.Delta > 0 then
+
+            // If we not suppressing change marks, automatically update the
+            // last change or yank start and end positions.
+            if not _suppressLastChangeMarks then
                 let startPoint = SnapshotPoint(args.After, change.NewPosition)
                 _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
                 let endPoint = SnapshotPoint(args.After, change.NewEnd)
@@ -218,6 +228,9 @@ type internal TextChangeTracker
         member x.TrackCurrentChange
             with get () = x.TrackCurrentChange
             and set value = x.TrackCurrentChange <- value
+        member x.SuppressLastChangeMarks
+            with get () = _suppressLastChangeMarks
+            and set value = _suppressLastChangeMarks <- value
         member x.CurrentChange = x.CurrentChange
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()
