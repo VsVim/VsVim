@@ -471,7 +471,7 @@ namespace Vim.UnitTest
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
                     @" [      1    0 VimBufferTest.cs",
-                    @" ]     10    1 VimBufferTest.cs",
+                    @" ]      1    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
