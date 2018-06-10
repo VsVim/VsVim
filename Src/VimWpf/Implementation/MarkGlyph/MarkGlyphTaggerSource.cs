@@ -49,6 +49,11 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
         }
 
+        private bool IsMarkHidden(Mark mark)
+        {
+            return _hideMarks.Contains(mark.Char);
+        }
+
         private void LoadGlobalMarks()
         {
             foreach (var tuple in _markMap.GlobalMarks)
@@ -104,37 +109,52 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private bool UpdateMark(Mark mark)
         {
-            if (_hideMarks.Contains(mark.Char))
+            // Check first whether this mark is hidden.
+            if (IsMarkHidden(mark))
             {
                 if (_lineNumberMap.TryGetValue(mark, out int lineNumber) && lineNumber != -1)
                 {
-                    _lineNumberMap[mark] = -1;
+                    // Transition from active to inactive.
                     --_activeMarks;
                     return true;
+                }
+                else
+                {
+                    // It might become unhidden.
+                    _lineNumberMap[mark] = -1;
                 }
                 return false;
             }
 
-            var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
+            // Get old line number.
             var oldLineNumber = -1;
-            var newLineNumber = -1;
             if (_lineNumberMap.TryGetValue(mark, out int currentLineNumber))
             {
                 oldLineNumber = currentLineNumber;
             }
+
+            // Get new line number.
+            var newLineNumber = -1;
+            var virtualPoint = _markMap.GetMark(mark, _vimBufferData);
             if (virtualPoint.IsSome())
             {
                 var point = virtualPoint.Value.Position;
                 var line = point.GetContainingLine();
+
+                // Avoid displyaing marks on the phantom line.
                 if (line.Length != 0 || line.LineBreakLength != 0 || point.Snapshot.LineCount == 1)
                 {
                     newLineNumber = line.LineNumber;
                 }
             }
+
+            // Now check for no change.
             if (oldLineNumber == newLineNumber)
             {
                 return false;
             }
+
+            // Update active marks.
             if (oldLineNumber == -1)
             {
                 ++_activeMarks;
@@ -143,6 +163,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             {
                 --_activeMarks;
             }
+
+            // Record new line number.
             _lineNumberMap[mark] = newLineNumber;
             return true;
         }
@@ -187,7 +209,6 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
             var pairs =
                 _lineNumberMap
-                .Where(pair => !_hideMarks.Contains(pair.Key.Char))
                 .Where(pair => pair.Value != -1)
                 .GroupBy(pair => pair.Value)
                 .Select(grouping =>
