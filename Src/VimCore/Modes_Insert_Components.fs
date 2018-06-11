@@ -142,7 +142,7 @@ type internal TextChangeTracker
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
-        x.UpdateLastChangeMarks args
+        x.UpdateMarks args
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -160,17 +160,17 @@ type internal TextChangeTracker
     /// Update the last edit point and last change marks based on the latest change to the
     /// ITextBuffer.  Note that this isn't necessarily a vim originated edit.  Can be done
     /// by another Visual Studio operation but we still treat it like a Vim edit.
-    member x.UpdateLastChangeMarks (args: TextContentChangedEventArgs) = 
+    member x.UpdateMarks (args: TextContentChangedEventArgs) = 
 
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
-            let editPosition = 
+            let position = 
                 if change.Delta > 0 && change.NewEnd > 0 then
                     change.NewEnd - 1
                 else
                     change.NewPosition
-            let editPoint = SnapshotPoint(args.After, editPosition)
-            _vimTextBuffer.LastEditPoint <- Some editPoint
+            let point = SnapshotPoint(args.After, position)
+            _vimTextBuffer.LastEditPoint <- Some point
 
             // If we not suppressing change marks, automatically update the
             // last change start and end positions.
