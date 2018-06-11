@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using Microsoft.FSharp.Collections;
-using Microsoft.VisualStudio.Text;
 using Moq;
 using Vim.EditorHost;
 using Vim.UI.Wpf.Implementation.CommandMargin;
@@ -114,7 +113,7 @@ namespace Vim.UI.Wpf.UnitTest
             mode.SetupGet(x => x.VisualSelection).Returns(selection);
 
             _vimBuffer.ModeImpl = mode.Object;
-            _vimBuffer.ModeKindImpl = ModeKind.VisualLine;
+            _vimBuffer.ModeKindImpl = ModeKind.VisualBlock;
             var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             Assert.Equal($"{expectedLineCount}x{expectedColumnCount}", actual);
         }
@@ -124,8 +123,6 @@ namespace Vim.UI.Wpf.UnitTest
         {
             string[] lines = { "cat", "dog", "fish" };
             var textBuffer = CreateTextBuffer(lines);
-            
-           const int expectedLineCount = 23;
             
             _search.SetupGet(x => x.InSearch).Returns(false);
             var mode = _factory.Create<IVisualMode>();
@@ -138,8 +135,8 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.VisualLine;
             
-            var span = new CharacterSpan(textBuffer.GetPointInLine(1, 1), textBuffer.GetPointInLine(2, 3));
-            var selection = new VisualSelection.Character(span, SearchPath.Forward);
+            var span = new SnapshotLineRange(textBuffer.CurrentSnapshot, 1, 2);
+            var selection = new VisualSelection.Line(span, SearchPath.Forward, 0);
             mode.SetupGet(x => x.VisualSelection).Returns(selection);
             Assert.Equal("2", CommandMarginUtil.GetShowCommandText(_vimBuffer));
         }
