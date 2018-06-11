@@ -3319,18 +3319,6 @@ type internal CommandUtil
         else
             CommandResult.Error
 
-    /// Record last change or yank start and end positions
-    member x.RecordLastChangeOrYank (span: SnapshotSpan) =
-        let startPoint = span.Start
-        let endPoint =
-            match SnapshotSpanUtil.GetLastIncludedPoint span with
-            | Some point ->
-                if SnapshotPointUtil.IsInsideLineBreak point then point else span.End
-            | None ->
-                span.End
-        _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
-        _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
-
     /// Yank the specified lines into the specified register.  This command should operate
     /// against the visual buffer if possible.  Yanking a line which contains the fold should
     /// yank the entire fold
@@ -3350,7 +3338,7 @@ type internal CommandUtil
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
             _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-            x.RecordLastChangeOrYank span
+            _commonOperations.RecordLastChangeOrYank span true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3362,7 +3350,7 @@ type internal CommandUtil
         | OperationKind.CharacterWise ->
             TextViewUtil.MoveCaretToPoint _textView result.Start
         | _ -> ()
-        x.RecordLastChangeOrYank result.Span
+        _commonOperations.RecordLastChangeOrYank result.Span true
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
@@ -3383,7 +3371,7 @@ type internal CommandUtil
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-        x.RecordLastChangeOrYank editSpan.OverarchingSpan
+        _commonOperations.RecordLastChangeOrYank editSpan.OverarchingSpan true
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
@@ -3391,7 +3379,7 @@ type internal CommandUtil
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-        x.RecordLastChangeOrYank visualSpan.EditSpan.OverarchingSpan
+        _commonOperations.RecordLastChangeOrYank visualSpan.EditSpan.OverarchingSpan true
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection

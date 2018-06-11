@@ -1586,6 +1586,28 @@ type internal CommonOperations
     member x.RaiseSearchResultMessage searchResult = 
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
+    /// Record last change or yank start and end positions
+    member x.RecordLastChangeOrYank span isYank =
+        let startPoint = SnapshotSpanUtil.GetStartPoint span
+        let endPoint = SnapshotSpanUtil.GetEndPoint span
+        let endPoint =
+            match SnapshotSpanUtil.GetLastIncludedPoint span with
+            | Some point ->
+                if SnapshotPointUtil.IsInsideLineBreak point then point else endPoint
+            | None ->
+                endPoint
+        _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
+        _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
+        let lineRange = SnapshotLineRange.CreateForSpan span
+        let lineCount = lineRange.Count
+        if lineCount >= 3 then
+            let message =
+                if isYank then
+                    Resources.Common_LinesYanked lineCount
+                else
+                    Resources.Common_LinesChanged lineCount
+            _statusUtil.OnStatus message
+
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
     member x.Undo count = 
@@ -1741,6 +1763,7 @@ type internal CommonOperations
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
+        member x.RecordLastChangeOrYank span isYank = x.RecordLastChangeOrYank span isYank
         member x.Redo count = x.Redo count
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count

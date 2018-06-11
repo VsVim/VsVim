@@ -25,6 +25,7 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Loose);
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
+            _operations.Setup(x => x.RecordLastChangeOrYank(It.IsAny<SnapshotSpan>(), It.IsAny<bool>()));
             _vimTextBuffer = _factory.Create<IVimTextBuffer>(MockBehavior.Strict);
             _vimTextBuffer.SetupProperty(x => x.LastEditPoint);
             _vimTextBuffer.SetupProperty(x => x.LastChangeOrYankStart);

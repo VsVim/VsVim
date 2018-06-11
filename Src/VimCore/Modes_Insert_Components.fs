@@ -173,13 +173,10 @@ type internal TextChangeTracker
             _vimTextBuffer.LastEditPoint <- Some editPoint
 
             // If we not suppressing change marks, automatically update the
-            // last change or yank start and end positions.
+            // last change start and end positions.
             if not _suppressLastChangeMarks then
-                let startPoint = SnapshotPoint(args.After, change.NewPosition)
-                _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
-                let endPoint = SnapshotPoint(args.After, change.NewEnd)
-                let endPoint = if change.NewText.EndsWith("\n") then editPoint else endPoint
-                _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
+                let span = SnapshotSpan(args.After, change.NewSpan)
+                _operations.RecordLastChangeOrYank span false
         else
             // When there are multiple changes it is usually the result of a projection 
             // buffer edit coming from a web page edit.  For now that's unsupported
