@@ -1378,8 +1378,15 @@ type internal MotionUtil
             _jumpList.Add x.CaretPoint
 
             let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending caretPoint virtualPoint.Position
-            let column = SnapshotPointUtil.GetColumn virtualPoint.Position
+            let markPoint = virtualPoint.Position
+            let markPoint =
+                if not _globalSettings.IsVirtualEditOneMore
+                    && not (SnapshotPointUtil.IsStartOfLine markPoint)
+                    && SnapshotPointUtil.IsInsideLineBreak markPoint then
+                    SnapshotPointUtil.SubtractOne markPoint
+                else
+                    markPoint
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending caretPoint markPoint
             let span = SnapshotSpan(startPoint, endPoint)
             let isForward = caretPoint = startPoint
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward, motionResultFlags = MotionResultFlags.BigDelete) |> Some

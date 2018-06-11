@@ -3080,6 +3080,59 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Jumping to a mark set at the end of a line should not go into virtual space
+            /// </summary>
+            [WpfFact]
+            public void JumpToEndOfLineMark()
+            {
+                Create("cat", "dog", "bat");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("`a");
+                Assert.Equal(_textView.GetPointInLine(1, 2).Position, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Jumping to a mark set at the end of a line should work with 've=onemore'
+            /// </summary>
+            [WpfFact]
+            public void JumpToEndOfLineMarkWithOneMore()
+            {
+                Create("cat", "dog", "bat");
+                _globalSettings.VirtualEdit = "onemore";
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("`a");
+                Assert.Equal(_textView.GetPointInLine(1, 3).Position, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Deleting to a mark set at the end of a line should not go into virtual space
+            /// </summary>
+            [WpfFact]
+            public void DeleteToEndOfLineMark()
+            {
+                // This is messed up, but it's what vim does.
+                Create("cat", "dog", "bat");
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d`a");
+                Assert.Equal(new[] { "cag", "bat" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Deleting to a mark set at the end of a line should work with 've=onemore'
+            /// </summary>
+            [WpfFact]
+            public void DeleteToEndOfLineMarkWithOneMore()
+            {
+                Create("cat", "dog", "bat");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d`a");
+                Assert.Equal(new[] { "ca", "bat" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// The delete character command should update the last edit point 
             /// </summary>
             [WpfFact]
