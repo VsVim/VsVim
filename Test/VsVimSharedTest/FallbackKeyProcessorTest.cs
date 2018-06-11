@@ -102,8 +102,31 @@ namespace Vim.VisualStudio.UnitTest
             public void SimpleInNormal()
             {
                 var commandId = AddRemovedBinding("Global::ctrl+k");
-                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                var isCalled = false;
+                ExpectNotRaise(commandId, () => isCalled = true);
                 _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.C, ModifierKeys.Control));
+                Assert.False(isCalled, "this command should not be called");
+            }
+
+            [WpfFact]
+            public void SpecialInDisabled()
+            {
+                var commandId = AddRemovedBinding("Global::ctrl+Left Arrow");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.Left, ModifierKeys.Control));
+                _commands.Verify();
+            }
+
+            [WpfFact]
+            public void SpecialInDisabledTwoBindings()
+            {
+                var globalCommandId = AddRemovedBinding("Global::ctrl+Left Arrow");
+                var commandId = AddRemovedBinding("Text Editor::ctrl+Left Arrow");
+                _vimBuffer.SwitchMode(ModeKind.Disabled, ModeArgument.None);
+                ExpectRaise(commandId);
+                _keyProcessor.KeyDown(_keyboardDevice.CreateKeyEventArgs(Key.Left, ModifierKeys.Control));
                 _commands.Verify();
             }
         }
