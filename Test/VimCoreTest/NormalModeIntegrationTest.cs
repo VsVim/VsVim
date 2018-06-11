@@ -3399,7 +3399,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Undo of insert with horizontal arrow keys
+            /// Undo of insert with horizontal arrow key should break the undo sequence
             /// </summary>
             [WpfFact]
             public void Undo_InsertWithHorizontalArrowKeys()
@@ -3409,6 +3409,24 @@ namespace Vim.UnitTest
                 Assert.Equal("aaa ddd eee bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
                 Assert.Equal("aaa eee bbb ccc", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// Undo of insert with external caret movement should break the undo sequence
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertWithExternalCaretMovement()
+            {
+                Create("aaa bbb ccc");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("iddd ");
+                _textView.MoveCaretTo(12);
+                _vimBuffer.ProcessNotation("eee <Esc>");
+                Assert.Equal("aaa ddd bbb eee ccc", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa ddd bbb ccc", _textBuffer.GetLineText(0));
                 _vimBuffer.ProcessNotation("u");
                 Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }

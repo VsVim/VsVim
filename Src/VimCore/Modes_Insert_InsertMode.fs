@@ -964,6 +964,7 @@ type internal InsertMode
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             x.ChangeCombinedEditCommand command
         else
+            x.BreakUndoSequence "Insert after motion" 
             x.ChangeCombinedEditCommand None
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
