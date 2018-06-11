@@ -50,21 +50,12 @@ namespace Vim.VisualStudio.Implementation.Misc
         }
 
         /// <summary>
-        /// We create a single fallback key processor on demand and reuse it
-        /// for all text views
+        /// Create a fallback key processor for every text view if we don't create a vim buffer
         /// </summary>
+        /// <param name="wpfTextView"></param>
+        /// <returns></returns>
         KeyProcessor IKeyProcessorProvider.GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            if (_vsAdapter.IsWatchWindowView(wpfTextView))
-            {
-                return null;
-            }
-
-            if (!_vsAdapter.IsTextEditorView(wpfTextView))
-            {
-                return null;
-            }
-
             if (!_vim.TryGetOrCreateVimBufferForHost(wpfTextView, out IVimBuffer vimBuffer))
             {
                 vimBuffer = null;
