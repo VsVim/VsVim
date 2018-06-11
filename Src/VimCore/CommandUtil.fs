@@ -1422,16 +1422,21 @@ type internal CommandUtil
         // If not exact, adjust point to first non-blank or start.
         let adjustPointForExact point =
             if exact then
-                point
+                if not _globalSettings.IsVirtualEditOneMore
+                    && not (SnapshotPointUtil.IsStartOfLine point)
+                    && SnapshotPointUtil.IsInsideLineBreak point then
+                    SnapshotPointUtil.SubtractOne point
+                else
+                    point
             else
                 point
-                |> VirtualSnapshotPointUtil.GetContainingLine
+                |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                |> VirtualSnapshotPointUtil.OfPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
-            _commonOperations.MoveCaretToPoint point.Position ViewFlags.Standard
+            let point = adjustPointForExact point.Position
+            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1450,33 +1455,37 @@ type internal CommandUtil
                 // mark, but the buffer has been unloaded.
                 match markMap.GetMarkInfo mark _vimBufferData with
                 | None -> markNotSet()
-                | Some (ident, name, line, column) ->
+                | Some (_, name, line, column) ->
                     let vimHost = _vimBufferData.Vim.VimHost
-                    let column = if exact then column else 0
+                    let column = if exact then column else -1
                     vimHost.LoadFileIntoNewWindow name line column |> ignore
                     CommandResult.Completed ModeSwitch.NoSwitch
-            | Some point ->
-                let point = adjustPointForExact point
-                if point.Position.Snapshot.TextBuffer = _textBuffer then
-                    jumpLocal point
-                elif _commonOperations.NavigateToPoint point then
-                    _jumpList.Add before
-                    CommandResult.Completed ModeSwitch.NoSwitch
+            | Some virtualPoint ->
+                if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then
+                    jumpLocal virtualPoint
                 else
-                    _statusUtil.OnError Resources.Common_MarkNotSet
-                    CommandResult.Error
+                    if
+                        adjustPointForExact virtualPoint.Position
+                        |> VirtualSnapshotPointUtil.OfPoint
+                        |> _commonOperations.NavigateToPoint
+                    then
+                        _jumpList.Add before
+                        CommandResult.Completed ModeSwitch.NoSwitch
+                    else
+                        _statusUtil.OnError Resources.Common_MarkNotSet
+                        CommandResult.Error
         | Mark.LocalMark localMark ->
             match _vimTextBuffer.GetLocalMark localMark with
             | None -> markNotSet()
-            | Some point -> adjustPointForExact point |> jumpLocal
+            | Some point -> jumpLocal point
         | Mark.LastJump ->
             match _jumpList.LastJumpLocation with
             | None -> markNotSet()
-            | Some point -> adjustPointForExact point |> jumpLocal
+            | Some point -> jumpLocal point
         | Mark.LastExitedPosition ->
             match _vimTextBuffer.Vim.MarkMap.GetMark Mark.LastExitedPosition _vimBufferData with
             | None -> markNotSet()
-            | Some point -> adjustPointForExact point |> jumpLocal
+            | Some point -> jumpLocal point
 
     /// Jump to the specified mark
     member x.JumpToMark mark =
