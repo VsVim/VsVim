@@ -213,7 +213,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         public static string GetShowCommandText(IVimBuffer vimBuffer)
         {
             if (vimBuffer.IncrementalSearch.InSearch)
+            {
                 return string.Empty;
+            }
 
             switch (vimBuffer.ModeKind)
             {
@@ -238,24 +240,40 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var normalMode = vimBuffer.NormalMode;
             if (!string.IsNullOrEmpty(normalMode.Command))
+            {
                 return normalMode.Command;
+            }
+
             if (normalMode.CommandRunner.Inputs.Any())
+            {
                 return KeyInputsToShowCommandText(normalMode.CommandRunner.Inputs);
+            }
+
             if (vimBuffer.BufferedKeyInputs.Any())
+            {
                 return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
+            }
+
             return string.Empty;
         }
 
         private static string GetVisualModeShowCommandText(IVimBuffer vimBuffer, IVisualMode visualMode)
         {
             if (visualMode.CommandRunner.Inputs.Any())
+            {
                 return KeyInputsToShowCommandText(visualMode.CommandRunner.Inputs);
+            }
+
             if (vimBuffer.BufferedKeyInputs.Any())
+            {
                 return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
+            }
 
             var visualSpan = visualMode.VisualSelection.VisualSpan;
             if (!visualSpan.Spans.Any())
+            {
                 return string.Empty; // not sure if this can happen
+            }
 
             switch (visualSpan.VisualKind.VisualModeKind)
             {
@@ -263,13 +281,18 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     return visualSpan.LineRange.Count.ToString();
                 case ModeKind.VisualCharacter:
                     if (visualSpan.LineRange.Count > 1)
+                    {
                         return visualSpan.LineRange.Count.ToString();
+                    }
         
                     var charSpan = visualSpan.Spans.First();
                     // account for the selection possibly extending past the last printable character in the line to include some or all of a multi-character newline
                     var line = charSpan.Snapshot.GetLineFromPosition(charSpan.Start);
                     if (charSpan.End.Position > line.End)
+                    {
                         return (line.End - charSpan.Start + 1).ToString();
+                    }
+
                     return charSpan.Length.ToString();
                 case ModeKind.VisualBlock:
                     return $"{visualSpan.LineRange.Count}x{visualSpan.Spans.Max(x => x.Length)}";
