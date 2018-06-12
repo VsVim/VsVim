@@ -239,11 +239,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private static string GetNormalModeShowCommandText(IVimBuffer vimBuffer)
         {
             var normalMode = vimBuffer.NormalMode;
-            if (!string.IsNullOrEmpty(normalMode.Command))
-            {
-                return normalMode.Command;
-            }
-
             if (normalMode.CommandRunner.Inputs.Any())
             {
                 return KeyInputsToShowCommandText(normalMode.CommandRunner.Inputs);
@@ -252,6 +247,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (vimBuffer.BufferedKeyInputs.Any())
             {
                 return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
+            }
+
+            if (!string.IsNullOrEmpty(normalMode.Command))
+            {
+                return normalMode.Command;
             }
 
             return string.Empty;

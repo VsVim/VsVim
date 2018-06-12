@@ -405,10 +405,14 @@ namespace Vim.UI.Wpf.UnitTest
             public void NoEvents1()
             {
                 var mode = new Mock<INormalMode>();
+                var runner = new Mock<ICommandRunner>();
+                mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
+                runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
                 _globalSettings.SetupGet(x => x.ShowCommand).Returns(true);
                 _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
                 mode.SetupGet(x => x.Command).Returns("foo");
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+                _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
                 _vimBuffer.ModeKindImpl = ModeKind.Normal;
                 _vimBuffer.ModeImpl = mode.Object;
                 _vimBuffer.NormalModeImpl = mode.Object;
