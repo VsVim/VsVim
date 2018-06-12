@@ -218,7 +218,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             switch (vimBuffer.ModeKind)
             {
                 case ModeKind.Normal:
-                    return string.IsNullOrEmpty(vimBuffer.NormalMode.Command) ? string.Concat(vimBuffer.BufferedKeyInputs.Select(x => x.Char)) : vimBuffer.NormalMode.Command;
+                    return GetNormalModeShowCommandText(vimBuffer);
                 case ModeKind.SelectBlock:
                     return GetVisualModeShowCommandText(vimBuffer, vimBuffer.VisualBlockMode);
                 case ModeKind.SelectCharacter:
@@ -234,12 +234,24 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             return string.Empty;
         }
 
+        private static string GetNormalModeShowCommandText(IVimBuffer vimBuffer)
+        {
+            var normalMode = vimBuffer.NormalMode;
+            if (!string.IsNullOrEmpty(normalMode.Command))
+                return normalMode.Command;
+            if (normalMode.CommandRunner.Inputs.Any())
+                return KeyInputsToShowCommandText(normalMode.CommandRunner.Inputs);
+            if (vimBuffer.BufferedKeyInputs.Any())
+                return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
+            return string.Empty;
+        }
+
         private static string GetVisualModeShowCommandText(IVimBuffer vimBuffer, IVisualMode visualMode)
         {
             if (visualMode.CommandRunner.Inputs.Any())
-                return string.Concat(visualMode.CommandRunner.Inputs.Select(x => x.Char));
+                return KeyInputsToShowCommandText(visualMode.CommandRunner.Inputs);
             if (vimBuffer.BufferedKeyInputs.Any())
-                return string.Concat(vimBuffer.BufferedKeyInputs.Select(x => x.Char));
+                return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
 
             var visualSpan = visualMode.VisualSelection.VisualSpan;
             if (!visualSpan.Spans.Any())
@@ -264,6 +276,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             return string.Empty;
+        }
+
+        private static string KeyInputsToShowCommandText(IEnumerable<KeyInput> inputs)
+        {
+            return string.Concat(inputs.Select(x =>
+                                               {
+                                                   string text;
+                                                   return CharDisplay.ControlCharUtil.TryGetDisplayText(x.Char, out text) ? text : x.Char.ToString();
+                                               }));
         }
     }
 }

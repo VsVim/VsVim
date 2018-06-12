@@ -50,12 +50,36 @@ namespace Vim.UI.Wpf.UnitTest
             const string partialCommand = @"\s";
             mode.SetupGet(x => x.Command).Returns(string.Empty);
             
+            var runner = _factory.Create<ICommandRunner>();
+            mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
+            runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
+            
             _vimBuffer.BufferedKeyInputsImpl = ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput));
             _vimBuffer.NormalModeImpl = mode.Object;
             _vimBuffer.ModeKindImpl = ModeKind.Normal;
             
             var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
             Assert.Equal(partialCommand, actual);
+        }
+        
+        [WpfFact]
+        public void GetCommandStatusNormalModeCommandInputs()
+        {
+            _search.SetupGet(x => x.InSearch).Returns(false);
+            var mode = _factory.Create<INormalMode>();
+            mode.SetupGet(x => x.Command).Returns(string.Empty);
+            
+            var runner = _factory.Create<ICommandRunner>();
+            const string partialCommand = "\u0017"; // <C-w>
+            mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
+            runner.SetupGet(x => x.Inputs).Returns(ListModule.OfSeq(partialCommand.Select(KeyInputUtil.CharToKeyInput)));
+
+            _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
+            _vimBuffer.NormalModeImpl = mode.Object;
+            _vimBuffer.ModeKindImpl = ModeKind.Normal;
+            
+            var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
+            Assert.Equal("^W", actual);
         }
         
         [WpfFact]
