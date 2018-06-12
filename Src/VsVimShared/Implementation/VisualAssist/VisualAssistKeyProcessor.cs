@@ -8,6 +8,15 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
     {
         private readonly IVimBuffer _vimBuffer;
 
+        private bool IsTextViewFocused
+        {
+            get
+            {
+                // If the peek window is open, the text view won't have the focus.
+                return _vimBuffer.Vim.VimHost.IsFocused(_vimBuffer.TextView);
+            }
+        }
+
         internal VisualAssistKeyProcessor(IVimBuffer vimBuffer)
         {
             _vimBuffer = vimBuffer;
@@ -22,7 +31,10 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
         {
             VimTrace.TraceInfo("VisualAssistKeyProcessor::PreviewKeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
 
-            if (_vimBuffer.ModeKind == ModeKind.Normal && args.Key == Key.OemPeriod && args.KeyboardDevice.Modifiers == ModifierKeys.None)
+            if (IsTextViewFocused
+                && _vimBuffer.ModeKind == ModeKind.Normal
+                && args.Key == Key.OemPeriod
+                && args.KeyboardDevice.Modifiers == ModifierKeys.None)
             {
                 // Visual Assist in general won't process any keys when we are in normal mode because we have 
                 // the caret hidden.  However it appears they check for the caret hidden on a timer or some
@@ -49,8 +61,10 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
         public override void PreviewKeyUp(KeyEventArgs args)
         {
             VimTrace.TraceInfo("VisualAssistKeyProcessor::PreviewKeyUp {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
-            if (args.Key == Key.Escape ||
-                (args.Key == Key.OemOpenBrackets && args.KeyboardDevice.Modifiers == ModifierKeys.Control))
+            if (IsTextViewFocused
+                && (args.Key == Key.Escape
+                    || (args.Key == Key.OemOpenBrackets
+                        && args.KeyboardDevice.Modifiers == ModifierKeys.Control)))
             {
                 // The Escape key was pressed and we are still inside of Insert mode.  This means that Visual Assit
                 // handled the key stroke to dismiss intellisense.  Leave insert mode now to complete the operation
