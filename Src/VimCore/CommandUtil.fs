@@ -2106,7 +2106,7 @@ type internal CommandUtil
                 commandResult
 
         // Function to actually repeat the last change
-        let rec repeat (command: StoredCommand) (repeatData: CommandData option) =
+        let rec repeat (storedCommand: StoredCommand) (repeatData: CommandData option) =
 
             // Before repeating a command it needs to be updated in the context of the repeat operation. This
             // includes recalculating the visual span and considering explicit counts that are passed into
@@ -2119,8 +2119,8 @@ type internal CommandUtil
                 | None -> None
                 | Some r -> r.Count
 
-            match command with
-            | StoredCommand.NormalCommand (command, data, _) ->
+            match storedCommand with
+            | StoredCommand.NormalCommand (command, data, flags) ->
                 let command, data =
                     match repeatCount with
                     | Some _ ->
@@ -2130,6 +2130,29 @@ type internal CommandUtil
                             { motionData with MotionArgument = argument })
                         (command, data)
                     | None -> (command, data)
+                let data =
+                    match command with
+                    | NormalCommand.PutAfterCaret _
+                    | NormalCommand.PutBeforeCaret _
+                        ->
+
+                        // Special case when redoing positive numbered register puts:
+                        // increment the register number (see vim ':help redo-register').
+                        match data.RegisterName with
+                        | Some (RegisterName.Numbered numberedRegister) ->
+                            match numberedRegister.NextPositive with
+                            | Some nextNumberedRegister ->
+                                let nextRegister = RegisterName.Numbered nextNumberedRegister
+                                let newData = { data with RegisterName = Some nextRegister }
+                                let newStoredCommand = StoredCommand.NormalCommand (command, newData, flags)
+                                _vimData.LastCommand <- Some newStoredCommand
+                                newData
+                            | _ ->
+                                data
+                        | _ ->
+                            data
+                    | _ ->
+                        data
                 x.RunNormalCommand command data
             | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) ->
                 let data =

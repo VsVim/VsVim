@@ -81,6 +81,19 @@ type NumberedRegister =
         | Number8 -> '8'
         | Number9 -> '9'
 
+    member x.NextPositive = 
+        match x with 
+        | Number0 -> None
+        | Number1 -> Some Number2
+        | Number2 -> Some Number3
+        | Number3 -> Some Number4
+        | Number4 -> Some Number5
+        | Number5 -> Some Number6
+        | Number6 -> Some Number7
+        | Number7 -> Some Number8
+        | Number8 -> Some Number9
+        | Number9 -> None
+
     static member OfChar c = 
         match c with
         | '0' -> Some Number0
