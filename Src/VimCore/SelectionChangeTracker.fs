@@ -65,12 +65,16 @@ type internal SelectionChangeTracker
             // ITextView.  If it deleted text for example it would cause a selection event in 
             // every ITextView which had a caret in the area.  Only the active one should be the
             // one responding to it.
-            if _textView.Selection.IsEmpty then
 
-                // It's also possible that VsVim itself programmatically cleared the
-                // selection elsewere, e.g. during 'go to definition' command handling.
-                // Avoid leaving the buffer in any kind of visual or select mode
-                // with a zero-width selection.
+            // However, it's also possible that VsVim itself programmatically cleared the
+            // selection elsewere, e.g. during 'go to definition' command handling.
+            // Avoid leaving the buffer in any kind of visual or select mode
+            // with a zero-width selection.
+            if
+                _textView.Selection.IsEmpty
+                && VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind
+                && not _vimBuffer.IsSwitchingMode
+            then
                 _vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
 
         elif _vimBuffer.ModeKind = ModeKind.Insert && x.ShouldIgnoreSelectionChange() then
