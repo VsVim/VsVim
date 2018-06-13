@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Windows.Input;
+using System.Text;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {
@@ -11,6 +12,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private static readonly Dictionary<Key, KeyInput> s_wpfControlKeyToKeyInputMap;
         private static readonly Dictionary<VimKey, Key> s_vimKeyToWpfKeyMap;
         private static readonly Dictionary<KeyInput, Key> s_keyInputToWpfKeyMap;
+        private static readonly byte[] s_keyboardState = new byte[256];
 
         static AlternateKeyUtil()
         {
@@ -166,6 +168,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
+            // Vim allows certain "lazy" control keys, such as <C-6> for <C-^>.
             if ((modifierKeys == ModifierKeys.Control ||
                 modifierKeys == (ModifierKeys.Control | ModifierKeys.Shift)) &&
                 s_wpfControlKeyToKeyInputMap.TryGetValue(key, out keyInput))
@@ -173,7 +176,60 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
+            // If the key is not a letter and has the alt or control modifier and doesn't
+            // correspond to an ASCII control key (like <C-^>), we need to convert it here.
+            // This is needed because key combinations like <C-;> and <A-.> won't
+            // be passed to TextInput, because they aren't text.
+            if (!(key >= Key.A && key <= Key.Z)
+                && (modifierKeys & (ModifierKeys.Alt | ModifierKeys.Control)) != 0)
+            {
+                switch (key)
+                {
+                    case Key.LeftAlt:
+                    case Key.RightAlt:
+                    case Key.LeftCtrl:
+                    case Key.RightCtrl:
+                    case Key.LeftShift:
+                    case Key.RightShift:
+
+                        // Avoid work for common cases.
+                        break;
+
+                    default:
+                        if (GetCharFromKey(key, out char unicodeChar))
+                        {
+                            var keyModifiers = ConvertToKeyModifiers(modifierKeys);
+                            keyInput = KeyInputUtil.ApplyKeyModifiersToChar(unicodeChar, keyModifiers);
+
+                            // Control characters will be handled normally by TextInput.
+                            if (!System.Char.IsControl(keyInput.Char))
+                            {
+                                return true;
+                            }
+                        }
+                        break;
+                }
+            }
+
             keyInput = null;
+            return false;
+        }
+
+        private static bool GetCharFromKey(Key key, out char unicodeChar)
+        {
+            int virtualKey = KeyInterop.VirtualKeyFromKey(key);
+            uint MAPVK_VK_TO_VSC = 0x0;
+            uint scanCode = NativeMethods.MapVirtualKey((uint)virtualKey, MAPVK_VK_TO_VSC);
+            StringBuilder stringBuilder = new StringBuilder(1);
+            int result = NativeMethods.ToUnicodeEx((uint)virtualKey, scanCode,
+                s_keyboardState, stringBuilder, stringBuilder.Capacity,
+                0, NativeMethods.GetKeyboardLayout(0));
+            if (result == 1)
+            {
+                unicodeChar = stringBuilder[0];
+                return true;
+            }
+            unicodeChar = default(char);
             return false;
         }
 

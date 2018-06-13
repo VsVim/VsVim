@@ -73,6 +73,9 @@ namespace Vim.UI.Wpf
         internal static extern bool GetKeyboardLayoutName(char[] name);
 
         [DllImport("user32.dll")]
+        public static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+        [DllImport("user32.dll")]
         internal static extern uint GetKeyboardLayoutList(int count, [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] list);
 
         [DllImport("user32.dll")]
@@ -90,6 +93,7 @@ namespace Vim.UI.Wpf
             uint virtualKey,
             uint scanCode,
             byte[] keyState,
+            [Out, MarshalAs(UnmanagedType.LPWStr, SizeParamIndex = 4)]
             StringBuilder buffer,
             int bufferSize,
             uint flags,
