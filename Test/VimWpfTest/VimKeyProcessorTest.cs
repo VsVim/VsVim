@@ -46,9 +46,24 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void KeyDown1()
             {
-                var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
-                _processor.KeyDown(arg);
-                Assert.False(arg.Handled);
+                var oldKeyboardlayout = NativeMethods.GetKeyboardLayout(0);
+                var germanLayout = NativeMethods.LoadKeyboardLayout("00000407",
+                    NativeMethods.KLF_ACTIVATE, out bool needUnload);
+                try
+                {
+                    // <AltGr-8> should be ']' on a german keyboard.
+                    var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
+                    _processor.KeyDown(arg);
+                    Assert.False(arg.Handled);
+                }
+                finally
+                {
+                    NativeMethods.ActivateKeyboardLayout(oldKeyboardlayout, 0);
+                    if (needUnload)
+                    {
+                        NativeMethods.UnloadKeyboardLayout(germanLayout);
+                    }
+                }
             }
 
             /// <summary>

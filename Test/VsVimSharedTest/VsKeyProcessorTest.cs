@@ -277,16 +277,6 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// Don't handle the AltGr scenarios here.  The AltGr key is just too ambiguous to handle in the 
-            /// KeyDown event
-            /// </summary>
-            [WpfFact]
-            public void AltGr()
-            {
-                VerifyNotHandle(Key.D, ModifierKeys.Alt | ModifierKeys.Control);
-            }
-
-            /// <summary>
             /// Don't handle any alpha input in the KeyDown phase.  This should all be handled inside
             /// of the TextInput phase instead
             /// </summary>

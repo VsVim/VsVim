@@ -96,6 +96,9 @@ namespace Vim.UI.Wpf
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);
 
+        [DllImport("user32.dll")]
+        internal static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint Flags);
+
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         internal static extern int ToUnicodeEx(
             uint virtualKey,
