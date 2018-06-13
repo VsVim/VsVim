@@ -137,14 +137,6 @@ namespace Vim.UI.Wpf
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (_keyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
-            {
-                // AltGr greatly confuses things becuase it's realized in WPF as Control | Alt.  So
-                // while it's possible to use Control to further modify a key which used AltGr
-                // originally the result is indistinguishable here (and in gVim).  Don't attempt
-                // to process it
-                handled = false;
-            }
             else
             {
                 // Attempt to map the key information into a KeyInput value which can be processed

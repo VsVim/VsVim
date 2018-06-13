@@ -12,7 +12,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private static readonly Dictionary<Key, KeyInput> s_wpfControlKeyToKeyInputMap;
         private static readonly Dictionary<VimKey, Key> s_vimKeyToWpfKeyMap;
         private static readonly Dictionary<KeyInput, Key> s_keyInputToWpfKeyMap;
-        private static readonly byte[] s_keyboardState = new byte[256];
+
+        private readonly byte[] _keyboardState = new byte[256];
 
         static AlternateKeyUtil()
         {
@@ -147,11 +148,17 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return res;
         }
 
+        internal static bool IsAltGr(ModifierKeys modifierKeys)
+        {
+            var altGr = ModifierKeys.Control | ModifierKeys.Alt;
+            return (modifierKeys & altGr) == altGr;
+        }
+
         #region IKeyUtil
 
         bool IKeyUtil.IsAltGr(ModifierKeys modifierKeys)
         {
-            return modifierKeys == (ModifierKeys.Alt | ModifierKeys.Control);
+            return IsAltGr(modifierKeys);
         }
 
         VimKeyModifiers IKeyUtil.GetKeyModifiers(ModifierKeys modifierKeys)
@@ -176,12 +183,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
-            // If the key is not a letter and has the control modifier and doesn't
+            // If the key is not a pure alt or alt-shift key combination, and doesn't
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
-            // This is needed because key combinations like <C-;> won't
-            // be passed to TextInput, because they can't be represented as system text.
-            if (!(key >= Key.A && key <= Key.Z)
-                && (modifierKeys & ModifierKeys.Control) != 0)
+            // This is needed because key combinations like <C-;> won't be passed to
+            // TextInput, because they can't be represented as system or control text.
+            if (modifierKeys != ModifierKeys.Alt
+                && modifierKeys != (ModifierKeys.Alt | ModifierKeys.Shift)
+                && (modifierKeys & (ModifierKeys.Control | ModifierKeys.Alt)) != 0)
             {
                 switch (key)
                 {
@@ -191,12 +199,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     case Key.RightCtrl:
                     case Key.LeftShift:
                     case Key.RightShift:
+                    case Key.System:
 
                         // Avoid work for common cases.
                         break;
 
                     default:
-                        if (GetCharFromKey(key, out char unicodeChar))
+                        if (GetCharFromKey(key, modifierKeys, out char unicodeChar))
                         {
                             var keyModifiers = ConvertToKeyModifiers(modifierKeys);
                             keyInput = KeyInputUtil.ApplyKeyModifiersToChar(unicodeChar, keyModifiers);
@@ -215,15 +224,43 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return false;
         }
 
-        private static bool GetCharFromKey(Key key, out char unicodeChar)
+        private bool GetCharFromKey(Key key, ModifierKeys modifierKeys, out char unicodeChar)
         {
+            byte keyIsDown = 0x80;
+            byte keyIsUp = 0x00;
+
             int virtualKey = KeyInterop.VirtualKeyFromKey(key);
-            uint MAPVK_VK_TO_VSC = 0x0;
-            uint scanCode = NativeMethods.MapVirtualKey((uint)virtualKey, MAPVK_VK_TO_VSC);
+            uint scanCode = NativeMethods.MapVirtualKey((uint)virtualKey, NativeMethods.MAPVK_VK_TO_VSC);
             StringBuilder stringBuilder = new StringBuilder(1);
+            var keyboardLayout = NativeMethods.GetKeyboardLayout(0);
+
+            // Fail if the AltGr is set and the key has an AltGr representation.
+            if (IsAltGr(modifierKeys))
+            {
+                var hasShift = (modifierKeys & ModifierKeys.Shift) != 0;
+                _keyboardState[NativeMethods.VK_LSHIFT] = hasShift ? keyIsDown : keyIsUp;
+                _keyboardState[NativeMethods.VK_LCONTROL] = keyIsDown;
+                _keyboardState[NativeMethods.VK_LMENU] = keyIsDown;
+                _keyboardState[NativeMethods.VK_SHIFT] = hasShift ? keyIsDown : keyIsUp;
+                _keyboardState[NativeMethods.VK_CONTROL] = keyIsDown;
+                _keyboardState[NativeMethods.VK_MENU] = keyIsDown;
+                int altGrResult = NativeMethods.ToUnicodeEx((uint)virtualKey, scanCode,
+                    _keyboardState, stringBuilder, stringBuilder.Capacity, 0, keyboardLayout);
+                if (altGrResult == 1)
+                {
+                    unicodeChar = default(char);
+                    return false;
+                }
+            }
+
+            _keyboardState[NativeMethods.VK_LSHIFT] = keyIsUp;
+            _keyboardState[NativeMethods.VK_LCONTROL] = keyIsUp;
+            _keyboardState[NativeMethods.VK_LMENU] = keyIsUp;
+            _keyboardState[NativeMethods.VK_SHIFT] = keyIsUp;
+            _keyboardState[NativeMethods.VK_CONTROL] = keyIsUp;
+            _keyboardState[NativeMethods.VK_MENU] = keyIsUp;
             int result = NativeMethods.ToUnicodeEx((uint)virtualKey, scanCode,
-                s_keyboardState, stringBuilder, stringBuilder.Capacity,
-                0, NativeMethods.GetKeyboardLayout(0));
+                _keyboardState, stringBuilder, stringBuilder.Capacity, 0, keyboardLayout);
             if (result == 1)
             {
                 unicodeChar = stringBuilder[0];

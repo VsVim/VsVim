@@ -29,6 +29,14 @@ namespace Vim.UI.Wpf
 
         internal const uint INFINITE = 0xffffffff;
 
+        internal const uint VK_LSHIFT = 0xA0;
+
+        internal const uint VK_LCONTROL = 0xA2;
+
+        internal const uint VK_LMENU = 0xA4;
+
+        internal const uint MAPVK_VK_TO_VSC = 0x0;
+
         /// <summary>
         /// Keyboard code for the default English QWERTY layout
         /// </summary>
