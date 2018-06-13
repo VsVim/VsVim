@@ -176,12 +176,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
-            // If the key is not a letter and has the alt or control modifier and doesn't
+            // If the key is not a letter and has the control modifier and doesn't
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
-            // This is needed because key combinations like <C-;> and <A-.> won't
-            // be passed to TextInput, because they aren't text.
+            // This is needed because key combinations like <C-;> won't
+            // be passed to TextInput, because they can't be represented as system text.
             if (!(key >= Key.A && key <= Key.Z)
-                && (modifierKeys & (ModifierKeys.Alt | ModifierKeys.Control)) != 0)
+                && (modifierKeys & ModifierKeys.Control) != 0)
             {
                 switch (key)
                 {
