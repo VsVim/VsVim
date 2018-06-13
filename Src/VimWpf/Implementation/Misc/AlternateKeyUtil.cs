@@ -187,7 +187,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
-            // We have to be careful not to shadow any keys that produce text when
+            // We just have to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
             if (modifierKeys != ModifierKeys.Alt
                 && modifierKeys != (ModifierKeys.Alt | ModifierKeys.Shift)
@@ -253,7 +253,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             StringBuilder stringBuilder = new StringBuilder(1);
             var keyboardLayout = NativeMethods.GetKeyboardLayout(0);
 
-            // Fail if the AltGr is set and the key has an AltGr representation.
+            // Fail if the AltGr modifier is set and the key has an AltGr representation.
             if (IsAltGr(modifierKeys))
             {
                 var hasShift = (modifierKeys & ModifierKeys.Shift) != 0;
