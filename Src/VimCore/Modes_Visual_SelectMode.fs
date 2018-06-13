@@ -248,7 +248,7 @@ type internal SelectMode
 
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
-        member x.CommandNames = Seq.empty
+        member x.CommandNames =  Commands |> Seq.map (fun binding -> binding.KeyInputSet)
         member x.ModeKind = _modeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.Process keyInput =  x.Process keyInput

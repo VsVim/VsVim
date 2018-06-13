@@ -64,8 +64,15 @@ type internal SelectionChangeTracker
             // It's possible that an edit in another ITextView has affected the selection on this 
             // ITextView.  If it deleted text for example it would cause a selection event in 
             // every ITextView which had a caret in the area.  Only the active one should be the
-            // one responding to it 
-            ()
+            // one responding to it.
+            if _textView.Selection.IsEmpty then
+
+                // It's also possible that VsVim itself programmatically cleared the
+                // selection elsewere, e.g. during 'go to definition' command handling.
+                // Avoid leaving the buffer in any kind of visual or select mode
+                // with a zero-width selection.
+                _vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+
         elif _vimBuffer.ModeKind = ModeKind.Insert && x.ShouldIgnoreSelectionChange() then
             // If one of the IVisualModeSelectionOverride instances wants us to ignore the
             // event then we will
