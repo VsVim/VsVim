@@ -771,6 +771,11 @@ namespace Vim.VisualStudio
                 return false;
             }
 
+            if (!_vsAdapter.IsTextEditorView(textView))
+            {
+                return false;
+            }
+
             var result = _extensionAdapterBroker.ShouldCreateVimBuffer(textView);
             if (result.HasValue)
             {
