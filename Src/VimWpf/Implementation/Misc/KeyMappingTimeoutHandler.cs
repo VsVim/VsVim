@@ -80,6 +80,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     if (!globalSettings.Timeout)
                     {
                         _timer.Stop();
+                        return;
                     }
 
                     if (_timer.IsEnabled)
