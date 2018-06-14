@@ -679,9 +679,14 @@ type VimInterpreter
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =
 
-        // The value when display shouldn't contain any new lines.  They are expressed as instead
-        // ^J which is the key-notation for <NL>
-        let normalizeDisplayString (data: string) = StringUtil.GetDisplayString data
+        // Convert the register value to a human-readable form.
+        let normalizeDisplayString (registerValue: RegisterValue) =
+            if registerValue.IsString then
+                StringUtil.GetDisplayString registerValue.StringValue
+            else
+                registerValue.KeyInputs
+                |> Seq.map KeyNotationUtil.GetDisplayName
+                |> String.concat ""
 
         let displayNames = 
             match nameList with
@@ -708,7 +713,7 @@ type VimInterpreter
                 match register.Name.Char, StringUtil.IsNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
-                | Some c, false -> Some (c, normalizeDisplayString register.StringValue))
+                | Some c, false -> Some (c, normalizeDisplayString register.RegisterValue))
             |> SeqUtil.filterToSome
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines

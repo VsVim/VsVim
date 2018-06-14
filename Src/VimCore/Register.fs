@@ -477,6 +477,9 @@ type RegisterValue
     new (keyInputs: KeyInput list) =
         RegisterValue(false, StringData.Simple "", keyInputs, OperationKind.CharacterWise)
 
+    /// Whether this register is natively a string
+    member x.IsString = _isString
+
     /// Get the RegisterData as a StringData instance
     member x.StringData =
         if _isString then
