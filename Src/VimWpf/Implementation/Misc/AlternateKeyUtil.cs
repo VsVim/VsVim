@@ -183,15 +183,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
-            // If the key is not a pure alt or alt-shift key combination and doesn't
+            // If the key is not a pure alt/shift key combination and doesn't
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
             // We just have to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
-            if (modifierKeys != ModifierKeys.Alt
-                && modifierKeys != (ModifierKeys.Alt | ModifierKeys.Shift)
-                && (modifierKeys & (ModifierKeys.Control | ModifierKeys.Alt)) != 0)
+            if ((modifierKeys & ~(ModifierKeys.Alt | ModifierKeys.Shift)) != 0)
             {
                 switch (key)
                 {
@@ -209,7 +207,10 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     default:
                         if (GetKeyInputFromKey(key, modifierKeys, out keyInput))
                         {
-                            // Control characters will be handled normally by TextInput.
+                            // Only produce a key input here if the key input we
+                            // found is *not* an ASCII control character.
+                            // Control characters will be handled by TextInput
+                            // as control text.
                             if (!System.Char.IsControl(keyInput.Char))
                             {
                                 return true;
@@ -237,22 +238,26 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private bool GetCharFromKey(Key key, ModifierKeys modifierKeys, out char unicodeChar)
         {
-            byte keyIsDown = 0x80;
-            byte keyIsUp = 0x00;
+            // From the documentation for GetKeyboardState:
+            // - If the high-order bit is 1, the key is down; otherwise, it is up.
+            const byte keyIsDown = 0x80;
+            const byte keyIsUp = 0x00;
 
+            // Use interop and pinvoke to get the scan code and keyboard layout.
             var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(key);
             var scanCode = NativeMethods.MapVirtualKey(virtualKey, NativeMethods.MAPVK_VK_TO_VSC);
             StringBuilder stringBuilder = new StringBuilder(1);
             var keyboardLayout = NativeMethods.GetKeyboardLayout(0);
 
-            // Fail if the AltGr modifier is set and the key has an AltGr representation.
+            // Fail if the AltGr modifier is set and the key produces a character
+            // when AltGr is pressed. We want to disambiguate Ctrl+Alt from AltGr.
             if (IsAltGr(modifierKeys))
             {
-                var hasShift = (modifierKeys & ModifierKeys.Shift) != 0;
-                _keyboardState[NativeMethods.VK_LSHIFT] = hasShift ? keyIsDown : keyIsUp;
+                // Mark control and alt (and their merged virtual keys) as pressed.
+                // This is conceptually equivalent to passing in the modifier
+                // keys control and alt.
                 _keyboardState[NativeMethods.VK_LCONTROL] = keyIsDown;
                 _keyboardState[NativeMethods.VK_LMENU] = keyIsDown;
-                _keyboardState[NativeMethods.VK_SHIFT] = hasShift ? keyIsDown : keyIsUp;
                 _keyboardState[NativeMethods.VK_CONTROL] = keyIsDown;
                 _keyboardState[NativeMethods.VK_MENU] = keyIsDown;
                 int altGrResult = NativeMethods.ToUnicodeEx(virtualKey, scanCode,
@@ -264,10 +269,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 }
             }
 
-            _keyboardState[NativeMethods.VK_LSHIFT] = keyIsUp;
+            // Return the "base" key (or AltGr level 1) for the scan code.
+            // This is the unicode character that would be produced if the
+            // the key were pressed with no modifiers.
+            // This is conceptually equivalent to passing in modifier keys none.
             _keyboardState[NativeMethods.VK_LCONTROL] = keyIsUp;
             _keyboardState[NativeMethods.VK_LMENU] = keyIsUp;
-            _keyboardState[NativeMethods.VK_SHIFT] = keyIsUp;
             _keyboardState[NativeMethods.VK_CONTROL] = keyIsUp;
             _keyboardState[NativeMethods.VK_MENU] = keyIsUp;
             int result = NativeMethods.ToUnicodeEx(virtualKey, scanCode,
