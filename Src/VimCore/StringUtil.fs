@@ -139,6 +139,17 @@ module internal StringUtil =
 
     let IsBlanks (arg: string) = Seq.forall CharUtil.IsBlank arg
 
+    let GetDisplayString (arg: string) =
+        let builder = new System.Text.StringBuilder()
+        for i = 0 to arg.Length - 1 do
+            let c = arg.[i]
+            if Char.IsControl(c) then
+                builder.Append('^') |> ignore
+                builder.Append(char(c + '@')) |> ignore
+            else
+                builder.Append(c) |> ignore
+        builder.ToString()
+
     /// Is the specified check string a substring of the given argument at the specified
     /// index
     let IsSubstringAt (arg: string) (check: string) (index: int) (comparer: CharComparer) =
