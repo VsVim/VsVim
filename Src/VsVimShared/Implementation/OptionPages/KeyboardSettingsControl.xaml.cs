@@ -30,7 +30,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             typeof(KeyboardSettingsControl));
 
         private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
-        private readonly HashSet<KeyBindingData> _advancedSet = new HashSet<KeyBindingData>();
         private readonly IVim _vim;
         private readonly IKeyBindingService _keyBindingService;
         private readonly IVimApplicationSettings _vimApplicationSettings;
@@ -93,7 +92,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             // as one is being handled.
             _snapshot = GetCommandKeyBindingSnapshot();
             _keyBindingList.Clear();
-            _advancedSet.Clear();
 
             var handledByVsVim = _snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
             var handledByVs = _snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
@@ -108,21 +106,15 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                     HandledByVsVim = handledByVsVim.Contains(firstKey)
                 };
                 _keyBindingList.Add(data);
-
-                if (IsAdvanced(firstKey))
-                {
-                    _advancedSet.Add(data);
-                }
             }
         }
 
         /// <summary>
-        /// Switch all of the bindings to VsVim except for the advanced ones
+        /// Switch all of the bindings to VsVim
         /// </summary>
         private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
             _keyBindingList
-                .Where(x => !_advancedSet.Contains(x))
                 .ForEach(x => x.HandledByVsVim = true);
         }
 
@@ -132,31 +124,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
             _keyBindingList.ForEach(x => x.HandledByVsVim = false);
-        }
-
-        /// <summary>
-        /// Is this an advanced key stroke like CTRL+V which we don't want to automatically 
-        /// convert.  
-        /// </summary>
-        private bool IsAdvanced(KeyStroke keyStroke)
-        {
-            // Look for paste
-            if (keyStroke.KeyModifiers != VimKeyModifiers.Control || keyStroke.KeyInput.KeyModifiers != VimKeyModifiers.None)
-            {
-                return false;
-            }
-
-            // Look for paste, cut, copy and select all
-            switch (keyStroke.KeyInput.Char)
-            {
-                case 'v':
-                case 'x':
-                case 'c':
-                case 'a':
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         private void UpdateKeyBindings()

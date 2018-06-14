@@ -63,7 +63,7 @@ namespace Vim.UI.Wpf
 
         public virtual DefaultSettings DefaultSettings
         {
-            get { return DefaultSettings.GVim73; }
+            get { return DefaultSettings.GVim74; }
         }
 
         protected VimHost(

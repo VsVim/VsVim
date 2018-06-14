@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimHost.Setup(x => x.VimCreated(It.IsAny<IVim>()));
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("VimTest.cs");
-            _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim73);
+            _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim74);
             if (createVim)
             {
                 CreateVim();
