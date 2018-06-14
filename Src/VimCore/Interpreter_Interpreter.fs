@@ -681,7 +681,7 @@ type VimInterpreter
 
         // The value when display shouldn't contain any new lines.  They are expressed as instead
         // ^J which is the key-notation for <NL>
-        let normalizeDisplayString (data: string) = data.Replace(System.Environment.NewLine, "^J")
+        let normalizeDisplayString (data: string) = StringUtil.GetDisplayString data
 
         let displayNames = 
             match nameList with
