@@ -297,6 +297,10 @@ type internal InsertMode
         if _commandMap.IsEmpty then
             x.BuildCommands()
 
+    member x.CommandNames =
+        x.EnsureCommandsBuilt()
+        _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map KeyInputSet.OneKeyInput
+
     member x.BuildCommands () =
 
         // These commands have nothing to do with selection settings
@@ -1139,7 +1143,7 @@ type internal InsertMode
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
         member x.IsInPaste = x.IsInPaste
         member x.VimTextBuffer = _vimBuffer.VimTextBuffer
-        member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map KeyInputSet.OneKeyInput
+        member x.CommandNames =  x.CommandNames
         member x.ModeKind = x.ModeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.IsDirectInsert keyInput = x.IsDirectInsert keyInput
