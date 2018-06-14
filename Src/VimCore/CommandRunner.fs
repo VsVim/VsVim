@@ -73,6 +73,8 @@ type internal CommandRunner
         | Some count -> count
         | None -> 1
 
+    member x.Inputs = List.rev _data.Inputs
+
     /// Try and get the VisualSpan for the provided kind
     member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings.TabStop
 
@@ -395,6 +397,7 @@ type internal CommandRunner
         member x.HasCount = x.HasCount
         member x.RegisterName = x.RegisterName
         member x.Count = x.Count
+        member x.Inputs = x.Inputs
         member x.KeyRemapMode = 
             match _runBindData with
             | None -> KeyRemapMode.None

@@ -113,6 +113,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             get { return _commandLineInput; }
         }
 
+        public TextBox ShowCommandText
+        {
+            get { return _showCommandText; }
+        }
+        
         public Visibility IsStatuslineVisible
         {
             get { return (Visibility)GetValue(IsStatuslineVisibleProperty); }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Classification;
 using Moq;
@@ -22,6 +23,7 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly CommandMarginController _controller;
         private readonly MockVimBuffer _vimBuffer;
         private readonly Mock<IIncrementalSearch> _search;
+        private Mock<IVimGlobalSettings> _globalSettings;
 
         protected CommandMarginControllerTest()
         {
@@ -41,8 +43,8 @@ namespace Vim.UI.Wpf.UnitTest
             var textBuffer = CreateTextBuffer(new[] { "" });
             _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
 
-            var globalSettings = new Mock<IVimGlobalSettings>();
-            _vimBuffer.GlobalSettingsImpl = globalSettings.Object;
+            _globalSettings = new Mock<IVimGlobalSettings>();
+            _vimBuffer.GlobalSettingsImpl = _globalSettings.Object;
 
             var editorFormatMap = _factory.Create<IEditorFormatMap>(MockBehavior.Loose);
             editorFormatMap.Setup(x => x.GetProperties(It.IsAny<string>())).Returns(new ResourceDictionary());
@@ -403,15 +405,20 @@ namespace Vim.UI.Wpf.UnitTest
             public void NoEvents1()
             {
                 var mode = new Mock<INormalMode>();
+                var runner = new Mock<ICommandRunner>();
+                mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
+                runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
+                _globalSettings.SetupGet(x => x.ShowCommand).Returns(true);
                 _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
                 mode.SetupGet(x => x.Command).Returns("foo");
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+                _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
                 _vimBuffer.ModeKindImpl = ModeKind.Normal;
                 _vimBuffer.ModeImpl = mode.Object;
                 _vimBuffer.NormalModeImpl = mode.Object;
 
                 SimulateKeystroke();
-                Assert.Equal("foo", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo", _marginControl.ShowCommandText.Text);
                 mode.Verify();
                 _factory.Verify();
             }
@@ -508,7 +515,9 @@ namespace Vim.UI.Wpf.UnitTest
             public void Search_Visual_Complete()
             {
                 var mode = _factory.Create<IVisualMode>();
-                mode.Setup(x => x.CommandRunner).Returns(_factory.Create<ICommandRunner>(MockBehavior.Loose).Object);
+                var runner = _factory.Create<ICommandRunner>(MockBehavior.Loose);
+                mode.Setup(x => x.CommandRunner).Returns(runner.Object);
+                runner.Setup(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
                 mode.Setup(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
                 _vimBuffer.VisualCharacterModeImpl = mode.Object;
                 _vimBuffer.ModeKindImpl = ModeKind.VisualCharacter;

@@ -186,6 +186,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.StatusMessage += OnStatusMessage;
             _vimBuffer.ErrorMessage += OnErrorMessage;
             _vimBuffer.WarningMessage += OnWarningMessage;
+            _vimBuffer.KeyInputProcessed += OnKeyInputProcessed;
             _vimBuffer.CommandMode.CommandChanged += OnCommandModeCommandChanged;
             _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
@@ -208,6 +209,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.StatusMessage -= OnStatusMessage;
             _vimBuffer.ErrorMessage -= OnErrorMessage;
             _vimBuffer.WarningMessage -= OnWarningMessage;
+            _vimBuffer.KeyInputProcessed -= OnKeyInputProcessed;
             _vimBuffer.CommandMode.CommandChanged -= OnCommandModeCommandChanged;
             _vimBuffer.TextView.GotAggregateFocus -= OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted -= OnRecordingStarted;
@@ -676,6 +678,25 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     _margin.UpdateCaretPosition(EditPosition.End);
                 }
             }
+            
+            UpdateShowCommandText();
+        }
+
+        private void OnKeyInputProcessed(object sender, KeyInputProcessedEventArgs e)
+        {
+            UpdateShowCommandText();
+        }
+
+        private void UpdateShowCommandText()
+        {
+            if (!_vimBuffer.GlobalSettings.ShowCommand)
+            {
+                _margin.ShowCommandText.Visibility = Visibility.Collapsed;
+                return;
+            }
+            string text = CommandMarginUtil.GetShowCommandText(_vimBuffer);
+            _margin.ShowCommandText.Text = text;
+            _margin.ShowCommandText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void OnStatusMessage(object sender, StringEventArgs args)
