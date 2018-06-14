@@ -1217,6 +1217,38 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ParagraphTest : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// Inner paragraph is always linewise
+            /// </summary>
+            [WpfFact]
+            public void InnerLinewise()
+            {
+                // Reported in issue #2006.
+                Create("ram", "goat", "", "cat", "dog", "", "bat", "bear");
+                _textView.MoveCaretToLine(3);
+                _vimBuffer.Process("vip");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                _vimBuffer.Process("y");
+                Assert.True(UnnamedRegister.OperationKind.IsLineWise);
+            }
+
+            /// <summary>
+            /// Outer paragraph is always linewise
+            /// </summary>
+            [WpfFact]
+            public void OuterLinewise()
+            {
+                Create("ram", "goat", "", "cat", "dog", "", "bat", "bear");
+                _textView.MoveCaretToLine(3);
+                _vimBuffer.Process("vip");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                _vimBuffer.Process("y");
+                Assert.True(UnnamedRegister.OperationKind.IsLineWise);
+            }
+        }
+
         public sealed class SelectionTest : VisualModeIntegrationTest
         {
             /// <summary>
