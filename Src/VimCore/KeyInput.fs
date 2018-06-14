@@ -305,6 +305,17 @@ module KeyInputUtil =
     /// certain ambiguous combinations.
     let ApplyKeyModifiers (keyInput: KeyInput) (targetModifiers: VimKeyModifiers) =
 
+        let normalizeToUpper (keyInput: KeyInput) =
+            match keyInput.RawChar with
+            | None -> keyInput
+            | Some c ->
+                if CharUtil.IsLetter c && CharUtil.IsLower c then
+                    let c = CharUtil.ToUpper keyInput.Char
+                    let upperKeyInput = CharToKeyInput c 
+                    ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
+                else
+                    keyInput
+
         let normalizeShift (keyInput: KeyInput) =
             match keyInput.RawChar with
             | None -> keyInput
@@ -368,21 +379,28 @@ module KeyInputUtil =
 
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
-        // First normalize the shift case
-        let keyInput = 
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
-                normalizeShift keyInput
-            else 
-                keyInput
+        if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt then
 
-        // Next normalize the control case
-        let keyInput = 
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Control && not (Util.IsFlagSet targetModifiers VimKeyModifiers.Alt) then
-                normalizeControl keyInput
-            else
-                keyInput
+            // The alt key preserves all modifiers and converts the char to uppercase.
+            normalizeToUpper keyInput
 
-        keyInput
+        else
+
+            // First normalize the shift case.
+            let keyInput = 
+                if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
+                    normalizeShift keyInput
+                else 
+                    keyInput
+
+            // Next normalize the control case.
+            let keyInput = 
+                if Util.IsFlagSet targetModifiers VimKeyModifiers.Control then
+                    normalizeControl keyInput
+                else
+                    keyInput
+
+            keyInput
 
     let ApplyKeyModifiersToKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey

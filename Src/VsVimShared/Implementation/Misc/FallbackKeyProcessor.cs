@@ -182,7 +182,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            var c = (char)('a' + (key - Key.A));
+            var c = (char)('A' + (key - Key.A));
             keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.CharToKeyInput(c), keyModifiers);
             return true;
         }
