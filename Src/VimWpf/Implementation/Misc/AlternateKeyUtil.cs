@@ -183,13 +183,15 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 return true;
             }
 
-            // If the key is not a pure alt/shift key combination and doesn't
+            // If the key is not a pure alt or shift key combination and doesn't
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
             // We just have to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
-            if ((modifierKeys & ~(ModifierKeys.Alt | ModifierKeys.Shift)) != 0)
+            if (modifierKeys != ModifierKeys.None
+                && modifierKeys != ModifierKeys.Alt
+                && modifierKeys != ModifierKeys.Shift)
             {
                 switch (key)
                 {
@@ -205,6 +207,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         break;
 
                     default:
+                        VimTrace.TraceInfo("AlternateKeyUtil::TryConvertSpecialKeyToKeyInput {0} {1}",
+                            key, modifierKeys);
                         if (GetKeyInputFromKey(key, modifierKeys, out keyInput))
                         {
                             // Only produce a key input here if the key input we
@@ -264,6 +268,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
                     _keyboardState, stringBuilder, stringBuilder.Capacity, 0, keyboardLayout);
                 if (altGrResult == 1)
                 {
+                    VimTrace.TraceInfo("AlternateKeyUtil::GetCharFromKey AltGr {0} -> {1}",
+                        key, stringBuilder[0]);
                     unicodeChar = default(char);
                     return false;
                 }
