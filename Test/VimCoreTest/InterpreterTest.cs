@@ -1551,7 +1551,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 _vimBuffer.ProcessNotation("dd");
                 ParseAndRun("reg");
-                AssertLine(@"""1   cat^J");
+                AssertLine(@"""1   cat^M^J");
             }
 
             /// <summary>
@@ -1563,7 +1563,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 _vimBuffer.ProcessNotation("yy");
                 ParseAndRun("reg");
-                AssertLine(@"""0   cat^J");
+                AssertLine(@"""0   cat^M^J");
             }
 
             [WpfFact]
@@ -1585,6 +1585,20 @@ namespace Vim.UnitTest
                 _vimData.LastSearchData = new SearchData("test", SearchPath.Forward);
                 ParseAndRun("reg");
                 AssertLine(@"""/   test");
+            }
+
+            /// <summary>
+            /// Displaying a recorded macro with special keys should display those keys
+            /// </summary>
+            [WpfFact]
+            public void DisplayRecordedMacro()
+            {
+                Create("cat", "dog");
+                var registerName = RegisterName.NewNamed(NamedRegister.Nameq);
+                var right = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
+                Vim.RegisterMap.GetRegister(registerName).UpdateValue(right, right, right);
+                ParseAndRun("reg");
+                AssertLine(@"""q   <Right><Right><Right>");
             }
         }
 
