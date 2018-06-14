@@ -16,9 +16,17 @@ namespace Vim.VisualStudio.Implementation.Misc
     /// </summary>
     internal sealed class FallbackKeyProcessor : KeyProcessor
     {
-        private static KeyInput StripModifiers(KeyInput keyInput)
+        private static KeyInput GetBaseKeyInput(KeyInput keyInput)
         {
-            return KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, VimKeyModifiers.None);
+            var keyChar = keyInput.Char;
+            if (keyChar != KeyInput.DefaultValue.Char)
+            {
+                return KeyInputUtil.CharToKeyInput(Char.ToUpper(keyChar));
+            }
+            else
+            {
+                return KeyInputUtil.VimKeyToKeyInput(keyInput.Key);
+            }
         }
 
         /// <summary>
@@ -41,7 +49,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
             internal static KeyInputWithModifier Create(KeyStroke stroke)
             {
-                return new KeyInputWithModifier(StripModifiers(stroke.KeyInput), stroke.KeyModifiers);
+                return new KeyInputWithModifier(GetBaseKeyInput(stroke.KeyInput), stroke.KeyModifiers);
             }
         }
 
@@ -122,7 +130,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     KeyBinding.Parse(binding.KeyBinding.CommandString),
                     binding.Id
                 ))
-                .ToLookup(fallbackCommand => StripModifiers(fallbackCommand.KeyBindings[0].KeyInput));
+                .ToLookup(fallbackCommand => GetBaseKeyInput(fallbackCommand.KeyBindings[0].KeyInput));
         }
 
         /// <summary>
@@ -231,11 +239,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             // First strip modifiers from the key input.
-            var strippedKeyInput = StripModifiers(keyInput);
+            var strippedKeyInput = GetBaseKeyInput(keyInput);
 
             // Check for any applicable fallback bindings, in order.
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
-            var findFirstKeyInput = _firstChord != null ? StripModifiers(_firstChord) : strippedKeyInput;
+            var findFirstKeyInput = _firstChord != null ? GetBaseKeyInput(_firstChord) : strippedKeyInput;
             var findFirstModifiers = _firstChord != null ? _firstChord.KeyModifiers : keyInput.KeyModifiers;
             var cmds = _fallbackCommandList[findFirstKeyInput]
                 .Where(fallbackCommand => fallbackCommand.KeyBindings[0].KeyModifiers == findFirstModifiers)
@@ -259,7 +267,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 var secondChord = cmds
                     .Where(fallbackCommand => fallbackCommand.KeyBindings.Count >= 2 &&
                         fallbackCommand.KeyBindings[1].KeyModifiers == keyInput.KeyModifiers &&
-                        StripModifiers(fallbackCommand.KeyBindings[1].KeyInput) == strippedKeyInput)
+                        GetBaseKeyInput(fallbackCommand.KeyBindings[1].KeyInput) == strippedKeyInput)
                     .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
                     .ToList();
 
