@@ -23,6 +23,6 @@ namespace Vim.UI.Wpf
         /// and not by a literal character.  Keys like Up, Down, Subtract, etc ... aren't done
         /// by character but instead directly by virtual key.  They are handled by this method
         /// </summary>
-        bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, bool dangerously, out KeyInput keyInput);
+        bool TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput);
     }
 }

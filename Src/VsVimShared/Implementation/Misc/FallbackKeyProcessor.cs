@@ -193,7 +193,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
-            if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, true, out KeyInput keyInput))
+            if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out KeyInput keyInput))
             {
                 args.Handled = TryProcess(keyInput);
             }

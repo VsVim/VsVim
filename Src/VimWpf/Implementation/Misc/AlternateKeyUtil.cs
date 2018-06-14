@@ -166,7 +166,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return ConvertToKeyModifiers(modifierKeys);
         }
 
-        bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, bool dangerously, out KeyInput keyInput)
+        bool IKeyUtil.TryConvertSpecialToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             if (s_wpfKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
@@ -207,7 +207,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         break;
 
                     default:
-                        if (GetKeyInputFromKey(key, modifierKeys, dangerously, out keyInput))
+                        if (GetKeyInputFromKey(key, modifierKeys, out keyInput))
                         {
                             // Control characters will be handled normally by TextInput.
                             if (!System.Char.IsControl(keyInput.Char))
@@ -223,20 +223,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return false;
         }
 
-        private bool GetKeyInputFromKey(Key key, ModifierKeys modifierKeys, bool dangerously, out KeyInput keyInput)
+        private bool GetKeyInputFromKey(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
             if (GetCharFromKey(key, modifierKeys, out char unicodeChar))
             {
                 var keyModifiers = ConvertToKeyModifiers(modifierKeys);
-                if (dangerously)
-                {
-                    keyInput = KeyInputUtil.CharToKeyInput(unicodeChar);
-                    keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, keyModifiers);
-                }
-                else
-                {
-                    keyInput = KeyInputUtil.ApplyKeyModifiersToChar(unicodeChar, keyModifiers);
-                }
+                keyInput = KeyInputUtil.ApplyKeyModifiersToChar(unicodeChar, keyModifiers);
                 return true;
             }
             keyInput = null;

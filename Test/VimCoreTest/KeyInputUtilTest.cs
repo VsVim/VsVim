@@ -146,58 +146,6 @@ namespace Vim.UnitTest
                 var right = KeyInputUtil.ApplyKeyModifiers(left, VimKeyModifiers.None);
                 Assert.Equal(left, right);
             }
-
-            /// <summary>
-            /// The application of Alt to the letter a should result in the character á 
-            /// </summary>
-            [Fact]
-            public void AltToA()
-            {
-                var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt);
-                Assert.Equal('\u00E1', keyInput.Char);
-                Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
-                Assert.Equal(VimKey.RawCharacter, keyInput.Key);
-            }
-
-            [Fact]
-            public void AltToUpperA()
-            {
-                var keyInput = ApplyModifiers('a', VimKeyModifiers.Alt | VimKeyModifiers.Shift);
-                Assert.Equal('\u00C1', keyInput.Char);
-                Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
-                Assert.Equal(VimKey.RawCharacter, keyInput.Key);
-            }
-
-            [Fact]
-            public void AltToDigit()
-            {
-                const string expected = "\u00B0\u00B1\u00B2\u00B3\u00B4\u00B5\u00B6\u00B7\u00B8\u00B9";
-                for (var i = 0; i < expected.Length; i++)
-                {
-                    var c = char.Parse(i.ToString());
-                    var keyInput = ApplyModifiers(c, VimKeyModifiers.Alt);
-                    Assert.Equal(expected[i], keyInput.Char);
-                    Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
-                    Assert.Equal(VimKey.RawCharacter, keyInput.Key);
-                }
-            }
-
-            /// <summary>
-            /// In general the alt key combined with the simple keys should mirror the simple 
-            /// values when they are created simply by char
-            /// </summary>
-            [Fact]
-            public void AltMirror()
-            {
-                const string expected = "\u00C1\u00B0\u00B1\u00B2\u00B3\u00B4\u00B5\u00B6\u00B7\u00B8\u00B9";
-                const string source = "A0123456789";
-                for (var i = 0; i < source.Length; i++)
-                {
-                    var left = KeyInputUtil.CharToKeyInput(expected[i]);
-                    var right = KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.CharToKeyInput(source[i]), VimKeyModifiers.Alt);
-                    Assert.Equal(left, right);
-                }
-            }
         }
 
         public sealed class EquivalentKeyTest
