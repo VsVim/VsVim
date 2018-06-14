@@ -18,6 +18,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
+using EnvDTE80;
 
 namespace Vim.VisualStudio
 {
@@ -217,6 +218,29 @@ namespace Vim.VisualStudio
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
+            InitOutputPane(vimApplicationSettings);
+        }
+
+        /// <summary>
+        /// Hookup the output window to the vim trace data when it's requested by the developer
+        /// </summary>
+        private void InitOutputPane(IVimApplicationSettings vimApplicationSettings)
+        {
+            if (!(_dte is DTE2 dte2))
+            {
+                return;
+            }
+
+            var outputWindow = dte2.ToolWindows.OutputWindow;
+            var outputPane = outputWindow.OutputWindowPanes.Add("VsVim");
+
+            VimTrace.Trace += (_, e) =>
+            {
+                if (vimApplicationSettings.EnableOutputWindow)
+                {
+                    outputPane.OutputString(e.Message + Environment.NewLine);
+                }
+            };
         }
 
         private static void InitTelemetry(ITelemetry telemetry, IVimApplicationSettings vimApplicationSettings)

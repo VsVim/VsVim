@@ -54,6 +54,11 @@ namespace Vim.VisualStudio
         bool EnableTelemetry { get; set; }
 
         /// <summary>
+        /// Enable debug logging via the OutputWindow
+        /// </summary>
+        bool EnableOutputWindow { get; set; }
+
+        /// <summary>
         /// Do we want to enable vim style processing of tab and backspace
         /// </summary>
         bool UseEditorTabAndBackspace { get; set; }
