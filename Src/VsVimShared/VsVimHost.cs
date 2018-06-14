@@ -226,7 +226,12 @@ namespace Vim.VisualStudio
         /// </summary>
         private void InitOutputPane(IVimApplicationSettings vimApplicationSettings)
         {
-            var outputWindow = ((DTE2)_dte).ToolWindows.OutputWindow;
+            if (!(_dte is DTE2 dte2))
+            {
+                return;
+            }
+
+            var outputWindow = dte2.ToolWindows.OutputWindow;
             var outputPane = outputWindow.OutputWindowPanes.Add("VsVim");
 
             VimTrace.Trace += (_, e) =>

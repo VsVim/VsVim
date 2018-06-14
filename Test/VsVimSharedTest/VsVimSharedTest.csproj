@@ -45,7 +45,6 @@
     <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Resources\VsCommands.txt" />
     <None Include="$(VsVimAppConfig)">
       <Link>app.config</Link>
