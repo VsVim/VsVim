@@ -1678,22 +1678,24 @@ type VimInterpreter
         _vimHost.RunHostCommand _textView command argument
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
-        let filePath =
-            match filePath with
-            | Some filePath -> Some (x.ResolveVimPath filePath)
-            | None -> None
-        if not (List.isEmpty fileOptionList) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
-        else
-            match filePath with
-            | Some filePath -> 
-                let text = _textBuffer.CurrentSnapshot.GetText()
-                _vimHost.SaveTextAs text filePath |> ignore
-            | None ->
-                if not hasBang && _vimHost.IsReadOnly _textBuffer then
-                    _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
-                else
-                    _vimHost.Save _textBuffer |> ignore
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
+
+            let filePath =
+                match filePath with
+                | Some filePath -> Some (x.ResolveVimPath filePath)
+                | None -> None
+            if not (List.isEmpty fileOptionList) then
+                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
+            else
+                match filePath with
+                | Some filePath -> 
+                    let text = lineRange.ExtentIncludingLineBreak.GetText()
+                    _vimHost.SaveTextAs text filePath |> ignore
+                | None ->
+                    if not hasBang && _vimHost.IsReadOnly _textBuffer then
+                        _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
+                    else
+                        _vimHost.Save _textBuffer |> ignore)
 
     /// Run the 'wall' command
     member x.RunWriteAll hasBang = 

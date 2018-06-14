@@ -1330,6 +1330,48 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class WriteTest : CommandModeIntegrationTest
+        {
+            private string _saveTextAsText = null;
+            private string _saveTextAsFilePath = null;
+
+            internal override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimHost.RunSaveTextAs = (text, filePath) =>
+                    {
+                        _saveTextAsText = text;
+                        _saveTextAsFilePath = filePath;
+
+                        return true;
+                    };
+            }
+
+            /// <summary>
+            /// Writing a file without a line range should default to the whole buffer
+            /// </summary>
+            [WpfFact]
+            public void WriteWholeBuffer()
+            {
+                Create("cat", "bat", "dog", "bear");
+                RunCommand("w animals.txt");
+                Assert.Equal("animals.txt", _saveTextAsFilePath);
+                Assert.Equal(String.Join(Environment.NewLine, new[] { "cat", "bat", "dog", "bear" }), _saveTextAsText);
+            }
+
+            /// <summary>
+            /// Write a file with a line range should write just that range
+            /// </summary>
+            [WpfFact]
+            public void WriteLineRange()
+            {
+                Create("cat", "bat", "dog", "bear");
+                RunCommand("2,3w animals.txt");
+                Assert.Equal("animals.txt", _saveTextAsFilePath);
+                Assert.Equal(String.Join(Environment.NewLine, new[] { "bat", "dog", "" }), _saveTextAsText);
+            }
+        }
+
         public sealed class YankTest : CommandModeIntegrationTest
         {
             private void AssertLines(params string[] lines)
