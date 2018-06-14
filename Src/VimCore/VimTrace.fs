@@ -3,6 +3,7 @@ namespace Vim
 open System
 open System.Diagnostics
 
+[<RequireQualifiedAccess>]
 type VimTraceKind =
     | Info
     | Error
