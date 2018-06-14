@@ -425,12 +425,29 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void GoToDefinitionShouldClearSelection()
             {
-                _textBuffer.SetText("dog", "cat");
-                _textView.Selection.Select(_textBuffer.GetLineSpan(0, 3));
+                _textBuffer.SetText("dog", "cat", "bear");
+                _textView.MoveCaretToLine(0);
+
+                // Return our text view in the list of text views to check for new selections.
                 _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new[] { _textView });
-                _nextTarget.SetupExecAll();
+
+                // Set up a command target to select text in the text buffer.
+                var commandGroup = VSConstants.GUID_VSStandardCommandSet97;
+                _nextTarget.Setup(x => x.Exec(
+                    ref commandGroup,
+                    It.IsAny<uint>(),
+                    It.IsAny<uint>(),
+                    It.IsAny<IntPtr>(),
+                    It.IsAny<IntPtr>())).Returns(() =>
+                    {
+                        _textView.Selection.Select(_textBuffer.GetLineSpan(1, 3));
+                        return VSConstants.S_OK;
+                    });
+
+                Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
                 RunExec(CreateEditCommand(EditCommandKind.GoToDefinition));
                 Assert.True(_textView.Selection.IsEmpty);
+                Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -523,7 +540,7 @@ namespace Vim.VisualStudio.UnitTest
             public void GoToDefinition()
             {
                 var editCommand = CreateEditCommand(EditCommandKind.GoToDefinition);
-                Assert.False(_targetRaw.Exec(editCommand, out Action action));
+                Assert.False(_targetRaw.Exec(editCommand, out Action preAction, out Action postAction));
             }
         }
 

@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Language.NavigateTo.Interfaces;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using System.Windows.Input;
+using System.Collections.Generic;
 
 namespace Vim.VisualStudio.Implementation.NavigateTo
 {
@@ -28,6 +29,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         private readonly SynchronizationContext _synchronizationContext;
         private readonly ITextManager _textManager;
         private bool _inSearch;
+        private List<WeakReference<ITextView>> _selected;
 
         [ImportingConstructor]
         internal NavigateToItemProviderFactory(ITextManager textManager)
@@ -38,6 +40,12 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
 
         private void OnSearchStarted(string searchText)
         {
+            // Cautiously record which buffers have pre-existing selections.
+            _selected = _textManager
+                .GetDocumentTextViews(DocumentLoad.RespectLazy)
+                .Where(x => !x.Selection.IsEmpty)
+                .Select(x => new WeakReference<ITextView>(x))
+                .ToList();
             _inSearch = true;
             VimTrace.TraceInfo("NavigateTo Start: {0}", searchText);
         }
@@ -52,8 +60,14 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
                 // isn't loaded then it can't have a selection which will interfere with this
                 _inSearch = false;
                 _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
-                    .Where(x => !x.Selection.IsEmpty)
-                    .ForEach(x => x.Selection.Clear());
+                    .Where(x => !x.Selection.IsEmpty &&
+                        !_selected.Where(y => y.TryGetTarget(out ITextView target) && target == x).Any())
+                    .ForEach(x =>
+                    {
+                        var startPoint = x.Selection.Start;
+                        x.Selection.Clear();
+                        x.Caret.MoveTo(startPoint);
+                    });
             }
         }
 

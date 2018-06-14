@@ -353,8 +353,10 @@ namespace Vim.VisualStudio
             {
                 return GoToDefinitionCPlusPlus(textView, target);
             }
-
-            return SafeExecuteCommand(textView, CommandNameGoToDefinition);
+            else
+            {
+                return SafeExecuteCommand(textView, CommandNameGoToDefinition);
+            }
         }
 
         /// <summary>
@@ -405,26 +407,7 @@ namespace Vim.VisualStudio
 
         public override bool GoToDefinition()
         {
-            var selected = _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                .Where(x => !x.Selection.IsEmpty).ToList();
-            if (!GoToDefinitionCore(_textManager.ActiveTextViewOptional, null))
-            {
-                return false;
-            }
-
-            // Certain language services, VB.Net for example, will select the word after
-            // the go to definition is implemented.  Need to clear that out to prevent the
-            // go to definition from switching us to Visual Mode
-            // 
-            // This selection often occurs in another document but that document won't be 
-            // active when we get back here.  Instead just clear all of the new selections
-            _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
-                .ForEach(x => x.Selection.Clear());
-
-            return true;
+            return GoToDefinitionCore(_textManager.ActiveTextViewOptional, null);
         }
 
         /// <summary>

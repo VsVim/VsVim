@@ -49,9 +49,10 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             base.PreviewKeyUp(args);
         }
 
-        private bool Exec(EditCommand editCommand, out Action action)
+        private bool Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            action = null;
+            preAction = null;
+            postAction = null;
             return false;
         }
 
@@ -145,9 +146,9 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return QueryStatus(editCommand);
         }
 
-        bool ICommandTarget.Exec(EditCommand editCommand, out Action action)
+        bool ICommandTarget.Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            return Exec(editCommand, out action);
+            return Exec(editCommand, out preAction, out postAction);
         }
 
         #endregion

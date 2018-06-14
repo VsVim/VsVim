@@ -213,9 +213,10 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
         }
 
-        internal bool Exec(EditCommand editCommand, out Action action)
+        internal bool Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            action = null;
+            preAction = null;
+            postAction = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
             if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
@@ -246,11 +247,27 @@ namespace Vim.VisualStudio.Implementation.Misc
                     // out.  This command can cause the active document to switch if the target
                     // of the goto def is in another file.  This file won't be registered as the
                     // active file yet so just clear out the active selections
-                    action = () =>
+                    List<ITextView> selected = null;
+                    preAction = () =>
                         {
-                            _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
+                            // Record which buffers have pre-existing selections.
+                            selected = _textManager
+                                .GetDocumentTextViews(DocumentLoad.RespectLazy)
                                 .Where(x => !x.Selection.IsEmpty)
-                                .ForEach(x => x.Selection.Clear());
+                                .ToList();
+                        };
+                    postAction = () =>
+                        {
+                            // Clear any new selections.
+                            _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
+                                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
+                                .ForEach(x =>
+                                {
+                                    // Move the caret to the beginning of the selection.
+                                    var startPoint = x.Selection.Start;
+                                    x.Selection.Clear();
+                                    x.Caret.MoveTo(startPoint);
+                                });
                         };
                     return false;
 
@@ -261,7 +278,10 @@ namespace Vim.VisualStudio.Implementation.Misc
                     // case).  
                     if (_textView.Selection.IsEmpty)
                     {
-                        action = () => { _textView.Selection.Clear(); };
+                        postAction = () =>
+                            {
+                                _textView.Selection.Clear();
+                            };
                     }
                     return false;
 
@@ -322,9 +342,9 @@ namespace Vim.VisualStudio.Implementation.Misc
             return QueryStatus(editCommand);
         }
 
-        bool ICommandTarget.Exec(EditCommand editCommand, out Action action)
+        bool ICommandTarget.Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
-            return Exec(editCommand, out action);
+            return Exec(editCommand, out preAction, out postAction);
         }
 
         #endregion

@@ -15,6 +15,11 @@ namespace Vim.VisualStudio
         /// </summary>
         internal static readonly CommandId HiddenCommand = new CommandId(new Guid("{5D7E7F65-A63F-46EE-84F1-990B2CAB23F9}"), 6144);
 
+        /// <summary>
+        /// The command that Ctrl-F12 is bound to in VS2017 for C# and perhaps other language services
+        /// </summary>
+        internal static readonly CommandId RoslynGotoDeclarationCommand = new CommandId(new Guid("{b61e1a20-8c13-49a9-a727-a0ec091647dd}"), 512);
+
         internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, VimKeyModifiers modifiers, out EditCommand command)
         {
             if (!TryConvert(commandGroup, commandId, pVariableIn, out KeyInput keyInput, out EditCommandKind kind, out bool isRawText))
@@ -54,6 +59,14 @@ namespace Vim.VisualStudio
             if (VSConstants.VSStd2K == commandGroup)
             {
                 return TryConvert((VSConstants.VSStd2KCmdID)commandId, variantIn, out keyInput, out kind, out isRawText);
+            }
+
+            if (commandGroup == RoslynGotoDeclarationCommand.Group && commandId == RoslynGotoDeclarationCommand.Id)
+            {
+                keyInput = KeyInput.DefaultValue;
+                kind = EditCommandKind.GoToDefinition;
+                isRawText = false;
+                return true;
             }
 
             if (commandGroup == HiddenCommand.Group && commandId == HiddenCommand.Id)
@@ -403,7 +416,7 @@ namespace Vim.VisualStudio
             switch (editCommand.EditCommandKind)
             {
                 case EditCommandKind.GoToDefinition:
-                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDecl);
+                    oleCommandData = new OleCommandData(VSConstants.VSStd97CmdID.GotoDefn);
                     return true;
                 case EditCommandKind.Paste:
                     oleCommandData = new OleCommandData(VSConstants.VSStd2KCmdID.PASTE);

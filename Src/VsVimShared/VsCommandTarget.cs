@@ -243,10 +243,11 @@ namespace Vim.VisualStudio
             return true;
         }
 
-        internal bool Exec(EditCommand editCommand, out Action action)
+        internal bool Exec(EditCommand editCommand, out Action preAction, out Action postAction)
         {
             VimTrace.TraceInfo("VsCommandTarget::Exec {0}", editCommand);
-            action = null;
+            preAction = null;
+            postAction = null;
 
             // If the KeyInput was already handled then pretend we handled it here 
             if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
@@ -257,7 +258,7 @@ namespace Vim.VisualStudio
             var result = false;
             foreach (var commandTarget in _commandTargets)
             {
-                if (commandTarget.Exec(editCommand, out action))
+                if (commandTarget.Exec(editCommand, out preAction, out postAction))
                 {
                     result = true;
                     break;
@@ -333,21 +334,28 @@ namespace Vim.VisualStudio
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint commandExecOpt, IntPtr variantIn, IntPtr variantOut)
         {
             EditCommand editCommand = null;
-            Action action = null;
+            Action preAction = null;
+            Action postAction = null;
+            if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
+                Exec(editCommand, out preAction, out postAction))
+            {
+                return NativeMethods.S_OK;
+            }
+
+            if (preAction != null)
+            {
+                preAction();
+            }
             try
             {
-                if (TryConvert(commandGroup, commandId, variantIn, out editCommand) &&
-                    Exec(editCommand, out action))
-                {
-                    return NativeMethods.S_OK;
-                }
-
                 return _nextCommandTarget.Exec(commandGroup, commandId, commandExecOpt, variantIn, variantOut);
             }
             finally
             {
-                // Run any cleanup actions specified by ExecCore 
-                action?.Invoke();
+                if (postAction != null)
+                {
+                    postAction();
+                }
             }
         }
 
