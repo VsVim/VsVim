@@ -4864,6 +4864,22 @@ namespace Vim.UnitTest
                     new[] { "cat", "dog", "dog", "fish" });
                 Assert.True(_textBuffer.CurrentSnapshot.Lines.Take(3).All(x => x.GetLineBreakText() == Environment.NewLine));
             }
+
+            /// <summary>
+            /// Redoing a numbered put should increment the register number
+            /// </summary>
+            [WpfFact]
+            public void RedoNumberedPut()
+            {
+                Create("cat", "dog", "fish", "bear", "");
+                _vimBuffer.Process("dd");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(@"""1p");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(".");
+                Assert.Equal(new[] { "bear", "fish", "dog", "cat", "" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class PutBeforeTest : NormalModeIntegrationTest
@@ -5001,6 +5017,22 @@ namespace Vim.UnitTest
                 Assert.Equal("  be  dog", _textView.GetLine(1).GetText());
                 Assert.Equal("  cat", _textView.GetLine(2).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Redoing a numbered put should increment the register number
+            /// </summary>
+            [WpfFact]
+            public void RedoNumberedPut()
+            {
+                Create("cat", "dog", "fish", "bear", "");
+                _vimBuffer.Process("dd");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(@"""1P");
+                _vimBuffer.Process(".");
+                _vimBuffer.Process(".");
+                Assert.Equal(new[] { "cat", "dog", "fish", "bear", "" }, _textBuffer.GetLines());
             }
         }
 
