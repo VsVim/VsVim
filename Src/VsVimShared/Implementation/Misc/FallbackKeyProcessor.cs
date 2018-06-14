@@ -16,27 +16,32 @@ namespace Vim.VisualStudio.Implementation.Misc
     /// </summary>
     internal sealed class FallbackKeyProcessor : KeyProcessor
     {
+        private static KeyInput StripModifiers(KeyInput keyInput)
+        {
+            return KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, VimKeyModifiers.None);
+        }
+
         /// <summary>
         /// A smaller container that represents the parts of a KeyStroke that
         /// the FallbackKeyProcessor uses.
         /// </summary>
-        internal struct KeyCharModifier
+        internal struct KeyInputWithModifier
         {
-            private readonly char _char;
+            private readonly KeyInput _key;
             private readonly VimKeyModifiers _keyModifiers;
 
-            internal KeyCharModifier(char c, VimKeyModifiers keyModifiers)
+            internal KeyInputWithModifier(KeyInput key, VimKeyModifiers keyModifiers)
             {
-                _char = c;
+                _key = key;
                 _keyModifiers = keyModifiers;
             }
 
-            internal char Char { get { return _char; } }
+            internal KeyInput KeyInput { get { return _key; } }
             internal VimKeyModifiers KeyModifiers { get { return _keyModifiers; } }
 
-            internal static KeyCharModifier Create(KeyStroke stroke)
+            internal static KeyInputWithModifier Create(KeyStroke stroke)
             {
-                return new KeyCharModifier(stroke.Char, stroke.KeyModifiers);
+                return new KeyInputWithModifier(StripModifiers(stroke.KeyInput), stroke.KeyModifiers);
             }
         }
 
@@ -47,17 +52,17 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal struct FallbackCommand
         {
             private readonly ScopeKind _scopeKind;
-            private readonly List<KeyCharModifier> _keyBinding;
+            private readonly List<KeyInputWithModifier> _keyBinding;
             private readonly CommandId _command;
 
             internal FallbackCommand(ScopeKind scopeKind, KeyBinding keyBinding, CommandId command)
             {
                 _scopeKind = scopeKind;
-                _keyBinding = keyBinding.KeyStrokes.Select(KeyCharModifier.Create).ToList();
+                _keyBinding = keyBinding.KeyStrokes.Select(KeyInputWithModifier.Create).ToList();
                 _command = command;
             }
             internal ScopeKind ScopeKind { get { return _scopeKind; } }
-            internal List<KeyCharModifier> KeyBindings { get { return _keyBinding; } }
+            internal List<KeyInputWithModifier> KeyBindings { get { return _keyBinding; } }
             internal CommandId Command { get { return _command; } }
         }
 
@@ -69,7 +74,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ScopeData _scopeData;
 
         private KeyInput _firstChord;
-        private ILookup<char, FallbackCommand> _fallbackCommandList;
+        private ILookup<KeyInput, FallbackCommand> _fallbackCommandList;
 
         /// <summary>
         /// In general a key processor applies to a specific IWpfTextView but
@@ -84,7 +89,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _vimApplicationSettings = vimApplicationSettings;
             _vimBuffer = vimBuffer;
             _scopeData = scopeData;
-            _fallbackCommandList = Enumerable.Empty<FallbackCommand>().ToLookup(x => 'a');
+            _fallbackCommandList = Enumerable.Empty<FallbackCommand>().ToLookup(x => KeyInput.DefaultValue);
 
             // Register for key binding changes and get the current bindings
             _vimApplicationSettings.SettingsChanged += OnSettingsChanged;
@@ -117,7 +122,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     KeyBinding.Parse(binding.KeyBinding.CommandString),
                     binding.Id
                 ))
-                .ToLookup(fallbackCommand => fallbackCommand.KeyBindings[0].Char);
+                .ToLookup(fallbackCommand => StripModifiers(fallbackCommand.KeyBindings[0].KeyInput));
         }
 
         /// <summary>
@@ -225,11 +230,14 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            // Check for any applicable fallback bindings, in order
+            // First strip modifiers from the key input.
+            var strippedKeyInput = StripModifiers(keyInput);
+
+            // Check for any applicable fallback bindings, in order.
             VimTrace.TraceInfo("FallbackKeyProcessor::TryProcess {0}", keyInput);
-            var findFirstChar = _firstChord != null ? _firstChord.Char : keyInput.Char;
+            var findFirstKeyInput = _firstChord != null ? StripModifiers(_firstChord) : strippedKeyInput;
             var findFirstModifiers = _firstChord != null ? _firstChord.KeyModifiers : keyInput.KeyModifiers;
-            var cmds = _fallbackCommandList[findFirstChar]
+            var cmds = _fallbackCommandList[findFirstKeyInput]
                 .Where(fallbackCommand => fallbackCommand.KeyBindings[0].KeyModifiers == findFirstModifiers)
                 .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
                 .ToList();
@@ -239,7 +247,8 @@ namespace Vim.VisualStudio.Implementation.Misc
                 _firstChord = null;
                 return false;
             }
-            else if (cmds.Count == 1 && cmds[0].KeyBindings.Count == 1)
+            else if (cmds.Count == 1 && cmds[0].KeyBindings.Count == 1
+                || cmds.Count == 2 && cmds[0].KeyBindings.Count == 1 && cmds[1].KeyBindings.Count == 1)
             {
                 _firstChord = null;
                 var cmd = cmds.First();
@@ -250,7 +259,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 var secondChord = cmds
                     .Where(fallbackCommand => fallbackCommand.KeyBindings.Count >= 2 &&
                         fallbackCommand.KeyBindings[1].KeyModifiers == keyInput.KeyModifiers &&
-                        fallbackCommand.KeyBindings[1].Char == keyInput.Char)
+                        StripModifiers(fallbackCommand.KeyBindings[1].KeyInput) == strippedKeyInput)
                     .OrderBy(fallbackCommand => GetScopeOrder(fallbackCommand.ScopeKind))
                     .ToList();
 
