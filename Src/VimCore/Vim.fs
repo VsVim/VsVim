@@ -639,15 +639,18 @@ type internal Vim
             x.CreateVimBuffer textView (Some settings)
 
     member x.MaybeLoadFiles() =
+
+        // Load registers before loading the vimrc so that
+        // registers that are set in the vimrc "stick".
+        if x.AutoLoadSessionData && not _sessionDataAutoLoaded then
+            x.LoadSessionData()
+            _sessionDataAutoLoaded <- true
+
         if x.AutoLoadVimRc then
             match _vimRcState with
             | VimRcState.None -> x.LoadVimRc() |> ignore
             | VimRcState.LoadSucceeded _ -> ()
             | VimRcState.LoadFailed -> ()
-
-        if x.AutoLoadSessionData && not _sessionDataAutoLoaded then
-            x.LoadSessionData()
-            _sessionDataAutoLoaded <- true
 
     member x.LoadVimRcCore() =
         Contract.Assert(_isLoadingVimRc)
