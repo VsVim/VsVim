@@ -1885,9 +1885,25 @@ namespace Vim.UnitTest
         {
             private readonly Vim _vimRaw;
 
+            private string _name;
+            private int _line;
+            private int _column;
+
             public EditAlternateFileTest()
             {
                 _vimRaw = (Vim)Vim;
+            }
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimHost.LoadIntoNewWindowFunc = (name, line, column) =>
+                    {
+                        _name = name;
+                        _line = line;
+                        _column = column;
+                        return true;
+                    };
             }
 
             [WpfFact]
@@ -1922,6 +1938,60 @@ namespace Vim.UnitTest
                 _vimRaw.OnFocus(vimBuffer2);
                 vimBuffer2.ProcessNotation("2<C-^>");
                 Assert.Equal(vimBuffer0.TextView.Caret.Position.VirtualBufferPosition, _vimHost.NavigateToData);
+            }
+
+            [WpfFact]
+            public void TabEditMostRecent()
+            {
+                Create("buffer0", "cat", "dog");
+                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
+                var vimBuffer0 = _vimBuffer;
+                vimBuffer0.TextView.MoveCaretToLine(0, 1);
+                var vimBuffer1 = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
+                vimBuffer1.TextView.MoveCaretToLine(1, 2);
+                var vimBuffer2 = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
+                vimBuffer2.TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffer0);
+                Assert.Equal("buffer0.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffer1);
+                Assert.Equal("buffer1.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffer2);
+                Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
+
+                _name = null;
+                _line = int.MinValue;
+                _column = int.MinValue;
+                vimBuffer2.ProcessNotation(":tabe #<CR>");
+                Assert.Equal("buffer1.cs", _name);
+                Assert.Equal(0, _line);
+                Assert.Equal(-1, _column);
+            }
+
+            [WpfFact]
+            public void TabEditNextMostRecent()
+            {
+                Create("buffer0", "cat", "dog");
+                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
+                var vimBuffer0 = _vimBuffer;
+                vimBuffer0.TextView.MoveCaretToLine(0, 1);
+                var vimBuffer1 = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
+                vimBuffer1.TextView.MoveCaretToLine(1, 2);
+                var vimBuffer2 = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
+                vimBuffer2.TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffer0);
+                Assert.Equal("buffer0.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffer1);
+                Assert.Equal("buffer1.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffer2);
+                Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
+
+                _name = null;
+                _line = int.MinValue;
+                _column = int.MinValue;
+                vimBuffer2.ProcessNotation(":tabe #2<CR>");
+                Assert.Equal("buffer0.cs", _name);
+                Assert.Equal(0, _line);
+                Assert.Equal(-1, _column);
             }
         }
 
