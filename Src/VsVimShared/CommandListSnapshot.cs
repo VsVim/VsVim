@@ -13,10 +13,16 @@ namespace Vim.VisualStudio
     /// </summary>
     public sealed class CommandListSnapshot
     {
-        private struct CommandData
+        private readonly struct CommandData
         {
-            internal DteCommand Command;
-            internal ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings;
+            internal readonly DteCommand Command;
+            internal readonly ReadOnlyCollection<CommandKeyBinding> CommandKeyBindings;
+            
+            internal CommandData(DteCommand command, ReadOnlyCollection<CommandKeyBinding> commandKeyBindings)
+            {
+                Command = command;
+                CommandKeyBindings = commandKeyBindings;
+            }
         }
 
         private readonly Dictionary<CommandId, CommandData> _commandMap = new Dictionary<CommandId, CommandData>();
@@ -53,12 +59,8 @@ namespace Vim.VisualStudio
                     continue;
                 }
 
-                var commandKeybindings = command.GetCommandKeyBindings().ToReadOnlyCollection();
-                var commandData = new CommandData()
-                {
-                    Command = command,
-                    CommandKeyBindings = commandKeybindings
-                };
+                var commandKeyBindings = command.GetCommandKeyBindings().ToReadOnlyCollection();
+                var commandData = new CommandData(command, commandKeyBindings);
 
                 _commandMap[commandId] = commandData;
 

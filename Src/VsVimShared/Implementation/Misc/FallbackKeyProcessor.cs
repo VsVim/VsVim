@@ -25,7 +25,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// A smaller container that represents the parts of a KeyStroke that
         /// the FallbackKeyProcessor uses.
         /// </summary>
-        internal struct KeyInputWithModifier
+        internal readonly struct KeyInputWithModifier
         {
             private readonly KeyInput _key;
             private readonly VimKeyModifiers _keyModifiers;
@@ -49,7 +49,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// A fallback command is a tuple of a previously bound key paired
         /// with its corresponding Visual Studio command
         /// </summary>
-        internal struct FallbackCommand
+        internal readonly struct FallbackCommand
         {
             private readonly ScopeKind _scopeKind;
             private readonly List<KeyInputWithModifier> _keyBinding;

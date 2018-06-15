@@ -1528,7 +1528,7 @@ namespace Vim.UnitTest
                 TaskScheduler.Default);
         }
  
-        internal struct SemaphoreDisposer : IDisposable
+        internal readonly struct SemaphoreDisposer : IDisposable
         {
             private readonly Semaphore _semaphore;
  

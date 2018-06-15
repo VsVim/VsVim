@@ -4,7 +4,7 @@ using Microsoft.VisualStudio;
 
 namespace Vim.VisualStudio
 {
-    public struct Result<T>
+    public readonly struct Result<T>
     {
         private readonly bool _isSuccess;
         private readonly T _value;
@@ -89,7 +89,7 @@ namespace Vim.VisualStudio
         }
     }
 
-    public struct Result
+    public readonly struct Result
     {
         private readonly bool _isSuccess;
         private readonly int _hresult;

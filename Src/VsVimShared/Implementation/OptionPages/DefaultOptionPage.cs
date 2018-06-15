@@ -21,7 +21,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
     {
         #region ColorKey 
 
-        private struct ColorKey
+        private readonly struct ColorKey
         {
             internal readonly string Name;
             internal readonly bool IsForeground;

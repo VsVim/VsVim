@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         /// Information about the completion which needs to be passed around between the 
         /// various components
         /// </summary>
-        private struct CompletionData
+        private readonly struct CompletionData
         {
             internal readonly SnapshotSpan WordSpan;
             internal readonly ReadOnlyCollection<string> WordCollection;
