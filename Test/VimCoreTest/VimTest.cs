@@ -652,6 +652,43 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RecentBufferTest : VimTest
+        {
+            private IVimBuffer CreateVimBuffer()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.CreateVimBuffer(textView);
+                return buffer;
+            }
+
+            private void FocusVimBuffer(IVimBuffer vimBuffer)
+            {
+                _vimRaw.OnFocus(vimBuffer);
+            }
+
+            [WpfFact]
+            public void RecentBuffer()
+            {
+                var buffer1 = CreateVimBuffer();
+                var buffer2 = CreateVimBuffer();
+                var buffer3 = CreateVimBuffer();
+
+                FocusVimBuffer(buffer1);
+                FocusVimBuffer(buffer2);
+                FocusVimBuffer(buffer3);
+                Assert.Equal(buffer3, _vim.TryGetRecentBuffer(0).Value);
+                Assert.Equal(buffer2, _vim.TryGetRecentBuffer(1).Value);
+                Assert.Equal(buffer1, _vim.TryGetRecentBuffer(2).Value);
+                Assert.True(_vim.TryGetRecentBuffer(3).IsNone());
+
+                FocusVimBuffer(buffer2);
+                Assert.Equal(buffer2, _vim.TryGetRecentBuffer(0).Value);
+                Assert.Equal(buffer3, _vim.TryGetRecentBuffer(1).Value);
+                Assert.Equal(buffer1, _vim.TryGetRecentBuffer(2).Value);
+                Assert.True(_vim.TryGetRecentBuffer(3).IsNone());
+            }
+        }
+
         public sealed class GlobalSettingsCustomizationTest : VimTest
         {
             public GlobalSettingsCustomizationTest()
