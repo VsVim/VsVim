@@ -634,6 +634,23 @@ namespace Vim.UnitTest
             }
         }
 
+        public class UnloadedMarksTest : ClosingSetsLastEditedPositionMark
+        {
+            [WpfFact]
+            public void ReloadUnloadedMark()
+            {
+                Vim.MarkMap.SetGlobalMark(Letter.A, _vimBufferData.VimTextBuffer, 1, 2);
+                AssertPosition(1, 2, Vim.MarkMap.GetGlobalMark(Letter.A));
+
+                _vimBuffer.Close();
+                Assert.True(Vim.MarkMap.GetGlobalMark(Letter.A).IsNone());
+
+                // reopen the file
+                OpenFakeVimBufferTestWindow();
+                AssertPosition(1, 2, Vim.MarkMap.GetGlobalMark(Letter.A));
+            }
+        }
+
         public sealed class MiscTest : VimBufferTest
         {
             /// <summary>
