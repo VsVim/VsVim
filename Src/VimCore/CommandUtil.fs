@@ -1182,7 +1182,7 @@ type internal CommandUtil
     /// GoTo the ITextView in the specified direction
     member x.GoToRecentView count =
         let vim = _vimBufferData.Vim
-        match vim.TryGetRecentBuffer 1 with
+        match vim.TryGetRecentBuffer count with
         | None -> ()
         | Some vimBuffer ->
             let textView = vimBuffer.VimBufferData.TextView
