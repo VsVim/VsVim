@@ -1906,90 +1906,53 @@ namespace Vim.UnitTest
                     };
             }
 
-            [WpfFact]
-            public void MostRecent()
+            [WpfTheory]
+            [InlineData("<C-^>", 1)]
+            [InlineData("2<C-^>", 0)]
+            public void MostRecent(string command, int bufferIndex)
             {
+                var vimBuffers = new IVimBuffer[3];
                 Create("buffer0", "cat", "dog");
-                var vimBuffer0 = _vimBuffer;
-                vimBuffer0.TextView.MoveCaretToLine(0, 1);
-                var vimBuffer1 = CreateVimBuffer("buffer1", "foo", "bar");
-                vimBuffer1.TextView.MoveCaretToLine(1, 2);
-                var vimBuffer2 = CreateVimBuffer("buffer2", "aaa", "bbb");
-                vimBuffer2.TextView.MoveCaretToLine(2, 0);
-                _vimRaw.OnFocus(vimBuffer0);
-                _vimRaw.OnFocus(vimBuffer1);
-                _vimRaw.OnFocus(vimBuffer2);
-                vimBuffer2.ProcessNotation("<C-^>");
-                Assert.Equal(vimBuffer1.TextView.Caret.Position.VirtualBufferPosition, _vimHost.NavigateToData);
+                vimBuffers[0] = _vimBuffer;
+                vimBuffers[0].TextView.MoveCaretToLine(0, 1);
+                vimBuffers[1] = CreateVimBuffer("buffer1", "foo", "bar");
+                vimBuffers[1].TextView.MoveCaretToLine(1, 2);
+                vimBuffers[2] = CreateVimBuffer("buffer2", "aaa", "bbb");
+                vimBuffers[2].TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffers[0]);
+                _vimRaw.OnFocus(vimBuffers[1]);
+                _vimRaw.OnFocus(vimBuffers[2]);
+                vimBuffers[2].ProcessNotation(command);
+                var expectedData = vimBuffers[bufferIndex].TextView.Caret.Position.VirtualBufferPosition;
+                Assert.Equal(expectedData, _vimHost.NavigateToData);
             }
 
-            [WpfFact]
-            public void NextMostRecent()
+            [WpfTheory]
+            [InlineData(":tabe #<CR>", "buffer1.cs")]
+            [InlineData(":tabe #2<CR>", "buffer0.cs")]
+            public void TabEditMostRecent(string command, string name)
             {
-                Create("buffer0", "cat", "dog");
-                var vimBuffer0 = _vimBuffer;
-                vimBuffer0.TextView.MoveCaretToLine(0, 1);
-                var vimBuffer1 = CreateVimBuffer("buffer1", "foo", "bar");
-                vimBuffer1.TextView.MoveCaretToLine(1, 2);
-                var vimBuffer2 = CreateVimBuffer("buffer2", "aaa", "bbb");
-                vimBuffer2.TextView.MoveCaretToLine(2, 0);
-                _vimRaw.OnFocus(vimBuffer0);
-                _vimRaw.OnFocus(vimBuffer1);
-                _vimRaw.OnFocus(vimBuffer2);
-                vimBuffer2.ProcessNotation("2<C-^>");
-                Assert.Equal(vimBuffer0.TextView.Caret.Position.VirtualBufferPosition, _vimHost.NavigateToData);
-            }
-
-            [WpfFact]
-            public void TabEditMostRecent()
-            {
+                var vimBuffers = new IVimBuffer[3];
                 Create("buffer0", "cat", "dog");
                 _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
-                var vimBuffer0 = _vimBuffer;
-                vimBuffer0.TextView.MoveCaretToLine(0, 1);
-                var vimBuffer1 = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
-                vimBuffer1.TextView.MoveCaretToLine(1, 2);
-                var vimBuffer2 = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
-                vimBuffer2.TextView.MoveCaretToLine(2, 0);
-                _vimRaw.OnFocus(vimBuffer0);
+                vimBuffers[0] = _vimBuffer;
+                vimBuffers[0].TextView.MoveCaretToLine(0, 1);
+                vimBuffers[1] = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
+                vimBuffers[1].TextView.MoveCaretToLine(1, 2);
+                vimBuffers[2] = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
+                vimBuffers[2].TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffers[0]);
                 Assert.Equal("buffer0.cs", _vimData.FileHistory.Items.Head);
-                _vimRaw.OnFocus(vimBuffer1);
+                _vimRaw.OnFocus(vimBuffers[1]);
                 Assert.Equal("buffer1.cs", _vimData.FileHistory.Items.Head);
-                _vimRaw.OnFocus(vimBuffer2);
+                _vimRaw.OnFocus(vimBuffers[2]);
                 Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
 
                 _name = null;
                 _line = int.MinValue;
                 _column = int.MinValue;
-                vimBuffer2.ProcessNotation(":tabe #<CR>");
-                Assert.Equal("buffer1.cs", _name);
-                Assert.Equal(0, _line);
-                Assert.Equal(-1, _column);
-            }
-
-            [WpfFact]
-            public void TabEditNextMostRecent()
-            {
-                Create("buffer0", "cat", "dog");
-                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
-                var vimBuffer0 = _vimBuffer;
-                vimBuffer0.TextView.MoveCaretToLine(0, 1);
-                var vimBuffer1 = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
-                vimBuffer1.TextView.MoveCaretToLine(1, 2);
-                var vimBuffer2 = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
-                vimBuffer2.TextView.MoveCaretToLine(2, 0);
-                _vimRaw.OnFocus(vimBuffer0);
-                Assert.Equal("buffer0.cs", _vimData.FileHistory.Items.Head);
-                _vimRaw.OnFocus(vimBuffer1);
-                Assert.Equal("buffer1.cs", _vimData.FileHistory.Items.Head);
-                _vimRaw.OnFocus(vimBuffer2);
-                Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
-
-                _name = null;
-                _line = int.MinValue;
-                _column = int.MinValue;
-                vimBuffer2.ProcessNotation(":tabe #2<CR>");
-                Assert.Equal("buffer0.cs", _name);
+                vimBuffers[2].ProcessNotation(command);
+                Assert.Equal(name, _name);
                 Assert.Equal(0, _line);
                 Assert.Equal(-1, _column);
             }
