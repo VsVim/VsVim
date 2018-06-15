@@ -2178,6 +2178,8 @@ type internal CommandUtil
                     match command with
                     | NormalCommand.PutAfterCaret _
                     | NormalCommand.PutBeforeCaret _
+                    | NormalCommand.PutAfterCaretWithIndent
+                    | NormalCommand.PutBeforeCaretWithIndent
                         ->
 
                         // Special case when redoing positive numbered register puts:
