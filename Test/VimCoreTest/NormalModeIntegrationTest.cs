@@ -1881,6 +1881,50 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EditAlternateFileTest : NormalModeIntegrationTest
+        {
+            private readonly Vim _vimRaw;
+
+            public EditAlternateFileTest()
+            {
+                _vimRaw = (Vim)Vim;
+            }
+
+            [WpfFact]
+            public void MostRecent()
+            {
+                Create("buffer0", "cat", "dog");
+                var vimBuffer0 = _vimBuffer;
+                vimBuffer0.TextView.MoveCaretToLine(0, 1);
+                var vimBuffer1 = CreateVimBuffer("buffer1", "foo", "bar");
+                vimBuffer1.TextView.MoveCaretToLine(1, 2);
+                var vimBuffer2 = CreateVimBuffer("buffer2", "aaa", "bbb");
+                vimBuffer2.TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffer0);
+                _vimRaw.OnFocus(vimBuffer1);
+                _vimRaw.OnFocus(vimBuffer2);
+                vimBuffer2.ProcessNotation("<C-^>");
+                Assert.Equal(vimBuffer1.TextView.Caret.Position.VirtualBufferPosition, _vimHost.NavigateToData);
+            }
+
+            [WpfFact]
+            public void NextMostRecent()
+            {
+                Create("buffer0", "cat", "dog");
+                var vimBuffer0 = _vimBuffer;
+                vimBuffer0.TextView.MoveCaretToLine(0, 1);
+                var vimBuffer1 = CreateVimBuffer("buffer1", "foo", "bar");
+                vimBuffer1.TextView.MoveCaretToLine(1, 2);
+                var vimBuffer2 = CreateVimBuffer("buffer2", "aaa", "bbb");
+                vimBuffer2.TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffer0);
+                _vimRaw.OnFocus(vimBuffer1);
+                _vimRaw.OnFocus(vimBuffer2);
+                vimBuffer2.ProcessNotation("2<C-^>");
+                Assert.Equal(vimBuffer0.TextView.Caret.Position.VirtualBufferPosition, _vimHost.NavigateToData);
+            }
+        }
+
         public sealed class FilterTest : NormalModeIntegrationTest
         {
             private string _command;
