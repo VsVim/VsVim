@@ -126,7 +126,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
         }
 
-        internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct
+        internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct, Enum
         {
             var value = GetString(propertyName, null);
             if (value == null)
@@ -142,7 +142,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             return defaultValue;
         }
 
-        internal void SetEnum<T>(string propertyName, T value) where T : struct
+        internal void SetEnum<T>(string propertyName, T value) where T : struct, Enum
         {
             SetString(propertyName, value.ToString());
         }
