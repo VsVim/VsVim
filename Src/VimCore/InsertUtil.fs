@@ -199,11 +199,31 @@ type internal InsertUtil
                 let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
 
                 // Only apply the edit to lines which were included in the original selection
-                let point = SnapshotLineUtil.GetSpaceOrEnd currentLine spaces _localSettings.TabStop
+                let tabStop = _localSettings.TabStop
+                let point = SnapshotLineUtil.GetSpaceOrEnd currentLine spaces tabStop
                 if not (SnapshotPointUtil.IsInsideLineBreak point) then
                     let position = point.Position
-                    if not (textEdit.Insert(position, text)) then
-                        abortChange <- true
+                    let column = SnapshotPointUtil.GetColumn point
+                    let text =
+                        if _localSettings.ExpandTab then
+                            StringUtil.ExpandTabsForColumn text column tabStop
+                        else
+                            text
+
+                    // Unfortunately, we may have to delete some of the preceding
+                    // spaces if they are no longer needed to maintain the
+                    // column position.
+                    if text.StartsWith("\t") then
+                        let mutable n = 0
+                        while column - n > 0 && (column - n) % tabStop <> 0
+                        && point.Subtract(n + 1).GetChar() = ' ' do
+                            n <- n + 1
+                        let span = Span(position - n, n)
+                        if not (textEdit.Replace(span, text)) then
+                            abortChange <- true
+                    else
+                        if not (textEdit.Insert(position, text)) then
+                            abortChange <- true
 
             if abortChange then
                 textEdit.Cancel()

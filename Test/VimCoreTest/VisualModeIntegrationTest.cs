@@ -1040,6 +1040,49 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>.");
                     Assert.Equal(new[] { "xxcat", "xxdog" }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// A block inserted tab with 'expandtab' should obey the starting column with
+                /// </summary>
+                [WpfFact]
+                public void UnalignedExpandTabs()
+                {
+                    // Reported in issue #2073.
+                    Create(" dog", " cat", " bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = true;
+                    EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "    dog", "    cat", "    bat", "", }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// A block inserted tab with 'noexpandtab' should eat preceding spaces if possible
+                /// </summary>
+                [WpfFact]
+                public void UnalignedNoExpandTabs()
+                {
+                    Create(" dog", " cat", " bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = false;
+                    EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "\tdog", "\tcat", "\tbat", "", }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// A block inserted tab with 'noexpandtab' should not eat preceding non-spaces
+                /// </summary>
+                [WpfFact]
+                public void UnalignedNoExpandTabsNotSpaces()
+                {
+                    Create("xdog", "xcat", "xbat", "");
+                    _vimBufferData.LocalSettings.TabStop = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = false;
+                    EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "x\tdog", "x\tcat", "x\tbat", "", }, _textBuffer.GetLines());
+                }
             }
         }
 

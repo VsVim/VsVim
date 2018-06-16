@@ -139,15 +139,31 @@ module internal StringUtil =
 
     let IsBlanks (arg: string) = Seq.forall CharUtil.IsBlank arg
 
+    let ExpandTabsForColumn (arg: string) (startColumn: int) (tabStop: int) =
+        let builder = new System.Text.StringBuilder()
+        let mutable column = startColumn
+        for i = 0 to arg.Length - 1 do
+            let c = arg.[i]
+            if c = '\t' then
+                builder.AppendChar ' '
+                column <- column + 1
+                while column % tabStop <> 0 do
+                    builder.AppendChar ' '
+                    column <- column + 1
+            else
+                builder.AppendChar c
+                column <- column + 1
+        builder.ToString()
+
     let GetDisplayString (arg: string) =
         let builder = new System.Text.StringBuilder()
         for i = 0 to arg.Length - 1 do
             let c = arg.[i]
             if Char.IsControl(c) then
-                builder.Append('^') |> ignore
-                builder.Append(char(c + '@')) |> ignore
+                builder.AppendChar '^'
+                builder.AppendChar (char(c + '@'))
             else
-                builder.Append(c) |> ignore
+                builder.AppendChar c
         builder.ToString()
 
     /// Is the specified check string a substring of the given argument at the specified
