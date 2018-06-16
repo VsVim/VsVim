@@ -10,44 +10,34 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
     {
         private readonly IVim _vim;
 
-        private InputMethodState _lastInsertMethodState;
+        private bool _inInputMode;
+        private InputMethodState _lastInputMethodState;
 
         [ImportingConstructor]
         internal ImeCoordinator(IVim vim)
         {
             _vim = vim;
 
-            _lastInsertMethodState = InputMethodState.On;
+            _inInputMode = false;
+            _lastInputMethodState = InputMethod.Current.ImeState;
         }
 
-        #region IVimBufferCreationListener
-
-        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        void VimBufferCreated(IVimBuffer vimBuffer)
         {
             if (vimBuffer.TextView is IWpfTextView textView)
             {
-                vimBuffer.SwitchedMode += OnModeSwitch;
+                vimBuffer.KeyInputProcessed += OnKeyInputProcessed;
                 textView.GotAggregateFocus += OnGotFocus;
-                textView.LostAggregateFocus += OnLostFocus;
                 vimBuffer.Closed += OnBufferClosed;
             }
         }
 
-        private void OnBufferClosed(object sender, EventArgs e)
+        private void OnKeyInputProcessed(object sender, KeyInputProcessedEventArgs e)
         {
-            if (sender is IVimBuffer vimBuffer && vimBuffer.TextView is IWpfTextView textView)
+            if (sender is IVimBuffer vimBuffer)
             {
-                vimBuffer.SwitchedMode -= OnModeSwitch;
-                textView.GotAggregateFocus -= OnGotFocus;
-                textView.LostAggregateFocus -= OnLostFocus;
-                vimBuffer.Closed -= OnBufferClosed;
+                OnInputModeRelatedEvent(vimBuffer);
             }
-        }
-
-        private void OnModeSwitch(object sender, SwitchModeEventArgs e)
-        {
-            OnLeaveMode(e.PreviousMode);
-            OnEnterMode(e.CurrentMode);
         }
 
         private void OnGotFocus(object sender, EventArgs e)
@@ -56,52 +46,71 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             {
                 if (_vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer))
                 {
-                    OnEnterMode(vimBuffer.Mode);
+                    OnInputModeRelatedEvent(vimBuffer);
                 }
             }
         }
 
-        private void OnLostFocus(object sender, EventArgs e)
+        private void OnBufferClosed(object sender, EventArgs e)
         {
-            if (sender is IWpfTextView textView)
+            if (sender is IVimBuffer vimBuffer && vimBuffer.TextView is IWpfTextView textView)
             {
-                if (_vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer))
-                {
-                    OnLeaveMode(vimBuffer.Mode);
-                }
+                vimBuffer.KeyInputProcessed -= OnKeyInputProcessed;
+                textView.GotAggregateFocus -= OnGotFocus;
+                vimBuffer.Closed -= OnBufferClosed;
             }
         }
 
-        private void OnLeaveMode(IMode mode)
+        private void OnInputModeRelatedEvent(IVimBuffer vimBuffer)
         {
-            switch (mode.ModeKind)
-            {
-                case ModeKind.Insert:
-                case ModeKind.Replace:
-                    _lastInsertMethodState = InputMethod.Current.ImeState;
-                    VimTrace.TraceInfo("ImeCoordinator: Leaving insert with IME {0}", _lastInsertMethodState);
-                    break;
+            var wasInInputMode = _inInputMode;
+            var isInInputMode = IsInputMode(vimBuffer);
+            _inInputMode = isInInputMode;
 
-                default:
-                    break;
+            if (wasInInputMode != isInInputMode)
+            {
+                AdjustImeState();
             }
         }
 
-        private void OnEnterMode(IMode mode)
+        private static bool IsInputMode(IVimBuffer vimBuffer)
         {
-            switch (mode.ModeKind)
+            switch (vimBuffer.Mode.ModeKind)
             {
                 case ModeKind.Insert:
                 case ModeKind.Replace:
-                    InputMethod.Current.ImeState = _lastInsertMethodState;
-                    VimTrace.TraceInfo("ImeCoordinator: Entering insert with IME {0}", _lastInsertMethodState);
-                    break;
+                case ModeKind.ExternalEdit:
+                case ModeKind.Disabled:
+                    return true;
+
+                case ModeKind.Normal:
+                    return vimBuffer.IncrementalSearch.InSearch;
 
                 default:
-                    InputMethod.Current.ImeState = InputMethodState.Off;
-                    VimTrace.TraceInfo("ImeCoordinator: Entering non-insert with IME {0}", InputMethodState.Off);
-                    break;
+                    return false;
             }
+        }
+
+        private void AdjustImeState()
+        {
+            if (_inInputMode)
+            {
+                InputMethod.Current.ImeState = _lastInputMethodState;
+                VimTrace.TraceInfo($"ImeCoordinator: input mode with IME {InputMethod.Current.ImeState}");
+            }
+            else
+            {
+                _lastInputMethodState = InputMethod.Current.ImeState;
+                InputMethod.Current.ImeState = InputMethodState.Off;
+                VimTrace.TraceInfo($"ImeCoordinator: non-input mode with IME {InputMethod.Current.ImeState}");
+            }
+        }
+
+        #region IVimBufferCreationListener
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            VimBufferCreated(vimBuffer);
         }
 
         #endregion
