@@ -79,6 +79,9 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             {
                 case ModeKind.Insert:
                 case ModeKind.Replace:
+                case ModeKind.SelectCharacter:
+                case ModeKind.SelectLine:
+                case ModeKind.SelectBlock:
                 case ModeKind.ExternalEdit:
                 case ModeKind.Disabled:
                     return true;
