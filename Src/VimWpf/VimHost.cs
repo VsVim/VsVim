@@ -78,6 +78,10 @@ namespace Vim.UI.Wpf
             _editorOperationsFactoryService = editorOperationsFactoryService;
         }
 
+        public virtual void EnsurePackageLoaded()
+        {
+        }
+
         public virtual void Beep()
         {
             SystemSounds.Beep.Play();
@@ -529,6 +533,11 @@ namespace Vim.UI.Wpf
         DefaultSettings IVimHost.DefaultSettings
         {
             get { return DefaultSettings; }
+        }
+
+        void IVimHost.EnsurePackageLoaded()
+        {
+            EnsurePackageLoaded();
         }
 
         void IVimHost.Beep()

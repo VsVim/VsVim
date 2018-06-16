@@ -144,6 +144,7 @@ namespace Vim.VisualStudio
         private readonly ISmartIndentationService _smartIndentationService;
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
+        private readonly IVsShell _vsShell;
         private IVim _vim;
 
         internal _DTE DTE
@@ -213,6 +214,7 @@ namespace Vim.VisualStudio
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
+            _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
@@ -258,6 +260,12 @@ namespace Vim.VisualStudio
                 telemetry.WriteEvent($"VsVim Installed {VimConstants.VersionNumber}");
                 vimApplicationSettings.LastVersionUsed = VimConstants.VersionNumber;
             }
+        }
+
+        public override void EnsurePackageLoaded()
+        {
+            var guid = VsVimConstants.PackageGuid;
+            _vsShell.LoadPackage(ref guid, out IVsPackage package);
         }
 
         public override void CloseAllOtherTabs(ITextView textView)
