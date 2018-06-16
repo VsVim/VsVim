@@ -29,13 +29,25 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 vimBuffer.SwitchedMode += OnModeSwitch;
                 textView.GotAggregateFocus += OnGotFocus;
                 textView.LostAggregateFocus += OnLostFocus;
+                vimBuffer.Closed += OnBufferClosed;
+            }
+        }
+
+        private void OnBufferClosed(object sender, EventArgs e)
+        {
+            if (sender is IVimBuffer vimBuffer && vimBuffer.TextView is IWpfTextView textView)
+            {
+                vimBuffer.SwitchedMode -= OnModeSwitch;
+                textView.GotAggregateFocus -= OnGotFocus;
+                textView.LostAggregateFocus -= OnLostFocus;
+                vimBuffer.Closed -= OnBufferClosed;
             }
         }
 
         private void OnModeSwitch(object sender, SwitchModeEventArgs e)
         {
-            OnLeaveModeKind(e.PreviousMode.ModeKind);
-            OnEnterModeKind(e.CurrentMode.ModeKind);
+            OnLeaveMode(e.PreviousMode);
+            OnEnterMode(e.CurrentMode);
         }
 
         private void OnGotFocus(object sender, EventArgs e)
@@ -44,7 +56,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             {
                 if (_vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer))
                 {
-                    OnEnterModeKind(vimBuffer.ModeKind);
+                    OnEnterMode(vimBuffer.Mode);
                 }
             }
         }
@@ -55,19 +67,19 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             {
                 if (_vim.TryGetVimBuffer(textView, out IVimBuffer vimBuffer))
                 {
-                    OnLeaveModeKind(vimBuffer.ModeKind);
+                    OnLeaveMode(vimBuffer.Mode);
                 }
             }
         }
 
-        private void OnLeaveModeKind(ModeKind modeKind)
+        private void OnLeaveMode(IMode mode)
         {
-            switch (modeKind)
+            switch (mode.ModeKind)
             {
                 case ModeKind.Insert:
                 case ModeKind.Replace:
                     _lastInsertMethodState = InputMethod.Current.ImeState;
-                    VimTrace.TraceInfo("ImeCoordinator: Leaving insert with {0}", _lastInsertMethodState);
+                    VimTrace.TraceInfo("ImeCoordinator: Leaving insert with IME {0}", _lastInsertMethodState);
                     break;
 
                 default:
@@ -75,18 +87,19 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             }
         }
 
-        private void OnEnterModeKind(ModeKind modeKind)
+        private void OnEnterMode(IMode mode)
         {
-            switch (modeKind)
+            switch (mode.ModeKind)
             {
                 case ModeKind.Insert:
                 case ModeKind.Replace:
                     InputMethod.Current.ImeState = _lastInsertMethodState;
-                    VimTrace.TraceInfo("ImeCoordinator: Entering insert with {0}", _lastInsertMethodState);
+                    VimTrace.TraceInfo("ImeCoordinator: Entering insert with IME {0}", _lastInsertMethodState);
                     break;
 
                 default:
                     InputMethod.Current.ImeState = InputMethodState.Off;
+                    VimTrace.TraceInfo("ImeCoordinator: Entering non-insert with IME {0}", InputMethodState.Off);
                     break;
             }
         }
