@@ -18,8 +18,8 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         {
             _vim = vim;
 
-            _inInputMode = false;
-            _lastInputMethodState = InputMethod.Current.ImeState;
+            _inInputMode = true;
+            _lastInputMethodState = InputMethodState.DoNotCare;
         }
 
         void VimBufferCreated(IVimBuffer vimBuffer)
