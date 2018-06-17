@@ -654,8 +654,7 @@ type VimInterpreter
 
         // Get the printable format for the KeyInputSet 
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
-
-            keyInputSet.KeyInputs |> Seq.map KeyNotationUtil.GetDisplayName |> String.concat ""
+            KeyNotationUtil.KeyInputSetToString keyInputSet
 
         // Get the printable line for the provided mode, left and right side
         let getLine modes lhs rhs = 
@@ -685,8 +684,8 @@ type VimInterpreter
                 StringUtil.GetDisplayString registerValue.StringValue
             else
                 registerValue.KeyInputs
-                |> Seq.map KeyNotationUtil.GetDisplayName
-                |> String.concat ""
+                |> KeyInputSetUtil.OfList
+                |> KeyNotationUtil.KeyInputSetToString
 
         let displayNames = 
             match nameList with

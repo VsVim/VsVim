@@ -5,6 +5,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using Vim.Extensions;
@@ -217,7 +218,7 @@ namespace Vim.UnitTest
                     var name = entry[0];
                     var isCharacterWise = entry[1] == 'c';
                     var value = entry.Substring(2);
-                    list.Add(new SessionRegisterValue(name, isCharacterWise, value));
+                    list.Add(new SessionRegisterValue(name, isCharacterWise, value, false));
                 }
 
                 var serializer = new DataContractJsonSerializer(typeof(SessionData));
@@ -239,6 +240,28 @@ namespace Vim.UnitTest
                 var register = _vim.RegisterMap.GetRegister(name);
                 Assert.Equal(kind, register.OperationKind);
                 Assert.Equal(value, register.StringValue);
+            }
+
+            private void WriteMacroData(params string[] data)
+            {
+                var list = new List<SessionRegisterValue>();
+                foreach (var entry in data)
+                {
+                    var name = entry[0];
+                    var value = entry.Substring(1);
+                    list.Add(new SessionRegisterValue(name, true, value, true));
+                }
+
+                var serializer = new DataContractJsonSerializer(typeof(SessionData));
+                serializer.WriteObject(_stream, new SessionData(list.ToArray()));
+                _stream.Position = 0;
+            }
+
+            private void AssertMacroRegister(char name, string value)
+            {
+                var register = _vim.RegisterMap.GetRegister(name);
+                var keyInputSet = KeyInputSetUtil.OfList(register.RegisterValue.KeyInputs);
+                Assert.Equal(value, KeyNotationUtil.KeyInputSetToString(keyInputSet));
             }
 
             [WpfFact]
@@ -288,6 +311,37 @@ namespace Vim.UnitTest
                     Assert.False(name.IsAppend);
                 }
             }
+
+            /// <summary>
+            /// Macro registers can be loaded
+            /// </summary>
+            [WpfFact]
+            public void MacroLoad()
+            {
+                WriteMacroData("a<Right><Left><Esc>", "babc<CR>");
+                _vimRaw.LoadSessionData();
+                AssertMacroRegister('a', "<Right><Left><Esc>");
+                AssertMacroRegister('b', "abc<CR>");
+            }
+
+            /// <summary>
+            /// Macro registers roundtrip
+            /// </summary>
+            [WpfFact]
+            public void MacroSave()
+            {
+                _vim.RegisterMap.GetRegister('h').UpdateValue(
+                    KeyNotationUtil.StringToKeyInputSet("<Right><Left><Esc>").KeyInputs.ToArray());
+                _vim.RegisterMap.GetRegister('i').UpdateValue(
+                    KeyNotationUtil.StringToKeyInputSet("abc<CR>").KeyInputs.ToArray());
+                _vim.SaveSessionData();
+                _vim.RegisterMap.Clear();
+                _stream.Position = 0;
+                _vim.LoadSessionData();
+                AssertMacroRegister('h', "<Right><Left><Esc>");
+                AssertMacroRegister('i', "abc<CR>");
+            }
+
         }
 
         public sealed class FocussedBufferTest : VimTest
