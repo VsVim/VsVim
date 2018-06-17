@@ -58,10 +58,10 @@ namespace Vim.VisualStudio
         {
             _hresult = hresult;
             _isSuccess = false;
-            _value = default(T);
+            _value = default;
         }
 
-        public T GetValueOrDefault(T defaultValue = default(T))
+        public T GetValueOrDefault(T defaultValue = default)
         {
             return IsSuccess ? Value : defaultValue;
         }
@@ -74,7 +74,7 @@ namespace Vim.VisualStudio
                 return true;
             }
 
-            value = default(T);
+            value = default;
             return false;
         }
 

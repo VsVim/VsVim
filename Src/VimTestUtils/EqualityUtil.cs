@@ -134,8 +134,8 @@ namespace Vim.UnitTest
             {
                 if (!Object.ReferenceEquals(value, null))
                 {
-                    Assert.False(_compareWithEqualityOperator(default(T), value));
-                    Assert.False(_compareWithEqualityOperator(value, default(T)));
+                    Assert.False(_compareWithEqualityOperator(default, value));
+                    Assert.False(_compareWithEqualityOperator(value, default));
                 }
             }
         }
@@ -168,8 +168,8 @@ namespace Vim.UnitTest
             {
                 if (!Object.ReferenceEquals(value, null))
                 {
-                    Assert.True(_compareWithInequalityOperator(default(T), value));
-                    Assert.True(_compareWithInequalityOperator(value, default(T)));
+                    Assert.True(_compareWithInequalityOperator(default, value));
+                    Assert.True(_compareWithInequalityOperator(value, default));
                 }
             }
         }

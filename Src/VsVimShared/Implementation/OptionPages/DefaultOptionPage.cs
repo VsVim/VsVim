@@ -542,7 +542,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                     throw new Exception("Invalid color value");
                 default:
                     Contract.GetInvalidEnumException((__VSCOLORTYPE)type);
-                    return default(Color);
+                    return default;
             }
         }
     }

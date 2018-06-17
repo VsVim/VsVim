@@ -35,7 +35,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
                 return true;
             }
 
-            span = default(SnapshotSpan);
+            span = default;
             return false;
         }
 

@@ -41,9 +41,9 @@ namespace Vim.EditorHost
                 }
             }
 
-            vsVersion = default(Version);
+            vsVersion = default;
             vsvsInstallDirectory = null;
-            editorVersion = default(EditorVersion);
+            editorVersion = default;
             return false;
         }
 
@@ -63,7 +63,7 @@ namespace Vim.EditorHost
                 return true;
             }
 
-            vsVersion = default(Version);
+            vsVersion = default;
             vsInstallDirectory = null;
             return false;
         }
@@ -142,7 +142,7 @@ namespace Vim.EditorHost
             while (true);
 
             directory = null;
-            vsVersion = default(Version);
+            vsVersion = default;
             return false;
         }
     }
