@@ -428,7 +428,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 FontSize = fontSize,
                 Width = width,
                 Height = textHeight,
-                LineHeight = textHeight,
+                LineHeight = textHeight != 0 ? textHeight : double.NaN,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
                 BaselineOffset = 0,
             };
