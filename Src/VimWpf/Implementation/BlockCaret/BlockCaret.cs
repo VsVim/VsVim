@@ -406,6 +406,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
+            var textHeight = offset + height;
 
             if (_caretOpacity < 1.0 && backgroundBrush is SolidColorBrush solidBrush)
             {
@@ -426,7 +427,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 FontStyle = typeface.Style,
                 FontSize = fontSize,
                 Width = width,
-                Height = offset + height,
+                Height = textHeight,
+                LineHeight = textHeight,
+                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+                BaselineOffset = 0,
             };
 
             var element = new Canvas
