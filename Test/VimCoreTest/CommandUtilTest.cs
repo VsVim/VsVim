@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private IJumpList _jumpList;
-        private LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
+        private readonly LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
         private IOutliningManager _outliningManager;
         internal CommandUtil _commandUtil;
 

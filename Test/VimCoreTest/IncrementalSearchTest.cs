@@ -10,7 +10,7 @@ namespace Vim.UnitTest
 {
     public abstract class IncrementalSearchTest : VimTestBase
     {
-        private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
+        private static readonly SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
         private IVimData _vimData;
         private IVimGlobalSettings _globalSettings;

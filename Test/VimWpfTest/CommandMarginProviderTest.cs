@@ -16,8 +16,8 @@ namespace Vim.UI.Wpf.UnitTest
     {
         private readonly MockRepository _factory;
         private readonly Mock<IVim> _vim;
-        private CommandMarginProvider _commandMarginProviderRaw;
-        private IWpfTextViewMarginProvider _commandMarginProvider;
+        private readonly CommandMarginProvider _commandMarginProviderRaw;
+        private readonly IWpfTextViewMarginProvider _commandMarginProvider;
 
         public CommandMarginProviderTest()
         {

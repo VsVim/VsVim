@@ -1199,7 +1199,7 @@ namespace Vim.UnitTest
 
         public sealed class LetTest : InterpreterTest
         {
-            private Dictionary<string, VariableValue> _variableMap;
+            private readonly Dictionary<string, VariableValue> _variableMap;
 
             public LetTest()
             {

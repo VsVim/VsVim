@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.UnitTest
         private sealed class ServiceProvider : SVsServiceProvider
         {
             private MockRepository _factory = new MockRepository(MockBehavior.Loose);
-            private Dictionary<Type, object> _serviceMap = new Dictionary<Type, object>(new TypeEqualityComparer());
+            private readonly Dictionary<Type, object> _serviceMap = new Dictionary<Type, object>(new TypeEqualityComparer());
 
             public ServiceProvider()
             {

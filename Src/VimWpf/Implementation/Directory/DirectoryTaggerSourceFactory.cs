@@ -17,7 +17,7 @@ namespace Vim.UI.Wpf.Implementation.Directory
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     internal sealed class DirectoryTaggerSourceFactory : IClassifierProvider
     {
-        private static object s_key = new object();
+        private static readonly object s_key = new object();
         private readonly IClassificationTypeRegistryService _classificationTypeRegistryService;
 
         [ImportingConstructor]
