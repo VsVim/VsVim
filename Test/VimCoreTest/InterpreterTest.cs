@@ -488,7 +488,7 @@ namespace Vim.UnitTest
             private string _arguments;
             private string _input;
 
-            private string reverseLines(string input)
+            private string ReverseLines(string input)
             {
                 var newLine = Environment.NewLine;
                 var reversedLines = input
@@ -515,7 +515,7 @@ namespace Vim.UnitTest
                         else if (arguments == "/c reverse")
                         {
                             // Reverse the order of the lines.
-                            return new RunCommandResults(0, reverseLines(input), "");
+                            return new RunCommandResults(0, ReverseLines(input), "");
                         }
                         else
                         {
@@ -2387,14 +2387,13 @@ namespace Vim.UnitTest
             public void MapKeys_Clear()
             {
                 Create("");
-                Action<string, KeyRemapMode[]> testMapClear =
-                    (command, toClearModes) =>
+                void testMapClear(string command, KeyRemapMode[] toClearModes)
+                {
+                    foreach (var keyRemapMode in KeyRemapMode.All)
                     {
-                        foreach (var keyRemapMode in KeyRemapMode.All)
-                        {
-                            Assert.True(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
-                        }
-                    };
+                        Assert.True(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
+                    }
+                }
 
                 _keyMap.ClearAll();
 

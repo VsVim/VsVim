@@ -1302,14 +1302,14 @@ namespace Vim.UnitTest
             {
                 Create("the dog kicked the ball", "into the tree");
 
-                Action<SnapshotSpan> action = span =>
+                void action(SnapshotSpan span)
                 {
                     var characterSpan = new CharacterSpan(span);
                     var visual = VisualSpan.NewCharacter(characterSpan);
                     var stored = StoredVisualSpan.OfVisualSpan(visual);
                     var restored = _commandUtil.CalculateVisualSpan(stored);
                     Assert.Equal(visual, restored);
-                };
+                }
 
                 action(new SnapshotSpan(_textView.TextSnapshot, 0, 3));
                 action(new SnapshotSpan(_textView.TextSnapshot, 0, 4));

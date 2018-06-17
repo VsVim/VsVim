@@ -126,7 +126,7 @@ namespace Vim.VisualStudio
             // because Venus projects are not fully initialized at this state.  Merely querying 
             // for properties cause them to corrupt internal state and prevents rendering of the 
             // view.  Occurs for aspx and .js pages
-            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
+            void install() => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
 
             _protectedOperations.BeginInvoke(install);
         }
@@ -146,7 +146,7 @@ namespace Vim.VisualStudio
         /// </summary>
         private void ConnectToOleCommandTargetDelayed(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
-            Action connectInBackground = () => _protectedOperations.BeginInvoke(
+            void connectInBackground() => _protectedOperations.BeginInvoke(
                 () => ConnectToOleCommandTarget(vimBuffer, textView, vsTextView),
                 DispatcherPriority.Background);
 

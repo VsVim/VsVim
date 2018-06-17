@@ -633,13 +633,12 @@ namespace Vim.UnitTest
             [Fact]
             public void TabKey()
             {
-                Action<KeyInput> verify =
-                    keyInput =>
-                    {
-                        Assert.Equal(VimKey.Tab, keyInput.Key);
-                        Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
-                        Assert.Equal('\t', keyInput.Char);
-                    };
+                void verify(KeyInput keyInput)
+                {
+                    Assert.Equal(VimKey.Tab, keyInput.Key);
+                    Assert.Equal(VimKeyModifiers.None, keyInput.KeyModifiers);
+                    Assert.Equal('\t', keyInput.Char);
+                }
 
                 verify(KeyInputUtil.TabKey);
                 verify(KeyInputUtil.CharToKeyInput('\t'));

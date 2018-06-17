@@ -390,7 +390,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            Action doCheck = () =>
+            void doCheck()
             {
                 if (vimBuffer.IsClosed)
                 {

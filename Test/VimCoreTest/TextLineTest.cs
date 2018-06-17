@@ -13,13 +13,12 @@ namespace Vim.UnitTest
         [Fact]
         public void BothWays()
         {
-            Action<string> action =
-                text =>
-                {
-                    var lines = TextLine.GetTextLines(text);
-                    var otherText = TextLine.CreateString(lines);
-                    Assert.Equal(text, otherText);
-                };
+            void action(string text)
+            {
+                var lines = TextLine.GetTextLines(text);
+                var otherText = TextLine.CreateString(lines);
+                Assert.Equal(text, otherText);
+            }
 
             action("");
             action(Environment.NewLine);

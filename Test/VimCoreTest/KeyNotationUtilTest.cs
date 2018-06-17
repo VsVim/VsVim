@@ -166,14 +166,13 @@ namespace Vim.UnitTest
             [Fact]
             public void AlternateShiftAndControlWithNonPrintable()
             {
-                Action<string, VimKey> assert =
-                    (name, vimKey) =>
-                    {
-                        var notation = $"<CS-{name}>";
-                        var keyInput = KeyNotationUtil.StringToKeyInput(notation);
-                        Assert.Equal(vimKey, keyInput.Key);
-                        Assert.Equal(VimKeyModifiers.Shift | VimKeyModifiers.Control, keyInput.KeyModifiers);
-                    };
+                void assert(string name, VimKey vimKey)
+                {
+                    var notation = $"<CS-{name}>";
+                    var keyInput = KeyNotationUtil.StringToKeyInput(notation);
+                    Assert.Equal(vimKey, keyInput.Key);
+                    Assert.Equal(VimKeyModifiers.Shift | VimKeyModifiers.Control, keyInput.KeyModifiers);
+                }
                 assert("Enter", VimKey.Enter);
                 assert("F2", VimKey.F2);
             }
@@ -191,11 +190,11 @@ namespace Vim.UnitTest
             [Fact]
             public void Keypad()
             {
-                Action<VimKey, string> func = (vimKey, name) =>
-                    {
-                        var keyInput = KeyNotationUtil.StringToKeyInput(name);
-                        Assert.Equal(vimKey, keyInput.Key);
-                    };
+                void func(VimKey vimKey, string name)
+                {
+                    var keyInput = KeyNotationUtil.StringToKeyInput(name);
+                    Assert.Equal(vimKey, keyInput.Key);
+                }
                 func(VimKey.KeypadEnter, "<kEnter>");
                 func(VimKey.KeypadDecimal, "<kPoint>");
                 func(VimKey.KeypadDivide, "<kDivide>");
@@ -207,11 +206,11 @@ namespace Vim.UnitTest
             [Fact]
             public void Mouse()
             {
-                Action<VimKey, string> func = (vimKey, name) =>
-                    {
-                        var keyInput = KeyNotationUtil.StringToKeyInput(name);
-                        Assert.Equal(vimKey, keyInput.Key);
-                    };
+                void func(VimKey vimKey, string name)
+                {
+                    var keyInput = KeyNotationUtil.StringToKeyInput(name);
+                    Assert.Equal(vimKey, keyInput.Key);
+                }
                 func(VimKey.LeftMouse, "<LeftMouse>");
                 func(VimKey.LeftDrag, "<LeftDrag>");
                 func(VimKey.LeftRelease, "<LeftRelease>");
@@ -517,12 +516,11 @@ namespace Vim.UnitTest
             [Fact]
             public void NamedKeys()
             {
-                Action<VimKey, string> func =
-                    (vimKey, name) =>
-                    {
-                        var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-                        Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
-                    };
+                void func(VimKey vimKey, string name)
+                {
+                    var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                    Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
+                }
 
                 func(VimKey.Enter, "<CR>");
                 func(VimKey.Escape, "<Esc>");
@@ -532,12 +530,11 @@ namespace Vim.UnitTest
             [Fact]
             public void KeypadKeys()
             {
-                Action<VimKey, string> func =
-                    (vimKey, name) =>
-                    {
-                        var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
-                        Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
-                    };
+                void func(VimKey vimKey, string name)
+                {
+                    var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                    Assert.Equal(name, KeyNotationUtil.GetDisplayName(keyInput));
+                }
 
                 func(VimKey.KeypadEnter, "<kEnter>");
                 func(VimKey.KeypadDecimal, "<kPoint>");

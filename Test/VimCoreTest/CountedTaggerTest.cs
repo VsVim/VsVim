@@ -51,12 +51,11 @@ namespace Vim.UnitTest
         public void Create_GetFromCache()
         {
             var runCount = 0;
-            Func<ITagger<TextMarkerTag>> func =
-                () =>
-                {
-                    runCount++;
-                    return _factory.Create<ITagger<TextMarkerTag>>().Object;
-                };
+            ITagger<TextMarkerTag> func()
+            {
+                runCount++;
+                return _factory.Create<ITagger<TextMarkerTag>>().Object;
+            }
             var result1 = Create(_key, _propertyCollection, func);
             var result2 = Create(_key, _propertyCollection, func);
             Assert.Equal(1, runCount);

@@ -82,11 +82,11 @@ namespace Vim.VisualStudio.UnitTest
             var invokedCallback = false;
             var key = new object();
             var textBlock = new TextBlock();
-            Action callback = () =>
+            void callback()
             {
                 invokedCallback = true;
                 Assert.False(_toastNotificationService.Remove(key));
-            };
+            }
 
             _toastNotificationService.Display(key, textBlock, callback);
             Assert.True(_toastNotificationService.Remove(key));

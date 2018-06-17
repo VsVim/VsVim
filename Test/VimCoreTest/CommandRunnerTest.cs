@@ -706,11 +706,11 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 var seen = string.Empty;
-                Func<KeyInput, bool> func = ki =>
+                bool func(KeyInput ki)
                 {
                     seen += ki.Char.ToString();
                     return seen != "ood";
-                };
+                }
 
                 _runner.Add(VimUtil.CreateComplexNormalBinding("f", func));
                 Assert.True(_runner.Run("food").IsComplete);

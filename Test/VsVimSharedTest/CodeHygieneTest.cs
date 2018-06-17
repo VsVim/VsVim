@@ -38,7 +38,9 @@ namespace Vim.VisualStudio.UnitTest
             {
                 foreach (var type in assembly.GetTypes())
                 {
-                    if (type.FullName.StartsWith("Xaml", StringComparison.Ordinal))
+                    if (type.FullName.StartsWith("Xaml", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Microsoft.CodeAnalysis.EmbeddedAttribute", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("System.Runtime.CompilerServices.IsReadOnlyAttribute", StringComparison.Ordinal))
                     {
                         continue;
                     }

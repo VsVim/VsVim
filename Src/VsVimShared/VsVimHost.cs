@@ -296,7 +296,7 @@ namespace Vim.VisualStudio
         private static string GetCPlusPlusIdentifier(ITextView textView)
         {
             var snapshot = textView.TextSnapshot;
-            Func<int, bool> isValid = (position) =>
+            bool isValid(int position)
             {
                 if (position < 0 || position >= snapshot.Length)
                 {
@@ -305,7 +305,7 @@ namespace Vim.VisualStudio
 
                 var c = snapshot[position];
                 return char.IsLetter(c) || char.IsDigit(c) || c == '_';
-            };
+            }
 
             var start = textView.Caret.Position.BufferPosition.Position;
             if (!isValid(start))
@@ -845,29 +845,28 @@ namespace Vim.VisualStudio
             var id = (VSConstants.VSSELELEMID)elementid;
             if (id == VSConstants.VSSELELEMID.SEID_WindowFrame)
             {
-                Func<object, ITextView> getTextView =
-                    obj =>
+                ITextView getTextView(object obj)
+                {
+                    var vsWindowFrame = obj as IVsWindowFrame;
+                    if (vsWindowFrame == null)
                     {
-                        var vsWindowFrame = obj as IVsWindowFrame;
-                        if (vsWindowFrame == null)
-                        {
-                            return null;
-                        }
+                        return null;
+                    }
 
-                        var vsCodeWindow = vsWindowFrame.GetCodeWindow();
-                        if (vsCodeWindow.IsError)
-                        {
-                            return null;
-                        }
+                    var vsCodeWindow = vsWindowFrame.GetCodeWindow();
+                    if (vsCodeWindow.IsError)
+                    {
+                        return null;
+                    }
 
-                        var lastActiveTextView = vsCodeWindow.Value.GetLastActiveView(_vsAdapter.EditorAdapter);
-                        if (lastActiveTextView.IsError)
-                        {
-                            return null;
-                        }
+                    var lastActiveTextView = vsCodeWindow.Value.GetLastActiveView(_vsAdapter.EditorAdapter);
+                    if (lastActiveTextView.IsError)
+                    {
+                        return null;
+                    }
 
-                        return lastActiveTextView.Value;
-                    };
+                    return lastActiveTextView.Value;
+                }
 
                 ITextView oldView = getTextView(varValueOld);
                 ITextView newView = null;

@@ -1372,12 +1372,12 @@ namespace Vim.UnitTest
         public void VerifyCommandsNotRepeatable()
         {
             Create(string.Empty);
-            Action<string> verify = str =>
+            void verify(string str)
             {
                 var keyInputSet = KeyNotationUtil.StringToKeyInputSet(str);
                 var command = _modeRaw.Commands.Where(x => x.KeyInputSet == keyInputSet).Single();
                 Assert.True(CommandFlags.None == (command.CommandFlags & CommandFlags.Repeatable));
-            };
+            }
 
             verify("n");
             verify("N");
