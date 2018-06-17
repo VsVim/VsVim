@@ -55,7 +55,7 @@ namespace Vim.UnitTest.Utilities
         {
             using (var mre = new ManualResetEvent(initialState: false))
             {
-                SendOrPostCallback calback = s =>
+                void callback(object s)
                 {
                     try
                     {
@@ -65,8 +65,8 @@ namespace Vim.UnitTest.Utilities
                     {
                         mre.Set();
                     }
-                };
-                Post(d, state);
+                }
+                Post(callback, state);
 
                 mre.WaitOne();
             }
