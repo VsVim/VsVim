@@ -5,7 +5,7 @@ namespace Vim.UnitTest
 {
     public class SnapshotUtilTest : VimTestBase
     {
-        private static string[] s_lines = new string[]
+        private static readonly string[] s_lines = new string[]
             {
                 "summary description for this line",
                 "some other line",

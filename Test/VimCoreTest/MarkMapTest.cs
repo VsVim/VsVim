@@ -11,9 +11,9 @@ namespace Vim.UnitTest
     {
         private MarkMap _markMapRaw;
         private IMarkMap _markMap;
-        private Mark _globalMarkC = Mark.NewGlobalMark(Letter.C);
-        private Mark _localMarkC = Mark.NewLocalMark(LocalMark.NewLetter(Letter.C));
-        private Mark _localMarkD = Mark.NewLocalMark(LocalMark.NewLetter(Letter.D));
+        private readonly Mark _globalMarkC = Mark.NewGlobalMark(Letter.C);
+        private readonly Mark _localMarkC = Mark.NewLocalMark(LocalMark.NewLetter(Letter.C));
+        private readonly Mark _localMarkD = Mark.NewLocalMark(LocalMark.NewLetter(Letter.D));
 
         public MarkMapTest()
         {

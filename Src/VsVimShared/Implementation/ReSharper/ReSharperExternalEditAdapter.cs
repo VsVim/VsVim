@@ -18,7 +18,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
     [Export(typeof(IExternalEditAdapter))]
     internal sealed class ReSharperExternalEditAdapter : IExternalEditAdapter
     {
-        private struct VersionInfo
+        private readonly struct VersionInfo
         {
             internal readonly ReSharperVersion Version;
             internal readonly IReSharperEditTagDetector EditTagDetector;

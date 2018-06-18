@@ -33,7 +33,7 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
         private readonly object _toastKey = new object();
         private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
         private readonly VisualStudioVersion _visualStudioVersion;
-        private bool _isRegistryFixedNeeded;
+        private readonly bool _isRegistryFixedNeeded;
 
         [ImportingConstructor]
         internal VisualAssistUtil(

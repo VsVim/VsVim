@@ -1533,14 +1533,13 @@ let x = 42
             [Fact]
             public void Arguments()
             {
-                Action<string, KeyMapArgument> action =
-                    (commandText, mapArgument) =>
-                    {
-                        var command = ParseLineCommand(commandText).AsMapKeys();
-                        var mapArguments = command.Item5;
-                        Assert.Equal(1, mapArguments.Length);
-                        Assert.Equal(mapArgument, mapArguments.Head);
-                    };
+                void action(string commandText, KeyMapArgument mapArgument)
+                {
+                    var command = ParseLineCommand(commandText).AsMapKeys();
+                    var mapArguments = command.Item5;
+                    Assert.Equal(1, mapArguments.Length);
+                    Assert.Equal(mapArgument, mapArguments.Head);
+                }
                 action("map <buffer> a b", KeyMapArgument.Buffer);
                 action("map <silent> a b", KeyMapArgument.Silent);
                 action("imap <silent> a b", KeyMapArgument.Silent);
@@ -1923,11 +1922,11 @@ let x = 42
             [Fact]
             public void Registers()
             {
-                Action<string> check = (text) =>
+                void check(string text)
                 {
                     var command = ParseLineCommand(text);
                     Assert.True(command.IsDisplayRegisters);
-                };
+                }
 
                 check("reg b 1");
                 check("reg");

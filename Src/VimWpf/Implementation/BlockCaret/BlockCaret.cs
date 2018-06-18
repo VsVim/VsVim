@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
     internal sealed class BlockCaret : IBlockCaret
     {
-        private struct CaretData
+        private readonly struct CaretData
         {
             internal readonly CaretDisplay CaretDisplay;
             internal readonly double CaretOpacity;

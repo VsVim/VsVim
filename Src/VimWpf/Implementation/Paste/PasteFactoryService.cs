@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
             _protectedOperations = protectedOperations;
         }
 
-#pragma warning disable 169
+#pragma warning disable 169, IDE0044
         [Export(typeof(AdornmentLayerDefinition))]
         [Name(PasteAdornmentLayerName)]
         [Order(After = PredefinedAdornmentLayers.Text)]

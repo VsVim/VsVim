@@ -8,7 +8,7 @@ namespace Vim.VisualStudio
     /// Id of an EnvDTE.Command object.  The Name portion of a Command is optional and doesn't
     /// figure into the name.  The Guid and ID are unique to a command
     /// </summary>
-    public struct CommandId : IEquatable<CommandId>
+    public readonly struct CommandId : IEquatable<CommandId>
     {
         public readonly Guid Group;
 

@@ -15,7 +15,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly IProtectedOperations _protectedOperations;
         private readonly IControlCharUtil _controlCharUtil;
 
-#pragma warning disable 169
+#pragma warning disable 169, IDE0044
         [Export(typeof(AdornmentLayerDefinition))]
         [Name(BlockCaretAdornmentLayerName)]
         [Order(After = PredefinedAdornmentLayers.Text)]

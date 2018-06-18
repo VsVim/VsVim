@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
     internal sealed class CharDisplayTaggerSource : IBasicTaggerSource<IntraTextAdornmentTag>, IDisposable
     {
-        internal struct AdornmentData
+        internal readonly struct AdornmentData
         {
             internal readonly int Position;
             internal readonly UIElement Adornment;

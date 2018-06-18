@@ -13,7 +13,7 @@ namespace Vim.VisualStudio.Implementation.ToastNotification
     {
         internal const string MarginName = "Toast Notification Service";
 
-        private struct ToastData
+        private readonly struct ToastData
         {
             internal readonly object Key;
             internal readonly FrameworkElement ToastNotification;

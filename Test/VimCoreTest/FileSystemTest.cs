@@ -9,7 +9,7 @@ namespace Vim.UnitTest
 {
     public abstract class FileSystemTest : IDisposable
     {
-        private Dictionary<string, string> _savedEnvVariables;
+        private readonly Dictionary<string, string> _savedEnvVariables;
         private FileSystem _fileSystemRaw;
         private IFileSystem _fileSystem;
 

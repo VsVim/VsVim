@@ -340,7 +340,7 @@ namespace Vim.VisualStudio
 
         public static bool TryParse(string binding, out KeyBinding keyBinding)
         {
-            keyBinding = default(KeyBinding);
+            keyBinding = default;
             var scopeEnd = binding.IndexOf(':');
             if (scopeEnd < 0)
             {

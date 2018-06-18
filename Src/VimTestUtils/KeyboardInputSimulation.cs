@@ -172,7 +172,7 @@ namespace Vim.UnitTest
 
         #region KeyData
 
-        private struct KeyData
+        private readonly struct KeyData
         {
             internal readonly Key Key;
             internal readonly ModifierKeys ModifierKeys;

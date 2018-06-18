@@ -26,12 +26,12 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private string GetText()
         {
             string text = null;
-            Action action = () =>
-                {
-                    text = _useTextMethods
-                        ? Clipboard.GetText()
-                        : (string)Clipboard.GetData(DataFormats.UnicodeText);
-                };
+            void action()
+            {
+                text = _useTextMethods
+                    ? Clipboard.GetText()
+                    : (string)Clipboard.GetData(DataFormats.UnicodeText);
+            }
 
             if (!TryAccessClipboard(action))
             {
@@ -43,17 +43,17 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private void SetText(string text)
         {
-            Action action = () =>
+            void action()
+            {
+                if (_useTextMethods)
                 {
-                    if (_useTextMethods)
-                    {
-                        Clipboard.SetText(text);
-                    }
-                    else
-                    {
-                        Clipboard.SetDataObject(text);
-                    }
-                };
+                    Clipboard.SetText(text);
+                }
+                else
+                {
+                    Clipboard.SetDataObject(text);
+                }
+            }
 
             TryAccessClipboard(action);
         }

@@ -21,7 +21,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
     {
         #region ColorKey 
 
-        private struct ColorKey
+        private readonly struct ColorKey
         {
             internal readonly string Name;
             internal readonly bool IsForeground;
@@ -552,7 +552,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                     throw new Exception("Invalid color value");
                 default:
                     Contract.GetInvalidEnumException((__VSCOLORTYPE)type);
-                    return default(Color);
+                    return default;
             }
         }
     }

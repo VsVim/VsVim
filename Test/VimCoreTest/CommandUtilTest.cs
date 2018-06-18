@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private IVimTextBuffer _vimTextBuffer;
         private IJumpList _jumpList;
-        private LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
+        private readonly LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
         private IOutliningManager _outliningManager;
         internal CommandUtil _commandUtil;
 
@@ -1302,14 +1302,14 @@ namespace Vim.UnitTest
             {
                 Create("the dog kicked the ball", "into the tree");
 
-                Action<SnapshotSpan> action = span =>
+                void action(SnapshotSpan span)
                 {
                     var characterSpan = new CharacterSpan(span);
                     var visual = VisualSpan.NewCharacter(characterSpan);
                     var stored = StoredVisualSpan.OfVisualSpan(visual);
                     var restored = _commandUtil.CalculateVisualSpan(stored);
                     Assert.Equal(visual, restored);
-                };
+                }
 
                 action(new SnapshotSpan(_textView.TextSnapshot, 0, 3));
                 action(new SnapshotSpan(_textView.TextSnapshot, 0, 4));

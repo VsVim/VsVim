@@ -334,7 +334,7 @@ namespace Vim.UnitTest
 
         #region # and *
 
-        private static string[] s_lines2 = new string[]
+        private static readonly string[] s_lines2 = new string[]
             {
                 "summary description for this line",
                 "some other line",

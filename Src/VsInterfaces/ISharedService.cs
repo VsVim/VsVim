@@ -6,7 +6,7 @@ namespace Vim.VisualStudio
     /// <summary>
     /// State of the active tab group in Visual Studio
     /// </summary>
-    public struct WindowFrameState
+    public readonly struct WindowFrameState
     {
         public static WindowFrameState Default
         {

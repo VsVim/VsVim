@@ -4,9 +4,9 @@ namespace Vim.UnitTest
 {
     public sealed class LocalSettingsTest
     {
-        private IVimGlobalSettings _globalSettings;
-        private IVimLocalSettings _localSettings;
-        private LocalSettings _localSettingsRaw;
+        private readonly IVimGlobalSettings _globalSettings;
+        private readonly IVimLocalSettings _localSettings;
+        private readonly LocalSettings _localSettingsRaw;
 
         public LocalSettingsTest()
         {

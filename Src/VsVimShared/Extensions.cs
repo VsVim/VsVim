@@ -41,7 +41,7 @@ namespace Vim.VisualStudio
             }
             catch
             {
-                commandId = default(CommandId);
+                commandId = default;
                 return false;
             }
         }

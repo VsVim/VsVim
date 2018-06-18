@@ -883,19 +883,19 @@ namespace Vim.UnitTest
             public void DifferentTypes()
             {
                 Create("{ { (( } /* a /*) b */ })");
-                Action<int, int> del = (start, end) =>
-                    {
-                        _textView.MoveCaretTo(start);
-                        _vimBuffer.Process("%");
-                        Assert.Equal(end, _textView.GetCaretPoint().Position);
+                void del(int start, int end)
+                {
+                    _textView.MoveCaretTo(start);
+                    _vimBuffer.Process("%");
+                    Assert.Equal(end, _textView.GetCaretPoint().Position);
 
-                        if (start != end)
-                        {
-                            _textView.MoveCaretTo(end);
-                            _vimBuffer.Process("%");
-                            Assert.Equal(start, _textView.GetCaretPoint().Position);
-                        }
-                    };
+                    if (start != end)
+                    {
+                        _textView.MoveCaretTo(end);
+                        _vimBuffer.Process("%");
+                        Assert.Equal(start, _textView.GetCaretPoint().Position);
+                    }
+                }
                 del(0, 23);
                 del(2, 7);
                 del(4, 24);
@@ -3794,14 +3794,13 @@ namespace Vim.UnitTest
                 public void Braces()
                 {
                     Create("func() {   }");
-                    Action<string, int> doSearch =
-                        (pattern, position) =>
-                        {
-                            _textView.MoveCaretTo(0);
-                            _vimBuffer.Process(pattern);
-                            _vimBuffer.Process(VimKey.Enter);
-                            Assert.Equal(position, _textView.GetCaretPoint().Position);
-                        };
+                    void doSearch(string pattern, int position)
+                    {
+                        _textView.MoveCaretTo(0);
+                        _vimBuffer.Process(pattern);
+                        _vimBuffer.Process(VimKey.Enter);
+                        Assert.Equal(position, _textView.GetCaretPoint().Position);
+                    }
                     doSearch(@"/{", 7);
                     doSearch(@"/}", 11);
 

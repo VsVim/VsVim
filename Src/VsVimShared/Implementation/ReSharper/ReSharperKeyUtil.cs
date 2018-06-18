@@ -13,7 +13,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 {
     internal sealed class ReSharperKeyUtil : KeyProcessor, ICommandTarget
     {
-        private static object s_propertyBagKey = new object();
+        private static readonly object s_propertyBagKey = new object();
 
         private readonly IVimBuffer _vimBuffer;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;

@@ -28,7 +28,7 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        private static RoutedEvent s_testEvent = EventManager.RegisterRoutedEvent(
+        private static readonly RoutedEvent s_testEvent = EventManager.RegisterRoutedEvent(
                 "Test Event",
                 RoutingStrategy.Bubble,
                 typeof(MockKeyboardDevice),

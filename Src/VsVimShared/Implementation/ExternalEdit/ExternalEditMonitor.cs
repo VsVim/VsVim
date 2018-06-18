@@ -285,24 +285,23 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                 return;
             }
 
-            Action doCheck =
-                () =>
-                {
-                    var saved = _queuedCheckKind ?? kind;
-                    _queuedCheckKind = null;
+            void doCheck()
+            {
+                var saved = _queuedCheckKind ?? kind;
+                _queuedCheckKind = null;
 
-                    // The ITextView can close in between the time of dispatch and the actual 
-                    // execution of the call.  
-                    //
-                    // In addition to being the right thing to do by bailing out early, there are parts 
-                    // of the SHIM layer which can't handle being called after the ITextView is 
-                    // called.  EnumMarkers for example will throw a NullReferenceException.
-                    if (_textView.IsClosed)
-                    {
-                        return;
-                    }
-                    PerformCheck(saved);
-                };
+                // The ITextView can close in between the time of dispatch and the actual 
+                // execution of the call.  
+                //
+                // In addition to being the right thing to do by bailing out early, there are parts 
+                // of the SHIM layer which can't handle being called after the ITextView is 
+                // called.  EnumMarkers for example will throw a NullReferenceException.
+                if (_textView.IsClosed)
+                {
+                    return;
+                }
+                PerformCheck(saved);
+            }
 
             _protectedOperations.BeginInvoke(doCheck, DispatcherPriority.Loaded);
         }

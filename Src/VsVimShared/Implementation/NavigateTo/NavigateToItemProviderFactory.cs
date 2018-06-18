@@ -92,7 +92,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
 
         private void CallOnMainThread(Action action)
         {
-            Action wrappedAction = () =>
+            void wrappedAction()
             {
                 try
                 {
@@ -102,7 +102,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
                 {
                     // Don't let the exception propagate to the message loop and take down VS
                 }
-            };
+            }
 
             try
             {

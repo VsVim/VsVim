@@ -184,11 +184,11 @@ namespace Vim.UnitTest
             [WpfFact]
             public void BadAttributes()
             {
-                Action<string> action = text =>
+                void action(string text)
                 {
                     var items = Parse(text);
                     Assert.Empty(items);
-                };
+                }
 
                 action("<a name1='f hello // bar");
                 action("<a name1=\"f hello // bar");
