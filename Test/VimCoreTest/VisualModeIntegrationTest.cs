@@ -1026,7 +1026,6 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void UnalignedExpandTabs()
                 {
-                    // Reported in issue #2073.
                     Create(" dog ", " cat  ", " bat   ", "");
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = true;
@@ -1055,6 +1054,7 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void UnalignedNoExpandTabsNotSpaces()
                 {
+                    // Reported in issue #2217.
                     Create(" dog_", " cat__", " bat___", "");
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = false;
