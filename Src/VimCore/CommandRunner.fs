@@ -73,7 +73,7 @@ type internal CommandRunner
         | Some count -> count
         | None -> 1
 
-    member x.Inputs = List.rev _data.Inputs
+    member x.Inputs = _data.Inputs
 
     /// Try and get the VisualSpan for the provided kind
     member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings.TabStop
@@ -331,7 +331,7 @@ type internal CommandRunner
             // support reentrancy while binding
             BindResult.Error
         else
-            _data <- {_data with Inputs = ki :: _data.Inputs }
+            _data <- {_data with Inputs = _data.Inputs @ [ki] }
             let result = 
                 _inBind <- true
                 try

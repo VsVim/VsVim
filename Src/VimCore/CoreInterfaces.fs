@@ -3569,6 +3569,7 @@ type ICommandRunner =
     /// When HasCount is true this has the associated count
     abstract Count: int 
 
+    /// List of processed KeyInputs in the order in which they were typed
     abstract Inputs: KeyInput list
     
     /// Add a Command.  If there is already a Command with the same name an exception will
