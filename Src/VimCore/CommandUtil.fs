@@ -549,7 +549,7 @@ type internal CommandUtil
             // Caret needs to be positioned at the front of the span in undo so move it
             // before we create the transaction
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditBlockWithLinkedChange "Change Block" blockSpan (fun () ->
+            x.EditBlockWithLinkedChange "Change Block" blockSpan false (fun () ->
                 x.DeleteSelection registerName visualSpan |> ignore)
 
         | VisualSpan.Line range -> x.ChangeLinesCore range registerName
@@ -915,9 +915,9 @@ type internal CommandUtil
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create an undo transaction, perform an action, and switch to block insert mode
-    member x.EditBlockWithLinkedChange name blockSpan action =
+    member x.EditBlockWithLinkedChange name blockSpan atEndOfLine action =
         let transaction = x.CreateTransactionForLinkedChange name action
-        let arg = ModeArgument.InsertBlock (blockSpan, transaction)
+        let arg = ModeArgument.InsertBlock (blockSpan, atEndOfLine, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Used for commands which need to operate on the visual buffer and produce a SnapshotSpan
@@ -2575,7 +2575,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
-        | VisualCommand.SwitchModeInsert -> x.SwitchModeInsert visualSpan
+        | VisualCommand.SwitchModeInsert atEndOfLine -> x.SwitchModeInsert visualSpan atEndOfLine
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind
         | VisualCommand.SwitchModeOtherVisual -> x.SwitchModeOtherVisual visualSpan
@@ -3175,22 +3175,28 @@ type internal CommandUtil
 
     /// Switch from the current visual mode into insert.  If we are in block mode this
     /// will start a block insertion
-    member x.SwitchModeInsert (visualSpan: VisualSpan) =
+    member x.SwitchModeInsert (visualSpan: VisualSpan) (atEndOfLine: bool) =
 
         match visualSpan with
         | VisualSpan.Block blockSpan ->
             // The insert begins at the start of the block collection.  Any undo should move
             // the caret back to this position so make sure to move it before we start the
             // transaction so that it will be properly positioned on undo
-            TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditBlockWithLinkedChange "Visual Insert" blockSpan (fun _ -> ())
+            if atEndOfLine then
+                visualSpan.Start
+                |> SnapshotPointUtil.GetContainingLine
+                |> SnapshotLineUtil.GetEnd
+            else
+                visualSpan.Start
+            |> TextViewUtil.MoveCaretToPoint _textView
+            x.EditBlockWithLinkedChange "Visual Insert" blockSpan atEndOfLine (fun _ -> ())
         | _ ->
             // For all other visual mode inserts the caret moves to column 0 on the first
             // line of the selection.  It should be positioned there after an undo so move
             // it now before the undo transaction
             visualSpan.Start
             |> SnapshotPointUtil.GetContainingLine
-            |> SnapshotLineUtil.GetStart
+            |> if atEndOfLine then SnapshotLineUtil.GetEnd else SnapshotLineUtil.GetStart
             |> TextViewUtil.MoveCaretToPoint _textView
             x.EditWithUndoTransaction "Visual Insert" (fun _ -> ())
             x.SwitchMode ModeKind.Insert ModeArgument.None

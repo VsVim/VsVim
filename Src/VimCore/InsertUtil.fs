@@ -158,7 +158,7 @@ type internal InsertUtil
         | None -> textEdit.Cancel()
 
     /// Apply the given TextChange to the specified BlockSpan 
-    member x.ApplyBlockInsert (text: string) startLineNumber spaces height = 
+    member x.ApplyBlockInsert (text: string) atEndOfLine startLineNumber spaces height = 
 
         // Don't edit past the end of the ITextBuffer 
         let height = 
@@ -200,8 +200,12 @@ type internal InsertUtil
 
                 // Only apply the edit to lines which were included in the original selection
                 let tabStop = _localSettings.TabStop
-                let point = SnapshotLineUtil.GetSpaceOrEnd currentLine spaces tabStop
-                if not (SnapshotPointUtil.IsInsideLineBreak point) then
+                let point =
+                    if atEndOfLine then
+                        SnapshotLineUtil.GetEnd currentLine
+                    else
+                        SnapshotLineUtil.GetSpaceOrEnd currentLine spaces tabStop
+                if atEndOfLine || not (SnapshotPointUtil.IsInsideLineBreak point) then
                     let position = point.Position
                     let column = SnapshotPointUtil.GetColumn point
                     let text =
@@ -238,10 +242,10 @@ type internal InsertUtil
         x.RunBackspacingCommand InsertCommand.Back
 
     /// Block insert the specified text at the caret point over the specified number of lines
-    member x.BlockInsert text height = 
+    member x.BlockInsert text atEndOfLine height = 
         let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
         let spaces = SnapshotLineUtil.GetSpacesToColumn x.CaretLine column _localSettings.TabStop
-        x.ApplyBlockInsert text line spaces height 
+        x.ApplyBlockInsert text atEndOfLine line spaces height 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
@@ -540,7 +544,7 @@ type internal InsertUtil
                 x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
-    member x.RepeatBlock (insertCommand: InsertCommand) (blockSpan: BlockSpan) =
+    member x.RepeatBlock (insertCommand: InsertCommand) (atEndOfLine: bool) (blockSpan: BlockSpan) =
 
         // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
         // applied to it.  For example if you add 2 characters, delete them and then insert text
@@ -558,7 +562,7 @@ type internal InsertUtil
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
                     let startLineNumber = (SnapshotPointUtil.GetLineNumber blockSpan.Start) + 1
-                    x.ApplyBlockInsert text startLineNumber blockSpan.ColumnSpaces (blockSpan.Height - 1)
+                    x.ApplyBlockInsert text atEndOfLine startLineNumber blockSpan.ColumnSpaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
                     match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
@@ -577,7 +581,7 @@ type internal InsertUtil
         else
             match command with
             | InsertCommand.Back -> x.Back()
-            | InsertCommand.BlockInsert (text, count) -> x.BlockInsert text count
+            | InsertCommand.BlockInsert (text, atEndOfLine, count) -> x.BlockInsert text atEndOfLine count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()
@@ -853,5 +857,5 @@ type internal InsertUtil
     interface IInsertUtil with
         member x.RunInsertCommand command = x.RunInsertCommand command
         member x.RepeatEdit textChange addNewLines count = x.RepeatEdit textChange addNewLines count
-        member x.RepeatBlock command blockSpan = x.RepeatBlock command blockSpan
+        member x.RepeatBlock command atEndOfLine blockSpan = x.RepeatBlock command atEndOfLine blockSpan
 

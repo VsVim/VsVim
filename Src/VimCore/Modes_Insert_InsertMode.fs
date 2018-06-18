@@ -140,7 +140,7 @@ type InsertKind =
     /// whether or not a newline should be inserted after the text
     | Repeat of int * bool * TextChange
 
-    | Block of BlockSpan
+    | Block of bool * BlockSpan
 
 /// The CTRL-R command comes in a number of varieties which really come down to just the 
 /// following options.  Detailed information is available on ':help i_CTRL-R_CTRL-R'
@@ -532,15 +532,18 @@ type internal InsertMode
             match _sessionData.InsertKind, _sessionData.CombinedEditCommand with
             | InsertKind.Normal, _ -> ()
             | InsertKind.Repeat (count, addNewLines, textChange), _ -> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
-            | InsertKind.Block blockSpan, None -> ()
-            | InsertKind.Block blockSpan, Some command -> 
+            | InsertKind.Block _, None -> ()
+            | InsertKind.Block (atEndOfLine, blockSpan), Some command -> 
+
                 // The RepeatBlock command will be performing edits on the ITextBuffer.  We don't want to 
                 // track these changes.  They instead will be tracked by the InsertCommand that we return
                 try 
                     _textChangeTracker.TrackCurrentChange <- false
                     let combinedCommand = 
-                        match _insertUtil.RepeatBlock command blockSpan with
-                        | Some text -> InsertCommand.BlockInsert (text, blockSpan.Height) |> Some
+                        match _insertUtil.RepeatBlock command atEndOfLine blockSpan with
+                        | Some text ->
+                            InsertCommand.BlockInsert (text, atEndOfLine, blockSpan.Height)
+                            |> Some
                         | None -> None
                     x.ChangeCombinedEditCommand combinedCommand
                 finally 
@@ -1063,8 +1066,8 @@ type internal InsertMode
         // Set up transaction and kind of insert
         let transaction, insertKind =
             match arg with
-            | ModeArgument.InsertBlock (blockSpan, transaction) ->
-                Some transaction, InsertKind.Block blockSpan
+            | ModeArgument.InsertBlock (blockSpan, atEndOfLine, transaction) ->
+                Some transaction, InsertKind.Block (atEndOfLine, blockSpan)
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
