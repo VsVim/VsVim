@@ -85,6 +85,19 @@ namespace Vim.UI.Wpf.UnitTest
         }
         
         [WpfFact]
+        public void GetCommandStatusNormalModeCommandInputsAndBufferedKeys()
+        {
+            const string commandInputs = "2c";
+            const string bufferedInputs = "2t";
+            _normalRunner.SetupGet(x => x.Inputs).Returns(ListModule.OfSeq(commandInputs.Select(KeyInputUtil.CharToKeyInput)));
+            _vimBuffer.BufferedKeyInputsImpl = ListModule.OfSeq(bufferedInputs.Select(KeyInputUtil.CharToKeyInput));
+            _vimBuffer.ModeKindImpl = ModeKind.Normal;
+            
+            var actual = CommandMarginUtil.GetShowCommandText(_vimBuffer);
+            Assert.Equal(commandInputs + bufferedInputs, actual);
+        }
+
+        [WpfFact]
         public void GetCommandStatusVisualCharacterMode()
         {
             string[] lines = { "cat", "dog", "fish" };

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using System.Text;
-using System.Windows;
-using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 
@@ -239,34 +235,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private static string GetNormalModeShowCommandText(IVimBuffer vimBuffer)
         {
             var normalMode = vimBuffer.NormalMode;
-            if (normalMode.CommandRunner.Inputs.Any())
-            {
-                return KeyInputsToShowCommandText(normalMode.CommandRunner.Inputs);
-            }
-
-            if (vimBuffer.BufferedKeyInputs.Any())
-            {
-                return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
-            }
-
-            if (!string.IsNullOrEmpty(normalMode.Command))
-            {
-                return normalMode.Command;
-            }
-
-            return string.Empty;
+            var cmdText = KeyInputsToShowCommandText(normalMode.CommandRunner.Inputs.Concat(vimBuffer.BufferedKeyInputs));
+            return string.IsNullOrEmpty(cmdText) ? normalMode.Command : cmdText;
         }
 
         private static string GetVisualModeShowCommandText(IVimBuffer vimBuffer, IVisualMode visualMode)
         {
-            if (visualMode.CommandRunner.Inputs.Any())
+            var cmdText = KeyInputsToShowCommandText(visualMode.CommandRunner.Inputs.Concat(vimBuffer.BufferedKeyInputs));
+            if (!string.IsNullOrEmpty(cmdText))
             {
-                return KeyInputsToShowCommandText(visualMode.CommandRunner.Inputs);
-            }
-
-            if (vimBuffer.BufferedKeyInputs.Any())
-            {
-                return KeyInputsToShowCommandText(vimBuffer.BufferedKeyInputs);
+                return cmdText;
             }
 
             var visualSpan = visualMode.VisualSelection.VisualSpan;
