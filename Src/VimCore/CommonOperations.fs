@@ -1588,6 +1588,7 @@ type internal CommonOperations
     /// after the undo completes
     member x.Undo count = 
         _undoRedoOperations.Undo count
+        x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
