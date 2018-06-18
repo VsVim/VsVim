@@ -4129,6 +4129,9 @@ type IVimHost =
     /// then -1 should be returned
     abstract TabCount: int
 
+    /// Ensure that the VsVim package is loaded
+    abstract EnsurePackageLoaded: unit -> unit
+
     abstract Beep: unit -> unit
 
     /// Called at the start of a bulk operation such as a macro replay or a repeat of

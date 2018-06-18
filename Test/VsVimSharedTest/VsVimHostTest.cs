@@ -30,7 +30,8 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private Mock<_DTE> _dte;
-        private Mock<IVsUIShell4> _shell;
+        private Mock<IVsUIShell4> _uiVSShell;
+        private Mock<IVsShell> _vsShell;
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
 
@@ -44,7 +45,8 @@ namespace Vim.VisualStudio.UnitTest
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
-            _shell = _factory.Create<IVsUIShell4>();
+            _uiVSShell = _factory.Create<IVsUIShell4>();
+            _vsShell = _factory.Create<IVsShell>(MockBehavior.Loose);
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = _factory.Create<ITextManager>();
@@ -65,7 +67,8 @@ namespace Vim.VisualStudio.UnitTest
 
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
-            sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
+            sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_uiVSShell.Object);
+            sp.Setup(x => x.GetService(typeof(SVsShell))).Returns(_vsShell.Object);
             sp.Setup(x => x.GetService(typeof(IVsExtensibility))).Returns(_factory.Create<IVsExtensibility>().Object);
             sp.Setup(x => x.GetService(typeof(SVsShellMonitorSelection))).Returns(vsMonitorSelection.Object);
             sp.Setup(x => x.GetService(typeof(SVsRunningDocumentTable))).Returns(vsRunningDocumentTable.Object);

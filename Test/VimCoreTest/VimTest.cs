@@ -60,6 +60,7 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.AutoSynchronizeSettings).Returns(true);
             _vimHost.Setup(x => x.VimCreated(It.IsAny<IVim>()));
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("VimTest.cs");
+            _vimHost.Setup(x => x.EnsurePackageLoaded());
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim74);
             if (createVim)
             {
@@ -239,6 +240,16 @@ namespace Vim.UnitTest
                 var register = _vim.RegisterMap.GetRegister(name);
                 Assert.Equal(kind, register.OperationKind);
                 Assert.Equal(value, register.StringValue);
+            }
+
+            [WpfFact]
+            public void PackageLoaded()
+            {
+                var ensuredPackageLoaded = false;
+                _vimHost.Setup(x => x.EnsurePackageLoaded())
+                    .Callback(() => { ensuredPackageLoaded = true; });
+                _vimRaw.LoadSessionData();
+                Assert.True(ensuredPackageLoaded);
             }
 
             [WpfFact]

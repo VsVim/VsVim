@@ -22,6 +22,7 @@ namespace Vim.UnitTest.Mock
         public bool IsAutoCommandEnabled { get; set; }
         public bool IsUndoRedoExpected { get; set; }
         public DefaultSettings DefaultSettings { get; set; }
+        public bool EnsuredPackageLoaded { get; private set; }
         public int BeepCount { get; set; }
         public bool ClosedOtherWindows { get; private set; }
         public bool ClosedOtherTabs { get; private set; }
@@ -106,6 +107,11 @@ namespace Vim.UnitTest.Mock
             ShouldCreateVimBufferImpl = false;
             ShouldIncludeRcFile = true;
             WordWrapStyle = WordWrapStyles.WordWrap;
+        }
+
+        void IVimHost.EnsurePackageLoaded()
+        {
+            EnsuredPackageLoaded = true;
         }
 
         void IVimHost.Beep()

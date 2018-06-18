@@ -795,6 +795,11 @@ type internal Vim
             | None -> ()
 
     member x.LoadSessionData() =
+
+        // Make sure the VsVim package is loaded so that session data
+        // will be saved on exit (issues #2087 and #1726).
+        _vimHost.EnsurePackageLoaded()
+
         x.LoadSessionDataCore (x.GetSessionDataFilePath())
 
     member x.SaveSessionDataCore filePath = 
