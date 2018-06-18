@@ -151,7 +151,7 @@ type internal GlobalSettings() =
         [|
             (AtomicInsertName, AtomicInsertName, SettingValue.Toggle false, SettingOptions.None)
             (BackspaceName, "bs", SettingValue.String "", SettingOptions.None)
-            (CaretOpacityName, CaretOpacityName, SettingValue.Number 65, SettingOptions.None)
+            (CaretOpacityName, CaretOpacityName, SettingValue.Number 100, SettingOptions.None)
             (ClipboardName, "cb", SettingValue.String "", SettingOptions.None)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,", SettingOptions.FileName)
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
