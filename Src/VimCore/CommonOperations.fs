@@ -912,7 +912,7 @@ type internal CommonOperations
         else
             // First step is to trim away the start of the 'text' string which will fill up
             // the gap to the next tab boundary.  
-            let gap = _localSettings.TabStop - spacesToColumn
+            let gap = _localSettings.TabStop - spacesToColumn % _localSettings.TabStop
             let mutable index = 0
             let mutable count = 0
             while count < gap && index < text.Length do
