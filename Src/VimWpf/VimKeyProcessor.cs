@@ -123,10 +123,12 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
-            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1} {2}", args.Key, args.SystemKey, args.KeyboardDevice.Modifiers);
+
+            var key = args.Key == Key.System ? args.SystemKey : args.Key;
 
             bool handled;
-            if (args.Key == Key.DeadCharProcessed)
+            if (key == Key.DeadCharProcessed)
             {
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first
@@ -137,20 +139,12 @@ namespace Vim.UI.Wpf
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (_keyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
-            {
-                // AltGr greatly confuses things becuase it's realized in WPF as Control | Alt.  So
-                // while it's possible to use Control to further modify a key which used AltGr
-                // originally the result is indistinguishable here (and in gVim).  Don't attempt
-                // to process it
-                handled = false;
-            }
             else
             {
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this worksa nd the key is processed then the input is considered
                 // to be handled
-                if (_keyUtil.TryConvertSpecialToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out KeyInput keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(key, args.KeyboardDevice.Modifiers, out KeyInput keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }

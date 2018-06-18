@@ -206,13 +206,24 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void AltAlphaIsCaseSensitive()
+            public void AltAlphaIsCaseInsensitive()
             {
                 Assert.True(_map.MapWithNoRemap("<A-a>", "1", KeyRemapMode.Normal));
                 Assert.True(_map.MapWithNoRemap("<A-A>", "2", KeyRemapMode.Normal));
                 var ret = _map.GetKeyMapping("<A-a>", KeyRemapMode.Normal).Single();
-                Assert.Equal(KeyInputUtil.CharToKeyInput('1'), ret);
+                Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
                 ret = _map.GetKeyMapping("<A-A>", KeyRemapMode.Normal).Single();
+                Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
+            }
+
+            [Fact]
+            public void AltAlphaSupportsShift()
+            {
+                Assert.True(_map.MapWithNoRemap("<A-A>", "1", KeyRemapMode.Normal));
+                Assert.True(_map.MapWithNoRemap("<A-S-A>", "2", KeyRemapMode.Normal));
+                var ret = _map.GetKeyMapping("<A-A>", KeyRemapMode.Normal).Single();
+                Assert.Equal(KeyInputUtil.CharToKeyInput('1'), ret);
+                ret = _map.GetKeyMapping("<A-S-A>", KeyRemapMode.Normal).Single();
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
             }
 

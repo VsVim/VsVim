@@ -29,6 +29,14 @@ namespace Vim.UI.Wpf
 
         internal const uint INFINITE = 0xffffffff;
 
+        internal const uint VK_LSHIFT = 0xA0;
+
+        internal const uint VK_LCONTROL = 0xA2;
+
+        internal const uint VK_LMENU = 0xA4;
+
+        internal const uint MAPVK_VK_TO_VSC = 0x0;
+
         /// <summary>
         /// Keyboard code for the default English QWERTY layout
         /// </summary>
@@ -73,6 +81,9 @@ namespace Vim.UI.Wpf
         internal static extern bool GetKeyboardLayoutName(char[] name);
 
         [DllImport("user32.dll")]
+        public static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+        [DllImport("user32.dll")]
         internal static extern uint GetKeyboardLayoutList(int count, [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] list);
 
         [DllImport("user32.dll")]
@@ -85,11 +96,15 @@ namespace Vim.UI.Wpf
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);
 
+        [DllImport("user32.dll")]
+        internal static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint Flags);
+
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         internal static extern int ToUnicodeEx(
             uint virtualKey,
             uint scanCode,
             byte[] keyState,
+            [Out, MarshalAs(UnmanagedType.LPWStr, SizeParamIndex = 4)]
             StringBuilder buffer,
             int bufferSize,
             uint flags,

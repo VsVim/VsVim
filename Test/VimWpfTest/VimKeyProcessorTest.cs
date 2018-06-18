@@ -40,15 +40,70 @@ namespace Vim.UI.Wpf.UnitTest
                 return new VimKeyProcessor(_mockVimBuffer.Object, KeyUtil);
             }
 
+            private void AssertHandled(Key key, ModifierKeys modifierKeys)
+            {
+                var arg = CreateKeyEventArgs(key, modifierKeys);
+                _processor.KeyDown(arg);
+                Assert.True(arg.Handled);
+            }
+
+            private void AssertNotHandled(Key key, ModifierKeys modifierKeys)
+            {
+                var arg = CreateKeyEventArgs(key, modifierKeys);
+                _processor.KeyDown(arg);
+                Assert.False(arg.Handled);
+            }
+
             /// <summary>
-            /// Don't handle AltGR keys
+            /// Don't handle keys with AltGR levels
             /// </summary>
             [WpfFact]
             public void KeyDown1()
             {
-                var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
-                _processor.KeyDown(arg);
-                Assert.False(arg.Handled);
+                _mockVimBuffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>()))
+                    .Returns(true);
+                _mockVimBuffer.Setup(x => x.Process(It.IsAny<KeyInput>()))
+                    .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+
+                // Temporarily switch to a US international keyboard
+                // that has keys with AltGr levels.
+                var oldKeyboardlayout = NativeMethods.GetKeyboardLayout(0);
+                var usInternationalLayout = NativeMethods.LoadKeyboardLayout("00020409",
+                    NativeMethods.KLF_ACTIVATE, out bool needUnload);
+                try
+                {
+                    // <c> should be 'c'.
+                    AssertNotHandled(Key.C, ModifierKeys.None);
+
+                    // <S-c> should be 'C'.
+                    AssertNotHandled(Key.C, ModifierKeys.Shift);
+
+                    // <AltGr-c> should be '©'.
+                    AssertNotHandled(Key.C, ModifierKeys.Control | ModifierKeys.Alt);
+
+                    // <AltGr-S-c> should be '¢'.
+                    AssertNotHandled(Key.C, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt);
+
+                    // <f> should be 'f'.
+                    AssertNotHandled(Key.F, ModifierKeys.None);
+
+                    // <S-f> should be 'F'.
+                    AssertNotHandled(Key.F, ModifierKeys.Shift);
+
+                    // <AltGr-f> can be <C-A-f>.
+                    AssertHandled(Key.F, ModifierKeys.Control | ModifierKeys.Alt);
+
+                    // <AltGr-S-f> can be <C-S-A-f>.
+                    AssertHandled(Key.F, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt);
+                }
+                finally
+                {
+                    NativeMethods.ActivateKeyboardLayout(oldKeyboardlayout, 0);
+                    if (needUnload)
+                    {
+                        NativeMethods.UnloadKeyboardLayout(usInternationalLayout);
+                    }
+                }
             }
 
             /// <summary>

@@ -461,29 +461,6 @@ namespace Vim.UnitTest
             }
 
             [Fact]
-            public void AlphaLowerAndAlt()
-            {
-                foreach (var c in KeyInputUtilTest.CharLettersLower)
-                {
-                    var keyInput = KeyInputUtil.CharWithAltToKeyInput(c);
-                    var shiftedChar = (char)(0x80 | (int)c);
-                    Assert.Equal(shiftedChar.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
-                }
-            }
-
-            [Fact]
-            public void AlphaLowerAndAltGr()
-            {
-                // Vim don't let you map Alt-Gr combinations (Ctrl + Alt), intead it should see just the plain character
-                // The #1008 and #1390 issues were caused by VsVim not handling those combinations properly.
-                foreach (var c in KeyInputUtilTest.CharLettersLower)
-                {
-                    var keyInput = KeyInputUtil.ApplyKeyModifiersToChar(c, VimKeyModifiers.Alt | VimKeyModifiers.Control);
-                    Assert.Equal(c.ToString(), KeyNotationUtil.GetDisplayName(keyInput));
-                }
-            }
-
-            [Fact]
             public void NonAlphaWithControl()
             {
                 foreach (var c in "()#")
@@ -505,10 +482,8 @@ namespace Vim.UnitTest
             [Fact]
             public void AltGrAndEnter()
             {
-                // Alt-Gr should not add any modifiers in combination with Enter, so the display name should remain <CR>
-                // The #1008 and #1390 issues were caused by VsVim not handling this combination properly.
                 var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Enter, VimKeyModifiers.Alt | VimKeyModifiers.Control);
-                Assert.Equal("<CR>", KeyNotationUtil.GetDisplayName(keyInput));
+                Assert.Equal("<C-A-CR>", KeyNotationUtil.GetDisplayName(keyInput));
             }
 
             /// <summary>

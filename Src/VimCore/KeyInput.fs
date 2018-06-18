@@ -305,6 +305,17 @@ module KeyInputUtil =
     /// certain ambiguous combinations.
     let ApplyKeyModifiers (keyInput: KeyInput) (targetModifiers: VimKeyModifiers) =
 
+        let normalizeToUpper (keyInput: KeyInput) =
+            match keyInput.RawChar with
+            | None -> keyInput
+            | Some c ->
+                if CharUtil.IsLetter c && CharUtil.IsLower c then
+                    let c = CharUtil.ToUpper keyInput.Char
+                    let upperKeyInput = CharToKeyInput c 
+                    ChangeKeyModifiersDangerous upperKeyInput keyInput.KeyModifiers
+                else
+                    keyInput
+
         let normalizeShift (keyInput: KeyInput) =
             match keyInput.RawChar with
             | None -> keyInput
@@ -366,65 +377,30 @@ module KeyInputUtil =
                         let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Control
                         ChangeKeyModifiersDangerous keyInput modifiers
 
-        let normalizeAlt (keyInput: KeyInput) =
-            match keyInput.RawChar with
-            | None -> keyInput
-            | Some c ->
-                let number = int c
-                if number < 0x80 then
-                    // These keys are shifted to have the high bit set to include Alt.  At this point they don't
-                    // represent the original VimKey anymore (á isn't VimKey.LowerA or VimKey.UpperA) so choose
-                    // the RawCharacter instead
-                    let number = number ||| 0x80
-                    let c = char number
-                    let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Alt
-                    KeyInput(VimKey.RawCharacter, modifiers, Some c)
-                else
-                    // Nothing special to do here
-                    keyInput
-
-        let normalizeAltGr (keyInput: KeyInput) = 
-            match keyInput.RawChar with
-            | None -> keyInput
-            | Some c ->
-                // Vim doesn't let you map Alt-Gr combinations, instead it sees the the character that is is output by the system 
-                // key mapping. So in order to let VsVim behave the same way, the modifiers should be removed. Furthermore there's 
-                // no special Alt-Gr modifier, it's rerpresented by Ctrl+Alt, so remove both of them. 
-                // This fixes the #1008 and #1390 issues.
-                let unsetflag (a: VimKeyModifiers) (b: VimKeyModifiers): VimKeyModifiers = Util.UnsetFlag a b
-                let unsetflags a b c = unsetflag (unsetflag a b) c
-                let modifiers = unsetflags keyInput.KeyModifiers VimKeyModifiers.Alt VimKeyModifiers.Control
-                KeyInput(keyInput.Key, modifiers, Some c)
-
         let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
 
-        // First normalize the shift case
-        let keyInput = 
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
-                normalizeShift keyInput
-            else 
-                keyInput
+        if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt then
 
-        // Next normalize the control case
-        let keyInput = 
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Control && not (Util.IsFlagSet targetModifiers VimKeyModifiers.Alt) then
-                normalizeControl keyInput
-            else
-                keyInput
+            // The alt key preserves all modifiers and converts the char to uppercase.
+            normalizeToUpper keyInput
 
-        let keyInput =
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt && not (Util.IsFlagSet targetModifiers VimKeyModifiers.Control) then
-                normalizeAlt keyInput
-            else 
-                keyInput
+        else
 
-        let keyInput = 
-            if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt && Util.IsFlagSet targetModifiers VimKeyModifiers.Control then
-                normalizeAltGr keyInput
-            else
-                keyInput
+            // First normalize the shift case.
+            let keyInput = 
+                if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
+                    normalizeShift keyInput
+                else 
+                    keyInput
 
-        keyInput
+            // Next normalize the control case.
+            let keyInput = 
+                if Util.IsFlagSet targetModifiers VimKeyModifiers.Control then
+                    normalizeControl keyInput
+                else
+                    keyInput
+
+            keyInput
 
     let ApplyKeyModifiersToKey vimKey modifiers = 
         let keyInput = VimKeyToKeyInput vimKey
