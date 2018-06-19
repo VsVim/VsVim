@@ -1425,7 +1425,7 @@ type internal CommandUtil
                 if not _globalSettings.IsVirtualEditOneMore
                     && not (SnapshotPointUtil.IsStartOfLine point)
                     && SnapshotPointUtil.IsInsideLineBreak point then
-                    SnapshotPointUtil.SubtractOne point
+                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
                 else
                     point
             else
