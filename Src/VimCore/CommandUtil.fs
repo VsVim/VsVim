@@ -2636,6 +2636,12 @@ type internal CommandUtil
             TextViewUtil.MoveCaretToPoint _textView point
             _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
+    /// Get the number lines in the current window
+    member x.GetWindowLineCount (textViewLines: ITextViewLineCollection) =
+        let lineHeight = _textView.LineHeight
+        let viewportHeight = _textView.ViewportHeight
+        int (floor (viewportHeight / lineHeight))
+
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
@@ -2663,7 +2669,9 @@ type internal CommandUtil
                 else
                     1
 
-        let count = if count <= 0 then 1 else count
+        // Ensure that we scroll by at least one line.
+        let minCount = 1
+        let count = max count minCount
 
         let spacesToCaret = x.GetSpacesToCaret()
 
@@ -2680,6 +2688,10 @@ type internal CommandUtil
         match TextViewUtil.GetTextViewLines _textView with
         | None -> ()
         | Some textViewLines ->
+
+            // Limit the amount of scrolling to the size of the window.
+            let maxCount = x.GetWindowLineCount textViewLines
+            let count = min count maxCount
 
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
             let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
@@ -2736,14 +2748,11 @@ type internal CommandUtil
             | ScrollDirection.Down -> Some false
             | _ -> None
 
-        // Get the page scroll amount in pixels, allowing for
+        // Get the page scroll amount in lines, allowing for
         /// some overlapping context lines (vim overlaps two).
         let getScrollAmount (textViewLines: ITextViewLineCollection) =
-            let lineHeight = _textView.LineHeight
-            let viewportHeight = _textView.ViewportHeight
-            let fullLines = floor(viewportHeight / lineHeight)
-            let scrollLines = max 1.0 (fullLines - 2.0)
-            scrollLines * lineHeight
+            let lineCount = x.GetWindowLineCount textViewLines
+            max 1 (lineCount - 2)
 
         // Scroll up by one full page unless we are at the top.
         let doScrollUp () =
@@ -2752,7 +2761,7 @@ type internal CommandUtil
                 _editorOperations.PageUp(false)
             | Some textViewLines ->
                 let scrollAmount = getScrollAmount textViewLines
-                _textView.ViewScroller.ScrollViewportVerticallyByPixels(scrollAmount)
+                _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Up, scrollAmount)
 
         // Scroll down by one full page or as much as possible.
         let doScrollDown () =
@@ -2775,7 +2784,7 @@ type internal CommandUtil
                     _editorOperations.ScrollLineTop()
                 else
                     let scrollAmount = getScrollAmount textViewLines
-                    _textView.ViewScroller.ScrollViewportVerticallyByPixels(-1.0 * scrollAmount)
+                    _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, scrollAmount)
 
         // Get the last (and if possible, fully visible) line in the text view.
         let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
