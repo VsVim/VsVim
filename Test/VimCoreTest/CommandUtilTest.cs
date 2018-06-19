@@ -877,6 +877,22 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
+                /// Setting scroll to zero resets it to the calculated value
+                /// </summary>
+                [WpfFact]
+                public void ResetScrollToCalculatedValue()
+                {
+                    // Reported in issue #1887.
+                    Create("a", "b", "c", "d", "e", "f", "g", "h");
+                    _textView.SetVisibleLineCount(count: 4);
+                    var calculatedScroll = _windowSettings.Scroll;
+                    _windowSettings.Scroll = 100;
+                    Assert.Equal(100, _windowSettings.Scroll);
+                    _windowSettings.Scroll = 0;
+                    Assert.Equal(calculatedScroll, _windowSettings.Scroll);
+                }
+
+                /// <summary>
                 /// With no scroll or count then the value of 1 should be used and the scroll option
                 /// shouldn't be updated
                 /// </summary>
