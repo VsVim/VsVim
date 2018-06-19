@@ -215,7 +215,12 @@ type LiveSettingValue =
         | Number (_, defaultValue), SettingValue.Number value -> Number (value, defaultValue) |> Some
         | String (_, defaultValue), SettingValue.String value -> String (value, defaultValue) |> Some
         | Toggle (_, defaultValue), SettingValue.Toggle value -> Toggle (value, defaultValue) |> Some
-        | CalculatedNumber (_, func), SettingValue.Number value -> CalculatedNumber (Some value, func) |> Some
+        | CalculatedNumber (_, func), SettingValue.Number value ->
+            if value = 0 then
+                CalculatedNumber (None, func)
+            else
+                CalculatedNumber (Some value, func)
+            |> Some
         | Custom (name, customSettingSource), value -> 
             customSettingSource.SetSettingValue name value
             Some x
