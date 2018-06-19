@@ -1194,7 +1194,7 @@ more";
                 _textView.MoveCaretTo(_textBuffer.GetLine(1).End);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
+                Assert.Equal(3, data.CaretColumn.AsInLastLine().Item);
             }
 
             [WpfFact]
@@ -1247,7 +1247,7 @@ more";
                 _textView.SetVisibleLineRange(start: 0, length: 2);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
             [WpfFact]

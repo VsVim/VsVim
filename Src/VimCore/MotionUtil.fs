@@ -1205,18 +1205,19 @@ type internal MotionUtil
                     None
             | NullableUtil.HasValue point -> createForPoint point
 
+    /// Get the caret column based on the 'startofline' option
+    member x.GetCaretColumn (line: ITextSnapshotLine) =
+        let column = 
+            if _globalSettings.StartOfLine then 
+                line |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetColumn
+            else
+                _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
+        CaretColumn.InLastLine column
+
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonBlankMotion (flags: MotionResultFlags) (startLine: ITextSnapshotLine) (endLine: ITextSnapshotLine) = 
-
-        // Get the column based on the 'startofline' option
-        let column = 
-            if _globalSettings.StartOfLine then 
-                endLine |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetColumn
-            else
-                _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
-        let column = CaretColumn.InLastLine column
+    member x.LineToLineFirstNonBlankMotion (flags: MotionResultFlags) (startLine: ITextSnapshotLine) (endLine: ITextSnapshotLine) =
 
         // Create the range based on the provided lines.  Remember they can be in reverse
         // order
@@ -1225,6 +1226,7 @@ type internal MotionUtil
                 if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
                 else endLine, startLine, false
             (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
+        let column = x.GetCaretColumn endLine
         MotionResult.Create(range.ExtentIncludingLineBreak, MotionKind.LineWise, isForward, flags, column)
 
     /// Get the block span for the specified char at the given context point
@@ -2468,7 +2470,9 @@ type internal MotionUtil
                 | Some point -> 
                     let line = SnapshotPointUtil.GetContainingLine point
                     let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
-                    MotionResult.Create(span, MotionKind.LineWise, isForward)
+                    let flags = MotionResultFlags.MaintainCaretColumn
+                    let caretColumn = x.GetCaretColumn line
+                    MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                     |> x.ApplyStartOfLineOption
                     |> Some
 
@@ -2500,7 +2504,9 @@ type internal MotionUtil
                 | Some point -> 
                     let line = SnapshotPointUtil.GetContainingLine point
                     let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
-                    MotionResult.Create(span, MotionKind.LineWise, isForward)
+                    let flags = MotionResultFlags.MaintainCaretColumn
+                    let caretColumn = x.GetCaretColumn line
+                    MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                     |> x.ApplyStartOfLineOption
                     |> Some
 
@@ -2522,7 +2528,9 @@ type internal MotionUtil
                     | Some point -> SnapshotPointUtil.GetContainingLine point
 
                 let span, isForward = x.SpanAndForwardFromLines x.CaretLine middleLine
-                MotionResult.Create(span, MotionKind.LineWise, isForward)
+                let flags = MotionResultFlags.MaintainCaretColumn
+                let caretColumn = x.GetCaretColumn middleLine
+                MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                 |> x.ApplyStartOfLineOption
                 |> Some
 
