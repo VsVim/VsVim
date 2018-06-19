@@ -3371,6 +3371,39 @@ namespace Vim.UnitTest
         public sealed class UndoTest : NormalModeIntegrationTest
         {
             /// <summary>
+            /// When undoing an append, the caret isn't in virtual space
+            /// </summary>
+            [WpfFact]
+            public void Undo_Append()
+            {
+                // Reported in issue #2218.
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("A ddd<Esc>");
+                Assert.Equal("aaa bbb ccc ddd", _textBuffer.GetLineText(0));
+                Assert.Equal(14, _textView.Caret.Position.BufferPosition.Position);
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
+                Assert.Equal(10, _textView.Caret.Position.BufferPosition.Position);
+            }
+
+            /// <summary>
+            /// When undoing an append, the caret is in virtual space with 've=onemore'
+            /// </summary>
+            [WpfFact]
+            public void Undo_AppendVirtualEdit()
+            {
+                Create("aaa bbb ccc");
+                _globalSettings.VirtualEdit = "onemore";
+                Assert.True(_globalSettings.IsVirtualEditOneMore);
+                _vimBuffer.ProcessNotation("A ddd<Esc>");
+                Assert.Equal("aaa bbb ccc ddd", _textBuffer.GetLineText(0));
+                Assert.Equal(14, _textView.Caret.Position.BufferPosition.Position);
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
+                Assert.Equal(11, _textView.Caret.Position.BufferPosition.Position);
+            }
+
+            /// <summary>
             /// Undo of insert
             /// </summary>
             [WpfFact]

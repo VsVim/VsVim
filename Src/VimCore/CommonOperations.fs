@@ -243,7 +243,9 @@ type internal CommonOperations
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
-                TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
+                point
+                |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                |> TextViewUtil.MoveCaretToPoint _textView
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
@@ -1588,6 +1590,7 @@ type internal CommonOperations
     /// after the undo completes
     member x.Undo count = 
         _undoRedoOperations.Undo count
+        x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
