@@ -841,7 +841,7 @@ namespace Vim.UnitTest
                 public void UseScrollOption()
                 {
                     Create("a", "b", "c", "d", "e");
-                    _textView.SetVisibleLineCount(count: 1);
+                    _textView.SetVisibleLineCount(count: 4);
                     _windowSettings.Scroll = 3;
                     _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption<int>.None);
                     Assert.Equal(3, _textView.GetCaretLine().LineNumber);
@@ -855,7 +855,7 @@ namespace Vim.UnitTest
                 public void ScrollOptionWithCount()
                 {
                     Create("a", "b", "c", "d", "e");
-                    _textView.SetVisibleLineCount(count: 1);
+                    _textView.SetVisibleLineCount(count: 3);
                     _windowSettings.Scroll = 3;
                     _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
                     Assert.Equal(2, _textView.GetCaretLine().LineNumber);
@@ -898,8 +898,8 @@ namespace Vim.UnitTest
                 public void OverFold()
                 {
                     Create("a", "b", "c", "d", "e");
-                    _textView.SetVisibleLineCount(count: 1);
-                    _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2));
+                    _textView.SetVisibleLineCount(count: 3);
+                    _foldManager.CreateFold(_textBuffer.GetLineRange(1, 2)); // "b" and "c"
                     _commandUtil.ScrollLines(ScrollDirection.Down, false, FSharpOption.Create(2));
                     Assert.Equal(3, _textView.GetCaretLine().LineNumber);
                 }
