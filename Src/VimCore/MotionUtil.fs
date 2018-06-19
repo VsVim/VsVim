@@ -1205,8 +1205,8 @@ type internal MotionUtil
                     None
             | NullableUtil.HasValue point -> createForPoint point
 
-    /// Get the caret column based on the 'startofline' option
-    member x.GetCaretColumn (line: ITextSnapshotLine) =
+    /// Get the caret column of the specified line based on the 'startofline' option
+    member x.GetCaretColumnOfLine (line: ITextSnapshotLine) =
         let column = 
             if _globalSettings.StartOfLine then 
                 line |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetColumn
@@ -1226,7 +1226,7 @@ type internal MotionUtil
                 if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
                 else endLine, startLine, false
             (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
-        let column = x.GetCaretColumn endLine
+        let column = x.GetCaretColumnOfLine endLine
         MotionResult.Create(range.ExtentIncludingLineBreak, MotionKind.LineWise, isForward, flags, column)
 
     /// Get the block span for the specified char at the given context point
@@ -2394,6 +2394,13 @@ type internal MotionUtil
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
                     caretColumn = CaretColumn.InLastLine x.CaretColumn.Column) |> Some)
 
+    /// Get the appropriate maintain caret column flag taking into account 'startofline'
+    member x.GetMaintainCaretColumnFlag () =
+        if _globalSettings.StartOfLine then
+            MotionResultFlags.None
+        else
+            MotionResultFlags.MaintainCaretColumn
+
     /// Implements the 'gg' motion.  
     ///
     /// Because this uses specific line numbers instead of counts we don't want to operate
@@ -2405,7 +2412,8 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetFirstLine x.CurrentSnapshot
-        x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
+        let flags = x.GetMaintainCaretColumnFlag()
+        x.LineToLineFirstNonBlankMotion flags x.CaretLine endLine
 
     /// Implements the 'G' motion
     ///
@@ -2418,7 +2426,8 @@ type internal MotionUtil
             match numberOpt with
             | Some number ->  SnapshotUtil.GetLineOrLast x.CurrentSnapshot (Util.VimLineToTssLine number)
             | None -> SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot 
-        x.LineToLineFirstNonBlankMotion MotionResultFlags.MaintainCaretColumn x.CaretLine endLine
+        let flags = x.GetMaintainCaretColumnFlag()
+        x.LineToLineFirstNonBlankMotion flags x.CaretLine endLine
 
     /// Go to the last non-blank character on the 'count - 1' line
     member x.LastNonBlankOnLine count = 
@@ -2470,8 +2479,8 @@ type internal MotionUtil
                 | Some point -> 
                     let line = SnapshotPointUtil.GetContainingLine point
                     let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
-                    let flags = MotionResultFlags.MaintainCaretColumn
-                    let caretColumn = x.GetCaretColumn line
+                    let flags = x.GetMaintainCaretColumnFlag()
+                    let caretColumn = x.GetCaretColumnOfLine line
                     MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                     |> x.ApplyStartOfLineOption
                     |> Some
@@ -2504,8 +2513,8 @@ type internal MotionUtil
                 | Some point -> 
                     let line = SnapshotPointUtil.GetContainingLine point
                     let span, isForward = x.SpanAndForwardFromLines x.CaretLine line
-                    let flags = MotionResultFlags.MaintainCaretColumn
-                    let caretColumn = x.GetCaretColumn line
+                    let flags = x.GetMaintainCaretColumnFlag()
+                    let caretColumn = x.GetCaretColumnOfLine line
                     MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                     |> x.ApplyStartOfLineOption
                     |> Some
@@ -2528,8 +2537,8 @@ type internal MotionUtil
                     | Some point -> SnapshotPointUtil.GetContainingLine point
 
                 let span, isForward = x.SpanAndForwardFromLines x.CaretLine middleLine
-                let flags = MotionResultFlags.MaintainCaretColumn
-                let caretColumn = x.GetCaretColumn middleLine
+                let flags = x.GetMaintainCaretColumnFlag()
+                let caretColumn = x.GetCaretColumnOfLine middleLine
                 MotionResult.Create(span, MotionKind.LineWise, isForward, flags, caretColumn)
                 |> x.ApplyStartOfLineOption
                 |> Some
