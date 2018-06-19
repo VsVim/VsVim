@@ -28,3 +28,8 @@ module KeyNotationUtil =
     /// Get the display name for the specified KeyInput value
     val GetDisplayName: keyInput: KeyInput -> string
 
+    /// Convert the specified KeyInput into a string using key notation
+    val KeyInputToString: keyInput: KeyInput -> string
+
+    /// Convert the specified KeyInputSet into a string using key notation
+    val KeyInputSetToString: keyInputSet: KeyInputSet -> string

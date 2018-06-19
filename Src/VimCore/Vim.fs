@@ -26,6 +26,9 @@ type SessionRegisterValue = {
 
     [<field: DataMember(Name = "value")>]
     Value: string
+
+    [<field: DataMember(Name = "isMacro")>]
+    IsMacro: bool
 }
 
 [<DataContract>]
@@ -762,6 +765,10 @@ type internal Vim
         Path.Combine(x.GetSessionDataDirectory(), "vimdata.json")
 
     member x.ReadSessionData filePath =
+
+        // Note: Older session data will not have the 'isMacro' field.
+        // If 'isMacro' is missing, then the value is a string,
+        // which is backward compatible.
         let filePath=  x.GetSessionDataFilePath()
         match _fileSystem.Read filePath with
         | None -> SessionData.Empty
@@ -784,13 +791,23 @@ type internal Vim
             _ as ex -> VimTrace.TraceError ex
 
     member x.LoadSessionDataCore filePath =
-        let sessionData = x.ReadSessionData (x.GetSessionDataFilePath())
+        let sessionData = x.ReadSessionData filePath
         let registers = if sessionData.Registers = null then [| |] else sessionData.Registers
         for sessionReg in registers do
             match sessionReg.Name |> RegisterName.OfChar with
             | Some name -> 
-                let kind = if sessionReg.IsCharacterWise then OperationKind.CharacterWise else OperationKind.LineWise
-                let registerValue = RegisterValue(sessionReg.Value, kind)
+                let kind =
+                    if sessionReg.IsCharacterWise then
+                        OperationKind.CharacterWise
+                    else
+                        OperationKind.LineWise
+                let registerValue =
+                    if sessionReg.IsMacro then
+                        match KeyNotationUtil.TryStringToKeyInputSet(sessionReg.Value) with
+                        | Some keyInputSet -> RegisterValue(keyInputSet.KeyInputs)
+                        | None -> RegisterValue(sessionReg.Value, kind)
+                    else
+                        RegisterValue(sessionReg.Value, kind)
                 _registerMap.SetRegisterValue name registerValue
             | None -> ()
 
@@ -807,9 +824,19 @@ type internal Vim
             NamedRegister.All
             |> Seq.filter (fun n -> not n.IsAppend)
             |> Seq.map (fun n -> 
-                let value = _registerMap.GetRegister (RegisterName.Named n)
-                let isCharacterWise = value.OperationKind = OperationKind.CharacterWise
-                { Name = n.Char; IsCharacterWise = isCharacterWise; Value = value.StringValue })
+                let registerName = RegisterName.Named n
+                let register = _registerMap.GetRegister registerName
+                let registerValue = register.RegisterValue
+                let isMacro = not registerValue.IsString
+                let isCharacterWise = registerValue.OperationKind = OperationKind.CharacterWise
+                let value =
+                    if isMacro then
+                        registerValue.KeyInputs
+                        |> KeyInputSetUtil.OfList
+                        |> KeyNotationUtil.KeyInputSetToString
+                    else
+                        registerValue.StringValue
+                { Name = n.Char; IsCharacterWise = isCharacterWise; Value = value; IsMacro = isMacro; })
             |> Seq.toArray
         let sessionData = { Registers = sessionRegisterArray }
         x.WriteSessionData sessionData filePath

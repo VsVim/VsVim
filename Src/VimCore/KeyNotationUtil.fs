@@ -320,5 +320,11 @@ module KeyNotationUtil =
         | Some (name, modifiers) -> inner name modifiers true
         | None -> checkForSpecialControl ()
 
+    /// Convert the specified KeyInput into a string using key notation
+    let KeyInputToString (keyInput: KeyInput) = GetDisplayName keyInput
 
-
+    /// Convert the specified KeyInputSet into a string using key notation
+    let KeyInputSetToString (keyInputSet: KeyInputSet) =
+        keyInputSet.KeyInputs
+        |> Seq.map GetDisplayName
+        |> String.concat ""
