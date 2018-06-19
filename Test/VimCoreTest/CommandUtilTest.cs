@@ -848,7 +848,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// If the scroll option is set to be consulted an an explicit count is given then that
+                /// If the scroll option is set to be consulted and an explicit count is given then that
                 /// count should be used and the scroll option should be set to that value
                 /// </summary>
                 [WpfFact]
@@ -860,6 +860,20 @@ namespace Vim.UnitTest
                     _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(2));
                     Assert.Equal(2, _textView.GetCaretLine().LineNumber);
                     Assert.Equal(2, _windowSettings.Scroll);
+                }
+
+                /// <summary>
+                /// The amount of scroll is limited by the visible line count
+                /// </summary>
+                [WpfFact]
+                public void ScrollLimitedByLineCount()
+                {
+                    // Reported in issue #1887.
+                    Create("a", "b", "c", "d", "e", "f", "g", "h");
+                    _textView.SetVisibleLineCount(count: 3);
+                    _commandUtil.ScrollLines(ScrollDirection.Down, true, FSharpOption.Create(100));
+                    Assert.Equal(3, _textView.GetCaretLine().LineNumber);
+                    Assert.Equal(100, _windowSettings.Scroll);
                 }
 
                 /// <summary>
