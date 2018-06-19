@@ -2612,6 +2612,30 @@ type internal CommandUtil
                 _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Get the current number of spaces to caret we are maintaining
+    member x.GetSpacesToCaret () =
+        let spacesToCaret = _commonOperations.GetSpacesToPoint x.CaretPoint
+        match _commonOperations.MaintainCaretColumn with
+        | MaintainCaretColumn.None -> spacesToCaret
+        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
+        | MaintainCaretColumn.EndOfLine -> spacesToCaret
+
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
+
+        // First apply scroll offset.
+        _commonOperations.AdjustCaretForScrollOffset()
+
+        // At this point the view has been scolled and the caret is on the proper line.  Need to
+        // adjust the caret within the line to the appropriate column
+        if useStartOfLine && _globalSettings.StartOfLine then
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            TextViewUtil.MoveCaretToPoint _textView point
+        else
+            let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
+            TextViewUtil.MoveCaretToPoint _textView point
+            _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
+
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
@@ -2641,14 +2665,7 @@ type internal CommandUtil
 
         let count = if count <= 0 then 1 else count
 
-        // In the case we are not using 'startofline' then this is a maintain caret column
-        // operation.  Save the current value now so that it can be processed later
-        let maintainSpacesToCaret =
-            let spacesToCaret = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
-            match _commonOperations.MaintainCaretColumn with
-            | MaintainCaretColumn.None -> spacesToCaret
-            | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
-            | MaintainCaretColumn.EndOfLine -> spacesToCaret
+        let spacesToCaret = x.GetSpacesToCaret()
 
         // Update the caret to the specified offset from the first visible line
         let updateCaretToOffset lineOffset =
@@ -2705,15 +2722,7 @@ type internal CommandUtil
                     updateCaretToOffset lineOffset
             | _ -> ()
 
-            // At this point the view has been scolled and the caret is on the proper line.  Need to
-            // adjust the caret within the line to the appropriate column
-            if _globalSettings.StartOfLine then
-                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-                TextViewUtil.MoveCaretToPoint _textView point
-            else
-                let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine maintainSpacesToCaret _localSettings.TabStop
-                TextViewUtil.MoveCaretToPoint _textView point
-                _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces maintainSpacesToCaret
+            x.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2789,6 +2798,8 @@ type internal CommandUtil
                 else
                     lastLine
 
+        let spacesToCaret = x.GetSpacesToCaret()
+
         match getIsUp direction with
         | None ->
             _commonOperations.Beep()
@@ -2831,8 +2842,7 @@ type internal CommandUtil
                 // Move the caret to the beginning of that line.
                 _textView.Caret.MoveTo(line.Start) |> ignore
 
-                // Move past any whitespace on the caret line.
-                _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+                x.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2905,42 +2915,23 @@ type internal CommandUtil
         // it should always be at least at big as count.
         let rowCount = max rowCount count
 
+        let spacesToCaret = x.GetSpacesToCaret()
+
         _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
 
         match TextViewUtil.GetVisibleSnapshotLineRange _textView with
         | None -> ()
         | Some lineRange ->
-
-            // If the scroll of the window has taken the caret off of the visible portion of the ITextView
-            // then we need to move it back at the same column
-            let updateCaret (line: ITextSnapshotLine) =
-
-                // This is one operation which does maintain the column spacing as we go up and down the
-                // lines.  Make sure to use spaces here not column
-                let columnSpaces =
-                    let caretSpaces = _commonOperations.GetSpacesToPoint x.CaretPoint
-                    match _commonOperations.MaintainCaretColumn with
-                    | MaintainCaretColumn.None -> caretSpaces
-                    | MaintainCaretColumn.Spaces spaces -> max caretSpaces spaces
-                    | MaintainCaretColumn.EndOfLine -> caretSpaces
-
-                let point = _commonOperations.GetPointForSpaces line columnSpaces
-                TextViewUtil.MoveCaretToPoint _textView point
-
-                // The MaintainCaretColumn value is reset on every caret position change.  Don't cache
-                // the value until after the caret is moved
-                _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces columnSpaces
-
             match direction with
             | ScrollDirection.Up ->
                 if x.CaretPoint.Position > lineRange.End.Position then
-                    updateCaret <| lineRange.End.GetContainingLine()
+                    TextViewUtil.MoveCaretToPoint _textView lineRange.End
             | ScrollDirection.Down ->
                 if x.CaretPoint.Position < lineRange.Start.Position then
-                    updateCaret <| lineRange.Start.GetContainingLine()
+                    TextViewUtil.MoveCaretToPoint _textView lineRange.Start
             | _ -> ()
 
-            _commonOperations.AdjustCaretForScrollOffset()
+            x.RestoreSpacesToCaret spacesToCaret false
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
