@@ -2341,7 +2341,7 @@ type ModeArgument =
 
     /// Begins a block insertion.  This can possibly have a linked undo transaction that needs
     /// to be carried forward through the insert
-    | InsertBlock of BlockSpan * ILinkedUndoTransaction
+    | InsertBlock of BlockSpan * bool * ILinkedUndoTransaction
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -2372,7 +2372,7 @@ with
         match x with
         | ModeArgument.None -> ()
         | ModeArgument.InitialVisualSelection _ -> ()
-        | ModeArgument.InsertBlock (_, transaction) -> transaction.Complete()
+        | ModeArgument.InsertBlock (_, _, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithCount _ -> ()
         | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
         | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
@@ -2993,8 +2993,9 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
-    /// Switch the mode to insert and possibly a block insert
-    | SwitchModeInsert
+    /// Switch the mode to insert and possibly a block insert. The bool specifies whether
+    /// the insert is at the end of the line
+    | SwitchModeInsert of bool
 
     /// Switch to the previous mode
     | SwitchModePrevious
@@ -3038,9 +3039,10 @@ type InsertCommand  =
     /// Backspace at the current caret position
     | Back
 
-    /// Block edit of the specified TextChange value.  The int represents the number of 
+    /// Block edit of the specified TextChange value.  The bool signifies whether
+    /// the insert is at the end of the line. The int represents the number of 
     /// lines on which this block insert should take place
-    | BlockInsert of string * int
+    | BlockInsert of string * bool * int
 
     /// This is an insert command which is a combination of other insert commands
     | Combined of InsertCommand * InsertCommand
@@ -3155,7 +3157,7 @@ type InsertCommand  =
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
-        | InsertCommand.InsertTab -> Some (TextChange.Insert (EditUtil.GetTabText editorOptions))
+        | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
@@ -3372,7 +3374,7 @@ type internal IInsertUtil =
     abstract RepeatEdit: textChange: TextChange -> addNewLines: bool -> count: int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock: command: InsertCommand -> blockSpan: BlockSpan -> string option
+    abstract RepeatBlock: command: InsertCommand -> atEndOfLine: bool -> blockSpan: BlockSpan -> string option
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across
