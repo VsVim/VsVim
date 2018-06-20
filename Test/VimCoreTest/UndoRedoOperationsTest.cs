@@ -46,6 +46,16 @@ namespace Vim.UnitTest
                     _mockUndoHistory = _factory.Create<ITextUndoHistory>();
                     _mockUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { _undoCount += count; });
                     _mockUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { _redoCount += count; });
+                    _mockUndoHistory.Setup(x => x.CreateTransaction(It.IsAny<string>()))
+                        .Returns<string>(
+                            name =>
+                            {
+                                var transaction = _factory.Create<ITextUndoTransaction>();
+                                transaction.Setup(x => x.Complete());
+                                transaction.Setup(x => x.Dispose());
+                                return transaction.Object;
+                            }
+                        );
                     textUndoHistory = FSharpOption.Create(_mockUndoHistory.Object);
                     break;
 
@@ -167,7 +177,7 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperations.Undo(1);
-                Assert.Equal(3, _undoCount);
+                Assert.Equal(4, _undoCount);
             }
 
             [WpfFact]
@@ -180,9 +190,9 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperations.Undo(1);
-                Assert.Equal(3, _undoCount);
+                Assert.Equal(4, _undoCount);
                 _undoRedoOperations.Redo(1);
-                Assert.Equal(3, _redoCount);
+                Assert.Equal(4, _redoCount);
             }
 
             [WpfFact]
@@ -369,7 +379,7 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperationsRaw.Undo(1);
-                Assert.Equal(10, _undoCount);
+                Assert.Equal(11, _undoCount);
                 Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
@@ -469,7 +479,7 @@ namespace Vim.UnitTest
                 }
                 _undoRedoOperations.Undo(count: 1);
                 _undoRedoOperationsRaw.Redo(1);
-                Assert.Equal(10, _redoCount);
+                Assert.Equal(11, _redoCount);
                 Assert.Equal(0, _undoRedoOperationsRaw.RedoStack.Length);
                 Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
             }
