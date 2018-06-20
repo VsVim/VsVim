@@ -363,7 +363,16 @@ and UndoRedoOperations
                 | UndoRedoData.Linked (count, false) :: tail -> 
                     Contract.Assert(count > 0)
                     hasData <- true
-                    _undoStack <- UndoRedoData.Linked (count, true) :: tail
+
+                    // Append an empty transaction to the previous undo transaction
+                    // to break the undo sequence.
+                    match _textUndoHistory with
+                    | Some textUndoHistory ->
+                        use undoTransaction = textUndoHistory.CreateTransaction "Break undo sequence"
+                        undoTransaction.Complete()
+                    | None -> ()
+
+                    _undoStack <- UndoRedoData.Linked (count + 1, true) :: tail
                 | _ -> ()
 
                 // If a linked undo operation completes that contains 0 undo / redo items that very likely 
