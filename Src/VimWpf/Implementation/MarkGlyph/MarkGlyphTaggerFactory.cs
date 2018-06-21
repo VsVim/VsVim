@@ -32,6 +32,11 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         ITagger<T> IViewTaggerProvider.CreateTagger<T>(ITextView textView, ITextBuffer textBuffer)
         {
+            if (textView.VisualSnapshot.TextBuffer != textBuffer)
+            {
+                return null;
+            }
+
             if (!_vim.TryGetOrCreateVimBufferForHost(textView, out IVimBuffer vimBuffer))
             {
                 return null;
