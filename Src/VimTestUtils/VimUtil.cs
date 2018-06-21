@@ -59,7 +59,7 @@ namespace Vim.UnitTest
 
         internal static Parser CreateParser()
         {
-            return new Parser(new GlobalSettings(), CreateVimData());
+            return new Parser(new GlobalSettings(), CreateVimData(), null);
         }
 
         internal static CommandBinding CreateNormalBinding(string name)

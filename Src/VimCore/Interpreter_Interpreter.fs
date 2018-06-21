@@ -481,7 +481,7 @@ type VimInterpreter
                 if not (Path.IsPathRooted directoryPath) then
                     Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
                 else directoryPath
-
+            
             if not (Directory.Exists directoryPath) then
                 // Not a fan of this function but we need to emulate the Vim behavior here
                 _statusUtil.OnError (Resources.Interpreter_CantFindDirectory directoryPath)
@@ -788,7 +788,7 @@ type VimInterpreter
     
     /// Run the execute command
     member x.RunExecute expression =
-        let parser = Parser(_globalSettings, _vimData)
+        let parser = Parser(_globalSettings, _vimData, _vimBufferData)
         let execute str =
             parser.ParseLineCommand str |> x.RunLineCommand
         match x.RunExpression expression  with
@@ -1829,7 +1829,7 @@ type VimInterpreter
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
-        let parser = Parser(_globalSettings, _vimData, lines)
+        let parser = Parser(_globalSettings, _vimData, _vimBufferData, lines)
         while not parser.IsDone do
             let lineCommand = parser.ParseNextCommand()
             x.RunLineCommand lineCommand |> ignore

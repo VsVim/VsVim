@@ -12,9 +12,9 @@ type ParseResult<'T> =
 [<Class>]
 type Parser = 
 
-    new: vimData: IVimGlobalSettings * IVimData -> Parser
+    new: vimData: IVimGlobalSettings * IVimData * IVimBufferData -> Parser
 
-    new: vimData: IVimGlobalSettings * IVimData * lines: string[] -> Parser
+    new: vimData: IVimGlobalSettings * IVimData * IVimBufferData * lines: string[] -> Parser
 
     member IsDone: bool
 
@@ -34,5 +34,3 @@ type Parser =
     member ParseLineCommand: commandText: string -> LineCommand
 
     member ParseLineCommands: lines: string[] -> LineCommand list
-
-

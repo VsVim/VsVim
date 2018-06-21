@@ -72,7 +72,7 @@ type internal AutoCommandRunner
             let autoCommandList = x.GetAutoCommands fileName eventKind
             if autoCommandList.Length > 0 then
                 let vimInterpreter = _vim.GetVimInterpreter vimBuffer
-                let parser = Parser(_globalSettings, _vimData)
+                let parser = Parser(_globalSettings, _vimData, vimBuffer.VimBufferData)
 
                 autoCommandList
                 |> Seq.iter (fun autoCommand -> 

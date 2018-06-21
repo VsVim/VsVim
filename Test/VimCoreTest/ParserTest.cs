@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Text.StructuredPrintfImpl;
+using Moq;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Vim.UnitTest
 {
@@ -13,7 +15,7 @@ namespace Vim.UnitTest
     {
         protected Parser CreateParser(params string[] lines)
         {
-            return new Parser(new GlobalSettings(), VimUtil.CreateVimData(), lines);
+            return new Parser(new GlobalSettings(), VimUtil.CreateVimData(), null, lines);
         }
 
         protected Parser CreateParserOfLines(string text)
@@ -1937,6 +1939,100 @@ let x = 42
             public void QuickFixWindow()
             {
                 Assert.Equal(LineCommand.QuickFixWindow, ParseLineCommand("cwindow"));
+            }
+        }
+
+        public sealed class FilenameModifiersTest : ParserTest
+        {
+            private MockRepository _factory;
+            private Mock<IVimBufferData> _vimBufferData;
+
+            [WpfFact]
+            public void VimDocExamples()
+            {
+                // http://vimdoc.sourceforge.net/htmldoc/cmdline.html#filename-modifiers
+                var parser = CreateParser();
+
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c");
+                _vimBufferData.SetupGet(x => x.CurrentFileName).Returns("src/version.c");
+                AssertPathEquivalent("/home/mool/vim/src/version.c", parser.ParseFilePath("%:p"));
+                AssertPathEquivalent("src", parser.ParseFilePath("%:h"));
+                AssertPathEquivalent("/home/mool/vim/src", parser.ParseFilePath("%:p:h"));
+                AssertPathEquivalent("/home/mool/vim", parser.ParseFilePath("%:p:h:h"));
+                AssertPathEquivalent("version.c", parser.ParseFilePath("%:t"));
+                AssertPathEquivalent("version.c", parser.ParseFilePath("%:p:t"));
+                AssertPathEquivalent("src/version", parser.ParseFilePath("%:r"));
+                AssertPathEquivalent("/home/mool/vim/src/version", parser.ParseFilePath("%:p:r"));
+                AssertPathEquivalent("version", parser.ParseFilePath("%:t:r"));
+                AssertPathEquivalent("c", parser.ParseFilePath("%:e"));
+
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c.gz");
+                _vimBufferData.SetupGet(x => x.CurrentFileName).Returns("src/version.c.gz");
+                AssertPathEquivalent("/home/mool/vim/src/version.c.gz", parser.ParseFilePath("%:p"));
+                AssertPathEquivalent("gz", parser.ParseFilePath("%:e"));
+                AssertPathEquivalent("c.gz", parser.ParseFilePath("%:e:e"));
+                AssertPathEquivalent("c.gz", parser.ParseFilePath("%:e:e:e"));
+                AssertPathEquivalent("c", parser.ParseFilePath("%:e:e:r"));
+                AssertPathEquivalent("src/version.c", parser.ParseFilePath("%:r"));
+                AssertPathEquivalent("c", parser.ParseFilePath("%:r:e"));
+                AssertPathEquivalent("src/version", parser.ParseFilePath("%:r:r"));
+                AssertPathEquivalent("src/version", parser.ParseFilePath("%:r:r:r"));
+            }
+
+            [WpfFact]
+            public void InvalidModifiers()
+            {
+                var parser = CreateParser();
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentFileName).Returns("test.abc.xyz");
+                
+                AssertPathEquivalent("test.abc.xyzx", parser.ParseFilePath("%x"));
+                AssertPathEquivalent("test.abc.xyz:", parser.ParseFilePath("%:"));
+                AssertPathEquivalent("test.abc.xyz:x", parser.ParseFilePath("%:x"));
+                AssertPathEquivalent("test.abc.xyz:t", parser.ParseFilePath("%:t:t"));
+                AssertPathEquivalent("xyz:h:r", parser.ParseFilePath("%:e:h:r"));
+                AssertPathEquivalent(@"c:\A\B\C\D\test.abc.xyz:p", parser.ParseFilePath("%:p:p"));
+            }
+
+            [WpfFact]
+            public void ExtensionOnlyFilename()
+            {
+                var parser = CreateParser();
+                _vimBufferData.SetupGet(x => x.CurrentFileName).Returns(".vimrc");
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\.vimrc");
+
+                AssertPathEquivalent(".vimrc", parser.ParseFilePath("%:r"));
+                AssertPathEquivalent("", parser.ParseFilePath("%:e"));
+            }
+            
+            [WpfFact]
+            public void EscapeSequence()
+            {
+                var parser = CreateParser();
+                _vimBufferData.SetupGet(x => x.CurrentFileName).Returns("test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
+                
+                AssertPathEquivalent(@"fooc:\A\B\C\bar\%test\", parser.ParseFilePath(@"foo%:p:h:h\bar\\%%:r:r\"));
+            }
+            
+            private Parser CreateParser()
+            {
+                _factory = new MockRepository(MockBehavior.Default)
+                {
+                    DefaultValue = DefaultValue.Mock
+                };
+                _vimBufferData = _factory.Create<IVimBufferData>();
+                return new Parser(new GlobalSettings(), _factory.Create<IVimData>().Object, _vimBufferData.Object);
+            }
+
+            private static void AssertPathEquivalent(string expected, string actual)
+            {
+                var aParts = expected.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                var bParts = actual.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                if(aParts.Length == bParts.Length)
+                    if (Enumerable.Range(0, aParts.Length).All(i => StringComparer.OrdinalIgnoreCase.Equals(aParts[i], bParts[i])))
+                        return;
+                throw new XunitException($"Paths are not equivalent: Expected '{expected}', Actual '{actual}'");
             }
         }
     }
