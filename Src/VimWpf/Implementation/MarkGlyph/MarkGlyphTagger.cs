@@ -96,10 +96,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
         {
-            if (UpdateAllMarks())
-            {
-                RaiseChanged();
-            }
+            VimTrace.TraceInfo($"MarkGlyphTagger::TextBufferChanged {e.AfterVersion}");
+            UpdateAllMarks();
         }
 
         private void OnLocalSettingsChanged(object sender, SettingEventArgs e)
@@ -107,10 +105,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             if (e.Setting.Name == LocalSettingNames.HideMarksName)
             {
                 _hideMarks = _vimBufferData.LocalSettings.HideMarks;
-                if (UpdateAllMarks())
-                {
-                    RaiseChanged();
-                }
+                UpdateAllMarks();
             }
         }
 
@@ -122,7 +117,6 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 if (_isVisible)
                 {
                     UpdateAllMarks();
-                    RaiseChanged();
                 }
                 else
                 {
@@ -198,27 +192,24 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             return true;
         }
 
-        private bool UpdateAllMarks()
+        private void UpdateAllMarks()
         {
             if (!_isVisible)
             {
-                return false;
+                return;
             }
 
             if (_lineNumberMap.Count == 0)
             {
-                return false;
+                return;
             }
 
-            var wereMarksChanged = false;
             foreach (var mark in _lineNumberMap.Keys.ToList())
             {
-                if (UpdateMark(mark))
-                {
-                    wereMarksChanged = true;
-                }
+                UpdateMark(mark);
             }
-            return wereMarksChanged;
+
+            RaiseChanged();
         }
 
         private void RemoveMark(Mark mark)
@@ -236,6 +227,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             CachePairs();
             var snapshot = _vimBufferData.TextView.VisualSnapshot;
             var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+            VimTrace.TraceInfo($"MarkGlyphTagger::RaiseChanged");
             _changedEvent?.Invoke(this, new SnapshotSpanEventArgs(span));
         }
 
@@ -295,9 +287,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     if (lineNumber < snapshot.LineCount)
                     {
                         var line = snapshot.GetLineFromLineNumber(lineNumber);
-                        if (span.OverlapsWith(line.Extent))
+                        if (span.OverlapsWith(line.ExtentIncludingLineBreak))
                         {
                             var tag = new MarkGlyphTag(chars);
+                            VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
                             yield return new TagSpan<MarkGlyphTag>(line.Extent, tag);
                         }
                     }
