@@ -8,7 +8,7 @@ using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
-    internal sealed class MarkGlyphTaggerSource : IBasicTaggerSource<MarkGlyphTag>, IDisposable
+    internal sealed class MarkGlyphTagger : ITagger<MarkGlyphTag>
     {
         static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList =
             new ReadOnlyCollection<ITagSpan<MarkGlyphTag>>(new List<ITagSpan<MarkGlyphTag>>());
@@ -21,9 +21,9 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private int _activeMarks;
         private string _hideMarks;
 
-        private EventHandler _changedEvent;
+        private EventHandler<SnapshotSpanEventArgs> _changedEvent;
 
-        internal MarkGlyphTaggerSource(IVimBufferData vimBufferData)
+        internal MarkGlyphTagger(IVimBufferData vimBufferData)
         {
             _vimBufferData = vimBufferData;
             _markMap = _vimBufferData.Vim.MarkMap;
@@ -199,7 +199,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private void RaiseChanged()
         {
             CachePairs();
-            _changedEvent?.Invoke(this, EventArgs.Empty);
+            var span = SnapshotUtil.GetExtent(_vimBufferData.TextView.TextSnapshot);
+            _changedEvent?.Invoke(this, new SnapshotSpanEventArgs(span));
         }
 
         private void CachePairs()
@@ -225,59 +226,51 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     )
                 );
             _glyphPairs.AddRange(pairs);
+            foreach (var pair in _glyphPairs)
+            {
+                VimTrace.TraceInfo($"{pair.Item1} -> {pair.Item2}");
+            }
         }
 
-        private ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
+        private IEnumerable<ITagSpan<MarkGlyphTag>> GetTags(NormalizedSnapshotSpanCollection spans)
         {
             if (_glyphPairs.Count == 0)
             {
-                return s_emptyTagList;
+                yield break;
             }
 
-            var snapshot = span.Snapshot;
-            var list = new List<ITagSpan<MarkGlyphTag>>();
-            foreach (var pair in _glyphPairs)
+            foreach (var span in spans)
             {
-                var chars = pair.Item1;
-                var lineNumber = pair.Item2;
-
-                if (lineNumber < snapshot.LineCount)
+                var snapshot = span.Snapshot;
+                var list = new List<ITagSpan<MarkGlyphTag>>();
+                foreach (var pair in _glyphPairs)
                 {
-                    var line = snapshot.GetLineFromLineNumber(lineNumber);
-                    var startSpan = new SnapshotSpan(line.Start, 0);
-                    if (span.Contains(startSpan))
+                    var chars = pair.Item1;
+                    var lineNumber = pair.Item2;
+
+                    if (lineNumber < snapshot.LineCount)
                     {
-                        var tag = new MarkGlyphTag(chars);
-                        var tagSpan = new TagSpan<MarkGlyphTag>(startSpan, tag);
-                        list.Add(tagSpan);
+                        var line = snapshot.GetLineFromLineNumber(lineNumber);
+                        var startSpan = new SnapshotSpan(line.Start, 0);
+                        if (span.Contains(startSpan))
+                        {
+                            var tag = new MarkGlyphTag(chars);
+                            yield return new TagSpan<MarkGlyphTag>(startSpan, tag);
+                        }
                     }
                 }
             }
-            return list.ToReadOnlyCollectionShallow();
         }
 
-        #region IBasicTaggerSource<MarkGlyphTag>
+        IEnumerable<ITagSpan<MarkGlyphTag>> ITagger<MarkGlyphTag>.GetTags(NormalizedSnapshotSpanCollection spans)
+        {
+            return GetTags(spans);
+        }
 
-        event EventHandler IBasicTaggerSource<MarkGlyphTag>.Changed
+        event EventHandler<SnapshotSpanEventArgs> ITagger<MarkGlyphTag>.TagsChanged
         {
             add { _changedEvent += value; }
             remove { _changedEvent -= value; }
         }
-
-        ReadOnlyCollection<ITagSpan<MarkGlyphTag>> IBasicTaggerSource<MarkGlyphTag>.GetTags(SnapshotSpan span)
-        {
-            return GetTags(span);
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        void IDisposable.Dispose()
-        {
-            Dispose();
-        }
-
-        #endregion
     }
 }
