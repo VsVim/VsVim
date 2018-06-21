@@ -1194,7 +1194,7 @@ more";
                 _textView.MoveCaretTo(_textBuffer.GetLine(1).End);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
+                Assert.Equal(3, data.CaretColumn.AsInLastLine().Item);
             }
 
             [WpfFact]
@@ -1247,7 +1247,7 @@ more";
                 _textView.SetVisibleLineRange(start: 0, length: 2);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.True(data.CaretColumn.IsNone);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
             }
 
             [WpfFact]
@@ -1258,6 +1258,40 @@ more";
                 var data = _motionUtil.LineInMiddleOfVisibleWindow();
                 Assert.Equal(new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).EndIncludingLineBreak), data.Value.Span);
                 Assert.Equal(OperationKind.LineWise, data.Value.OperationKind);
+            }
+        }
+
+        public sealed class GoToLine : MotionUtilTest
+        {
+            [WpfFact]
+            public void WithStartOfLine()
+            {
+                // Reported in issue #2224.
+                Create("aaa xxx", "bbb yyy", "ccc zzz", "");
+                _globalSettings.StartOfLine = true;
+                _textView.MoveCaretToLine(2, 4);
+                _motionUtil._commonOperations.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(1));
+                Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.True(!data.IsForward);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.True(!data.MotionResultFlags.HasFlag(MotionResultFlags.MaintainCaretColumn));
+            }
+
+            [WpfFact]
+            public void WithouthStartOfLine()
+            {
+                Create("aaa xxx", "bbb yyy", "ccc zzz", "");
+                _globalSettings.StartOfLine = false;
+                _textView.MoveCaretToLine(2, 4);
+                _motionUtil._commonOperations.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
+                var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(1));
+                Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
+                Assert.True(data.MotionKind.IsLineWise);
+                Assert.True(!data.IsForward);
+                Assert.Equal(4, data.CaretColumn.AsInLastLine().Item);
+                Assert.True(data.MotionResultFlags.HasFlag(MotionResultFlags.MaintainCaretColumn));
             }
         }
 
