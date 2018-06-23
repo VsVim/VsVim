@@ -764,7 +764,8 @@ namespace Vim.VisualStudio
                     result = GoToWindowCore(currentTextView, true, maxCount);
                     break;
                 default:
-                    throw Contract.GetInvalidEnumException(windowKind);
+                    result = false;
+                    break;
             }
 
             if (!result)
