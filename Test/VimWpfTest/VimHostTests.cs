@@ -89,7 +89,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void MoveFocus(ITextView textView, Direction direction)
+            public override void MoveFocus(ITextView textView, int count, Direction direction)
             {
                 throw new NotImplementedException();
             }

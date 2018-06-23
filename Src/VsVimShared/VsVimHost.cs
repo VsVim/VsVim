@@ -692,7 +692,7 @@ namespace Vim.VisualStudio
             if (horizontally)
             {
                 // Find those windows that overlap a horizontal line
-                // passing through the caret of the active window,
+                // passing through the caret of the current window,
                 // sorted by increasing horizontal position on the screen.
                 rawPairs = rawPairs
                     .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
@@ -701,7 +701,7 @@ namespace Vim.VisualStudio
             else
             {
                 // Find those windows that overlap a vertical line
-                // passing through the caret of the active window,
+                // passing through the caret of the current window,
                 // sorted by increasing vertical position on the screen.
                 rawPairs = rawPairs
                     .Where(pair => pair.Item2.Left <= caretPoint.X && caretPoint.X <= pair.Item2.Right)
@@ -710,26 +710,24 @@ namespace Vim.VisualStudio
 
             var pairs = rawPairs.ToList();
 
-            // Find the position of the current text view in that list.
+            // Find the position of the current window in that list.
             var currentIndex = pairs.FindIndex(pair => pair.Item1 == currentTextView);
             if (currentIndex == -1)
             {
                 return false;
             }
 
-            // Attempt to move by delta in the specified direction.
+            // Move as far as possible in the specified direction.
             var newIndex = currentIndex + delta;
-            if (newIndex < 0 || newIndex >= pairs.Count)
-            {
-                return false;
-            }
+            newIndex = Math.Max(0, newIndex);
+            newIndex = Math.Min(newIndex, pairs.Count - 1);
 
             // Go to the resulting window.
             pairs[newIndex].Item1.VisualElement.Focus();
             return true;
         }
 
-        public override void MoveFocus(ITextView textView, Direction direction)
+        public override void MoveFocus(ITextView textView, int count, Direction direction)
         {
             var currentTextView = textView as IWpfTextView;
             if (currentTextView == null)
@@ -741,16 +739,16 @@ namespace Vim.VisualStudio
             switch (direction)
             {
                 case Direction.Up:
-                    result = MoveFocusCore(currentTextView, false, -1);
+                    result = MoveFocusCore(currentTextView, false, -count);
                     break;
                 case Direction.Down:
-                    result = MoveFocusCore(currentTextView, false, 1);
+                    result = MoveFocusCore(currentTextView, false, count);
                     break;
                 case Direction.Left:
-                    result = MoveFocusCore(currentTextView, true, -1);
+                    result = MoveFocusCore(currentTextView, true, -count);
                     break;
                 case Direction.Right:
-                    result = MoveFocusCore(currentTextView, true, 1);
+                    result = MoveFocusCore(currentTextView, true, count);
                     break;
                 default:
                     throw Contract.GetInvalidEnumException(direction);

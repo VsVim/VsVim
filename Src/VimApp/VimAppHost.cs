@@ -175,7 +175,7 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
-        public override void MoveFocus(ITextView textView, Direction direction)
+        public override void MoveFocus(ITextView textView, int count, Direction direction)
         {
             foreach (var vimWindow in _vimWindowManager.VimWindowList)
             {

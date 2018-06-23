@@ -184,7 +184,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.MoveFocus(ITextView textView, Direction direction)
+        void IVimHost.MoveFocus(ITextView textView, int count, Direction direction)
         {
             throw new NotImplementedException();
         }
