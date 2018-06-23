@@ -1175,13 +1175,8 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// GoTo the ITextView in the specified direction
-    member x.GoToView count direction =
-        _vimHost.MoveFocus _textView count direction
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// GoTo the last ITextView in the specified direction
-    member x.GoToLastView direction =
-        _vimHost.MoveFocus _textView 1000 direction
+    member x.GoToWindow count direction =
+        _vimHost.GoToWindow _textView count direction
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Join 'count' lines in the buffer
@@ -2485,8 +2480,7 @@ type internal CommandUtil
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
         | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
-        | NormalCommand.GoToView direction -> x.GoToView count direction
-        | NormalCommand.GoToLastView direction -> x.GoToLastView direction
+        | NormalCommand.GoToWindow direction -> x.GoToWindow direction count
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
         | NormalCommand.InsertAtEndOfLine -> x.InsertAtEndOfLine count

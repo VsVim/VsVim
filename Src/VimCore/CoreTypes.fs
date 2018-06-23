@@ -402,6 +402,21 @@ type Direction =
     | Left      = 3
     | Right     = 4
 
+type WindowKind =
+    | Up           = 1
+    | Down         = 2
+    | Left         = 3
+    | Right        = 4
+    | FarUp        = 5
+    | FarDown      = 6
+    | FarLeft      = 7
+    | FarRight     = 8
+    | Next         = 9
+    | Previous     = 10
+    | Recent       = 11
+    | Top          = 12
+    | Bottom       = 13
+
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]

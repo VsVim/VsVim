@@ -676,7 +676,7 @@ namespace Vim.VisualStudio
             return new Rect(element.PointToScreen(upperLeft), element.PointToScreen(lowerRight));
         }
 
-        private bool MoveFocusCore(IWpfTextView currentTextView, bool horizontally, int delta)
+        private bool GoToWindowCore(IWpfTextView currentTextView, bool horizontally, int delta)
         {
             // Build a list of all visible windows and their screen coordinates.
             var caretPoint = GetScreenPoint(currentTextView);
@@ -727,8 +727,9 @@ namespace Vim.VisualStudio
             return true;
         }
 
-        public override void MoveFocus(ITextView textView, int count, Direction direction)
+        public override void GoToWindow(ITextView textView, WindowKind windowKind, int count)
         {
+            const int maxCount = 1000;
             var currentTextView = textView as IWpfTextView;
             if (currentTextView == null)
             {
@@ -736,22 +737,34 @@ namespace Vim.VisualStudio
             }
 
             bool result;
-            switch (direction)
+            switch (windowKind)
             {
-                case Direction.Up:
-                    result = MoveFocusCore(currentTextView, false, -count);
+                case WindowKind.Up:
+                    result = GoToWindowCore(currentTextView, false, -count);
                     break;
-                case Direction.Down:
-                    result = MoveFocusCore(currentTextView, false, count);
+                case WindowKind.Down:
+                    result = GoToWindowCore(currentTextView, false, count);
                     break;
-                case Direction.Left:
-                    result = MoveFocusCore(currentTextView, true, -count);
+                case WindowKind.Left:
+                    result = GoToWindowCore(currentTextView, true, -count);
                     break;
-                case Direction.Right:
-                    result = MoveFocusCore(currentTextView, true, count);
+                case WindowKind.Right:
+                    result = GoToWindowCore(currentTextView, true, count);
+                    break;
+                case WindowKind.FarUp:
+                    result = GoToWindowCore(currentTextView, false, -maxCount);
+                    break;
+                case WindowKind.FarDown:
+                    result = GoToWindowCore(currentTextView, false, maxCount);
+                    break;
+                case WindowKind.FarLeft:
+                    result = GoToWindowCore(currentTextView, true, -maxCount);
+                    break;
+                case WindowKind.FarRight:
+                    result = GoToWindowCore(currentTextView, true, maxCount);
                     break;
                 default:
-                    throw Contract.GetInvalidEnumException(direction);
+                    throw Contract.GetInvalidEnumException(windowKind);
             }
 
             if (!result)
