@@ -676,38 +676,58 @@ namespace Vim.VisualStudio
             return new Rect(element.PointToScreen(upperLeft), element.PointToScreen(lowerRight));
         }
 
-        private bool GoToWindowCore(IWpfTextView currentTextView, bool horizontally, int delta)
+        private IEnumerable<Tuple<IWpfTextView, Rect>> GetWindowPairs()
         {
             // Build a list of all visible windows and their screen coordinates.
-            var caretPoint = GetScreenPoint(currentTextView);
-            var rawPairs =
-                _vim.VimBuffers
+            return _vim.VimBuffers
                 .Select(vimBuffer => vimBuffer.TextView as IWpfTextView)
                 .Where(textView => textView != null)
                 .Where(textView => textView.VisualElement.IsVisible)
                 .Where(textView => textView.ViewportWidth != 0)
                 .Select(textView =>
                     Tuple.Create(textView, GetScreenRect(textView)));
+        }
 
-            if (horizontally)
-            {
-                // Find those windows that overlap a horizontal line
-                // passing through the caret of the current window,
-                // sorted by increasing horizontal position on the screen.
-                rawPairs = rawPairs
-                    .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
-                    .OrderBy(pair => pair.Item2.X);
-            }
-            else
-            {
-                // Find those windows that overlap a vertical line
-                // passing through the caret of the current window,
-                // sorted by increasing vertical position on the screen.
-                rawPairs = rawPairs
-                    .Where(pair => pair.Item2.Left <= caretPoint.X && caretPoint.X <= pair.Item2.Right)
-                    .OrderBy(pair => pair.Item2.Y);
-            }
+        private bool GoToWindowVertically(IWpfTextView currentTextView, int delta)
+        {
+            // Find those windows that overlap a vertical line
+            // passing through the caret of the current window,
+            // sorted by increasing vertical position on the screen.
+            var caretPoint = GetScreenPoint(currentTextView);
+            var pairs = GetWindowPairs()
+                .Where(pair => pair.Item2.Left <= caretPoint.X && caretPoint.X <= pair.Item2.Right)
+                .OrderBy(pair => pair.Item2.Y);
 
+            return GoToWindowCore(currentTextView, delta, false, pairs);
+        }
+
+        private bool GoToWindowHorizontally(IWpfTextView currentTextView, int delta)
+        {
+            // Find those windows that overlap a horizontal line
+            // passing through the caret of the current window,
+            // sorted by increasing horizontal position on the screen.
+            var caretPoint = GetScreenPoint(currentTextView);
+
+            var pairs = GetWindowPairs()
+                .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
+                .OrderBy(pair => pair.Item2.X);
+
+            return GoToWindowCore(currentTextView, delta, false, pairs);
+        }
+
+        private bool GoToWindowNext(IWpfTextView currentTextView, int delta)
+        {
+            // Sort the windows into row/column order.
+            var pairs = GetWindowPairs()
+                .OrderBy(pair => pair.Item2.X)
+                .ThenBy(pair => pair.Item2.Y);
+
+            return GoToWindowCore(currentTextView, delta, true, pairs);
+        }
+
+        public bool GoToWindowCore(IWpfTextView currentTextView, int delta, bool wrap,
+            IEnumerable<Tuple<IWpfTextView, Rect>> rawPairs)
+        {
             var pairs = rawPairs.ToList();
 
             // Find the position of the current window in that list.
@@ -717,10 +737,18 @@ namespace Vim.VisualStudio
                 return false;
             }
 
-            // Move as far as possible in the specified direction.
             var newIndex = currentIndex + delta;
-            newIndex = Math.Max(0, newIndex);
-            newIndex = Math.Min(newIndex, pairs.Count - 1);
+            if (wrap)
+            {
+                // Wrap around to a valid index.
+                newIndex = (newIndex % pairs.Count + pairs.Count) % pairs.Count;
+            }
+            else
+            {
+                // Move as far as possible in the specified direction.
+                newIndex = Math.Max(0, newIndex);
+                newIndex = Math.Min(newIndex, pairs.Count - 1);
+            }
 
             // Go to the resulting window.
             pairs[newIndex].Item1.VisualElement.Focus();
@@ -740,29 +768,47 @@ namespace Vim.VisualStudio
             switch (windowKind)
             {
                 case WindowKind.Up:
-                    result = GoToWindowCore(currentTextView, false, -count);
+                    result = GoToWindowVertically(currentTextView, -count);
                     break;
                 case WindowKind.Down:
-                    result = GoToWindowCore(currentTextView, false, count);
+                    result = GoToWindowVertically(currentTextView, count);
                     break;
                 case WindowKind.Left:
-                    result = GoToWindowCore(currentTextView, true, -count);
+                    result = GoToWindowHorizontally(currentTextView, -count);
                     break;
                 case WindowKind.Right:
-                    result = GoToWindowCore(currentTextView, true, count);
+                    result = GoToWindowHorizontally(currentTextView, count);
                     break;
+
                 case WindowKind.FarUp:
-                    result = GoToWindowCore(currentTextView, false, -maxCount);
+                    result = GoToWindowVertically(currentTextView, -maxCount);
                     break;
                 case WindowKind.FarDown:
-                    result = GoToWindowCore(currentTextView, false, maxCount);
+                    result = GoToWindowVertically(currentTextView, maxCount);
                     break;
                 case WindowKind.FarLeft:
-                    result = GoToWindowCore(currentTextView, true, -maxCount);
+                    result = GoToWindowHorizontally(currentTextView, -maxCount);
                     break;
                 case WindowKind.FarRight:
-                    result = GoToWindowCore(currentTextView, true, maxCount);
+                    result = GoToWindowHorizontally(currentTextView, maxCount);
                     break;
+
+                case WindowKind.Previous:
+                    result = GoToWindowNext(currentTextView, -count);
+                    break;
+                case WindowKind.Next:
+                    result = GoToWindowNext(currentTextView, count);
+                    break;
+
+                case WindowKind.Top:
+                case WindowKind.Bottom:
+                    result = false;
+                    break;
+
+                case WindowKind.Recent:
+                    result = false;
+                    break;
+
                 default:
                     result = false;
                     break;
