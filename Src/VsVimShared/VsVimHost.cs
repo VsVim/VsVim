@@ -648,68 +648,109 @@ namespace Vim.VisualStudio
             }
         }
 
-        private IEnumerable<Tuple<IWpfTextView, Point>> GetTextViewPairs()
+        /// <summary>
+        /// Get the point at the middle of the caret in screen coordinates
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <returns></returns>
+        private Point GetScreenPoint(IWpfTextView textView)
         {
-            // Compute pairs of visible text views and their X, Y coordinate.
-            return
+            var element = textView.VisualElement;
+            var caret = textView.Caret;
+            var caretX = (caret.Left + caret.Right) / 2 - textView.ViewportLeft;
+            var caretY = (caret.Top + caret.Bottom) / 2 - textView.ViewportTop;
+            return element.PointToScreen(new Point(caretX, caretY));
+        }
+
+        /// <summary>
+        /// Get the rectangle of the window in screen coordinates including associated elements
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <returns></returns>
+        private Rect GetScreenRect(IWpfTextView textView)
+        {
+            var element = textView.VisualElement;
+            var size = element.RenderSize;
+            var upperLeft = new Point(0, 0);
+            var lowerRight = new Point(size.Width, size.Height);
+            return new Rect(element.PointToScreen(upperLeft), element.PointToScreen(lowerRight));
+        }
+
+        private bool MoveFocusCore(IWpfTextView currentTextView, bool horizontally, int delta)
+        {
+            // Build a list of all visible windows and their screen coordinates.
+            var caretPoint = GetScreenPoint(currentTextView);
+            var rawPairs =
                 _vim.VimBuffers
                 .Select(vimBuffer => vimBuffer.TextView as IWpfTextView)
                 .Where(textView => textView != null)
                 .Where(textView => textView.VisualElement.IsVisible)
                 .Where(textView => textView.ViewportWidth != 0)
                 .Select(textView =>
-                    Tuple.Create(textView, textView.VisualElement.PointToScreen(new Point(0, 0))));
-        }
+                    Tuple.Create(textView, GetScreenRect(textView)));
 
-        private bool MoveFocusHorizontally(int delta)
-        {
-            Contract.Requires(delta == 1 || delta == -1);
+            if (horizontally)
+            {
+                // Find those windows that overlap a horizontal line
+                // passing through the caret of the active window,
+                // sorted by increasing horizontal position on the screen.
+                rawPairs = rawPairs
+                    .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
+                    .OrderBy(pair => pair.Item2.X);
+            }
+            else
+            {
+                // Find those windows that overlap a vertical line
+                // passing through the caret of the active window,
+                // sorted by increasing vertical position on the screen.
+                rawPairs = rawPairs
+                    .Where(pair => pair.Item2.Left <= caretPoint.X && caretPoint.X <= pair.Item2.Right)
+                    .OrderBy(pair => pair.Item2.Y);
+            }
 
-            // sorted by X and then by Y.
-            var pairs = GetTextViewPairs()
-                .OrderBy(pair => pair.Item2.X)
-                .ThenBy(pair => pair.Item2.Y)
-                .ToList();
-            var count = pairs.Count;
+            var pairs = rawPairs.ToList();
 
-            // Find the index of the text view with the focus.
-            var indexOfCurrentView = pairs.FindIndex(pair => pair.Item1.HasAggregateFocus);
-            if (indexOfCurrentView == -1)
+            // Find the position of the current text view in that list.
+            var currentIndex = pairs.FindIndex(pair => pair.Item1 == currentTextView);
+            if (currentIndex == -1)
             {
                 return false;
             }
 
-            // Repeatedly apply the delta until we encounter a text view
-            // with a different X coordinate.
-            for (var i = indexOfCurrentView + delta; i >= 0 && i < count; i += delta)
+            // Attempt to move by delta in the specified direction.
+            var newIndex = currentIndex + delta;
+            if (newIndex < 0 || newIndex >= pairs.Count)
             {
-                if (pairs[i].Item2.X != pairs[indexOfCurrentView].Item2.X)
-                {
-                    pairs[i].Item1.VisualElement.Focus();
-                    return true;
-                }
+                return false;
             }
 
-            // There is no such text view.
-            return false;
+            // Go to the resulting window.
+            pairs[newIndex].Item1.VisualElement.Focus();
+            return true;
         }
 
         public override void MoveFocus(ITextView textView, Direction direction)
         {
+            var currentTextView = textView as IWpfTextView;
+            if (currentTextView == null)
+            {
+                return;
+            }
+
             bool result;
             switch (direction)
             {
                 case Direction.Up:
-                    result = _textManager.MoveViewUp(textView);
+                    result = MoveFocusCore(currentTextView, false, -1);
                     break;
                 case Direction.Down:
-                    result = _textManager.MoveViewDown(textView);
+                    result = MoveFocusCore(currentTextView, false, 1);
                     break;
                 case Direction.Left:
-                    result = MoveFocusHorizontally(-1);
+                    result = MoveFocusCore(currentTextView, true, -1);
                     break;
                 case Direction.Right:
-                    result = MoveFocusHorizontally(1);
+                    result = MoveFocusCore(currentTextView, true, 1);
                     break;
                 default:
                     throw Contract.GetInvalidEnumException(direction);
