@@ -19,6 +19,7 @@ using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
+using System.Windows;
 
 namespace Vim.VisualStudio
 {
@@ -647,28 +648,50 @@ namespace Vim.VisualStudio
             }
         }
 
-        private bool MoveFocusHorizontally(int indexDelta)
+        private IEnumerable<Tuple<IWpfTextView, Point>> GetTextViewPairs()
         {
-            // Thanks to https://github.com/mrdooz/TabGroupJumper/blob/master/TabGroupJumper/Connect.cs
-            var topLevelWindows = _dte.Windows.Cast<Window>()
-                .Where(window => window.Kind == "Document" && (window.Left != 0))
+            // Compute pairs of visible text views and their X, Y coordinate.
+            return
+                _vim.VimBuffers
+                .Select(vimBuffer => vimBuffer.TextView as IWpfTextView)
+                .Where(textView => textView != null)
+                .Where(textView => textView.VisualElement.IsVisible)
+                .Where(textView => textView.ViewportWidth != 0)
+                .Select(textView =>
+                    Tuple.Create(textView, textView.VisualElement.PointToScreen(new Point(0, 0))));
+        }
+
+        private bool MoveFocusHorizontally(int delta)
+        {
+            Contract.Requires(delta == 1 || delta == -1);
+
+            // sorted by X and then by Y.
+            var pairs = GetTextViewPairs()
+                .OrderBy(pair => pair.Item2.X)
+                .ThenBy(pair => pair.Item2.Y)
                 .ToList();
-            topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
-            if (topLevelWindows.Count == 0)
+            var count = pairs.Count;
+
+            // Find the index of the text view with the focus.
+            var indexOfCurrentView = pairs.FindIndex(pair => pair.Item1.HasAggregateFocus);
+            if (indexOfCurrentView == -1)
             {
                 return false;
             }
 
-            var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
-            var movedIndex = indexOfActiveDoc + indexDelta;
-            var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
-            if (newIndex >= topLevelWindows.Count)
+            // Repeatedly apply the delta until we encounter a text view
+            // with a different X coordinate.
+            for (var i = indexOfCurrentView + delta; i >= 0 && i < count; i += delta)
             {
-                return false;
+                if (pairs[i].Item2.X != pairs[indexOfCurrentView].Item2.X)
+                {
+                    pairs[i].Item1.VisualElement.Focus();
+                    return true;
+                }
             }
 
-            topLevelWindows[newIndex].Activate();
-            return true;
+            // There is no such text view.
+            return false;
         }
 
         public override void MoveFocus(ITextView textView, Direction direction)
