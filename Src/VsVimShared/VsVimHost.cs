@@ -724,6 +724,40 @@ namespace Vim.VisualStudio
             return GoToWindowCore(currentTextView, delta, wrap, pairs);
         }
 
+        private bool GoToWindowRecent(IWpfTextView currentTextView)
+        {
+            // Get the list of visible windows.
+            var windows = GetWindowPairs().Select(pair => pair.Item1).ToList();
+
+            // Find a recent buffer that is visible.
+            var i = 1;
+            while (TryGetRecentWindow(i, out IWpfTextView textView))
+            {
+                if (windows.Contains(textView))
+                {
+                    textView.VisualElement.Focus();
+                    return true;
+                }
+                ++i;
+            }
+
+            return false;
+        }
+
+        private bool TryGetRecentWindow(int n, out IWpfTextView textView)
+        {
+            textView = null;
+#if false
+            // TODO: Enable when PR #2139 is merged.
+            var vimBufferOption = _vim.TryGetRecentBuffer(i);
+            if (vimBufferOption.HasValue && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
+            {
+                textView = wpfTextView;
+            }
+#endif
+            return false;
+        }
+
         public bool GoToWindowCore(IWpfTextView currentTextView, int delta, bool wrap,
             IEnumerable<Tuple<IWpfTextView, Rect>> rawPairs)
         {
@@ -807,7 +841,7 @@ namespace Vim.VisualStudio
                     break;
 
                 case WindowKind.Recent:
-                    result = false;
+                    result = GoToWindowRecent(currentTextView);
                     break;
 
                 default:
@@ -964,7 +998,7 @@ namespace Vim.VisualStudio
             return base.ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
-        #region IVsSelectionEvents
+#region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -1063,6 +1097,6 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-        #endregion
+#endregion
     }
 }

@@ -146,6 +146,7 @@ type internal NormalMode
                 yield ("<C-w>W", CommandFlags.None, NormalCommand.GoToWindow WindowKind.Previous)
                 yield ("<C-w><C-s>", CommandFlags.None, NormalCommand.SplitViewHorizontally)
                 yield ("<C-w>s", CommandFlags.None, NormalCommand.SplitViewHorizontally)
+                yield ("<C-w>S", CommandFlags.None, NormalCommand.SplitViewHorizontally)
                 yield ("<C-w><C-v>", CommandFlags.None, NormalCommand.SplitViewVertically)
                 yield ("<C-w>v", CommandFlags.None, NormalCommand.SplitViewVertically)
                 yield ("<C-w><C-g><C-f>", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
