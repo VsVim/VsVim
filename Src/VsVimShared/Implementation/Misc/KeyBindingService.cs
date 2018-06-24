@@ -29,6 +29,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private ConflictingKeyBindingState _state;
         private HashSet<KeyInput> _vimFirstKeyInputSet;
 
+        // TODO: This should be renamed to VimKeyInputSet.
         internal HashSet<KeyInput> VimFirstKeyInputSet
         {
             get { return _vimFirstKeyInputSet; }
@@ -82,7 +83,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal void RunConflictingKeyBindingStateCheck(IVimBuffer vimBuffer)
         {
-            _vimFirstKeyInputSet = CreateVimFirstKeyInputSet(vimBuffer);
+            _vimFirstKeyInputSet = CreateVimKeyInputSet(vimBuffer);
 
             // Calculate the current conflicting state.  Can't cache the snapshot here because we don't 
             // receive any notifications when key bindings change in Visual Studio.  Have to assume they 
@@ -117,15 +118,14 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// <summary>
         /// Compute the set of keys that conflict with and have been already been removed.
         /// </summary>
-        internal HashSet<KeyInput> CreateVimFirstKeyInputSet(IVimBuffer buffer)
+        internal HashSet<KeyInput> CreateVimKeyInputSet(IVimBuffer buffer)
         {
-            // Get the list of all KeyInputs that are the first key of a VsVim command
+            // Get the list of all KeyInputs from all the KeyInputSets for all modes.
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes
                 .Select(x => x.CommandNames)
                 .SelectMany(x => x)
-                .Where(x => x.KeyInputs.Length > 0)
-                .Select(x => x.KeyInputs.First()))
+                .SelectMany(x => x.KeyInputs))
             {
 
                 // Include the key used to disable VsVim
@@ -152,7 +152,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer vimBuffer)
         {
-            var hashSet = CreateVimFirstKeyInputSet(vimBuffer);
+            var hashSet = CreateVimKeyInputSet(vimBuffer);
             return CreateCommandKeyBindingSnapshot(hashSet);
         }
 
