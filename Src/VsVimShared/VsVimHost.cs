@@ -845,8 +845,7 @@ namespace Vim.VisualStudio
                     break;
 
                 default:
-                    result = false;
-                    break;
+                    throw Contract.GetInvalidEnumException(windowKind);
             }
 
             if (!result)
@@ -998,7 +997,7 @@ namespace Vim.VisualStudio
             return base.ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
-#region IVsSelectionEvents
+        #region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -1097,6 +1096,6 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-#endregion
+        #endregion
     }
 }
