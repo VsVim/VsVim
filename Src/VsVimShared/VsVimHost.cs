@@ -707,7 +707,6 @@ namespace Vim.VisualStudio
             // passing through the caret of the current window,
             // sorted by increasing horizontal position on the screen.
             var caretPoint = GetScreenPoint(currentTextView);
-
             var pairs = GetWindowPairs()
                 .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
                 .OrderBy(pair => pair.Item2.X);
@@ -715,14 +714,14 @@ namespace Vim.VisualStudio
             return GoToWindowCore(currentTextView, delta, false, pairs);
         }
 
-        private bool GoToWindowNext(IWpfTextView currentTextView, int delta)
+        private bool GoToWindowNext(IWpfTextView currentTextView, int delta, bool wrap)
         {
             // Sort the windows into row/column order.
             var pairs = GetWindowPairs()
                 .OrderBy(pair => pair.Item2.X)
                 .ThenBy(pair => pair.Item2.Y);
 
-            return GoToWindowCore(currentTextView, delta, true, pairs);
+            return GoToWindowCore(currentTextView, delta, wrap, pairs);
         }
 
         public bool GoToWindowCore(IWpfTextView currentTextView, int delta, bool wrap,
@@ -794,15 +793,17 @@ namespace Vim.VisualStudio
                     break;
 
                 case WindowKind.Previous:
-                    result = GoToWindowNext(currentTextView, -count);
+                    result = GoToWindowNext(currentTextView, -count, true);
                     break;
                 case WindowKind.Next:
-                    result = GoToWindowNext(currentTextView, count);
+                    result = GoToWindowNext(currentTextView, count, true);
                     break;
 
                 case WindowKind.Top:
+                    result = GoToWindowNext(currentTextView, -maxCount, false);
+                    break;
                 case WindowKind.Bottom:
-                    result = false;
+                    result = GoToWindowNext(currentTextView, maxCount, false);
                     break;
 
                 case WindowKind.Recent:
