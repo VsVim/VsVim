@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Media;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -19,7 +21,6 @@ using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
-using System.Windows;
 
 namespace Vim.VisualStudio
 {
@@ -663,13 +664,24 @@ namespace Vim.VisualStudio
         }
 
         /// <summary>
-        /// Get the rectangle of the window in screen coordinates including associated elements
+        /// Get the rectangle of the window in screen coordinates including any associated
+        /// elements like margins, scroll bars, etc.
         /// </summary>
         /// <param name="textView"></param>
         /// <returns></returns>
         private Rect GetScreenRect(IWpfTextView textView)
         {
             var element = textView.VisualElement;
+            var parent = VisualTreeHelper.GetParent(element);
+            if (parent is FrameworkElement parentElement)
+            {
+                // The parent is a grid that contains the text view and all its margins.
+                // Unfortunately, this does not include the navigation bar, so a horizontal
+                // line from the caret in a window without one might intersect the navigation
+                // bar and then we would not consider it as a candidate for horizontal motion.
+                // The user can work around this by moving the caret down a couple of lines.
+                element = parentElement;
+            }
             var size = element.RenderSize;
             var upperLeft = new Point(0, 0);
             var lowerRight = new Point(size.Width, size.Height);
