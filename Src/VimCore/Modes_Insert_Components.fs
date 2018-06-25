@@ -17,14 +17,8 @@ type internal ITextChangeTracker =
     /// cause the current change to be completed
     abstract TrackCurrentChange: bool with get, set
 
-    /// Whether we are tracking the effective change
-    abstract TrackEffectiveChange: bool with get, set
-
     /// Current change
     abstract CurrentChange: TextChange option
-
-    /// Effective change
-    abstract EffectiveChange: TextChange option
 
     /// Complete the current change if there is one
     abstract CompleteChange: unit -> unit
@@ -32,9 +26,34 @@ type internal ITextChangeTracker =
     /// Clear out the current change without completing it
     abstract ClearChange: unit -> unit
 
+    /// Start tracking the effective change
+    abstract StartTrackingEffectiveChange: unit -> unit
+
+    /// Effective change
+    abstract EffectiveChange: TextChange option
+
+    /// Stop tracking the effective change
+    abstract StopTrackingEffectiveChange: unit -> unit
+
     /// Raised when a change is completed
     [<CLIEvent>]
     abstract ChangeCompleted: IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
+
+/// Data relating to an effective change
+type EffectiveChangeData = {
+
+    /// The left edge of the active change
+    LeftEdge: int
+
+    /// The right edge of the active change
+    RightEdge: int
+
+    /// The total number of characters deleted to the left of the active change
+    LeftDeletions: int
+
+    /// The total number of character deleted to the right of the active change
+    RightDeletions: int
+}
 
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
@@ -55,20 +74,7 @@ type internal TextChangeTracker
     /// Whether or not tracking is currently enabled
     let mutable _trackCurrentChange = false
 
-    /// Whether we are tracking the effective change
-    let mutable _trackEffectiveChange = false
-
-    /// The left edge of the active change
-    let mutable _leftEdge = 0
-
-    /// The right edge of the active change
-    let mutable _rightEdge =  0
-
-    /// The total number of characters deleted to the left of the active change
-    let mutable _leftDeletions = 0
-
-    /// The total number of character deleted to the right of the active change
-    let mutable _rightDeletions = 0
+    let mutable (_effectiveChangeData: EffectiveChangeData option) = None
 
     do
         // Listen to text buffer change events in order to track edits.  Don't respond to changes
@@ -85,29 +91,12 @@ type internal TextChangeTracker
         | None -> None
         | Some (change,_) -> Some change
 
-    member x.EffectiveChange =
-        let span = SnapshotSpan(_textView.TextSnapshot, _leftEdge, _rightEdge - _leftEdge)
-        let text = span.GetText()
-        let textChange = TextChange.Insert text
-        Some textChange
-
     member x.TrackCurrentChange
         with get () = _trackCurrentChange
         and set value = 
             if _trackCurrentChange <> value then
                 _currentTextChange <- None
                 _trackCurrentChange <- value
-
-    member x.TrackEffectiveChange
-        with get () = _trackEffectiveChange
-        and set value =
-            _trackEffectiveChange <- value
-            if _trackEffectiveChange then
-                let caretPosition = _textView.Caret.Position.BufferPosition.Position
-                _leftEdge <- caretPosition
-                _rightEdge <- caretPosition
-                _leftDeletions <- 0
-                _rightDeletions <- 0
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
@@ -123,6 +112,29 @@ type internal TextChangeTracker
     /// Clear out the current change without completing it
     member x.ClearChange() =
         _currentTextChange <- None
+
+    member x.StartTrackingEffectiveChange() =
+        let caretPosition = _textView.Caret.Position.BufferPosition.Position
+        _effectiveChangeData <-
+            Some {
+                LeftEdge = caretPosition;
+                RightEdge = caretPosition;
+                LeftDeletions = 0;
+                RightDeletions = 0;
+            }
+
+    member x.EffectiveChange =
+        match _effectiveChangeData with
+        | Some data ->
+            let span = SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
+            let text = span.GetText()
+            let textChange = TextChange.Insert text
+            Some textChange
+        | None ->
+            None
+
+    member x.StopTrackingEffectiveChange() =
+        _effectiveChangeData <- None
 
     /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
     /// edit patterns and simply does a raw adjustment
@@ -173,7 +185,7 @@ type internal TextChangeTracker
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
-        if x.TrackEffectiveChange then
+        if _effectiveChangeData.IsSome then
             x.UpdateEffectiveChange args
 
         x.UpdateLastEditPoint args
@@ -190,51 +202,6 @@ type internal TextChangeTracker
             | Some (oldTextChange, oldBufferChange) -> x.MergeChange oldTextChange oldBufferChange newTextChange newBufferChange 
         else
             x.CompleteChange()
-
-    member x.UpdateEffectiveChange (args: TextContentChangedEventArgs) =
-
-        VimTrace.TraceInfo("OnTextChange: {0}", args.Changes.Count)
-        for i = 0 to args.Changes.Count - 1 do
-            VimTrace.TraceInfo("OnTextChange: change {0}", i)
-            let change = args.Changes.[i]
-            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldText, change.NewText)
-            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
-            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
-
-        if args.Changes.Count = 1 then
-            let change = args.Changes.[0]
-            if change.OldSpan.End < _leftEdge then
-
-                // Change entirely precedes the active region so shift the edges by the delta.
-                _leftEdge <- _leftEdge + change.Delta
-                _rightEdge <- _rightEdge + change.Delta
-
-            elif change.OldSpan.Start > _rightEdge then
-
-                // Change entirely follows the active region, so we can ignore it.
-                ()
-
-            elif change.OldSpan.Start >= _leftEdge && change.OldSpan.End <= _rightEdge then
-
-                // Change falls completely within the active region so shift the right edge.
-                _rightEdge <- _rightEdge + change.Delta
-
-            else
-
-                // Change falls partially ouside the active region.
-                if change.OldSpan.Start < _leftEdge then
-
-                    // Delete additional characters to the left.
-                    let deleted = _leftEdge - change.OldSpan.Start
-                    _leftEdge <- change.NewSpan.Start
-                    _leftDeletions <- _leftDeletions + deleted
-
-                if change.OldSpan.End > _rightEdge then
-
-                    // Delete additional characters to the right.
-                    let deleted = change.OldSpan.End - _rightEdge
-                    _rightEdge <- change.NewSpan.End
-                    _rightDeletions <- _rightDeletions + deleted
 
     /// Update the last edit point based on the latest change to the ITextBuffer.  Note that 
     /// this isn't necessarily a vim originated edit.  Can be done by another Visual Studio
@@ -287,6 +254,71 @@ type internal TextChangeTracker
             x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
 
+    member x.UpdateEffectiveChange (args: TextContentChangedEventArgs) =
+
+        VimTrace.TraceInfo("OnTextChange: {0}", args.Changes.Count)
+        for i = 0 to args.Changes.Count - 1 do
+            VimTrace.TraceInfo("OnTextChange: change {0}", i)
+            let change = args.Changes.[i]
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldText, change.NewText)
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
+            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
+
+        match args.Changes.Count, _effectiveChangeData with
+        | 1, Some data ->
+            let mutable leftEdge = data.LeftEdge
+            let mutable rightEdge = data.RightEdge
+            let mutable leftDeletions = data.LeftDeletions
+            let mutable rightDeletions = data.RightDeletions
+
+            let change = args.Changes.[0]
+            if change.OldSpan.End < leftEdge then
+
+                // Change entirely precedes the active region so shift the edges by the delta.
+                leftEdge <- leftEdge + change.Delta
+                rightEdge <- rightEdge + change.Delta
+
+            elif change.OldSpan.Start > rightEdge then
+
+                // Change entirely follows the active region, so we can ignore it.
+                ()
+
+            elif change.OldSpan.Start >= leftEdge && change.OldSpan.End <= rightEdge then
+
+                // Change falls completely within the active region so shift the right edge.
+                rightEdge <- rightEdge + change.Delta
+
+            else
+
+                // Change is neither a subsest nor disjoint with
+                // the active region. Handle overlap.
+
+                // Check for deletions to the left.
+                if change.OldSpan.Start < leftEdge then
+                    let deleted = leftEdge - change.OldSpan.Start
+                    leftEdge <- change.NewSpan.Start
+                    leftDeletions <- leftDeletions + deleted
+
+                // Check for deletions to the right.
+                if change.OldSpan.End > rightEdge then
+                    let deleted = change.OldSpan.End - rightEdge
+                    rightEdge <- change.NewSpan.End
+                    rightDeletions <- rightDeletions + deleted
+                else
+                    rightEdge <- rightEdge + change.Delta
+
+            _effectiveChangeData <-
+                Some {
+                    data with
+                        LeftEdge = leftEdge;
+                        RightEdge = rightEdge;
+                        LeftDeletions = leftDeletions;
+                        RightDeletions = rightDeletions;
+                }
+
+        | _ ->
+            ()
+
     static member GetTextChangeTracker (bufferData: IVimBufferData) (commonOperationsFactory: ICommonOperationsFactory) =
         let textView = bufferData.TextView
         textView.Properties.GetOrCreateSingletonProperty(Key, (fun () -> 
@@ -298,12 +330,11 @@ type internal TextChangeTracker
         member x.TrackCurrentChange
             with get () = x.TrackCurrentChange
             and set value = x.TrackCurrentChange <- value
-        member x.TrackEffectiveChange
-            with get () = x.TrackEffectiveChange
-            and set value = x.TrackEffectiveChange <- value
         member x.CurrentChange = x.CurrentChange
-        member x.EffectiveChange = x.EffectiveChange
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()
+        member x.StartTrackingEffectiveChange () = x.StartTrackingEffectiveChange ()
+        member x.EffectiveChange = x.EffectiveChange
+        member x.StopTrackingEffectiveChange () = x.StopTrackingEffectiveChange ()
         [<CLIEvent>]
         member x.ChangeCompleted = _changeCompletedEvent.Publish

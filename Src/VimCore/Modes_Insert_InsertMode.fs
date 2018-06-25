@@ -1084,7 +1084,7 @@ type internal InsertMode
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
         _textChangeTracker.TrackCurrentChange <- true
-        _textChangeTracker.TrackEffectiveChange <- true
+        _textChangeTracker.StartTrackingEffectiveChange()
 
         // Set up transaction and kind of insert
         let transaction, insertKind =
@@ -1142,7 +1142,7 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
-        _textChangeTracker.TrackEffectiveChange <- false
+        _textChangeTracker.StopTrackingEffectiveChange()
 
         match _textChangeTracker.EffectiveChange with
         | Some textChange ->
