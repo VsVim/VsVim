@@ -42,6 +42,9 @@ type internal ITextChangeTracker =
 /// Data relating to an effective change
 type EffectiveChangeData = {
 
+    // The current caret position
+    CaretPosition: CaretPosition
+
     /// The left edge of the active change
     LeftEdge: int
 
@@ -83,6 +86,10 @@ type internal TextChangeTracker
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
+        // Listen to caret position changed events
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun args -> this.OnPositionChanged args)
+        |> _bag.Add
         _textView.Closed 
         |> Event.add (fun _ -> _bag.DisposeAll())
 
@@ -114,11 +121,13 @@ type internal TextChangeTracker
         _currentTextChange <- None
 
     member x.StartTrackingEffectiveChange() =
-        let caretPosition = _textView.Caret.Position.BufferPosition.Position
+        let caretPosition = _textView.Caret.Position
+        let position = caretPosition.BufferPosition.Position
         _effectiveChangeData <-
             Some {
-                LeftEdge = caretPosition;
-                RightEdge = caretPosition;
+                CaretPosition = caretPosition;
+                LeftEdge = position;
+                RightEdge = position;
                 LeftDeletions = 0;
                 RightDeletions = 0;
             }
@@ -189,6 +198,14 @@ type internal TextChangeTracker
             x.UpdateEffectiveChange args
 
         x.UpdateLastEditPoint args
+
+    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) = 
+
+        match _effectiveChangeData with
+        | Some data ->
+            _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }
+        | None ->
+            ()
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -309,11 +326,11 @@ type internal TextChangeTracker
 
             _effectiveChangeData <-
                 Some {
-                    data with
-                        LeftEdge = leftEdge;
-                        RightEdge = rightEdge;
-                        LeftDeletions = leftDeletions;
-                        RightDeletions = rightDeletions;
+                    CaretPosition = _textView.Caret.Position;
+                    LeftEdge = leftEdge;
+                    RightEdge = rightEdge;
+                    LeftDeletions = leftDeletions;
+                    RightDeletions = rightDeletions;
                 }
 
         | _ ->
