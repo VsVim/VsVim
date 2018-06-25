@@ -942,6 +942,7 @@ type internal InsertMode
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
     member x.OnCaretPositionChanged args = 
+        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
         _textChangeTracker.CompleteChange()
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
@@ -1074,6 +1075,7 @@ type internal InsertMode
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
         _textChangeTracker.TrackCurrentChange <- true
+        _textChangeTracker.TrackEffectiveChange <- true
 
         // Set up transaction and kind of insert
         let transaction, insertKind =
@@ -1131,6 +1133,13 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
+        _textChangeTracker.TrackEffectiveChange <- false
+
+        match _textChangeTracker.EffectiveChange with
+        | Some textChange ->
+            VimTrace.TraceInfo("InsertMode: EffectiveChange {0}", textChange)
+        | None ->
+            ()
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 
