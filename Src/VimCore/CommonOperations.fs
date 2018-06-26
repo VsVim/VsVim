@@ -1597,6 +1597,7 @@ type internal CommonOperations
     /// after the redo completes
     member x.Redo count = 
         _undoRedoOperations.Redo count
+        x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Ensure the given view properties are met at the given point
