@@ -348,17 +348,29 @@ type FunctionDefinition = {
     IsScriptLocal: bool
 }
 
+/// See :help filename-modifiers
 [<RequireQualifiedAccess>]
 type FilenameModifier =
+    /// :e
     | Extension
+    /// :h
     | Head
+    /// :p
     | PathFull
+    /// :r
     | Root
+    /// :t
     | Tail
 
+/// 
 [<RequireQualifiedAccess>]
 type SymbolicPathComponent =
-    | Filename of FilenameModifier list
+    /// '%' + modifiers
+    | CurrentFilename of FilenameModifier list
+    /// '#' + modifiers
+    // TODO: depends on PR #2139
+    //| AlternateFilename of FilenameModifier list
+    /// Literal text
     | Literal of string
 
 type SymbolicPath = SymbolicPathComponent list

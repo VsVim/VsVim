@@ -1842,16 +1842,32 @@ type VimInterpreter
             | SymbolicPathComponent.Literal literal::tail -> 
                 sb.AppendString literal
                 inner sb tail
-            | SymbolicPathComponent.Filename filename::tail -> 
-                x.ApplyFilenameModifiers filename |> sb.AppendString
+            | SymbolicPathComponent.CurrentFilename modifiers::tail -> 
+                let path = 
+                    match modifiers with
+                    | FilenameModifier.PathFull::tail -> x.ApplyFilenameModifiers _vimBufferData.CurrentFilePath tail
+                    | _ -> x.ApplyFilenameModifiers _vimBufferData.CurrentFileName modifiers
+                path |> sb.AppendString
                 inner sb tail
+            // TODO: depends on PR #2139
+            // Note that _vimData.AlternateFile[Path|Name] don't actually exist in the dependency at the time of writing.
+            // These simply call out the need for calculated paths analogous to _vimBufferData.CurrentFile[Path|Name].
+            // As with '%', both a rooted path '#:p' and a prefix-stripped path '#' are needed to maintain consistency with Vim.
+
+            //| SymbolicPathComponent.AlternateFilename modifiers::tail ->
+            //    let path =
+            //        match modifiers with
+            //        | FilenameModifier.PathFull::tail -> x.ApplyFilenameModifiers _vimData.AlternateFilePath tail
+            //        | _ -> x.ApplyFilenameModifiers _vimData.AlternateFileName modifiers
+            //    path |> sb.AppendString
+            //    inner sb tail
             | [] -> ()
 
         let builder = System.Text.StringBuilder()
         inner builder symbolicPath
         builder.ToString()
 
-    member x.ApplyFilenameModifiers modifiers : string =
+    member x.ApplyFilenameModifiers path modifiers : string =
         let rec inner path modifiers : string =
             match path with
             | "" -> ""
@@ -1874,10 +1890,7 @@ type VimInterpreter
                     let ext = Array.skip (exts.Length - count) exts |> String.concat "."
                     inner ext tailNew
                 | _ -> path
-        
-        match modifiers with
-        | FilenameModifier.PathFull::tail -> inner _vimBufferData.CurrentFilePath tail
-        | _ -> inner _vimBufferData.CurrentFileName modifiers
+        inner path modifiers
 
     interface IVimInterpreter with
         member x.GetLine lineSpecifier = x.GetLine lineSpecifier

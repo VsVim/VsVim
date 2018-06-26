@@ -2646,27 +2646,36 @@ type Parser
             else
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '\\' ->
+                    // As per :help cmdline-special, '\' only acts as an escape character when it immediately preceeds '%' or '#'.
                     _tokenizer.MoveNextChar()
                     match _tokenizer.CurrentTokenKind with
+                    // TODO: depends on PR #2139
+                    //| TokenKind.Character '#' 
                     | TokenKind.Character '%' ->
+                        let c = _tokenizer.CurrentChar
                         _tokenizer.MoveNextChar()
-                        inner (SymbolicPathComponent.Literal "%"::components)
+                        inner (SymbolicPathComponent.Literal (StringUtil.OfChar c)::components)
                     | _ -> 
                         inner (SymbolicPathComponent.Literal "\\"::components)
                 | TokenKind.Character '%' ->
                     _tokenizer.MoveNextChar()
-                    let modifiers = SymbolicPathComponent.Filename x.ParseFilenameModifiers
+                    let modifiers = SymbolicPathComponent.CurrentFilename x.ParseFilenameModifiers
                     inner (modifiers::components)
+                // TODO: depends on PR #2139
+                //| TokenKind.Character '#' ->
+                //    _tokenizer.MoveNextChar()
+                //    let modifiers = SymbolicPathComponent.AlternateFilename x.ParseFilenameModifiers
+                //    inner (modifiers::components)
                 | _ ->
                     let literal = _tokenizer.CurrentToken.TokenText
                     _tokenizer.MoveNextToken()
-                    let nextComponents = match components with
+                    let nextComponents = 
+                        match components with
                         | SymbolicPathComponent.Literal lhead::tail -> (SymbolicPathComponent.Literal (lhead + literal))::tail
                         | _ -> (SymbolicPathComponent.Literal literal::components)
                     inner nextComponents
         
-        let components = (inner List.Empty)
-        List.rev components
+        List.rev (inner List.Empty)
 
 and ConditionalParser
     (
