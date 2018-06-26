@@ -787,14 +787,11 @@ namespace Vim.VisualStudio
         private bool TryGetRecentWindow(int n, out IWpfTextView textView)
         {
             textView = null;
-#if false
-            // TODO: Enable when PR #2139 is merged.
-            var vimBufferOption = _vim.TryGetRecentBuffer(i);
-            if (vimBufferOption.HasValue && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
+            var vimBufferOption = _vim.TryGetRecentBuffer(n);
+            if (!vimBufferOption.IsNone() && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
             {
                 textView = wpfTextView;
             }
-#endif
             return false;
         }
 
