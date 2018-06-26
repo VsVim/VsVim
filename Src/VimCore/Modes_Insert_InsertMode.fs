@@ -750,7 +750,7 @@ type internal InsertMode
         | None -> ()
         | Some transaction ->
             transaction.Complete()
-            let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name LinkedUndoTransactionFlags.CanBeEmpty
+            let transaction = x.CreateLinkedUndoTransaction name
             _sessionData <- { _sessionData with Transaction = Some transaction }
 
     /// Paste the contents of the specified register with the given flags 
