@@ -207,8 +207,7 @@ type internal TextChangeTracker
 
         x.UpdateLastEditPoint args
 
-    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) = 
-
+    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) =
         match _effectiveChangeData with
         | Some data ->
             _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }

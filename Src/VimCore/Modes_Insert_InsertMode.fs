@@ -781,7 +781,7 @@ type internal InsertMode
             | _ -> 
 
                 // All other commands break the undo sequence.
-                x.BreakUndoSequence "Insert after motion" 
+                x.BreakUndoSequence "Insert after motion"
 
         ProcessResult.OfCommandResult result
 
@@ -1179,12 +1179,6 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
         _textChangeTracker.StopTrackingEffectiveChange()
-
-        match _textChangeTracker.EffectiveChange with
-        | Some textChange ->
-            VimTrace.TraceInfo("InsertMode: EffectiveChange {0}", textChange)
-        | None ->
-            ()
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 

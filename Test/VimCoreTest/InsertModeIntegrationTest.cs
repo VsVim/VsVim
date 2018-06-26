@@ -362,10 +362,16 @@ namespace Vim.UnitTest
         /// </summary>
         public sealed class LastTextRegisterTest : InsertModeIntegrationTest
         {
+            protected override void Create(ModeArgument argument, params string[] lines)
+            {
+                base.Create(argument, lines);
+                _localSettings.EndOfLine = false;
+            }
+
             [WpfFact]
             public void SimpleWord()
             {
-                Create("", "");
+                Create("");
                 _vimBuffer.ProcessNotation("dog<Esc>");
                 Assert.Equal("dog", RegisterMap.GetRegisterText('.'));
             }
@@ -373,7 +379,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void WordsWithSpaces()
             {
-                Create("", "");
+                Create("");
                 _vimBuffer.ProcessNotation("dog tree<Esc>");
                 Assert.Equal("dog tree", RegisterMap.GetRegisterText('.'));
             }
@@ -381,7 +387,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CaretMove()
             {
-                Create("", "");
+                Create("");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
                 _vimBuffer.ProcessNotation("<Esc>");
@@ -389,12 +395,13 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Once the caret moves and typing starts again then the register resets
+            /// Once the caret moves outside the active region and typing starts again then
+            /// the register resets
             /// </summary>
             [WpfFact]
             public void TypeAfterCaretMove()
             {
-                Create("cat", "");
+                Create("cat");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(5);
                 _vimBuffer.ProcessNotation("t<Esc>");
@@ -408,7 +415,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TypeAfterCaretMoveBack()
             {
-                Create("", "");
+                Create("");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
                 _textView.MoveCaretTo(3);
@@ -420,7 +427,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void AccrossMultipleLines()
             {
-                Create("", "");
+                Create("");
                 _vimBuffer.ProcessNotation("dog<CR>cat<Esc>");
                 Assert.Equal("dog" + Environment.NewLine + "cat", RegisterMap.GetRegisterText('.'));
             }
