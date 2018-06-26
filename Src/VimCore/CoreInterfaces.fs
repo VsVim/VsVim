@@ -2381,11 +2381,18 @@ with
         | ModeArgument.Substitute _ -> ()
         | ModeArgument.PartialCommand _ -> ()
 
+/// Information about the attributes of Command
+[<System.Flags>]
+type CommandResultFlags =
+    | None = 0x0000
+    | CustomProcessed = 0x0001
+
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<NoEquality>]
 type ModeSwitch =
     | NoSwitch
+    | NoSwitchWithArgument of CommandResultFlags
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
@@ -2476,6 +2483,9 @@ type CommandFlags =
     /// Represents an insert edit action which can be linked with other insert edit actions and
     /// hence acts with them in a repeat
     | InsertEdit = 0x2000
+
+    /// If the command depends on the context, e.g. a tab insertion
+    | ContextSensitive = 0x4000
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -3797,6 +3807,7 @@ type ProcessResult =
         | Handled modeSwitch ->
             match modeSwitch with
             | ModeSwitch.NoSwitch -> false
+            | ModeSwitch.NoSwitchWithArgument _ -> false
             | ModeSwitch.SwitchMode _ -> true
             | ModeSwitch.SwitchModeWithArgument _ -> true
             | ModeSwitch.SwitchPreviousMode -> true

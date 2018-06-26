@@ -197,6 +197,9 @@ type InsertSessionData = {
 
     /// The Active edit item 
     ActiveEditItem: ActiveEditItem
+
+    /// Whether to suppress the effective change
+    SuppressEffectiveChange: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -228,6 +231,7 @@ type internal InsertMode
         Transaction = None
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
+        SuppressEffectiveChange = false
     }
 
     /// The set of commands supported by insert mode
@@ -240,9 +244,9 @@ type internal InsertMode
                 ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
                 ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
                 ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
-                ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-                ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
                 ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
@@ -537,7 +541,11 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
 
         // If applicable, use the effective change for the edit.
-        if not _globalSettings.AtomicInsert && _textChangeTracker.IsEffectiveChangeInsert then
+        if
+            not _globalSettings.AtomicInsert
+            && not _sessionData.SuppressEffectiveChange
+            && _textChangeTracker.IsEffectiveChangeInsert
+        then
             match _textChangeTracker.EffectiveChange with
             | Some span ->
                 span
@@ -705,6 +713,10 @@ type internal InsertMode
                 | TextChange.Combination _ -> InsertCommand.Combined (left, right)
             | _ -> InsertCommand.Combined (left, right)
 
+    /// Suppress the use of the effective change for the current session
+    member x.SuppressEffectiveChange () =
+        _sessionData <- { _sessionData with SuppressEffectiveChange = true }
+
     /// Run the insert command with the given information
     member x.RunInsertCommand (command: InsertCommand) (keyInputSet: KeyInputSet) commandFlags: ProcessResult =
 
@@ -731,6 +743,16 @@ type internal InsertMode
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
+        let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
+        let wasCustomProcessed =
+            match result with
+            | CommandResult.Completed (ModeSwitch.NoSwitchWithArgument flags) ->
+                Util.IsFlagSet flags CommandResultFlags.CustomProcessed
+            | _ ->
+                false
+
+        if isContextSensitive || wasCustomProcessed then
+            x.SuppressEffectiveChange()
         if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
@@ -769,6 +791,7 @@ type internal InsertMode
         | None -> ()
         | Some transaction ->
             transaction.Complete()
+            _textChangeTracker.StartTrackingEffectiveChange()
             let transaction = x.CreateLinkedUndoTransaction name
             _sessionData <- { _sessionData with Transaction = Some transaction }
 
@@ -817,15 +840,16 @@ type internal InsertMode
         let func (text: string) = 
             let data = 
                 if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
+                    let flags = CommandFlags.Repeatable ||| CommandFlags.ContextSensitive
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
-                    Some (InsertCommand.DeleteAllIndent, keyInputSet, "0")
+                    Some (InsertCommand.DeleteAllIndent, flags, keyInputSet, "0")
                 else
                     None
 
             match data with
             | None ->
                 None
-            | Some (command, keyInputSet, text) ->
+            | Some (command, flags, keyInputSet, text) ->
 
                 // First step is to delete the portion of the current change which matches up with
                 // our command.
@@ -836,7 +860,7 @@ type internal InsertMode
                     _textBuffer.Delete(span.Span) |> ignore
 
                 // Now run the command
-                x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
+                x.RunInsertCommand command keyInputSet flags |> Some
 
         match _sessionData.CombinedEditCommand with
         | None -> None
@@ -991,8 +1015,15 @@ type internal InsertMode
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             x.ChangeCombinedEditCommand command
         else
-            x.BreakUndoSequence "Insert after motion" 
-            x.ChangeCombinedEditCommand None
+            let breakUndoSequence =
+                match _textChangeTracker.EffectiveChange with
+                | Some span ->
+                    span.Contains(args.NewPosition.BufferPosition) |> not
+                | None ->
+                    true
+            if breakUndoSequence then
+                x.BreakUndoSequence "Insert after motion" 
+                x.ChangeCombinedEditCommand None
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
@@ -1129,6 +1160,7 @@ type internal InsertMode
             InsertKind = insertKind
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
+            SuppressEffectiveChange = false
         }
 
         // If this is replace mode then go ahead and setup overwrite

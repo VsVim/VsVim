@@ -488,7 +488,8 @@ type internal VimBuffer
                     match result with
                     | ProcessResult.Handled modeSwitch ->
                         match modeSwitch with
-                        | ModeSwitch.NoSwitch -> 
+                        | ModeSwitch.NoSwitch
+                        | ModeSwitch.NoSwitchWithArgument _ -> 
                                 maybeLeaveOneCommand()
                         | ModeSwitch.SwitchMode kind -> 
                             // An explicit mode switch doesn't affect one command mode

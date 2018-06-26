@@ -365,7 +365,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void SimpleWord()
             {
-                Create("");
+                Create("", "");
                 _vimBuffer.ProcessNotation("dog<Esc>");
                 Assert.Equal("dog", RegisterMap.GetRegisterText('.'));
             }
@@ -373,7 +373,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void WordsWithSpaces()
             {
-                Create("");
+                Create("", "");
                 _vimBuffer.ProcessNotation("dog tree<Esc>");
                 Assert.Equal("dog tree", RegisterMap.GetRegisterText('.'));
             }
@@ -381,7 +381,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CaretMove()
             {
-                Create("");
+                Create("", "");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
                 _vimBuffer.ProcessNotation("<Esc>");
@@ -394,9 +394,9 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TypeAfterCaretMove()
             {
-                Create("");
+                Create("cat", "");
                 _vimBuffer.ProcessNotation("dog");
-                _textView.MoveCaretTo(2);
+                _textView.MoveCaretTo(5);
                 _vimBuffer.ProcessNotation("t<Esc>");
                 Assert.Equal("t", RegisterMap.GetRegisterText('.'));
             }
@@ -408,7 +408,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TypeAfterCaretMoveBack()
             {
-                Create("");
+                Create("", "");
                 _vimBuffer.ProcessNotation("dog");
                 _textView.MoveCaretTo(2);
                 _textView.MoveCaretTo(3);
@@ -420,7 +420,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void AccrossMultipleLines()
             {
-                Create("");
+                Create("", "");
                 _vimBuffer.ProcessNotation("dog<CR>cat<Esc>");
                 Assert.Equal("dog" + Environment.NewLine + "cat", RegisterMap.GetRegisterText('.'));
             }
