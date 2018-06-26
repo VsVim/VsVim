@@ -555,7 +555,7 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<string>()))
+                    .Setup(x => x.CreateLinkedUndoTransactionWithFlags(It.IsAny<string>(), It.IsAny<LinkedUndoTransactionFlags>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
@@ -592,7 +592,7 @@ namespace Vim.UnitTest
                 var transaction = new Mock<ILinkedUndoTransaction>(MockBehavior.Strict);
                 transaction.Setup(x => x.Dispose()).Verifiable();
                 _undoRedoOperations
-                    .Setup(x => x.CreateLinkedUndoTransaction(It.IsAny<string>()))
+                    .Setup(x => x.CreateLinkedUndoTransactionWithFlags(It.IsAny<string>(), It.IsAny<LinkedUndoTransactionFlags>()))
                     .Returns(transaction.Object)
                     .Verifiable();
                 _undoRedoOperations
