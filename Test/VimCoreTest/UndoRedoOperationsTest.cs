@@ -177,6 +177,19 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperations.Undo(1);
+                Assert.Equal(3, _undoCount);
+            }
+
+            [WpfFact]
+            public void UndoGroupEndsWithInsert()
+            {
+                Create();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags("test", LinkedUndoTransactionFlags.EndsWithInsert))
+                {
+                    RaiseUndoTransactionCompleted(count: 3);
+                }
+
+                _undoRedoOperations.Undo(1);
                 Assert.Equal(4, _undoCount);
             }
 
@@ -190,9 +203,9 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperations.Undo(1);
-                Assert.Equal(4, _undoCount);
+                Assert.Equal(3, _undoCount);
                 _undoRedoOperations.Redo(1);
-                Assert.Equal(4, _redoCount);
+                Assert.Equal(3, _redoCount);
             }
 
             [WpfFact]
@@ -379,7 +392,7 @@ namespace Vim.UnitTest
                 }
 
                 _undoRedoOperationsRaw.Undo(1);
-                Assert.Equal(11, _undoCount);
+                Assert.Equal(10, _undoCount);
                 Assert.Equal(0, _undoRedoOperationsRaw.UndoStack.Length);
             }
 
@@ -479,7 +492,7 @@ namespace Vim.UnitTest
                 }
                 _undoRedoOperations.Undo(count: 1);
                 _undoRedoOperationsRaw.Redo(1);
-                Assert.Equal(11, _redoCount);
+                Assert.Equal(10, _redoCount);
                 Assert.Equal(0, _undoRedoOperationsRaw.RedoStack.Length);
                 Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
             }

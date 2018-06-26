@@ -352,9 +352,13 @@ and UndoRedoOperations
     ///     - transactions we orphaned in ResetState because of detected errors
     ///     - transactions closed out of order 
     member x.LinkedUndoTransactionClosed (linkedUndoTransaction: LinkedUndoTransaction) = 
+        let canBeEmpty = Util.IsFlagSet linkedUndoTransaction.Flags LinkedUndoTransactionFlags.CanBeEmpty
+        let endsWithInsert = Util.IsFlagSet linkedUndoTransaction.Flags LinkedUndoTransactionFlags.EndsWithInsert
+
         match x.UndoTransactionClosedCore linkedUndoTransaction _linkedUndoTransactionStack with
         | TransactionCloseResult.Expected -> 
-            if _linkedUndoTransactionStack.Count = 0 && Option.isSome _textUndoHistory then
+            match _linkedUndoTransactionStack.Count, _textUndoHistory with
+            | 0, Some textUndoHistory ->
                 let mutable hasData = false
 
                 // The linked undo transaction is now done, need to freeze the data on the undo
@@ -364,24 +368,27 @@ and UndoRedoOperations
                     Contract.Assert(count > 0)
                     hasData <- true
 
-                    // Append an empty transaction to the previous undo transaction
-                    // to break the undo sequence.
-                    match _textUndoHistory with
-                    | Some textUndoHistory ->
-                        use undoTransaction = textUndoHistory.CreateTransaction "Break undo sequence"
-                        undoTransaction.Complete()
-                    | None -> ()
+                    // If the linked transaction ended with an insert, then append an empty
+                    // transaction to the previous undo transaction to break the undo sequence.
+                    let extra =
+                        if endsWithInsert then
+                            use undoTransaction = textUndoHistory.CreateTransaction "Break undo sequence"
+                            undoTransaction.Complete()
+                            1
+                        else
+                            0
 
-                    _undoStack <- UndoRedoData.Linked (count + 1, true) :: tail
+                    _undoStack <- UndoRedoData.Linked (count + extra, true) :: tail
                 | _ -> ()
 
                 // If a linked undo operation completes that contains 0 undo / redo items that very likely 
                 // indicates a bug.  It can mean that VsVim has been unhooked from the undo / redo event
                 // queue as described in #1387.  Notify the user and reset our state 
-                if not hasData && not (Util.IsFlagSet linkedUndoTransaction.Flags LinkedUndoTransactionFlags.CanBeEmpty) then
+                if not hasData && not canBeEmpty then
                     x.ResetState()
                     VimTrace.TraceInfo("!!! Empty linked undo chain")
                     _statusUtil.OnError Resources.Undo_LinkedChainBroken
+            | _ -> ()
         
         | TransactionCloseResult.Orphaned -> ()
         | TransactionCloseResult.BadOrder -> 
