@@ -97,6 +97,9 @@ namespace Vim.VisualStudio
                 return;
             }
 
+            // Vim doesn't consider folding an undo operation, and neither does VsVim (issue #2184).
+            vimBuffer.TextView.Options.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false);
+
             // We have to make a decision on whether Visual Studio or Vim settings win during the startup
             // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
             // win.  
