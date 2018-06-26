@@ -470,13 +470,14 @@ type VimInterpreter
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
 
     /// Change the directory to the given value
-    member x.RunChangeDirectory directoryPath = 
-        match directoryPath with
-        | None -> 
+    member x.RunChangeDirectory symbolicPath = 
+        match symbolicPath with
+        | [] -> 
             // On non-Unix systems the :cd commandshould print out the directory when
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
-        | Some directoryPath ->
+        | _ ->
+            let directoryPath = x.InterpretSymbolicPath symbolicPath
             let directoryPath = 
                 if not (Path.IsPathRooted directoryPath) then
                     Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
@@ -491,13 +492,14 @@ type VimInterpreter
                 _vimData.CurrentDirectory <- directoryPath
 
     /// Change the local directory to the given value
-    member x.RunChangeLocalDirectory directoryPath = 
-        match directoryPath with
-        | None -> 
+    member x.RunChangeLocalDirectory symbolicPath = 
+        match symbolicPath with
+        | [] -> 
             // On non-Unix systems the :cd commandshould print out the directory when
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
-        | Some directoryPath ->
+        | _ ->
+            let directoryPath = x.InterpretSymbolicPath symbolicPath
             let directoryPath = 
                 if not (Path.IsPathRooted directoryPath) then
                     Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
@@ -788,7 +790,7 @@ type VimInterpreter
     
     /// Run the execute command
     member x.RunExecute expression =
-        let parser = Parser(_globalSettings, _vimData, _vimBufferData)
+        let parser = Parser(_globalSettings, _vimData)
         let execute str =
             parser.ParseLineCommand str |> x.RunLineCommand
         match x.RunExpression expression  with
@@ -1631,8 +1633,8 @@ type VimInterpreter
             | Some substituteData -> substituteData.SearchPattern, substituteData.Substitute
         x.RunSubstitute lineRange pattern replace flags 
 
-    member x.RunTabNew filePath = 
-        let filePath = filePath |> OptionUtil.getOrDefault ""
+    member x.RunTabNew symbolicPath = 
+        let filePath = x.InterpretSymbolicPath symbolicPath
         _vimHost.LoadFileIntoNewWindow filePath |> ignore
 
     member x.RunOnly() =
@@ -1829,10 +1831,53 @@ type VimInterpreter
 
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
-        let parser = Parser(_globalSettings, _vimData, _vimBufferData, lines)
+        let parser = Parser(_globalSettings, _vimData, lines)
         while not parser.IsDone do
             let lineCommand = parser.ParseNextCommand()
             x.RunLineCommand lineCommand |> ignore
+   
+    member x.InterpretSymbolicPath (symbolicPath: SymbolicPath) =
+        let rec inner (sb:System.Text.StringBuilder) sp =
+            match sp with
+            | SymbolicPathComponent.Literal literal::tail -> 
+                sb.AppendString literal
+                inner sb tail
+            | SymbolicPathComponent.Filename filename::tail -> 
+                x.ApplyFilenameModifiers filename |> sb.AppendString
+                inner sb tail
+            | [] -> ()
+
+        let builder = System.Text.StringBuilder()
+        inner builder symbolicPath
+        builder.ToString()
+
+    member x.ApplyFilenameModifiers modifiers : string =
+        let rec inner path modifiers : string =
+            match path with
+            | "" -> ""
+            | _ ->
+                match modifiers with
+                | FilenameModifier.Head::tail -> 
+                    match Path.GetDirectoryName path with
+                    | "" -> "."
+                    | d -> inner d tail
+                | FilenameModifier.Tail::tail -> inner (Path.GetFileName path) tail
+                | FilenameModifier.Root::tail when path.StartsWith(".") -> inner path tail
+                | FilenameModifier.Root::tail -> 
+                    let s = path.Substring(0, path.Length - (Path.GetExtension path).Length)
+                    inner s tail
+                | FilenameModifier.Extension::_ when path.StartsWith(".") -> ""
+                | FilenameModifier.Extension::tail ->
+                    let tailNew = List.skipWhile (fun m -> m = FilenameModifier.Extension) tail
+                    let count = 1 + (tail.Length - tailNew.Length)
+                    let exts = Array.tail ((Path.GetFileName path).Split('.'))
+                    let ext = Array.skip (exts.Length - count) exts |> String.concat "."
+                    inner ext tailNew
+                | _ -> path
+        
+        match modifiers with
+        | FilenameModifier.PathFull::tail -> inner _vimBufferData.CurrentFilePath tail
+        | _ -> inner _vimBufferData.CurrentFileName modifiers
 
     interface IVimInterpreter with
         member x.GetLine lineSpecifier = x.GetLine lineSpecifier

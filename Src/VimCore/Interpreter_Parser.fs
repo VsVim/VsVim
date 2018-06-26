@@ -3,7 +3,6 @@
 namespace Vim.Interpreter
 open Vim
 open System.Collections.Generic
-open System.IO
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
@@ -109,8 +108,7 @@ type LineCommandBuilder
 type Parser
     (
         _globalSettings: IVimGlobalSettings,
-        _vimData: IVimData,
-        _vimBufferData: IVimBufferData
+        _vimData: IVimData
     ) = 
 
     let _parseResultBuilder = ParseResultBuilder()
@@ -325,8 +323,8 @@ type Parser
         ]
         |> Map.ofList
 
-    new (globalSettings, vimData, vimBufferData, lines) as this =
-        Parser(globalSettings, vimData, vimBufferData)
+    new (globalSettings, vimData, lines) as this =
+        Parser(globalSettings, vimData)
         then
             this.Reset lines
 
@@ -386,9 +384,9 @@ type Parser
     member x.ParseRestOfLineAsFilePath() = 
         x.SkipBlanks()
         if _tokenizer.IsAtEndOfLine then
-            None
+            []
         else
-            x.ParseRestOfLine() |> x.ParseFilePath |> Some 
+            x.ParseRestOfLine() |> x.ParseDirectoryPath
 
     /// Move to the next line of the input.  This will move past blank lines and return true if 
     /// the result is a non-blank line which can be processed
@@ -2612,29 +2610,26 @@ type Parser
                 rest [lineCommand]
         inner (fun all -> all) 
                 
-    member x.ParseFilenameModifiers : char list =
-        let rec inner (modifiers:char list) : char list =
+    member x.ParseFilenameModifiers : FilenameModifier list =
+        let rec inner (modifiers:FilenameModifier list) : FilenameModifier list =
             match _tokenizer.CurrentTokenKind with
             | TokenKind.Character ':' ->
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextChar()
-                match _tokenizer.CurrentChar with
+                let c = _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+                match c with
                 | 'p' when modifiers.IsEmpty -> 
                     // Note that 'p' is only valid when it is the first modifier -- violations end the modifier sequence
-                    _tokenizer.MoveNextChar()
-                    inner ('p' :: modifiers)
-                | 't' when not (List.exists (fun m -> m = 'r' || m = 'e' || m = 't') modifiers) ->
+                    inner (FilenameModifier.PathFull::modifiers)
+                | 't' when not (List.exists (fun m -> m = FilenameModifier.Root || m = FilenameModifier.Extension || m = FilenameModifier.Tail) modifiers) ->
                     // 't' must precede 'r' and 'e' and cannot be repeated -- violations end the modifier sequence
-                    _tokenizer.MoveNextChar()
-                    inner ('t' :: modifiers)
-                | 'h' when not (List.exists (fun m -> m = 'r' || m = 'e' || m = 't') modifiers) ->
+                    inner (FilenameModifier.Tail::modifiers)
+                | 'h' when not (List.exists (fun m -> m = FilenameModifier.Root || m = FilenameModifier.Extension || m = FilenameModifier.Tail) modifiers) ->
                     // 'h' should not follow 'e', 't', or 'r'
-                    _tokenizer.MoveNextChar()
-                    inner ('h' :: modifiers)
-                | 'r' | 'e' ->
-                    let c = _tokenizer.CurrentChar
-                    _tokenizer.MoveNextChar()
-                    inner (c :: modifiers)
+                    inner (FilenameModifier.Head::modifiers)
+                | 'r' -> inner (FilenameModifier.Root::modifiers)
+                | 'e' -> inner (FilenameModifier.Extension::modifiers)
                 | _ ->
                     // Stop processing modifiers if we encounter an unrecognized or invalid modifier character. Unconsume the last character and yield the modifiers so far.
                     _tokenizer.MoveToMark mark
@@ -2642,60 +2637,36 @@ type Parser
             | _ -> modifiers
         
         List.rev (inner List.Empty)
-   
-    member x.ApplyFilenameModifiers modifiers : string =
-        let rec inner path modifiers : string =
-            match path with
-            | "" -> ""
-            | _ ->
-                match modifiers with
-                | 'h'::tail -> 
-                    match Path.GetDirectoryName path with
-                    | "" -> "."
-                    | d -> inner d tail
-                | 't'::tail -> inner (Path.GetFileName path) tail
-                | 'r'::tail when path.StartsWith(".") -> inner path tail
-                | 'r'::tail -> 
-                    let s = path.Substring(0, path.Length - (Path.GetExtension path).Length)
-                    inner s tail
-                | 'e'::_ when path.StartsWith(".") -> ""
-                | 'e'::tail ->
-                    let tailNew = List.skipWhile (fun m -> m = 'e') tail
-                    let count = 1 + (tail.Length - tailNew.Length)
-                    let exts = Array.tail ((Path.GetFileName path).Split('.'))
-                    let ext = Array.skip (exts.Length - count) exts |> String.concat "."
-                    inner ext tailNew
-                | _ -> path
-        
-        match modifiers with
-        | 'p'::tail -> inner _vimBufferData.CurrentFilePath tail
-        | _ -> inner _vimBufferData.CurrentFileName modifiers
     
-    member x.ParseFilePath directoryPath : string =
+    member x.ParseDirectoryPath directoryPath : SymbolicPath =
         _tokenizer.Reset directoryPath TokenizerFlags.None
-        let rec inner (sb:System.Text.StringBuilder) =
-            if not _tokenizer.IsAtEndOfLine then
+        let rec inner components =
+            if _tokenizer.IsAtEndOfLine then
+                components
+            else
                 match _tokenizer.CurrentTokenKind with
                 | TokenKind.Character '\\' ->
                     _tokenizer.MoveNextChar()
                     match _tokenizer.CurrentTokenKind with
                     | TokenKind.Character '%' ->
                         _tokenizer.MoveNextChar()
-                        sb.AppendChar '%'
-                    | _ -> sb.AppendChar '\\'
+                        inner (SymbolicPathComponent.Literal "%"::components)
+                    | _ -> 
+                        inner (SymbolicPathComponent.Literal "\\"::components)
                 | TokenKind.Character '%' ->
                     _tokenizer.MoveNextChar()
-                    let modifiers = x.ParseFilenameModifiers
-                    let modifiedPath = x.ApplyFilenameModifiers modifiers
-                    sb.AppendString modifiedPath
+                    let modifiers = SymbolicPathComponent.Filename x.ParseFilenameModifiers
+                    inner (modifiers::components)
                 | _ ->
-                    sb.AppendString _tokenizer.CurrentToken.TokenText
+                    let literal = _tokenizer.CurrentToken.TokenText
                     _tokenizer.MoveNextToken()
-                inner sb
+                    let nextComponents = match components with
+                        | SymbolicPathComponent.Literal lhead::tail -> (SymbolicPathComponent.Literal (lhead + literal))::tail
+                        | _ -> (SymbolicPathComponent.Literal literal::components)
+                    inner nextComponents
         
-        let builder = System.Text.StringBuilder()
-        inner builder
-        builder.ToString()
+        let components = (inner List.Empty)
+        List.rev components
 
 and ConditionalParser
     (

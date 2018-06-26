@@ -15,7 +15,7 @@ type internal CommandMode
     let _commandChangedEvent = StandardEvent()
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
-    let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData, _buffer.VimBufferData)
+    let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
     static let BindDataError: BindData<int> = {

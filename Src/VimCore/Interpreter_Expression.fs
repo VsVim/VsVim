@@ -348,6 +348,21 @@ type FunctionDefinition = {
     IsScriptLocal: bool
 }
 
+[<RequireQualifiedAccess>]
+type FilenameModifier =
+    | Extension
+    | Head
+    | PathFull
+    | Root
+    | Tail
+
+[<RequireQualifiedAccess>]
+type SymbolicPathComponent =
+    | Filename of FilenameModifier list
+    | Literal of string
+
+type SymbolicPath = SymbolicPathComponent list
+
 /// Represents the values or the '+cmd' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type CommandOption =
@@ -417,10 +432,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Call of CallInfo
 
     /// Change the current directory to the given value
-    | ChangeDirectory of string option
+    | ChangeDirectory of SymbolicPath
 
     /// Change the current directory for the local window
-    | ChangeLocalDirectory of string option
+    | ChangeLocalDirectory of SymbolicPath
 
     /// Clear out the keyboard map for the given modes
     | ClearKeyMap of KeyRemapMode list * KeyMapArgument list
@@ -664,7 +679,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | TabOnly
 
     /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
-    | TabNew of string option
+    | TabNew of SymbolicPath
 
     /// The version command
     | Version

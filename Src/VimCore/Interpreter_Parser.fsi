@@ -12,9 +12,9 @@ type ParseResult<'T> =
 [<Class>]
 type Parser = 
 
-    new: vimData: IVimGlobalSettings * IVimData * IVimBufferData -> Parser
+    new: vimData: IVimGlobalSettings * IVimData -> Parser
 
-    new: vimData: IVimGlobalSettings * IVimData * IVimBufferData * lines: string[] -> Parser
+    new: vimData: IVimGlobalSettings * IVimData * lines: string[] -> Parser
 
     member IsDone: bool
 
