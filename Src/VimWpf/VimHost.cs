@@ -230,7 +230,7 @@ namespace Vim.UI.Wpf
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
-        public abstract void MoveFocus(ITextView textView, Direction direction);
+        public abstract void GoToWindow(ITextView textView, WindowKind windowKind, int count);
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
@@ -652,9 +652,9 @@ namespace Vim.UI.Wpf
             Make(jumpToFirstError, arguments);
         }
 
-        void IVimHost.MoveFocus(ITextView textView, Direction direction)
+        void IVimHost.GoToWindow(ITextView textView, WindowKind windowKind, int count)
         {
-            MoveFocus(textView, direction);
+            GoToWindow(textView, windowKind, count);
         }
 
         void IVimHost.OpenQuickFixWindow()

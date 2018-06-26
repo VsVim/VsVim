@@ -175,7 +175,7 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
-        public override void MoveFocus(ITextView textView, Direction direction)
+        public override void GoToWindow(ITextView textView, WindowKind windowKind, int count)
         {
             foreach (var vimWindow in _vimWindowManager.VimWindowList)
             {
@@ -197,12 +197,12 @@ namespace VimApp
                 }
 
                 var target = -1;
-                switch (direction)
+                switch (windowKind)
                 {
-                    case Direction.Up:
+                    case WindowKind.Up:
                         target = i - 1;
                         break;
-                    case Direction.Down:
+                    case WindowKind.Down:
                         target = i + 1;
                         break;
                 }

@@ -2621,8 +2621,8 @@ type NormalCommand =
     /// Go to the next tab in the specified direction
     | GoToNextTab of SearchPath
 
-    /// GoTo the ITextView in the specified direction
-    | GoToView of Direction
+    /// Go to the window of the specified kind
+    | GoToWindow of WindowKind
 
     /// Switch to insert after the caret position
     | InsertAfterCaret
@@ -2852,7 +2852,7 @@ type NormalCommand =
         | NormalCommand.GoToGlobalDeclaration -> None
         | NormalCommand.GoToLocalDeclaration -> None
         | NormalCommand.GoToNextTab _ -> None
-        | NormalCommand.GoToView _ -> None
+        | NormalCommand.GoToWindow _ -> None
         | NormalCommand.InsertAfterCaret -> None
         | NormalCommand.InsertBeforeCaret -> None
         | NormalCommand.InsertAtEndOfLine -> None
@@ -4221,7 +4221,7 @@ type IVimHost =
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit
 
     /// Move the focus to the ITextView in the open document in the specified direction
-    abstract MoveFocus: textView: ITextView -> direction: Direction -> unit
+    abstract GoToWindow: textView: ITextView -> direction: WindowKind -> count: int -> unit
 
     abstract NavigateTo: point: VirtualSnapshotPoint -> bool
 

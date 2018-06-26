@@ -1664,7 +1664,7 @@ namespace Vim.UnitTest
         public void Bind_GoToView_Down()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Down));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToWindow(WindowKind.Down));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-j>"));
             _commandUtil.Verify();
@@ -1674,7 +1674,7 @@ namespace Vim.UnitTest
         public void Bind_GoToView_Right()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Right));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToWindow(WindowKind.Right));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-l>"));
             _commandUtil.Verify();
@@ -1684,7 +1684,7 @@ namespace Vim.UnitTest
         public void Bind_GoToView_Left()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Left));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToWindow(WindowKind.Left));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-h>"));
             _commandUtil.Verify();
@@ -1694,7 +1694,7 @@ namespace Vim.UnitTest
         public void Bind_GoToView_Up()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Up));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToWindow(WindowKind.Up));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-k>"));
             _commandUtil.Verify();
@@ -1704,7 +1704,7 @@ namespace Vim.UnitTest
         public void Bind_GoToView_Up2()
         {
             Create(string.Empty);
-            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Up));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToWindow(WindowKind.Up));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
             _commandUtil.Verify();
