@@ -30,7 +30,10 @@ type internal ITextChangeTracker =
     abstract StartTrackingEffectiveChange: unit -> unit
 
     /// Effective change
-    abstract EffectiveChange: TextChange option
+    abstract IsEffectiveChangeInsert: bool
+
+    /// Effective change
+    abstract EffectiveChange: SnapshotSpan option
 
     /// Stop tracking the effective change
     abstract StopTrackingEffectiveChange: unit -> unit
@@ -132,13 +135,18 @@ type internal TextChangeTracker
                 RightDeletions = 0;
             }
 
+    member x.IsEffectiveChangeInsert =
+        match _effectiveChangeData with
+        | Some data ->
+            data.LeftDeletions = 0 && data.RightDeletions = 0
+        | None ->
+            false
+
     member x.EffectiveChange =
         match _effectiveChangeData with
         | Some data ->
-            let span = SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
-            let text = span.GetText()
-            let textChange = TextChange.Insert text
-            Some textChange
+            SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
+            |> Some
         | None ->
             None
 
@@ -351,6 +359,7 @@ type internal TextChangeTracker
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()
         member x.StartTrackingEffectiveChange () = x.StartTrackingEffectiveChange ()
+        member x.IsEffectiveChangeInsert = x.IsEffectiveChangeInsert
         member x.EffectiveChange = x.EffectiveChange
         member x.StopTrackingEffectiveChange () = x.StopTrackingEffectiveChange ()
         [<CLIEvent>]

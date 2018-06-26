@@ -536,14 +536,18 @@ type internal InsertMode
         // edit data for the session
         _textChangeTracker.CompleteChange()
 
-        // If available, use the effective change for the edit.
-        match _textChangeTracker.EffectiveChange with
-        | Some textChange ->
-            InsertCommand.OfTextChange textChange
-            |> Some
-            |> x.ChangeCombinedEditCommand
-        | None ->
-            ()
+        // If applicable, use the effective change for the edit.
+        if not _globalSettings.AtomicInsert && _textChangeTracker.IsEffectiveChangeInsert then
+            match _textChangeTracker.EffectiveChange with
+            | Some span ->
+                span
+                |> SnapshotSpanUtil.GetText
+                |> TextChange.Insert
+                |> InsertCommand.OfTextChange
+                |> Some
+                |> x.ChangeCombinedEditCommand
+            | None ->
+                ()
 
         try
             match _sessionData.InsertKind, _sessionData.CombinedEditCommand with
