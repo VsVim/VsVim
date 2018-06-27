@@ -197,9 +197,6 @@ type InsertSessionData = {
 
     /// The Active edit item 
     ActiveEditItem: ActiveEditItem
-
-    /// Whether to suppress the effective change
-    SuppressEffectiveChange: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -231,7 +228,6 @@ type internal InsertMode
         Transaction = None
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
-        SuppressEffectiveChange = false
     }
 
     /// The set of commands supported by insert mode
@@ -240,7 +236,7 @@ type internal InsertMode
             [
                 ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<End>", InsertCommand.MoveCaretToEndOfLine, CommandFlags.Movement)
-                ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
                 ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
                 ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
@@ -249,8 +245,8 @@ type internal InsertMode
                 ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
                 ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-                ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-                ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
+                ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
                 ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
@@ -543,17 +539,17 @@ type internal InsertMode
         // If applicable, use the effective change for the edit.
         if
             not _globalSettings.AtomicInsert
-            && not _sessionData.SuppressEffectiveChange
             && _textChangeTracker.IsEffectiveChangeInsert
         then
             match _textChangeTracker.EffectiveChange with
             | Some span ->
-                span
-                |> SnapshotSpanUtil.GetText
-                |> TextChange.Insert
-                |> InsertCommand.OfTextChange
-                |> Some
-                |> x.ChangeCombinedEditCommand
+                if span.Length <> 0 then
+                    span
+                    |> SnapshotSpanUtil.GetText
+                    |> TextChange.Insert
+                    |> InsertCommand.OfTextChange
+                    |> Some
+                    |> x.ChangeCombinedEditCommand
             | None ->
                 ()
 
@@ -713,10 +709,6 @@ type internal InsertMode
                 | TextChange.Combination _ -> InsertCommand.Combined (left, right)
             | _ -> InsertCommand.Combined (left, right)
 
-    /// Suppress the use of the effective change for the current session
-    member x.SuppressEffectiveChange () =
-        _sessionData <- { _sessionData with SuppressEffectiveChange = true }
-
     /// Run the insert command with the given information
     member x.RunInsertCommand (command: InsertCommand) (keyInputSet: KeyInputSet) commandFlags: ProcessResult =
 
@@ -752,7 +744,8 @@ type internal InsertMode
                 false
 
         if isContextSensitive || wasCustomProcessed then
-            x.SuppressEffectiveChange()
+            _textChangeTracker.StopTrackingEffectiveChange()
+
         if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
@@ -793,11 +786,7 @@ type internal InsertMode
             transaction.Complete()
             _textChangeTracker.StartTrackingEffectiveChange()
             let transaction = x.CreateLinkedUndoTransaction name
-            _sessionData <- {
-                _sessionData with
-                    Transaction = Some transaction;
-                    SuppressEffectiveChange = false;
-            }
+            _sessionData <- { _sessionData with Transaction = Some transaction }
 
     /// Paste the contents of the specified register with the given flags 
     ///
@@ -1163,7 +1152,6 @@ type internal InsertMode
             InsertKind = insertKind
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
-            SuppressEffectiveChange = false
         }
 
         // If this is replace mode then go ahead and setup overwrite
