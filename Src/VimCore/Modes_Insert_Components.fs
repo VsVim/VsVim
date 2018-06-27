@@ -29,10 +29,10 @@ type internal ITextChangeTracker =
     /// Start tracking the effective change
     abstract StartTrackingEffectiveChange: unit -> unit
 
-    /// Effective change
+    /// Whether the effective change is a simple insert
     abstract IsEffectiveChangeInsert: bool
 
-    /// Effective change
+    /// A span representing the active insert region of the effective change
     abstract EffectiveChange: SnapshotSpan option
 
     /// Stop tracking the effective change
@@ -123,6 +123,7 @@ type internal TextChangeTracker
     member x.ClearChange() =
         _currentTextChange <- None
 
+    /// Start tracking the effective change
     member x.StartTrackingEffectiveChange() =
         let caretPosition = _textView.Caret.Position
         let position = caretPosition.BufferPosition.Position
@@ -135,6 +136,7 @@ type internal TextChangeTracker
                 RightDeletions = 0;
             }
 
+    /// Whether the effective change is a simple insert
     member x.IsEffectiveChangeInsert =
         match _effectiveChangeData with
         | Some data ->
@@ -142,6 +144,7 @@ type internal TextChangeTracker
         | None ->
             false
 
+    /// A span representing the active insert region of the effective change
     member x.EffectiveChange =
         match _effectiveChangeData with
         | Some data ->
@@ -150,6 +153,7 @@ type internal TextChangeTracker
         | None ->
             None
 
+    /// Stop tracking the effective change
     member x.StopTrackingEffectiveChange() =
         _effectiveChangeData <- None
 

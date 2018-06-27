@@ -1016,12 +1016,23 @@ type internal InsertMode
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             x.ChangeCombinedEditCommand command
         else
+
+            // Don't break the undo sequence if the caret was moved within the
+            // active insertion region of the effective change. This allows code
+            // assistants to perform a variety of edits without breaking the undo
+            // sequence. This is not strictly vim-compatible, but it is a minor
+            // point and until we can tell the difference between the user using
+            // the mouse and the caret being moved programmatically, we can bend
+            // the rules a little. In any case, we still break the undo sequence
+            // if the mouse is moved before or after the active insertion region,
+            // which is the main intent of the policy.
             let breakUndoSequence =
                 match _textChangeTracker.EffectiveChange with
                 | Some span ->
                     span.Contains(args.NewPosition.BufferPosition) |> not
                 | None ->
                     true
+
             if breakUndoSequence then
                 x.BreakUndoSequence "Insert after motion" 
                 x.ChangeCombinedEditCommand None
