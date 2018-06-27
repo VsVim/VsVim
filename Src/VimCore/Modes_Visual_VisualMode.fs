@@ -232,8 +232,7 @@ type internal VisualMode
                         _selectionTracker.UpdateSelection()
                     | CommandResult.Completed modeSwitch ->
                         match modeSwitch with
-                        | ModeSwitch.NoSwitch
-                        | ModeSwitch.NoSwitchWithArgument _ -> _selectionTracker.UpdateSelection()
+                        | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
                         | ModeSwitch.SwitchMode(_) -> ()
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()

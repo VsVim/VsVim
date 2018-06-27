@@ -1378,7 +1378,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Repeat of a TryCustomProcess should recall that function vs. repeating the
+            /// Repeat of a TryCustomProcess for a context sensitive command should
+            /// recall that function vs. repeating the
             /// inserted text
             /// </summary>
             [WpfFact]
@@ -1389,9 +1390,8 @@ namespace Vim.UnitTest
                 VimHost.TryCustomProcessFunc =
                     (textView, command) =>
                     {
-                        if (command.IsInsert)
+                        if (command.IsInsertTab)
                         {
-                            Assert.Equal("#", command.AsInsert().Item);
                             if (first)
                             {
                                 _textBuffer.Insert(0, "hello ");
@@ -1406,7 +1406,7 @@ namespace Vim.UnitTest
 
                         return false;
                     };
-                _vimBuffer.ProcessNotation("#<Esc>.");
+                _vimBuffer.ProcessNotation("<Tab><Esc>.");
                 Assert.Equal("big hello world", _textBuffer.GetLine(0).GetText());
             }
 

@@ -536,7 +536,7 @@ type internal InsertMode
         // edit data for the session
         _textChangeTracker.CompleteChange()
 
-        // If applicable, use the effective change for the edit.
+        // If applicable, use the effective change for the combined edit.
         if
             not _globalSettings.AtomicInsert
             && _textChangeTracker.IsEffectiveChangeInsert
@@ -544,12 +544,27 @@ type internal InsertMode
             match _textChangeTracker.EffectiveChange with
             | Some span ->
                 if span.Length <> 0 then
+
+                    // Override the piecewise combined edit command with
+                    // the effective change which is a simple insertion.
                     span
                     |> SnapshotSpanUtil.GetText
                     |> TextChange.Insert
                     |> InsertCommand.OfTextChange
                     |> Some
                     |> x.ChangeCombinedEditCommand
+
+                    // If the effective change is confined to one line then
+                    // move the caret to the end of the effective change.
+                    // This can happen if the editor auto-inserted matching
+                    // parentheses, quotes, brackets, etc. and the user
+                    // didn't "finish" them manually. We want the caret
+                    // and the final edit point to appear as if the user
+                    // had entered them directly.
+                    let startingLineNumber = span.Start |> SnapshotPointUtil.GetLineNumber
+                    let endingLineNumber = span.End |> SnapshotPointUtil.GetLineNumber
+                    if startingLineNumber = endingLineNumber then
+                        _operations.MoveCaretToPoint span.End ViewFlags.None
             | None ->
                 ()
 
@@ -736,14 +751,8 @@ type internal InsertMode
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
         let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
-        let wasCustomProcessed =
-            match result with
-            | CommandResult.Completed (ModeSwitch.NoSwitchWithArgument flags) ->
-                Util.IsFlagSet flags CommandResultFlags.CustomProcessed
-            | _ ->
-                false
 
-        if isContextSensitive || wasCustomProcessed then
+        if isContextSensitive then
             _textChangeTracker.StopTrackingEffectiveChange()
 
         if isEdit || (isMovement && _globalSettings.AtomicInsert) then

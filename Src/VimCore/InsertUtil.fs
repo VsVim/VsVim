@@ -611,9 +611,7 @@ type internal InsertUtil
 
         // Allow the host to custom process this message here.
         if _vimHost.TryCustomProcess _textView command then
-            CommandResultFlags.CustomProcessed
-            |> ModeSwitch.NoSwitchWithArgument
-            |> CommandResult.Completed
+            CommandResult.Completed ModeSwitch.NoSwitch
         else
             match command with
             | InsertCommand.Back -> x.Back()
