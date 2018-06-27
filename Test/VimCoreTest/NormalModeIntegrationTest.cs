@@ -3393,13 +3393,23 @@ namespace Vim.UnitTest
             /// with the user finishing or not finishing auto-inserted tokens
             /// </summary>
             [WpfTheory]
-            [InlineData("")]
-            [InlineData("\"")]
-            [InlineData("\")")]
-            [InlineData("\")]")]
-            public void ReSharperCompletion(string finish)
+            [InlineData(false, "")]
+            [InlineData(false, "\"")]
+            [InlineData(false, "\")")]
+            [InlineData(false, "\")]")]
+            public void ReSharperCompletion(bool atomic, string finish)
             {
+                // Any test with atomic set to true will fail. The closest
+                // is finishing all the tokens and then the repeated string
+                // produces "[C_Conditiona"DEBUG")]".
+
+                // This is a repro for issues #1353 and #1997. Even with
+                // atomic insert set, the calculated combined edit is wrong
+                // and exhibits the curious underscore and missing final
+                // letter described in those issues.
+
                 Create("xyzzy", "xyzzy", "");
+                _globalSettings.AtomicInsert = atomic;
                 _vimBuffer.ProcessNotation("cw["); // user
                 _textBuffer.Insert(1, "]"); // assistant
                 _textView.MoveCaretTo(1); // assistant
