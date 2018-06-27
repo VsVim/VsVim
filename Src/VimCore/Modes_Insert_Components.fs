@@ -208,6 +208,7 @@ type internal TextChangeTracker
         x.UpdateLastEditPoint args
 
     member x.OnPositionChanged (args: CaretPositionChangedEventArgs) =
+        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
         match _effectiveChangeData with
         | Some data ->
             _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }
@@ -296,7 +297,21 @@ type internal TextChangeTracker
             let mutable rightDeletions = data.RightDeletions
 
             let change = args.Changes.[0]
-            if change.OldSpan.End < leftEdge then
+            let virtualSpaces = data.CaretPosition.VirtualSpaces
+            if
+                virtualSpaces > 0
+                && change.OldSpan.Start = leftEdge
+                && change.OldSpan.End = rightEdge
+                && change.NewSpan.Start = leftEdge
+                && change.NewText.Length >= virtualSpaces
+                && change.NewText.Substring(0, virtualSpaces) |> StringUtil.IsBlanks
+            then
+
+                // Caret was moved from virtual space to non-virtual space.
+                leftEdge <- leftEdge + virtualSpaces
+                rightEdge <- change.NewSpan.End
+
+            elif change.OldSpan.End < leftEdge then
 
                 // Change entirely precedes the active region so shift the edges by the delta.
                 leftEdge <- leftEdge + change.Delta

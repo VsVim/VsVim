@@ -983,7 +983,6 @@ type internal InsertMode
     /// Need to be careful to not end the edit due to the caret moving as a result of 
     /// normal typing
     member x.OnCaretPositionChanged args = 
-        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
         _textChangeTracker.CompleteChange()
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
