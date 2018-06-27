@@ -793,7 +793,11 @@ type internal InsertMode
             transaction.Complete()
             _textChangeTracker.StartTrackingEffectiveChange()
             let transaction = x.CreateLinkedUndoTransaction name
-            _sessionData <- { _sessionData with Transaction = Some transaction }
+            _sessionData <- {
+                _sessionData with
+                    Transaction = Some transaction;
+                    SuppressEffectiveChange = false;
+            }
 
     /// Paste the contents of the specified register with the given flags 
     ///
