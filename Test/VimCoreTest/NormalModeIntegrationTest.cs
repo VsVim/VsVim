@@ -3368,6 +3368,74 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EffectiveChangeTests : NormalModeIntegrationTest
+        {
+            /// <summary>
+            /// An auto-inserted parenthesis should be repeated
+            /// </summary>
+            [WpfFact]
+            public void AutoInsertedParenthesis()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("i(");
+                _textBuffer.Insert(1, ")");
+                _textView.MoveCaretTo(1);
+                Assert.Equal("()", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(1, _textView.Caret.Position.BufferPosition.Position);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal("()()", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Detailed example of ReSharper completion with repeat
+            /// with the user finishing or not finishing auto-inserted tokens
+            /// </summary>
+            [WpfTheory]
+            [InlineData("")]
+            [InlineData("\"")]
+            [InlineData("\")")]
+            [InlineData("\")]")]
+            public void ReSharperCompletion(string finish)
+            {
+                Create("xyzzy", "xyzzy", "");
+                _vimBuffer.ProcessNotation("cw["); // user
+                _textBuffer.Insert(1, "]"); // assistant
+                _textView.MoveCaretTo(1); // assistant
+                _vimBuffer.ProcessNotation("Con"); // user
+                _textBuffer.Insert(4, "ditional"); // assistant
+                Assert.Equal("[Conditional]", _textBuffer.GetLine(0).GetText());
+                _textBuffer.Insert(12, "()"); // assistant
+                _textView.MoveCaretTo(13); // assistant
+                Assert.Equal("[Conditional()]", _textBuffer.GetLine(0).GetText());
+                _textBuffer.Replace(new Span(1, 11), "_\t"); // assistant
+                _textBuffer.Replace(new Span(1, 1), "Conditional"); // assistant
+                _textBuffer.Replace(new Span(12, 1), ""); // assistant
+                Assert.Equal("[Conditional()]", _textBuffer.GetLine(0).GetText());
+                _textView.MoveCaretTo(13); // assistant
+                _vimBuffer.ProcessNotation("\""); // user
+                _textBuffer.Insert(14, "\""); // assistant
+                _textView.MoveCaretTo(14); // assistant
+                Assert.Equal("[Conditional(\"\")]", _textBuffer.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("D"); // user
+                _textBuffer.Insert(15, "EBUG"); // assistant
+                Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(0).GetText());
+                foreach (var key in finish)
+                {
+                    _vimBuffer.Process(key); // user
+                    var span = new Span(_textView.Caret.Position.BufferPosition.Position, 1);
+                    _textBuffer.Delete(span); // assistant
+                    Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(0).GetText());
+                }
+                _vimBuffer.ProcessNotation("<Esc>"); // user
+                Assert.Equal(21, _textView.Caret.Position.BufferPosition.Position);
+                _textView.MoveCaretToLine(1); // unit test
+                _vimBuffer.ProcessNotation("."); // user
+                Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(1).GetText());
+            }
+        }
+
         public sealed class UndoTest : NormalModeIntegrationTest
         {
             /// <summary>
