@@ -542,30 +542,29 @@ type internal InsertMode
             && _textChangeTracker.IsEffectiveChangeInsert
         then
             match _textChangeTracker.EffectiveChange with
-            | Some span ->
-                if span.Length <> 0 then
+            | Some span when span.Length <> 0 ->
 
-                    // Override the piecewise combined edit command with
-                    // the effective change which is a simple insertion.
-                    span
-                    |> SnapshotSpanUtil.GetText
-                    |> TextChange.Insert
-                    |> InsertCommand.OfTextChange
-                    |> Some
-                    |> x.ChangeCombinedEditCommand
+                // Override the piecewise combined edit command with
+                // the effective change which is a simple insertion.
+                span
+                |> SnapshotSpanUtil.GetText
+                |> TextChange.Insert
+                |> InsertCommand.OfTextChange
+                |> Some
+                |> x.ChangeCombinedEditCommand
 
-                    // If the effective change is confined to one line then
-                    // move the caret to the end of the effective change.
-                    // This can happen if the editor auto-inserted matching
-                    // parentheses, quotes, brackets, etc. and the user
-                    // didn't "finish" them manually. We want the caret
-                    // and the final edit point to appear as if the user
-                    // had entered them directly.
-                    let startingLineNumber = span.Start |> SnapshotPointUtil.GetLineNumber
-                    let endingLineNumber = span.End |> SnapshotPointUtil.GetLineNumber
-                    if startingLineNumber = endingLineNumber then
-                        _operations.MoveCaretToPoint span.End ViewFlags.None
-            | None ->
+                // If the effective change is confined to one line then
+                // move the caret to the end of the effective change.
+                // This can happen if the editor auto-inserted matching
+                // parentheses, quotes, brackets, etc. and the user
+                // didn't "finish" them manually. We want the caret
+                // and the final edit point to appear as if the user
+                // had entered them directly.
+                let startingLineNumber = span.Start |> SnapshotPointUtil.GetLineNumber
+                let endingLineNumber = span.End |> SnapshotPointUtil.GetLineNumber
+                if startingLineNumber = endingLineNumber then
+                    _operations.MoveCaretToPoint span.End ViewFlags.None
+            | _ ->
                 ()
 
         try

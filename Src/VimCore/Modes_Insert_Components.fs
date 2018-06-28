@@ -48,16 +48,16 @@ type EffectiveChangeData = {
     // The current caret position
     CaretPosition: CaretPosition
 
-    /// The left edge of the active change
+    /// The left edge of the active insert region
     LeftEdge: int
 
-    /// The right edge of the active change
+    /// The right edge of the active insert region
     RightEdge: int
 
-    /// The total number of characters deleted to the left of the active change
+    /// The total number of characters deleted to the left of the active insert region
     LeftDeletions: int
 
-    /// The total number of character deleted to the right of the active change
+    /// The total number of character deleted to the right of the active insert region
     RightDeletions: int
 }
 
@@ -89,10 +89,12 @@ type internal TextChangeTracker
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
-        // Listen to caret position changed events
+        // Listen to caret position changed events.
         _textView.Caret.PositionChanged
         |> Observable.subscribe (fun args -> this.OnPositionChanged args)
         |> _bag.Add
+
+        // Dispose handlers when the text view is closed.
         _textView.Closed 
         |> Event.add (fun _ -> _bag.DisposeAll())
 
