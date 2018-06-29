@@ -1860,6 +1860,28 @@ type internal CommandUtil
         | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal ()
 
+    /// Move the caret to position of the mouse cursor
+    member x.MoveCaretToMouse () =
+        match TextViewUtil.GetTextViewLines _textView with
+        | Some textViewLines ->
+            match _mouseDevice.GetPosition _textView with
+            | Some position ->
+
+                // Move the caret to the current mouse position.
+                let x = position.X + _textView.ViewportLeft
+                let y = position.Y + _textView.ViewportTop
+                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(y)
+                if textViewLine <> null then
+                    _textView.Caret.MoveTo(textViewLine, x) |> ignore
+                    CommandResult.Completed ModeSwitch.NoSwitch
+                else
+                    CommandResult.Error
+            | None ->
+                CommandResult.Error
+        | None ->
+            CommandResult.Error
+
+
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
     member x.OpenFoldInSelection (visualSpan: VisualSpan) =
@@ -1965,23 +1987,16 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
-            match _mouseDevice.GetPosition _textView with
-            | None -> ()
-            | Some position ->
+        match x.MoveCaretToMouse() with
+        | CommandResult.Completed _ ->
 
-                // First move the caret to the current mouse position
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
-                _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
-
-                // Now run the put after command
-                let register = x.GetRegister (Some RegisterName.Unnamed)
-                x.EditWithUndoTransaction "Put after mouse" (fun () ->
-                    x.PutAfterCaretCore register.RegisterValue 1 false)
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+            // Run the put after command
+            let register = x.GetRegister (Some RegisterName.Unnamed)
+            x.EditWithUndoTransaction "Put after mouse" (fun () ->
+                x.PutAfterCaretCore register.RegisterValue 1 false)
+            CommandResult.Completed ModeSwitch.NoSwitch
+        | _ ->
+            CommandResult.Error
 
     /// Put the contents of the specified register before the cursor.  Used for the
     /// 'P' and 'gP' commands in normal mode
@@ -2725,6 +2740,7 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
+        | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault

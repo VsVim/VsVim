@@ -50,6 +50,22 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             }
         }
 
+        public override void PreprocessMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            // These methods get called for the entire mouse processing chain
+            // before calling PreprocessMouseDown (and there is not an equivalent
+            // for PreprocessMouseMiddleButtonDown).
+            this.PreprocessMouseDown(e);
+        }
+
+        public override void PreprocessMouseRightButtonDown(MouseButtonEventArgs e)
+        {
+            // These methods get called for the entire mouse processing chain
+            // before calling PreprocessMouseDown (and there is not an equivalent
+            // for PreprocessMouseMiddleButtonDown).
+            this.PreprocessMouseDown(e);
+        }
+
         public override void PreprocessMouseDown(MouseButtonEventArgs e)
         {
             switch (e.ChangedButton)

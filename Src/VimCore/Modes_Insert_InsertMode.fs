@@ -329,6 +329,7 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
+                ("<LeftMouse>", RawInsertCommand.CustomCommand this.SetCursorPosition)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -967,6 +968,22 @@ type internal InsertMode
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Set the cursor position with the mouse
+    member x.SetCursorPosition keyInput =
+        x.CancelWordCompletionSession()
+
+        // Because we are in a command, this won't invoke our caret position
+        // changed handler. As a result, we can tell the difference between
+        // a user using the mouse and a component programmatically changing
+        // the caret position.
+        match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
+        | CommandResult.Completed _ ->
+            x.BreakUndoSequence "Set cursor position"
+        | _ ->
+            ()
+
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 
@@ -1116,12 +1133,12 @@ type internal InsertMode
         _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
-    /// This is raised when caret changes.  If this is the result of a user click then 
-    /// we need to complete the change.
-    ///
-    /// Need to be careful to not end the edit due to the caret moving as a result of 
-    /// normal typing
+    /// Raised when the caret position changes
     member x.OnCaretPositionChanged args = 
+
+        // Because this is invoked only when are active but not processing a command, it means
+        // that some other component (e.g. a language service, ReSharper or Visual Assist)
+        // changed the caret position programmatically.
         _textChangeTracker.CompleteChange()
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
@@ -1161,12 +1178,10 @@ type internal InsertMode
             // Don't break the undo sequence if the caret was moved within the
             // active insertion region of the effective change. This allows code
             // assistants to perform a variety of edits without breaking the undo
-            // sequence. This is not strictly vim-compatible, but it is a minor
-            // point and until we can tell the difference between the user using
-            // the mouse and the caret being moved programmatically, we can bend
-            // the rules a little. In any case, we still break the undo sequence
-            // if the mouse is moved before or after the active insertion region,
-            // which is the main intent of the policy.
+            // sequence. With a little more work we could allow edits completely
+            // outside the active insertion region without breaking the undo
+            // sequence, and this would allow code assistants to e.g. automatically
+            // add usings and have the command still be repeatable.
             let breakUndoSequence =
                 match _textChangeTracker.EffectiveChange with
                 | Some span ->

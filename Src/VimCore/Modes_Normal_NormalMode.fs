@@ -163,6 +163,7 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("<LeftMouse>", CommandFlags.Special, NormalCommand.MoveCaretToMouse)
                 yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
