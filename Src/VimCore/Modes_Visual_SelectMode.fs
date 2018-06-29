@@ -36,6 +36,7 @@ type internal SelectMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
                 yield ("<C-a>", CommandFlags.Special, VisualCommand.SelectAll)
+                yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -172,7 +173,7 @@ type internal SelectMode
 
     /// Select Mode doesn't actually process any mouse keys.  Actual mouse events for
     /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) = true
 
     member x.Process keyInput = 
 

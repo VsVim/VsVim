@@ -3205,6 +3205,9 @@ type VisualCommand =
     /// Delete the selected text and put it into a register
     | DeleteSelection
 
+    /// Extend the selection to the mouse
+    | ExtendSelectionToMouse
+
     /// Extend the selection to the next match for the last pattern searched for
     | ExtendSelectionToNextMatch of SearchPath: SearchPath
 

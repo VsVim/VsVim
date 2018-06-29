@@ -1084,6 +1084,19 @@ type internal CommandUtil
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
+    /// Extend the selection to the mouse
+    member x.ExtendSelectionToMouse (visualSpan: VisualSpan) =
+        let startPoint =
+            if x.CaretPoint = visualSpan.Start then
+                visualSpan.End
+            else
+                visualSpan.Start
+            |> VirtualSnapshotPointUtil.OfPoint
+        x.MoveCaretToMouse() |> ignore
+        let endPoint = _textView.Caret.Position.VirtualBufferPosition
+        _textView.Selection.Select(startPoint, endPoint)
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Get a line range specifier
     member x.GetLineRangeSpecifier (lineRange: SnapshotLineRange) =
         let caretLine = TextViewUtil.GetCaretLine _textView
@@ -2810,6 +2823,7 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
+        | VisualCommand.ExtendSelectionToMouse -> x.ExtendSelectionToMouse visualSpan
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan

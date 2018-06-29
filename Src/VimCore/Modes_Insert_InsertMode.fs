@@ -287,7 +287,7 @@ type internal InsertMode
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
-    let mutable (_leftMouseStart: SnapshotPoint option) = None
+    let mutable (_leftMouseStart: VirtualSnapshotPoint option) = None
 
     do
         // Caret changes can end a text change operation.
@@ -982,7 +982,7 @@ type internal InsertMode
         match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
         | CommandResult.Completed _ ->
             x.BreakUndoSequence "Set cursor position"
-            _leftMouseStart <- Some x.CaretPoint
+            _leftMouseStart <- Some _textView.Caret.Position.VirtualBufferPosition
         | _ ->
             ()
 
@@ -995,15 +995,9 @@ type internal InsertMode
         | Some startPoint ->
             match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
             | CommandResult.Completed _ ->
-                let endPoint = x.CaretPoint
+                let endPoint = _textView.Caret.Position.VirtualBufferPosition
                 if startPoint <> endPoint then
-                    let startPoint, endPoint, isReversed =
-                        if startPoint.Position < endPoint.Position then
-                            startPoint, endPoint, false
-                        else
-                            endPoint, startPoint, true
-                    let span = SnapshotSpan(startPoint, endPoint)
-                    _textView.Selection.Select(span, isReversed)
+                    _textView.Selection.Select(startPoint, endPoint)
                     ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.SelectCharacter)
                 else
                     ProcessResult.Handled ModeSwitch.NoSwitch
