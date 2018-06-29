@@ -782,7 +782,7 @@ type internal InsertMode
             | _ -> 
 
                 // All other commands break the undo sequence.
-                x.BreakUndoSequence "Insert after motion"
+                x.BreakUndoSequence "Insert after motion" 
 
         ProcessResult.OfCommandResult result
 
@@ -1033,7 +1033,7 @@ type internal InsertMode
                     true
 
             if breakUndoSequence then
-                x.BreakUndoSequence "Insert after motion" 
+                x.BreakUndoSequence "Insert after motion"
                 x.ChangeCombinedEditCommand None
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
