@@ -287,6 +287,7 @@ type internal InsertMode
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
+    let mutable (_leftMouseStart: SnapshotPoint option) = None
 
     do
         // Caret changes can end a text change operation.
@@ -329,7 +330,9 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
-                ("<LeftMouse>", RawInsertCommand.CustomCommand this.SetCursorPosition)
+                ("<LeftMouse>", RawInsertCommand.CustomCommand this.LeftMouseDown)
+                ("<LeftDrag>", RawInsertCommand.CustomCommand this.LeftMouseDrag)
+                ("<LeftRelease>", RawInsertCommand.CustomCommand this.LeftMouseUp)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -968,8 +971,8 @@ type internal InsertMode
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Set the cursor position with the mouse
-    member x.SetCursorPosition keyInput =
+    /// Left mouse down
+    member x.LeftMouseDown keyInput =
         x.CancelWordCompletionSession()
 
         // Because we are in a command, this won't invoke our caret position
@@ -979,9 +982,40 @@ type internal InsertMode
         match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
         | CommandResult.Completed _ ->
             x.BreakUndoSequence "Set cursor position"
+            _leftMouseStart <- Some x.CaretPoint
         | _ ->
             ()
 
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Left mouse drag
+    member x.LeftMouseDrag keyInput =
+
+        match _leftMouseStart with
+        | Some startPoint ->
+            match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
+            | CommandResult.Completed _ ->
+                let endPoint = x.CaretPoint
+                if startPoint <> endPoint then
+                    let startPoint, endPoint, isReversed =
+                        if startPoint.Position < endPoint.Position then
+                            startPoint, endPoint, false
+                        else
+                            endPoint, startPoint, true
+                    let span = SnapshotSpan(startPoint, endPoint)
+                    _textView.Selection.Select(span, isReversed)
+                    ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.SelectCharacter)
+                else
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+            | _ ->
+                ProcessResult.Handled ModeSwitch.NoSwitch
+        | None ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
+
+    /// Left mouse up
+    member x.LeftMouseUp keyInput =
+        _leftMouseStart <- None
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
