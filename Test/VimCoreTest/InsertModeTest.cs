@@ -79,6 +79,7 @@ namespace Vim.UnitTest
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _broker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _insertUtil = _factory.Create<IInsertUtil>();
+            _insertUtil.Setup(x => x.NewUndoSequence());
             _motionUtil = _factory.Create<IMotionUtil>();
             _commandUtil = _factory.Create<ICommandUtil>();
             _capture = _factory.Create<IMotionCapture>();

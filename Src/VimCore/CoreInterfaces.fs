@@ -3114,6 +3114,9 @@ type InsertCommand  =
     /// Shift the current line one indent width to the right
     | ShiftLineRight
 
+    /// Undo replace
+    | UndoReplace
+
     /// Delete non-blank characters before cursor on current line
     | DeleteLineBeforeCursor
 
@@ -3168,6 +3171,7 @@ type InsertCommand  =
         | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
+        | InsertCommand.UndoReplace -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
         | InsertCommand.Paste -> None
 
@@ -3375,6 +3379,9 @@ type internal IInsertUtil =
 
     /// Repeat the given edit series. 
     abstract RepeatBlock: command: InsertCommand -> atEndOfLine: bool -> blockSpan: BlockSpan -> string option
+
+    /// Signal that a new undo sequence is in effect
+    abstract NewUndoSequence: unit -> unit
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to repeat a Command instance across

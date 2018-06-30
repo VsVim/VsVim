@@ -447,12 +447,20 @@ type internal InsertMode
 
                 // Map any insert commands to their replacement counterparts.
                 match rawInsertCommand with
-                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterAboveCaret, flags) ->
-                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterAboveCaret, flags)
-                    |> Some
-                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterBelowCaret, flags) ->
-                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterBelowCaret, flags)
-                    |> Some
+                | RawInsertCommand.InsertCommand (keyInput, command, flags) ->
+                    let replaceCommand =
+                        match command with
+                        | InsertCommand.Back ->
+                            Some InsertCommand.UndoReplace
+                        | InsertCommand.InsertCharacterAboveCaret ->
+                            Some InsertCommand.ReplaceCharacterAboveCaret
+                        | InsertCommand.InsertCharacterBelowCaret ->
+                            Some InsertCommand.ReplaceCharacterBelowCaret
+                        | _ -> None
+                    match replaceCommand with
+                    | Some replaceCommand ->
+                        RawInsertCommand.InsertCommand (keyInput, replaceCommand, flags) |> Some
+                    | None -> Some rawInsertCommand
                 | _ -> Some rawInsertCommand
             else
                 Some rawInsertCommand
@@ -735,17 +743,15 @@ type internal InsertMode
             match command with
             | InsertCommand.ShiftLineLeft -> ()
             | InsertCommand.ShiftLineRight -> ()
-            | InsertCommand.InsertCharacterAboveCaret -> ()
-            | InsertCommand.InsertCharacterBelowCaret -> ()
-            | InsertCommand.ReplaceCharacterAboveCaret -> ()
-            | InsertCommand.ReplaceCharacterBelowCaret -> ()
             | _ -> 
-                // All other commands break the undo sequence
+
+                // All other commands break the undo sequence.
                 x.BreakUndoSequence "Insert after motion" 
 
         ProcessResult.OfCommandResult result
 
     member x.BreakUndoSequence name =
+        _insertUtil.NewUndoSequence()
         match _sessionData.Transaction with
         | None -> ()
         | Some transaction ->
@@ -1054,6 +1060,7 @@ type internal InsertMode
     /// ModeArgument value. 
     member x.OnEnter arg =
         x.EnsureCommandsBuilt()
+        _insertUtil.NewUndoSequence()
 
         // Record start point upon initial entry to insert mode
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
