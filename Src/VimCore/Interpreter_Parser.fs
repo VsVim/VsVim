@@ -836,6 +836,7 @@ type Parser
             | LineCommand.Redo -> noRangeCommand
             | LineCommand.RemoveAutoCommands _ -> noRangeCommand
             | LineCommand.Retab (_, hasBang, tabStop) -> LineCommand.Retab (lineRange, hasBang, tabStop)
+            | LineCommand.RunCSharpScript _ -> noRangeCommand
             | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
             | LineCommand.Set _ -> noRangeCommand
             | LineCommand.ShellCommand _ -> noRangeCommand
@@ -1481,6 +1482,10 @@ type Parser
             | _ -> ParseResult.Succeeded flags
 
         inner LineCommandFlags.None
+
+    member x.ParseRunCSharpScript(name) =
+
+        LineCommand.RunCSharpScript name
 
     /// Parse out the substitute command.  This should be called with the index just after
     /// the end of the :substitute word
@@ -2427,7 +2432,8 @@ type Parser
                 | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
                 | "!" -> x.ParseShellCommand lineRange
                 | "@" -> x.ParseAtCommand lineRange
-                | _ -> LineCommand.ParseError Resources.Parser_Error
+                | _ -> x.ParseRunCSharpScript name
+                //| _ -> LineCommand.ParseError Resources.Parser_Error
 
             handleParseResult parseResult
 

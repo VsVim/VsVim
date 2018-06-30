@@ -7,6 +7,9 @@ open Vim.VimCoreExtensions
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
+open Microsoft.CodeAnalysis.CSharp.Scripting
+open System
+open Microsoft.CodeAnalysis.Scripting
 
 [<RequireQualifiedAccess>]
 type DefaultLineRange =
@@ -223,6 +226,11 @@ type ExpressionInterpreter
         | BinaryKind.Modulo -> notSupported()
         | BinaryKind.Multiply -> notSupported()
         | BinaryKind.Subtract -> notSupported()
+
+type ScriptGlobal (_name:string , _vimBuffer: IVimBuffer, _statusUtil:IStatusUtil)= 
+    member x.Name = _name
+    member x.VimBuffer = _vimBuffer
+    member x.StatusUtil = _statusUtil
 
 [<Sealed>]
 [<Class>]
@@ -509,6 +517,22 @@ type VimInterpreter
             else
                 // Setting the global directory will clear out the local directory for the window
                 _vimBuffer.CurrentDirectory <- Some directoryPath
+
+    member x.RunCSharpScript (commandName:string) = 
+        let scriptPath = 
+            Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),System.String.Format("{0}.csx",commandName))
+
+        if File.Exists(scriptPath) then
+            try
+                let param = new ScriptGlobal(commandName,_vimBuffer,_statusUtil)
+                let script = 
+                    CSharpScript.Create(File.ReadAllText(scriptPath),ScriptOptions.Default,typeof<ScriptGlobal>)
+                script.RunAsync(param) |> ignore
+            with 
+                ex ->  _statusUtil.OnError (ex.ToString())
+        else
+            _statusUtil.OnError ("ScriptFile Not Found")
+            
 
     member x.RunCopyOrMoveTo sourceLineRange destLineRange count transactionName editOperation = 
 
@@ -1794,6 +1818,7 @@ type VimInterpreter
         | LineCommand.Redo -> x.RunRedo()
         | LineCommand.RemoveAutoCommands autoCommandDefinition -> x.RemoveAutoCommands autoCommandDefinition
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
+        | LineCommand.RunCSharpScript (scriptName) -> x.RunCSharpScript scriptName
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
         | LineCommand.ShellCommand (lineRange, command) -> x.RunShellCommand lineRange command
