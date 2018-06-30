@@ -102,6 +102,7 @@ type internal VisualMode
                 yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
                 yield ("g<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection true)
                 yield ("g<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection true)
+                yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -148,9 +149,7 @@ type internal VisualMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
-    /// Visual Mode doesn't actually process any mouse keys.  Actual mouse events for
-    /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) = true
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()

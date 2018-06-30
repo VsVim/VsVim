@@ -1001,7 +1001,9 @@ type internal InsertMode
                 let endPoint = _textView.Caret.Position.VirtualBufferPosition
                 if startPoint <> endPoint then
                     _textView.Selection.Select(startPoint, endPoint)
-                    ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.SelectCharacter)
+                    let useSelect = Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse
+                    let modeKind = if useSelect then ModeKind.SelectCharacter else ModeKind.VisualCharacter
+                    ProcessResult.Handled (ModeSwitch.SwitchMode modeKind)
                 else
                     ProcessResult.Handled ModeSwitch.NoSwitch
             | _ ->
