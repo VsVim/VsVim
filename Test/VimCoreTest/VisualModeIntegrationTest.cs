@@ -1947,22 +1947,6 @@ namespace Vim.UnitTest
 
         public sealed class CanProcessTest : VisualModeIntegrationTest
         {
-            /// <summary>
-            /// Visual Mode itself doesn't actually process mouse commands.  That is the job of
-            /// the selection mode tracker.
-            /// </summary>
-            [WpfFact]
-            public void MouseCommands()
-            {
-                Create("");
-                _vimBuffer.Process("v");
-                foreach (var keyInput in KeyInputUtil.VimKeyInputList.Where(x => x.IsMouseKey))
-                {
-                    var ret = _vimBuffer.CanProcess(keyInput);
-                    Assert.False(_vimBuffer.CanProcess(keyInput));
-                }
-            }
-
             [WpfFact]
             public void Simple()
             {
@@ -3299,7 +3283,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 _vimBuffer.ProcessNotation("vl");
-                Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
+                Assert.False(_vimBuffer.CanProcess(VimKey.LeftRelease));
             }
 
             [WpfFact]

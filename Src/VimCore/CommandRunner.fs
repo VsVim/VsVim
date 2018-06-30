@@ -409,6 +409,11 @@ type internal CommandRunner
             match _runBindData with
             | None -> KeyRemapMode.None
             | Some bindData -> bindData.KeyRemapMode
+        member x.DoesCommandStartWith keyInput =
+            let name = KeyInputSet.OneKeyInput keyInput
+            _commandMap
+            |> Seq.filter (fun pair -> pair.Value.KeyInputSet.StartsWith name)
+            |> SeqUtil.isNotEmpty
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name
         member x.ResetState () = x.ResetState()

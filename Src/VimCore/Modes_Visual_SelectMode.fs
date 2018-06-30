@@ -171,7 +171,8 @@ type internal SelectMode
             replaceSelection span text
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
-    member x.CanProcess (keyInput: KeyInput) = true
+    member x.CanProcess (keyInput: KeyInput) =
+        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
 
     member x.Process keyInput = 
 

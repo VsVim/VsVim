@@ -909,7 +909,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world");
                 _vimBuffer.ProcessNotation("vl");
-                Assert.False(_vimBuffer.CanProcess(VimKey.LeftDrag));
+                Assert.False(_vimBuffer.CanProcess(VimKey.LeftRelease));
             }
         }
     }

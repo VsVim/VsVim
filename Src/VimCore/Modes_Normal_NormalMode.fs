@@ -352,15 +352,9 @@ type internal NormalMode
         _data <- EmptyData
 
     member x.CanProcess (keyInput: KeyInput) =
-        let doesCommandStartWith (keyInput: KeyInput) =
-            let name = KeyInputSet(keyInput)
-            _runner.Commands 
-            |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
-            |> SeqUtil.isNotEmpty
-
         if _runner.IsWaitingForMoreInput then 
             true
-        elif doesCommandStartWith keyInput then 
+        elif _runner.DoesCommandStartWith keyInput then
             true
         elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
 

@@ -3865,6 +3865,9 @@ type ICommandRunner =
     /// List of processed KeyInputs in the order in which they were typed
     abstract Inputs: KeyInput list
     
+    /// Whether a command starts with the specified key input
+    abstract DoesCommandStartWith: KeyInput -> bool
+
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
     abstract Add: CommandBinding -> unit

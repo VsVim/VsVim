@@ -149,7 +149,8 @@ type internal VisualMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
-    member x.CanProcess (keyInput: KeyInput) = true
+    member x.CanProcess (keyInput: KeyInput) =
+        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
