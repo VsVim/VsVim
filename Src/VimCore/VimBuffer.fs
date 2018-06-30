@@ -25,8 +25,8 @@ type VimBufferData
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
 
-    member x.CurrentFilePath = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer
-    member x.CurrentFileName =
+    member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
+    member x.CurrentFileName : string option =
         let filePath = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer
         let cd = match _currentDirectory with Some s -> s | None -> _vimTextBuffer.Vim.VimData.CurrentDirectory
         let rec stripPrefix (p1:string list) (p2:string list) = 
@@ -36,7 +36,7 @@ type VimBufferData
                 stripPrefix (List.tail p1) (List.tail p2)
         let splitPath (path:string) =
             path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) |> List.ofArray
-        stripPrefix (splitPath cd) (splitPath filePath) |> String.concat (StringUtil.OfChar Path.DirectorySeparatorChar)
+        stripPrefix (splitPath cd) (splitPath filePath) |> String.concat (StringUtil.OfChar Path.DirectorySeparatorChar) |> Some
 
     interface IVimBufferData with
         member x.CurrentDirectory 

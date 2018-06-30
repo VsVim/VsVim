@@ -350,7 +350,7 @@ type FunctionDefinition = {
 
 /// See :help filename-modifiers
 [<RequireQualifiedAccess>]
-type FilenameModifier =
+type FileNameModifier =
     /// :e
     | Extension
     /// :h
@@ -362,14 +362,30 @@ type FilenameModifier =
     /// :t
     | Tail
 
-/// 
+    member x.Char =
+        match x with
+        | Extension -> 'e'
+        | Head -> 'h'
+        | PathFull -> 'p'
+        | Root -> 'r'
+        | Tail -> 't'
+
+    static member OfChar c =
+        match c with
+        | 'e' -> Some FileNameModifier.Extension
+        | 'h' -> Some FileNameModifier.Head
+        | 'p' -> Some FileNameModifier.PathFull
+        | 'r' -> Some FileNameModifier.Root
+        | 't' -> Some FileNameModifier.Tail
+        | _ -> None
+
 [<RequireQualifiedAccess>]
 type SymbolicPathComponent =
     /// '%' + modifiers
-    | CurrentFilename of FilenameModifier list
+    | CurrentFileName of FileNameModifier list
     /// '#' + modifiers
     // TODO: depends on PR #2139
-    //| AlternateFilename of FilenameModifier list
+    //| AlternateFileName of FileNameModifier list
     /// Literal text
     | Literal of string
 

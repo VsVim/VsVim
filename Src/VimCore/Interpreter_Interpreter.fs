@@ -1842,11 +1842,11 @@ type VimInterpreter
             | SymbolicPathComponent.Literal literal::tail -> 
                 sb.AppendString literal
                 inner sb tail
-            | SymbolicPathComponent.CurrentFilename modifiers::tail -> 
+            | SymbolicPathComponent.CurrentFileName modifiers::tail -> 
                 let path = 
                     match modifiers with
-                    | FilenameModifier.PathFull::tail -> x.ApplyFilenameModifiers _vimBufferData.CurrentFilePath tail
-                    | _ -> x.ApplyFilenameModifiers _vimBufferData.CurrentFileName modifiers
+                    | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers _vimBufferData.CurrentFilePath tail
+                    | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentFileName modifiers
                 path |> sb.AppendString
                 inner sb tail
             // TODO: depends on PR #2139
@@ -1854,11 +1854,11 @@ type VimInterpreter
             // These simply call out the need for calculated paths analogous to _vimBufferData.CurrentFile[Path|Name].
             // As with '%', both a rooted path '#:p' and a prefix-stripped path '#' are needed to maintain consistency with Vim.
 
-            //| SymbolicPathComponent.AlternateFilename modifiers::tail ->
+            //| SymbolicPathComponent.AlternateFileName modifiers::tail ->
             //    let path =
             //        match modifiers with
-            //        | FilenameModifier.PathFull::tail -> x.ApplyFilenameModifiers _vimData.AlternateFilePath tail
-            //        | _ -> x.ApplyFilenameModifiers _vimData.AlternateFileName modifiers
+            //        | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers _vimData.AlternateFilePath tail
+            //        | _ -> x.ApplyFileNameModifiers _vimData.AlternateFileName modifiers
             //    path |> sb.AppendString
             //    inner sb tail
             | [] -> ()
@@ -1867,30 +1867,32 @@ type VimInterpreter
         inner builder symbolicPath
         builder.ToString()
 
-    member x.ApplyFilenameModifiers path modifiers : string =
+    member x.ApplyFileNameModifiers path modifiers : string =
         let rec inner path modifiers : string =
             match path with
             | "" -> ""
             | _ ->
                 match modifiers with
-                | FilenameModifier.Head::tail -> 
+                | FileNameModifier.Head::tail -> 
                     match Path.GetDirectoryName path with
                     | "" -> "."
                     | d -> inner d tail
-                | FilenameModifier.Tail::tail -> inner (Path.GetFileName path) tail
-                | FilenameModifier.Root::tail when path.StartsWith(".") -> inner path tail
-                | FilenameModifier.Root::tail -> 
+                | FileNameModifier.Tail::tail -> inner (Path.GetFileName path) tail
+                | FileNameModifier.Root::tail when path.StartsWith(".") -> inner path tail
+                | FileNameModifier.Root::tail -> 
                     let s = path.Substring(0, path.Length - (Path.GetExtension path).Length)
                     inner s tail
-                | FilenameModifier.Extension::_ when path.StartsWith(".") -> ""
-                | FilenameModifier.Extension::tail ->
-                    let tailNew = List.skipWhile (fun m -> m = FilenameModifier.Extension) tail
+                | FileNameModifier.Extension::_ when path.StartsWith(".") -> ""
+                | FileNameModifier.Extension::tail ->
+                    let tailNew = List.skipWhile (fun m -> m = FileNameModifier.Extension) tail
                     let count = 1 + (tail.Length - tailNew.Length)
                     let exts = Array.tail ((Path.GetFileName path).Split('.'))
                     let ext = Array.skip (exts.Length - count) exts |> String.concat "."
                     inner ext tailNew
                 | _ -> path
-        inner path modifiers
+        match path with
+        | None -> ""
+        | Some path -> inner path modifiers
 
     interface IVimInterpreter with
         member x.GetLine lineSpecifier = x.GetLine lineSpecifier

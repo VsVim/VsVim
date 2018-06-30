@@ -2610,28 +2610,33 @@ type Parser
                 rest [lineCommand]
         inner (fun all -> all) 
                 
-    member x.ParseFilenameModifiers : FilenameModifier list =
-        let rec inner (modifiers:FilenameModifier list) : FilenameModifier list =
+    member x.ParseFileNameModifiers : FileNameModifier list =
+        let rec inner (modifiers:FileNameModifier list) : FileNameModifier list =
             match _tokenizer.CurrentTokenKind with
             | TokenKind.Character ':' ->
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextChar()
                 let c = _tokenizer.CurrentChar
                 _tokenizer.MoveNextChar()
-                match c with
-                | 'p' when modifiers.IsEmpty -> 
-                    // Note that 'p' is only valid when it is the first modifier -- violations end the modifier sequence
-                    inner (FilenameModifier.PathFull::modifiers)
-                | 't' when not (List.exists (fun m -> m = FilenameModifier.Root || m = FilenameModifier.Extension || m = FilenameModifier.Tail) modifiers) ->
-                    // 't' must precede 'r' and 'e' and cannot be repeated -- violations end the modifier sequence
-                    inner (FilenameModifier.Tail::modifiers)
-                | 'h' when not (List.exists (fun m -> m = FilenameModifier.Root || m = FilenameModifier.Extension || m = FilenameModifier.Tail) modifiers) ->
-                    // 'h' should not follow 'e', 't', or 'r'
-                    inner (FilenameModifier.Head::modifiers)
-                | 'r' -> inner (FilenameModifier.Root::modifiers)
-                | 'e' -> inner (FilenameModifier.Extension::modifiers)
-                | _ ->
-                    // Stop processing modifiers if we encounter an unrecognized or invalid modifier character. Unconsume the last character and yield the modifiers so far.
+                match FileNameModifier.OfChar c with
+                | Some m ->
+                    match m with 
+                    | FileNameModifier.PathFull when modifiers.IsEmpty -> 
+                        // Note that 'p' is only valid when it is the first modifier -- violations end the modifier sequence
+                        inner (m::modifiers)
+                    | FileNameModifier.Tail when not (List.exists (fun m -> m = FileNameModifier.Root || m = FileNameModifier.Extension || m = FileNameModifier.Tail) modifiers) ->
+                        // 't' must precede 'r' and 'e' and cannot be repeated -- violations end the modifier sequence
+                        inner (m::modifiers)
+                    | FileNameModifier.Head when not (List.exists (fun m -> m = FileNameModifier.Root || m = FileNameModifier.Extension || m = FileNameModifier.Tail) modifiers) ->
+                        // 'h' should not follow 'e', 't', or 'r'
+                        inner (m::modifiers)
+                    | FileNameModifier.Root -> inner (m::modifiers)
+                    | FileNameModifier.Extension -> inner (m::modifiers)
+                    | _ -> 
+                        // Stop processing if we encounter an unrecognized modifier character. Unconsume the last character and yield the modifiers so far.
+                        _tokenizer.MoveToMark mark
+                        modifiers
+                | None ->
                     _tokenizer.MoveToMark mark
                     modifiers
             | _ -> modifiers
@@ -2659,12 +2664,12 @@ type Parser
                         inner (SymbolicPathComponent.Literal "\\"::components)
                 | TokenKind.Character '%' ->
                     _tokenizer.MoveNextChar()
-                    let modifiers = SymbolicPathComponent.CurrentFilename x.ParseFilenameModifiers
+                    let modifiers = SymbolicPathComponent.CurrentFileName x.ParseFileNameModifiers
                     inner (modifiers::components)
                 // TODO: depends on PR #2139
                 //| TokenKind.Character '#' ->
                 //    _tokenizer.MoveNextChar()
-                //    let modifiers = SymbolicPathComponent.AlternateFilename x.ParseFilenameModifiers
+                //    let modifiers = SymbolicPathComponent.AlternateFileName x.ParseFileNameModifiers
                 //    inner (modifiers::components)
                 | _ ->
                     let literal = _tokenizer.CurrentToken.TokenText
