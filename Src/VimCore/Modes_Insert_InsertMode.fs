@@ -186,6 +186,9 @@ type ActiveEditItem =
     /// In the middle of a digraph operation. Wait for the second digraph key
     | Digraph2 of KeyInput
 
+    /// The left mouse button is down and might be dragged
+    | LeftMouseDown of VirtualSnapshotPoint
+
     /// No active items
     | None
 
@@ -287,7 +290,6 @@ type internal InsertMode
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
-    let mutable (_leftMouseStart: VirtualSnapshotPoint option) = None
 
     do
         // Caret changes can end a text change operation.
@@ -982,7 +984,8 @@ type internal InsertMode
         match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
         | CommandResult.Completed _ ->
             x.BreakUndoSequence "Set cursor position"
-            _leftMouseStart <- Some _textView.Caret.Position.VirtualBufferPosition
+            let position = _textView.Caret.Position.VirtualBufferPosition
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.LeftMouseDown position }
         | _ ->
             ()
 
@@ -991,8 +994,8 @@ type internal InsertMode
     /// Left mouse drag
     member x.LeftMouseDrag keyInput =
 
-        match _leftMouseStart with
-        | Some startPoint ->
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.LeftMouseDown startPoint ->
             match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
             | CommandResult.Completed _ ->
                 let endPoint = _textView.Caret.Position.VirtualBufferPosition
@@ -1003,13 +1006,13 @@ type internal InsertMode
                     ProcessResult.Handled ModeSwitch.NoSwitch
             | _ ->
                 ProcessResult.Handled ModeSwitch.NoSwitch
-        | None ->
+        | _ ->
             ProcessResult.Handled ModeSwitch.NoSwitch
 
 
     /// Left mouse up
     member x.LeftMouseUp keyInput =
-        _leftMouseStart <- None
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
@@ -1133,7 +1136,9 @@ type internal InsertMode
             x.Paste keyInput pasteFlags
         | ActiveEditItem.OverwriteReplace ->
             x.Paste keyInput PasteFlags.None
-        | ActiveEditItem.None -> 
+        | ActiveEditItem.None
+        | ActiveEditItem.LeftMouseDown _
+            ->
 
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
