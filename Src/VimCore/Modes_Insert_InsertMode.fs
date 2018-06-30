@@ -1000,21 +1000,30 @@ type internal InsertMode
             | CommandResult.Completed _ ->
                 let endPoint = _textView.Caret.Position.VirtualBufferPosition
                 if startPoint <> endPoint then
+
+                    // The drag moved far enough to encompass at least one character,
+                    // so select the text and let the selection change tracker choose
+                    // which mode we will go into.
+                    _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
                     _textView.Selection.Select(startPoint, endPoint)
-                    let useSelect = Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse
-                    let modeKind = if useSelect then ModeKind.SelectCharacter else ModeKind.VisualCharacter
-                    ProcessResult.Handled (ModeSwitch.SwitchMode modeKind)
-                else
-                    ProcessResult.Handled ModeSwitch.NoSwitch
+                    ()
             | _ ->
-                ProcessResult.Handled ModeSwitch.NoSwitch
+                ()
         | _ ->
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            ()
+
+        ProcessResult.Handled ModeSwitch.NoSwitch
 
 
     /// Left mouse up
     member x.LeftMouseUp keyInput =
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
+        match _sessionData.ActiveEditItem with
+        | ActiveEditItem.LeftMouseDown _ ->
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        | _ ->
+            ()
+
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
