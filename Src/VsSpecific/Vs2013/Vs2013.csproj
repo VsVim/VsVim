@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio.Vs2013</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Vs2013</AssemblyName>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_2013</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

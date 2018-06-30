@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio</RootNamespace>
     <AssemblyName>VsVim</AssemblyName>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <StartAction>Program</StartAction>
     <UseCodebase>true</UseCodebase>
     <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
@@ -119,6 +119,7 @@
   <PropertyGroup>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.8.2" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="15.5.72" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.0.0.0" />
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
