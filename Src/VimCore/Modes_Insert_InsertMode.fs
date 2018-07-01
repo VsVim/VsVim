@@ -552,18 +552,6 @@ type internal InsertMode
                 |> InsertCommand.OfTextChange
                 |> Some
                 |> x.ChangeCombinedEditCommand
-
-                // If the effective change is confined to one line then
-                // move the caret to the end of the effective change.
-                // This can happen if the editor auto-inserted matching
-                // parentheses, quotes, brackets, etc. and the user
-                // didn't "finish" them manually. We want the caret
-                // and the final edit point to appear as if the user
-                // had entered them directly.
-                let startingLineNumber = span.Start |> SnapshotPointUtil.GetLineNumber
-                let endingLineNumber = span.End |> SnapshotPointUtil.GetLineNumber
-                if startingLineNumber = endingLineNumber then
-                    _operations.MoveCaretToPoint span.End ViewFlags.None
             | _ ->
                 ()
 

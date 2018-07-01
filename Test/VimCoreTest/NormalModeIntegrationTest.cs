@@ -3382,7 +3382,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 Assert.Equal("()", _textBuffer.GetLine(0).GetText());
                 _vimBuffer.ProcessNotation("<Esc>");
-                Assert.Equal(1, _textView.Caret.Position.BufferPosition.Position);
                 _textView.MoveCaretTo(0);
                 _vimBuffer.ProcessNotation(".");
                 Assert.Equal("()()", _textBuffer.GetLine(0).GetText());
@@ -3439,7 +3438,6 @@ namespace Vim.UnitTest
                     Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(0).GetText());
                 }
                 _vimBuffer.ProcessNotation("<Esc>"); // user
-                Assert.Equal(21, _textView.Caret.Position.BufferPosition.Position);
                 _textView.MoveCaretToLine(1); // unit test
                 _vimBuffer.ProcessNotation("."); // user
                 Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(1).GetText());
