@@ -883,8 +883,8 @@ type internal CommandUtil
             let builder = StringBuilder()
             for i = 0 to bytes.Length - 1 do
                 let str = sprintf "%02x" bytes.[i]
-                builder.AppendString str
                 if i > 0 then builder.AppendChar ' '
+                builder.AppendString str
             _statusUtil.OnStatus (builder.ToString())
         CommandResult.Completed ModeSwitch.NoSwitch
 
