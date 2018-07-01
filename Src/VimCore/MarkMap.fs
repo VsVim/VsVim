@@ -127,7 +127,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             let column = point.Position.Position - textLine.Start.Position
             let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
             let name = vimBufferData.Vim.VimHost.GetName point.Position.Snapshot.TextBuffer
-            Some (mark.Char, name, line, column)
+            MarkInfo(mark.Char, name, line, column) |> Some
 
         match mark with
         | Mark.GlobalMark letter ->
@@ -135,7 +135,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             | Some point -> getPointInfo point
             | None ->
                 match _globalUnloadedMarkMap.TryFind letter with
-                | Some (name, line, column) -> Some (mark.Char, name, line, column)
+                | Some (name, line, column) -> MarkInfo(mark.Char, name, line, column) |> Some
                 | None -> None
         |_ ->
             match x.GetMark mark vimBufferData with

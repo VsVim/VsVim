@@ -1455,10 +1455,12 @@ type internal CommandUtil
                 // mark, but the buffer has been unloaded.
                 match markMap.GetMarkInfo mark _vimBufferData with
                 | None -> markNotSet()
-                | Some (_, name, line, column) ->
+                | Some markInfo ->
                     let vimHost = _vimBufferData.Vim.VimHost
-                    let column = if exact then Some column else None
-                    vimHost.LoadFileIntoNewWindow name (Some line) column |> ignore
+                    let name = markInfo.Name
+                    let line = Some markInfo.Line
+                    let column = if exact then Some markInfo.Column else None
+                    vimHost.LoadFileIntoNewWindow name line column |> ignore
                     CommandResult.Completed ModeSwitch.NoSwitch
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then

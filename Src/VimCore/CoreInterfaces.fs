@@ -4127,6 +4127,27 @@ type RunCommandResults
 
     member x.Error = _error
 
+/// Information associated with a mark
+type MarkInfo
+    (
+        _ident: char,
+        _name: string,
+        _line: int,
+        _column: int
+    ) =
+
+    /// The character used to identify the mark
+    member x.Ident = _ident
+
+    /// The name of the buffer the mark is in
+    member x.Name = _name
+
+    /// The line of the mark
+    member x.Line = _line
+
+    /// The column of the mark
+    member x.Column = _column
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
@@ -4510,8 +4531,8 @@ and IMarkMap =
     /// Get the mark for the given char for the IVimTextBuffer
     abstract GetMark: mark: Mark -> vimBufferData: IVimBufferData -> VirtualSnapshotPoint option
 
-    /// Get the mark info for the given char for the IVimTextBuffer
-    abstract GetMarkInfo: mark: Mark -> vimBufferData: IVimBufferData -> (char * string * int * int) option
+    /// Get the mark info for the given mark for the IVimTextBuffer
+    abstract GetMarkInfo: mark: Mark -> vimBufferData: IVimBufferData -> MarkInfo option
 
     /// Get the current value of the specified global mark
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option

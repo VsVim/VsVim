@@ -736,7 +736,13 @@ type VimInterpreter
         let printMarkInfo info =
             let ident, name, line, column = info
             sprintf " %c  %5d%5d %s" ident (line + 1) column name
-        let getMark (mark: Mark) = _markMap.GetMarkInfo mark _vimBufferData
+        let getMark (mark: Mark) =
+            match _markMap.GetMarkInfo mark _vimBufferData with
+            | Some markInfo ->
+                (markInfo.Ident, markInfo.Name, markInfo.Line, markInfo.Column)
+                |> Some
+            | None ->
+                None
 
         seq {
             yield Mark.LastJump
