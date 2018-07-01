@@ -412,7 +412,7 @@ type internal Vim
         let currentFileNameFunc() = 
             match _activeBufferStack with
             | [] -> None
-            | h::_ -> h.VimBufferData.CurrentFileName
+            | h::_ -> h.VimBufferData.CurrentRelativeFileName
         RegisterMap(_vimData, _clipboardDevice, currentFileNameFunc) :> IRegisterMap
 
     let _recorder = MacroRecorder(_registerMap)

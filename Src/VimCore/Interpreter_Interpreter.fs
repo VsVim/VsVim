@@ -1846,7 +1846,7 @@ type VimInterpreter
                 let path = 
                     match modifiers with
                     | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers _vimBufferData.CurrentFilePath tail
-                    | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentFileName modifiers
+                    | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentRelativeFileName modifiers
                 path |> sb.AppendString
                 inner sb tail
             // TODO: depends on PR #2139

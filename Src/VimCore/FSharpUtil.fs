@@ -1035,3 +1035,20 @@ module internal SystemUtil =
         | _ -> 
             let text = ResolvePath text
             EnsureRooted currentDirectory text
+
+    /// Remove the common path prefix elements from path1 and path2.
+    /// Note that directory separator chars are not compared, just the path directory components.
+    /// The paths returned are normalized to use the standard directory separator char.
+    /// 
+    /// E.g. ("C:\A\B\C\D\", "C:/A/B/C1/D/foo.bar") -> ("C\D\", "C1\D\foo.bar")
+    let StripCommonPathPrefix path1 path2 =
+        let rec stripPrefix (p1: string list) (p2: string list) = 
+            if p1.Length = 0 || p2.Length = 0 || not (StringComparer.OrdinalIgnoreCase.Equals(p1.[0], p2.[0])) then
+                (p1, p2)
+            else
+                stripPrefix (List.tail p1) (List.tail p2)
+        let splitPath (path: string) =
+            path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) |> List.ofArray
+        let sep = System.String(Path.DirectorySeparatorChar, 1)
+        let prefix1, prefix2 = stripPrefix (splitPath path1) (splitPath path2) 
+        (String.concat sep prefix1, String.concat sep prefix2)

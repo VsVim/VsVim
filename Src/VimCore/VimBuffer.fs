@@ -3,7 +3,6 @@
 namespace Vim
 
 open System
-open System.IO
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -26,24 +25,19 @@ type VimBufferData
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
-    member x.CurrentFileName : string option =
-        let filePath = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer
-        let cd = match _currentDirectory with Some s -> s | None -> _vimTextBuffer.Vim.VimData.CurrentDirectory
-        let rec stripPrefix (p1:string list) (p2:string list) = 
-            if p1.Length = 0 || p2.Length = 0 || not (StringUtil.IsEqualIgnoreCase p1.[0] p2.[0]) then
-                p2
-            else
-                stripPrefix (List.tail p1) (List.tail p2)
-        let splitPath (path:string) =
-            path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) |> List.ofArray
-        stripPrefix (splitPath cd) (splitPath filePath) |> String.concat (StringUtil.OfChar Path.DirectorySeparatorChar) |> Some
+    member x.CurrentRelativeFileName : string option =
+        match x.CurrentFilePath with
+        | None -> None
+        | Some filePath ->
+            let cd = match _currentDirectory with Some s -> s | None -> _vimTextBuffer.Vim.VimData.CurrentDirectory
+            SystemUtil.StripCommonPathPrefix cd filePath |> snd |> Some
 
     interface IVimBufferData with
         member x.CurrentDirectory 
             with get() = _currentDirectory
             and set value = _currentDirectory <- value
         member x.CurrentFilePath = x.CurrentFilePath
-        member x.CurrentFileName = x.CurrentFileName
+        member x.CurrentRelativeFileName = x.CurrentRelativeFileName
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value

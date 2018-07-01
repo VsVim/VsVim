@@ -4303,8 +4303,8 @@ and IVimBufferData =
     /// The current (rooted) file path for this buffer
     abstract CurrentFilePath : string option
 
-    /// The current file name for this buffer. This is CurrentFilePath, excluding any prefix shared with CurrentDirectory.
-    abstract CurrentFileName : string option
+    /// The current relative file name for this buffer. This is actually the CurrentFilePath, excluding any prefix shared with CurrentDirectory.
+    abstract CurrentRelativeFileName : string option
     
     /// This is the caret point at the start of the most recent visual mode session. It's
     /// the actual location of the caret vs. the anchor point.

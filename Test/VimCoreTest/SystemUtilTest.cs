@@ -92,5 +92,16 @@ namespace Vim.UnitTest
             Assert.Equal(@"c:\foo", SystemUtil.ResolveVimPath(@"c:\foo", "."));
             Assert.Equal(@"c:\", SystemUtil.ResolveVimPath(@"c:\foo", ".."));
         }
+
+        [Fact]
+        public void StripCommonPathPrefix()
+        {
+            Assert.Equal(Tuple.Create(@"C\D\", @"C1\D\foo.bar"), SystemUtil.StripCommonPathPrefix(@"C:\A\B\C\D\", "C:/A/B/C1/D/foo.bar"));
+            Assert.Equal(Tuple.Create(@"C\D", @"C1\D"), SystemUtil.StripCommonPathPrefix(@"C:\A\B\C\D", @"C:\A\B\C1\D"));
+            Assert.Equal(Tuple.Create(@"D:\A\B\C\D", @"C:\A\B\C\D"), SystemUtil.StripCommonPathPrefix(@"D:\A\B\C\D", "C:/A/B/C/D"));
+            Assert.Equal(Tuple.Create("", @"C:\A\B\C\foo.bar"), SystemUtil.StripCommonPathPrefix("", "C:/A/B/C/foo.bar"));
+            Assert.Equal(Tuple.Create("", ""), SystemUtil.StripCommonPathPrefix("", ""));
+            Assert.Equal(Tuple.Create("foo.bar", "foo.baz"), SystemUtil.StripCommonPathPrefix("foo.bar", "foo.baz"));
+        }
     }
 }
