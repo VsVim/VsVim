@@ -10,7 +10,6 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using System.Windows.Threading;
-using System.Collections.Generic;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 
@@ -27,7 +26,6 @@ namespace VimApp
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
-        private readonly Dictionary<IWpfTextView, string> _viewMap;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
@@ -65,32 +63,12 @@ namespace VimApp
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;
-            _viewMap = new Dictionary<IWpfTextView, string>();
         }
 
         public override void VimCreated(IVim vim)
         {
             _vim = vim;
             _vim.VimData.CurrentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        }
-
-        public override void Close(ITextView textView)
-        {
-            foreach (var vimWindow in _vimWindowManager.VimWindowList)
-            {
-                foreach (var viewInfo in vimWindow.VimViewInfoList.ToList())
-                {
-                    if (viewInfo.TextView == textView)
-                    {
-                        viewInfo.VimBuffer.Close();
-                        viewInfo.TextView.Close();
-                        _viewMap.Remove(viewInfo.TextView);
-                        break;
-                    }
-                }
-                vimWindow.Clear();
-                break;
-            }
         }
 
         public override void CloseAllOtherTabs(ITextView textView)
@@ -108,15 +86,8 @@ namespace VimApp
 
         }
 
-        public override string GetName(ITextBuffer textBuffer)
+        public override string GetName(ITextBuffer value)
         {
-            foreach (var pair in _viewMap)
-            {
-                if (pair.Key.TextBuffer == textBuffer)
-                {
-                    return pair.Value;
-                }
-            }
             return "";
         }
 
@@ -154,16 +125,6 @@ namespace VimApp
         // the active window, not existing
         public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            foreach (var pair in _viewMap)
-            {
-                if (pair.Value == filePath)
-                {
-                    var point = pair.Key.Caret.Position.VirtualBufferPosition;
-                    NavigateTo(point);
-                    return true;
-                }
-            }
-
             var vimWindow = MainWindow.ActiveVimWindowOpt;
             if (vimWindow == null)
             {
@@ -174,10 +135,7 @@ namespace VimApp
             if (TryLoadPath(filePath, out IWpfTextView createdTextView))
             {
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
-                foreach (var viewInfo in vimWindow.VimViewInfoList.ToList())
-                {
-                    Close(viewInfo.TextView);
-                }
+                vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     (Action)(() =>
@@ -188,8 +146,6 @@ namespace VimApp
                         control.Focus();
                     }),
                     DispatcherPriority.ApplicationIdle);
-
-                _viewMap.Add(createdTextView, filePath);
 
                 return true;
             }
@@ -202,16 +158,6 @@ namespace VimApp
 
         public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
-            foreach (var pair in _viewMap)
-            {
-                if (pair.Value == filePath)
-                {
-                    var point = pair.Key.Caret.Position.VirtualBufferPosition;
-                    NavigateTo(point);
-                    return true;
-                }
-            }
-
             try
             {
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
@@ -237,8 +183,6 @@ namespace VimApp
                 // Give the focus to the new buffer.
                 var point = wpfTextView.Caret.Position.VirtualBufferPosition;
                 NavigateTo(point);
-
-                _viewMap.Add(wpfTextView, filePath);
 
                 return true;
             }
