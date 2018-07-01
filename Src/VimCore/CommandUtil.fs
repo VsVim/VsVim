@@ -1460,8 +1460,11 @@ type internal CommandUtil
                     let name = markInfo.Name
                     let line = Some markInfo.Line
                     let column = if exact then Some markInfo.Column else None
-                    vimHost.LoadFileIntoNewWindow name line column |> ignore
-                    CommandResult.Completed ModeSwitch.NoSwitch
+                    if vimHost.LoadFileIntoNewWindow name line column then
+                        CommandResult.Completed ModeSwitch.NoSwitch
+                    else
+                        _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+                        CommandResult.Error
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then
                     jumpLocal virtualPoint
