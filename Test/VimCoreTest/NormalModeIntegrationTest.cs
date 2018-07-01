@@ -4532,6 +4532,29 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("j");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
             }
+
+            [WpfFact]
+            public void SurrogatePairToHighCharacterBelow()
+            {
+                Create("A𠈓C", "tree");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.GetCaretPoint());
+                _textView.MoveCaretToLine(lineNumber: 1, column: 2);
+            }
+
+            [WpfFact]
+            public void SurrogatePairFromLowCharacterBelow()
+            {
+                Create("A𠈓C", "tree");
+                _textView.MoveCaretToLine(lineNumber: 1, column: 2);
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 2), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class ChangeCaseMotionTest : NormalModeIntegrationTest

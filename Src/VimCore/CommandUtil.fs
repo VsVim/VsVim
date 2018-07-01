@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Formatting
+open System.Text
 open RegexPatternUtil
 open VimCoreExtensions
 open ITextEditExtensions
@@ -873,11 +874,18 @@ type internal CommandUtil
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
     member x.DisplayCharacterBytes () =
-        match SnapshotPointUtil.TryGetChar x.CaretPoint with
-        | None -> _commonOperations.Beep()
-        | Some c ->
-            let str = sprintf "%d" (int c)
-            _statusUtil.OnStatus str
+        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+            _commonOperations.Beep()
+        else
+            let span = SnapshotCharacterSpan(x.CaretPoint)
+            let text = span.GetText()
+            let bytes = Encoding.UTF8.GetBytes(text)
+            let builder = StringBuilder()
+            for i = 0 to bytes.Length - 1 do
+                let str = sprintf "%02x" bytes.[i]
+                builder.AppendString str
+                if i > 0 then builder.AppendChar ' '
+            _statusUtil.OnStatus (builder.ToString())
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when

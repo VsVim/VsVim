@@ -166,6 +166,37 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DisplayCharacterBytesTest : CommandUtilTest
+        {
+            private void Check(string expected)
+            {
+                _statusUtil.Setup(x => x.OnStatus(expected)).Verifiable();
+                _commandUtil.DisplayCharacterBytes();
+                _statusUtil.Verify();
+            }
+
+            [WpfFact]
+            public void AsciiSimple()
+            {
+                Create("cat");
+                Check("63");
+            }
+
+            [WpfFact]
+            public void ZeroFillSimple()
+            {
+                Create("\t");
+                Check("09");
+            }
+
+            [WpfFact]
+            public void SurrogatePair()
+            {
+                Create("𠈓");
+                Check("f0 a0 88 93");
+            }
+        }
+
         /// <summary>
         /// The majority of the fold functions are just pass throughs to the IFoldManager
         /// implementation.  Make sure they are actually passed through
