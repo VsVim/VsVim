@@ -756,7 +756,7 @@ type internal InsertMode
         | None -> ()
         | Some transaction ->
             transaction.Complete()
-            let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name LinkedUndoTransactionFlags.CanBeEmpty
+            let transaction = x.CreateLinkedUndoTransaction name
             _sessionData <- { _sessionData with Transaction = Some transaction }
 
     /// Paste the contents of the specified register with the given flags 
@@ -1056,6 +1056,11 @@ type internal InsertMode
     member x.OnClose () =
         _bag.DisposeAll()
 
+    /// Create a linked undo transaction suitable for insert mode
+    member x.CreateLinkedUndoTransaction name =
+        let flags = LinkedUndoTransactionFlags.CanBeEmpty ||| LinkedUndoTransactionFlags.EndsWithInsert
+        _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
+
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
@@ -1077,10 +1082,10 @@ type internal InsertMode
                 Some transaction, InsertKind.Block (atEndOfLine, blockSpan)
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
+                    let transaction = x.CreateLinkedUndoTransaction "Insert with count"
                     Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
                 else
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert" LinkedUndoTransactionFlags.CanBeEmpty
+                    let transaction = x.CreateLinkedUndoTransaction "Insert"
                     Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine (count, transaction) ->
                 if count > 1 then
@@ -1090,7 +1095,7 @@ type internal InsertMode
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal
             | _ -> 
-                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
+                let transaction = x.CreateLinkedUndoTransaction "Insert with transaction"
                 Some transaction, InsertKind.Normal
 
         // If the LastCommand coming into insert / replace mode is not setup for linking 

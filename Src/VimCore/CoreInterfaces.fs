@@ -211,6 +211,8 @@ type LinkedUndoTransactionFlags =
 
     | CanBeEmpty = 0x1
 
+    | EndsWithInsert = 0x2
+
 /// Wraps a set of IUndoTransaction items such that they undo and redo as a single
 /// entity.
 type ILinkedUndoTransaction =
