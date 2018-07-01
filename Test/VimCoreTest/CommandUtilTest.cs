@@ -194,6 +194,23 @@ namespace Vim.UnitTest
                 Create("𠈓");
                 Check("f0 a0 88 93");
             }
+
+            [WpfFact]
+            public void SurrogatePairLowSurrogae()
+            {
+                Create("𠈓");
+                _textView.MoveCaretTo(1);
+                Check("f0 a0 88 93");
+            }
+
+            [WpfFact]
+            public void EndPoint()
+            {
+                Create("hello");
+                _textView.MoveCaretTo(_textBuffer.CurrentSnapshot.Length);
+                _commandUtil.DisplayCharacterBytes();
+                Assert.Equal(1, VimHost.BeepCount);
+            }
         }
 
         /// <summary>
