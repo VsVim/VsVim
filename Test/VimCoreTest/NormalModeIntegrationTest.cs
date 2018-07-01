@@ -8,6 +8,7 @@ using Vim.Extensions;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -1886,8 +1887,8 @@ namespace Vim.UnitTest
             private readonly Vim _vimRaw;
 
             private string _name;
-            private int _line;
-            private int _column;
+            private FSharpOption<int> _line;
+            private FSharpOption<int> _column;
 
             public EditAlternateFileTest()
             {
@@ -1949,12 +1950,12 @@ namespace Vim.UnitTest
                 Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
 
                 _name = null;
-                _line = int.MinValue;
-                _column = int.MinValue;
+                _line = null;
+                _column = null;
                 vimBuffers[2].ProcessNotation(command);
                 Assert.Equal(name, _name);
-                Assert.Equal(0, _line);
-                Assert.Equal(-1, _column);
+                Assert.Equal(0, _line.Value);
+                Assert.Null(_column);
             }
         }
 

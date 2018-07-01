@@ -1640,7 +1640,7 @@ type VimInterpreter
 
     member x.RunTabNew filePath = 
         let filePath = filePath |> OptionUtil.getOrDefault ""
-        _vimHost.LoadFileIntoNewWindow filePath 0 -1 |> ignore
+        _vimHost.LoadFileIntoNewWindow filePath (Some 0) None |> ignore
 
     member x.RunOnly() =
         _vimHost.CloseAllOtherWindows _textView

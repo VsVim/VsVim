@@ -1457,8 +1457,8 @@ type internal CommandUtil
                 | None -> markNotSet()
                 | Some (_, name, line, column) ->
                     let vimHost = _vimBufferData.Vim.VimHost
-                    let column = if exact then column else -1
-                    vimHost.LoadFileIntoNewWindow name line column |> ignore
+                    let column = if exact then Some column else None
+                    vimHost.LoadFileIntoNewWindow name (Some line) column |> ignore
                     CommandResult.Completed ModeSwitch.NoSwitch
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then

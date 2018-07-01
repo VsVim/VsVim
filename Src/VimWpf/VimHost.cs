@@ -231,7 +231,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
-        public abstract bool LoadFileIntoNewWindow(string filePath, int line, int column);
+        public abstract bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
@@ -647,7 +647,7 @@ namespace Vim.UI.Wpf
             return LoadFileIntoExistingWindow(filePath, textView);
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath, int line, int column)
+        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadFileIntoNewWindow(filePath, line, column);
         }

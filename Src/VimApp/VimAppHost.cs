@@ -11,6 +11,8 @@ using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using System.Windows.Threading;
 using System.Collections.Generic;
+using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
 namespace VimApp
 {
@@ -198,7 +200,7 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath, int line, int column)
+        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             foreach (var pair in _viewMap)
             {
@@ -216,17 +218,17 @@ namespace VimApp
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
 
-                if (line != -1)
+                if (line.IsSome())
                 {
                     // Move the caret to its initial position.
-                    if (column != -1)
+                    if (column.IsSome())
                     {
-                        wpfTextView.MoveCaretToLine(line, column);
+                        wpfTextView.MoveCaretToLine(line.Value, column.Value);
                     }
                     else
                     {
                         // Default column implies moving to the first non-blank.
-                        wpfTextView.MoveCaretToLine(line);
+                        wpfTextView.MoveCaretToLine(line.Value);
                         var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
                         editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
                     }

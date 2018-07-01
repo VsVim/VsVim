@@ -448,7 +448,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override bool LoadFileIntoNewWindow(string filePath, int line, int column)
+        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
@@ -456,7 +456,7 @@ namespace Vim.VisualStudio
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
                     out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
 
-                if (line != -1)
+                if (line.IsSome())
                 {
                     // Get the VS text view for the window.
                     var vsTextView = VsShellUtilities.GetTextView(windowFrame);
@@ -465,11 +465,11 @@ namespace Vim.VisualStudio
                     var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
 
                     // Move the caret to its initial position.
-                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line);
+                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line.Value);
                     var point = snapshotLine.Start;
-                    if (column != -1)
+                    if (column.IsSome())
                     {
-                        point = point.Add(column);
+                        point = point.Add(column.Value);
                         wpfTextView.Caret.MoveTo(point);
                     }
                     else
@@ -788,7 +788,7 @@ namespace Vim.VisualStudio
         {
             textView = null;
             var vimBufferOption = _vim.TryGetRecentBuffer(n);
-            if (!vimBufferOption.IsNone() && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
+            if (vimBufferOption.IsSome() && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
             {
                 textView = wpfTextView;
             }
