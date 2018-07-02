@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Core</RootNamespace>
     <AssemblyName>Vim.Core</AssemblyName>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <OtherFlags>--standalone</OtherFlags>
     <NoWarn>2011</NoWarn>
   </PropertyGroup>
@@ -129,6 +129,8 @@
       <Version>4.2.3</Version>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.8.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.8.2" />
 
     <!-- Excluding thes package to avoid the auto-include that is happening 
          via F# targets and hittnig a restore issue in 15.7

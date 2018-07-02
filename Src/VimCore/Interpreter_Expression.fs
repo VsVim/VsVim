@@ -638,6 +638,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - new tabstop value
     | Retab of LineRangeSpecifier * bool * int option
 
+    | RunCSharpScript of string
+
     /// Process the 'set' command
     | Set of SetArgument list
 
