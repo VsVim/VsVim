@@ -46,6 +46,16 @@ namespace Vim.UnitTest
                     _mockUndoHistory = _factory.Create<ITextUndoHistory>();
                     _mockUndoHistory.Setup(x => x.Undo(It.IsAny<int>())).Callback<int>(count => { _undoCount += count; });
                     _mockUndoHistory.Setup(x => x.Redo(It.IsAny<int>())).Callback<int>(count => { _redoCount += count; });
+                    _mockUndoHistory.Setup(x => x.CreateTransaction(It.IsAny<string>()))
+                        .Returns<string>(
+                            name =>
+                            {
+                                var transaction = _factory.Create<ITextUndoTransaction>();
+                                transaction.Setup(x => x.Complete());
+                                transaction.Setup(x => x.Dispose());
+                                return transaction.Object;
+                            }
+                        );
                     textUndoHistory = FSharpOption.Create(_mockUndoHistory.Object);
                     break;
 
@@ -168,6 +178,19 @@ namespace Vim.UnitTest
 
                 _undoRedoOperations.Undo(1);
                 Assert.Equal(3, _undoCount);
+            }
+
+            [WpfFact]
+            public void UndoGroupEndsWithInsert()
+            {
+                Create();
+                using (var transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags("test", LinkedUndoTransactionFlags.EndsWithInsert))
+                {
+                    RaiseUndoTransactionCompleted(count: 3);
+                }
+
+                _undoRedoOperations.Undo(1);
+                Assert.Equal(4, _undoCount);
             }
 
             [WpfFact]

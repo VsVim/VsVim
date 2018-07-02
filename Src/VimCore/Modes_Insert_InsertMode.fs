@@ -447,12 +447,20 @@ type internal InsertMode
 
                 // Map any insert commands to their replacement counterparts.
                 match rawInsertCommand with
-                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterAboveCaret, flags) ->
-                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterAboveCaret, flags)
-                    |> Some
-                | RawInsertCommand.InsertCommand (keyInput, InsertCommand.InsertCharacterBelowCaret, flags) ->
-                    RawInsertCommand.InsertCommand (keyInput, InsertCommand.ReplaceCharacterBelowCaret, flags)
-                    |> Some
+                | RawInsertCommand.InsertCommand (keyInput, command, flags) ->
+                    let replaceCommand =
+                        match command with
+                        | InsertCommand.Back ->
+                            Some InsertCommand.UndoReplace
+                        | InsertCommand.InsertCharacterAboveCaret ->
+                            Some InsertCommand.ReplaceCharacterAboveCaret
+                        | InsertCommand.InsertCharacterBelowCaret ->
+                            Some InsertCommand.ReplaceCharacterBelowCaret
+                        | _ -> None
+                    match replaceCommand with
+                    | Some replaceCommand ->
+                        RawInsertCommand.InsertCommand (keyInput, replaceCommand, flags) |> Some
+                    | None -> Some rawInsertCommand
                 | _ -> Some rawInsertCommand
             else
                 Some rawInsertCommand
@@ -735,22 +743,20 @@ type internal InsertMode
             match command with
             | InsertCommand.ShiftLineLeft -> ()
             | InsertCommand.ShiftLineRight -> ()
-            | InsertCommand.InsertCharacterAboveCaret -> ()
-            | InsertCommand.InsertCharacterBelowCaret -> ()
-            | InsertCommand.ReplaceCharacterAboveCaret -> ()
-            | InsertCommand.ReplaceCharacterBelowCaret -> ()
             | _ -> 
-                // All other commands break the undo sequence
+
+                // All other commands break the undo sequence.
                 x.BreakUndoSequence "Insert after motion" 
 
         ProcessResult.OfCommandResult result
 
     member x.BreakUndoSequence name =
+        _insertUtil.NewUndoSequence()
         match _sessionData.Transaction with
         | None -> ()
         | Some transaction ->
             transaction.Complete()
-            let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name LinkedUndoTransactionFlags.CanBeEmpty
+            let transaction = x.CreateLinkedUndoTransaction name
             _sessionData <- { _sessionData with Transaction = Some transaction }
 
     /// Paste the contents of the specified register with the given flags 
@@ -1050,10 +1056,16 @@ type internal InsertMode
     member x.OnClose () =
         _bag.DisposeAll()
 
+    /// Create a linked undo transaction suitable for insert mode
+    member x.CreateLinkedUndoTransaction name =
+        let flags = LinkedUndoTransactionFlags.CanBeEmpty ||| LinkedUndoTransactionFlags.EndsWithInsert
+        _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
+
     /// Entering an insert or replace mode.  Setup the InsertSessionData based on the 
     /// ModeArgument value. 
     member x.OnEnter arg =
         x.EnsureCommandsBuilt()
+        _insertUtil.NewUndoSequence()
 
         // Record start point upon initial entry to insert mode
         _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
@@ -1070,10 +1082,10 @@ type internal InsertMode
                 Some transaction, InsertKind.Block (atEndOfLine, blockSpan)
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with count" LinkedUndoTransactionFlags.CanBeEmpty
+                    let transaction = x.CreateLinkedUndoTransaction "Insert with count"
                     Some transaction, InsertKind.Repeat (count, false, TextChange.Insert StringUtil.Empty)
                 else
-                    let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert" LinkedUndoTransactionFlags.CanBeEmpty
+                    let transaction = x.CreateLinkedUndoTransaction "Insert"
                     Some transaction, InsertKind.Normal
             | ModeArgument.InsertWithCountAndNewLine (count, transaction) ->
                 if count > 1 then
@@ -1083,7 +1095,7 @@ type internal InsertMode
             | ModeArgument.InsertWithTransaction transaction ->
                 Some transaction, InsertKind.Normal
             | _ -> 
-                let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Insert with transaction" LinkedUndoTransactionFlags.CanBeEmpty
+                let transaction = x.CreateLinkedUndoTransaction "Insert with transaction"
                 Some transaction, InsertKind.Normal
 
         // If the LastCommand coming into insert / replace mode is not setup for linking 

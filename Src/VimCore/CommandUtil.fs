@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Formatting
+open System.Text
 open RegexPatternUtil
 open VimCoreExtensions
 open ITextEditExtensions
@@ -873,11 +874,18 @@ type internal CommandUtil
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
     member x.DisplayCharacterBytes () =
-        match SnapshotPointUtil.TryGetChar x.CaretPoint with
-        | None -> _commonOperations.Beep()
-        | Some c ->
-            let str = sprintf "%d" (int c)
-            _statusUtil.OnStatus str
+        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+            _commonOperations.Beep()
+        else
+            let span = SnapshotCharacterSpan(x.CaretPoint)
+            let text = span.GetText()
+            let bytes = Encoding.UTF8.GetBytes(text)
+            let builder = StringBuilder()
+            for i = 0 to bytes.Length - 1 do
+                let str = sprintf "%02x" bytes.[i]
+                if i > 0 then builder.AppendChar ' '
+                builder.AppendString str
+            _statusUtil.OnStatus (builder.ToString())
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
@@ -888,7 +896,8 @@ type internal CommandUtil
     /// Used for the several commands which make an edit here and need the edit to be linked
     /// with the next insert mode change.
     member x.CreateTransactionForLinkedChange name action =
-        let transaction = _undoRedoOperations.CreateLinkedUndoTransaction name
+        let flags = LinkedUndoTransactionFlags.EndsWithInsert
+        let transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
 
         try
             x.EditWithUndoTransaction name action
@@ -1175,8 +1184,18 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// GoTo the ITextView in the specified direction
-    member x.GoToView direction =
-        _vimHost.MoveFocus _textView direction
+    member x.GoToWindow count direction =
+        _vimHost.GoToWindow _textView count direction
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// GoTo the ITextView in the specified direction
+    member x.GoToRecentView count =
+        let vim = _vimBufferData.Vim
+        match vim.TryGetRecentBuffer count with
+        | None -> ()
+        | Some vimBuffer ->
+            let textView = vimBuffer.VimBufferData.TextView
+            _vimHost.NavigateTo(textView.Caret.Position.VirtualBufferPosition) |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Join 'count' lines in the buffer
@@ -1409,18 +1428,24 @@ type internal CommandUtil
     member x.JumpToMarkCore mark exact =
         let before = x.CaretPoint
 
-        // Jump to the given point in the ITextBuffer
-        let jumpLocal (point: VirtualSnapshotPoint) =
-            let point =
-                if exact then
-                    point
+        // If not exact, adjust point to first non-blank or start.
+        let adjustPointForExact point =
+            if exact then
+                if not _globalSettings.IsVirtualEditOneMore
+                    && not (SnapshotPointUtil.IsStartOfLine point)
+                    && SnapshotPointUtil.IsInsideLineBreak point then
+                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
                 else
                     point
-                    |> VirtualSnapshotPointUtil.GetContainingLine
-                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                    |> VirtualSnapshotPointUtil.OfPoint
+            else
+                point
+                |> SnapshotPointUtil.GetContainingLine
+                |> SnapshotLineUtil.GetFirstNonBlankOrStart
 
-            _commonOperations.MoveCaretToPoint point.Position ViewFlags.Standard
+        // Jump to the given point in the ITextBuffer
+        let jumpLocal (point: VirtualSnapshotPoint) =
+            let point = adjustPointForExact point.Position
+            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1434,16 +1459,35 @@ type internal CommandUtil
             let markMap = _vimTextBuffer.Vim.MarkMap
             match markMap.GetGlobalMark letter with
             | None ->
-                markNotSet()
-            | Some point ->
-                if point.Position.Snapshot.TextBuffer = _textBuffer then
-                    jumpLocal point
-                elif _commonOperations.NavigateToPoint point then
-                    _jumpList.Add before
-                    CommandResult.Completed ModeSwitch.NoSwitch
+
+                // It's still possible that there is a global
+                // mark, but the buffer has been unloaded.
+                match markMap.GetMarkInfo mark _vimBufferData with
+                | None -> markNotSet()
+                | Some markInfo ->
+                    let vimHost = _vimBufferData.Vim.VimHost
+                    let name = markInfo.Name
+                    let line = Some markInfo.Line
+                    let column = if exact then Some markInfo.Column else None
+                    if vimHost.LoadFileIntoNewWindow name line column then
+                        CommandResult.Completed ModeSwitch.NoSwitch
+                    else
+                        _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+                        CommandResult.Error
+            | Some virtualPoint ->
+                if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then
+                    jumpLocal virtualPoint
                 else
-                    _statusUtil.OnError Resources.Common_MarkNotSet
-                    CommandResult.Error
+                    if
+                        adjustPointForExact virtualPoint.Position
+                        |> VirtualSnapshotPointUtil.OfPoint
+                        |> _commonOperations.NavigateToPoint
+                    then
+                        _jumpList.Add before
+                        CommandResult.Completed ModeSwitch.NoSwitch
+                    else
+                        _statusUtil.OnError Resources.Common_MarkNotSet
+                        CommandResult.Error
         | Mark.LocalMark localMark ->
             match _vimTextBuffer.GetLocalMark localMark with
             | None -> markNotSet()
@@ -2480,7 +2524,8 @@ type internal CommandUtil
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
         | NormalCommand.GoToNextTab path -> x.GoToNextTab path data.Count
-        | NormalCommand.GoToView direction -> x.GoToView direction
+        | NormalCommand.GoToWindow direction -> x.GoToWindow direction count
+        | NormalCommand.GoToRecentView -> x.GoToRecentView count
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
         | NormalCommand.InsertAtEndOfLine -> x.InsertAtEndOfLine count

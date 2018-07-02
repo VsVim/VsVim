@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Media;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -446,11 +448,39 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override bool LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
-                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
+                // Open the document in a window.
+                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
+                    out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
+
+                if (line.IsSome())
+                {
+                    // Get the VS text view for the window.
+                    var vsTextView = VsShellUtilities.GetTextView(windowFrame);
+
+                    // Get the WPF text view for the VS text view.
+                    var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+
+                    // Move the caret to its initial position.
+                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line.Value);
+                    var point = snapshotLine.Start;
+                    if (column.IsSome())
+                    {
+                        point = point.Add(column.Value);
+                        wpfTextView.Caret.MoveTo(point);
+                    }
+                    else
+                    {
+                        // Default column implies moving to the first non-blank.
+                        wpfTextView.Caret.MoveTo(point);
+                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    }
+                }
+
                 return true;
             }
             catch (Exception e)
@@ -647,49 +677,212 @@ namespace Vim.VisualStudio
             }
         }
 
-        private bool MoveFocusHorizontally(int indexDelta)
+        /// <summary>
+        /// Get the point at the middle of the caret in screen coordinates
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <returns></returns>
+        private Point GetScreenPoint(IWpfTextView textView)
         {
-            // Thanks to https://github.com/mrdooz/TabGroupJumper/blob/master/TabGroupJumper/Connect.cs
-            var topLevelWindows = _dte.Windows.Cast<Window>()
-                .Where(window => window.Kind == "Document" && (window.Left != 0))
-                .ToList();
-            topLevelWindows.Sort((a, b) => a.Left < b.Left ? -1 : 1);
-            if (topLevelWindows.Count == 0)
+            var element = textView.VisualElement;
+            var caret = textView.Caret;
+            var caretX = (caret.Left + caret.Right) / 2 - textView.ViewportLeft;
+            var caretY = (caret.Top + caret.Bottom) / 2 - textView.ViewportTop;
+            return element.PointToScreen(new Point(caretX, caretY));
+        }
+
+        /// <summary>
+        /// Get the rectangle of the window in screen coordinates including any associated
+        /// elements like margins, scroll bars, etc.
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <returns></returns>
+        private Rect GetScreenRect(IWpfTextView textView)
+        {
+            var element = textView.VisualElement;
+            var parent = VisualTreeHelper.GetParent(element);
+            if (parent is FrameworkElement parentElement)
+            {
+                // The parent is a grid that contains the text view and all its margins.
+                // Unfortunately, this does not include the navigation bar, so a horizontal
+                // line from the caret in a window without one might intersect the navigation
+                // bar and then we would not consider it as a candidate for horizontal motion.
+                // The user can work around this by moving the caret down a couple of lines.
+                element = parentElement;
+            }
+            var size = element.RenderSize;
+            var upperLeft = new Point(0, 0);
+            var lowerRight = new Point(size.Width, size.Height);
+            return new Rect(element.PointToScreen(upperLeft), element.PointToScreen(lowerRight));
+        }
+
+        private IEnumerable<Tuple<IWpfTextView, Rect>> GetWindowPairs()
+        {
+            // Build a list of all visible windows and their screen coordinates.
+            return _vim.VimBuffers
+                .Select(vimBuffer => vimBuffer.TextView as IWpfTextView)
+                .Where(textView => textView != null)
+                .Where(textView => textView.VisualElement.IsVisible)
+                .Where(textView => textView.ViewportWidth != 0)
+                .Select(textView =>
+                    Tuple.Create(textView, GetScreenRect(textView)));
+        }
+
+        private bool GoToWindowVertically(IWpfTextView currentTextView, int delta)
+        {
+            // Find those windows that overlap a vertical line
+            // passing through the caret of the current window,
+            // sorted by increasing vertical position on the screen.
+            var caretPoint = GetScreenPoint(currentTextView);
+            var pairs = GetWindowPairs()
+                .Where(pair => pair.Item2.Left <= caretPoint.X && caretPoint.X <= pair.Item2.Right)
+                .OrderBy(pair => pair.Item2.Y);
+
+            return GoToWindowCore(currentTextView, delta, false, pairs);
+        }
+
+        private bool GoToWindowHorizontally(IWpfTextView currentTextView, int delta)
+        {
+            // Find those windows that overlap a horizontal line
+            // passing through the caret of the current window,
+            // sorted by increasing horizontal position on the screen.
+            var caretPoint = GetScreenPoint(currentTextView);
+            var pairs = GetWindowPairs()
+                .Where(pair => pair.Item2.Top <= caretPoint.Y && caretPoint.Y <= pair.Item2.Bottom)
+                .OrderBy(pair => pair.Item2.X);
+
+            return GoToWindowCore(currentTextView, delta, false, pairs);
+        }
+
+        private bool GoToWindowNext(IWpfTextView currentTextView, int delta, bool wrap)
+        {
+            // Sort the windows into row/column order.
+            var pairs = GetWindowPairs()
+                .OrderBy(pair => pair.Item2.X)
+                .ThenBy(pair => pair.Item2.Y);
+
+            return GoToWindowCore(currentTextView, delta, wrap, pairs);
+        }
+
+        private bool GoToWindowRecent(IWpfTextView currentTextView)
+        {
+            // Get the list of visible windows.
+            var windows = GetWindowPairs().Select(pair => pair.Item1).ToList();
+
+            // Find a recent buffer that is visible.
+            var i = 1;
+            while (TryGetRecentWindow(i, out IWpfTextView textView))
+            {
+                if (windows.Contains(textView))
+                {
+                    textView.VisualElement.Focus();
+                    return true;
+                }
+                ++i;
+            }
+
+            return false;
+        }
+
+        private bool TryGetRecentWindow(int n, out IWpfTextView textView)
+        {
+            textView = null;
+            var vimBufferOption = _vim.TryGetRecentBuffer(n);
+            if (vimBufferOption.IsSome() && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
+            {
+                textView = wpfTextView;
+            }
+            return false;
+        }
+
+        public bool GoToWindowCore(IWpfTextView currentTextView, int delta, bool wrap,
+            IEnumerable<Tuple<IWpfTextView, Rect>> rawPairs)
+        {
+            var pairs = rawPairs.ToList();
+
+            // Find the position of the current window in that list.
+            var currentIndex = pairs.FindIndex(pair => pair.Item1 == currentTextView);
+            if (currentIndex == -1)
             {
                 return false;
             }
 
-            var indexOfActiveDoc = topLevelWindows.FindIndex(win => win == _dte.ActiveWindow);
-            var movedIndex = indexOfActiveDoc + indexDelta;
-            var newIndex = (movedIndex < 0 ? movedIndex + topLevelWindows.Count : movedIndex % topLevelWindows.Count);
-            if (newIndex >= topLevelWindows.Count)
+            var newIndex = currentIndex + delta;
+            if (wrap)
             {
-                return false;
+                // Wrap around to a valid index.
+                newIndex = (newIndex % pairs.Count + pairs.Count) % pairs.Count;
+            }
+            else
+            {
+                // Move as far as possible in the specified direction.
+                newIndex = Math.Max(0, newIndex);
+                newIndex = Math.Min(newIndex, pairs.Count - 1);
             }
 
-            topLevelWindows[newIndex].Activate();
+            // Go to the resulting window.
+            pairs[newIndex].Item1.VisualElement.Focus();
             return true;
         }
 
-        public override void MoveFocus(ITextView textView, Direction direction)
+        public override void GoToWindow(ITextView textView, WindowKind windowKind, int count)
         {
-            bool result;
-            switch (direction)
+            const int maxCount = 1000;
+            var currentTextView = textView as IWpfTextView;
+            if (currentTextView == null)
             {
-                case Direction.Up:
-                    result = _textManager.MoveViewUp(textView);
+                return;
+            }
+
+            bool result;
+            switch (windowKind)
+            {
+                case WindowKind.Up:
+                    result = GoToWindowVertically(currentTextView, -count);
                     break;
-                case Direction.Down:
-                    result = _textManager.MoveViewDown(textView);
+                case WindowKind.Down:
+                    result = GoToWindowVertically(currentTextView, count);
                     break;
-                case Direction.Left:
-                    result = MoveFocusHorizontally(-1);
+                case WindowKind.Left:
+                    result = GoToWindowHorizontally(currentTextView, -count);
                     break;
-                case Direction.Right:
-                    result = MoveFocusHorizontally(1);
+                case WindowKind.Right:
+                    result = GoToWindowHorizontally(currentTextView, count);
                     break;
+
+                case WindowKind.FarUp:
+                    result = GoToWindowVertically(currentTextView, -maxCount);
+                    break;
+                case WindowKind.FarDown:
+                    result = GoToWindowVertically(currentTextView, maxCount);
+                    break;
+                case WindowKind.FarLeft:
+                    result = GoToWindowHorizontally(currentTextView, -maxCount);
+                    break;
+                case WindowKind.FarRight:
+                    result = GoToWindowHorizontally(currentTextView, maxCount);
+                    break;
+
+                case WindowKind.Previous:
+                    result = GoToWindowNext(currentTextView, -count, true);
+                    break;
+                case WindowKind.Next:
+                    result = GoToWindowNext(currentTextView, count, true);
+                    break;
+
+                case WindowKind.Top:
+                    result = GoToWindowNext(currentTextView, -maxCount, false);
+                    break;
+                case WindowKind.Bottom:
+                    result = GoToWindowNext(currentTextView, maxCount, false);
+                    break;
+
+                case WindowKind.Recent:
+                    result = GoToWindowRecent(currentTextView);
+                    break;
+
                 default:
-                    throw Contract.GetInvalidEnumException(direction);
+                    throw Contract.GetInvalidEnumException(windowKind);
             }
 
             if (!result)

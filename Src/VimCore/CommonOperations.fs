@@ -799,7 +799,7 @@ type internal CommonOperations
 
     /// No need to check for dirty since we are opening a new window
     member x.GoToFileInNewWindow name =
-        if not (_vimHost.LoadFileIntoNewWindow name) then
+        if not (_vimHost.LoadFileIntoNewWindow name (Some 0) None) then
             _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
 
     member x.GoToNextTab path count = 
@@ -1597,6 +1597,7 @@ type internal CommonOperations
     /// after the redo completes
     member x.Redo count = 
         _undoRedoOperations.Redo count
+        x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
     /// Ensure the given view properties are met at the given point

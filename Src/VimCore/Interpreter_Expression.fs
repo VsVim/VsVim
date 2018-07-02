@@ -383,9 +383,8 @@ type FileNameModifier =
 type SymbolicPathComponent =
     /// '%' + modifiers
     | CurrentFileName of FileNameModifier list
-    /// '#' + modifiers
-    // TODO: depends on PR #2139
-    //| AlternateFileName of FileNameModifier list
+    /// '#'[number] + modifiers
+    | AlternateFileName of int * FileNameModifier list
     /// Literal text
     | Literal of string
 
@@ -526,7 +525,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided ++opt
     ///  - The provided +cmd 
     ///  - The provided file to edit 
-    | Edit of bool * FileOption list * CommandOption option * string
+    | Edit of bool * FileOption list * CommandOption option * SymbolicPath
+
+    /// List recent files
+    | Files
 
     /// Fold the selected LineRange
     | Fold of LineRangeSpecifier

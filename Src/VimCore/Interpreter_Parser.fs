@@ -792,6 +792,7 @@ type Parser
             | LineCommand.Else -> noRangeCommand
             | LineCommand.ElseIf _ -> noRangeCommand
             | LineCommand.Execute _ -> noRangeCommand
+            | LineCommand.Files -> noRangeCommand
             | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
             | LineCommand.Function _ -> noRangeCommand
             | LineCommand.FunctionEnd _ -> noRangeCommand
@@ -1135,8 +1136,7 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName = x.ParseRestOfLine()
-
+        let fileName = x.ParseRestOfLineAsFilePath()
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
 
     /// Parse out the :function command
@@ -1853,6 +1853,10 @@ type Parser
 
         LineCommand.Yank (lineRange, registerName, count)
 
+    /// Parse out the files command
+    member x.ParseFiles() =
+        LineCommand.Files
+
     /// Parse out the fold command
     member x.ParseFold lineRange =
         LineCommand.Fold lineRange
@@ -2305,6 +2309,7 @@ type Parser
                 match name with
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
+                | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -2328,6 +2333,7 @@ type Parser
                 | "endfunction" -> noRange x.ParseFunctionEnd
                 | "endif" -> noRange x.ParseIfEnd
                 | "exit" -> x.ParseQuitAndWrite lineRange
+                | "files" -> noRange x.ParseFiles
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
@@ -2344,6 +2350,7 @@ type Parser
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+                | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
                 | "make" -> noRange x.ParseMake 
@@ -2654,8 +2661,7 @@ type Parser
                     // As per :help cmdline-special, '\' only acts as an escape character when it immediately preceeds '%' or '#'.
                     _tokenizer.MoveNextChar()
                     match _tokenizer.CurrentTokenKind with
-                    // TODO: depends on PR #2139
-                    //| TokenKind.Character '#' 
+                    | TokenKind.Character '#' 
                     | TokenKind.Character '%' ->
                         let c = _tokenizer.CurrentChar
                         _tokenizer.MoveNextChar()
@@ -2666,11 +2672,16 @@ type Parser
                     _tokenizer.MoveNextChar()
                     let modifiers = SymbolicPathComponent.CurrentFileName x.ParseFileNameModifiers
                     inner (modifiers::components)
-                // TODO: depends on PR #2139
-                //| TokenKind.Character '#' ->
-                //    _tokenizer.MoveNextChar()
-                //    let modifiers = SymbolicPathComponent.AlternateFileName x.ParseFileNameModifiers
-                //    inner (modifiers::components)
+                | TokenKind.Character '#' ->
+                    _tokenizer.MoveNextChar()
+                    let n =
+                        match _tokenizer.CurrentTokenKind with
+                        | TokenKind.Number n ->
+                            _tokenizer.MoveNextToken()
+                            n
+                        | _ -> 1
+                    let modifiers = x.ParseFileNameModifiers
+                    inner (SymbolicPathComponent.AlternateFileName (n, modifiers)::components)
                 | _ ->
                     let literal = _tokenizer.CurrentToken.TokenText
                     _tokenizer.MoveNextToken()

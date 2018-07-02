@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
 using Vim.EditorHost;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -79,7 +80,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override bool LoadFileIntoNewWindow(string filePath)
+            public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
             {
                 throw new NotImplementedException();
             }
@@ -89,7 +90,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void MoveFocus(ITextView textView, Direction direction)
+            public override void GoToWindow(ITextView textView, WindowKind windowKind, int count)
             {
                 throw new NotImplementedException();
             }

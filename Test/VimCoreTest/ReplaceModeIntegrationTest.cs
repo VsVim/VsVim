@@ -10,12 +10,14 @@ namespace Vim.UnitTest
         protected IVimBuffer _vimBuffer;
         protected ITextView _textView;
         protected ITextBuffer _textBuffer;
+        protected IVimGlobalSettings _globalSettings;
 
         protected void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _globalSettings = Vim.GlobalSettings;
         }
 
         public sealed class RepeatEdit : ReplaceModeIntegrationTest
@@ -93,6 +95,36 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(VimKey.Escape);
                 Assert.Equal("catcatree", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        public sealed class ReplaceUndoTest : ReplaceModeIntegrationTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("cat dog bat rat", "cow gnu fox yak");
+                _textView.MoveCaretTo(4);
+                _vimBuffer.ProcessNotation("<S-R>DOG BAT<BS><BS><BS>");
+                Assert.Equal("cat DOG bat rat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void BackspaceToPreviousLine()
+            {
+                Create("cat dog bat rat", "cow gnu fox yak");
+                _globalSettings.Backspace = "indent,eol,start";
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<S-R><BS><BS><BS><BS><BS><BS><BS><BS>BAT");
+                Assert.Equal("cat dog BAT rat", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void BackspaceAfterMoving()
+            {
+                Create("cat dog bat rat", "cow gnu fox yak");
+                _vimBuffer.ProcessNotation("<S-R>CAT<Right><Left><BS><BS><BS>");
+                Assert.Equal("CAT dog bat rat", _textBuffer.GetLine(0).GetText());
             }
         }
 

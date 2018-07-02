@@ -734,39 +734,39 @@ type VimInterpreter
         _statusUtil.OnStatusLong list
 
     /// Display the specified marks
-    member x.RunDisplayMarks (marks: Mark list) = 
-        if not (List.isEmpty marks) then
-            _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "Specific marks")
-        else
-            let printMark (ident: char) (point: VirtualSnapshotPoint) =
-                let textLine = point.Position.GetContainingLine()
-                let lineNum = textLine.LineNumber + 1
-                let column = point.Position.Position - textLine.Start.Position
-                let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
-                let name = _vimHost.GetName point.Position.Snapshot.TextBuffer
-                sprintf " %c  %5d%5d %s" ident lineNum column name
-            let getMark (mark:Mark) = (mark.Char, (_markMap.GetMark mark _vimBufferData))
+    member x.RunDisplayMarks (marks: Mark list) =
+        let printMarkInfo info =
+            let ident, name, line, column = info
+            sprintf " %c  %5d%5d %s" ident (line + 1) column name
+        let getMark (mark: Mark) =
+            match _markMap.GetMarkInfo mark _vimBufferData with
+            | Some markInfo ->
+                (markInfo.Ident, markInfo.Name, markInfo.Line, markInfo.Column)
+                |> Some
+            | None ->
+                None
 
-            seq {
-                yield Mark.LastJump
-                for letter in Letter.All do
-                    yield Mark.LocalMark (LocalMark.Letter letter)
-                for letter in Letter.All do
-                    yield Mark.GlobalMark letter
-                for number in NumberMark.All do
-                    yield Mark.LocalMark (LocalMark.Number number)
-                yield Mark.LastExitedPosition
-                yield Mark.LocalMark LocalMark.LastInsertExit
-                yield Mark.LocalMark LocalMark.LastEdit
-                yield Mark.LocalMark LocalMark.LastSelectionStart
-                yield Mark.LocalMark LocalMark.LastSelectionEnd
-            }
-            |> Seq.map getMark
-            |> Seq.filter (fun (c,option) -> option.IsSome)
-            |> Seq.map (fun (c, option) -> (c, option.Value))
-            |> Seq.map (fun (c,p) -> printMark c p )
-            |> Seq.append ("mark line  col file/text" |> Seq.singleton)
-            |> _statusUtil.OnStatusLong
+        seq {
+            yield Mark.LastJump
+            for letter in Letter.All do
+                yield Mark.LocalMark (LocalMark.Letter letter)
+            for letter in Letter.All do
+                yield Mark.GlobalMark letter
+            for number in NumberMark.All do
+                yield Mark.LocalMark (LocalMark.Number number)
+            yield Mark.LastExitedPosition
+            yield Mark.LocalMark LocalMark.LastInsertExit
+            yield Mark.LocalMark LocalMark.LastEdit
+            yield Mark.LocalMark LocalMark.LastSelectionStart
+            yield Mark.LocalMark LocalMark.LastSelectionEnd
+        }
+        |> Seq.filter (fun mark -> marks.Length = 0 || List.contains mark marks)
+        |> Seq.map getMark
+        |> Seq.filter (fun option -> option.IsSome)
+        |> Seq.map (fun option -> option.Value)
+        |> Seq.map (fun info -> printMarkInfo info)
+        |> Seq.append ("mark line  col file/text" |> Seq.singleton)
+        |> _statusUtil.OnStatusLong
 
     /// Run the echo command
     member x.RunEcho expression =
@@ -799,7 +799,8 @@ type VimInterpreter
         | _ -> _statusUtil.OnStatus "Error executing expression"
 
     /// Edit the specified file
-    member x.RunEdit hasBang fileOptions commandOption filePath =
+    member x.RunEdit hasBang fileOptions commandOption symbolicPath =
+        let filePath = x.InterpretSymbolicPath symbolicPath
         if not (List.isEmpty fileOptions) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[++opt]")
         elif Option.isSome commandOption then
@@ -827,6 +828,19 @@ type VimInterpreter
     /// Get the value of the specified expression 
     member x.RunExpression expr =
         _exprInterpreter.RunExpression expr
+
+    /// Print out the applicable file history information
+    member x.RunFiles () = 
+        let output = List<string>()
+        output.Add("      # file history")
+
+        let historyList = _vimData.FileHistory
+        for i = 0 to historyList.Count - 1 do
+            let item = historyList.Items.[i]
+            let msg = sprintf "%7d %s" i item
+            output.Add(msg)
+
+        _statusUtil.OnStatusLong(output)
 
     /// Fold the specified line range
     member x.RunFold lineRange = 
@@ -1635,7 +1649,7 @@ type VimInterpreter
 
     member x.RunTabNew symbolicPath = 
         let filePath = x.InterpretSymbolicPath symbolicPath
-        _vimHost.LoadFileIntoNewWindow filePath |> ignore
+        _vimHost.LoadFileIntoNewWindow filePath (Some 0) None |> ignore
 
     member x.RunOnly() =
         _vimHost.CloseAllOtherWindows _textView
@@ -1755,6 +1769,7 @@ type VimInterpreter
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
+        | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.Help -> x.RunHelp()
@@ -1849,18 +1864,21 @@ type VimInterpreter
                     | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentRelativeFileName modifiers
                 path |> sb.AppendString
                 inner sb tail
-            // TODO: depends on PR #2139
-            // Note that _vimData.AlternateFile[Path|Name] don't actually exist in the dependency at the time of writing.
-            // These simply call out the need for calculated paths analogous to _vimBufferData.CurrentFile[Path|Name].
-            // As with '%', both a rooted path '#:p' and a prefix-stripped path '#' are needed to maintain consistency with Vim.
-
-            //| SymbolicPathComponent.AlternateFileName modifiers::tail ->
-            //    let path =
-            //        match modifiers with
-            //        | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers _vimData.AlternateFilePath tail
-            //        | _ -> x.ApplyFileNameModifiers _vimData.AlternateFileName modifiers
-            //    path |> sb.AppendString
-            //    inner sb tail
+            | SymbolicPathComponent.AlternateFileName (n, modifiers)::tail ->
+                let fileHistory = _vimData.FileHistory
+                let fileName = if n >= fileHistory.Count then None else Some fileHistory.Items.[n]
+                let path =
+                    match modifiers with
+                    | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers fileName tail
+                    | _ -> 
+                        let relativeFileName = 
+                            match fileName with
+                            | None -> None
+                            | Some filePath ->
+                                SystemUtil.StripCommonPathPrefix x.CurrentDirectory filePath |> snd |> Some
+                        x.ApplyFileNameModifiers relativeFileName modifiers
+                path |> sb.AppendString
+                inner sb tail
             | [] -> ()
 
         let builder = System.Text.StringBuilder()
