@@ -44,6 +44,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, string, IVimData, RunCommandResults> RunCommandFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
+        public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
@@ -97,6 +98,7 @@ namespace Vim.UnitTest.Mock
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
+            LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             OpenQuickFixWindowFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
@@ -258,9 +260,9 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath)
+        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
-            throw new NotImplementedException();
+            return LoadIntoNewWindowFunc(filePath, line, column);
         }
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()

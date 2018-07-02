@@ -74,7 +74,8 @@ namespace Vim.UnitTest
             var creationListeners = new[] { new Lazy<IVimBufferCreationListener>(() => _simpleListener) };
             var markMap = _factory.Create<IMarkMap>();
             markMap.Setup(x => x.SetMark(Mark.LastJump, It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
-            markMap.Setup(x => x.SetLastExitedPosition("VimTest.cs", 0, 0)).Returns(true);
+            markMap.Setup(x => x.UnloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs", 0, 0)).Returns(true);
+            markMap.Setup(x => x.ReloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs")).Returns(true);
             _vimRaw = new Vim(
                 _vimHost.Object,
                 _bufferFactory,
@@ -648,6 +649,43 @@ namespace Vim.UnitTest
                 var buffer = _vim.CreateVimBuffer(textView);
                 buffer.Process('a');
                 Assert.True(_vim.ActiveBuffer.IsNone());
+            }
+        }
+
+        public sealed class RecentBufferTest : VimTest
+        {
+            private IVimBuffer CreateVimBuffer()
+            {
+                var textView = CreateTextView();
+                var buffer = _vim.CreateVimBuffer(textView);
+                return buffer;
+            }
+
+            private void FocusVimBuffer(IVimBuffer vimBuffer)
+            {
+                _vimRaw.OnFocus(vimBuffer);
+            }
+
+            [WpfFact]
+            public void RecentBuffer()
+            {
+                var buffer1 = CreateVimBuffer();
+                var buffer2 = CreateVimBuffer();
+                var buffer3 = CreateVimBuffer();
+
+                FocusVimBuffer(buffer1);
+                FocusVimBuffer(buffer2);
+                FocusVimBuffer(buffer3);
+                Assert.Equal(buffer3, _vim.TryGetRecentBuffer(0).Value);
+                Assert.Equal(buffer2, _vim.TryGetRecentBuffer(1).Value);
+                Assert.Equal(buffer1, _vim.TryGetRecentBuffer(2).Value);
+                Assert.True(_vim.TryGetRecentBuffer(3).IsNone());
+
+                FocusVimBuffer(buffer2);
+                Assert.Equal(buffer2, _vim.TryGetRecentBuffer(0).Value);
+                Assert.Equal(buffer3, _vim.TryGetRecentBuffer(1).Value);
+                Assert.Equal(buffer1, _vim.TryGetRecentBuffer(2).Value);
+                Assert.True(_vim.TryGetRecentBuffer(3).IsNone());
             }
         }
 

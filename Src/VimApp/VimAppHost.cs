@@ -10,6 +10,8 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using System.Windows.Threading;
+using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
 namespace VimApp
 {
@@ -154,13 +156,34 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
+
+                if (line.IsSome())
+                {
+                    // Move the caret to its initial position.
+                    if (column.IsSome())
+                    {
+                        wpfTextView.MoveCaretToLine(line.Value, column.Value);
+                    }
+                    else
+                    {
+                        // Default column implies moving to the first non-blank.
+                        wpfTextView.MoveCaretToLine(line.Value);
+                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    }
+                }
+
+                // Give the focus to the new buffer.
+                var point = wpfTextView.Caret.Position.VirtualBufferPosition;
+                NavigateTo(point);
+
                 return true;
             }
             catch (Exception ex)
@@ -223,6 +246,39 @@ namespace VimApp
 
         public override bool NavigateTo(VirtualSnapshotPoint point)
         {
+            var textBuffer = point.Position.Snapshot.TextBuffer;
+            foreach (var vimWindow in _vimWindowManager.VimWindowList)
+            {
+                foreach (var vimViewInfo in vimWindow.VimViewInfoList)
+                {
+                    if (vimViewInfo.TextView.TextBuffer == textBuffer)
+                    {
+                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
+                            {
+                                // Select the tab.
+                                vimWindow.TabItem.IsSelected = true;
+                            }),
+                            DispatcherPriority.ApplicationIdle);
+                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
+                            {
+                                // Move caret to point.
+                                var textView = vimViewInfo.TextViewHost.TextView;
+                                textView.Caret.MoveTo(point);
+
+                                // Center the caret line in the window.
+                                var caretLine = textView.GetCaretLine();
+                                var span = caretLine.ExtentIncludingLineBreak;
+                                var option = EnsureSpanVisibleOptions.AlwaysCenter;
+                                textView.ViewScroller.EnsureSpanVisible(span, option);
+
+                                // Focus the window.
+                                Keyboard.Focus(textView.VisualElement);
+                            }),
+                            DispatcherPriority.ApplicationIdle);
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 

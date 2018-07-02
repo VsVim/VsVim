@@ -386,7 +386,21 @@ type Parser
         if _tokenizer.IsAtEndOfLine then
             None
         else
-            x.ParseRestOfLine() |> Some
+            if _tokenizer.CurrentChar = '#' then
+                _tokenizer.MoveNextChar()
+                let n =
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Number n ->
+                        _tokenizer.MoveNextToken()
+                        n
+                    | _ -> 1
+                let fileHistory = _vimData.FileHistory
+                if n >= fileHistory.Count then
+                    None
+                else
+                    Some fileHistory.Items.[n]
+            else
+                x.ParseRestOfLine() |> Some
 
     /// Move to the next line of the input.  This will move past blank lines and return true if 
     /// the result is a non-blank line which can be processed
@@ -792,6 +806,7 @@ type Parser
             | LineCommand.Else -> noRangeCommand
             | LineCommand.ElseIf _ -> noRangeCommand
             | LineCommand.Execute _ -> noRangeCommand
+            | LineCommand.Files -> noRangeCommand
             | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
             | LineCommand.Function _ -> noRangeCommand
             | LineCommand.FunctionEnd _ -> noRangeCommand
@@ -1141,7 +1156,10 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName = x.ParseRestOfLine()
+        let fileName =
+            match x.ParseRestOfLineAsFilePath() with
+            | None -> ""
+            | Some fileName -> fileName
 
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
 
@@ -1859,6 +1877,10 @@ type Parser
 
         LineCommand.Yank (lineRange, registerName, count)
 
+    /// Parse out the files command
+    member x.ParseFiles() =
+        LineCommand.Files
+
     /// Parse out the fold command
     member x.ParseFold lineRange =
         LineCommand.Fold lineRange
@@ -2311,6 +2333,7 @@ type Parser
                 match name with
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
+                | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -2334,6 +2357,7 @@ type Parser
                 | "endfunction" -> noRange x.ParseFunctionEnd
                 | "endif" -> noRange x.ParseIfEnd
                 | "exit" -> x.ParseQuitAndWrite lineRange
+                | "files" -> noRange x.ParseFiles
                 | "fold" -> x.ParseFold lineRange
                 | "function" -> noRange x.ParseFunctionStart
                 | "global" -> x.ParseGlobal lineRange
@@ -2350,6 +2374,7 @@ type Parser
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+                | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
                 | "make" -> noRange x.ParseMake 
