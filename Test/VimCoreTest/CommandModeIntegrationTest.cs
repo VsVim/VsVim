@@ -1268,6 +1268,19 @@ namespace Vim.UnitTest
                     RunCommandRaw(@":s/\*6/\*7/g");
                     Assert.Equal("*7", _textBuffer.GetLine(0).GetText());
                 }
+
+                /// <summary>
+                /// A dot cannot match any portion of the linebreak
+                /// </summary>
+                [WpfFact]
+                public void DotCannotMatchTheLineBreak()
+                {
+                    /// Reported in issue #2236.
+                    Create("abc", "def", "");
+                    Assert.Equal("abc\r\ndef\r\n", _textView.TextSnapshot.GetText());
+                    RunCommandRaw(":s/.*/xxx");
+                    Assert.Equal("xxx\r\ndef\r\n", _textView.TextSnapshot.GetText());
+                }
             }
         }
 
