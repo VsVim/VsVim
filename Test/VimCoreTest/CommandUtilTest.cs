@@ -18,7 +18,7 @@ namespace Vim.UnitTest
         private MockRepository _factory;
         private MockVimHost _vimHost;
         private IMacroRecorder _macroRecorder;
-        private Mock<IStatusUtil> _statusUtil;
+        private TestableStatusUtil _statusUtil;
         private TestableBulkOperations _bulkOperations;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
@@ -44,13 +44,13 @@ namespace Vim.UnitTest
             var foldManager = CreateFoldManager(_textView);
 
             _factory = new MockRepository(MockBehavior.Loose);
-            _statusUtil = _factory.Create<IStatusUtil>();
+            _statusUtil = new TestableStatusUtil();
             _bulkOperations = new TestableBulkOperations();
 
             var vimBufferData = CreateVimBufferData(
                 _vimTextBuffer,
                 _textView,
-                statusUtil: _statusUtil.Object);
+                statusUtil: _statusUtil);
             _jumpList = vimBufferData.JumpList;
             _windowSettings = vimBufferData.WindowSettings;
 
@@ -163,6 +163,53 @@ namespace Vim.UnitTest
                 Create("");
                 var value = _commandUtil.CreateRegisterValue(VimUtil.CreateStringDataBlock("cat", "dog"), OperationKind.LineWise);
                 Assert.Equal("cat" + Environment.NewLine + "dog", value.StringValue);
+            }
+        }
+
+        public sealed class DisplayCharacterBytesTest : CommandUtilTest
+        {
+            private void Check(string expected)
+            {
+                _commandUtil.DisplayCharacterBytes();
+                Assert.Equal(expected, _statusUtil.LastStatus);
+            }
+
+            [WpfFact]
+            public void AsciiSimple()
+            {
+                Create("cat");
+                Check("63");
+            }
+
+            [WpfFact]
+            public void ZeroFillSimple()
+            {
+                Create("\t");
+                Check("09");
+            }
+
+            [WpfFact]
+            public void SurrogatePair()
+            {
+                Create("𠈓");
+                Check("f0 a0 88 93");
+            }
+
+            [WpfFact]
+            public void SurrogatePairLowSurrogae()
+            {
+                Create("𠈓");
+                _textView.MoveCaretTo(1);
+                Check("f0 a0 88 93");
+            }
+
+            [WpfFact]
+            public void EndPoint()
+            {
+                Create("hello");
+                _textView.MoveCaretTo(_textBuffer.CurrentSnapshot.Length);
+                _commandUtil.DisplayCharacterBytes();
+                Assert.Equal(1, VimHost.BeepCount);
             }
         }
 
@@ -372,9 +419,8 @@ namespace Vim.UnitTest
             public void JumpToMark_Global_NotSet()
             {
                 Create("cat", "dog");
-                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkNotSet)).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
-                _statusUtil.Verify();
+                Assert.Equal(Resources.Common_MarkNotSet, _statusUtil.LastError);
             }
 
             [WpfFact]
@@ -409,11 +455,10 @@ namespace Vim.UnitTest
                 Vim.MarkMap.SetGlobalMark(Letter.A, otherVimBuffer.VimTextBuffer, 0, 1);
 
                 var point = new VirtualSnapshotPoint(otherVimBuffer.TextBuffer.GetPoint(1));
-                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkNotSet)).Verifiable();
                 _commonOperations.Setup(x => x.NavigateToPoint(point)).Returns(false).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
                 _commonOperations.Verify();
-                _statusUtil.Verify();
+                Assert.Equal(Resources.Common_MarkNotSet, _statusUtil.LastError);
             }
 
             [WpfFact]
@@ -430,11 +475,10 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "tree");
                 var msg = "This is a test";
-                _statusUtil.Setup(x => x.OnError(msg)).Verifiable();
                 _commonOperations.Setup(x => x.GoToDefinition()).Returns(Result.NewFailed(msg)).Verifiable();
                 _commandUtil.GoToDefinition();
                 _commonOperations.Verify();
-                _statusUtil.Verify();
+                Assert.Equal(msg, _statusUtil.LastError);
             }
 
             [WpfFact]
@@ -1096,9 +1140,8 @@ namespace Vim.UnitTest
             public void SetMarkToCaret_BeepOnFailure()
             {
                 Create("the cat chased the dog");
-                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkInvalid)).Verifiable();
                 _commandUtil.SetMarkToCaret('!');
-                _statusUtil.Verify();
+                Assert.Equal(Resources.Common_MarkInvalid, _statusUtil.LastError);
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 
@@ -1129,9 +1172,8 @@ namespace Vim.UnitTest
             public void JumpToMark_OnFailure()
             {
                 Create("the cat chased the dog");
-                _statusUtil.Setup(x => x.OnError(Resources.Common_MarkNotSet)).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewLocalMark(_localMarkA));
-                _statusUtil.Verify();
+                Assert.Equal(Resources.Common_MarkNotSet, _statusUtil.LastError);
             }
 
             /// <summary>
@@ -1248,10 +1290,9 @@ namespace Vim.UnitTest
                     _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
                 }));
 
-                _statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
                 _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
-                _factory.Verify();
                 Assert.True(didRun);
+                Assert.Equal(Resources.NormalMode_RecursiveRepeatDetected, _statusUtil.LastError);
             }
 
             /// <summary>
