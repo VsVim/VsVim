@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Outlining
 open NullableUtil
+open Vim.VimCoreExtensions
 
 type IncrementalSearchData = { 
 
@@ -132,8 +133,8 @@ type internal IncrementalSearch
                 member this.Completed (data: ITrackingPoint) _ = runActive (fun session -> x.RunCompleted session data) IncrementalSearchData.Default.SearchResult
                 member this.Cancelled (data: ITrackingPoint) = runActive (fun session -> x.RunCancelled session) ()
             }
-
-        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty None
+        let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
+        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty vimBuffer
         _incrementalSearchSession <- Some (IncrementalSearchSession(key, historySession, incrementalSearchData))
 
         // Raise the event
