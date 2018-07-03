@@ -4880,6 +4880,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Short lines should be padded on the right
+            /// </summary>
+            [WpfFact]
+            public void BlockWithShortLines()
+            {
+                // Reported in issue #2231.
+                Create("xxx dog", "cat", "");
+                _textView.MoveCaretTo(6);
+                UnnamedRegister.UpdateBlockValues("aa", "bb");
+                _vimBuffer.Process("p");
+                Assert.Equal(new[] { "xxx dogaa", "cat    bb", "", }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// The new text should be on new lines at the same indetn and the caret posion should
             /// be the same as puting over existing lines
             /// </summary>
