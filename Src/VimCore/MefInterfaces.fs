@@ -321,6 +321,9 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
 
+    /// Whether to use virtual space
+    abstract UseVirtualSpace: bool
+
     abstract AdjustCaretForScrollOffset: unit -> unit
 
     abstract member CloseWindowUnlessDirty: unit -> unit

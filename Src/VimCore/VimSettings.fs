@@ -456,8 +456,12 @@ type internal GlobalSettings() =
         member x.IsBackspaceEol = x.IsCommaSubOptionPresent BackspaceName "eol"
         member x.IsBackspaceIndent = x.IsCommaSubOptionPresent BackspaceName "indent"
         member x.IsBackspaceStart = x.IsCommaSubOptionPresent BackspaceName "start"
-        member x.IsVirtualEditBlock = x.IsCommaSubOptionPresent VirtualEditName "block"
-        member x.IsVirtualEditInsert = x.IsCommaSubOptionPresent VirtualEditName "insert"
+        member x.IsVirtualEditBlock =
+            x.IsCommaSubOptionPresent VirtualEditName "block"
+            || x.IsCommaSubOptionPresent VirtualEditName "all"
+        member x.IsVirtualEditInsert =
+            x.IsCommaSubOptionPresent VirtualEditName "insert"
+            || x.IsCommaSubOptionPresent VirtualEditName "all"
         member x.IsVirtualEditAll = x.IsCommaSubOptionPresent VirtualEditName "all"
         member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
         member x.IsWhichWrapSpaceLeft = x.IsCommaSubOptionPresent WhichWrapName "b"
