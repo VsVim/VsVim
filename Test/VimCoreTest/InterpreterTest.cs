@@ -2712,6 +2712,8 @@ namespace Vim.UnitTest
             private Mock<IVimBufferData> _vimBufferData;
             private VimInterpreter _interpreter;
             private Parser _parser;
+            private HistoryList _fileHistory;
+            private Mock<IVim> _vim;
 
             [WpfFact]
             public void VimDocExamples()
@@ -2784,6 +2786,25 @@ namespace Vim.UnitTest
                 TestInterpretation(@"fooc:\A\B\C\bar\%test\", @"foo%:p:h:h\bar\\%%:r:r\");
             }
 
+            [WpfFact]
+            public void AlternateFilenameTest()
+            {
+                Create();
+
+                var cd = @"c:\A\B";
+                _vimBuffer.SetupGet(x => x.CurrentDirectory).Returns(cd);
+
+                _fileHistory.Add(@"c:\A\B\hist3.txt");
+                _fileHistory.Add(@"c:\C\hist2.txt");
+                _fileHistory.Add(@"c:\A\hist1.txt");
+
+                TestInterpretation("hist1.txt", "#0");
+                TestInterpretation(@"C\hist2.txt", "#");
+                TestInterpretation(@"C\hist2.txt", "#1");
+                TestInterpretation("hist3.txt", "#2");
+                TestInterpretation(@"c:\A\B\hist3.txt", "#2:p");
+            }
+
             private void TestInterpretation(string expected, string symbolicPath)
             {
                 AssertPathEquivalent(expected, _interpreter.InterpretSymbolicPath(_parser.ParseDirectoryPath(symbolicPath)));
@@ -2801,9 +2822,14 @@ namespace Vim.UnitTest
                 _fileSystem = _factory.Create<IFileSystem>();
                 _bufferTrackingService = _factory.Create<IBufferTrackingService>();
                 _globalSettings = _factory.Create<IVimGlobalSettings>();
+                _vim = _factory.Create<IVim>();
                 _vimData = _factory.Create<IVimData>();
                 _vimBufferData = _factory.Create<IVimBufferData>();
                 _vimBuffer.SetupGet(x => x.VimBufferData).Returns(_vimBufferData.Object);
+                _vimBufferData.SetupGet(x => x.Vim).Returns(_vim.Object);
+                _vim.SetupGet(x => x.VimData).Returns(_vimData.Object);
+                _fileHistory = new HistoryList();
+                _vimData.SetupGet(x => x.FileHistory).Returns(_fileHistory);
                 _parser = new Parser(_globalSettings.Object, _vimData.Object);
                 _interpreter = new VimInterpreter(_vimBuffer.Object, _commonOperations.Object, _foldManager.Object, _fileSystem.Object, _bufferTrackingService.Object);
             }
