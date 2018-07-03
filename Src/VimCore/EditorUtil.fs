@@ -1868,14 +1868,18 @@ module VirtualSnapshotPointUtil =
 
     let IsInVirtualSpace (point:VirtualSnapshotPoint) = point.IsInVirtualSpace
 
-    /// Incremental the VirtualSnapshotPoint by one keeping it on the same 
-    /// line
-    let AddOneOnSameLine point =
-        if IsInVirtualSpace point then VirtualSnapshotPoint(point.Position, point.VirtualSpaces + 1)
-        else
-            let line = GetContainingLine point
-            if point.Position = line.EndIncludingLineBreak then VirtualSnapshotPoint(point.Position, 1)
-            else VirtualSnapshotPoint(point.Position.Add(1))
+    let GetColumnNumber (point: VirtualSnapshotPoint) =
+        let line = GetContainingLine point
+        point.Position.Position - line.Start.Position + point.VirtualSpaces
+
+    /// Add count to the VirtualSnapshotPoint keeping it on the same line
+    let Add point count =
+        let line = GetContainingLine point
+        let offset = point.Position.Position - line.Start.Position + point.VirtualSpaces
+        VirtualSnapshotPoint(line, offset + count)
+
+    /// Add one to the VirtualSnapshotPoint keeping it on the same line
+    let AddOneOnSameLine point = Add point 1
 
     /// Used to order two SnapshotPoint's in ascending order.  
     let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 

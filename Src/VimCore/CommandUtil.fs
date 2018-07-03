@@ -106,6 +106,9 @@ type internal CommandUtil
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -1589,10 +1592,10 @@ type internal CommandUtil
             CommandResult.Error
         | Some result ->
 
-            let point = x.CaretPoint
+            let point = x.CaretVirtualPoint
             _commonOperations.MoveCaretToMotionResult result
 
-            if point = x.CaretPoint then
+            if point = x.CaretVirtualPoint then
                 // Failure to move the caret for a motion results in a beep for certain motions.  There
                 // isn't any documentation here but experimentally it is true for 'l' and 'h'.
                 //

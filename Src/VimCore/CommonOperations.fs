@@ -737,7 +737,15 @@ type internal CommonOperations
                 // Character wise motions should expand regions
                 ViewFlags.All
 
-        x.MoveCaretToPoint point viewFlags
+        match _globalSettings.IsVirtualEditAll, result.IsForward, result.MotionKind, result.CaretColumn with
+        | true, true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column ->
+            let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
+            let virtualSpaces = max 0 (column - columnNumber)
+            let virtualPoint = VirtualSnapshotPointUtil.Add (VirtualSnapshotPointUtil.OfPoint point) virtualSpaces
+            TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
+        | _ ->
+            x.MoveCaretToPoint point viewFlags
+
         _editorOperations.ResetSelection()
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 

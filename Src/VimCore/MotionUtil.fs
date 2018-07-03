@@ -989,6 +989,9 @@ type internal MotionUtil
     /// Caret point in the ITextView
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// The virtual caret point in the ITextView
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     /// Caret line in the ITextView
     member x.CaretLine = SnapshotPointUtil.GetContainingLine x.CaretPoint
 
@@ -2318,10 +2321,17 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters after the caret 
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
-        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
-        let span = SnapshotSpan(x.CaretPoint, endPoint)
-        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+        if _globalSettings.IsVirtualEditAll then
+            let startPoint = x.CaretVirtualPoint
+            let endPoint = VirtualSnapshotPointUtil.Add startPoint count
+            let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
+            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+        else
+            let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+            let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
+            let span = SnapshotSpan(x.CaretPoint, endPoint)
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
     /// Get a relative character motion backward or forward 'count' characters
     /// wrapping lines if 'withLineWrap' is specified

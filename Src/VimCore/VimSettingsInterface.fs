@@ -354,6 +354,15 @@ and IVimGlobalSettings =
     /// Is the 'start' option inside of Backspace set
     abstract IsBackspaceStart: bool with get
 
+    /// Is the 'block' option inside of VirtualEdit set
+    abstract IsVirtualEditBlock: bool with get
+
+    /// Is the 'insert' option inside of VirtualEdit set
+    abstract IsVirtualEditInsert: bool with get
+
+    /// Is the 'all' option inside of VirtualEdit set
+    abstract IsVirtualEditAll: bool with get
+
     /// Is the 'onemore' option inside of VirtualEdit set
     abstract IsVirtualEditOneMore: bool with get
 
