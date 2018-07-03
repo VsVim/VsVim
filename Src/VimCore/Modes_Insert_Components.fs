@@ -175,8 +175,9 @@ type internal TextChangeTracker
             // If we not suppressing change marks, automatically update the
             // last change start and end positions.
             if not _suppressLastChangeMarks then
-                let span = SnapshotSpan(args.After, change.NewSpan)
-                _operations.RecordLastChangeOrYank span false
+                let oldSpan = SnapshotSpan(args.Before, change.OldSpan)
+                let newSpan = SnapshotSpan(args.After, change.NewSpan)
+                _operations.RecordLastChangeOrYank oldSpan newSpan
         else
             // When there are multiple changes it is usually the result of a projection 
             // buffer edit coming from a web page edit.  For now that's unsupported

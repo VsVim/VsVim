@@ -32,6 +32,7 @@ module internal Resources =
     let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let Common_NoEnvironmentVariableFound = "No environment variable found"
+    let Common_LinesDeleted lines = sprintf "%d lines deleted" lines
     let Common_LinesChanged lines = sprintf "%d lines changed" lines
     let Common_LinesYanked lines = sprintf "%d lines yanked" lines
 

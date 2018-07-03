@@ -3338,7 +3338,7 @@ type internal CommandUtil
             let data = StringData.OfSpan span
             let value = x.CreateRegisterValue data OperationKind.LineWise
             _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-            _commonOperations.RecordLastChangeOrYank span true
+            _commonOperations.RecordLastChangeOrYank span span
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3350,7 +3350,7 @@ type internal CommandUtil
         | OperationKind.CharacterWise ->
             TextViewUtil.MoveCaretToPoint _textView result.Start
         | _ -> ()
-        _commonOperations.RecordLastChangeOrYank result.Span true
+        _commonOperations.RecordLastChangeOrYank result.Span result.Span
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the lines in the specified selection
@@ -3371,7 +3371,8 @@ type internal CommandUtil
         let data = StringData.OfEditSpan editSpan
         let value = x.CreateRegisterValue data operationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-        _commonOperations.RecordLastChangeOrYank editSpan.OverarchingSpan true
+        let span = editSpan.OverarchingSpan
+        _commonOperations.RecordLastChangeOrYank span span
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Yank the selection into the specified register
@@ -3379,7 +3380,8 @@ type internal CommandUtil
         let data = StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
-        _commonOperations.RecordLastChangeOrYank visualSpan.EditSpan.OverarchingSpan true
+        let span = visualSpan.EditSpan.OverarchingSpan
+        _commonOperations.RecordLastChangeOrYank span span
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection
