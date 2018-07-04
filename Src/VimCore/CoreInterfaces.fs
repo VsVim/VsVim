@@ -1732,23 +1732,23 @@ type BlockSpan =
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
     /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
     /// SnapshotSpan start
-    static member CreateForSpan (span: SnapshotSpan) tabStop =
+    static member CreateForSpan (span: VirtualSnapshotSpan) tabStop =
         let startPoint, width = 
-            let startColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.Start tabStop
-            let endColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.End tabStop
+            let startColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.Start tabStop
+            let endColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.End tabStop
             let width = endColumnSpaces - startColumnSpaces 
 
             if width = 0 then
-                span.Start, 1
+                span.Start.Position, 1
             elif width > 0 then
-                span.Start, width
+                span.Start.Position, width
             else 
-                let startLine = SnapshotPointUtil.GetContainingLine span.Start
+                let startLine = SnapshotPointUtil.GetContainingLine span.Start.Position
                 let start = SnapshotLineUtil.GetColumnOrEnd endColumnSpaces startLine
                 let width = abs width
                 start, width
 
-        let height = SnapshotSpanUtil.GetLineCount span
+        let height = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
         BlockSpan(startPoint, tabStop, width, height)
 
 [<RequireQualifiedAccess>]
@@ -1924,17 +1924,17 @@ type VisualSpan =
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
     /// to be the end of the selection and hence not included (exclusive) just as it is 
     /// in ITextSelection
-    static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
+    static member CreateForSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop =
 
         match visualKind with
         | VisualKind.Character ->
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let characterSpan = CharacterSpan(startPoint, endPoint)
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let characterSpan = CharacterSpan(startPoint.Position, endPoint.Position)
             Character characterSpan
         | VisualKind.Line ->
 
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint.Position
 
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
             // one line too big.  Go back on point to ensure we don't expand the span
@@ -1942,13 +1942,13 @@ type VisualSpan =
                 if startPoint = endPoint then
                     startLine
                 else
-                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint.Position
                     SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
         | VisualKind.Block -> 
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let span = SnapshotSpan(startPoint, endPoint)
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
             BlockSpan.CreateForSpan span tabStop |> Block
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
@@ -1956,11 +1956,11 @@ type VisualSpan =
     static member CreateForSelection (textView: ITextView) visualKind tabStop =
         let selection = textView.Selection
         if selection.IsEmpty then
-            let caretPoint = TextViewUtil.GetCaretPoint textView
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
             VisualSpan.CreateForSelectionPoints visualKind caretPoint caretPoint tabStop
         else
-            let anchorPoint = selection.AnchorPoint.Position
-            let activePoint = selection.ActivePoint.Position 
+            let anchorPoint = selection.AnchorPoint
+            let activePoint = selection.ActivePoint
 
             // Need to special case the selection ending in, and encompassing, an empty line.  Once you 
             // get rid of the virtual points here it's impossible to distinguish from the case where the 
@@ -1977,7 +1977,11 @@ type VisualSpan =
         match visualKind with
         | VisualKind.Character -> CharacterSpan(span) |> Character
         | VisualKind.Line -> span |> SnapshotLineRangeUtil.CreateForSpan |> Line
-        | VisualKind.Block -> BlockSpan.CreateForSpan span tabStop |> Block
+        | VisualKind.Block ->
+            let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
+            let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
+            BlockSpan.CreateForSpan span tabStop |> Block
 
 /// Represents the information for a visual mode selection.  All of the values are expressed
 /// in terms of an inclusive selection.
@@ -2203,7 +2207,7 @@ type VisualSelection =
                     caretPoint, activePoint
 
             let path = SearchPath.Create isForward
-            VisualSpan.CreateForSelectionPoints visualKind anchorPoint.Position activePoint.Position tabStop, path
+            VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop, path
 
         let visualSpan, path = 
             match visualKind with
