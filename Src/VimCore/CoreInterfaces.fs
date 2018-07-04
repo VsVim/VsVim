@@ -1732,7 +1732,7 @@ type BlockSpan =
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
     /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
     /// SnapshotSpan start
-    static member CreateForSpan (span: VirtualSnapshotSpan) tabStop =
+    static member CreateForVirtualSpan (span: VirtualSnapshotSpan) tabStop =
         let startPoint, width = 
             let startColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.Start tabStop
             let endColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.End tabStop
@@ -1750,6 +1750,10 @@ type BlockSpan =
 
         let height = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
         BlockSpan(startPoint, tabStop, width, height)
+
+    static member CreateForSpan (span: SnapshotSpan) tabStop =
+        let virtualSpan = VirtualSnapshotSpanUtil.OfSpan span
+        BlockSpan.CreateForVirtualSpan virtualSpan tabStop
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -1924,7 +1928,7 @@ type VisualSpan =
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
     /// to be the end of the selection and hence not included (exclusive) just as it is 
     /// in ITextSelection
-    static member CreateForSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop =
+    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop =
 
         match visualKind with
         | VisualKind.Character ->
@@ -1949,7 +1953,12 @@ type VisualSpan =
         | VisualKind.Block -> 
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
             let span = VirtualSnapshotSpan(startPoint, endPoint)
-            BlockSpan.CreateForSpan span tabStop |> Block
+            BlockSpan.CreateForVirtualSpan span tabStop |> Block
+
+    static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
+        let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
+        let virtualActivePoint = VirtualSnapshotPointUtil.OfPoint activePoint
+        VisualSpan.CreateForVirtualSelectionPoints visualKind virtualAnchorPoint virtualActivePoint tabStop
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
@@ -1957,7 +1966,7 @@ type VisualSpan =
         let selection = textView.Selection
         if selection.IsEmpty then
             let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
-            VisualSpan.CreateForSelectionPoints visualKind caretPoint caretPoint tabStop
+            VisualSpan.CreateForVirtualSelectionPoints visualKind caretPoint caretPoint tabStop
         else
             let anchorPoint = selection.AnchorPoint
             let activePoint = selection.ActivePoint
@@ -1970,18 +1979,14 @@ type VisualSpan =
                 let characterSpan = CharacterSpan(selection.Start.Position, endPoint)
                 Character characterSpan
             else
-                let visualSpan = VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop
+                let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
                 visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
 
     static member CreateForSpan (span: SnapshotSpan) visualKind tabStop =
         match visualKind with
         | VisualKind.Character -> CharacterSpan(span) |> Character
         | VisualKind.Line -> span |> SnapshotLineRangeUtil.CreateForSpan |> Line
-        | VisualKind.Block ->
-            let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
-            let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
-            let span = VirtualSnapshotSpan(startPoint, endPoint)
-            BlockSpan.CreateForSpan span tabStop |> Block
+        | VisualKind.Block -> BlockSpan.CreateForSpan span tabStop |> Block
 
 /// Represents the information for a visual mode selection.  All of the values are expressed
 /// in terms of an inclusive selection.
@@ -2207,7 +2212,7 @@ type VisualSelection =
                     caretPoint, activePoint
 
             let path = SearchPath.Create isForward
-            VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop, path
+            VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop, path
 
         let visualSpan, path = 
             match visualKind with
