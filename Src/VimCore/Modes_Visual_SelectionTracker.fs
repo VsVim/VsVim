@@ -63,6 +63,9 @@ type internal SelectionTracker
 
             _anchorPoint <- Some caretPoint
             _extendIntoLineBreak <- false
+
+            _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
+
         else 
             // The selection is already set and we need to track it.  The anchor point in
             // vim is always included in the selection but in the ITextSelection it is 
@@ -77,6 +80,9 @@ type internal SelectionTracker
                 else
                     Some anchorPoint
             _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
+
+            let visualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
+            _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -110,6 +116,8 @@ type internal SelectionTracker
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView
+
+            _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
 
     /// Update the selection based on the current state of the ITextView
     member x.UpdateSelectionWithAnchorPoint anchorPoint = 
