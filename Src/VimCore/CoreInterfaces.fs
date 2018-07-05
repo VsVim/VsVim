@@ -1614,7 +1614,7 @@ type CharacterSpan =
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
     member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
-        if x.End = x.LastLine.End then
+        if x.End.Position >= x.LastLine.End.Position then
             let endPoint = x.LastLine.EndIncludingLineBreak
             CharacterSpan(x.Start, endPoint)
         else
