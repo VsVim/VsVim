@@ -375,6 +375,23 @@ namespace Vim.UI.Wpf.UnitTest
                     ProcessNotation(@":<C-R>c");
                     Assert.Equal(":test", _marginControl.CommandLineTextBox.Text);
                 }
+                
+                [WpfFact]
+                public void SpecialWord()
+                {
+                    Create("cat");
+                    ProcessNotation(@":<C-R><C-w>");
+                    Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
+                }
+                
+                [WpfFact]
+                public void SpecialWORD()
+                {
+                    Create("cat.dog");
+
+                    ProcessNotation(@":<C-R><C-a>");
+                    Assert.Equal(":cat.dog", _marginControl.CommandLineTextBox.Text);
+                }
 
                 [WpfFact]
                 public void InPasteWait()
@@ -382,6 +399,17 @@ namespace Vim.UI.Wpf.UnitTest
                     Create("cat");
                     ProcessNotation(@":<C-R>");
                     Assert.True(_controller.InPasteWait);
+                }
+                
+                [WpfFact]
+                public void CtrlR_IgnoredInPasteWait()
+                {
+                    Create("");
+                    ProcessNotation(@":cat<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                    ProcessNotation("<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                    Assert.Equal(":cat\"", _marginControl.CommandLineTextBox.Text);
                 }
             }
 
@@ -394,6 +422,22 @@ namespace Vim.UI.Wpf.UnitTest
                     Vim.RegisterMap.GetRegister('c').UpdateValue("ca");
                     ProcessNotation(@":t<Left><C-r>c");
                     Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
+                }
+                
+                [WpfFact]
+                public void SpecialWord()
+                {
+                    Create("cat");
+                    ProcessNotation(@":s<Left><C-R><C-w>");
+                    Assert.Equal(":cats", _marginControl.CommandLineTextBox.Text);
+                }
+                
+                [WpfFact]
+                public void SpecialWORD()
+                {
+                    Create("cat.dog");
+                    ProcessNotation(@":s<Left><C-R><C-a>");
+                    Assert.Equal(":cat.dogs", _marginControl.CommandLineTextBox.Text);
                 }
                 
                 [WpfFact]
