@@ -398,6 +398,7 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
+    let DotRegex = @"[^\r\n]"
     let DollarRegex = @"(?<!\r)(?=\r?$)"
     let NewLineRegex = @"(?<!\r)\r?\n"
 
@@ -543,7 +544,11 @@ module VimRegexFactory =
     /// magic setting.
     let ConvertCharAsSpecial (data: VimRegexBuilder) c = 
         match c with
-        | '.' -> data.AppendChar '.'
+        | '.' ->
+            if data.IsCollectionOpen then
+                ConvertCharAsNormal data '.'
+            else
+                data.AppendString DotRegex
         | '+' -> data.AppendChar '+'
         | '=' -> data.AppendChar '?'
         | '?' -> data.AppendChar '?'
