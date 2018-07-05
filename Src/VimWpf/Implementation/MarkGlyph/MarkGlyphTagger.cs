@@ -287,11 +287,12 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     if (lineNumber < snapshot.LineCount)
                     {
                         var line = snapshot.GetLineFromLineNumber(lineNumber);
-                        if (span.OverlapsWith(line.ExtentIncludingLineBreak))
+                        var lineSpan = new SnapshotSpan(line.Start, 0);
+                        if (span.Contains(lineSpan))
                         {
                             var tag = new MarkGlyphTag(chars);
                             VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
-                            yield return new TagSpan<MarkGlyphTag>(line.Extent, tag);
+                            yield return new TagSpan<MarkGlyphTag>(lineSpan, tag);
                         }
                     }
                 }
