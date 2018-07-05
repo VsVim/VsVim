@@ -162,6 +162,11 @@ namespace Vim.EditorHost
             return new SnapshotPoint(buffer.CurrentSnapshot, position);
         }
 
+        public static VirtualSnapshotPoint GetVirtualPoint(this ITextBuffer buffer, int position)
+        {
+            return new VirtualSnapshotPoint(buffer.CurrentSnapshot, position);
+        }
+
         public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
         {
             return buffer.CurrentSnapshot.GetEndPoint();

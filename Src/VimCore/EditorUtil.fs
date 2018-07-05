@@ -1057,13 +1057,6 @@ module NormalizedSnapshotSpanCollectionUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module VirtualSnapshotSpanUtil = 
-
-    /// Get the span 
-    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
-
-/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
-/// include any Vim specific logic
 module SnapshotLineUtil =
 
     /// ITextSnapshot the ITextSnapshotLine is associated with
@@ -1868,6 +1861,10 @@ module VirtualSnapshotPointUtil =
 
     let IsInVirtualSpace (point:VirtualSnapshotPoint) = point.IsInVirtualSpace
 
+    let GetLineColumn (point: VirtualSnapshotPoint) =
+        let line = GetContainingLine point
+        line.LineNumber, point.Position.Position - line.Start.Position + point.VirtualSpaces
+
     let GetColumnNumber (point: VirtualSnapshotPoint) =
         let line = GetContainingLine point
         point.Position.Position - line.Start.Position + point.VirtualSpaces
@@ -1885,6 +1882,24 @@ module VirtualSnapshotPointUtil =
     let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 
         if left.CompareTo(right) < 0 then left,right 
         else right,left
+
+    let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop = 
+        let column = SnapshotColumn(point.Position)
+        let spaces = SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
+        spaces + point.VirtualSpaces
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module VirtualSnapshotSpanUtil =
+
+    /// Get the span
+    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
+
+    /// Get a virtual snapshot span from a snapshot span
+    let OfSpan (span: SnapshotSpan) =
+        let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
+        let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
+        VirtualSnapshotSpan(startPoint, endPoint)
 
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context

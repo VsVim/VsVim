@@ -97,8 +97,9 @@ type internal SelectionTracker
         match _anchorPoint with
         | None -> ()
         | Some anchorPoint ->
+            let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
             let simulatedCaretPoint = 
-                let caretPoint = TextViewUtil.GetCaretPoint _textView 
+                let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView 
                 if _incrementalSearch.InSearch then
                     match _lastIncrementalSearchResult with
                     | None -> caretPoint
@@ -106,13 +107,14 @@ type internal SelectionTracker
                         match searchResult with
                         | SearchResult.NotFound _ -> caretPoint
                         | SearchResult.Error _ -> caretPoint
-                        | SearchResult.Found (_, span, _, _) -> span.Start
+                        | SearchResult.Found (_, span, _, _) ->
+                            VirtualSnapshotPointUtil.OfPoint span.Start
                 else
                     caretPoint
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
-            let visualSelection = VisualSelection.CreateForPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForVirtualPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView
