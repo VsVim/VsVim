@@ -152,6 +152,45 @@ namespace Vim.UI.Wpf.UnitTest
             }
         }
         
+        public sealed class DeleteWordTest : CommandLineEditIntegrationTest
+        {
+            [WpfFact]
+            public void DeleteEditStart()
+            {
+                Create();
+                ProcessNotation(@":foo<Left><c-w>");
+                Assert.Equal(":o", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("o", _vimBuffer.CommandMode.Command);
+            }
+
+            [WpfFact]
+            public void DeleteCommand()
+            {
+                Create();
+                ProcessNotation(@":foo <c-w>");
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("", _vimBuffer.CommandMode.Command);
+            }
+
+            [WpfFact]
+            public void DeleteSearch()
+            {
+                Create();
+                ProcessNotation(@"/foo bar  <c-w>");
+                Assert.Equal("/foo ", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo ", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+
+            [WpfFact]
+            public void DeleteSearchEdit()
+            {
+                Create();
+                ProcessNotation(@"/foo bar<Left><c-w>");
+                Assert.Equal("/foo r", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo r", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+        }
+
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
             [WpfFact]

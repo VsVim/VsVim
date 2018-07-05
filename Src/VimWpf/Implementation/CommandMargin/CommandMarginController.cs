@@ -458,6 +458,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
                         // Now move the buffer into paste wait 
                         _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToChar('r', VimKeyModifiers.Control));
+                        e.Handled = true;
                     }
                     break;
                 case Key.U:
@@ -472,6 +473,13 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                             UpdateVimBufferStateWithCommandText(text);
                             textBox.Select(1, 0);
                         }
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.W:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        DeleteWordBeforeCursor();
                         e.Handled = true;
                     }
                     break;
@@ -939,6 +947,23 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // the operation.  Just pass Escape down to the buffer so it will cancel out
             // of paste wait and go back to a known state
             _vimBuffer.Process(KeyInputUtil.EscapeKey);
+        }
+
+        private void DeleteWordBeforeCursor()
+        {
+            var textBox = _margin.CommandLineTextBox;
+            var end = textBox.SelectionStart;
+            if (end < 2)
+                return;
+            var begin = end;
+            while (begin > 1 && char.IsWhiteSpace(textBox.Text, begin - 1))
+                begin--;
+            while (begin > 1 && !char.IsWhiteSpace(textBox.Text, begin - 1))
+                begin--;
+            var text = textBox.Text.Substring(0, begin) + textBox.Text.Substring(end);
+            textBox.Text = text;
+            UpdateVimBufferStateWithCommandText(text);
+            textBox.Select(begin, 0);
         }
     }
 }

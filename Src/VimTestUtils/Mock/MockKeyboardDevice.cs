@@ -153,6 +153,12 @@ namespace Vim.UnitTest.Mock
                 return true;
             }
 
+            if (keyInput.Char == ' ')
+            {
+                key = Key.Space;
+                return true;
+            }
+            
             if ((char)18 == keyInput.Char)
             {
                 key = Key.R;
@@ -163,6 +169,13 @@ namespace Vim.UnitTest.Mock
             if ((char)21 == keyInput.Char)
             {
                 key = Key.U;
+                modKeys = ModifierKeys.Control;
+                return true;
+            }
+            
+            if ((char)23 == keyInput.Char)
+            {
+                key = Key.W;
                 modKeys = ModifierKeys.Control;
                 return true;
             }
