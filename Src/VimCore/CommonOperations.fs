@@ -670,17 +670,6 @@ type internal CommonOperations
         let line = result.DirectionLastLine
         x.AdjustEditLineForVisualSnapshotLine line
 
-    member x.UseVirtualSpace =
-        match _vimTextBuffer.ModeKind with
-        | ModeKind.SelectBlock
-        | ModeKind.VisualBlock
-            -> _globalSettings.IsVirtualEditBlock
-        | ModeKind.Insert
-        | ModeKind.Replace
-            -> _globalSettings.IsVirtualEditInsert
-        | _
-            -> _globalSettings.IsVirtualEditAll
-
     /// Move the caret to the position dictated by the given MotionResult value
     ///
     /// Note: This method mixes points from the edit and visual snapshot.  Take care
@@ -748,7 +737,7 @@ type internal CommonOperations
                 // Character wise motions should expand regions
                 ViewFlags.All
 
-        match x.UseVirtualSpace, result.IsForward, result.MotionKind, result.CaretColumn with
+        match _vimTextBuffer.UseVirtualSpace, result.IsForward, result.MotionKind, result.CaretColumn with
         | true, true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column ->
             let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
             let virtualSpaces = max 0 (column - columnNumber)
@@ -1768,7 +1757,6 @@ type internal CommonOperations
             and set value = x.MaintainCaretColumn <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
-        member x.UseVirtualSpace = x.UseVirtualSpace
 
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.Beep() = x.Beep()

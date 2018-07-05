@@ -1974,7 +1974,7 @@ type VisualSpan =
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
-    static member CreateForSelection (textView: ITextView) visualKind tabStop =
+    static member CreateForVirtualSelection (textView: ITextView) visualKind tabStop useVirtualSpace =
         let selection = textView.Selection
         if selection.IsEmpty then
             let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
@@ -1992,7 +1992,13 @@ type VisualSpan =
                 Character characterSpan
             else
                 let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
-                visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
+                if useVirtualSpace then
+                    visualSpan
+                else
+                    visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
+
+    static member CreateForSelection (textView: ITextView) visualKind tabStop =
+        VisualSpan.CreateForVirtualSelection textView visualKind tabStop false
 
     static member CreateForSpan (span: SnapshotSpan) visualKind tabStop =
         match visualKind with
@@ -2245,9 +2251,9 @@ type VisualSelection =
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
     /// SelectionKind should specify what the current mode is (or the mode which produced the 
     /// active ITextSelection)
-    static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
-        let caretPoint = TextViewUtil.GetCaretPoint textView
-        let visualSpan = VisualSpan.CreateForSelection textView visualKind tabStop
+    static member CreateForVirtualSelection (textView: ITextView) visualKind selectionKind tabStop useVirtualSpace =
+        let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+        let visualSpan = VisualSpan.CreateForVirtualSelection textView visualKind tabStop useVirtualSpace
 
         // Get the proper VisualSpan based off of the way in which it was created.  VisualSelection
         // represents all values internally as inclusive
@@ -2271,8 +2277,10 @@ type VisualSelection =
             else
                 SearchPath.Forward
 
-        let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
         VisualSelection.Create visualSpan path caretPoint 
+
+    static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
+        VisualSelection.CreateForVirtualSelection textView visualKind selectionKind tabStop false
 
     /// Create the initial Visual Selection information for the specified Kind started at 
     /// the specified point
@@ -4694,6 +4702,9 @@ and IVimTextBuffer =
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
+
+    /// Whether to use virtual space
+    abstract UseVirtualSpace: bool
 
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
     /// state 

@@ -179,6 +179,18 @@ type internal VimTextBuffer
             | Some point -> Some (localMark, point))
         |> SeqUtil.filterToSome
 
+    /// Whether to use virtual space
+    member x.UseVirtualSpace =
+        match _modeKind with
+        | ModeKind.SelectBlock
+        | ModeKind.VisualBlock
+            -> _globalSettings.IsVirtualEditBlock
+        | ModeKind.Insert
+        | ModeKind.Replace
+            -> _globalSettings.IsVirtualEditInsert
+        | _
+            -> _globalSettings.IsVirtualEditAll
+
     /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
     member x.Clear() =
         // First clear out the Letter based marks
@@ -296,6 +308,7 @@ type internal VimTextBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
+        member x.UseVirtualSpace = x.UseVirtualSpace
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark line column = x.SetLocalMark localMark line column

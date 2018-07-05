@@ -267,7 +267,7 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let vim = vimBufferData.Vim
-        let createCommandRunner kind countKeyRemapMode = CommandRunner(textView, vim.RegisterMap, capture, vimBufferData.LocalSettings, commandUtil, vimBufferData.StatusUtil, kind, countKeyRemapMode) :>ICommandRunner
+        let createCommandRunner kind countKeyRemapMode = CommandRunner(vimBufferData, capture, commandUtil, kind, countKeyRemapMode) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.GetDisplayWindowBroker textView
         let bufferOptions = _editorOptionsFactoryService.GetOptions(textView.TextBuffer)
         let visualOptsFactory visualKind = Modes.Visual.SelectionTracker(vimBufferData, incrementalSearch, visualKind) :> Modes.Visual.ISelectionTracker

@@ -59,12 +59,9 @@ namespace Vim.UnitTest
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
-                _textView,
-                Vim.RegisterMap,
+                vimBufferData,
                 capture,
-                vimBufferData.LocalSettings,
                 _commandUtil.Object,
-                vimBufferData.StatusUtil,
                 VisualKind.Character,
                 KeyRemapMode.Normal);
             _modeRaw = new NormalMode(

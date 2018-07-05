@@ -2321,7 +2321,7 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters after the caret 
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
-        if _commonOperations.UseVirtualSpace then
+        if _vimTextBuffer.UseVirtualSpace then
             let startPoint = x.CaretVirtualPoint
             let endPoint = VirtualSnapshotPointUtil.Add startPoint count
             let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
