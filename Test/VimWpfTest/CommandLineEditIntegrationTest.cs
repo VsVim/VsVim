@@ -151,7 +151,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("o", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
         }
-
+        
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
             [WpfFact]
@@ -186,6 +186,21 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
             }
 
+            /// <summary>
+            /// Backspacing over first character should clear the command line and return to normal mode.
+            /// </summary>
+            [WpfFact]
+            public void BackspaceOverFirstCharacter()
+            {
+                Create("");
+                ProcessNotation(@":e");
+                Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                ProcessNotation("<left><bs>");
+                Assert.Equal("", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+            
             /// <summary>
             /// Previously keys like caused issues because their literal char value was being appended to the
             /// beginning of the edit box
@@ -341,7 +356,7 @@ namespace Vim.UI.Wpf.UnitTest
                     ProcessNotation(@":t<Left><C-r>c");
                     Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
                 }
-
+                
                 [WpfFact]
                 public void InPasteWait()
                 {

@@ -436,7 +436,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
                 case Key.Back:
                     // Backspacing past the beginning aborts the command/search.
-                    if (_margin.CommandLineTextBox.Text.Length <= 1)
+                    if (_margin.CommandLineTextBox.SelectionStart < 2 && _margin.CommandLineTextBox.SelectionLength == 0)
                     {
                         _vimBuffer.Process(KeyInputUtil.EscapeKey);
                         ChangeEditKind(EditKind.None);
@@ -464,10 +464,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
                         var textBox = _margin.CommandLineTextBox;
-                        var text = textBox.Text.Substring(textBox.SelectionStart);
-                        textBox.Text = text;
+                        if(textBox.SelectionStart > 1)
+                        {
+                            var text = textBox.Text.Substring(textBox.SelectionStart);
+                            textBox.Text = text;
 
-                        UpdateVimBufferStateWithCommandText(text);
+                            UpdateVimBufferStateWithCommandText(text);
+                            textBox.Select(1, 0);
+                        }
+                        e.Handled = true;
                     }
                     break;
                 case Key.P:
@@ -484,7 +489,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
             }
         }
-
+        
         /// <summary>
         /// If we're in command mode and a key is processed which effects the edit we should handle
         /// it here
@@ -898,7 +903,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateForPasteWait(WpfTextChangedEventArgs e)
         {
             Debug.Assert(InPasteWait);
-
+            
             var command = _margin.CommandLineTextBox.Text ?? "";
             if (e.Changes.Count == 1 && command.Length > 0)
             {
@@ -915,7 +920,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     // for manually updating the command line state.  Also we have to keep the caret postion
                     // correct
                     var name = RegisterName.OfChar(c);
-                    if (name.IsSome())
+                     if (name.IsSome())
                     {
                         var toPaste = _vimBuffer.GetRegister(name.Value).StringValue;
                         var builder = new StringBuilder();
