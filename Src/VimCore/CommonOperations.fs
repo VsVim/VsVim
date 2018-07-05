@@ -1533,7 +1533,8 @@ type internal CommonOperations
                 // Collection strings are inserted at the original character
                 // position down the set of lines creating whitespace as needed
                 // to match the indent
-                let lineNumber, column = SnapshotPointUtil.GetLineColumn point
+                let column = SnapshotCharacterSpan(point)
+                let lineNumber, columnNumber = column.LineNumber, column.ColumnNumber
     
                 // First break the strings into the collection to edit against
                 // existing lines and those which need to create new lines at
@@ -1544,18 +1545,23 @@ type internal CommonOperations
                     let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Count
                     (Seq.take insertCount col, Seq.skip insertCount col)
     
-                // Insert the text at existing lines
+                // Insert the text into each of the existing lines.
                 insertCol |> Seq.iteri (fun offset str -> 
-                    let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
-                    if line.Length < column then
-                        let prefix = String.replicate (column - line.Length) " "
-                        edit.Insert(line.Start.Position, prefix + str) |> ignore
+                    let line =
+                        lineNumber + offset
+                        |> SnapshotUtil.GetLine originalSnapshot
+                    let column = SnapshotCharacterSpan(line)
+                    let columnCount = column.ColumnCount
+                    if columnCount < columnNumber then
+                        let prefix = String.replicate (columnNumber - columnCount) " "
+                        edit.Insert(line.End.Position, prefix + str) |> ignore
                     else
-                        edit.Insert(line.Start.Position + column, str) |> ignore)
+                        let offset = column.Add(columnNumber).Offset
+                        edit.Insert(line.Start.Position + offset, str) |> ignore)
     
                 // Add the text to the end of the buffer.
                 if not (Seq.isEmpty appendCol) then
-                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate column " ")
+                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate columnNumber " ")
                     let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                     let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                     edit.Insert(endPoint.Position, text) |> ignore
