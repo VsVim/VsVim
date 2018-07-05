@@ -2589,6 +2589,9 @@ type NormalCommand =
     /// Display the bytes of the current character in the status bar
     | DisplayCharacterBytes
 
+    /// Display the ascii (or really code point) value of the current character
+    | DisplayCharacterCodePoint
+
     /// Fold 'count' lines in the ITextBuffer
     | FoldLines
 
@@ -2845,7 +2848,8 @@ type NormalCommand =
         | NormalCommand.DeleteAllFoldsUnderCaret -> None
         | NormalCommand.DeleteLines -> None
         | NormalCommand.DeleteTillEndOfLine -> None
-        | NormalCommand.DisplayCharacterBytes
+        | NormalCommand.DisplayCharacterBytes -> None
+        | NormalCommand.DisplayCharacterCodePoint ->None
         | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
         | NormalCommand.FormatLines -> None

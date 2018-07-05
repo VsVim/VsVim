@@ -15,6 +15,16 @@ open System.Text
 open StringBuilderExtensions
 open System.Linq
 
+[<Struct>]
+type internal CodePointData = {
+    Point: SnapshotPoint
+    CodePoint: int
+    IsSurrogatePair: bool
+    IsInvalidSurrogatePair: bool
+} with
+    member x.Length = if x.IsSurrogatePair then 2 else 1
+    member x.Span = SnapshotSpan(x.Point, x.Length)
+
 /// This module exists purely to break type dependency issues created below.  
 module internal EditorCoreUtil =
 
@@ -32,6 +42,31 @@ module internal EditorCoreUtil =
             point
         else
             point.Subtract(1)
+
+    /// Get the code point for particular point in the buffer. Will take into account surrogate 
+    /// pairs 
+    let GetCodePointData (point: SnapshotPoint) = 
+        let c = point.GetChar()
+        let snapshot = point.Snapshot
+        if CharUtil.IsHighSurrogate c then
+            let nextPoint = point.Add(1)
+            if not (IsEndPoint nextPoint) && CharUtil.IsLowSurrogate (nextPoint.GetChar()) then
+                let codePoint = CharUtil.ConvertToCodePoint c (nextPoint.GetChar())
+                { Point = point; CodePoint = codePoint; IsSurrogatePair = true; IsInvalidSurrogatePair = false }
+            else
+                { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
+        elif CharUtil.IsLowSurrogate(c) then
+            if point.Position <> 0 then
+                { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
+            else
+                let previousPoint = point.Subtract(1)
+                if CharUtil.IsHighSurrogate (previousPoint.GetChar()) then
+                    let codePoint = CharUtil.ConvertToCodePoint (previousPoint.GetChar()) c
+                    { Point = previousPoint; CodePoint = codePoint; IsSurrogatePair = true; IsInvalidSurrogatePair = false }
+                else
+                    { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
+        else
+            { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = false }
 
     /// Get the span of the character which is pointed to by the point.  Normally this is a 
     /// trivial operation.  The only difficulty is if the point exists at the end of a line
@@ -51,27 +86,8 @@ module internal EditorCoreUtil =
         elif point.Position = snapshot.Length then
             new SnapshotSpan(point, 0)
         else
-            let c = point.GetChar()
-            let snapshot = point.Snapshot
-            if System.Char.IsHighSurrogate(c) then
-                let nextPoint = point.Add(1)
-                if IsEndPoint nextPoint then
-                    new SnapshotSpan(point, 1)
-                elif System.Char.IsLowSurrogate(nextPoint.GetChar()) then
-                    new SnapshotSpan(point, 2)
-                else
-                    new SnapshotSpan(point, 1)
-            elif System.Char.IsLowSurrogate(c) then
-                if point.Position = 0 then
-                    new SnapshotSpan(point, 1)
-                else
-                    let previousPoint = point.Subtract(1)
-                    if System.Char.IsHighSurrogate(previousPoint.GetChar()) then
-                        new SnapshotSpan(previousPoint, 2)
-                    else
-                        new SnapshotSpan(point, 1)
-            else
-                new SnapshotSpan(point, 1)
+            let codePointData = GetCodePointData point
+            codePointData.Span
 
     let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 

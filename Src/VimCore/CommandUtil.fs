@@ -873,9 +873,30 @@ type internal CommandUtil
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
-    member x.DisplayCharacterBytes () =
+    member x.DisplayCharacterCodePoint() =
         if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
             _commonOperations.Beep()
+        elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+            _statusUtil.OnStatus "NUL"
+        else
+            let codePointData = EditorCoreUtil.GetCodePointData x.CaretPoint
+            let text = codePointData.Span.GetText()
+            let cp = codePointData.CodePoint
+            if codePointData.IsInvalidSurrogatePair then
+                _commonOperations.Beep()
+            elif codePointData.IsSurrogatePair then
+                let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
+                _statusUtil.OnStatus str
+            else
+                let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
+                _statusUtil.OnStatus str
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.DisplayCharacterBytes() =
+        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+            _commonOperations.Beep()
+        elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+            _statusUtil.OnStatus "NUL"
         else
             let span = SnapshotCharacterSpan(x.CaretPoint)
             let text = span.GetText()
@@ -2478,6 +2499,7 @@ type internal CommandUtil
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion registerName)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count registerName
         | NormalCommand.DisplayCharacterBytes -> x.DisplayCharacterBytes()
+        | NormalCommand.DisplayCharacterCodePoint -> x.DisplayCharacterCodePoint()
         | NormalCommand.FilterLines -> x.FilterLines count
         | NormalCommand.FilterMotion motion -> x.RunWithMotion motion x.FilterMotion
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
