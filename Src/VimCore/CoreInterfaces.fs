@@ -1544,6 +1544,17 @@ type CharacterSpan =
                 max 0 diff
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
+    new (span: VirtualSnapshotSpan) =
+        let lineCount = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
+        let lastLine = SnapshotSpanUtil.GetLastLine span.SnapshotSpan
+        let lastLineLength =
+            if lineCount = 1 then
+                span.End.Position.Position - span.Start.Position.Position + span.End.VirtualSpaces
+            else
+                let diff = span.End.Position.Position - lastLine.Start.Position + span.End.VirtualSpaces
+                max 0 diff
+        CharacterSpan(span.Start.Position, lineCount, lastLineLength)
+
     new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
@@ -1933,7 +1944,8 @@ type VisualSpan =
         match visualKind with
         | VisualKind.Character ->
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let characterSpan = CharacterSpan(startPoint.Position, endPoint.Position)
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
+            let characterSpan = CharacterSpan(span)
             Character characterSpan
         | VisualKind.Line ->
 
