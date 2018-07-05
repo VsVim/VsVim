@@ -443,10 +443,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
                 case Key.Back:
                     // Backspacing past the beginning aborts the command/search.
-                    if (_margin.CommandLineTextBox.SelectionStart < 2 && _margin.CommandLineTextBox.SelectionLength == 0)
+                    if (_margin.CommandLineTextBox.Text.Length <= 1)
                     {
                         _vimBuffer.Process(KeyInputUtil.EscapeKey);
                         ChangeEditKind(EditKind.None);
+                        e.Handled = true;
+                    }
+                    else if (_margin.CommandLineTextBox.CaretIndex == 1)
+                    {
+                        // don't let the caret get behind the initial character
                         e.Handled = true;
                     }
                     break;

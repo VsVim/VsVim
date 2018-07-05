@@ -226,18 +226,27 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             /// <summary>
-            /// Backspacing over first character should clear the command line and return to normal mode.
+            /// Backspacing over first character should clear the command line and return to normal mode,
+            /// but only if there are no characters after the cursor (i.e. length is 1).
             /// </summary>
             [WpfFact]
             public void BackspaceOverFirstCharacter()
             {
                 Create("");
-                ProcessNotation(@":e");
+                
+                ProcessNotation(":");
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                ProcessNotation("<bs>");
+                Assert.Equal("", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                
+                ProcessNotation(":e");
                 Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
                 Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
                 ProcessNotation("<left><bs>");
-                Assert.Equal("", _marginControl.CommandLineTextBox.Text);
-                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
             }
             
             /// <summary>
