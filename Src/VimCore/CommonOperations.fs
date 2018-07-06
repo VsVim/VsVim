@@ -567,7 +567,13 @@ type internal CommonOperations
 
         /// Move left one character taking into account 'whichwrap'
         let moveLeft () =
-            if _globalSettings.IsWhichWrapArrowLeftInsert then
+            let caretPoint = x.CaretVirtualPoint
+            if _vimTextBuffer.UseVirtualSpace && caretPoint.IsInVirtualSpace then
+                caretPoint
+                |> (fun point -> VirtualSnapshotPointUtil.Add point -1)
+                |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                true
+            elif _globalSettings.IsWhichWrapArrowLeftInsert then
                 if SnapshotPointUtil.IsStartPoint x.CaretPoint then
                     false
                 else
@@ -579,7 +585,13 @@ type internal CommonOperations
 
         /// Move right one character taking into account 'whichwrap'
         let moveRight () =
-            if _globalSettings.IsWhichWrapArrowRightInsert then
+            let caretPoint = x.CaretVirtualPoint
+            if _vimTextBuffer.UseVirtualSpace && caretPoint.Position = x.CaretLine.End then
+                caretPoint
+                |> (fun point -> VirtualSnapshotPointUtil.Add point 1)
+                |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                true
+            elif _globalSettings.IsWhichWrapArrowRightInsert then
                 if SnapshotPointUtil.IsEndPoint x.CaretPoint then
                     false
                 else
@@ -594,17 +606,23 @@ type internal CommonOperations
         | CaretMovement.Right -> moveRight()
         | _ -> x.MoveCaret caretMovement
 
-    /// Move the caret to the specified point and ensure the specified view properties are 
-    /// correct at that point 
-    member x.MoveCaretToPoint point viewFlags = 
+    /// Move the caret to the specified point with the specified view properties
+    member x.MoveCaretToPoint (point: SnapshotPoint) viewFlags =
+        let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
+        x.MoveCaretToVirtualPoint virtualPoint viewFlags
+
+    /// Move the caret to the specified virtual point with the specified view properties
+    member x.MoveCaretToVirtualPoint (point: VirtualSnapshotPoint) viewFlags =
+
         // In the case where we want to expand the text we are moving to we need to do the expansion
-        // first before the move.  Before the text is expanded the point we are moving to will map to 
-        // the collapsed region.  When the text is subsequently expanded it has no memory and will 
-        // just stay in place.  
+        // first before the move.  Before the text is expanded the point we are moving to will map to
+        // the collapsed region.  When the text is subsequently expanded it has no memory and will
+        // just stay in place.
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
-            x.EnsurePointExpanded point
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureAtPoint point viewFlags
+            x.EnsurePointExpanded point.Position
+
+        TextViewUtil.MoveCaretToVirtualPoint _textView point
+        x.EnsureAtPoint point.Position viewFlags
 
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
