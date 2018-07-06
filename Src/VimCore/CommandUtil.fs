@@ -874,32 +874,26 @@ type internal CommandUtil
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
     member x.DisplayCharacterCodePoint() =
-        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+        let point = SnapshotCodePoint(x.CaretPoint)
+        if point.IsEndPoint then
             _commonOperations.Beep()
-        elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+        elif point.IsInsideLineBreak then
             _statusUtil.OnStatus "NUL"
         else
-            let codePointData = EditorCoreUtil.GetCodePointData x.CaretPoint
-            let text = codePointData.Span.GetText()
-            let cp = codePointData.CodePoint
-            if codePointData.IsInvalidSurrogatePair then
-                _commonOperations.Beep()
-            elif codePointData.IsSurrogatePair then
-                let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
-                _statusUtil.OnStatus str
-            else
-                let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
-                _statusUtil.OnStatus str
+            let text = point.GetText()
+            let cp = point.CodePoint
+            let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
+            _statusUtil.OnStatus str
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.DisplayCharacterBytes() =
-        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+        let point = SnapshotCodePoint(x.CaretPoint)
+        if point.IsEndPoint then
             _commonOperations.Beep()
-        elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+        elif point.IsInsideLineBreak then
             _statusUtil.OnStatus "NUL"
         else
-            let span = SnapshotCharacterSpan(x.CaretPoint)
-            let text = span.GetText()
+            let text = point.GetText()
             let bytes = Encoding.UTF8.GetBytes(text)
             let builder = StringBuilder()
             for i = 0 to bytes.Length - 1 do

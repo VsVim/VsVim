@@ -14,16 +14,14 @@ open System.Diagnostics
 open System.Text
 open StringBuilderExtensions
 open System.Linq
+open System.Drawing
 
-[<Struct>]
-type internal CodePointData = {
-    Point: SnapshotPoint
-    CodePoint: int
-    IsSurrogatePair: bool
-    IsInvalidSurrogatePair: bool
-} with
-    member x.Length = if x.IsSurrogatePair then 2 else 1
-    member x.Span = SnapshotSpan(x.Point, x.Length)
+type CodePointInfo = 
+    | SimpleCharacter = 0
+    | SurrogatePairHighCharacter = 1
+    | SurrogatePairLowCharacter = 2
+    | BrokenSurrogatePair = 3
+    | EndPoint = 4
 
 /// This module exists purely to break type dependency issues created below.  
 module internal EditorCoreUtil =
@@ -43,30 +41,28 @@ module internal EditorCoreUtil =
         else
             point.Subtract(1)
 
-    /// Get the code point for particular point in the buffer. Will take into account surrogate 
-    /// pairs 
-    let GetCodePointData (point: SnapshotPoint) = 
-        let c = point.GetChar()
-        let snapshot = point.Snapshot
-        if CharUtil.IsHighSurrogate c then
-            let nextPoint = point.Add(1)
-            if not (IsEndPoint nextPoint) && CharUtil.IsLowSurrogate (nextPoint.GetChar()) then
-                let codePoint = CharUtil.ConvertToCodePoint c (nextPoint.GetChar())
-                { Point = point; CodePoint = codePoint; IsSurrogatePair = true; IsInvalidSurrogatePair = false }
-            else
-                { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
-        elif CharUtil.IsLowSurrogate(c) then
-            if point.Position <> 0 then
-                { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
-            else
-                let previousPoint = point.Subtract(1)
-                if CharUtil.IsHighSurrogate (previousPoint.GetChar()) then
-                    let codePoint = CharUtil.ConvertToCodePoint (previousPoint.GetChar()) c
-                    { Point = previousPoint; CodePoint = codePoint; IsSurrogatePair = true; IsInvalidSurrogatePair = false }
-                else
-                    { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = true }
+    // Get the code point information for a given point in the ITextSnapshot
+    let GetCodePointInfo (point: SnapshotPoint) = 
+        if IsEndPoint point then
+            CodePointInfo.EndPoint
         else
-            { Point = point; CodePoint = int c; IsSurrogatePair = false; IsInvalidSurrogatePair = false }
+            let c = point.GetChar()
+            if CharUtil.IsHighSurrogate c then
+                let nextPoint = point.Add(1)
+                if not (IsEndPoint nextPoint) && CharUtil.IsLowSurrogate (nextPoint.GetChar()) then CodePointInfo.SurrogatePairHighCharacter
+                else CodePointInfo.BrokenSurrogatePair
+            elif CharUtil.IsLowSurrogate c then
+                if point.Position = 0 then 
+                    CodePointInfo.BrokenSurrogatePair
+                else
+                    let previousPoint = point.Subtract(1)
+                    if CharUtil.IsHighSurrogate (previousPoint.GetChar()) then CodePointInfo.SurrogatePairLowCharacter
+                    else CodePointInfo.BrokenSurrogatePair
+            else
+                CodePointInfo.SimpleCharacter
+
+    let IsInsideLineBreak (point: SnapshotPoint) (line: ITextSnapshotLine) = 
+        point.Position >= line.End.Position && not (IsEndPoint point)
 
     /// Get the span of the character which is pointed to by the point.  Normally this is a 
     /// trivial operation.  The only difficulty is if the point exists at the end of a line
@@ -79,15 +75,14 @@ module internal EditorCoreUtil =
         Contract.Requires(point.Position >= line.Start.Position)
         Contract.Requires(point.Position <= line.EndIncludingLineBreak.Position)
 
-        let snapshot = point.Snapshot
-        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
-        if endSpan.Contains(point) then
-            endSpan
-        elif point.Position = snapshot.Length then
-            new SnapshotSpan(point, 0)
+        if IsInsideLineBreak point line then
+            new SnapshotSpan(line.End, line.EndIncludingLineBreak)
         else
-            let codePointData = GetCodePointData point
-            codePointData.Span
+            match GetCodePointInfo point with
+            | CodePointInfo.EndPoint -> SnapshotSpan(point, 0)
+            | CodePointInfo.SurrogatePairHighCharacter -> SnapshotSpan(point, 2)
+            | CodePointInfo.SurrogatePairLowCharacter -> SnapshotSpan((point.Subtract(1)), 2)
+            | _ -> SnapshotSpan(point, 1)
 
     let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 
@@ -95,9 +90,6 @@ module internal EditorCoreUtil =
         else
             let c = point.GetChar()
             CharUtil.GetCharacterWidth c tabStop
-
-    let IsInsideLineBreak (point: SnapshotPoint) (line: ITextSnapshotLine) = 
-        point.Position >= line.End.Position && not (IsEndPoint point)
 
     /// The snapshot ends with a linebreak if there is more more than one
     /// line and the last line of the snapshot (which doesn't have a linebreak)
@@ -354,6 +346,120 @@ type SnapshotColumn
     override x.ToString() = 
         x.Point.ToString()
 
+/// Conceptually this references a single CodePoint in the snapshot. This can be
+/// either:
+/// - a normal character
+/// - a UTF32 character (represented by two UTF16 characters called the "surrogate pair")
+/// - either a high or low surrogate char that doesn't have a proper matching pair.
+///
+/// In the case this refers to a surrogate pair then the Point will refer to the high
+/// surrogate.
+[<Struct>]
+[<NoEquality>]
+[<NoComparison>]
+type SnapshotCodePoint =
+
+    val private _line: ITextSnapshotLine
+    val private _offset: int
+    val private _codePointInfo: CodePointInfo
+
+    /// Create a SnapshotCodePoint for the given Point. In the case this points to a 
+    /// surrogate pair then the instance will point to the high surrogate instance.
+    new (point: SnapshotPoint) =
+        let line = point.GetContainingLine();
+        SnapshotCodePoint(line, point)
+
+    new (line: ITextSnapshotLine, point: SnapshotPoint) =
+
+        let info = EditorCoreUtil.GetCodePointInfo point
+        if info = CodePointInfo.SurrogatePairLowCharacter then
+            let point = point.Subtract(1) 
+            { _line = line; _offset = point.Position - line.Start.Position; _codePointInfo = CodePointInfo.SurrogatePairHighCharacter }
+        else
+            { _line = line; _offset = point.Position - line.Start.Position; _codePointInfo = info }
+
+    /// The snapshot line containing the column
+    member x.Line = x._line
+
+    /// The number of positions in the ITextSnapshot this character occupies. 
+    member x.Length = 
+        if x._codePointInfo = CodePointInfo.SurrogatePairHighCharacter then 2
+        else 1
+
+    /// The snapshot corresponding to the column
+    member x.Snapshot = x._line.Snapshot
+
+    /// The Point which represents the begining of this character.
+    member x.Point = x._line.Start.Add(x._offset)
+
+    member x.Span = 
+        let length = 
+            if x._codePointInfo = CodePointInfo.SurrogatePairHighCharacter then 2
+            else 1
+        SnapshotSpan(x.Point, length)
+
+    member x.CodePointInfo = x._codePointInfo
+
+    /// Returns the code point which represents this character. In the case of a broken surrogate pair
+    /// this will return the raw broken value.
+    member x.CodePoint = 
+        match x._codePointInfo with
+        | CodePointInfo.SurrogatePairHighCharacter -> 
+            let highChar = x.Point.GetChar()
+            let lowChar = x.Point.Add(1).GetChar()
+            CharUtil.ConvertToCodePoint highChar lowChar
+        | _ -> int (x.Point.GetChar())
+
+    /// The position or text buffer offset of the column
+    member x.Position = x.Point.Position
+
+    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.Point
+
+    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.Point x._line
+
+    /// Move forward by the specified number of CodePoint values
+    member x.Add count =
+        if count = 0 then 
+            x
+        elif count < 0 then
+            x.Subtract (-count)
+        else
+            let mutable count = count
+            let mutable current = x.Point
+            while count > 0 do
+                current <-
+                    match EditorCoreUtil.GetCodePointInfo current with
+                    | CodePointInfo.SurrogatePairHighCharacter -> current.Add(2)
+                    | _ -> current.Add(1)
+                count <- count - 1
+            SnapshotCodePoint(current)
+
+    /// Go backward (positive) or forward (negative) by the specified number of
+    /// CodePoint values
+    member x.Subtract count =
+        if count = 0 then 
+            x
+        elif count < 0 then
+            x.Add (-count)
+        else
+            let mutable count = count
+            let mutable current = x.Point
+            while count > 0 do
+                let previous = current.Subtract(1)
+                current <-
+                    match EditorCoreUtil.GetCodePointInfo previous with
+                    | CodePointInfo.SurrogatePairLowCharacter -> previous.Subtract(1)
+                    | _ -> previous
+                count <- count - 1
+            SnapshotCodePoint(current)
+
+    /// Get the text corresponding to the column
+    member x.GetText () = x.Span.GetText()
+
+    /// Debugger display
+    override x.ToString() =
+        sprintf "Line: %d Offset: %d Text: %s CodePoint: %d" x._line.LineNumber x._offset (x.GetText()) (x.CodePoint)
+
 /// Conceptually, a character span corresponds to a single logical character:
 /// - a normal character
 /// - a line break (which may consist of one or more physical characters)
@@ -395,7 +501,6 @@ type SnapshotCharacterSpan =
     /// column of a line that "parses" the line and builds a lookup
     /// table of physical positions corresponding to logical columns
     new (line: ITextSnapshotLine) =
-        let mutable currentPoint = line.Start
         let endPoint = line.EndIncludingLineBreak
 
         // Build an array of positions (including an extra final position)
@@ -404,10 +509,15 @@ type SnapshotCharacterSpan =
         /// are reused for other character span within the line.
         let positions =
             seq {
+                let mutable currentPoint = line.Start
                 while currentPoint.Position < endPoint.Position do
                     yield currentPoint.Position
-                    let span =EditorCoreUtil.GetCharacterSpan line currentPoint
-                    currentPoint <- span.End
+                    let width = 
+                        if CodePointInfo.SurrogatePairHighCharacter = EditorCoreUtil.GetCodePointInfo currentPoint then
+                            2
+                        else
+                            1
+                    currentPoint <- currentPoint.Add(width)
                 yield endPoint.Position
             }
             |> Seq.toArray
