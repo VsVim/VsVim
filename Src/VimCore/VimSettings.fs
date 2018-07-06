@@ -463,7 +463,9 @@ type internal GlobalSettings() =
             x.IsCommaSubOptionPresent VirtualEditName "insert"
             || x.IsCommaSubOptionPresent VirtualEditName "all"
         member x.IsVirtualEditAll = x.IsCommaSubOptionPresent VirtualEditName "all"
-        member x.IsVirtualEditOneMore = x.IsCommaSubOptionPresent VirtualEditName "onemore"
+        member x.IsVirtualEditOneMore =
+            x.IsCommaSubOptionPresent VirtualEditName "onemore"
+            || x.IsCommaSubOptionPresent VirtualEditName "all"
         member x.IsWhichWrapSpaceLeft = x.IsCommaSubOptionPresent WhichWrapName "b"
         member x.IsWhichWrapSpaceRight = x.IsCommaSubOptionPresent WhichWrapName "s"
         member x.IsWhichWrapCharLeft = x.IsCommaSubOptionPresent WhichWrapName "h"

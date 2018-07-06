@@ -2292,7 +2292,7 @@ type internal MotionUtil
     member x.CharLeftOnSameLine count = 
         let endPoint = x.CaretVirtualPoint
         if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
-            if count <= endPoint.VirtualSpaces then
+            if count < endPoint.VirtualSpaces then
 
                 // We are just moving in virtual space.
                 let startPoint = VirtualSnapshotPointUtil.Add endPoint -count
@@ -2338,7 +2338,7 @@ type internal MotionUtil
     member x.CharLeftWithLineWrap count =
         let endPoint = x.CaretVirtualPoint
         if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
-            if count <= endPoint.VirtualSpaces then
+            if count < endPoint.VirtualSpaces then
 
                 // We are just moving in virtual space.
                 let startPoint = VirtualSnapshotPointUtil.Add endPoint -count
@@ -2375,7 +2375,10 @@ type internal MotionUtil
         let endPoint = VirtualSnapshotPointUtil.Add startPoint count
         let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
         let span = VirtualSnapshotSpan(startPoint, endPoint)
-        MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+        if endPoint.IsInVirtualSpace then
+            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+        else
+            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive)
 
     /// Get a relative character motion backward or forward 'count' characters
     /// wrapping lines if 'withLineWrap' is specified
