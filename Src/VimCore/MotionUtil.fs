@@ -2290,48 +2290,92 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
     member x.CharLeftOnSameLine count = 
-        let startPoint = 
-            SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint count
-            |> OptionUtil.getOrDefault x.CaretLine.Start
-        let span = SnapshotSpan(startPoint, x.CaretPoint)
-        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+        let endPoint = x.CaretVirtualPoint
+        if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
+            if count <= endPoint.VirtualSpaces then
+
+                // We are just moving in virtual space.
+                let startPoint = VirtualSnapshotPointUtil.Add endPoint -count
+                let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
+                let span = VirtualSnapshotSpan(startPoint, endPoint)
+                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+            else
+
+                // Move from virtual space to real space.
+                let rest = count - endPoint.VirtualSpaces
+                let startPoint =
+                    SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine endPoint.Position rest
+                    |> OptionUtil.getOrDefault x.CaretLine.Start
+                    |> VirtualSnapshotPointUtil.OfPoint
+                let span = VirtualSnapshotSpan(startPoint, endPoint)
+                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false)
+        else
+            let startPoint =
+                SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint count
+                |> OptionUtil.getOrDefault x.CaretLine.Start
+            let span = SnapshotSpan(startPoint, x.CaretPoint)
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
 
     /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
     member x.CharRightOnSameLine count =
-        let endPoint = 
-            if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then 
-                x.CaretPoint
-            elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
-                x.CaretLine.End
-            else
-                SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint count 
-                |> OptionUtil.getOrDefault x.CaretLine.End
-        let span = SnapshotSpan(x.CaretPoint, endPoint)
-        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+        if _vimTextBuffer.UseVirtualSpace then
+            x.CharRightVirtual count
+        else
+            let endPoint =
+                if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
+                    x.CaretPoint
+                elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
+                    x.CaretLine.End
+                else
+                    SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint count
+                    |> OptionUtil.getOrDefault x.CaretLine.End
+            let span = SnapshotSpan(x.CaretPoint, endPoint)
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
     /// Get the motion which is 'count' characters before the caret
     /// through the buffer taking into acount 'virtualedit'
     member x.CharLeftWithLineWrap count =
-        let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-        let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint -count skipLineBreaks
-        let span = SnapshotSpan(startPoint, x.CaretPoint)
-        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+        let endPoint = x.CaretVirtualPoint
+        if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
+            if count <= endPoint.VirtualSpaces then
+
+                // We are just moving in virtual space.
+                let startPoint = VirtualSnapshotPointUtil.Add endPoint -count
+                let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
+                let span = VirtualSnapshotSpan(startPoint, endPoint)
+                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+            else
+
+                // Move from virtual space to real space.
+                let rest = count - endPoint.VirtualSpaces
+                let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+                let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan endPoint.Position -rest skipLineBreaks
+                let span = SnapshotSpan(startPoint, endPoint.Position)
+                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+        else
+            let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
+            let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint -count skipLineBreaks
+            let span = SnapshotSpan(startPoint, x.CaretPoint)
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
 
     /// Get the motion which is 'count' characters after the caret 
     /// through the buffer taking into acount 'virtualedit'
     member x.CharRightWithLineWrap count =
         if _vimTextBuffer.UseVirtualSpace then
-            let startPoint = x.CaretVirtualPoint
-            let endPoint = VirtualSnapshotPointUtil.Add startPoint count
-            let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
-            let span = VirtualSnapshotSpan(startPoint, endPoint)
-            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+            x.CharRightVirtual count
         else
             let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
             let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
             let span = SnapshotSpan(x.CaretPoint, endPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+
+    member x.CharRightVirtual count =
+        let startPoint = x.CaretVirtualPoint
+        let endPoint = VirtualSnapshotPointUtil.Add startPoint count
+        let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
+        let span = VirtualSnapshotSpan(startPoint, endPoint)
+        MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
 
     /// Get a relative character motion backward or forward 'count' characters
     /// wrapping lines if 'withLineWrap' is specified

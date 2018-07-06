@@ -737,8 +737,8 @@ type internal CommonOperations
                 // Character wise motions should expand regions
                 ViewFlags.All
 
-        match _vimTextBuffer.UseVirtualSpace, result.IsForward, result.MotionKind, result.CaretColumn with
-        | true, true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column ->
+        match _vimTextBuffer.UseVirtualSpace, result.MotionKind, result.CaretColumn with
+        | true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column ->
             let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
             let virtualSpaces = max 0 (column - columnNumber)
             let virtualPoint = VirtualSnapshotPointUtil.Add (VirtualSnapshotPointUtil.OfPoint point) virtualSpaces
