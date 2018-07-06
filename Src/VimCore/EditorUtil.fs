@@ -1822,7 +1822,7 @@ module SnapshotPointUtil =
         if left.Position < right.Position then left,right
         else right,left
 
-    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    /// Get the count of spaces to get to the specified point in its line when tabs are expanded
     let GetSpacesToPoint point tabStop = 
         let column = SnapshotColumn(point)
         SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
@@ -1889,9 +1889,9 @@ module VirtualSnapshotPointUtil =
         if left.CompareTo(right) < 0 then left,right 
         else right,left
 
-    let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop = 
-        let column = SnapshotColumn(point.Position)
-        let spaces = SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
+    /// Get the count of spaces to get to the specified point in its line when tabs are expanded
+    let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop =
+        let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
         spaces + point.VirtualSpaces
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
