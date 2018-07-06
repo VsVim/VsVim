@@ -107,11 +107,11 @@ namespace Vim.EditorHost
         /// Move the caret to the given position in the ITextView with the set amount of virtual 
         /// spaces
         /// </summary>
-        public static void MoveCaretTo(this ITextView textView, int position, int virtualSpaces)
+        public static CaretPosition MoveCaretTo(this ITextView textView, int position, int virtualSpaces)
         {
             var point = new SnapshotPoint(textView.TextSnapshot, position);
             var virtualPoint = new VirtualSnapshotPoint(point, virtualSpaces);
-            textView.Caret.MoveTo(virtualPoint);
+            return textView.Caret.MoveTo(virtualPoint);
         }
 
         public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber)
@@ -125,6 +125,14 @@ namespace Vim.EditorHost
             var snapshotLine = textView.TextSnapshot.GetLineFromLineNumber(lineNumber);
             var point = snapshotLine.Start.Add(column);
             return MoveCaretTo(textView, point.Position);
+        }
+
+        public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber, int column, int virtualSpaces)
+        {
+            var snapshotLine = textView.TextSnapshot.GetLineFromLineNumber(lineNumber);
+            var point = snapshotLine.Start.Add(column);
+            var virtualPoint = new VirtualSnapshotPoint(point, virtualSpaces);
+            return textView.Caret.MoveTo(virtualPoint);
         }
 
         public static void SetText(this ITextView textView, params string[] lines)

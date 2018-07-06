@@ -3856,6 +3856,110 @@ more";
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
                 Assert.Equal(CaretColumn.None, data.CaretColumn);
             }
+
+            [WpfFact]
+            public void LineDownRealToReal()
+            {
+                Create("foo bar", "baz qux", "");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownRealToVirtual()
+            {
+                Create("foo bar", "baz", "");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToReal()
+            {
+                Create("foo", "bar baz", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToVirtual()
+            {
+                Create("foo", "baz", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpRealToReal()
+            {
+                Create("foo bar", "baz qux", "");
+                _textView.MoveCaretToLine(1, 4);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpRealToVirtual()
+            {
+                Create("foo", "bar baz", "");
+                _textView.MoveCaretToLine(1, 4);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToReal()
+            {
+                Create("foo bar", "baz", "");
+                _textView.MoveCaretToLine(1, 3, virtualSpaces: 1);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToVirtual()
+            {
+                Create("foo", "baz", "");
+                _textView.MoveCaretToLine(1, 3, virtualSpaces: 1);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
         }
     }
 }
