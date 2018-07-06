@@ -616,9 +616,10 @@ type internal CommonOperations
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result: MotionResult) =
 
+        let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
-        match shouldMaintainCaretColumn, result.CaretColumn with
-        | true, CaretColumn.InLastLine column ->
+        match useVirtualSpace, shouldMaintainCaretColumn, result.CaretColumn with
+        | false, true, CaretColumn.InLastLine column ->
             
             // Mappings should occur visually 
             let visualLastLine = x.GetDirectionLastLineInVisualSnapshot result
@@ -738,11 +739,14 @@ type internal CommonOperations
                 ViewFlags.All
 
         match _vimTextBuffer.UseVirtualSpace, result.MotionKind, result.CaretColumn with
-        | true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column ->
+        | true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column
+        | true, MotionKind.LineWise, CaretColumn.InLastLine column
+            ->
             let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
             let virtualSpaces = max 0 (column - columnNumber)
             let virtualPoint = VirtualSnapshotPointUtil.Add (VirtualSnapshotPointUtil.OfPoint point) virtualSpaces
             TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
+            ()
         | _ ->
             x.MoveCaretToPoint point viewFlags
 

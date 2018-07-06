@@ -2422,7 +2422,11 @@ type internal MotionUtil
             if x.CaretLine.LineNumber = 0 then None
             else
                 let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
-                let column = x.CaretColumn.Column
+                let column =
+                    if _vimTextBuffer.UseVirtualSpace then
+                        VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
+                    else
+                        x.CaretColumn.Column
                 let characterSpan =
                     let s = SnapshotLineUtil.GetColumnOrEnd column startLine
                     let e = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
@@ -2443,8 +2447,13 @@ type internal MotionUtil
             else
                 let lineNumber = x.CaretLine.LineNumber + count
                 let lastLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
+                let column =
+                    if _vimTextBuffer.UseVirtualSpace then
+                        VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
+                    else
+                        x.CaretColumn.Column
                 let characterSpan = 
-                    let e = SnapshotLineUtil.GetColumnOrEnd x.CaretColumn.Column lastLine
+                    let e = SnapshotLineUtil.GetColumnOrEnd column lastLine
                     let e = SnapshotPointUtil.AddOneOrCurrent e
                     SnapshotSpan(x.CaretPoint, e)
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
@@ -2453,7 +2462,7 @@ type internal MotionUtil
                     spanBeforeLineWise = characterSpan,
                     isForward = true,
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
-                    caretColumn = CaretColumn.InLastLine x.CaretColumn.Column) |> Some)
+                    caretColumn = CaretColumn.InLastLine column) |> Some)
 
     /// Get the appropriate maintain caret column flag taking into account 'startofline'
     member x.GetMaintainCaretColumnFlag () =

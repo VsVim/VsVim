@@ -2027,8 +2027,8 @@ module BufferGraphUtil =
 /// to calculate items like motions
 type SnapshotData = {
 
-    /// SnapshotPoint for the Caret
-    CaretPoint: SnapshotPoint
+    /// VirtualSnapshotPoint for the Caret
+    CaretVirtualPoint: VirtualSnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
     CaretLine: ITextSnapshotLine
@@ -2037,6 +2037,7 @@ type SnapshotData = {
     CurrentSnapshot: ITextSnapshot
 } with
 
+    member x.CaretPoint = x.CaretVirtualPoint.Position
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
 [<System.Flags>]
@@ -2329,10 +2330,10 @@ module TextViewUtil =
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer
     let GetEditSnapshotData (textView: ITextView) = 
-        let caretPoint = GetCaretPoint textView
-        let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+        let caretPoint = GetCaretVirtualPoint textView
+        let caretLine = SnapshotPointUtil.GetContainingLine caretPoint.Position
         { 
-            CaretPoint = caretPoint
+            CaretVirtualPoint = caretPoint
             CaretLine = caretLine
             CurrentSnapshot = caretLine.Snapshot }
 
@@ -2353,8 +2354,14 @@ module TextViewUtil =
         // ITextBuffer in this case though these shouldn't matter too much
         let caretPoint = 
             let bufferGraph = textView.BufferGraph
-            let editCaretPoint = GetCaretPoint textView
-            BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint visualSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+            let editCaretPoint = GetCaretVirtualPoint textView
+            match BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint.Position visualSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor with
+            | Some point ->
+                point
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> (fun point -> VirtualSnapshotPointUtil.Add point editCaretPoint.VirtualSpaces)
+                |> Some
+            | None -> None
 
         match caretPoint with
         | None ->
@@ -2363,9 +2370,9 @@ module TextViewUtil =
             // ITextView though
             None
         | Some caretPoint ->
-            let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+            let caretLine = SnapshotPointUtil.GetContainingLine caretPoint.Position
             { 
-                CaretPoint = caretPoint
+                CaretVirtualPoint = caretPoint
                 CaretLine = caretLine
                 CurrentSnapshot = caretLine.Snapshot } |> Some
 
