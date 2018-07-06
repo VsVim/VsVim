@@ -474,12 +474,32 @@ type internal CommonOperations
     /// Move the caret in the given direction
     member x.MoveCaret caretMovement = 
 
+        /// Move the caret to the same virtual position in line as the current caret line
+        let moveToLineVirtual (line: ITextSnapshotLine) =
+            if _vimTextBuffer.UseVirtualSpace then
+                let caretPoint = x.CaretVirtualPoint
+                let tabStop = _localSettings.TabStop
+                let currentSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
+                let lineSpaces = SnapshotPointUtil.GetSpacesToPoint line.End tabStop
+                if lineSpaces < currentSpaces then
+                    let virtualSpaces = currentSpaces - lineSpaces
+                    line.End
+                    |> VirtualSnapshotPointUtil.OfPoint
+                    |> (fun point -> VirtualSnapshotPointUtil.Add point virtualSpaces)
+                    |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                    true
+                else
+                    false
+            else
+                false
+
         /// Move the caret up
         let moveUp () =
             match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
             | None -> false
             | Some line ->
-                _editorOperations.MoveLineUp(false);
+                if not (moveToLineVirtual line) then
+                    _editorOperations.MoveLineUp(false)
                 true
 
         /// Move the caret down
@@ -487,8 +507,12 @@ type internal CommonOperations
             match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
             | None -> false
             | Some line ->
-                _editorOperations.MoveLineDown(false);
-                true
+                if SnapshotLineUtil.IsPhantomLine line then
+                    false
+                else
+                    if not (moveToLineVirtual line) then
+                        _editorOperations.MoveLineDown(false)
+                    true
 
         /// Move the caret left.  Don't go past the start of the line 
         let moveLeft () = 
