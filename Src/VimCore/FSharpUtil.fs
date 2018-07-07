@@ -202,6 +202,13 @@ module internal SeqUtil =
             let tail = l |> Seq.skip 1 
             Some (head,tail)
 
+    /// Get the head element in the sequence.  Throws an ArgumentException if
+    /// the sequence is empty
+    let head (s:'a seq) =
+        match tryHead s with
+        | Some (h, _) -> h
+        | None ->  invalidArg "s" "Sequence must not be empty"
+
     /// Try and get the head of the sequence
     let tryHeadOnly (sequence: 'a seq) = 
         use e = sequence.GetEnumerator()

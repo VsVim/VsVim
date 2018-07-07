@@ -1894,12 +1894,33 @@ module VirtualSnapshotPointUtil =
         let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
         spaces + point.VirtualSpaces
 
+/// Contains operations that act on snapshot lines but return virtual snapshot points
+module VirtualSnapshotLineUtil =
+
+    // Get the virtual point in the given line which is just before the character that
+    // overlaps the specified column into the line
+    let GetSpace line spacesCount tabStop =
+        let overlapPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line spacesCount tabStop
+        let point = VirtualSnapshotPointUtil.OfPoint overlapPoint.Point
+        if point.Position = line.End then
+            let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length tabStop
+            let virtualSpaces = spacesCount - realSpaces
+            VirtualSnapshotPointUtil.Add point virtualSpaces
+        else
+            point
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module VirtualSnapshotSpanUtil =
 
     /// Get the span
     let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
+
+    /// Get the start point
+    let GetStartPoint (span:VirtualSnapshotSpan) = span.Start
+
+    /// Get the end point
+    let GetEndPoint (span:VirtualSnapshotSpan) = span.End
 
     /// Get a virtual snapshot span from a snapshot span
     let OfSpan (span: SnapshotSpan) =

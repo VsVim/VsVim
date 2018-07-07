@@ -1712,6 +1712,25 @@ type BlockSpan =
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
 
+    /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information
+    member x.BlockVirtualSpans: NonEmptyCollection<VirtualSnapshotSpan> =
+        let snapshot = SnapshotPointUtil.GetSnapshot x.Start
+        let offset = x.ColumnSpaces
+        let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+        let list = System.Collections.Generic.List<VirtualSnapshotSpan>()
+        for i = lineNumber to ((x._height - 1) + lineNumber) do
+            match SnapshotUtil.TryGetLine snapshot i with
+            | None -> ()
+            | Some line ->
+                let startPoint = VirtualSnapshotLineUtil.GetSpace line offset x._tabStop
+                let endPoint = VirtualSnapshotLineUtil.GetSpace line (offset + x.Spaces) x._tabStop
+                let span = VirtualSnapshotSpan(startPoint, endPoint)
+                list.Add(span)
+
+        list
+        |> NonEmptyCollectionUtil.OfSeq
+        |> Option.get
+
     /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
     /// this block spans, along with the offset (measured in cells) of the block
     /// with respect to the start point and end point.
@@ -2108,6 +2127,18 @@ type VisualSelection =
                     else
                         span.End
 
+        let getAdjustedVirtualEnd (span: VirtualSnapshotSpan) =
+            if span.Length = 0 then
+                span.Start
+            else
+                match selectionKind with
+                | SelectionKind.Exclusive -> span.End
+                | SelectionKind.Inclusive ->
+                    if span.Length > 0 then
+                        VirtualSnapshotPointUtil.Add span.End -1
+                    else
+                        span.End
+
         match x with
         | Character (characterSpan, path) ->
             // The caret is either positioned at the start or the end of the selected
@@ -2143,17 +2174,21 @@ type VisualSelection =
 
             match blockCaretLocation with
             | BlockCaretLocation.TopLeft ->
-                blockSpan.VirtualStart
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.head
+                |> VirtualSnapshotSpanUtil.GetStartPoint
             | BlockCaretLocation.TopRight ->
-                getAdjustedEnd blockSpan.BlockSpans.Head
-                |> VirtualSnapshotPointUtil.OfPoint
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.head
+                |> getAdjustedVirtualEnd
             | BlockCaretLocation.BottomLeft ->
-                blockSpan.BlockSpans
+                blockSpan.BlockVirtualSpans
                 |> SeqUtil.last
-                |> SnapshotSpanUtil.GetStartPoint
-                |> VirtualSnapshotPointUtil.OfPoint
+                |> VirtualSnapshotSpanUtil.GetStartPoint
             | BlockCaretLocation.BottomRight ->
-                blockSpan.VirtualEnd
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.last
+                |> getAdjustedVirtualEnd
 
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the
     /// specified SelectionKind.
