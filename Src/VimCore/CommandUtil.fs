@@ -1776,11 +1776,14 @@ type internal CommandUtil
     /// 'p' and 'gp' command in normal mode
     member x.PutAfterCaret registerName count moveCaretAfterText =
         let register = x.GetRegister registerName
-        x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText
+        x.EditWithUndoTransaction "Put after" (fun () ->
+            x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Core put after function used by many of the put after operations
     member x.PutAfterCaretCore (registerValue: RegisterValue) count moveCaretAfterText =
+        _commonOperations.FillInVirtualSpace()
+
         let stringData = registerValue.StringData.ApplyCount count
 
         // Adjust for simple putting line-wise "after" in an empty buffer.
@@ -1820,7 +1823,8 @@ type internal CommandUtil
     member x.PutAfterCaretWithIndent registerName count =
         let register = x.GetRegister registerName
         let registerValue = x.CalculateIdentStringData register.RegisterValue
-        x.PutAfterCaretCore registerValue count false
+        x.EditWithUndoTransaction "Put after with indent" (fun () ->
+            x.PutAfterCaretCore registerValue count false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
@@ -1839,7 +1843,8 @@ type internal CommandUtil
 
                 // Now run the put after command
                 let register = x.GetRegister (Some RegisterName.Unnamed)
-                x.PutAfterCaretCore register.RegisterValue 1 false
+                x.EditWithUndoTransaction "Put after mouse" (fun () ->
+                    x.PutAfterCaretCore register.RegisterValue 1 false)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1847,7 +1852,8 @@ type internal CommandUtil
     /// 'P' and 'gP' commands in normal mode
     member x.PutBeforeCaret registerName count moveCaretAfterText =
         let register = x.GetRegister registerName
-        x.PutBeforeCaretCore register.RegisterValue count moveCaretAfterText
+        x.EditWithUndoTransaction "Put before" (fun () ->
+            x.PutBeforeCaretCore register.RegisterValue count moveCaretAfterText)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register before the caret and respect the
@@ -1855,11 +1861,14 @@ type internal CommandUtil
     member x.PutBeforeCaretWithIndent registerName count =
         let register = x.GetRegister registerName
         let registerValue = x.CalculateIdentStringData register.RegisterValue
-        x.PutBeforeCaretCore registerValue count false
+        x.EditWithUndoTransaction "Put before with indent" (fun () ->
+            x.PutBeforeCaretCore registerValue count false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Core put function used by many of the put before operations
     member x.PutBeforeCaretCore (registerValue: RegisterValue) count moveCaretAfterText =
+        _commonOperations.FillInVirtualSpace()
+
         let stringData = registerValue.StringData.ApplyCount count
         let point =
             match registerValue.OperationKind with
