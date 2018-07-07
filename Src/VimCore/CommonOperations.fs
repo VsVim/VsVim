@@ -485,7 +485,7 @@ type internal CommonOperations
                     let virtualSpaces = currentSpaces - lineSpaces
                     line.End
                     |> VirtualSnapshotPointUtil.OfPoint
-                    |> VirtualSnapshotPointUtil.Add virtualSpaces
+                    |> VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces
                     |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
                     true
                 else
@@ -786,7 +786,7 @@ type internal CommonOperations
             let virtualSpaces = max 0 (column - columnNumber)
             point
             |> VirtualSnapshotPointUtil.OfPoint
-            |> VirtualSnapshotPointUtil.Add virtualSpaces
+            |> VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces
             |> (fun point -> x.MoveCaretToVirtualPoint point viewFlags)
         | _ ->
             x.MoveCaretToPoint point viewFlags

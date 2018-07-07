@@ -113,7 +113,8 @@ type internal SelectionTracker
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
-            let visualSelection = VisualSelection.CreateForVirtualPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let visualSelection = VisualSelection.CreateForVirtualPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             visualSelection.Select _textView
