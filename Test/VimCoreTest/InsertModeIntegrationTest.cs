@@ -1351,6 +1351,66 @@ namespace Vim.UnitTest
                 Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 3),
                     _textView.Caret.Position.VirtualBufferPosition);
             }
+
+            [WpfFact]
+            public void LineDownRealToVirtual()
+            {
+                Create("foo", "", "");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.ProcessNotation("<Down>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(1), 2),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToVirtual()
+            {
+                Create("foo", "bar", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("<Down>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(1), 6),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToReal()
+            {
+                Create("", "bar", "");
+                _textView.MoveCaretTo(0, virtualSpaces: 2);
+                _vimBuffer.ProcessNotation("<Down>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(1), 2),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineUpRealToVirtual()
+            {
+                Create("", "bar", "");
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.ProcessNotation("<Up>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 2),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToVirtual()
+            {
+                Create("foo", "bar", "");
+                _textView.MoveCaretToLine(1, 3, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("<Up>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 6),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToReal()
+            {
+                Create("foo", "", "");
+                _textView.MoveCaretToLine(1, 0, virtualSpaces: 2);
+                _vimBuffer.ProcessNotation("<Up>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 2),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
         }
 
         public sealed class MiscTest : InsertModeIntegrationTest
