@@ -1782,8 +1782,6 @@ type internal CommandUtil
 
     /// Core put after function used by many of the put after operations
     member x.PutAfterCaretCore (registerValue: RegisterValue) count moveCaretAfterText =
-        _commonOperations.FillInVirtualSpace()
-
         let stringData = registerValue.StringData.ApplyCount count
 
         // Adjust for simple putting line-wise "after" in an empty buffer.
@@ -1807,6 +1805,7 @@ type internal CommandUtil
         let point =
             match registerValue.OperationKind with
             | OperationKind.CharacterWise ->
+                _commonOperations.FillInVirtualSpace()
                 if x.CaretLine.Length = 0 then
                     x.CaretLine.Start
                 elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
@@ -1867,12 +1866,12 @@ type internal CommandUtil
 
     /// Core put function used by many of the put before operations
     member x.PutBeforeCaretCore (registerValue: RegisterValue) count moveCaretAfterText =
-        _commonOperations.FillInVirtualSpace()
-
         let stringData = registerValue.StringData.ApplyCount count
         let point =
             match registerValue.OperationKind with
-            | OperationKind.CharacterWise -> x.CaretPoint
+            | OperationKind.CharacterWise ->
+                _commonOperations.FillInVirtualSpace()
+                x.CaretPoint
             | OperationKind.LineWise -> x.CaretLine.Start
 
         x.PutCore point stringData registerValue.OperationKind moveCaretAfterText false
