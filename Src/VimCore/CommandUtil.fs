@@ -238,7 +238,7 @@ type internal CommandUtil
         | StoredVisualSpan.Block (width = width; height = height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the
             // current caret position
-            let blockSpan = BlockSpan(x.CaretPoint, _localSettings.TabStop, width, height)
+            let blockSpan = BlockSpan(x.CaretVirtualPoint, _localSettings.TabStop, width, height)
             VisualSpan.Block blockSpan
 
     member x.CalculateDeleteOperation (result: MotionResult) =

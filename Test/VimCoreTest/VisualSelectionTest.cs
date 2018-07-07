@@ -489,7 +489,7 @@ namespace Vim.UnitTest
                 public void SelectionExclusive()
                 {
                     Create("hello world");
-                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetPoint(0), 4, SelectionKind.Exclusive);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Exclusive);
                     Assert.Equal(0, visualSelection.AsCharacter().Item1.Length);
                 }
 
@@ -497,7 +497,7 @@ namespace Vim.UnitTest
                 public void SelectionInclusive()
                 {
                     Create("hello world");
-                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetPoint(0), 4, SelectionKind.Inclusive);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Inclusive);
                     Assert.Equal(1, visualSelection.AsCharacter().Item1.Length);
                 }
             }
