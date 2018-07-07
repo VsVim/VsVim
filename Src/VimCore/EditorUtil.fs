@@ -1836,9 +1836,11 @@ module SnapshotPointUtil =
         match OrderAscending point endPointOfLastLine with
         | (firstPoint, _) -> firstPoint
 
+/// Functional operations acting on virtual snapshot points
 module VirtualSnapshotPointUtil =
     
-    let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
+    /// Create a virtual point from a non-virtual point
+    let OfPoint (point: SnapshotPoint) = VirtualSnapshotPoint(point)
 
     /// Convert the SnapshotPoint into a VirtualSnapshotPoint taking into account the editors
     /// view that SnapshotPoint values in the line break should be represented as 
@@ -1851,24 +1853,30 @@ module VirtualSnapshotPointUtil =
         else
             VirtualSnapshotPoint(point)
 
-    let GetPoint (point:VirtualSnapshotPoint) = point.Position
+    /// Get the non-virtual snapshot point from the virtual point
+    let GetPoint (point: VirtualSnapshotPoint) = point.Position
 
+    /// Get the buffer position of the non-virtual snapshot point
     let GetPosition point = 
         let point = GetPoint point
         point.Position
 
-    let GetContainingLine (point:VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
+    /// Get the snapshot line containing the specified virtual point
+    let GetContainingLine (point: VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
 
-    let IsInVirtualSpace (point:VirtualSnapshotPoint) = point.IsInVirtualSpace
+    /// Whether the specified virtual point is in virtual space
+    let IsInVirtualSpace (point: VirtualSnapshotPoint) = point.IsInVirtualSpace
 
+    /// Get the line number and column number of the specified virtual point
     let GetLineColumn (point: VirtualSnapshotPoint) =
         let line = GetContainingLine point
         let realColumn = point.Position.Position - line.Start.Position
         line.LineNumber, realColumn + point.VirtualSpaces
 
+    /// Get the column number of the specified virtual point
     let GetColumnNumber (point: VirtualSnapshotPoint) =
-        let _, columnNumber = GetLineColumn point
-        columnNumber
+        match GetLineColumn point with
+        | _, columnNumber -> columnNumber
 
     /// Add count to the VirtualSnapshotPoint keeping it on the same line
     let AddOnSameLine count point =
