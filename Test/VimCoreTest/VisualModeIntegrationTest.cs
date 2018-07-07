@@ -269,6 +269,39 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
                 }
             }
+
+            public sealed class VirtualEditTest : BlockSelectionTest
+            {
+                protected override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+                    _globalSettings.VirtualEdit = "block";
+                }
+
+                [WpfFact]
+                public void Inclusive()
+                {
+                    Create("cat", "dog bear", "tree", "");
+                    _globalSettings.Selection = "inclusive";
+                    _vimBuffer.ProcessNotation("<C-q>2j8l");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
+                    Assert.Equal(3, blockSpan.Height);
+                    Assert.Equal(9, blockSpan.Spaces);
+                }
+
+                [WpfFact]
+                public void Exclusive()
+                {
+                    Create("cat", "dog bear", "tree", "");
+                    _globalSettings.Selection = "exclusive";
+                    _vimBuffer.ProcessNotation("<C-q>2j8l");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
+                    var blockSpan = _vimBuffer.GetSelectionBlockSpan();
+                    Assert.Equal(3, blockSpan.Height);
+                    Assert.Equal(8, blockSpan.Spaces);
+                }
+            }
         }
 
         public abstract class VisualShiftTest : VisualModeIntegrationTest
@@ -2961,15 +2994,15 @@ namespace Vim.UnitTest
 
         public abstract class YankSelectionTest : VisualModeIntegrationTest
         {
+            private void AssertRegister(params string[] lines)
+            {
+                var data = UnnamedRegister.StringData;
+                Assert.True(data.IsBlock);
+                Assert.Equal(lines, ((StringData.Block)data).Item);
+            }
+
             public sealed class BlockTest : YankSelectionTest
             {
-                private void AssertRegister(params string[] lines)
-                {
-                    var data = UnnamedRegister.StringData;
-                    Assert.True(data.IsBlock);
-                    Assert.Equal(lines, ((StringData.Block)data).Item);
-                }
-
                 [WpfFact]
                 public void Simple()
                 {
@@ -3016,6 +3049,26 @@ namespace Vim.UnitTest
                     Create(4, "trucker", "\tdog", "fisher");
                     _vimBuffer.ProcessNotation("ll<c-q>lljjy");
                     AssertRegister("uck", "  d", "she");
+                }
+            }
+
+            public sealed class VirtualBlock : YankSelectionTest
+            {
+                protected override void Create(params string[] lines)
+                {
+                    base.Create(lines);
+                    _globalSettings.VirtualEdit = "block";
+                }
+
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void YankBlock(string selection)
+                {
+                    Create("cat", "dog bear", "tree", "");
+                    _globalSettings.Selection = selection;
+                    _vimBuffer.ProcessNotation("<C-q>2j8ly");
+                    AssertRegister("cat", "dog bear", "tree");
                 }
             }
 

@@ -1656,7 +1656,7 @@ namespace Vim.UnitTest
         public static BlockSpan GetSelectionBlockSpan(this ITextView textView, int tabStop)
         {
             Assert.Equal(TextSelectionMode.Box, textView.Selection.Mode);
-            var spans = textView.Selection.SelectedSpans;
+            var spans = textView.Selection.VirtualSelectedSpans;
             var first = spans[0];
             return new BlockSpan(first.Start, tabStop, first.Length, spans.Count);
         }

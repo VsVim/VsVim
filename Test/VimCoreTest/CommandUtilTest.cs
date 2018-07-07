@@ -1963,6 +1963,19 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// PutAfter with a block value in virtual space should fill in spaces
+            /// </summary>
+            [WpfFact]
+            public void PutAfter_VirtualBlock()
+            {
+                Create("cat", "dog", "");
+                UnnamedRegister.UpdateBlockValues("foo", "bar");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                _commandUtil.PutAfterCaret(VimUtil.MissingRegisterName, 1, false);
+                Assert.Equal(new[] { "cat foo", "dog bar", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
             /// PutAfter with a block value with the moveCaret option should put the caret after
             /// the last inserted text from the last item in the block
             /// </summary>
@@ -1991,6 +2004,19 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
                 Assert.Equal("pig", _textView.GetLine(1).GetText());
                 Assert.Equal(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// PutBefore with a block value in virtual space should fill in spaces
+            /// </summary>
+            [WpfFact]
+            public void PutBefore_VirtualBlock()
+            {
+                Create("cat", "dog", "");
+                UnnamedRegister.UpdateBlockValues("foo", "bar");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                _commandUtil.PutBeforeCaret(VimUtil.MissingRegisterName, 1, false);
+                Assert.Equal(new[] { "cat foo", "dog bar", "" }, _textBuffer.GetLines());
             }
 
             /// <summary>
