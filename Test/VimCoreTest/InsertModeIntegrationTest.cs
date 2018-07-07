@@ -1304,6 +1304,55 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class VirtualEditTest : InsertModeIntegrationTest
+        {
+            protected override void Create(ModeArgument argument, params string[] lines)
+            {
+                base.Create(argument, lines);
+                _globalSettings.VirtualEdit = "insert";
+            }
+
+            [WpfFact]
+            public void CharRightRealToVirtual()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 4),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void CharRightVirtualToVirtual()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 5),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void CharLeftVirtualToVirtual()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 2);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 4),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void CharLeftVirtualToReal()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                _vimBuffer.ProcessNotation("<Left>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 3),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+        }
+
         public sealed class MiscTest : InsertModeIntegrationTest
         {
             /// <summary>
