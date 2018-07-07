@@ -2295,7 +2295,7 @@ type internal MotionUtil
             if count < endPoint.VirtualSpaces then
 
                 // We are just moving in virtual space.
-                let startPoint = VirtualSnapshotPointUtil.AddOnSameLine -count endPoint
+                let startPoint = VirtualSnapshotPointUtil.SubtractOnSameLine count endPoint
                 let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
                 let span = VirtualSnapshotSpan(startPoint, endPoint)
                 MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
@@ -2341,7 +2341,7 @@ type internal MotionUtil
             if count < endPoint.VirtualSpaces then
 
                 // We are just moving in virtual space.
-                let startPoint = VirtualSnapshotPointUtil.AddOnSameLine -count endPoint
+                let startPoint = VirtualSnapshotPointUtil.SubtractOnSameLine count endPoint
                 let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
                 let span = VirtualSnapshotSpan(startPoint, endPoint)
                 MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)

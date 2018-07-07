@@ -1863,17 +1863,21 @@ module VirtualSnapshotPointUtil =
 
     let GetLineColumn (point: VirtualSnapshotPoint) =
         let line = GetContainingLine point
-        line.LineNumber, point.Position.Position - line.Start.Position + point.VirtualSpaces
+        let realColumn = point.Position.Position - line.Start.Position
+        line.LineNumber, realColumn + point.VirtualSpaces
 
     let GetColumnNumber (point: VirtualSnapshotPoint) =
-        let line = GetContainingLine point
-        point.Position.Position - line.Start.Position + point.VirtualSpaces
+        let _, columnNumber = GetLineColumn point
+        columnNumber
 
     /// Add count to the VirtualSnapshotPoint keeping it on the same line
     let AddOnSameLine count point =
         let line = GetContainingLine point
-        let offset = point.Position.Position - line.Start.Position + point.VirtualSpaces
-        VirtualSnapshotPoint(line, offset + count)
+        let columnNumber = GetColumnNumber point
+        VirtualSnapshotPoint(line, columnNumber + count)
+
+    /// Subtract count to the VirtualSnapshotPoint keeping it on the same line
+    let SubtractOnSameLine count point = AddOnSameLine -count point
 
     /// Add one to the VirtualSnapshotPoint keeping it on the same line
     let AddOneOnSameLine point = AddOnSameLine 1 point
@@ -1888,9 +1892,9 @@ module VirtualSnapshotPointUtil =
             |> SnapshotPointUtil.SubtractOneOrCurrent
             |> OfPoint
 
-    /// Used to order two SnapshotPoint's in ascending order.  
-    let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 
-        if left.CompareTo(right) < 0 then left,right 
+    /// Put two VirtualSnapshotPoint's in ascending order
+    let OrderAscending (left: VirtualSnapshotPoint) (right: VirtualSnapshotPoint) =
+        if left.CompareTo(right) < 0 then left,right
         else right,left
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
