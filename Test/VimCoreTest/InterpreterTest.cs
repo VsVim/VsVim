@@ -2722,7 +2722,7 @@ namespace Vim.UnitTest
                 Create();
 
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c");
-                _vimBufferData.SetupGet(x => x.CurrentRelativeFileName).Returns("src/version.c");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("src/version.c");
                 TestInterpretation("/home/mool/vim/src/version.c", "%:p");
                 TestInterpretation("src", "%:h");
                 TestInterpretation("/home/mool/vim/src", "%:p:h");
@@ -2735,7 +2735,7 @@ namespace Vim.UnitTest
                 TestInterpretation("c", "%:e");
 
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c.gz");
-                _vimBufferData.SetupGet(x => x.CurrentRelativeFileName).Returns("src/version.c.gz");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("src/version.c.gz");
                 TestInterpretation("/home/mool/vim/src/version.c.gz", "%:p");
                 TestInterpretation("gz", "%:e");
                 TestInterpretation("c.gz", "%:e:e");
@@ -2753,7 +2753,7 @@ namespace Vim.UnitTest
                 Create();
 
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
-                _vimBufferData.SetupGet(x => x.CurrentRelativeFileName).Returns("test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("test.abc.xyz");
 
                 TestInterpretation("test.abc.xyzx", "%x");
                 TestInterpretation("test.abc.xyz:", "%:");
@@ -2768,7 +2768,7 @@ namespace Vim.UnitTest
             {
                 Create();
                 
-                _vimBufferData.SetupGet(x => x.CurrentRelativeFileName).Returns(".vimrc");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns(".vimrc");
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\.vimrc");
 
                 TestInterpretation(".vimrc", "%:r");
@@ -2780,7 +2780,7 @@ namespace Vim.UnitTest
             {
                 Create();
 
-                _vimBufferData.SetupGet(x => x.CurrentRelativeFileName).Returns("test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("test.abc.xyz");
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
 
                 TestInterpretation(@"fooc:\A\B\C\bar\%test\", @"foo%:p:h:h\bar\\%%:r:r\");
@@ -2798,9 +2798,9 @@ namespace Vim.UnitTest
                 _fileHistory.Add(@"c:\C\hist2.txt");
                 _fileHistory.Add(@"c:\A\hist1.txt");
 
-                TestInterpretation("hist1.txt", "#0");
-                TestInterpretation(@"C\hist2.txt", "#");
-                TestInterpretation(@"C\hist2.txt", "#1");
+                TestInterpretation(@"c:\A\hist1.txt", "#0");
+                TestInterpretation(@"c:\C\hist2.txt", "#");
+                TestInterpretation(@"c:\C\hist2.txt", "#1");
                 TestInterpretation("hist3.txt", "#2");
                 TestInterpretation(@"c:\A\B\hist3.txt", "#2:p");
             }

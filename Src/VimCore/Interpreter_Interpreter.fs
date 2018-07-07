@@ -822,8 +822,8 @@ type VimInterpreter
         elif not hasBang && _vimHost.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            let filePath = x.ResolveVimPath filePath
-            _vimHost.LoadFileIntoExistingWindow filePath _textView |> ignore
+            let resolvedFilePath = x.ResolveVimPath filePath
+            _vimHost.LoadFileIntoExistingWindow resolvedFilePath _textView |> ignore
 
     /// Get the value of the specified expression 
     member x.RunExpression expr =
@@ -1861,7 +1861,7 @@ type VimInterpreter
                 let path = 
                     match modifiers with
                     | FileNameModifier.PathFull::tail -> x.ApplyFileNameModifiers _vimBufferData.CurrentFilePath tail
-                    | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentRelativeFileName modifiers
+                    | _ -> x.ApplyFileNameModifiers _vimBufferData.CurrentRelativeFilePath modifiers
                 path |> sb.AppendString
                 inner sb tail
             | SymbolicPathComponent.AlternateFileName (n, modifiers)::tail ->
@@ -1875,7 +1875,7 @@ type VimInterpreter
                             match fileName with
                             | None -> None
                             | Some filePath ->
-                                SystemUtil.StripCommonPathPrefix x.CurrentDirectory filePath |> snd |> Some
+                                SystemUtil.StripPathPrefix x.CurrentDirectory filePath |> Some
                         x.ApplyFileNameModifiers relativeFileName modifiers
                 path |> sb.AppendString
                 inner sb tail
