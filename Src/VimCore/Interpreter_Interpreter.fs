@@ -1649,7 +1649,8 @@ type VimInterpreter
 
     member x.RunTabNew symbolicPath = 
         let filePath = x.InterpretSymbolicPath symbolicPath
-        _vimHost.LoadFileIntoNewWindow filePath (Some 0) None |> ignore
+        let resolvedFilePath = x.ResolveVimPath filePath
+        _vimHost.LoadFileIntoNewWindow resolvedFilePath (Some 0) None |> ignore
 
     member x.RunOnly() =
         _vimHost.CloseAllOtherWindows _textView
