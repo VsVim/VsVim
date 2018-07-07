@@ -43,7 +43,7 @@ namespace Vim.UnitTest
             Create(VisualKind.Character, "foo");
             _textView.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.Equal(0, _tracker.AnchorPoint.Position);
-            Assert.Same(_textView.TextSnapshot, _tracker.AnchorPoint.Snapshot);
+            Assert.Same(_textView.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
         }
 
         /// <summary>

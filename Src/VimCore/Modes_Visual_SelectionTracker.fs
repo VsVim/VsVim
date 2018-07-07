@@ -21,7 +21,7 @@ type internal SelectionTracker
 
     /// The anchor point we are currently tracking.  This is always included in the selection which
     /// is created by this type 
-    let mutable _anchorPoint: SnapshotPoint option = None
+    let mutable _anchorPoint: VirtualSnapshotPoint option = None
 
     /// Should the selection be extended into the line break 
     let mutable _extendIntoLineBreak: bool = false
@@ -61,7 +61,7 @@ type internal SelectionTracker
             let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind
             visualSelection.VisualSpan.Select _textView SearchPath.Forward
 
-            _anchorPoint <- Some caretPoint.Position
+            _anchorPoint <- Some caretPoint
             _extendIntoLineBreak <- false
 
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
@@ -72,11 +72,11 @@ type internal SelectionTracker
             // not when the selection is reversed.  We need to account for this when 
             // setting our anchor point unless the selection is exclusive
             _textView.Selection.Mode <- _visualKind.TextSelectionMode
-            let anchorPoint = selection.AnchorPoint.Position
+            let anchorPoint = selection.AnchorPoint
             let isInclusive =_globalSettings.SelectionKind = SelectionKind.Inclusive 
             _anchorPoint <- 
                 if selection.IsReversed && isInclusive then
-                    SnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
+                    VirtualSnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
                 else
                     Some anchorPoint
             _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
@@ -97,7 +97,6 @@ type internal SelectionTracker
         match _anchorPoint with
         | None -> ()
         | Some anchorPoint ->
-            let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
             let simulatedCaretPoint = 
                 let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView 
                 if _incrementalSearch.InSearch then
@@ -172,8 +171,8 @@ type internal SelectionTracker
         | Some anchorPoint ->
 
             _anchorPoint <- 
-                match TrackingPointUtil.GetPointInSnapshot anchorPoint PointTrackingMode.Negative args.After with
-                | None -> SnapshotPoint(args.After, 0) |> Some
+                match TrackingPointUtil.GetVirtualPointInSnapshot anchorPoint PointTrackingMode.Negative args.After with
+                | None -> VirtualSnapshotPoint(args.After, 0) |> Some
                 | Some anchorPoint -> Some anchorPoint
 
     interface ISelectionTracker with 

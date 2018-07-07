@@ -19,7 +19,7 @@ type ISelectionTracker =
     abstract UpdateSelection: unit -> unit
 
     /// Reset the selection with the given anchor point 
-    abstract UpdateSelectionWithAnchorPoint: anchorPoint: SnapshotPoint -> unit
+    abstract UpdateSelectionWithAnchorPoint: anchorPoint: VirtualSnapshotPoint -> unit
 
     /// Start tracking the selection
     abstract Start: unit -> unit

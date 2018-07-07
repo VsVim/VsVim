@@ -224,7 +224,9 @@ type internal VisualMode
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetAnchorPoint then
                         match _vimBufferData.VisualAnchorPoint |>  OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
                         | None -> ()
-                        | Some anchorPoint -> _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
+                        | Some anchorPoint ->
+                            let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
+                            _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->

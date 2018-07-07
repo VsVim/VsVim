@@ -1884,6 +1884,15 @@ module VirtualSnapshotPointUtil =
             if point.Position = line.EndIncludingLineBreak then VirtualSnapshotPoint(point.Position, 1)
             else VirtualSnapshotPoint(point.Position.Add(1))
 
+    /// Try and subtract 1 from the given point unless it's the start of the buffer in which
+    /// case return the passed in value
+    let SubtractOneOrCurrent (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            Add point -1
+        else
+            SnapshotPointUtil.SubtractOneOrCurrent point.Position
+            |> OfPoint
+
     /// Used to order two SnapshotPoint's in ascending order.  
     let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 
         if left.CompareTo(right) < 0 then left,right 
@@ -2461,6 +2470,22 @@ module TrackingPointUtil =
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
             GetPoint newSnapshot trackingPoint
+
+    let GetVirtualPointInSnapshot (point: VirtualSnapshotPoint) mode (newSnapshot: ITextSnapshot) =
+        let oldSnapshot = SnapshotPointUtil.GetSnapshot point.Position
+        if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
+            Some point
+        else
+            let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position.Position, mode)
+            match GetPoint newSnapshot trackingPoint with
+            | Some newPoint ->
+                let virtualSpaces = point.VirtualSpaces
+                newPoint
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> (fun point -> VirtualSnapshotPointUtil.Add point virtualSpaces)
+                |> Some
+            | None ->
+                None
 
 /// Abstraction useful for APIs which need to work over a single SnapshotSpan 
 /// or collection of SnapshotSpan values
