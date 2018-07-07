@@ -1686,7 +1686,7 @@ type BlockSpan =
         if point.Position = line.End then
             let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length x._tabStop
             let virtualSpaces = x.ColumnSpaces + x.Spaces - realSpaces
-            VirtualSnapshotPointUtil.Add point virtualSpaces
+            VirtualSnapshotPointUtil.Add virtualSpaces point
         else
             point
 
@@ -2141,7 +2141,7 @@ type VisualSelection =
                 | SelectionKind.Exclusive -> span.End
                 | SelectionKind.Inclusive ->
                     if span.Length > 0 then
-                        VirtualSnapshotPointUtil.Add span.End -1
+                        VirtualSnapshotPointUtil.SubtractOneOrCurrent span.End
                     else
                         span.End
 

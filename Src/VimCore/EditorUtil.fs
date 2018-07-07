@@ -1870,7 +1870,7 @@ module VirtualSnapshotPointUtil =
         point.Position.Position - line.Start.Position + point.VirtualSpaces
 
     /// Add count to the VirtualSnapshotPoint keeping it on the same line
-    let Add point count =
+    let Add count point =
         let line = GetContainingLine point
         let offset = point.Position.Position - line.Start.Position + point.VirtualSpaces
         VirtualSnapshotPoint(line, offset + count)
@@ -1888,7 +1888,7 @@ module VirtualSnapshotPointUtil =
     /// case return the passed in value
     let SubtractOneOrCurrent (point: VirtualSnapshotPoint) =
         if point.IsInVirtualSpace then
-            Add point -1
+            Add -1 point
         else
             SnapshotPointUtil.SubtractOneOrCurrent point.Position
             |> OfPoint
@@ -1914,7 +1914,7 @@ module VirtualSnapshotLineUtil =
         if point.Position = line.End then
             let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length tabStop
             let virtualSpaces = spacesCount - realSpaces
-            VirtualSnapshotPointUtil.Add point virtualSpaces
+            VirtualSnapshotPointUtil.Add virtualSpaces point
         else
             point
 
@@ -2389,7 +2389,7 @@ module TextViewUtil =
             | Some point ->
                 point
                 |> VirtualSnapshotPointUtil.OfPoint
-                |> (fun point -> VirtualSnapshotPointUtil.Add point editCaretPoint.VirtualSpaces)
+                |> VirtualSnapshotPointUtil.Add editCaretPoint.VirtualSpaces
                 |> Some
             | None -> None
 
@@ -2482,7 +2482,7 @@ module TrackingPointUtil =
                 let virtualSpaces = point.VirtualSpaces
                 newPoint
                 |> VirtualSnapshotPointUtil.OfPoint
-                |> (fun point -> VirtualSnapshotPointUtil.Add point virtualSpaces)
+                |> VirtualSnapshotPointUtil.Add virtualSpaces
                 |> Some
             | None ->
                 None

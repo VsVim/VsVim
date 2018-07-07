@@ -485,7 +485,7 @@ type internal CommonOperations
                     let virtualSpaces = currentSpaces - lineSpaces
                     line.End
                     |> VirtualSnapshotPointUtil.OfPoint
-                    |> (fun point -> VirtualSnapshotPointUtil.Add point virtualSpaces)
+                    |> VirtualSnapshotPointUtil.Add virtualSpaces
                     |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
                     true
                 else
@@ -594,7 +594,7 @@ type internal CommonOperations
             let caretPoint = x.CaretVirtualPoint
             if _vimTextBuffer.UseVirtualSpace && caretPoint.IsInVirtualSpace then
                 caretPoint
-                |> (fun point -> VirtualSnapshotPointUtil.Add point -1)
+                |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
                 |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
                 true
             elif _globalSettings.IsWhichWrapArrowLeftInsert then
@@ -612,7 +612,7 @@ type internal CommonOperations
             let caretPoint = x.CaretVirtualPoint
             if _vimTextBuffer.UseVirtualSpace && caretPoint.Position = x.CaretLine.End then
                 caretPoint
-                |> (fun point -> VirtualSnapshotPointUtil.Add point 1)
+                |> VirtualSnapshotPointUtil.AddOneOnSameLine
                 |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
                 true
             elif _globalSettings.IsWhichWrapArrowRightInsert then
@@ -780,15 +780,14 @@ type internal CommonOperations
                 // Character wise motions should expand regions
                 ViewFlags.All
 
-        match _vimTextBuffer.UseVirtualSpace, result.MotionKind, result.CaretColumn with
-        | true, MotionKind.CharacterWiseExclusive, CaretColumn.InLastLine column
-        | true, MotionKind.LineWise, CaretColumn.InLastLine column
-            ->
+        match _vimTextBuffer.UseVirtualSpace, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
             let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
             let virtualSpaces = max 0 (column - columnNumber)
-            let virtualPoint = VirtualSnapshotPointUtil.Add (VirtualSnapshotPointUtil.OfPoint point) virtualSpaces
-            TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
-            ()
+            point
+            |> VirtualSnapshotPointUtil.OfPoint
+            |> VirtualSnapshotPointUtil.Add virtualSpaces
+            |> (fun point -> x.MoveCaretToVirtualPoint point viewFlags)
         | _ ->
             x.MoveCaretToPoint point viewFlags
 
