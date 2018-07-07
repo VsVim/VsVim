@@ -2094,7 +2094,7 @@ type VisualSelection =
 
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
     /// specified SelectionKind.  
-    member x.GetCaretPoint selectionKind = 
+    member x.GetCaretVirtualPoint selectionKind =
 
         let getAdjustedEnd (span: SnapshotSpan) = 
             if span.Length = 0 then
@@ -2121,6 +2121,7 @@ type VisualSelection =
                 else
                     getAdjustedEnd characterSpan.Span
             | SearchPath.Backward -> characterSpan.Start
+            |> VirtualSnapshotPointUtil.OfPoint
 
         | Line (snapshotLineRange, path, column) ->
 
@@ -2136,15 +2137,29 @@ type VisualSelection =
                 SnapshotPointUtil.Add column line.Start
             else
                 line.End
+            |> VirtualSnapshotPointUtil.OfPoint
 
         | Block (blockSpan, blockCaretLocation) ->
 
             match blockCaretLocation with
-            | BlockCaretLocation.TopLeft -> blockSpan.Start
-            | BlockCaretLocation.TopRight -> getAdjustedEnd blockSpan.BlockSpans.Head
-            | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
-            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getAdjustedEnd
+            | BlockCaretLocation.TopLeft ->
+                blockSpan.VirtualStart
+            | BlockCaretLocation.TopRight ->
+                getAdjustedEnd blockSpan.BlockSpans.Head
+                |> VirtualSnapshotPointUtil.OfPoint
+            | BlockCaretLocation.BottomLeft ->
+                blockSpan.BlockSpans
+                |> SeqUtil.last
+                |> SnapshotSpanUtil.GetStartPoint
+                |> VirtualSnapshotPointUtil.OfPoint
+            | BlockCaretLocation.BottomRight ->
+                blockSpan.VirtualEnd
 
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the
+    /// specified SelectionKind.
+    member x.GetCaretPoint selectionKind =
+        let virtualCaretPoint = x.GetCaretVirtualPoint selectionKind
+        virtualCaretPoint.Position
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =

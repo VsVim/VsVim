@@ -140,8 +140,8 @@ type internal SelectionTracker
 
                 if visualSelection.VisualKind = _visualKind then
                     visualSelection.Select _textView
-                    let visualCaretPoint = visualSelection.GetCaretPoint _globalSettings.SelectionKind
-                    TextViewUtil.MoveCaretToPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
+                    let visualCaretPoint = visualSelection.GetCaretVirtualPoint _globalSettings.SelectionKind
+                    TextViewUtil.MoveCaretToVirtualPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
                     caretPoint
                 else
                     None
