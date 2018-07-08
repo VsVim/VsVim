@@ -2690,8 +2690,12 @@ type internal CommandUtil
             let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
             TextViewUtil.MoveCaretToPoint _textView point
         else
-            let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
-            TextViewUtil.MoveCaretToPoint _textView point
+            if _vimTextBuffer.UseVirtualSpace then
+                VirtualSnapshotLineUtil.GetSpace x.CaretLine spacesToCaret _localSettings.TabStop
+            else
+                SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
+                |> VirtualSnapshotPointUtil.OfPoint
+            |> TextViewUtil.MoveCaretToVirtualPoint _textView
             _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Get the number lines in the current window
