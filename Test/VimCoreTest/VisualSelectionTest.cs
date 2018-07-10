@@ -367,6 +367,20 @@ namespace Vim.UnitTest
                     var visualSpan = VisualSelection.CreateForPoints(VisualKind.Line, _textBuffer.GetPoint(0), caretPoint: _textBuffer.GetPointInLine(1, 0), tabStop: 4);
                     Assert.Equal(_textBuffer.GetLineRange(0, 1), visualSpan.AsLine().Item1);
                 }
+
+                /// <summary>
+                /// The use of virtual space should not affect a linewise visual selection
+                /// </summary>
+                /// <param name="useVirtualSpace"></param>
+                [WpfTheory]
+                [InlineData(false)]
+                [InlineData(true)]
+                public void CaretOnBlankLine(bool useVirtualSpace)
+                {
+                    Create("cats", "", "dogs", "");
+                    var visualSelection = VisualSelection.CreateForVirtualPoints(VisualKind.Line, _textBuffer.GetVirtualPoint(0), _textBuffer.GetVirtualPointInLine(1, 0), tabStop: 4, useVirtualSpace);
+                    Assert.Equal(_textBuffer.GetLineRange(0, 1), visualSelection.AsLine().Item1);
+                }
             }
 
             public sealed class BlockTest : CreateForPointsTest

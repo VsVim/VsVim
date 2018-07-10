@@ -2017,7 +2017,7 @@ type VisualSpan =
                 Character characterSpan
             else
                 let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
-                if useVirtualSpace then
+                if visualKind <> VisualKind.Line && useVirtualSpace then
                     visualSpan
                 else
                     visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
@@ -2252,7 +2252,7 @@ type VisualSelection =
     static member CreateForVirtualPoints visualKind (anchorPoint: VirtualSnapshotPoint) (caretPoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
 
         let addOne point =
-            if useVirtualSpace then
+            if visualKind <> VisualKind.Line && useVirtualSpace then
                 point
                 |> VirtualSnapshotPointUtil.AddOneOnSameLine
             else
