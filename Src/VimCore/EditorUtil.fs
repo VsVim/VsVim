@@ -523,6 +523,7 @@ type SnapshotCharacterSpan =
     /// column of a line that "parses" the line and builds a lookup
     /// table of physical positions corresponding to logical columns
     new (line: ITextSnapshotLine) =
+        let mutable currentPoint = line.Start
         let endPoint = line.EndIncludingLineBreak
 
         // Build an array of positions (including an extra final position)
@@ -531,15 +532,10 @@ type SnapshotCharacterSpan =
         /// are reused for other character span within the line.
         let positions =
             seq {
-                let mutable currentPoint = line.Start
                 while currentPoint.Position < endPoint.Position do
                     yield currentPoint.Position
-                    let width = 
-                        if CodePointInfo.SurrogatePairHighCharacter = EditorCoreUtil.GetCodePointInfo currentPoint then
-                            2
-                        else
-                            1
-                    currentPoint <- currentPoint.Add(width)
+                    let span = EditorCoreUtil.GetCharacterSpan line currentPoint
+                    currentPoint <- span.End
                 yield endPoint.Position
             }
             |> Seq.toArray
