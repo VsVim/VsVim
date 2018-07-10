@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         ITagger<T> IViewTaggerProvider.CreateTagger<T>(ITextView textView, ITextBuffer textBuffer)
         {
-            if (textView.VisualSnapshot.TextBuffer != textBuffer)
+            if (textView.TextBuffer != textBuffer)
             {
                 return null;
             }

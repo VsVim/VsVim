@@ -39,7 +39,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
             _markMap.MarkSet += OnMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
-            _vimBufferData.TextView.VisualSnapshot.TextBuffer.Changed += OnTextBufferChanged;
+            _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
             _vimBufferData.LocalSettings.SettingChanged += OnLocalSettingsChanged;
             _vimBufferData.Vim.VimHost.IsVisibleChanged += OnIsVisibleChanged;
         }
@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             _markMap.MarkSet -= OnMarkSet;
             _markMap.MarkDeleted -= OnMarkDeleted;
-            _vimBufferData.TextView.VisualSnapshot.TextBuffer.Changed -= OnTextBufferChanged;
+            _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
             _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
         }
 
@@ -225,7 +225,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
 
             CachePairs();
-            var snapshot = _vimBufferData.TextView.VisualSnapshot;
+            var snapshot = _vimBufferData.TextView.TextSnapshot;
             var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
             VimTrace.TraceInfo($"MarkGlyphTagger::RaiseChanged");
             _changedEvent?.Invoke(this, new SnapshotSpanEventArgs(span));
@@ -268,7 +268,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 yield break;
             }
 
-            if (spans[0].Snapshot.Version != _vimBufferData.TextView.VisualSnapshot.Version)
+            if (spans[0].Snapshot.Version != _vimBufferData.TextView.TextSnapshot.Version)
             {
                 yield break;
             }
