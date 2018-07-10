@@ -16,6 +16,7 @@ open StringBuilderExtensions
 open System.Linq
 open System.Drawing
 
+[<RequireQualifiedAccess>]
 type CodePointInfo = 
     | SimpleCharacter
     | SurrogatePairHighCharacter
