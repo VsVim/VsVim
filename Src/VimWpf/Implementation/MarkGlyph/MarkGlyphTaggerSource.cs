@@ -10,7 +10,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
     internal sealed class MarkGlyphTaggerSource : IBasicTaggerSource<MarkGlyphTag>, IDisposable
     {
-        static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList =
+        private readonly static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList =
             new ReadOnlyCollection<ITagSpan<MarkGlyphTag>>(new List<ITagSpan<MarkGlyphTag>>());
 
         private readonly IVimBufferData _vimBufferData;

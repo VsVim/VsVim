@@ -12,7 +12,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     [TagType(typeof(MarkGlyphTag))]
     [Name("MarkGlyph")]
     [Order(After = "VsTextMarker")]
-    class MarkGlyphFactoryProvider : IGlyphFactoryProvider
+    internal sealed class MarkGlyphFactoryProvider : IGlyphFactoryProvider
     {
         private readonly IVim _vim;
         private readonly IClassificationFormatMapService _classificationFormatMapService;

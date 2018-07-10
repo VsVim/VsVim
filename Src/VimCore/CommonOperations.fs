@@ -1586,11 +1586,15 @@ type internal CommonOperations
     member x.RaiseSearchResultMessage searchResult = 
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
-    /// Record last yank start and end positions
-    member x.RecordLastYank span = x.RecordLastChangeOrYank span span
-
     /// Record last change start and end positions
-    member x.RecordLastChange oldSpan newSpan = x.RecordLastChangeOrYank oldSpan newSpan
+    /// (spans must be from different snapshots)
+    member x.RecordLastChange (oldSpan: SnapshotSpan) (newSpan: SnapshotSpan) =
+        Contract.Requires(oldSpan.Snapshot <> newSpan.Snapshot)
+        x.RecordLastChangeOrYank oldSpan newSpan
+
+    /// Record last yank start and end positions
+    member x.RecordLastYank span =
+        x.RecordLastChangeOrYank span span
 
     /// Record last change or yankstart and end positions
     /// (it is a yank if the old span and the new span are the same)
