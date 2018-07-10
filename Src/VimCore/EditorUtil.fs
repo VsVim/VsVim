@@ -17,11 +17,11 @@ open System.Linq
 open System.Drawing
 
 type CodePointInfo = 
-    | SimpleCharacter = 0
-    | SurrogatePairHighCharacter = 1
-    | SurrogatePairLowCharacter = 2
-    | BrokenSurrogatePair = 3
-    | EndPoint = 4
+    | SimpleCharacter
+    | SurrogatePairHighCharacter
+    | SurrogatePairLowCharacter
+    | BrokenSurrogatePair
+    | EndPoint
 
 /// This module exists purely to break type dependency issues created below.  
 module internal EditorCoreUtil =
@@ -83,6 +83,23 @@ module internal EditorCoreUtil =
             | CodePointInfo.SurrogatePairHighCharacter -> SnapshotSpan(point, 2)
             | CodePointInfo.SurrogatePairLowCharacter -> SnapshotSpan((point.Subtract(1)), 2)
             | _ -> SnapshotSpan(point, 1)
+
+    /// Calculate the number of spaces that a character occupies on the screen. This 
+    /// takes into account tabs, surrogate pairs and unicode wide characters.
+    let GetCharacterSpaces (point: SnapshotPoint) tabStop = 
+        match GetCodePointInfo point with
+        | CodePointInfo.SurrogatePairHighCharacter -> 1
+        | CodePointInfo.SurrogatePairLowCharacter -> 0
+        | CodePointInfo.EndPoint -> 0
+        | CodePointInfo.BrokenSurrogatePair -> 1
+        | CodePointInfo.SimpleCharacter ->
+            let c = point.GetChar()
+            match c with
+            | '\u0000' -> 1
+            | '\t' -> tabStop
+            | _ when CharUtil.IsNonSpacingCharacter c -> 0
+            | _ when CharUtil.IsWideCharacter c -> 2
+            | _ -> 1
 
     let GetCharacterWidth (point: SnapshotPoint) tabStop = 
         if IsEndPoint point then 
@@ -354,6 +371,11 @@ type SnapshotColumn
 ///
 /// In the case this refers to a surrogate pair then the Point will refer to the high
 /// surrogate.
+///
+/// This is similar in structure to SnapshotCharacterSpan but a bit more low level. In
+/// general code should prefer SnapshotCharacterSpan as it deals with legal caret positions
+/// and characters. This type is used when a more direct mapping between positions and 
+/// code point is needed
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
@@ -1482,7 +1504,7 @@ module SnapshotLineUtil =
                 let remainder = spaces % tabStop 
                 spaces <- spaces + (tabStop - remainder)
             else
-                spaces <- spaces + EditorCoreUtil.GetCharacterWidth current.Point tabStop
+                spaces <- spaces + EditorCoreUtil.GetCharacterSpaces current.Point tabStop
             current <- current.Add 1
         
         spaces

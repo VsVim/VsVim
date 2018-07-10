@@ -10,16 +10,16 @@ namespace Vim.UnitTest
 {
     public abstract class SnapshotCodePointTest : VimTestBase
     {
-        private static void AssertIt(SnapshotCodePoint point, int? codePoint = null, CodePointInfo? codePointInfo = null, string text = null, int? position = null)
+        private static void AssertIt(SnapshotCodePoint point, int? codePoint = null, CodePointInfo codePointInfo = null, string text = null, int? position = null)
         {
             if (codePoint.HasValue)
             {
                 Assert.Equal(codePoint.Value, point.CodePoint);
             }
 
-            if (codePointInfo.HasValue)
+            if (codePointInfo != null)
             {
-                Assert.Equal(codePointInfo.Value, point.CodePointInfo);
+                Assert.Equal(codePointInfo, point.CodePointInfo);
             }
 
             if (text != null)
