@@ -14,8 +14,8 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Seq.map (fun letter -> letter, obj())
         |> Map.ofSeq
 
-    let _markSetEvent = StandardEvent<MarkChangedEventArgs>()
-    let _markDeletedEvent = StandardEvent<MarkChangedEventArgs>()
+    let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
+    let _markDeletedEvent = StandardEvent<MarkTextBufferEventArgs>()
 
     /// This is the map from Letter to the ITextBuffer where the global mark
     /// is stored.
@@ -29,12 +29,12 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
     /// Raise the mark set event
     member x.RaiseMarkSet mark textBuffer =
-        let args = MarkChangedEventArgs(mark, textBuffer)
+        let args = MarkTextBufferEventArgs(mark, textBuffer)
         _markSetEvent.Trigger x args
 
     /// Raise the mark deleted event
     member x.RaiseMarkDeleted mark textBuffer =
-        let args = MarkChangedEventArgs(mark, textBuffer)
+        let args = MarkTextBufferEventArgs(mark, textBuffer)
         _markDeletedEvent.Trigger x args
 
     /// Get the core information about the global mark represented by the letter
@@ -268,7 +268,6 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         _globalUnloadedMarkMap <- Map.empty
 
     interface IMarkMap with
-        member x.RaiseMarkSet mark textBuffer = x.RaiseMarkSet mark textBuffer
         member x.GlobalMarks = x.GlobalMarks
         member x.GetGlobalMark letter = x.GetGlobalMark letter
         member x.GetMark mark vimBufferData = x.GetMark mark vimBufferData

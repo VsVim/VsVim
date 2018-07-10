@@ -242,7 +242,7 @@ type internal VimBufferFactory
         let textBuffer = textView.TextBuffer
         let statusUtil = _statusUtilFactory.GetStatusUtilForView textView
         let localSettings = vimTextBuffer.LocalSettings
-        let jumpList = JumpList( textView, _bufferTrackingService, vim.MarkMap) :> IJumpList
+        let jumpList = JumpList( textView, _bufferTrackingService) :> IJumpList
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
         VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, _wordUtil) :> IVimBufferData
 

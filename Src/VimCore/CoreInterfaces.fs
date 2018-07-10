@@ -3657,6 +3657,22 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
 
+type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextBuffer = _textBuffer
+
+    override x.ToString() = _mark.ToString()
+
+type MarkTextViewEventArgs (_mark: Mark, _textView: ITextView) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextView = _textView
+
+    override x.ToString() = _mark.ToString()
+
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
 ///
@@ -3707,6 +3723,10 @@ type IJumpList =
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
 type IIncrementalSearch = 
 
@@ -4534,18 +4554,7 @@ and SwitchModeEventArgs
     /// has no previous one
     member x.PreviousMode = _previousMode
 
-and MarkChangedEventArgs (_mark: Mark, _textBuffer: ITextBuffer) = 
-    inherit System.EventArgs()
-
-    member x.Mark = _mark
-    member x.TextBuffer = _textBuffer
-
-    override x.ToString() = _mark.ToString()
-
 and IMarkMap =
-
-    /// Raise the mark set event
-    abstract RaiseMarkSet: mark: Mark -> textBuffer: ITextBuffer -> unit
 
     /// The set of active global marks
     abstract GlobalMarks: (Letter * VirtualSnapshotPoint) seq
@@ -4583,11 +4592,11 @@ and IMarkMap =
 
     /// Raised when a mark is set
     [<CLIEvent>]
-    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
     /// Raised when a mark is deleted
     [<CLIEvent>]
-    abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkChangedEventArgs>>
+    abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
@@ -4668,6 +4677,10 @@ and IVimTextBuffer =
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

@@ -37,8 +37,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             LoadNewBufferMarks();
             CachePairs();
 
-            _markMap.MarkSet += OnMarkSet;
+            _markMap.MarkSet += OnBufferMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
+            _vimBufferData.VimTextBuffer.MarkSet += OnBufferMarkSet;
+            _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
             _vimBufferData.LocalSettings.SettingChanged += OnLocalSettingsChanged;
             _vimBufferData.Vim.VimHost.IsVisibleChanged += OnIsVisibleChanged;
@@ -46,8 +48,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void Dispose()
         {
-            _markMap.MarkSet -= OnMarkSet;
+            _markMap.MarkSet -= OnBufferMarkSet;
             _markMap.MarkDeleted -= OnMarkDeleted;
+            _vimBufferData.VimTextBuffer.MarkSet -= OnBufferMarkSet;
+            _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
             _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
         }
@@ -74,7 +78,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
-        private void OnMarkSet(object sender, MarkChangedEventArgs args)
+        private void OnBufferMarkSet(object sender, MarkTextBufferEventArgs args)
         {
             if (args.TextBuffer == _vimBufferData.TextBuffer)
             {
@@ -85,12 +89,23 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
-        private void OnMarkDeleted(object sender, MarkChangedEventArgs args)
+        private void OnMarkDeleted(object sender, MarkTextBufferEventArgs args)
         {
             if (args.TextBuffer == _vimBufferData.TextBuffer)
             {
                 RemoveMark(args.Mark);
                 RaiseChanged();
+            }
+        }
+
+        private void OnWindowMarkSet(object sender, MarkTextViewEventArgs args)
+        {
+            if (args.TextView == _vimBufferData.TextView)
+            {
+                if (UpdateMark(args.Mark))
+                {
+                    RaiseChanged();
+                }
             }
         }
 

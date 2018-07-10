@@ -18,7 +18,7 @@ namespace Vim.UnitTest
             var textView = CreateTextView(lines);
             _textBuffer = textView.TextBuffer;
             _bufferTrackingService = new BufferTrackingService();
-            _jumpListRaw = new JumpList(textView, _bufferTrackingService, Vim.MarkMap);
+            _jumpListRaw = new JumpList(textView, _bufferTrackingService);
             _jumpList = _jumpListRaw;
         }
 

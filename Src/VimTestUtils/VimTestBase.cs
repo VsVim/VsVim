@@ -453,7 +453,7 @@ namespace Vim.UnitTest
             IVimWindowSettings windowSettings = null,
             IWordUtil wordUtil = null)
         {
-            jumpList = jumpList ?? new JumpList(textView, BufferTrackingService, Vim.MarkMap);
+            jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             wordUtil = wordUtil ?? WordUtil;

@@ -10,11 +10,12 @@ open System.Collections.Generic
 type internal JumpList 
     ( 
         _textView: ITextView,
-        _bufferTrackingService: IBufferTrackingService,
-        _markMap: IMarkMap
+        _bufferTrackingService: IBufferTrackingService
     ) =
 
     let _textBuffer = _textView.TextBuffer
+
+    let _markSetEvent = StandardEvent<MarkTextViewEventArgs>()
 
     /// The limit of items in the jump list is 100.  See ':help jumplist'
     let _limit = 100
@@ -30,6 +31,11 @@ type internal JumpList
 
     /// Last jump from location
     let mutable _lastJumpLocation: ITrackingLineColumn option = None
+
+    /// Raise the mark set event
+    member x.RaiseMarkSet mark =
+        let args = MarkTextViewEventArgs(mark, _textView)
+        _markSetEvent.Trigger x args
 
     /// Return the point for the caret before the most recent jump
     member x.LastJumpLocation = _lastJumpLocation |> OptionUtil.map2 (fun trackingLineColumn -> trackingLineColumn.VirtualPoint)
@@ -180,7 +186,7 @@ type internal JumpList
         | Some trackingLineColumn -> trackingLineColumn.Close()
 
         _lastJumpLocation <- Some (_bufferTrackingService.CreateLineColumn _textView.TextBuffer line column LineColumnTrackingMode.Default)
-        _markMap.RaiseMarkSet Mark.LastJump _textView.TextBuffer
+        x.RaiseMarkSet Mark.LastJump
 
     /// Start a traversal of the jump list
     member x.StartTraversal() = 
@@ -202,3 +208,5 @@ type internal JumpList
         member x.SetLastJumpLocation line column = x.SetLastJumpLocation line column
         member x.StartTraversal() = x.StartTraversal()
 
+        [<CLIEvent>]
+        member x.MarkSet = _markSetEvent.Publish
