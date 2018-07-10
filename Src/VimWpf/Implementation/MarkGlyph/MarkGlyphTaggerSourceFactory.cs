@@ -12,20 +12,20 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [TagType(typeof(MarkGlyphTag))]
-    internal sealed class MarkGlyphTaggerFactory : IViewTaggerProvider
+    internal sealed class MarkGlyphTaggerSourceFactory : IViewTaggerProvider
     {
         private readonly object _key = new object();
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal MarkGlyphTaggerFactory(IVim vim)
+        internal MarkGlyphTaggerSourceFactory(IVim vim)
         {
             _vim = vim;
         }
 
-        private MarkGlyphTagger CreateMarkGlyphTagger(IVimBufferData vimBufferData)
+        private MarkGlyphTaggerSource CreateMarkGlyphTaggerSource(IVimBufferData vimBufferData)
         {
-            return new MarkGlyphTagger(vimBufferData);
+            return new MarkGlyphTaggerSource(vimBufferData);
         }
 
         #region IViewTaggerProvider
@@ -43,8 +43,12 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
             var vimBufferData = vimBuffer.VimBufferData;
 
-            var tagger = CreateMarkGlyphTagger(vimBufferData) as ITagger<T>;
-            return tagger;
+            Func<IBasicTaggerSource<MarkGlyphTag>> func =
+                () => CreateMarkGlyphTaggerSource(vimBufferData);
+            return TaggerUtil.CreateBasicTagger(
+                textView.Properties,
+                _key,
+                func.ToFSharpFunc()) as ITagger<T>;
         }
 
         #endregion

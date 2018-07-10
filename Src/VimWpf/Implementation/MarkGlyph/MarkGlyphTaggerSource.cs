@@ -8,7 +8,7 @@ using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Implementation.MarkGlyph
 {
-    internal sealed class MarkGlyphTagger : ITagger<MarkGlyphTag>, IDisposable
+    internal sealed class MarkGlyphTaggerSource : IBasicTaggerSource<MarkGlyphTag>, IDisposable
     {
         static ReadOnlyCollection<ITagSpan<MarkGlyphTag>> s_emptyTagList =
             new ReadOnlyCollection<ITagSpan<MarkGlyphTag>>(new List<ITagSpan<MarkGlyphTag>>());
@@ -22,9 +22,9 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private int _activeMarks;
         private string _hideMarks;
 
-        private EventHandler<SnapshotSpanEventArgs> _changedEvent;
+        private EventHandler _changedEvent;
 
-        internal MarkGlyphTagger(IVimBufferData vimBufferData)
+        internal MarkGlyphTaggerSource(IVimBufferData vimBufferData)
         {
             _vimBufferData = vimBufferData;
             _markMap = _vimBufferData.Vim.MarkMap;
@@ -225,10 +225,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
 
             CachePairs();
-            var snapshot = _vimBufferData.TextView.TextSnapshot;
-            var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
-            VimTrace.TraceInfo($"MarkGlyphTagger::RaiseChanged");
-            _changedEvent?.Invoke(this, new SnapshotSpanEventArgs(span));
+            _changedEvent?.Invoke(this, EventArgs.Empty);
         }
 
         private void CachePairs()
@@ -261,58 +258,59 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             }
         }
 
-        private IEnumerable<ITagSpan<MarkGlyphTag>> GetTags(NormalizedSnapshotSpanCollection spans)
+        private ReadOnlyCollection<ITagSpan<MarkGlyphTag>> GetTags(SnapshotSpan span)
         {
-            if (_glyphPairs.Count == 0 || spans.Count == 0)
+            if (_glyphPairs.Count == 0)
             {
-                yield break;
+                return s_emptyTagList;
             }
 
-            if (spans[0].Snapshot.Version != _vimBufferData.TextView.TextSnapshot.Version)
-            {
-                yield break;
-            }
-
+            var snapshot = span.Snapshot;
+            var list = new List<ITagSpan<MarkGlyphTag>>();
             VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: starting...");
-            foreach (var span in spans)
+            foreach (var pair in _glyphPairs)
             {
-                VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: {span}");
-                var snapshot = span.Snapshot;
-                var list = new List<ITagSpan<MarkGlyphTag>>();
-                foreach (var pair in _glyphPairs)
-                {
-                    var chars = pair.Item1;
-                    var lineNumber = pair.Item2;
+                var chars = pair.Item1;
+                var lineNumber = pair.Item2;
 
-                    if (lineNumber < snapshot.LineCount)
+                if (lineNumber < snapshot.LineCount)
+                {
+                    var line = snapshot.GetLineFromLineNumber(lineNumber);
+                    var startSpan = new SnapshotSpan(line.Start, 0);
+                    if (span.Contains(startSpan))
                     {
-                        var line = snapshot.GetLineFromLineNumber(lineNumber);
-                        var lineSpan = new SnapshotSpan(line.Start, 0);
-                        if (span.Contains(lineSpan))
-                        {
-                            var tag = new MarkGlyphTag(chars);
-                            VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
-                            yield return new TagSpan<MarkGlyphTag>(lineSpan, tag);
-                        }
+                        VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
+                        var tag = new MarkGlyphTag(chars);
+                        var tagSpan = new TagSpan<MarkGlyphTag>(startSpan, tag);
+                        list.Add(tagSpan);
                     }
                 }
             }
+            return list.ToReadOnlyCollectionShallow();
         }
 
-        IEnumerable<ITagSpan<MarkGlyphTag>> ITagger<MarkGlyphTag>.GetTags(NormalizedSnapshotSpanCollection spans)
-        {
-            return GetTags(spans);
-        }
+        #region IBasicTaggerSource<MarkGlyphTag>
 
-        event EventHandler<SnapshotSpanEventArgs> ITagger<MarkGlyphTag>.TagsChanged
+        event EventHandler IBasicTaggerSource<MarkGlyphTag>.Changed
         {
             add { _changedEvent += value; }
             remove { _changedEvent -= value; }
         }
 
+        ReadOnlyCollection<ITagSpan<MarkGlyphTag>> IBasicTaggerSource<MarkGlyphTag>.GetTags(SnapshotSpan span)
+        {
+            return GetTags(span);
+        }
+
+        #endregion
+
+        #region IDisposable
+
         void IDisposable.Dispose()
         {
             Dispose();
         }
+
+        #endregion
     }
 }
