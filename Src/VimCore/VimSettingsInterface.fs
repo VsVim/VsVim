@@ -62,7 +62,7 @@ module LocalSettingNames =
     let QuoteEscapeName = "quoteescape"
     let EndOfLineName = "endofline"
     let FixEndOfLineName = "fixendofline"
-    let HideMarksName = "hidemarks"
+    let HideMarksName = "vsvim_hidemarks"
 
 module WindowSettingNames =
 

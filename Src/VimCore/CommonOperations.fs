@@ -1586,7 +1586,14 @@ type internal CommonOperations
     member x.RaiseSearchResultMessage searchResult = 
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
-    /// Record last change or yank start and end positions
+    /// Record last yank start and end positions
+    member x.RecordLastYank span = x.RecordLastChangeOrYank span span
+
+    /// Record last change start and end positions
+    member x.RecordLastChange oldSpan newSpan = x.RecordLastChangeOrYank oldSpan newSpan
+
+    /// Record last change or yankstart and end positions
+    /// (it is a yank if the old span and the new span are the same)
     member x.RecordLastChangeOrYank oldSpan newSpan =
         let startPoint = SnapshotSpanUtil.GetStartPoint newSpan
         let endPoint = SnapshotSpanUtil.GetEndPoint newSpan
@@ -1769,7 +1776,8 @@ type internal CommonOperations
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
-        member x.RecordLastChangeOrYank oldSpan newSpan = x.RecordLastChangeOrYank oldSpan newSpan
+        member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
+        member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count

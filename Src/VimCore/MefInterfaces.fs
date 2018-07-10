@@ -446,8 +446,11 @@ type ICommonOperations =
     /// Raise the error / warning messages for the given SearchResult
     abstract RaiseSearchResultMessage: SearchResult -> unit
 
-    /// Record last change or yank start and end positions
-    abstract RecordLastChangeOrYank: oldSpan: SnapshotSpan -> newSpan: SnapshotSpan -> unit
+    /// Record last change start and end positions
+    abstract RecordLastChange: oldSpan: SnapshotSpan -> newSpan: SnapshotSpan -> unit
+
+    /// Record last yank start and end positions
+    abstract RecordLastYank: span: SnapshotSpan -> unit
 
     /// Redo the buffer changes "count" times
     abstract Redo: count:int -> unit
