@@ -487,7 +487,7 @@ type internal LocalSettings
             (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
-            (HideMarksName, "hidemarks", SettingValue.String "", SettingOptions.None)
+            (HideMarksName, "vsvim_hidemarks", SettingValue.String "", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
