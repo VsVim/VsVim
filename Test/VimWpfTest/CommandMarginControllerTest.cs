@@ -56,7 +56,8 @@ namespace Vim.UI.Wpf.UnitTest
                 parentVisualElement.Object,
                 _marginControl,
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
-                VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView));
+                VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
+                CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData));
         }
 
         public sealed class InCommandLineUpdateTest : CommandMarginControllerTest

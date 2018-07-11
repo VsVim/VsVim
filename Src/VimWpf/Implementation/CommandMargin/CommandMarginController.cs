@@ -72,6 +72,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly CommandMarginControl _margin;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
+        private readonly ICommonOperations _commonOperations;
         private readonly FrameworkElement _parentVisualElement;
         private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
@@ -124,13 +125,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations)
         {
             _vimBuffer = buffer;
             _margin = control;
             _parentVisualElement = parentVisualElement;
             _editorFormatMap = editorFormatMap;
             _classificationFormatMap = classificationFormatMap;
+            _commonOperations = commonOperations;
 
             Connect();
             UpdateForRecordingChanged();
@@ -194,6 +196,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.Loaded += OnCommandMarginLoaded;
             _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.PreviewTextInput += OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
             _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
@@ -217,6 +220,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.Loaded -= OnCommandMarginLoaded;
             _margin.Unloaded -= OnCommandMarginUnloaded;
             _margin.CommandLineTextBox.PreviewKeyDown -= OnCommandLineTextBoxPreviewKeyDown;
+            _margin.CommandLineTextBox.PreviewTextInput -= OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged -= OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged -= OnCommandLineTextBoxSelectionChanged;
             _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
@@ -482,7 +486,40 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         e.Handled = HandleHistoryNavigation(KeyInputUtil.ApplyKeyModifiersToChar('n', VimKeyModifiers.Control));
                     }
                     break;
+                case Key.D6:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        ToggleLanguage();
+                        e.Handled = true;
+                    }
+                    break;
             }
+        }
+
+        /// <summary>
+        /// This method handles the text composition event as it applies to command line editor.
+        /// Make sure to mark the key as handled if we use it here.  If we don't then it will
+        /// propagate to the the editor and be processed again
+        /// </summary>
+        internal void HandleCharEvent(TextCompositionEventArgs e)
+        {
+            if (e.ControlText.Length == 1)
+            {
+                var textChar = e.ControlText[0];
+                switch (textChar)
+                {
+                    case (char)0x1E: // <C-^>
+                        ToggleLanguage();
+                        e.Handled = true;
+                        break;
+                }
+            }
+        }
+
+        private void ToggleLanguage()
+        {
+            var isForInsert = !_vimBuffer.IncrementalSearch.InSearch;
+            _commonOperations.ToggleLanguage(isForInsert);
         }
 
         /// <summary>
@@ -760,6 +797,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void OnCommandLineTextBoxPreviewKeyDown(object sender, KeyEventArgs e)
         {
             HandleKeyEvent(e);
+        }
+
+        public void OnCommandLineTextBoxPreviewTextInput(object sender, TextCompositionEventArgs args)
+        {
+            HandleCharEvent(args);
         }
 
         private void OnCommandLineTextBoxTextChanged(object sender, WpfTextChangedEventArgs e)

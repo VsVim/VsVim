@@ -232,6 +232,10 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             {
                 SetImeState(_inputModeState[targetInputMode]);
             }
+            else if (targetInputMode == InputMode.Insert && _inputMode == InputMode.Command)
+            {
+                SetImeState(_inputModeState[targetInputMode]);
+            }
         }
 
         /// <summary>
@@ -241,11 +245,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         /// <returns></returns>
         private InputMode GetTargetInputMode(Setting setting)
         {
-            if (setting.Name == GlobalSettingNames.ImeCommandName)
-            {
-                return InputMode.Command;
-            }
-            else if (setting.Name == GlobalSettingNames.ImeInsertName)
+            if (setting.Name == GlobalSettingNames.ImeInsertName)
             {
                 return InputMode.Insert;
             }

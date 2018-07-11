@@ -1692,6 +1692,31 @@ type internal CommonOperations
                 if isUnnamedOrMissing then
                     _registerMap.SetRegisterValue (RegisterName.Numbered NumberedRegister.Number0) value
 
+    /// Toggle the use of typing language characters for insert or search
+    /// (see vim ':help i_CTRL-^' and ':help c_CTRL-^')
+    member x.ToggleLanguage isForInsert =
+        let keyMap = _vimBufferData.Vim.KeyMap
+        let languageMappings = keyMap.GetKeyMappingsForMode KeyRemapMode.Language
+        let languageMappingsAreDefined = not languageMappings.IsEmpty
+        if isForInsert || _globalSettings.ImeSearch = -1 then
+            if languageMappingsAreDefined then
+                match _globalSettings.ImeInsert with
+                | 1 -> _globalSettings.ImeInsert <- 0
+                | _ -> _globalSettings.ImeInsert <- 1
+            else
+                match _globalSettings.ImeInsert with
+                | 2 -> _globalSettings.ImeInsert <- 0
+                | _ -> _globalSettings.ImeInsert <- 2
+        else
+            if languageMappingsAreDefined then
+                match _globalSettings.ImeSearch with
+                | 1 -> _globalSettings.ImeSearch <- 0
+                | _ -> _globalSettings.ImeSearch <- 1
+            else
+                match _globalSettings.ImeSearch with
+                | 2 -> _globalSettings.ImeSearch <- 0
+                | _ -> _globalSettings.ImeSearch <- 2
+
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -1746,6 +1771,7 @@ type internal CommonOperations
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
         member x.SortLines range reverseOrder flags pattern = x.SortLines range reverseOrder flags pattern
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
+        member x.ToggleLanguage isForInsert = x.ToggleLanguage isForInsert
         member x.Undo count = x.Undo count
 
 [<Export(typeof<ICommonOperationsFactory>)>]

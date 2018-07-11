@@ -26,7 +26,8 @@ namespace Vim.UI.Wpf.UnitTest
             _commandMarginProviderRaw = new CommandMarginProvider(
                 _vim.Object,
                 VimEditorHost.EditorFormatMapService,
-                VimEditorHost.ClassificationFormatMapService);
+                VimEditorHost.ClassificationFormatMapService,
+                CommonOperationsFactory);
             _commandMarginProvider = _commandMarginProviderRaw;
         }
 

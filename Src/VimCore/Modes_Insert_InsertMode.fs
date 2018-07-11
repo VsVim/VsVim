@@ -864,16 +864,7 @@ type internal InsertMode
 
     /// Toggle the use of typing language characters (see vim ':help i_CTRL-^')
     member x.ProcessToggleLanguage keyInput =
-        let languageMappings = _vimBuffer.Vim.KeyMap.GetKeyMappingsForMode KeyRemapMode.Language
-        let languageMappingsAreDefined = not languageMappings.IsEmpty
-        if languageMappingsAreDefined then
-            match _globalSettings.ImeInsert with
-            | 1 -> _globalSettings.ImeInsert <- 0
-            | _ -> _globalSettings.ImeInsert <- 1
-        else
-            match _globalSettings.ImeInsert with
-            | 2 -> _globalSettings.ImeInsert <- 0
-            | _ -> _globalSettings.ImeInsert <- 2
+        _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
