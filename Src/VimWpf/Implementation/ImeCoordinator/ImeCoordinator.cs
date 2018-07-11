@@ -27,15 +27,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
             private bool _synchronizingSettings;
 
-            public InputModeState(IVimGlobalSettings globalSettings, InputMethodState initialState)
+            public InputModeState(IVimGlobalSettings globalSettings)
             {
                 _globalSettings = globalSettings;
 
                 _synchronizingSettings = false;
-
-                SynchronizeState(InputMode.Command, initialState);
-                SynchronizeState(InputMode.Insert, initialState);
-                SynchronizeState(InputMode.Search, initialState);
             }
 
             public bool SynchronizingSettings
@@ -144,11 +140,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         switch (state)
                         {
                             case InputMethodState.On:
-                                _globalSettings.ImeInsert |= 2;
+                                _globalSettings.ImeInsert = 2;
                                 break;
 
                             case InputMethodState.Off:
-                                _globalSettings.ImeInsert &= ~2;
+                                _globalSettings.ImeInsert = 0;
                                 break;
 
                             case InputMethodState.DoNotCare:
@@ -169,11 +165,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                             switch (state)
                             {
                                 case InputMethodState.On:
-                                    _globalSettings.ImeSearch |= 2;
+                                    _globalSettings.ImeSearch = 2;
                                     break;
 
                                 case InputMethodState.Off:
-                                    _globalSettings.ImeSearch &= ~2;
+                                    _globalSettings.ImeSearch = 0;
                                     break;
 
                                 case InputMethodState.DoNotCare:
@@ -202,7 +198,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         {
             _vim = vim;
             _globalSettings = _vim.GlobalSettings;
-            _inputModeState = new InputModeState(_vim.GlobalSettings, GetImeState());
+            _inputModeState = new InputModeState(_vim.GlobalSettings);
 
             _inputMode = InputMode.None;
 
