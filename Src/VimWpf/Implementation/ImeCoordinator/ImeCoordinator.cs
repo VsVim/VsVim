@@ -218,7 +218,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private void OnSettingsChanged(object sender, SettingEventArgs args)
         {
-            // Don't manipulate the IME when the IME is disabled.
+            // Don't manipulate the IME when the IME coordinator is disabled.
             if (_globalSettings.ImeDisable)
             {
                 return;
@@ -353,7 +353,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private void AdjustImeState(InputMode oldInputMode, InputMode newInputMode)
         {
-            // Don't manipulate settings when the IME is disabled.
+            // Don't manipulate the IME when the IME coordinator is disabled.
             if (_vim.GlobalSettings.ImeDisable)
             {
                 return;
