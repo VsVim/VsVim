@@ -101,10 +101,17 @@ type internal SelectionChangeTracker
     /// If the caret changes position and it wasn't initiated by VsVim then we should be 
     /// adjusting the screen to account for 'scrolloff'
     member x.OnPositionChanged() = 
-        // Don't update the caret if a selection is occuring.  This could be a user double clicking, 
-        // dragging, etc ...  Don't want to update the caret in that case, let the mode change handle
-        // that.
-        if not _textView.InLayout && not _vimBuffer.IsProcessingInput then
+
+        // Don't apply the scroll offset if it isn't applicable, if the
+        // text view is currently being laid out, or if we in the middle
+        // of process input. If we are processing input then the mode is
+        // is responsible for ensuring that the scroll offset is obeyed,
+        // so let the mode handle it.
+        if
+            _vimBuffer.GlobalSettings.ScrollOffset > 0
+            && not _textView.InLayout
+            && not _vimBuffer.IsProcessingInput
+        then
 
             let doUpdate () =
                 if not _textView.IsClosed then
