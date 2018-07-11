@@ -202,7 +202,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         {
             _vim = vim;
             _globalSettings = _vim.GlobalSettings;
-            _inputModeState = new InputModeState(_vim.GlobalSettings, InputMethod.Current.ImeState);
+            _inputModeState = new InputModeState(_vim.GlobalSettings, GetImeState());
 
             _inputMode = InputMode.None;
 
@@ -240,7 +240,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             // If we're currently in the target mode, update the live IME state.
             if (targetInputMode == _inputMode)
             {
-                InputMethod.Current.ImeState = _inputModeState[targetInputMode];
+                SetImeState(_inputModeState[targetInputMode]);
             }
         }
 
@@ -361,26 +361,28 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
             if (oldInputMode != InputMode.None)
             {
-                _inputModeState[oldInputMode] = InputMethod.Current.ImeState;
+                _inputModeState[oldInputMode] = GetImeState();
             }
 
             if (newInputMode != InputMode.None)
             {
-                InputMethod.Current.ImeState = _inputModeState[newInputMode];
+                SetImeState(_inputModeState[newInputMode]);
             }
             else
             {
-                InputMethod.Current.ImeState = InputMethodState.Off;
+                SetImeState(InputMethodState.Off);
             }
+        }
 
-            if (_inputMode != InputMode.None)
-            {
-                VimTrace.TraceInfo($"ImeCoordinator: input mode with IME {InputMethod.Current.ImeState}");
-            }
-            else
-            {
-                VimTrace.TraceInfo($"ImeCoordinator: non-input mode with IME {InputMethod.Current.ImeState}");
-            }
+        private InputMethodState GetImeState()
+        {
+            return InputMethod.Current.ImeState;
+        }
+
+        private void SetImeState(InputMethodState state)
+        {
+            InputMethod.Current.ImeState = state;
+            VimTrace.TraceInfo($"ImeCoordinator: in mode = {_inputMode} turning IME {state}");
         }
 
         #region IVimBufferCreationListener
