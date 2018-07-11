@@ -61,7 +61,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                     case InputMode.Command:
                         if (_globalSettings.ImeCommand)
                         {
-                            return InputMethodState.On;
+                            return GetState(InputMode.Insert);
                         }
                         else
                         {
@@ -118,21 +118,9 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 switch (inputMode)
                 {
                     case InputMode.Command:
-                        switch (state)
+                        if (_globalSettings.ImeCommand)
                         {
-                            case InputMethodState.On:
-                                _globalSettings.ImeCommand = true;
-                                break;
-
-                            case InputMethodState.Off:
-                                _globalSettings.ImeCommand = false;
-                                break;
-
-                            case InputMethodState.DoNotCare:
-                                break;
-
-                            default:
-                                throw new ArgumentException("state");
+                            SetState(InputMode.Insert, state);
                         }
                         break;
 
@@ -140,7 +128,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         switch (state)
                         {
                             case InputMethodState.On:
-                                _globalSettings.ImeInsert = 2;
+                                    _globalSettings.ImeInsert = 2;
                                 break;
 
                             case InputMethodState.Off:
@@ -216,6 +204,12 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         {
             // Don't manipulate the IME when the IME coordinator is disabled.
             if (_globalSettings.ImeDisable)
+            {
+                return;
+            }
+
+            // Don't manipulate the IME if we have language mappings.
+            if (GetHaveLanguageMappings())
             {
                 return;
             }
@@ -355,6 +349,12 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 return;
             }
 
+            // Don't manipulate the IME if we have language mappings.
+            if (GetHaveLanguageMappings())
+            {
+                return;
+            }
+
             if (oldInputMode != InputMode.None)
             {
                 _inputModeState[oldInputMode] = GetImeState();
@@ -379,6 +379,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         {
             InputMethod.Current.ImeState = state;
             VimTrace.TraceInfo($"ImeCoordinator: in mode = {_inputMode} turning IME {state}");
+        }
+
+        private bool GetHaveLanguageMappings()
+        {
+            return !_vim.KeyMap.GetKeyMappingsForMode(KeyRemapMode.Language).IsEmpty;
         }
 
         #region IVimBufferCreationListener
