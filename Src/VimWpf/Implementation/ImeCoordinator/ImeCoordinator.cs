@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -8,21 +9,32 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ImeCoordinator : IVimBufferCreationListener
     {
-        private readonly IVim _vim;
+        private enum InputMode
+        {
+            None = 0,
+            Command = 1,
+            Insert = 2,
+            Search = 3,
+        };
 
-        private bool _inInputMode;
-        private InputMethodState _lastInputMethodState;
+        private readonly IVim _vim;
+        private readonly Dictionary<InputMode, InputMethodState> _lastInputMethodState;
+
+        private InputMode _inputMode;
 
         [ImportingConstructor]
         internal ImeCoordinator(IVim vim)
         {
             _vim = vim;
+            _lastInputMethodState = new Dictionary<InputMode, InputMethodState>();
 
-            _inInputMode = true;
-            _lastInputMethodState = InputMethodState.DoNotCare;
+            _inputMode = InputMode.None;
+            _lastInputMethodState[InputMode.Command] = InputMethodState.DoNotCare;
+            _lastInputMethodState[InputMode.Insert] = InputMethodState.DoNotCare;
+            _lastInputMethodState[InputMode.Search] = InputMethodState.DoNotCare;
         }
 
-        void VimBufferCreated(IVimBuffer vimBuffer)
+        private void VimBufferCreated(IVimBuffer vimBuffer)
         {
             if (vimBuffer.TextView is IWpfTextView textView)
             {
@@ -63,17 +75,17 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private void OnInputModeRelatedEvent(IVimBuffer vimBuffer)
         {
-            var wasInInputMode = _inInputMode;
-            var isInInputMode = IsInputMode(vimBuffer);
-            _inInputMode = isInInputMode;
+            var oldInputMode = _inputMode;
+            var newInputMode = GetInputMode(vimBuffer);
+            _inputMode = newInputMode;
 
-            if (wasInInputMode != isInInputMode)
+            if (oldInputMode != newInputMode)
             {
-                AdjustImeState();
+                AdjustImeState(oldInputMode, newInputMode);
             }
         }
 
-        private static bool IsInputMode(IVimBuffer vimBuffer)
+        private static InputMode GetInputMode(IVimBuffer vimBuffer)
         {
             switch (vimBuffer.Mode.ModeKind)
             {
@@ -84,27 +96,46 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 case ModeKind.SelectBlock:
                 case ModeKind.ExternalEdit:
                 case ModeKind.Disabled:
-                    return true;
+                    return InputMode.Insert;
 
                 case ModeKind.Normal:
-                    return vimBuffer.IncrementalSearch.InSearch;
+                    return vimBuffer.IncrementalSearch.InSearch ? InputMode.Search : InputMode.None;
+
+                case ModeKind.Command:
+                    return InputMode.Command;
 
                 default:
-                    return false;
+                    return InputMode.None;
             }
         }
 
-        private void AdjustImeState()
+        private void AdjustImeState(InputMode oldInputMode, InputMode newInputMode)
         {
-            if (_inInputMode)
+            if (_vim.GlobalSettings.ImeDisable)
             {
-                InputMethod.Current.ImeState = _lastInputMethodState;
+                return;
+            }
+
+            if (oldInputMode != InputMode.None)
+            {
+                _lastInputMethodState[oldInputMode] = InputMethod.Current.ImeState;
+            }
+
+            if (newInputMode != InputMode.None)
+            {
+                InputMethod.Current.ImeState = _lastInputMethodState[newInputMode];
+            }
+            else
+            {
+                InputMethod.Current.ImeState = InputMethodState.Off;
+            }
+
+            if (_inputMode != InputMode.None)
+            {
                 VimTrace.TraceInfo($"ImeCoordinator: input mode with IME {InputMethod.Current.ImeState}");
             }
             else
             {
-                _lastInputMethodState = InputMethod.Current.ImeState;
-                InputMethod.Current.ImeState = InputMethodState.Off;
                 VimTrace.TraceInfo($"ImeCoordinator: non-input mode with IME {InputMethod.Current.ImeState}");
             }
         }
