@@ -69,7 +69,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         }
 
                     case InputMode.Insert:
-                        if ((_globalSettings.ImeInsert & 2) != 0)
+                        if (_globalSettings.ImeInsert == 2)
                         {
                             return InputMethodState.On;
                         }
@@ -85,7 +85,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         }
                         else
                         {
-                            if ((_globalSettings.ImeSearch & 2) != 0)
+                            if (_globalSettings.ImeSearch == 2)
                             {
                                 return InputMethodState.On;
                             }
