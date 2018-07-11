@@ -110,6 +110,13 @@ type internal SelectionChangeTracker
                 if not _textView.IsClosed then
                     _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
 
+            // Delay the update to give whoever changed the caret position the
+            // opportunity to scroll the view according to their own needs.
+            // If another extension moves the caret far offscreen and then
+            // centers it if the caret is not onscreen, then reacting too
+            // early to the caret position will defeat their offscreen
+            // handling. An example is double-clicking on an test in an
+            // unopened document is "Test Explorer".
             let context = System.Threading.SynchronizationContext.Current
             if context <> null then
                 context.Post((fun _ -> doUpdate()), null)

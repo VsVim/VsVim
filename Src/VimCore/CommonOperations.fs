@@ -272,6 +272,9 @@ type internal CommonOperations
     member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
         Contract.Requires(offset > 0)
 
+        // If the text view is still being initialized, the viewport will have zero height
+        // which will force offset to zero. Likewise, if there are no text view lines,
+        // trying to scroll is pointless.
         match _textView.ViewportHeight, TextViewUtil.GetTextViewLines _textView with
         | height, Some textViewLines when height <> 0.0 && textViewLines.Count <> 0 ->
 
