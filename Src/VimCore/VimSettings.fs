@@ -162,7 +162,7 @@ type internal GlobalSettings() =
             (ImeCommandName, "imc", SettingValue.Toggle false, SettingOptions.None)
             (ImeDisableName, "imd", SettingValue.Toggle false, SettingOptions.None)
             (ImeInsertName, "imi", SettingValue.Number 0, SettingOptions.None)
-            (ImeSearchName, "ims", SettingValue.Number 0, SettingOptions.None)
+            (ImeSearchName, "ims", SettingValue.Number -1, SettingOptions.None)
             (JoinSpacesName, "js", SettingValue.Toggle true, SettingOptions.None)
             (KeyModelName, "km", SettingValue.String "", SettingOptions.None)
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
