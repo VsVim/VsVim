@@ -114,8 +114,8 @@ type internal SelectionChangeTracker
         then
 
             // Do the update being cautious that anything could have
-            // happened between when we posted the it and when it
-            // actually runs.
+            // happened between when we posted it and when it actually
+            // runs.
             let doUpdate () =
                 try
                     if not _textView.IsClosed then
