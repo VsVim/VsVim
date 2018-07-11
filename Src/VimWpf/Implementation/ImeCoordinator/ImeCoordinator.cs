@@ -18,21 +18,33 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         };
 
         /// <summary>
-        /// Provides an associative array abstraction over the underlying
-        /// golobal IME-related settings
+        /// A mapping from input mode to IME state using the
+        /// golobal IME-related settings as a backing store
         /// </summary>
-        internal class InputModeMap
+        internal class InputModeState
         {
             private readonly IVimGlobalSettings _globalSettings;
 
-            public InputModeMap(IVimGlobalSettings globalSettings)
+            private bool _synchronizingSettings;
+
+            public InputModeState(IVimGlobalSettings globalSettings)
             {
                 _globalSettings = globalSettings;
 
+                _synchronizingSettings = false;
+
                 var state = InputMethod.Current.ImeState;
-                SetState(InputMode.Command, state);
-                SetState(InputMode.Insert, state);
-                SetState(InputMode.Search, state);
+                SynchronizeState(InputMode.Command, state);
+                SynchronizeState(InputMode.Insert, state);
+                SynchronizeState(InputMode.Search, state);
+            }
+
+            public bool SynchronizingSettings
+            {
+                get
+                {
+                    return _synchronizingSettings;
+                }
             }
 
             public InputMethodState this[InputMode inputMode]
@@ -43,7 +55,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 }
                 set
                 {
-                    SetState(inputMode, value);
+                    SynchronizeState(inputMode, value);
                 }
             }
 
@@ -90,6 +102,19 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
                     default:
                         throw new ArgumentException("inputMode");
+                }
+            }
+
+            private void SynchronizeState(InputMode inputMode, InputMethodState state)
+            {
+                try
+                {
+                    _synchronizingSettings = true;
+                    SetState(inputMode, state);
+                }
+                finally
+                {
+                    _synchronizingSettings = false;
                 }
             }
 
@@ -168,7 +193,8 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         }
 
         private readonly IVim _vim;
-        private readonly InputModeMap _lastInputMethodState;
+        private readonly IVimGlobalSettings _globalSettings;
+        private readonly InputModeState _inputModeState;
 
         private InputMode _inputMode;
 
@@ -176,11 +202,56 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         internal ImeCoordinator(IVim vim)
         {
             _vim = vim;
-            _lastInputMethodState = new InputModeMap(_vim.GlobalSettings);
+            _globalSettings = _vim.GlobalSettings;
+            _inputModeState = new InputModeState(_vim.GlobalSettings);
 
             _inputMode = InputMode.None;
 
+            _vim.GlobalSettings.SettingChanged += OnSettingsChanged;
+
             AdjustImeState(_inputMode, _inputMode);
+        }
+
+        private void OnSettingsChanged(object sender, SettingEventArgs args)
+        {
+            // Don't manipulate settings when the IME is disabled.
+            if (_globalSettings.ImeDisable)
+            {
+                return;
+            }
+
+            // Ignore settings changed event when we are synchronizing settings.
+            if (_inputModeState.SynchronizingSettings)
+            {
+                return;
+            }
+
+            // Handle 'imcmdline' setting change.
+            if (args.Setting.Name == GlobalSettingNames.ImeCommandName)
+            {
+                if (_inputMode == InputMode.Command)
+                {
+                    InputMethod.Current.ImeState = _inputModeState[InputMode.Command];
+                }
+            }
+
+            // Handle 'iminsert' setting change.
+            if (args.Setting.Name == GlobalSettingNames.ImeInsertName)
+            {
+                if (_inputMode == InputMode.Insert)
+                {
+                    InputMethod.Current.ImeState = _inputModeState[InputMode.Insert];
+                }
+            }
+
+            // Handle 'imsearch' setting change.
+            if (args.Setting.Name == GlobalSettingNames.ImeSearchName)
+            {
+                if (_inputMode == InputMode.Search)
+                {
+                    InputMethod.Current.ImeState = _inputModeState[InputMode.Search];
+                }
+            }
         }
 
         private void VimBufferCreated(IVimBuffer vimBuffer)
@@ -267,6 +338,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private void AdjustImeState(InputMode oldInputMode, InputMode newInputMode)
         {
+            // Don't manipulate settings when the IME is disabled.
             if (_vim.GlobalSettings.ImeDisable)
             {
                 return;
@@ -274,12 +346,12 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
             if (oldInputMode != InputMode.None)
             {
-                _lastInputMethodState[oldInputMode] = InputMethod.Current.ImeState;
+                _inputModeState[oldInputMode] = InputMethod.Current.ImeState;
             }
 
             if (newInputMode != InputMode.None)
             {
-                InputMethod.Current.ImeState = _lastInputMethodState[newInputMode];
+                InputMethod.Current.ImeState = _inputModeState[newInputMode];
             }
             else
             {
