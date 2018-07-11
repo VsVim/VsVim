@@ -314,6 +314,7 @@ type internal InsertMode
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
+                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -859,6 +860,20 @@ type internal InsertMode
     member x.ProcessUndoStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Toggle the use of typing language characters (see vim ':help i_CTRL-^')
+    member x.ProcessToggleLanguage keyInput =
+        let languageMappings = _vimBuffer.Vim.KeyMap.GetKeyMappingsForMode KeyRemapMode.Language
+        let languageMappingsAreDefined = not languageMappings.IsEmpty
+        if languageMappingsAreDefined then
+            match _globalSettings.ImeInsert with
+            | 1 -> _globalSettings.ImeInsert <- 0
+            | _ -> _globalSettings.ImeInsert <- 1
+        else
+            match _globalSettings.ImeInsert with
+            | 2 -> _globalSettings.ImeInsert <- 0
+            | _ -> _globalSettings.ImeInsert <- 2
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  
