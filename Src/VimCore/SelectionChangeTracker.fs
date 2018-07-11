@@ -104,8 +104,15 @@ type internal SelectionChangeTracker
         // Don't update the caret if a selection is occuring.  This could be a user double clicking, 
         // dragging, etc ...  Don't want to update the caret in that case, let the mode change handle
         // that.
-        if _textView.HasAggregateFocus && not _vimBuffer.IsProcessingInput then
-            _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+        if not _textView.InLayout && not _vimBuffer.IsProcessingInput then
+
+            let doUpdate () =
+                if not _textView.IsClosed then
+                    _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+
+            let context = System.Threading.SynchronizationContext.Current
+            if context <> null then
+                context.Post((fun _ -> doUpdate()), null)
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()

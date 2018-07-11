@@ -294,12 +294,8 @@ type internal CommonOperations
                 let lastVisibleLineNumber = SnapshotPointUtil.GetLineNumber textViewLines.LastVisibleLine.End 
                 let topLineNumber = SnapshotPointUtil.GetLineNumber topPoint
                 let bottomLineNumber = SnapshotPointUtil.GetLineNumber bottomPoint
-                let contextLineNumber = SnapshotPointUtil.GetLineNumber contextPoint
 
-                if contextLineNumber < firstVisibleLineNumber || contextLineNumber > lastVisibleLineNumber then
-                    let span = SnapshotSpan(contextPoint, 0)
-                    _textView.ViewScroller.EnsureSpanVisible(span, EnsureSpanVisibleOptions.AlwaysCenter)
-                elif topLineNumber < firstVisibleLineNumber then
+                if topLineNumber < firstVisibleLineNumber then
                     _textView.DisplayTextLineContainingBufferPosition(topPoint, 0.0, ViewRelativePosition.Top)
                 elif bottomLineNumber > lastVisibleLineNumber then
                     _textView.DisplayTextLineContainingBufferPosition(bottomPoint, 0.0, ViewRelativePosition.Bottom)

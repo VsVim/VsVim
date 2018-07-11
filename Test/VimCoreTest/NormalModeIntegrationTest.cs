@@ -6301,6 +6301,7 @@ namespace Vim.UnitTest
             {
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(4);
+                TestableSynchronizationContext.RunOne();
                 AssertFirstLine(2);
             }
         }

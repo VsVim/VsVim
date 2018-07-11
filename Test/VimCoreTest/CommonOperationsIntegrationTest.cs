@@ -73,6 +73,7 @@ namespace Vim.UnitTest
                     _textView.ScrollToBottom();
                     _textView.MoveCaretToLine(2);
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();
+                    TestableSynchronizationContext.RunOne();
                     AssertFirstLine(1);
                 }
 
