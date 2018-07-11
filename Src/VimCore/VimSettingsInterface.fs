@@ -19,6 +19,10 @@ module GlobalSettingNames =
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
+    let ImeCommandName = "imccmdline"
+    let ImeDisableName = "imdisable"
+    let ImeInsertName = "iminsert"
+    let ImeSearchName= "imsearch"
     let IncrementalSearchName = "incsearch"
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
@@ -338,6 +342,18 @@ and IVimGlobalSettings =
     /// Whether or not incremental searches should be highlighted and focused 
     /// in the ITextBuffer
     abstract IncrementalSearch: bool with get, set
+
+    /// Whether the IME will be enabled in command mode
+    abstract ImeCommand: bool with get, set
+
+    /// Whether the IME coordinator is diabled
+    abstract ImeDisable: bool with get, set
+
+    /// Whether the IME will be enabled in insert mode
+    abstract ImeInsert: int with get, set
+
+    /// Whether the IME will be enabled in search mode
+    abstract ImeSearch: int with get, set
 
     /// Is the 'indent' option inside of Backspace set
     abstract IsBackspaceIndent: bool with get

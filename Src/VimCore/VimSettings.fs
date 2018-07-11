@@ -159,6 +159,10 @@ type internal GlobalSettings() =
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
             (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
             (IgnoreCaseName,"ic", SettingValue.Toggle false, SettingOptions.None)
+            (ImeCommandName, "imc", SettingValue.Toggle false, SettingOptions.None)
+            (ImeDisableName, "imd", SettingValue.Toggle false, SettingOptions.None)
+            (ImeInsertName, "imi", SettingValue.Number 0, SettingOptions.None)
+            (ImeSearchName, "ims", SettingValue.Number 0, SettingOptions.None)
             (JoinSpacesName, "js", SettingValue.Toggle true, SettingOptions.None)
             (KeyModelName, "km", SettingValue.String "", SettingOptions.None)
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
@@ -348,6 +352,18 @@ type internal GlobalSettings() =
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
             and set value = _map.TrySetValue IgnoreCaseName (SettingValue.Toggle value) |> ignore
+        member x.ImeCommand
+            with get()  = _map.GetBoolValue ImeCommandName
+            and set value = _map.TrySetValue ImeCommandName (SettingValue.Toggle value) |> ignore
+        member x.ImeDisable
+            with get()  = _map.GetBoolValue ImeDisableName
+            and set value = _map.TrySetValue ImeDisableName (SettingValue.Toggle value) |> ignore
+        member x.ImeInsert
+            with get()  = _map.GetNumberValue ImeInsertName
+            and set value = _map.TrySetValue ImeInsertName (SettingValue.Number value) |> ignore
+        member x.ImeSearch
+            with get()  = _map.GetNumberValue ImeSearchName
+            and set value = _map.TrySetValue ImeSearchName (SettingValue.Number value) |> ignore
         member x.IncrementalSearch
             with get() = _map.GetBoolValue IncrementalSearchName
             and set value = _map.TrySetValue IncrementalSearchName (SettingValue.Toggle value) |> ignore
