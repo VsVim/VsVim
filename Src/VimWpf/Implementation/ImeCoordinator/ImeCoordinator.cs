@@ -9,7 +9,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class ImeCoordinator : IVimBufferCreationListener
     {
-        private enum InputMode
+        internal enum InputMode
         {
             None = 0,
             Command = 1,
@@ -17,8 +17,158 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
             Search = 3,
         };
 
+        /// <summary>
+        /// Provides an associative array abstraction over the underlying
+        /// golobal IME-related settings
+        /// </summary>
+        internal class InputModeMap
+        {
+            private readonly IVimGlobalSettings _globalSettings;
+
+            public InputModeMap(IVimGlobalSettings globalSettings)
+            {
+                _globalSettings = globalSettings;
+
+                var state = InputMethod.Current.ImeState;
+                SetState(InputMode.Command, state);
+                SetState(InputMode.Insert, state);
+                SetState(InputMode.Search, state);
+            }
+
+            public InputMethodState this[InputMode inputMode]
+            {
+                get
+                {
+                    return GetState(inputMode);
+                }
+                set
+                {
+                    SetState(inputMode, value);
+                }
+            }
+
+            private InputMethodState GetState(InputMode inputMode)
+            {
+                switch (inputMode)
+                {
+                    case InputMode.Command:
+                        if (_globalSettings.ImeCommand)
+                        {
+                            return InputMethodState.On;
+                        }
+                        else
+                        {
+                            return InputMethodState.Off;
+                        }
+
+                    case InputMode.Insert:
+                        if ((_globalSettings.ImeInsert & 2) != 0)
+                        {
+                            return InputMethodState.On;
+                        }
+                        else
+                        {
+                            return InputMethodState.Off;
+                        }
+
+                    case InputMode.Search:
+                        if (_globalSettings.ImeSearch == -1)
+                        {
+                            return GetState(InputMode.Insert);
+                        }
+                        else
+                        {
+                            if ((_globalSettings.ImeSearch & 2) != 0)
+                            {
+                                return InputMethodState.On;
+                            }
+                            else
+                            {
+                                return InputMethodState.Off;
+                            }
+                        }
+
+                    default:
+                        throw new ArgumentException("inputMode");
+                }
+            }
+
+            private void SetState(InputMode inputMode, InputMethodState state)
+            {
+                switch (inputMode)
+                {
+                    case InputMode.Command:
+                        switch (state)
+                        {
+                            case InputMethodState.On:
+                                _globalSettings.ImeCommand = true;
+                                break;
+
+                            case InputMethodState.Off:
+                                _globalSettings.ImeCommand = false;
+                                break;
+
+                            case InputMethodState.DoNotCare:
+                                break;
+
+                            default:
+                                throw new ArgumentException("state");
+                        }
+                        break;
+
+                    case InputMode.Insert:
+                        switch (state)
+                        {
+                            case InputMethodState.On:
+                                _globalSettings.ImeInsert |= 2;
+                                break;
+
+                            case InputMethodState.Off:
+                                _globalSettings.ImeInsert &= ~2;
+                                break;
+
+                            case InputMethodState.DoNotCare:
+                                break;
+
+                            default:
+                                throw new ArgumentException("state");
+                        }
+                        break;
+
+                    case InputMode.Search:
+                        if (_globalSettings.ImeSearch == -1)
+                        {
+                            SetState(InputMode.Insert, state);
+                        }
+                        else
+                        {
+                            switch (state)
+                            {
+                                case InputMethodState.On:
+                                    _globalSettings.ImeSearch |= 2;
+                                    break;
+
+                                case InputMethodState.Off:
+                                    _globalSettings.ImeSearch &= ~2;
+                                    break;
+
+                                case InputMethodState.DoNotCare:
+                                    break;
+
+                                default:
+                                    throw new ArgumentException("state");
+                            }
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentException("inputMode");
+                }
+            }
+        }
+
         private readonly IVim _vim;
-        private readonly Dictionary<InputMode, InputMethodState> _lastInputMethodState;
+        private readonly InputModeMap _lastInputMethodState;
 
         private InputMode _inputMode;
 
@@ -26,12 +176,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
         internal ImeCoordinator(IVim vim)
         {
             _vim = vim;
-            _lastInputMethodState = new Dictionary<InputMode, InputMethodState>();
+            _lastInputMethodState = new InputModeMap(_vim.GlobalSettings);
 
             _inputMode = InputMode.None;
-            _lastInputMethodState[InputMode.Command] = InputMethodState.DoNotCare;
-            _lastInputMethodState[InputMode.Insert] = InputMethodState.DoNotCare;
-            _lastInputMethodState[InputMode.Search] = InputMethodState.DoNotCare;
+
+            AdjustImeState(_inputMode, _inputMode);
         }
 
         private void VimBufferCreated(IVimBuffer vimBuffer)
@@ -99,7 +248,14 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                     return InputMode.Insert;
 
                 case ModeKind.Normal:
-                    return vimBuffer.IncrementalSearch.InSearch ? InputMode.Search : InputMode.None;
+                    if (vimBuffer.IncrementalSearch.InSearch)
+                    {
+                        return InputMode.Search;
+                    }
+                    else
+                    {
+                        return InputMode.None;
+                    }
 
                 case ModeKind.Command:
                     return InputMode.Command;
