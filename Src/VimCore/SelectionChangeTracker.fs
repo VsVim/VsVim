@@ -103,8 +103,8 @@ type internal SelectionChangeTracker
     member x.OnPositionChanged() = 
 
         // Don't apply the scroll offset if it isn't applicable, if the
-        // text view is currently being laid out, or if we in the middle
-        // of process input. If we are processing input then the mode is
+        // text view is currently being laid out, or if we are in the middle
+        // of processing input. If we are processing input then the mode is
         // is responsible for ensuring that the scroll offset is obeyed,
         // so let the mode handle it.
         if
@@ -113,17 +113,23 @@ type internal SelectionChangeTracker
             && not _vimBuffer.IsProcessingInput
         then
 
+            // Do the update being cautious that anything could have
+            // happened between when we posted the it and when it
+            // actually runs.
             let doUpdate () =
-                if not _textView.IsClosed then
-                    _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+                try
+                    if not _textView.IsClosed then
+                        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+                with
+                | _ -> ()
 
             // Delay the update to give whoever changed the caret position the
             // opportunity to scroll the view according to their own needs.
             // If another extension moves the caret far offscreen and then
             // centers it if the caret is not onscreen, then reacting too
             // early to the caret position will defeat their offscreen
-            // handling. An example is double-clicking on an test in an
-            // unopened document is "Test Explorer".
+            // handling. An example is double-clicking on a test in an
+            // unopened document in "Test Explorer".
             let context = System.Threading.SynchronizationContext.Current
             if context <> null then
                 context.Post((fun _ -> doUpdate()), null)
