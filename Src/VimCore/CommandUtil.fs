@@ -233,7 +233,7 @@ type internal CommandUtil
             VisualSpan.Line range
 
         | StoredVisualSpan.Character (lineCount = lineCount; lastLineLength = lastLineLength) ->
-            let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineLength)
+            let characterSpan = CharacterSpan(x.CaretVirtualPoint, lineCount, lastLineLength)
             VisualSpan.Character characterSpan
         | StoredVisualSpan.Block (width = width; height = height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the

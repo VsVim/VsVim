@@ -1509,18 +1509,22 @@ type KeyMappingResult =
 [<DebuggerDisplay("{ToString()}")>]
 type CharacterSpan = 
 
-    val private _start: SnapshotPoint
+    val private _start: VirtualSnapshotPoint
 
     val private _lineCount: int
 
     val private _lastLineLength: int
 
     new (start: SnapshotPoint, lineCount: int, lastLineLength: int) =
+        let virtualStart = VirtualSnapshotPointUtil.OfPoint start
+        CharacterSpan(virtualStart, lineCount, lastLineLength)
+
+    new (start: VirtualSnapshotPoint, lineCount: int, lastLineLength: int) =
 
         // Don't let the last line of the CharacterSpan end partially into a line 
         // break.  Encompass the entire line break instead 
-        let number = start.GetContainingLine().LineNumber + (lineCount - 1)
-        let line = SnapshotUtil.GetLineOrLast start.Snapshot number
+        let number = start.Position.GetContainingLine().LineNumber + (lineCount - 1)
+        let line = SnapshotUtil.GetLineOrLast start.Position.Snapshot number
         let lastLineLength = 
             if line.Length = 0 then
                 line.LengthIncludingLineBreak
@@ -1545,25 +1549,39 @@ type CharacterSpan =
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
     new (span: VirtualSnapshotSpan) =
-        let lineCount = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
-        let lastLine = SnapshotSpanUtil.GetLastLine span.SnapshotSpan
+        let lineCount = VirtualSnapshotSpanUtil.GetLineCount span
+        let lastLine = VirtualSnapshotSpanUtil.GetLastLine span
+        let endColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.End
         let lastLineLength =
             if lineCount = 1 then
-                span.End.Position.Position - span.Start.Position.Position + span.End.VirtualSpaces
+                let startColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.Start
+                let endColumnNumberInLastLine =
+                    if span.Length <> 0 && endColumnNumber = 0 then
+                        lastLine.LengthIncludingLineBreak
+                    else
+                        endColumnNumber
+                endColumnNumberInLastLine - startColumnNumber
             else
-                let diff = span.End.Position.Position - lastLine.Start.Position + span.End.VirtualSpaces
+                let startColumnNumber = SnapshotPointUtil.GetColumn lastLine.Start
+                let diff = endColumnNumber - startColumnNumber
                 max 0 diff
-        CharacterSpan(span.Start.Position, lineCount, lastLineLength)
+        CharacterSpan(span.Start, lineCount, lastLineLength)
 
     new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
 
-    member x.Snapshot = x._start.Snapshot
+    new (startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint) =
+        let span = VirtualSnapshotSpan(startPoint, endPoint)
+        CharacterSpan(span)
+
+    member x.Snapshot = x._start.Position.Snapshot
 
     member x.StartLine = SnapshotPointUtil.GetContainingLine x.Start
 
-    member x.Start =  x._start
+    member x.Start =  x._start.Position
+
+    member x.VirtualStart =  x._start
 
     member x.LineCount = x._lineCount
 
@@ -1584,12 +1602,11 @@ type CharacterSpan =
 
     /// Get the End point of the Character Span.
     member x.End =
-        let snapshot = x.Snapshot
         let lastLine = x.LastLine
         let offset = 
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
-                SnapshotPointUtil.GetColumn x._start + x._lastLineLength
+                SnapshotPointUtil.GetColumn x._start.Position + x._lastLineLength
             else
                 x._lastLineLength
 
@@ -1602,7 +1619,31 @@ type CharacterSpan =
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
         // potential errors here
-        if x._start.Position <= endPoint.Position then
+        if x._start.Position.Position <= endPoint.Position then
+            endPoint
+        else
+            x._start.Position
+
+    /// Get the End point of the Character Span.
+    member x.VirtualEnd =
+        let lastLine = x.LastLine
+        let offset =
+            if x._lineCount = 1 then
+                // For a single line we need to apply the offset past the start point
+                VirtualSnapshotPointUtil.GetColumnNumber x._start + x._lastLineLength
+            else
+                x._lastLineLength
+
+        // The original SnapshotSpan could extend into the line break and hence we must
+        // consider that here.  The most common case for this occurring is when the caret
+        // in visual mode is on the first column of an empty line.  In that case the caret
+        // is really in the line break so End is one past that
+        let endPoint = VirtualSnapshotLineUtil.GetColumn offset lastLine
+
+        // Make sure that we don't create a negative SnapshotSpan.  Really we should
+        // be verifying the arguments to ensure we don't but until we do fix up
+        // potential errors here
+        if x._start.Position.Position <= endPoint.Position.Position then
             endPoint
         else
             x._start

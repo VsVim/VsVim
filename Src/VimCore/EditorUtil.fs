@@ -2080,6 +2080,9 @@ module VirtualSnapshotLineUtil =
         let virtualSpaces = columnCount - realColumnCount
         realSpacesToColumn + virtualSpaces
 
+    let GetColumn columnNumber (line: ITextSnapshotLine) =
+        VirtualSnapshotPoint(line, columnNumber)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module VirtualSnapshotSpanUtil =
@@ -2098,6 +2101,12 @@ module VirtualSnapshotSpanUtil =
         let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
         let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
         VirtualSnapshotSpan(startPoint, endPoint)
+
+    let GetLineCount (span: VirtualSnapshotSpan) =
+        SnapshotSpanUtil.GetLineCount span.SnapshotSpan
+
+    let GetLastLine (span: VirtualSnapshotSpan) =
+        SnapshotSpanUtil.GetLastLine span.SnapshotSpan
 
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context
