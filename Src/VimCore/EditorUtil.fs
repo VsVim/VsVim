@@ -1925,6 +1925,16 @@ module VirtualSnapshotLineUtil =
         else
             point
 
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
+    /// boundary only count for the number of spaces to get to the next tabstop boundary
+    let GetSpacesToColumn (line: ITextSnapshotLine) columnCount tabStop =
+        let realSpacesToColumn = SnapshotLineUtil.GetSpacesToColumn line columnCount tabStop
+        let realPoint = SnapshotLineUtil.GetSpaceOrEnd line realSpacesToColumn tabStop
+        let realColumnCount = SnapshotPointUtil.GetColumn realPoint
+        let virtualSpaces = columnCount - realColumnCount
+        realSpacesToColumn + virtualSpaces
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module VirtualSnapshotSpanUtil =

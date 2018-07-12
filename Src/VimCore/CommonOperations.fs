@@ -115,6 +115,11 @@ type internal CommonOperations
     member x.GetSpacesToColumn line column = 
         SnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
 
+    /// Get the count of virtual spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    member x.GetVirtualSpacesToColumn line column =
+        VirtualSnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
+
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
     member x.GetSpacesToPoint point = 
         SnapshotPointUtil.GetSpacesToPoint point _localSettings.TabStop
@@ -123,6 +128,15 @@ type internal CommonOperations
     // it goes beyond the last point in the string
     member x.GetPointForSpaces line spacesCount = 
         SnapshotLineUtil.GetSpaceOrEnd line spacesCount _localSettings.TabStop
+
+    /// Get the count of spaces to get to the specified virtual point in it's line when tabs are expanded
+    member x.GetSpacesToVirtualPoint point =
+        VirtualSnapshotPointUtil.GetSpacesToPoint point _localSettings.TabStop
+
+    // Get the virtual point in the given line which is count "spaces" into the line.  Returns End if
+    // it goes beyond the last point in the string
+    member x.GetVirtualPointForSpaces line spacesCount =
+        VirtualSnapshotLineUtil.GetSpace line spacesCount _localSettings.TabStop
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -660,15 +674,19 @@ type internal CommonOperations
 
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
-        match useVirtualSpace, shouldMaintainCaretColumn, result.CaretColumn with
-        | false, true, CaretColumn.InLastLine column ->
-            
+        match shouldMaintainCaretColumn, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
+
             // Mappings should occur visually 
             let visualLastLine = x.GetDirectionLastLineInVisualSnapshot result
 
             // First calculate the column in terms of spaces for the maintained caret.
             let caretColumnSpaces = 
-                let motionCaretColumnSpaces = x.GetSpacesToColumn x.CaretLine column
+                let motionCaretColumnSpaces =
+                    if useVirtualSpace then
+                        x.GetVirtualSpacesToColumn x.CaretLine column
+                    else
+                        x.GetSpacesToColumn x.CaretLine column
                 match _maintainCaretColumn with
                 | MaintainCaretColumn.None -> motionCaretColumnSpaces
                 | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
@@ -677,8 +695,13 @@ type internal CommonOperations
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
             let caretColumn = 
-                let column = x.GetPointForSpaces visualLastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
-                CaretColumn.InLastLine column
+                if useVirtualSpace then
+                    x.GetVirtualPointForSpaces visualLastLine caretColumnSpaces
+                    |> VirtualSnapshotPointUtil.GetColumnNumber
+                else
+                    x.GetPointForSpaces visualLastLine caretColumnSpaces
+                    |> SnapshotPointUtil.GetColumn
+                |> CaretColumn.InLastLine
             let result = 
                 { result with CaretColumn = caretColumn }
 
@@ -1819,6 +1842,8 @@ type internal CommonOperations
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
+        member x.GetSpacesToVirtualPoint point = x.GetSpacesToVirtualPoint point
+        member x.GetVirtualPointForSpaces contextLine column = x.GetVirtualPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
         member x.GoToFile() = x.GoToFile()

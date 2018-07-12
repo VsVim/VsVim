@@ -377,6 +377,13 @@ type ICommonOperations =
     /// Get the point that visually corresponds to the specified column on its line
     abstract GetPointForSpaces: contextLine: ITextSnapshotLine -> column: int -> SnapshotPoint
 
+    /// Get the number of spaces (when tabs are expanded) that is necessary to get to the
+    /// specified virtual point on it's line
+    abstract GetSpacesToVirtualPoint: point: VirtualSnapshotPoint -> int
+
+    /// Get the virtual point that visually corresponds to the specified column on its line
+    abstract GetVirtualPointForSpaces: contextLine: ITextSnapshotLine -> column: int -> VirtualSnapshotPoint
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition: unit -> Result
