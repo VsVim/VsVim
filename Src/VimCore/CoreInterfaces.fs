@@ -1580,6 +1580,8 @@ type CharacterSpan =
         let span = VirtualSnapshotSpan(startPoint, endPoint)
         CharacterSpan(span, useVirtualSpace)
 
+    member x.UseVirtualSpace = x._useVirtualSpace
+
     member x.Snapshot = x._start.Position.Snapshot
 
     member x.StartLine = SnapshotPointUtil.GetContainingLine x.Start
@@ -1956,14 +1958,29 @@ type VisualSpan =
 
             textView.Selection.Select(startPoint, endPoint);
 
+        // Select the given VirtualSnapshotSpan
+        let selectVirtualSpan startPoint endPoint =
+
+            textView.Selection.Mode <- TextSelectionMode.Stream
+
+            let startPoint, endPoint =
+                match path with
+                | SearchPath.Forward -> startPoint, endPoint
+                | SearchPath.Backward -> endPoint, startPoint
+
+            textView.Selection.Select(startPoint, endPoint);
+
         match x with
         | Character characterSpan ->
-            let endPoint = 
-                if characterSpan.IncludeLastLineLineBreak then
-                    SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
-                else
-                    characterSpan.End
-            selectSpan characterSpan.Start endPoint
+            if characterSpan.UseVirtualSpace then
+                selectVirtualSpan characterSpan.VirtualStart characterSpan.VirtualEnd
+            else
+                let endPoint =
+                    if characterSpan.IncludeLastLineLineBreak then
+                        SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
+                    else
+                        characterSpan.End
+                selectSpan characterSpan.Start endPoint
         | Line lineRange ->
             selectSpan lineRange.Start lineRange.EndIncludingLineBreak
         | Block blockSpan ->
