@@ -128,7 +128,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         switch (state)
                         {
                             case InputMethodState.On:
-                                    _globalSettings.ImeInsert = 2;
+                                _globalSettings.ImeInsert = 2;
                                 break;
 
                             case InputMethodState.Off:
