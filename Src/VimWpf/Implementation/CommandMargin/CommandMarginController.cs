@@ -516,6 +516,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
+        /// <summary>
+        /// Toggle the use of typing language characters
+        /// </summary>
         private void ToggleLanguage()
         {
             var isForInsert = !_vimBuffer.IncrementalSearch.InSearch;

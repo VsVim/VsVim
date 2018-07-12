@@ -190,17 +190,17 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
             _inputMode = InputMode.None;
 
-            _vim.GlobalSettings.SettingChanged += OnSettingsChanged;
+            _vim.GlobalSettings.SettingChanged += OnSettingChanged;
 
             AdjustImeState(_inputMode, _inputMode);
         }
 
         private void Dispose()
         {
-            _vim.GlobalSettings.SettingChanged -= OnSettingsChanged;
+            _vim.GlobalSettings.SettingChanged -= OnSettingChanged;
         }
 
-        private void OnSettingsChanged(object sender, SettingEventArgs args)
+        private void OnSettingChanged(object sender, SettingEventArgs args)
         {
             // Don't manipulate the IME when the IME coordinator is disabled.
             if (_globalSettings.ImeDisable)
@@ -220,30 +220,40 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 return;
             }
 
-            // Get the target input mode for the setting that was changed.
-            var targetInputMode = GetTargetInputMode(args.Setting);
-            if (targetInputMode == InputMode.None)
+            // Get the input mode for the setting that changed.
+            var settingInputMode = GetSettingInputMode(args.Setting);
+            if (settingInputMode == InputMode.None)
             {
                 return;
             }
 
-            // If we're currently in the target mode, update the live IME state.
-            if (targetInputMode == _inputMode)
+            // If we're currently in that input mode, update the live IME state.
+            if (settingInputMode == _inputMode)
             {
-                SetImeState(_inputModeState[targetInputMode]);
+                SetImeState(_inputModeState[settingInputMode]);
             }
-            else if (targetInputMode == InputMode.Insert && _inputMode == InputMode.Command)
+            else if (settingInputMode == InputMode.Insert)
             {
-                SetImeState(_inputModeState[targetInputMode]);
+                // If 'imsearch' is -1, treat search mode as if it were insert mode.
+                if (_globalSettings.ImeSearch == -1 && _inputMode == InputMode.Search)
+                {
+                    SetImeState(_inputModeState[settingInputMode]);
+                }
+
+                // If 'imcmdline' is set, treat command mode as if it were insert mode.
+                if (_globalSettings.ImeCommand && _inputMode == InputMode.Command)
+                {
+                    SetImeState(_inputModeState[settingInputMode]);
+                }
             }
         }
 
         /// <summary>
-        /// Get the target input mode corresponding to the specified setting
+        /// Get the input mode corresponding to the specified setting
         /// </summary>
         /// <param name="setting"></param>
         /// <returns></returns>
-        private InputMode GetTargetInputMode(Setting setting)
+        private InputMode GetSettingInputMode(Setting setting)
         {
             if (setting.Name == GlobalSettingNames.ImeInsertName)
             {

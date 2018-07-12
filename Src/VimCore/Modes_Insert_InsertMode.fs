@@ -862,7 +862,7 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Toggle the use of typing language characters (see vim ':help i_CTRL-^')
+    /// Toggle the use of typing language characters
     member x.ProcessToggleLanguage keyInput =
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
