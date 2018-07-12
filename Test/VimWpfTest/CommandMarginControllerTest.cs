@@ -43,6 +43,8 @@ namespace Vim.UI.Wpf.UnitTest
             var textBuffer = CreateTextBuffer(new[] { "" });
             _vimBuffer.TextViewImpl = TextEditorFactoryService.CreateTextView(textBuffer);
 
+            var vimBufferData = CreateVimBufferData(_vimBuffer.TextView);
+
             _globalSettings = new Mock<IVimGlobalSettings>();
             _vimBuffer.GlobalSettingsImpl = _globalSettings.Object;
 
@@ -57,7 +59,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _marginControl,
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
                 VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
-                CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData));
+                CommonOperationsFactory.GetCommonOperations(vimBufferData));
         }
 
         public sealed class InCommandLineUpdateTest : CommandMarginControllerTest
