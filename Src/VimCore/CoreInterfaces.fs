@@ -5,6 +5,8 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Text.Classification
+open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.IO
@@ -3655,6 +3657,22 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
 
+type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextBuffer = _textBuffer
+
+    override x.ToString() = _mark.ToString()
+
+type MarkTextViewEventArgs (_mark: Mark, _textView: ITextView) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextView = _textView
+
+    override x.ToString() = _mark.ToString()
+
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
 ///
@@ -3705,6 +3723,10 @@ type IJumpList =
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
 type IIncrementalSearch = 
 
@@ -4552,6 +4574,9 @@ and IMarkMap =
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
+    /// Delete the mark for the IVimTextBuffer
+    abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
+
     /// Unload the buffer recording the last exited position
     abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
 
@@ -4564,6 +4589,14 @@ and IMarkMap =
 
     /// Delete all of the global marks 
     abstract Clear: unit -> unit
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
+
+    /// Raised when a mark is deleted
+    [<CLIEvent>]
+    abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
@@ -4592,6 +4625,12 @@ and IVimTextBuffer =
 
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint: SnapshotPoint option with get, set
+
+    /// The start point of the last change or yank
+    abstract LastChangeOrYankStart: SnapshotPoint option with get, set
+
+    /// The end point of the last change or yank
+    abstract LastChangeOrYankEnd: SnapshotPoint option with get, set
 
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
@@ -4638,6 +4677,10 @@ and IVimTextBuffer =
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

@@ -84,6 +84,8 @@ namespace Vim.UnitTest
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             selection.SetupGet(x => x.IsReversed).Returns(false).Verifiable();
             selection.SetupGet(x => x.AnchorPoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 0));
+            selection.SetupGet(x => x.ActivePoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 1));
+            selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 1));
             selection.SetupProperty(x => x.Mode);
             var view = new Mock<ITextView>(MockBehavior.Strict);
             view.SetupGet(x => x.TextBuffer).Returns(realView.TextBuffer);
@@ -92,6 +94,7 @@ namespace Vim.UnitTest
             view.SetupGet(x => x.Selection).Returns(selection.Object);
             var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
             vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view.Object);
             var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
@@ -109,6 +112,7 @@ namespace Vim.UnitTest
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
             var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
             vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view);
             var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();

@@ -604,11 +604,8 @@ type VimInterpreter
             _commonOperations.DeleteLines lineRange.StartLine lineRange.Count registerName)
 
     member x.RunDeleteMarkCore mark = 
-        match mark with 
-        | Mark.LocalMark localMark -> _vimTextBuffer.RemoveLocalMark localMark |> ignore
-        | Mark.GlobalMark letter -> _markMap.RemoveGlobalMark letter |> ignore
-        | Mark.LastJump -> ()
-        | Mark.LastExitedPosition -> ()
+        let markMap = _vimBufferData.Vim.MarkMap
+        markMap.DeleteMark mark _vimBufferData |> ignore
 
     member x.RunDeleteMarks marks = 
         marks |> Seq.iter x.RunDeleteMarkCore
@@ -753,6 +750,8 @@ type VimInterpreter
             for number in NumberMark.All do
                 yield Mark.LocalMark (LocalMark.Number number)
             yield Mark.LastExitedPosition
+            yield Mark.LocalMark LocalMark.LastChangeOrYankStart
+            yield Mark.LocalMark LocalMark.LastChangeOrYankEnd
             yield Mark.LocalMark LocalMark.LastInsertExit
             yield Mark.LocalMark LocalMark.LastEdit
             yield Mark.LocalMark LocalMark.LastSelectionStart

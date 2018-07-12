@@ -487,6 +487,7 @@ type internal LocalSettings
             (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
+            (HideMarksName, "vsvim_hidemarks", SettingValue.String "", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -568,6 +569,9 @@ type internal LocalSettings
         member x.FixEndOfLine
             with get() = _map.GetBoolValue FixEndOfLineName
             and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
+        member x.HideMarks
+            with get() = _map.GetStringValue HideMarksName
+            and set value = _map.TrySetValue HideMarksName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

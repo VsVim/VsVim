@@ -437,8 +437,8 @@ namespace Vim.UnitTest
                     @"mark line  col file/text",
                     @" '      1    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]     10    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -455,8 +455,8 @@ namespace Vim.UnitTest
                     @" z      9    0 VimBufferTest.cs",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]     10    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -470,8 +470,8 @@ namespace Vim.UnitTest
                     @" z      9    0 VimBufferTest.cs",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]      1    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -490,8 +490,8 @@ namespace Vim.UnitTest
                     @" A      3    0 VimBufferTest.cs",
                     @" Z      9    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      7    0 VimBufferTest.cs",
-                    //@" ]      7    1 VimBufferTest.cs",
+                    @" [      7    0 VimBufferTest.cs",
+                    @" ]      7    1 VimBufferTest.cs",
                     @" ^     11    1 VimBufferTest.cs",
                     @" .      7    1 VimBufferTest.cs",
                 };
@@ -499,7 +499,7 @@ namespace Vim.UnitTest
 
                 _vimBuffer.ProcessNotation("kV<ESC>");
                 interpreter.RunDisplayMarks(s_emptyList);
-                
+
                 expectedMarks = new[] {
                     @"mark line  col file/text",
                     @" '      9    0 VimBufferTest.cs",
@@ -508,8 +508,8 @@ namespace Vim.UnitTest
                     @" A      3    0 VimBufferTest.cs",
                     @" Z      9    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      7    0 VimBufferTest.cs",
-                    //@" ]      7    1 VimBufferTest.cs",
+                    @" [      7    0 VimBufferTest.cs",
+                    @" ]      7    1 VimBufferTest.cs",
                     @" ^     11    1 VimBufferTest.cs",
                     @" .      7    1 VimBufferTest.cs",
                     @" <      6    0 VimBufferTest.cs",

@@ -1592,6 +1592,45 @@ type internal CommonOperations
     member x.RaiseSearchResultMessage searchResult = 
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
+    /// Record last change start and end positions
+    /// (spans must be from different snapshots)
+    member x.RecordLastChange (oldSpan: SnapshotSpan) (newSpan: SnapshotSpan) =
+        Contract.Requires(oldSpan.Snapshot <> newSpan.Snapshot)
+        x.RecordLastChangeOrYank oldSpan newSpan
+
+    /// Record last yank start and end positions
+    member x.RecordLastYank span =
+        x.RecordLastChangeOrYank span span
+
+    /// Record last change or yankstart and end positions
+    /// (it is a yank if the old span and the new span are the same)
+    member x.RecordLastChangeOrYank oldSpan newSpan =
+        let startPoint = SnapshotSpanUtil.GetStartPoint newSpan
+        let endPoint = SnapshotSpanUtil.GetEndPoint newSpan
+        let endPoint =
+            match SnapshotSpanUtil.GetLastIncludedPoint newSpan with
+            | Some point ->
+                if SnapshotPointUtil.IsInsideLineBreak point then point else endPoint
+            | None ->
+                endPoint
+        _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
+        _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
+        let lineRange =
+            if newSpan.Length = 0 then
+                oldSpan
+            else
+                newSpan
+            |> SnapshotLineRange.CreateForSpan
+        let lineCount = lineRange.Count
+        if lineCount >= 3 then
+            if newSpan.Length = 0 then
+                Resources.Common_LinesDeleted lineCount
+            elif oldSpan = newSpan then
+                Resources.Common_LinesYanked lineCount
+            else
+                Resources.Common_LinesChanged lineCount
+            |> _statusUtil.OnStatus
+
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
     member x.Undo count = 
@@ -1747,6 +1786,8 @@ type internal CommonOperations
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
+        member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
+        member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count

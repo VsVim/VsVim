@@ -25,8 +25,12 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Loose);
             _operations = _factory.Create<ICommonOperations>(MockBehavior.Strict);
+            _operations.Setup(x => x.RecordLastChange(It.IsAny<SnapshotSpan>(), It.IsAny<SnapshotSpan>()));
+            _operations.Setup(x => x.RecordLastYank(It.IsAny<SnapshotSpan>()));
             _vimTextBuffer = _factory.Create<IVimTextBuffer>(MockBehavior.Strict);
             _vimTextBuffer.SetupProperty(x => x.LastEditPoint);
+            _vimTextBuffer.SetupProperty(x => x.LastChangeOrYankStart);
+            _vimTextBuffer.SetupProperty(x => x.LastChangeOrYankEnd);
             _trackerRaw = new TextChangeTracker(_vimTextBuffer.Object, _textView, _operations.Object)
             {
                 TrackCurrentChange = true

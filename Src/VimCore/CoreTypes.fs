@@ -322,6 +322,8 @@ type LocalMark =
     | LastSelectionStart
     | LastSelectionEnd
     | LastEdit
+    | LastChangeOrYankStart
+    | LastChangeOrYankEnd
 
     with
 
@@ -333,6 +335,8 @@ type LocalMark =
         | LastSelectionEnd -> '>'
         | LastInsertExit -> '^'
         | LastEdit -> '.'
+        | LastChangeOrYankStart -> '['
+        | LastChangeOrYankEnd -> ']'
 
     static member All =
         seq {
@@ -344,6 +348,8 @@ type LocalMark =
             yield LocalMark.LastEdit
             yield LocalMark.LastSelectionStart
             yield LocalMark.LastSelectionEnd
+            yield LocalMark.LastChangeOrYankStart
+            yield LocalMark.LastChangeOrYankEnd
         }
 
     static member OfChar c =
@@ -358,6 +364,8 @@ type LocalMark =
                 | '>' -> Some LocalMark.LastSelectionEnd
                 | '^' -> Some LocalMark.LastInsertExit
                 | '.' -> Some LocalMark.LastEdit
+                | '[' -> Some LocalMark.LastChangeOrYankStart
+                | ']' -> Some LocalMark.LastChangeOrYankEnd
                 | _ -> None
 
 [<RequireQualifiedAccess>]

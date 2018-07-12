@@ -187,25 +187,16 @@ type internal VisualMode
 
     member x.Process (ki: KeyInput) =  
 
-        // Save the VisualSelection before executing the command.  Many commands which exit
-        // visual mode such as 'y' change the selection during execution.  We want to restore
-        // to the selection before the command executed so save it now
-        let lastVisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
-
-        // We can't wait until after the command to record the last visual selection
-        // because if the command modifies the text buffer, the snapshot will be newer
-        // than the one that was active when we created it which would interfere
-        // with the tracking service.
-        _vimTextBuffer.LastVisualSelection <- Some lastVisualSelection
-
         // Save the last visual selection at the global level for use with [count]V|v except
         // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
         // experimentally. 
-        if ki <> KeyInputUtil.EscapeKey then
+        match ki, _vimTextBuffer.LastVisualSelection with
+        | keyInput, Some lastVisualSelection when keyInput <> KeyInputUtil.EscapeKey ->
             let vimData = _vimBufferData.Vim.VimData
             match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
             | None -> ()
             | Some v -> vimData.LastVisualSelection <- Some v
+        | _ -> ()
 
         let result = 
             if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
@@ -217,6 +208,7 @@ type internal VisualMode
                     // update the selection while waiting for the next key
                     _selectionTracker.UpdateSelection()
                     ProcessResult.HandledNeedMoreInput
+
                 | BindResult.Complete commandRanData ->
 
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then

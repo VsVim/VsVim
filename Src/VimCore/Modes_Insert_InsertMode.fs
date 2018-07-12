@@ -593,7 +593,9 @@ type internal InsertMode
             _broker.DismissDisplayWindows()
 
         // Save the last edit point before moving the column to the left
-        _vimBuffer.VimTextBuffer.LastInsertExitPoint <- Some x.CaretPoint
+        let insertExitPoint = Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.LastInsertExitPoint <- insertExitPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertExitPoint
 
         // Save the last text edit
         match _sessionData.CombinedEditCommand with
@@ -747,6 +749,12 @@ type internal InsertMode
 
                 // All other commands break the undo sequence.
                 x.BreakUndoSequence "Insert after motion" 
+
+        // Arrow keys start a new insert point.
+        if isMovement then
+            x.ResetInsertPoint()
+        else
+            _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
 
         ProcessResult.OfCommandResult result
 
@@ -936,6 +944,14 @@ type internal InsertMode
         | ActiveEditItem.Undo ->
             x.ProcessUndo keyInput
 
+    /// Record special marks associated with a new insert point
+    member x.ResetInsertPoint () =
+        let insertPoint = Some x.CaretPoint
+        _vimBuffer.VimTextBuffer.InsertStartPoint <- insertPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankStart <- insertPoint
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertPoint
+        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
+
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
     ///
@@ -979,8 +995,9 @@ type internal InsertMode
         else
             x.BreakUndoSequence "Insert after motion" 
             x.ChangeCombinedEditCommand None
-        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
-        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
+
+        // This is now a separate insert.
+        x.ResetInsertPoint()
 
     member x.OnAfterRunInsertCommand (insertCommand: InsertCommand) =
 
@@ -1067,9 +1084,12 @@ type internal InsertMode
         x.EnsureCommandsBuilt()
         _insertUtil.NewUndoSequence()
 
-        // Record start point upon initial entry to insert mode
-        _vimBuffer.VimTextBuffer.InsertStartPoint <- Some x.CaretPoint
-        _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
+        // Record start point upon initial entry to insert mode.
+        x.ResetInsertPoint()
+
+        // Suppress change marks, which would be too fine-grained. We'll manually
+        // keep them updated and this will avoid a lot of tracking point churn.
+        _textChangeTracker.SuppressLastChangeMarks <- true
 
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
@@ -1131,6 +1151,10 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
+        _textChangeTracker.SuppressLastChangeMarks <- false
+
+        // Escape might have moved the caret back, but it recorded the correct value.
+        _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- _vimBuffer.VimTextBuffer.LastInsertExitPoint
 
         // Possibly raise the edit command.  This will have already happened if <Esc> was used
         // to exit insert mode.  This case takes care of being asked to exit programmatically 
