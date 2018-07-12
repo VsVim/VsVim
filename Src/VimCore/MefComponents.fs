@@ -72,7 +72,9 @@ type internal TrackingLineColumn
     /// Update the internal tracking information based on the new ITextSnapshot
     member x.OnBufferChanged (e: TextContentChangedEventArgs) =
         match _line with 
-        | Some snapshotLine -> x.AdjustForChange snapshotLine e
+        | Some snapshotLine ->
+            if e.AfterVersion <> snapshotLine.Snapshot.Version then
+                x.AdjustForChange snapshotLine e
         | None -> x.CheckForUndo e
 
     /// The change occurred and we are in a valid state.  Update our cached data against 
@@ -152,7 +154,7 @@ type internal TrackingLineColumn
     /// recover during an undo operation
     member x.MarkInvalid (snapshotLine: ITextSnapshotLine) =
         _line <- None
-        _lastValidVersion <- Some (snapshotLine.Snapshot.Version.VersionNumber, snapshotLine.LineNumber)
+        _lastValidVersion <- Some (snapshotLine.Snapshot.Version.ReiteratedVersionNumber, snapshotLine.LineNumber)
 
     override x.ToString() =
         match x.VirtualPoint with

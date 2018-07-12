@@ -437,8 +437,8 @@ namespace Vim.UnitTest
                     @"mark line  col file/text",
                     @" '      1    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]     10    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -455,8 +455,8 @@ namespace Vim.UnitTest
                     @" z      9    0 VimBufferTest.cs",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]     10    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -470,8 +470,8 @@ namespace Vim.UnitTest
                     @" z      9    0 VimBufferTest.cs",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      1    0 VimBufferTest.cs",
-                    //@" ]     10    1 VimBufferTest.cs",
+                    @" [      1    0 VimBufferTest.cs",
+                    @" ]      1    1 VimBufferTest.cs",
                     @" ^     10    1 VimBufferTest.cs",
                     @" .     10    0 VimBufferTest.cs",
                 };
@@ -490,8 +490,8 @@ namespace Vim.UnitTest
                     @" A      3    0 VimBufferTest.cs",
                     @" Z      9    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      7    0 VimBufferTest.cs",
-                    //@" ]      7    1 VimBufferTest.cs",
+                    @" [      7    0 VimBufferTest.cs",
+                    @" ]      7    1 VimBufferTest.cs",
                     @" ^     11    1 VimBufferTest.cs",
                     @" .      7    1 VimBufferTest.cs",
                 };
@@ -499,7 +499,7 @@ namespace Vim.UnitTest
 
                 _vimBuffer.ProcessNotation("kV<ESC>");
                 interpreter.RunDisplayMarks(s_emptyList);
-                
+
                 expectedMarks = new[] {
                     @"mark line  col file/text",
                     @" '      9    0 VimBufferTest.cs",
@@ -508,8 +508,8 @@ namespace Vim.UnitTest
                     @" A      3    0 VimBufferTest.cs",
                     @" Z      9    0 VimBufferTest.cs",
                    @" ""      1    0 VimBufferTest.cs",
-                    //@" [      7    0 VimBufferTest.cs",
-                    //@" ]      7    1 VimBufferTest.cs",
+                    @" [      7    0 VimBufferTest.cs",
+                    @" ]      7    1 VimBufferTest.cs",
                     @" ^     11    1 VimBufferTest.cs",
                     @" .      7    1 VimBufferTest.cs",
                     @" <      6    0 VimBufferTest.cs",
@@ -527,7 +527,7 @@ namespace Vim.UnitTest
             public ClosingSetsLastEditedPositionMark()
             {
                 OpenFakeVimBufferTestWindow();
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 0);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, "VimBufferTest.cs", 0, 0);
             }
 
             protected void OpenFakeVimBufferTestWindow()
@@ -576,7 +576,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReopeningTheWindowLastColumn()
             {
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 0, 5);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, "VimBufferTest.cs", 0, 5);
                 OpenFakeVimBufferTestWindow();
 
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
@@ -586,7 +586,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void ReopeningTheWindowLastColumnAfterFirstLine()
             {
-                _vimBuffer.MarkMap.SetLastExitedPosition("VimBufferTest.cs", 1, 6);
+                _vimBuffer.MarkMap.UnloadBuffer(_vimBufferData, "VimBufferTest.cs", 1, 6);
                 OpenFakeVimBufferTestWindow();
 
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
@@ -631,6 +631,23 @@ namespace Vim.UnitTest
 
                 var option = Vim.MarkMap.GetMark(Mark.LastExitedPosition, _vimBuffer.VimBufferData);
                 AssertPosition(0, 0, option);
+            }
+        }
+
+        public class UnloadedMarksTest : ClosingSetsLastEditedPositionMark
+        {
+            [WpfFact]
+            public void ReloadUnloadedMark()
+            {
+                Vim.MarkMap.SetGlobalMark(Letter.A, _vimBufferData.VimTextBuffer, 1, 2);
+                AssertPosition(1, 2, Vim.MarkMap.GetGlobalMark(Letter.A));
+
+                _vimBuffer.Close();
+                Assert.True(Vim.MarkMap.GetGlobalMark(Letter.A).IsNone());
+
+                // reopen the file
+                OpenFakeVimBufferTestWindow();
+                AssertPosition(1, 2, Vim.MarkMap.GetGlobalMark(Letter.A));
             }
         }
 

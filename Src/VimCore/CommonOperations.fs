@@ -799,7 +799,7 @@ type internal CommonOperations
 
     /// No need to check for dirty since we are opening a new window
     member x.GoToFileInNewWindow name =
-        if not (_vimHost.LoadFileIntoNewWindow name) then
+        if not (_vimHost.LoadFileIntoNewWindow name (Some 0) None) then
             _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
 
     member x.GoToNextTab path count = 
@@ -1533,7 +1533,8 @@ type internal CommonOperations
                 // Collection strings are inserted at the original character
                 // position down the set of lines creating whitespace as needed
                 // to match the indent
-                let lineNumber, column = SnapshotPointUtil.GetLineColumn point
+                let column = SnapshotCharacterSpan(point)
+                let lineNumber, columnNumber = column.LineNumber, column.ColumnNumber
     
                 // First break the strings into the collection to edit against
                 // existing lines and those which need to create new lines at
@@ -1544,18 +1545,23 @@ type internal CommonOperations
                     let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Count
                     (Seq.take insertCount col, Seq.skip insertCount col)
     
-                // Insert the text at existing lines
+                // Insert the text into each of the existing lines.
                 insertCol |> Seq.iteri (fun offset str -> 
-                    let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
-                    if line.Length < column then
-                        let prefix = String.replicate (column - line.Length) " "
-                        edit.Insert(line.Start.Position, prefix + str) |> ignore
+                    let line =
+                        lineNumber + offset
+                        |> SnapshotUtil.GetLine originalSnapshot
+                    let column = SnapshotCharacterSpan(line)
+                    let columnCount = column.ColumnCount
+                    if columnCount < columnNumber then
+                        let prefix = String.replicate (columnNumber - columnCount) " "
+                        edit.Insert(line.End.Position, prefix + str) |> ignore
                     else
-                        edit.Insert(line.Start.Position + column, str) |> ignore)
+                        let offset = column.Add(columnNumber).Offset
+                        edit.Insert(line.Start.Position + offset, str) |> ignore)
     
                 // Add the text to the end of the buffer.
                 if not (Seq.isEmpty appendCol) then
-                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate column " ")
+                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate columnNumber " ")
                     let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                     let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                     edit.Insert(endPoint.Position, text) |> ignore
@@ -1585,6 +1591,45 @@ type internal CommonOperations
 
     member x.RaiseSearchResultMessage searchResult = 
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
+
+    /// Record last change start and end positions
+    /// (spans must be from different snapshots)
+    member x.RecordLastChange (oldSpan: SnapshotSpan) (newSpan: SnapshotSpan) =
+        Contract.Requires(oldSpan.Snapshot <> newSpan.Snapshot)
+        x.RecordLastChangeOrYank oldSpan newSpan
+
+    /// Record last yank start and end positions
+    member x.RecordLastYank span =
+        x.RecordLastChangeOrYank span span
+
+    /// Record last change or yankstart and end positions
+    /// (it is a yank if the old span and the new span are the same)
+    member x.RecordLastChangeOrYank oldSpan newSpan =
+        let startPoint = SnapshotSpanUtil.GetStartPoint newSpan
+        let endPoint = SnapshotSpanUtil.GetEndPoint newSpan
+        let endPoint =
+            match SnapshotSpanUtil.GetLastIncludedPoint newSpan with
+            | Some point ->
+                if SnapshotPointUtil.IsInsideLineBreak point then point else endPoint
+            | None ->
+                endPoint
+        _vimTextBuffer.LastChangeOrYankStart <- Some startPoint
+        _vimTextBuffer.LastChangeOrYankEnd <- Some endPoint
+        let lineRange =
+            if newSpan.Length = 0 then
+                oldSpan
+            else
+                newSpan
+            |> SnapshotLineRange.CreateForSpan
+        let lineCount = lineRange.Count
+        if lineCount >= 3 then
+            if newSpan.Length = 0 then
+                Resources.Common_LinesDeleted lineCount
+            elif oldSpan = newSpan then
+                Resources.Common_LinesYanked lineCount
+            else
+                Resources.Common_LinesChanged lineCount
+            |> _statusUtil.OnStatus
 
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
@@ -1741,6 +1786,8 @@ type internal CommonOperations
         member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
+        member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
+        member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count

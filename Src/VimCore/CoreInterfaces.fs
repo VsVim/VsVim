@@ -5,6 +5,8 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Text.Classification
+open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.IO
@@ -2629,6 +2631,9 @@ type NormalCommand =
     /// Go to the window of the specified kind
     | GoToWindow of WindowKind
 
+    /// Go to the nth most recent view
+    | GoToRecentView
+
     /// Switch to insert after the caret position
     | InsertAfterCaret
 
@@ -2858,6 +2863,7 @@ type NormalCommand =
         | NormalCommand.GoToLocalDeclaration -> None
         | NormalCommand.GoToNextTab _ -> None
         | NormalCommand.GoToWindow _ -> None
+        | NormalCommand.GoToRecentView _ -> None
         | NormalCommand.InsertAfterCaret -> None
         | NormalCommand.InsertBeforeCaret -> None
         | NormalCommand.InsertAtEndOfLine -> None
@@ -3654,6 +3660,22 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
 
+type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextBuffer = _textBuffer
+
+    override x.ToString() = _mark.ToString()
+
+type MarkTextViewEventArgs (_mark: Mark, _textView: ITextView) =
+    inherit System.EventArgs()
+
+    member x.Mark = _mark
+    member x.TextView = _textView
+
+    override x.ToString() = _mark.ToString()
+
 /// Jump list information associated with an IVimBuffer.  This is maintained as a forward
 /// and backwards traversable list of points with which to navigate to
 ///
@@ -3704,6 +3726,10 @@ type IJumpList =
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
 type IIncrementalSearch = 
 
@@ -3942,6 +3968,14 @@ type HistoryList () =
             _list <- value :: list
             _totalCount <- _totalCount + 1
 
+    /// Remove an item from the history list
+    member x.Remove value = 
+        if not (StringUtil.IsNullOrEmpty value) then
+            _list <-
+                _list
+                |> Seq.filter (fun x -> not (StringUtil.IsEqual x value))
+                |> List.ofSeq
+
     /// Reset the list back to it's original state
     member x.Reset () = 
         _list <- List.empty
@@ -4030,6 +4064,9 @@ type IVimData =
 
     /// The history of the: command list
     abstract CommandHistory: HistoryList with get, set
+
+    /// The file history list
+    abstract FileHistory: HistoryList with get, set
 
     /// This is the pattern for which all occurences should be highlighted in the visible
     /// IVimBuffer instances.  When this value is empty then no pattern should be highlighted
@@ -4123,6 +4160,27 @@ type RunCommandResults
     member x.Output = _output
 
     member x.Error = _error
+
+/// Information associated with a mark
+type MarkInfo
+    (
+        _ident: char,
+        _name: string,
+        _line: int,
+        _column: int
+    ) =
+
+    /// The character used to identify the mark
+    member x.Ident = _ident
+
+    /// The name of the buffer the mark is in
+    member x.Name = _name
+
+    /// The line of the mark
+    member x.Line = _line
+
+    /// The column of the mark
+    member x.Column = _column
 
 type IVimHost =
 
@@ -4226,8 +4284,9 @@ type IVimHost =
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
 
-    /// Loads the new file into a new existing window
-    abstract LoadFileIntoNewWindow: filePath: string -> bool
+    /// Loads a file into a new window, optionally moving the caret to the
+    /// first non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> bool
 
     /// Run the host specific make operation
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit
@@ -4461,6 +4520,9 @@ and IVim =
     /// creation in the IVimHost
     abstract TryGetOrCreateVimBufferForHost: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
 
+    /// Get the nth most recent IVimBuffer
+    abstract TryGetRecentBuffer: n: int -> IVimBuffer option
+
 and BeforeSaveEventArgs
     (
         _textBuffer: ITextBuffer
@@ -4503,17 +4565,26 @@ and IMarkMap =
     /// Get the mark for the given char for the IVimTextBuffer
     abstract GetMark: mark: Mark -> vimBufferData: IVimBufferData -> VirtualSnapshotPoint option
 
+    /// Get the mark info for the given mark for the IVimTextBuffer
+    abstract GetMarkInfo: mark: Mark -> vimBufferData: IVimBufferData -> MarkInfo option
+
     /// Get the current value of the specified global mark
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark: letter: Letter -> vimtextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
+    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
     abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
 
-    /// Set the last exited position before the window is closed
-    abstract SetLastExitedPosition: bufferName: string -> line: int -> column: int -> bool
+    /// Delete the mark for the IVimTextBuffer
+    abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
+
+    /// Unload the buffer recording the last exited position
+    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
+
+    /// Reload the marks associated with a buffer
+    abstract ReloadBuffer: vimBufferData: IVimBufferData -> name: string -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed
@@ -4521,6 +4592,14 @@ and IMarkMap =
 
     /// Delete all of the global marks 
     abstract Clear: unit -> unit
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
+
+    /// Raised when a mark is deleted
+    [<CLIEvent>]
+    abstract MarkDeleted: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
@@ -4549,6 +4628,12 @@ and IVimTextBuffer =
 
     /// The point the caret occupied when the last edit occurred
     abstract LastEditPoint: SnapshotPoint option with get, set
+
+    /// The start point of the last change or yank
+    abstract LastChangeOrYankStart: SnapshotPoint option with get, set
+
+    /// The end point of the last change or yank
+    abstract LastChangeOrYankEnd: SnapshotPoint option with get, set
 
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
@@ -4595,6 +4680,10 @@ and IVimTextBuffer =
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
+
+    /// Raised when a mark is set
+    [<CLIEvent>]
+    abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

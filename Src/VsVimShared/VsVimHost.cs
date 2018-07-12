@@ -448,11 +448,39 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override bool LoadFileIntoNewWindow(string filePath)
+        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
-                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath);
+                // Open the document in a window.
+                VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
+                    out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
+
+                if (line.IsSome())
+                {
+                    // Get the VS text view for the window.
+                    var vsTextView = VsShellUtilities.GetTextView(windowFrame);
+
+                    // Get the WPF text view for the VS text view.
+                    var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+
+                    // Move the caret to its initial position.
+                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line.Value);
+                    var point = snapshotLine.Start;
+                    if (column.IsSome())
+                    {
+                        point = point.Add(column.Value);
+                        wpfTextView.Caret.MoveTo(point);
+                    }
+                    else
+                    {
+                        // Default column implies moving to the first non-blank.
+                        wpfTextView.Caret.MoveTo(point);
+                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
+                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+                    }
+                }
+
                 return true;
             }
             catch (Exception e)
@@ -759,14 +787,11 @@ namespace Vim.VisualStudio
         private bool TryGetRecentWindow(int n, out IWpfTextView textView)
         {
             textView = null;
-#if false
-            // TODO: Enable when PR #2139 is merged.
-            var vimBufferOption = _vim.TryGetRecentBuffer(i);
-            if (vimBufferOption.HasValue && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
+            var vimBufferOption = _vim.TryGetRecentBuffer(n);
+            if (vimBufferOption.IsSome() && vimBufferOption.Value.TextView is IWpfTextView wpfTextView)
             {
                 textView = wpfTextView;
             }
-#endif
             return false;
         }
 

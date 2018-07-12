@@ -8,6 +8,7 @@ using Vim.Extensions;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -1881,6 +1882,83 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EditAlternateFileTest : NormalModeIntegrationTest
+        {
+            private readonly Vim _vimRaw;
+
+            private string _name;
+            private FSharpOption<int> _line;
+            private FSharpOption<int> _column;
+
+            public EditAlternateFileTest()
+            {
+                _vimRaw = (Vim)Vim;
+            }
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _vimHost.LoadIntoNewWindowFunc = (name, line, column) =>
+                    {
+                        _name = name;
+                        _line = line;
+                        _column = column;
+                        return true;
+                    };
+            }
+
+            [WpfTheory]
+            [InlineData("<C-^>", 1)]
+            [InlineData("2<C-^>", 0)]
+            public void MostRecent(string command, int bufferIndex)
+            {
+                var vimBuffers = new IVimBuffer[3];
+                Create("buffer0", "cat", "dog");
+                vimBuffers[0] = _vimBuffer;
+                vimBuffers[0].TextView.MoveCaretToLine(0, 1);
+                vimBuffers[1] = CreateVimBuffer("buffer1", "foo", "bar");
+                vimBuffers[1].TextView.MoveCaretToLine(1, 2);
+                vimBuffers[2] = CreateVimBuffer("buffer2", "aaa", "bbb");
+                vimBuffers[2].TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffers[0]);
+                _vimRaw.OnFocus(vimBuffers[1]);
+                _vimRaw.OnFocus(vimBuffers[2]);
+                vimBuffers[2].ProcessNotation(command);
+                var expectedData = vimBuffers[bufferIndex].TextView.Caret.Position.VirtualBufferPosition;
+                Assert.Equal(expectedData, _vimHost.NavigateToData);
+            }
+
+            [WpfTheory]
+            [InlineData(":tabe #<CR>", "buffer1.cs")]
+            [InlineData(":tabe #2<CR>", "buffer0.cs")]
+            public void TabEditMostRecent(string command, string name)
+            {
+                var vimBuffers = new IVimBuffer[3];
+                Create("buffer0", "cat", "dog");
+                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
+                vimBuffers[0] = _vimBuffer;
+                vimBuffers[0].TextView.MoveCaretToLine(0, 1);
+                vimBuffers[1] = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");
+                vimBuffers[1].TextView.MoveCaretToLine(1, 2);
+                vimBuffers[2] = CreateVimBufferWithName("buffer2.cs", "buffer2", "aaa", "bbb");
+                vimBuffers[2].TextView.MoveCaretToLine(2, 0);
+                _vimRaw.OnFocus(vimBuffers[0]);
+                Assert.Equal("buffer0.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffers[1]);
+                Assert.Equal("buffer1.cs", _vimData.FileHistory.Items.Head);
+                _vimRaw.OnFocus(vimBuffers[2]);
+                Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
+
+                _name = null;
+                _line = null;
+                _column = null;
+                vimBuffers[2].ProcessNotation(command);
+                Assert.Equal(name, _name);
+                Assert.Equal(0, _line.Value);
+                Assert.Null(_column);
+            }
+        }
+
         public sealed class FilterTest : NormalModeIntegrationTest
         {
             private string _command;
@@ -3104,6 +3182,59 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("dd");
                 Assert.True(_vimTextBuffer.LastEditPoint.IsSome());
                 Assert.Equal(_textBuffer.GetLine(1).Start, _vimTextBuffer.LastEditPoint.Value);
+            }
+
+            /// <summary>
+            /// Jumping to a mark set at the end of a line should not go into virtual space
+            /// </summary>
+            [WpfFact]
+            public void JumpToEndOfLineMark()
+            {
+                Create("cat", "dog", "bat");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("`a");
+                Assert.Equal(_textView.GetPointInLine(1, 2).Position, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Jumping to a mark set at the end of a line should work with 've=onemore'
+            /// </summary>
+            [WpfFact]
+            public void JumpToEndOfLineMarkWithOneMore()
+            {
+                Create("cat", "dog", "bat");
+                _globalSettings.VirtualEdit = "onemore";
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("`a");
+                Assert.Equal(_textView.GetPointInLine(1, 3).Position, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Deleting to a mark set at the end of a line should not go into virtual space
+            /// </summary>
+            [WpfFact]
+            public void DeleteToEndOfLineMark()
+            {
+                // This is messed up, but it's what vim does.
+                Create("cat", "dog", "bat");
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d`a");
+                Assert.Equal(new[] { "cag", "bat" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Deleting to a mark set at the end of a line should work with 've=onemore'
+            /// </summary>
+            [WpfFact]
+            public void DeleteToEndOfLineMarkWithOneMore()
+            {
+                Create("cat", "dog", "bat");
+                _globalSettings.VirtualEdit = "onemore";
+                _textView.MoveCaretToLine(0, 2);
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("d`a");
+                Assert.Equal(new[] { "ca", "bat" }, _textBuffer.GetLines());
             }
         }
 
@@ -4608,6 +4739,29 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("j");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
             }
+
+            [WpfFact]
+            public void SurrogatePairToHighCharacterBelow()
+            {
+                Create("A𠈓C", "tree");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.GetCaretPoint());
+                _textView.MoveCaretToLine(lineNumber: 1, column: 2);
+            }
+
+            [WpfFact]
+            public void SurrogatePairFromLowCharacterBelow()
+            {
+                Create("A𠈓C", "tree");
+                _textView.MoveCaretToLine(lineNumber: 1, column: 2);
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 2), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class ChangeCaseMotionTest : NormalModeIntegrationTest
@@ -4799,6 +4953,20 @@ namespace Vim.UnitTest
                 Assert.Equal("cbbat", _textView.GetLine(1).GetText());
                 Assert.Equal("bear", _textView.GetLine(2).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Short lines should be padded on the right
+            /// </summary>
+            [WpfFact]
+            public void BlockWithShortLines()
+            {
+                // Reported in issue #2231.
+                Create("xxx dog", "cat", "");
+                _textView.MoveCaretTo(6);
+                UnnamedRegister.UpdateBlockValues("aa", "bb");
+                _vimBuffer.Process("p");
+                Assert.Equal(new[] { "xxx dogaa", "cat    bb", "", }, _textBuffer.GetLines());
             }
 
             /// <summary>

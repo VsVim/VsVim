@@ -421,5 +421,3 @@ type FoldTaggerProvider
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>
             let tagger = TaggerUtil.CreateBasicTagger textBuffer.Properties _key func
             tagger :> obj :?> ITagger<'T>
-
-
