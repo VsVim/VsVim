@@ -1652,6 +1652,8 @@ type CharacterSpan =
 
     member x.Length = x.Span.Length
 
+    member x.VirtualLength = x.VirtualSpan.Length
+
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
     member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
@@ -2067,7 +2069,11 @@ type VisualSpan =
             // Need to special case the selection ending in, and encompassing, an empty line.  Once you 
             // get rid of the virtual points here it's impossible to distinguish from the case where the 
             // selection ends in the line above instead.  
-            if visualKind = VisualKind.Character && selection.End.Position.GetContainingLine().Length = 0 then
+            if
+                not useVirtualSpace
+                && visualKind = VisualKind.Character
+                && selection.End.Position.GetContainingLine().Length = 0
+            then
                 let endPoint = SnapshotPointUtil.AddOneOrCurrent selection.End.Position 
                 let characterSpan = CharacterSpan(selection.Start.Position, endPoint)
                 Character characterSpan
