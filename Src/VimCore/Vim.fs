@@ -329,8 +329,8 @@ type internal VimBufferFactory
         // The ITextView is initialized and no one has forced the IVimBuffer out of
         // the uninitialized state.  Do the switch now to the correct mode
         let runInit () =
-            Contract.Assert(isReady())
             if not textView.IsClosed && vimBuffer.ModeKind = ModeKind.Uninitialized then
+                Contract.Assert(isReady())
                 vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
 
         if isReady () then

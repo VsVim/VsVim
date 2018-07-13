@@ -51,7 +51,6 @@ namespace Vim.UnitTest
                 Assert.NotSame(buffer1, buffer2);
             }
 
-
             /// <summary>
             /// Create the IVimBuffer for an uninitialized ITextView instance.  This should create an 
             /// IVimBuffer in the uninitialized state 
@@ -153,6 +152,49 @@ namespace Vim.UnitTest
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
                 TestableSynchronizationContext.RunAll();
+            }
+
+            /// <summary>
+            /// This scenario can happen when 
+            /// 
+            /// - A solution is re-opened in Visual Studio that has multiple documents open, at least 
+            ///   one of which is not visible (hence not layed out)
+            /// - The windows are in a tab well that is not the main body of VS
+            /// - The tab well is closed as a whole.
+            ///
+            /// In that case we will get a layout event but by the time our Post operation registers the
+            /// <see cref="ITextView"/> will already be closed.
+            /// </summary>
+            [WpfFact]
+            public void TextViewClosedImmediatelyAfterInitialLayout()
+            {
+                var textBuffer = CreateTextBuffer("");
+                var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
+
+                var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
+                textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.SetupGet(x => x.IsClosed).Returns(false);
+
+                var vimBuffer = _vimBufferFactory.CreateVimBuffer(textView.Object, vimTextBuffer);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+                textView.SetupGet(x => x.TextViewLines).Returns(() =>
+                    {
+                        var lines = _factory.Create<ITextViewLineCollection>();
+                        lines.SetupGet(x => x.IsValid).Returns(true);
+                        return lines.Object;
+                    });
+                textView.SetupGet(x => x.InLayout).Returns(false);
+                textView.SetupGet(x => x.IsClosed).Returns(false);
+                textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
+
+                Assert.Equal(1, TestableSynchronizationContext.PostedCallbackCount);
+                textView.SetupGet(x => x.IsClosed).Returns(true);
+                textView.SetupGet(x => x.TextViewLines).Throws(new Exception());
+                TestableSynchronizationContext.RunAll();
+                Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
             }
         }
     }
