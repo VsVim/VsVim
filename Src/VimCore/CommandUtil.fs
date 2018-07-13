@@ -873,12 +873,27 @@ type internal CommandUtil
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
         _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
-    member x.DisplayCharacterBytes () =
-        if SnapshotPointUtil.IsEndPoint x.CaretPoint then 
+    member x.DisplayCharacterCodePoint() =
+        let point = SnapshotCodePoint(x.CaretPoint)
+        if point.IsEndPoint then
             _commonOperations.Beep()
+        elif point.IsInsideLineBreak then
+            _statusUtil.OnStatus "NUL"
         else
-            let span = SnapshotCharacterSpan(x.CaretPoint)
-            let text = span.GetText()
+            let text = point.GetText()
+            let cp = point.CodePoint
+            let str = sprintf "<%s> %d, %8x, %6o" text cp cp cp 
+            _statusUtil.OnStatus str
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.DisplayCharacterBytes() =
+        let point = SnapshotCodePoint(x.CaretPoint)
+        if point.IsEndPoint then
+            _commonOperations.Beep()
+        elif point.IsInsideLineBreak then
+            _statusUtil.OnStatus "NUL"
+        else
+            let text = point.GetText()
             let bytes = Encoding.UTF8.GetBytes(text)
             let builder = StringBuilder()
             for i = 0 to bytes.Length - 1 do
@@ -2515,6 +2530,7 @@ type internal CommandUtil
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion registerName)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count registerName
         | NormalCommand.DisplayCharacterBytes -> x.DisplayCharacterBytes()
+        | NormalCommand.DisplayCharacterCodePoint -> x.DisplayCharacterCodePoint()
         | NormalCommand.FilterLines -> x.FilterLines count
         | NormalCommand.FilterMotion motion -> x.RunWithMotion motion x.FilterMotion
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault

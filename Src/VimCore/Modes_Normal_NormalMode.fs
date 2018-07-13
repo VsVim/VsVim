@@ -54,6 +54,7 @@ type internal NormalMode
                 yield ("cc", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
+                yield ("ga", CommandFlags.Special, NormalCommand.DisplayCharacterCodePoint)
                 yield ("gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret false)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
                 yield ("gh", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.SelectCharacter, ModeArgument.None))

@@ -562,6 +562,9 @@ module internal CharUtil =
     let IsAlpha x = (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z')
     let IsLetter x = System.Char.IsLetter(x)
     let IsWordChar x = IsLetter x || x = '_'
+    let IsHighSurrogate x = System.Char.IsHighSurrogate(x)
+    let IsLowSurrogate x = System.Char.IsLowSurrogate(x)
+    let ConvertToCodePoint (highSurrogate: char) (lowSurrogate: char) = System.Char.ConvertToUtf32(highSurrogate, lowSurrogate)
     let IsUpper x = System.Char.IsUpper(x)
     let IsUpperLetter x = IsUpper x && IsLetter x
     let IsLower x = System.Char.IsLower(x)
