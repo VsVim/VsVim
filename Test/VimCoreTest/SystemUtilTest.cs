@@ -92,5 +92,17 @@ namespace Vim.UnitTest
             Assert.Equal(@"c:\foo", SystemUtil.ResolveVimPath(@"c:\foo", "."));
             Assert.Equal(@"c:\", SystemUtil.ResolveVimPath(@"c:\foo", ".."));
         }
+
+        [Fact]
+        public void StripPathPrefix()
+        {
+            Assert.Equal(@"C\foo.bar", SystemUtil.StripPathPrefix(@"C:\A\B\", "C:/A/B/C/foo.bar"));
+            Assert.Equal(@"C:\A\B\C1\D", SystemUtil.StripPathPrefix(@"C:\A\B\C\D", @"C:\A\B\C1\D"));
+            Assert.Equal(@"C:\A\B\C1\D\foo.bar", SystemUtil.StripPathPrefix(@"C:\A\B\C\D\", "C:/A/B/C1/D/foo.bar"));
+            Assert.Equal(@"C:\A\B\C\D", SystemUtil.StripPathPrefix(@"D:\A\B\C\D", "C:/A/B/C/D"));
+            Assert.Equal(@"C:\A\B\C\foo.bar", SystemUtil.StripPathPrefix("", "C:/A/B/C/foo.bar"));
+            Assert.Equal("", SystemUtil.StripPathPrefix("", ""));
+            Assert.Equal("foo.baz", SystemUtil.StripPathPrefix("foo.bar", "foo.baz"));
+        }
     }
 }

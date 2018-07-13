@@ -1673,7 +1673,7 @@ let x = 42
             public void Parse_ChangeDirectory_Empty()
             {
                 var command = ParseLineCommand("cd").AsChangeDirectory();
-                Assert.True(command.Item.IsNone());
+                Assert.True(command.Item.IsEmpty);
             }
 
             /// <summary>
@@ -1683,7 +1683,9 @@ let x = 42
             public void Parse_ChangeDirectory_Path()
             {
                 var command = ParseLineCommand("cd test.txt").AsChangeDirectory();
-                Assert.Equal("test.txt", command.Item.Value);
+                Assert.Equal(1, command.Item.Length);
+                Assert.True(command.Item.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
             }
 
             /// <summary>
@@ -1694,7 +1696,9 @@ let x = 42
             public void Parse_ChangeDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("cd! test.txt").AsChangeDirectory();
-                Assert.Equal("test.txt", command.Item.Value);
+                Assert.Equal(1, command.Item.Length);
+                Assert.True(command.Item.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
             }
 
             /// <summary>
@@ -1704,7 +1708,7 @@ let x = 42
             public void Parse_ChangeLocalDirectory_Empty()
             {
                 var command = ParseLineCommand("lcd").AsChangeLocalDirectory();
-                Assert.True(command.Item.IsNone());
+                Assert.True(command.Item.IsEmpty);
             }
 
             /// <summary>
@@ -1714,7 +1718,9 @@ let x = 42
             public void Parse_ChangeLocalDirectory_Path()
             {
                 var command = ParseLineCommand("lcd test.txt").AsChangeLocalDirectory();
-                Assert.Equal("test.txt", command.Item.Value);
+                Assert.Equal(1, command.Item.Length);
+                Assert.True(command.Item.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
             }
 
             /// <summary>
@@ -1725,7 +1731,9 @@ let x = 42
             public void Parse_ChangeLocalDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("lcd! test.txt").AsChangeLocalDirectory();
-                Assert.Equal("test.txt", command.Item.Value);
+                Assert.Equal(1, command.Item.Length);
+                Assert.True(command.Item.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
             }
 
             /// <summary>

@@ -384,23 +384,9 @@ type Parser
     member x.ParseRestOfLineAsFilePath() = 
         x.SkipBlanks()
         if _tokenizer.IsAtEndOfLine then
-            None
+            []
         else
-            if _tokenizer.CurrentChar = '#' then
-                _tokenizer.MoveNextChar()
-                let n =
-                    match _tokenizer.CurrentTokenKind with
-                    | TokenKind.Number n ->
-                        _tokenizer.MoveNextToken()
-                        n
-                    | _ -> 1
-                let fileHistory = _vimData.FileHistory
-                if n >= fileHistory.Count then
-                    None
-                else
-                    Some fileHistory.Items.[n]
-            else
-                x.ParseRestOfLine() |> Some
+            x.ParseRestOfLine() |> x.ParseDirectoryPath
 
     /// Move to the next line of the input.  This will move past blank lines and return true if 
     /// the result is a non-blank line which can be processed
@@ -1052,13 +1038,7 @@ type Parser
     member x.ParseChangeLocalDirectory() =
         // Bang is allowed but has no effect
         x.ParseBang() |> ignore
-
-        x.SkipBlanks()
-        let path = 
-            if _tokenizer.IsAtEndOfLine then
-                None
-            else
-                x.ParseRestOfLine() |> Some
+        let path = x.ParseRestOfLineAsFilePath()
         LineCommand.ChangeLocalDirectory path
 
     /// Parse out the :close command
@@ -1156,11 +1136,7 @@ type Parser
         let commandOption = x.ParseCommandOption()
 
         x.SkipBlanks()
-        let fileName =
-            match x.ParseRestOfLineAsFilePath() with
-            | None -> ""
-            | Some fileName -> fileName
-
+        let fileName = x.ParseRestOfLineAsFilePath()
         LineCommand.Edit (hasBang, fileOptionList, commandOption, fileName)
 
     /// Parse out the :function command
@@ -2641,6 +2617,82 @@ type Parser
                 rest [lineCommand]
         inner (fun all -> all) 
                 
+    member x.ParseFileNameModifiers : FileNameModifier list =
+        let rec inner (modifiers:FileNameModifier list) : FileNameModifier list =
+            match _tokenizer.CurrentTokenKind with
+            | TokenKind.Character ':' ->
+                let mark = _tokenizer.Mark
+                _tokenizer.MoveNextChar()
+                let c = _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+                match FileNameModifier.OfChar c with
+                | Some m ->
+                    match m with 
+                    | FileNameModifier.PathFull when modifiers.IsEmpty -> 
+                        // Note that 'p' is only valid when it is the first modifier -- violations end the modifier sequence
+                        inner (m::modifiers)
+                    | FileNameModifier.Tail when not (List.exists (fun m -> m = FileNameModifier.Root || m = FileNameModifier.Extension || m = FileNameModifier.Tail) modifiers) ->
+                        // 't' must precede 'r' and 'e' and cannot be repeated -- violations end the modifier sequence
+                        inner (m::modifiers)
+                    | FileNameModifier.Head when not (List.exists (fun m -> m = FileNameModifier.Root || m = FileNameModifier.Extension || m = FileNameModifier.Tail) modifiers) ->
+                        // 'h' should not follow 'e', 't', or 'r'
+                        inner (m::modifiers)
+                    | FileNameModifier.Root -> inner (m::modifiers)
+                    | FileNameModifier.Extension -> inner (m::modifiers)
+                    | _ -> 
+                        // Stop processing if we encounter an unrecognized modifier character. Unconsume the last character and yield the modifiers so far.
+                        _tokenizer.MoveToMark mark
+                        modifiers
+                | None ->
+                    _tokenizer.MoveToMark mark
+                    modifiers
+            | _ -> modifiers
+        
+        List.rev (inner List.Empty)
+    
+    member x.ParseDirectoryPath directoryPath : SymbolicPath =
+        _tokenizer.Reset directoryPath TokenizerFlags.None
+        let rec inner components =
+            if _tokenizer.IsAtEndOfLine then
+                components
+            else
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Character '\\' ->
+                    // As per :help cmdline-special, '\' only acts as an escape character when it immediately preceeds '%' or '#'.
+                    _tokenizer.MoveNextChar()
+                    match _tokenizer.CurrentTokenKind with
+                    | TokenKind.Character '#' 
+                    | TokenKind.Character '%' ->
+                        let c = _tokenizer.CurrentChar
+                        _tokenizer.MoveNextChar()
+                        inner (SymbolicPathComponent.Literal (StringUtil.OfChar c)::components)
+                    | _ -> 
+                        inner (SymbolicPathComponent.Literal "\\"::components)
+                | TokenKind.Character '%' ->
+                    _tokenizer.MoveNextChar()
+                    let modifiers = SymbolicPathComponent.CurrentFileName x.ParseFileNameModifiers
+                    inner (modifiers::components)
+                | TokenKind.Character '#' ->
+                    _tokenizer.MoveNextChar()
+                    let n =
+                        match _tokenizer.CurrentTokenKind with
+                        | TokenKind.Number n ->
+                            _tokenizer.MoveNextToken()
+                            n
+                        | _ -> 1
+                    let modifiers = x.ParseFileNameModifiers
+                    inner (SymbolicPathComponent.AlternateFileName (n, modifiers)::components)
+                | _ ->
+                    let literal = _tokenizer.CurrentToken.TokenText
+                    _tokenizer.MoveNextToken()
+                    let nextComponents = 
+                        match components with
+                        | SymbolicPathComponent.Literal lhead::tail -> (SymbolicPathComponent.Literal (lhead + literal))::tail
+                        | _ -> (SymbolicPathComponent.Literal literal::components)
+                    inner nextComponents
+        
+        List.rev (inner List.Empty)
+
 and ConditionalParser
     (
         _parser: Parser,

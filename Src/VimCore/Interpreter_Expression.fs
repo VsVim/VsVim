@@ -348,6 +348,48 @@ type FunctionDefinition = {
     IsScriptLocal: bool
 }
 
+/// See :help filename-modifiers
+[<RequireQualifiedAccess>]
+type FileNameModifier =
+    /// :e
+    | Extension
+    /// :h
+    | Head
+    /// :p
+    | PathFull
+    /// :r
+    | Root
+    /// :t
+    | Tail
+
+    member x.Char =
+        match x with
+        | Extension -> 'e'
+        | Head -> 'h'
+        | PathFull -> 'p'
+        | Root -> 'r'
+        | Tail -> 't'
+
+    static member OfChar c =
+        match c with
+        | 'e' -> Some FileNameModifier.Extension
+        | 'h' -> Some FileNameModifier.Head
+        | 'p' -> Some FileNameModifier.PathFull
+        | 'r' -> Some FileNameModifier.Root
+        | 't' -> Some FileNameModifier.Tail
+        | _ -> None
+
+[<RequireQualifiedAccess>]
+type SymbolicPathComponent =
+    /// '%' + modifiers
+    | CurrentFileName of FileNameModifier list
+    /// '#'[number] + modifiers
+    | AlternateFileName of int * FileNameModifier list
+    /// Literal text
+    | Literal of string
+
+type SymbolicPath = SymbolicPathComponent list
+
 /// Represents the values or the '+cmd' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type CommandOption =
@@ -417,10 +459,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Call of CallInfo
 
     /// Change the current directory to the given value
-    | ChangeDirectory of string option
+    | ChangeDirectory of SymbolicPath
 
     /// Change the current directory for the local window
-    | ChangeLocalDirectory of string option
+    | ChangeLocalDirectory of SymbolicPath
 
     /// Clear out the keyboard map for the given modes
     | ClearKeyMap of KeyRemapMode list * KeyMapArgument list
@@ -483,7 +525,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - The provided ++opt
     ///  - The provided +cmd 
     ///  - The provided file to edit 
-    | Edit of bool * FileOption list * CommandOption option * string
+    | Edit of bool * FileOption list * CommandOption option * SymbolicPath
 
     /// List recent files
     | Files
@@ -667,7 +709,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | TabOnly
 
     /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
-    | TabNew of string option
+    | TabNew of SymbolicPath
 
     /// The version command
     | Version

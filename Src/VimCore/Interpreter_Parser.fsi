@@ -34,5 +34,3 @@ type Parser =
     member ParseLineCommand: commandText: string -> LineCommand
 
     member ParseLineCommands: lines: string[] -> LineCommand list
-
-

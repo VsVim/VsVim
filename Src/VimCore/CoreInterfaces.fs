@@ -4372,6 +4372,12 @@ and IVimBufferData =
     /// The current directory for this particular window
     abstract CurrentDirectory: string option with get, set
 
+    /// The current (rooted) file path for this buffer
+    abstract CurrentFilePath : string option
+
+    /// The current file path for this buffer, relative to CurrentDirectory
+    abstract CurrentRelativeFilePath : string option
+    
     /// This is the caret point at the start of the most recent visual mode session. It's
     /// the actual location of the caret vs. the anchor point.
     abstract VisualCaretStartPoint: ITrackingPoint option with get, set

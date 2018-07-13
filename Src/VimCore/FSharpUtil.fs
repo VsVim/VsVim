@@ -1038,3 +1038,25 @@ module internal SystemUtil =
         | _ -> 
             let text = ResolvePath text
             EnsureRooted currentDirectory text
+
+    /// Remove the prefix from the path.
+    /// Note that directory separator chars are not compared, just the path directory components.
+    /// The relative path returned is normalized to use the standard directory separator char.
+    /// 
+    /// E.g. ("C:\A\B\C", "C:/A/B/C/D/foo.bar") -> ("D\foo.bar")
+    /// E.g. ("C:\A\B\C", "C:/A/B/C1/D/foo.bar") -> ("C:\A\B\C1\D\foo.bar")
+    let StripPathPrefix prefix path =
+        let rec stripPrefix (p1: string list) (p2: string list) = 
+            if p1.Length = 0 || p2.Length = 0 || not (StringComparer.OrdinalIgnoreCase.Equals(p1.[0], p2.[0])) then
+                p1, p2
+            else
+                stripPrefix (List.tail p1) (List.tail p2)
+        let splitPath (path: string) =
+            path.Split([| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |], StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+        let sep = System.String(Path.DirectorySeparatorChar, 1)
+        let pathComponents = (splitPath path)
+        let remaining, pathPrefix = stripPrefix (splitPath prefix) pathComponents 
+        if remaining.IsEmpty then
+            String.concat sep pathPrefix
+        else
+            String.concat sep pathComponents

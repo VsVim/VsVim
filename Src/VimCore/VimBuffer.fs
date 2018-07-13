@@ -24,10 +24,20 @@ type VimBufferData
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
 
+    member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
+    member x.CurrentRelativeFilePath : string option =
+        match x.CurrentFilePath with
+        | None -> None
+        | Some filePath ->
+            let cd = match _currentDirectory with Some s -> s | None -> _vimTextBuffer.Vim.VimData.CurrentDirectory
+            SystemUtil.StripPathPrefix cd filePath |> Some
+
     interface IVimBufferData with
         member x.CurrentDirectory 
             with get() = _currentDirectory
             and set value = _currentDirectory <- value
+        member x.CurrentFilePath = x.CurrentFilePath
+        member x.CurrentRelativeFilePath = x.CurrentRelativeFilePath
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value

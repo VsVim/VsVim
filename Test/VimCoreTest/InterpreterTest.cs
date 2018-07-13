@@ -11,6 +11,7 @@ using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
+using Xunit.Sdk;
 
 namespace Vim.UnitTest
 {
@@ -2695,6 +2696,152 @@ namespace Vim.UnitTest
                 VimHost.TabCount = 3;
                 ParseAndRun("tablast");
                 Assert.Equal(2, VimHost.GoToTabData);
+            }
+        }
+
+        public sealed class FilenameModifiersTest
+        {
+            private MockRepository _factory;
+            private Mock<IVimBuffer> _vimBuffer;
+            private Mock<ICommonOperations> _commonOperations;
+            private Mock<IFoldManager> _foldManager;
+            private Mock<IFileSystem> _fileSystem;
+            private Mock<IBufferTrackingService> _bufferTrackingService;
+            private Mock<IVimGlobalSettings> _globalSettings;
+            private Mock<IVimData> _vimData;
+            private Mock<IVimBufferData> _vimBufferData;
+            private VimInterpreter _interpreter;
+            private Parser _parser;
+            private HistoryList _fileHistory;
+            private Mock<IVim> _vim;
+
+            [WpfFact]
+            public void VimDocExamples()
+            {
+                // http://vimdoc.sourceforge.net/htmldoc/cmdline.html#filename-modifiers
+                Create();
+
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("src/version.c");
+                TestInterpretation("/home/mool/vim/src/version.c", "%:p");
+                TestInterpretation("src", "%:h");
+                TestInterpretation("/home/mool/vim/src", "%:p:h");
+                TestInterpretation("/home/mool/vim", "%:p:h:h");
+                TestInterpretation("version.c", "%:t");
+                TestInterpretation("version.c", "%:p:t");
+                TestInterpretation("src/version", "%:r");
+                TestInterpretation("/home/mool/vim/src/version", "%:p:r");
+                TestInterpretation("version", "%:t:r");
+                TestInterpretation("c", "%:e");
+
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns("/home/mool/vim/src/version.c.gz");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("src/version.c.gz");
+                TestInterpretation("/home/mool/vim/src/version.c.gz", "%:p");
+                TestInterpretation("gz", "%:e");
+                TestInterpretation("c.gz", "%:e:e");
+                TestInterpretation("c.gz", "%:e:e:e");
+                TestInterpretation("c", "%:e:e:r");
+                TestInterpretation("src/version.c", "%:r");
+                TestInterpretation("c", "%:r:e");
+                TestInterpretation("src/version", "%:r:r");
+                TestInterpretation("src/version", "%:r:r:r");
+            }
+            
+            [WpfFact]
+            public void InvalidModifiers()
+            {
+                Create();
+
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("test.abc.xyz");
+
+                TestInterpretation("test.abc.xyzx", "%x");
+                TestInterpretation("test.abc.xyz:", "%:");
+                TestInterpretation("test.abc.xyz:x", "%:x");
+                TestInterpretation("test.abc.xyz:t", "%:t:t");
+                TestInterpretation("xyz:h:r", "%:e:h:r");
+                TestInterpretation(@"c:\A\B\C\D\test.abc.xyz:p", "%:p:p");
+            }
+
+            [WpfFact]
+            public void ExtensionOnlyFilename()
+            {
+                Create();
+                
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns(".vimrc");
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\.vimrc");
+
+                TestInterpretation(".vimrc", "%:r");
+                TestInterpretation("", "%:e");
+            }
+
+            [WpfFact]
+            public void EscapeSequence()
+            {
+                Create();
+
+                _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns("test.abc.xyz");
+                _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\test.abc.xyz");
+
+                TestInterpretation(@"fooc:\A\B\C\bar\%test\", @"foo%:p:h:h\bar\\%%:r:r\");
+            }
+
+            [WpfFact]
+            public void AlternateFilenameTest()
+            {
+                Create();
+
+                var cd = @"c:\A\B";
+                _vimBuffer.SetupGet(x => x.CurrentDirectory).Returns(cd);
+
+                _fileHistory.Add(@"c:\A\B\hist3.txt");
+                _fileHistory.Add(@"c:\C\hist2.txt");
+                _fileHistory.Add(@"c:\A\hist1.txt");
+
+                TestInterpretation(@"c:\A\hist1.txt", "#0");
+                TestInterpretation(@"c:\C\hist2.txt", "#");
+                TestInterpretation(@"c:\C\hist2.txt", "#1");
+                TestInterpretation("hist3.txt", "#2");
+                TestInterpretation(@"c:\A\B\hist3.txt", "#2:p");
+            }
+
+            private void TestInterpretation(string expected, string symbolicPath)
+            {
+                AssertPathEquivalent(expected, _interpreter.InterpretSymbolicPath(_parser.ParseDirectoryPath(symbolicPath)));
+            }
+            
+            private void Create()
+            {
+                _factory = new MockRepository(MockBehavior.Default)
+                {
+                    DefaultValue = DefaultValue.Mock
+                };
+                _vimBuffer = _factory.Create<IVimBuffer>();
+                _commonOperations = _factory.Create<ICommonOperations>();
+                _foldManager = _factory.Create<IFoldManager>();
+                _fileSystem = _factory.Create<IFileSystem>();
+                _bufferTrackingService = _factory.Create<IBufferTrackingService>();
+                _globalSettings = _factory.Create<IVimGlobalSettings>();
+                _vim = _factory.Create<IVim>();
+                _vimData = _factory.Create<IVimData>();
+                _vimBufferData = _factory.Create<IVimBufferData>();
+                _vimBuffer.SetupGet(x => x.VimBufferData).Returns(_vimBufferData.Object);
+                _vimBufferData.SetupGet(x => x.Vim).Returns(_vim.Object);
+                _vim.SetupGet(x => x.VimData).Returns(_vimData.Object);
+                _fileHistory = new HistoryList();
+                _vimData.SetupGet(x => x.FileHistory).Returns(_fileHistory);
+                _parser = new Parser(_globalSettings.Object, _vimData.Object);
+                _interpreter = new VimInterpreter(_vimBuffer.Object, _commonOperations.Object, _foldManager.Object, _fileSystem.Object, _bufferTrackingService.Object);
+            }
+
+            private static void AssertPathEquivalent(string expected, string actual)
+            {
+                var aParts = expected.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                var bParts = actual.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                if(aParts.Length == bParts.Length)
+                    if (Enumerable.Range(0, aParts.Length).All(i => StringComparer.OrdinalIgnoreCase.Equals(aParts[i], bParts[i])))
+                        return;
+                throw new XunitException($"Paths are not equivalent: Expected '{expected}', Actual '{actual}'");
             }
         }
     }
