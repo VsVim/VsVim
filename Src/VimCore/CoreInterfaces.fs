@@ -1607,6 +1607,16 @@ type CharacterSpan =
         else
             SnapshotPoint(x.Snapshot, endPoint.Position - 1) |> Some
 
+    /// The last virtual point included in the CharacterSpan
+    member x.VirtualLast =
+        let endPoint: VirtualSnapshotPoint = x.VirtualEnd
+        if endPoint.Position = x.Start then
+            None
+        else
+            endPoint
+            |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
+            |> Some
+
     /// Get the End point of the Character Span.
     member x.End =
         let lastLine = x.LastLine
@@ -1633,7 +1643,7 @@ type CharacterSpan =
 
     /// Get the End point of the Character Span.
     member x.VirtualEnd =
-        if x._useVirtualSpace then
+        if x.UseVirtualSpace then
             let lastLine = x.LastLine
             let offset =
                 if x._lineCount = 1 then
@@ -1657,7 +1667,9 @@ type CharacterSpan =
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
     member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
-        if x.End.Position >= x.LastLine.End.Position then
+        if x.UseVirtualSpace then
+            x
+        elif x.End.Position >= x.LastLine.End.Position then
             let endPoint = x.LastLine.EndIncludingLineBreak
             CharacterSpan(x.Start, endPoint)
         else
@@ -2166,8 +2178,13 @@ type VisualSelection =
                     x
                 else
                     // The span decreases by a single character in exclusive
-                    let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                    let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
+                    let characterSpan =
+                        if characterSpan.UseVirtualSpace then
+                            let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
+                            CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
+                        else
+                            let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
+                            CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
                     VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected

@@ -81,7 +81,8 @@ type internal SelectionTracker
                     Some anchorPoint
             _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
 
-            let visualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let visualSelection = VisualSelection.CreateForVirtualSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop useVirtualSpace
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
