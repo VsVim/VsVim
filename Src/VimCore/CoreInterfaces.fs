@@ -1675,7 +1675,11 @@ type CharacterSpan =
         else
             x
 
-    override x.ToString() = x.Span.ToString()
+    override x.ToString() =
+        if x.UseVirtualSpace then
+            x.VirtualSpan.ToString()
+        else
+            x.Span.ToString()
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
