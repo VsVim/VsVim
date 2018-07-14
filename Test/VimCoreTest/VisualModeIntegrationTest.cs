@@ -839,6 +839,17 @@ namespace Vim.UnitTest
                 Assert.Equal(point1, _textView.Selection.Start);
                 Assert.Equal(point2, _textView.Selection.End);
             }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(1, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
         }
 
         public sealed class VirtualExclusiveSelection : VisualModeIntegrationTest
@@ -868,6 +879,17 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("vl");
                 var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
                 var point2 = _textBuffer.GetVirtualPointInLine(0, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4); // or is (1, 0) better?
                 Assert.Equal(point1, _textView.Selection.Start);
                 Assert.Equal(point2, _textView.Selection.End);
             }
