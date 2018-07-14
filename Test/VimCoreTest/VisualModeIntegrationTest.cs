@@ -809,6 +809,70 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class VirtualInclusiveSelection : VisualModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.Selection = "inclusive";
+                _globalSettings.VirtualEdit = "all";
+            }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightOnEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("vl");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 2);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+        }
+
+        public sealed class VirtualExclusiveSelection : VisualModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.VirtualEdit = "all";
+            }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 0);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightOnEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("vl");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+        }
+
         public abstract class BlockInsertTest : VisualModeIntegrationTest
         {
             /// <summary>
