@@ -52,13 +52,14 @@ type internal SelectionTracker
         if x.IsRunning then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _textChangedHandler.Add()
 
+        let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
         let selection = _textView.Selection
         if selection.IsEmpty then
 
             // Set the selection.  If this is line mode we need to select the entire line 
             // here
             let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView
-            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind
+            let visualSelection = VisualSelection.CreateInitial _visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind useVirtualSpace
             visualSelection.VisualSpan.Select _textView SearchPath.Forward
 
             _anchorPoint <- Some caretPoint
@@ -81,7 +82,6 @@ type internal SelectionTracker
                     Some anchorPoint
             _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
 
-            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
             let visualSelection = VisualSelection.CreateForVirtualSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop useVirtualSpace
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
 

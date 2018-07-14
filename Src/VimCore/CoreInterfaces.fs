@@ -2432,16 +2432,21 @@ type VisualSelection =
 
     /// Create the initial Visual Selection information for the specified Kind started at 
     /// the specified point
-    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind =
+    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind useVirtualSpace =
         let caretPoint = caretVirtualPoint.Position
         match visualKind with
         | VisualKind.Character ->
             let characterSpan = 
                 let endPoint = 
                     match selectionKind with
-                    | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent caretPoint
-                    | SelectionKind.Exclusive -> caretPoint
-                CharacterSpan(caretPoint, endPoint)
+                    | SelectionKind.Inclusive ->
+                        if useVirtualSpace then
+                            VirtualSnapshotPointUtil.AddOneOnSameLine caretVirtualPoint
+                        else
+                            SnapshotPointUtil.AddOneOrCurrent caretPoint
+                            |> VirtualSnapshotPointUtil.OfPoint
+                    | SelectionKind.Exclusive -> caretVirtualPoint
+                CharacterSpan(caretVirtualPoint, endPoint, useVirtualSpace)
             VisualSelection.Character (characterSpan, SearchPath.Forward)
         | VisualKind.Line ->
             let lineRange = 

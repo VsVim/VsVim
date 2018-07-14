@@ -503,7 +503,7 @@ namespace Vim.UnitTest
                 public void SelectionExclusive()
                 {
                     Create("hello world");
-                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Exclusive);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Exclusive, false);
                     Assert.Equal(0, visualSelection.AsCharacter().Item1.Length);
                 }
 
@@ -511,8 +511,30 @@ namespace Vim.UnitTest
                 public void SelectionInclusive()
                 {
                     Create("hello world");
-                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Inclusive);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character, _textBuffer.GetVirtualPoint(0), 4, SelectionKind.Inclusive, false);
                     Assert.Equal(1, visualSelection.AsCharacter().Item1.Length);
+                }
+
+                [WpfFact]
+                public void VirtualSelectionExclusive()
+                {
+                    Create("hello world");
+                    var virtualPoint = _textBuffer.GetVirtualPointInLine(0, 20);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character,
+                        virtualPoint, 4, SelectionKind.Exclusive, true);
+                    Assert.Equal(virtualPoint, visualSelection.AsCharacter().Item1.VirtualStart);
+                    Assert.Equal(0, visualSelection.AsCharacter().Item1.VirtualLength);
+                }
+
+                [WpfFact]
+                public void VirtualSelectionInclusive()
+                {
+                    Create("hello world");
+                    var virtualPoint = _textBuffer.GetVirtualPointInLine(0, 20);
+                    var visualSelection = VisualSelection.CreateInitial(VisualKind.Character,
+                        virtualPoint, 4, SelectionKind.Inclusive, true);
+                    Assert.Equal(virtualPoint, visualSelection.AsCharacter().Item1.VirtualStart);
+                    Assert.Equal(1, visualSelection.AsCharacter().Item1.VirtualLength);
                 }
             }
         }
