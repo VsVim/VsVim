@@ -236,17 +236,17 @@ type internal InsertMode
             [
                 ("<Del>", InsertCommand.Delete, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<End>", InsertCommand.MoveCaretToEndOfLine, CommandFlags.Movement)
-                ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Enter>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<Left>", InsertCommand.MoveCaretWithArrow Direction.Left, CommandFlags.Movement)
                 ("<Down>", InsertCommand.MoveCaret Direction.Down, CommandFlags.Movement)
                 ("<Right>", InsertCommand.MoveCaretWithArrow Direction.Right, CommandFlags.Movement)
-                ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
-                ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
                 ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-                ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
-                ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
+                ("<C-m>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<C-t>", InsertCommand.ShiftLineRight, CommandFlags.Repeatable)
                 ("<C-y>", InsertCommand.InsertCharacterAboveCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-v>", InsertCommand.Paste, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
@@ -536,6 +536,25 @@ type internal InsertMode
         // edit data for the session
         _textChangeTracker.CompleteChange()
 
+        // If applicable, use the effective change for the combined edit.
+        if
+            not _globalSettings.AtomicInsert
+            && _textChangeTracker.IsEffectiveChangeInsert
+        then
+            match _textChangeTracker.EffectiveChange with
+            | Some span when span.Length <> 0 ->
+
+                // Override the piecewise combined edit command with
+                // the effective change which is a simple insertion.
+                span
+                |> SnapshotSpanUtil.GetText
+                |> TextChange.Insert
+                |> InsertCommand.OfTextChange
+                |> Some
+                |> x.ChangeCombinedEditCommand
+            | _ ->
+                ()
+
         try
             match _sessionData.InsertKind, _sessionData.CombinedEditCommand with
             | InsertKind.Normal, _ -> ()
@@ -720,6 +739,11 @@ type internal InsertMode
         // existing edit then we save it and send it out as a batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
+        let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
+
+        if isContextSensitive then
+            _textChangeTracker.StopTrackingEffectiveChange()
+
         if isEdit || (isMovement && _globalSettings.AtomicInsert) then
 
             // If it's an edit then combine it with the existing command and batch them 
@@ -764,6 +788,7 @@ type internal InsertMode
         | None -> ()
         | Some transaction ->
             transaction.Complete()
+            _textChangeTracker.StartTrackingEffectiveChange()
             let transaction = x.CreateLinkedUndoTransaction name
             _sessionData <- { _sessionData with Transaction = Some transaction }
 
@@ -812,15 +837,16 @@ type internal InsertMode
         let func (text: string) = 
             let data = 
                 if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
+                    let flags = CommandFlags.Repeatable ||| CommandFlags.ContextSensitive
                     let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
-                    Some (InsertCommand.DeleteAllIndent, keyInputSet, "0")
+                    Some (InsertCommand.DeleteAllIndent, flags, keyInputSet, "0")
                 else
                     None
 
             match data with
             | None ->
                 None
-            | Some (command, keyInputSet, text) ->
+            | Some (command, flags, keyInputSet, text) ->
 
                 // First step is to delete the portion of the current change which matches up with
                 // our command.
@@ -831,7 +857,7 @@ type internal InsertMode
                     _textBuffer.Delete(span.Span) |> ignore
 
                 // Now run the command
-                x.RunInsertCommand command keyInputSet CommandFlags.Repeatable |> Some
+                x.RunInsertCommand command keyInputSet flags |> Some
 
         match _sessionData.CombinedEditCommand with
         | None -> None
@@ -993,8 +1019,26 @@ type internal InsertMode
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             x.ChangeCombinedEditCommand command
         else
-            x.BreakUndoSequence "Insert after motion" 
-            x.ChangeCombinedEditCommand None
+
+            // Don't break the undo sequence if the caret was moved within the
+            // active insertion region of the effective change. This allows code
+            // assistants to perform a variety of edits without breaking the undo
+            // sequence. This is not strictly vim-compatible, but it is a minor
+            // point and until we can tell the difference between the user using
+            // the mouse and the caret being moved programmatically, we can bend
+            // the rules a little. In any case, we still break the undo sequence
+            // if the mouse is moved before or after the active insertion region,
+            // which is the main intent of the policy.
+            let breakUndoSequence =
+                match _textChangeTracker.EffectiveChange with
+                | Some span ->
+                    span.Contains(args.NewPosition.BufferPosition) |> not
+                | None ->
+                    true
+
+            if breakUndoSequence then
+                x.BreakUndoSequence "Insert after motion"
+                x.ChangeCombinedEditCommand None
 
         // This is now a separate insert.
         x.ResetInsertPoint()
@@ -1094,6 +1138,7 @@ type internal InsertMode
         // When starting insert mode we want to track the edits to the IVimBuffer as a 
         // text change
         _textChangeTracker.TrackCurrentChange <- true
+        _textChangeTracker.StartTrackingEffectiveChange()
 
         // Set up transaction and kind of insert
         let transaction, insertKind =
@@ -1151,6 +1196,7 @@ type internal InsertMode
         // When leaving insert mode we complete the current change
         _textChangeTracker.CompleteChange()
         _textChangeTracker.TrackCurrentChange <- false
+        _textChangeTracker.StopTrackingEffectiveChange()
         _textChangeTracker.SuppressLastChangeMarks <- false
 
         // Escape might have moved the caret back, but it recorded the correct value.

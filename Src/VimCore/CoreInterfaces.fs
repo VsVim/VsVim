@@ -2479,6 +2479,9 @@ type CommandFlags =
     /// hence acts with them in a repeat
     | InsertEdit = 0x2000
 
+    /// Wether the command depends on the context, e.g. a tab insertion
+    | ContextSensitive = 0x4000
+
 /// Data about the run of a given MotionResult
 type MotionData = {
 

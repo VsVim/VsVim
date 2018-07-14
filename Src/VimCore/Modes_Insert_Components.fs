@@ -29,9 +29,40 @@ type internal ITextChangeTracker =
     /// Clear out the current change without completing it
     abstract ClearChange: unit -> unit
 
+    /// Start tracking the effective change
+    abstract StartTrackingEffectiveChange: unit -> unit
+
+    /// Whether the effective change is a simple insert
+    abstract IsEffectiveChangeInsert: bool
+
+    /// A span representing the active insert region of the effective change
+    abstract EffectiveChange: SnapshotSpan option
+
+    /// Stop tracking the effective change
+    abstract StopTrackingEffectiveChange: unit -> unit
+
     /// Raised when a change is completed
     [<CLIEvent>]
     abstract ChangeCompleted: IDelegateEvent<System.EventHandler<TextChangeEventArgs>>
+
+/// Data relating to an effective change
+type EffectiveChangeData = {
+
+    // The current caret position
+    CaretPosition: CaretPosition
+
+    /// The left edge of the active insert region
+    LeftEdge: int
+
+    /// The right edge of the active insert region
+    RightEdge: int
+
+    /// The total number of characters deleted to the left of the active insert region
+    LeftDeletions: int
+
+    /// The total number of character deleted to the right of the active insert region
+    RightDeletions: int
+}
 
 /// Used to track changes to an individual IVimBuffer
 type internal TextChangeTracker
@@ -56,6 +87,8 @@ type internal TextChangeTracker
     /// Insert mode turns this off and manages the marks itself
     let mutable _suppressLastChangeMarks = false
 
+    let mutable (_effectiveChangeData: EffectiveChangeData option) = None
+
     do
         // Listen to text buffer change events in order to track edits.  Don't respond to changes
         // while disabled though
@@ -63,6 +96,12 @@ type internal TextChangeTracker
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
+        // Listen to caret position changed events.
+        _textView.Caret.PositionChanged
+        |> Observable.subscribe (fun args -> this.OnPositionChanged args)
+        |> _bag.Add
+
+        // Dispose handlers when the text view is closed.
         _textView.Closed 
         |> Event.add (fun _ -> _bag.DisposeAll())
 
@@ -92,6 +131,40 @@ type internal TextChangeTracker
     /// Clear out the current change without completing it
     member x.ClearChange() =
         _currentTextChange <- None
+
+    /// Start tracking the effective change
+    member x.StartTrackingEffectiveChange() =
+        let caretPosition = _textView.Caret.Position
+        let position = caretPosition.BufferPosition.Position
+        _effectiveChangeData <-
+            Some {
+                CaretPosition = caretPosition;
+                LeftEdge = position;
+                RightEdge = position;
+                LeftDeletions = 0;
+                RightDeletions = 0;
+            }
+
+    /// Whether the effective change is a simple insert
+    member x.IsEffectiveChangeInsert =
+        match _effectiveChangeData with
+        | Some data ->
+            data.LeftDeletions = 0 && data.RightDeletions = 0
+        | None ->
+            false
+
+    /// A span representing the active insert region of the effective change
+    member x.EffectiveChange =
+        match _effectiveChangeData with
+        | Some data ->
+            SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
+            |> Some
+        | None ->
+            None
+
+    /// Stop tracking the effective change
+    member x.StopTrackingEffectiveChange() =
+        _effectiveChangeData <- None
 
     /// Convert the ITextChange value into a TextChange instance.  This will not handle any special 
     /// edit patterns and simply does a raw adjustment
@@ -142,7 +215,18 @@ type internal TextChangeTracker
         if x.TrackCurrentChange then
             x.UpdateCurrentChange args
 
+        if _effectiveChangeData.IsSome then
+            x.UpdateEffectiveChange args
+
         x.UpdateMarks args
+
+    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) =
+        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
+        match _effectiveChangeData with
+        | Some data ->
+            _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }
+        | None ->
+            ()
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -215,6 +299,85 @@ type internal TextChangeTracker
             x.CompleteChange()
             _currentTextChange <- Some (newTextChange, newChange)
 
+    member x.UpdateEffectiveChange (args: TextContentChangedEventArgs) =
+
+        VimTrace.TraceInfo("OnTextChange: {0}", args.Changes.Count)
+        for i = 0 to args.Changes.Count - 1 do
+            VimTrace.TraceInfo("OnTextChange: change {0}", i)
+            let change = args.Changes.[i]
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldText, change.NewText)
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
+            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
+
+        match args.Changes.Count, _effectiveChangeData with
+        | 1, Some data ->
+            let mutable leftEdge = data.LeftEdge
+            let mutable rightEdge = data.RightEdge
+            let mutable leftDeletions = data.LeftDeletions
+            let mutable rightDeletions = data.RightDeletions
+
+            let change = args.Changes.[0]
+            let virtualSpaces = data.CaretPosition.VirtualSpaces
+            if
+                virtualSpaces > 0
+                && change.OldSpan.Start = leftEdge
+                && change.OldSpan.End = rightEdge
+                && change.NewSpan.Start = leftEdge
+                && change.NewText.Length >= virtualSpaces
+                && change.NewText.Substring(0, virtualSpaces) |> StringUtil.IsBlanks
+            then
+
+                // Caret was moved from virtual space to non-virtual space.
+                leftEdge <- leftEdge + virtualSpaces
+                rightEdge <- change.NewSpan.End
+
+            elif change.OldSpan.End < leftEdge then
+
+                // Change entirely precedes the active region so shift the edges by the delta.
+                leftEdge <- leftEdge + change.Delta
+                rightEdge <- rightEdge + change.Delta
+
+            elif change.OldSpan.Start > rightEdge then
+
+                // Change entirely follows the active region, so we can ignore it.
+                ()
+
+            elif change.OldSpan.Start >= leftEdge && change.OldSpan.End <= rightEdge then
+
+                // Change falls completely within the active region so shift the right edge.
+                rightEdge <- rightEdge + change.Delta
+
+            else
+
+                // Change is neither a subsest nor disjoint with
+                // the active region. Handle overlap.
+
+                // Check for deletions to the left.
+                if change.OldSpan.Start < leftEdge then
+                    let deleted = leftEdge - change.OldSpan.Start
+                    leftEdge <- change.NewSpan.Start
+                    leftDeletions <- leftDeletions + deleted
+
+                // Check for deletions to the right.
+                if change.OldSpan.End > rightEdge then
+                    let deleted = change.OldSpan.End - rightEdge
+                    rightEdge <- change.NewSpan.End
+                    rightDeletions <- rightDeletions + deleted
+                else
+                    rightEdge <- rightEdge + change.Delta
+
+            _effectiveChangeData <-
+                Some {
+                    CaretPosition = _textView.Caret.Position;
+                    LeftEdge = leftEdge;
+                    RightEdge = rightEdge;
+                    LeftDeletions = leftDeletions;
+                    RightDeletions = rightDeletions;
+                }
+
+        | _ ->
+            ()
+
     static member GetTextChangeTracker (bufferData: IVimBufferData) (commonOperationsFactory: ICommonOperationsFactory) =
         let textView = bufferData.TextView
         textView.Properties.GetOrCreateSingletonProperty(Key, (fun () -> 
@@ -232,5 +395,9 @@ type internal TextChangeTracker
         member x.CurrentChange = x.CurrentChange
         member x.CompleteChange () = x.CompleteChange ()
         member x.ClearChange () = x.ClearChange ()
+        member x.StartTrackingEffectiveChange () = x.StartTrackingEffectiveChange ()
+        member x.IsEffectiveChangeInsert = x.IsEffectiveChangeInsert
+        member x.EffectiveChange = x.EffectiveChange
+        member x.StopTrackingEffectiveChange () = x.StopTrackingEffectiveChange ()
         [<CLIEvent>]
         member x.ChangeCompleted = _changeCompletedEvent.Publish
