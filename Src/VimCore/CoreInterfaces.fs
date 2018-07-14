@@ -1610,7 +1610,7 @@ type CharacterSpan =
     /// The last virtual point included in the CharacterSpan
     member x.VirtualLast =
         let endPoint: VirtualSnapshotPoint = x.VirtualEnd
-        if endPoint.Position = x.Start then
+        if endPoint = x.VirtualStart then
             None
         else
             endPoint
@@ -2178,17 +2178,16 @@ type VisualSelection =
         | SelectionKind.Exclusive -> 
             match x with
             | Character (characterSpan, path) -> 
-                if SnapshotPointUtil.IsEndPoint characterSpan.End then
+                if
+                    not characterSpan.UseVirtualSpace
+                    && SnapshotPointUtil.IsEndPoint characterSpan.End
+                then
                     x
                 else
                     // The span decreases by a single character in exclusive
                     let characterSpan =
-                        if characterSpan.UseVirtualSpace then
-                            let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
-                            CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
-                        else
-                            let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
-                            CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
+                        let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
+                        CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
                     VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected
