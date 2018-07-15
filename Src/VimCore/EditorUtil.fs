@@ -2128,6 +2128,11 @@ module VirtualSnapshotSpanUtil =
         let startLine, lastLine = GetStartAndLastLine span
         startLine.LineNumber < lastLine.LineNumber
 
+    let GetText (span: VirtualSnapshotSpan) =
+        let spanText = SnapshotSpanUtil.GetText span.SnapshotSpan
+        let virtualSpaces = StringUtil.RepeatChar span.End.VirtualSpaces ' '
+        spanText + virtualSpaces
+
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context
 module SnapshotLineRangeUtil = 

@@ -3409,7 +3409,14 @@ type internal CommandUtil
 
     /// Yank the selection into the specified register
     member x.YankSelection registerName (visualSpan: VisualSpan) =
-        let data = StringData.OfEditSpan visualSpan.EditSpan
+        let data =
+            match visualSpan with
+            | VisualSpan.Character characterSpan when characterSpan.UseVirtualSpace ->
+                characterSpan.VirtualSpan
+                |> VirtualSnapshotSpanUtil.GetText
+                |> StringData.Simple
+            | _ ->
+                StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
         _commonOperations.RecordLastYank visualSpan.EditSpan.OverarchingSpan

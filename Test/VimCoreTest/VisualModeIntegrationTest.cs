@@ -3219,6 +3219,29 @@ namespace Vim.UnitTest
                 }
             }
 
+            public sealed class VirtualCharacterTest : YankSelectionTest
+            {
+                [WpfFact]
+                public void InclusiveVirtualSpaces()
+                {
+                    Create("cat", "");
+                    _globalSettings.VirtualEdit = "all";
+                    _globalSettings.Selection = "inclusive";
+                    _vimBuffer.Process("v6ly");
+                    Assert.Equal("cat    ", UnnamedRegister.StringValue);
+                }
+
+                [WpfFact]
+                public void ExclusiveVirtualSpaces()
+                {
+                    Create("cat", "");
+                    _globalSettings.VirtualEdit = "all";
+                    _globalSettings.Selection = "exclusive";
+                    _vimBuffer.Process("v6ly");
+                    Assert.Equal("cat   ", UnnamedRegister.StringValue);
+                }
+            }
+
             public sealed class LineTest : YankSelectionTest
             {
                 /// <summary>
