@@ -807,6 +807,17 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("vi(");
                 Assert.Equal(new SnapshotSpan(caretPoint, 0), _textView.GetSelectionSpan());
             }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 0);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
         }
 
         public sealed class VirtualInclusiveSelection : VisualModeIntegrationTest
