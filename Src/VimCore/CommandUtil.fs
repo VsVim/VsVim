@@ -1447,23 +1447,30 @@ type internal CommandUtil
         let before = x.CaretPoint
 
         // If not exact, adjust point to first non-blank or start.
-        let adjustPointForExact point =
+        let adjustPointForExact (virtualPoint: VirtualSnapshotPoint) =
+            let point = virtualPoint.Position
             if exact then
-                if not _globalSettings.IsVirtualEditOneMore
-                    && not (SnapshotPointUtil.IsStartOfLine point)
-                    && SnapshotPointUtil.IsInsideLineBreak point then
-                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
+                if _vimTextBuffer.UseVirtualSpace then
+                    virtualPoint
                 else
-                    point
+                    if
+                        not _globalSettings.IsVirtualEditOneMore
+                        && not (SnapshotPointUtil.IsStartOfLine point)
+                        && SnapshotPointUtil.IsInsideLineBreak point then
+                        SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
+                    else
+                        point
+                    |> VirtualSnapshotPointUtil.OfPoint
             else
                 point
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> VirtualSnapshotPointUtil.OfPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
-            let point = adjustPointForExact point.Position
-            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+            let point = adjustPointForExact point
+            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1497,8 +1504,7 @@ type internal CommandUtil
                     jumpLocal virtualPoint
                 else
                     if
-                        adjustPointForExact virtualPoint.Position
-                        |> VirtualSnapshotPointUtil.OfPoint
+                        adjustPointForExact virtualPoint
                         |> _commonOperations.NavigateToPoint
                     then
                         _jumpList.Add before
@@ -2680,7 +2686,7 @@ type internal CommandUtil
             _commonOperations.Beep()
             CommandResult.Error
         | Some mark ->
-            let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
+            let line, column = VirtualSnapshotPointUtil.GetLineColumn x.CaretVirtualPoint
             if not (_markMap.SetMark mark _vimBufferData line column) then
                 // Mark set can fail if the user chooses a readonly mark like '<'
                 _commonOperations.Beep()
@@ -2688,7 +2694,7 @@ type internal CommandUtil
 
     /// Get the current number of spaces to caret we are maintaining
     member x.GetSpacesToCaret () =
-        let spacesToCaret = _commonOperations.GetSpacesToPoint x.CaretPoint
+        let spacesToCaret = _commonOperations.GetSpacesToVirtualPoint x.CaretVirtualPoint
         match _commonOperations.MaintainCaretColumn with
         | MaintainCaretColumn.None -> spacesToCaret
         | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret

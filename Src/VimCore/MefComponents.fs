@@ -233,7 +233,7 @@ type internal TrackingVisualSpan =
             // in the span and the length of the final line
             let textBuffer = characterSpan.Snapshot.TextBuffer
             let trackingLineColumn = 
-                let line, column = SnapshotPointUtil.GetLineColumn characterSpan.Start
+                let line, column = VirtualSnapshotPointUtil.GetLineColumn characterSpan.VirtualStart
                 bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
 
             TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineLength)
@@ -251,7 +251,7 @@ type internal TrackingVisualSpan =
             // Setup an ITrackLineColumn at the top left of the block selection
             let trackingLineColumn =
                 let textBuffer = blockSpan.TextBuffer
-                let lineNumber, column = SnapshotPointUtil.GetLineColumn blockSpan.Start
+                let lineNumber, column = VirtualSnapshotPointUtil.GetLineColumn blockSpan.VirtualStart
 
                 bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
 

@@ -431,6 +431,10 @@ type ICommonOperations =
     /// properties at that point 
     abstract MoveCaretToPoint: point: SnapshotPoint -> viewFlags: ViewFlags -> unit
 
+    /// Move the caret to a given virtual point on the screen and ensure the view has the specified
+    /// properties at that point
+    abstract MoveCaretToVirtualPoint: point: VirtualSnapshotPoint -> viewFlags: ViewFlags -> unit
+
     /// Move the caret to the MotionResult value
     abstract MoveCaretToMotionResult: motionResult: MotionResult -> unit
 
