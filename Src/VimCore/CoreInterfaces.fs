@@ -1522,6 +1522,7 @@ type CharacterSpan =
         CharacterSpan(virtualStart, lineCount, lastLineLength, false)
 
     new (start: VirtualSnapshotPoint, lineCount: int, lastLineLength: int, useVirtualSpace: bool) =
+        Contract.Requires(lineCount > 0)
 
         // Don't let the last line of the CharacterSpan end partially into a line 
         // break.  Encompass the entire line break instead 
@@ -1530,8 +1531,6 @@ type CharacterSpan =
         let lastLineLength = 
             if useVirtualSpace then
                 lastLineLength
-            elif line.Length = 0 then
-                line.LengthIncludingLineBreak
             elif lastLineLength > line.Length then
                 line.LengthIncludingLineBreak
             else
