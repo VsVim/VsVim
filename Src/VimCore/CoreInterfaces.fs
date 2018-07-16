@@ -1616,7 +1616,7 @@ type CharacterSpan =
             None
         else
             endPoint
-            |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
+            |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
             |> Some
 
     /// Get the End point of the Character Span.
@@ -1678,10 +1678,7 @@ type CharacterSpan =
             x
 
     override x.ToString() =
-        if x.UseVirtualSpace then
-            x.VirtualSpan.ToString()
-        else
-            x.Span.ToString()
+        x.VirtualSpan.ToString()
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
@@ -2395,7 +2392,8 @@ type VisualSelection =
     static member CreateForPoints (visualKind : VisualKind) (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) (tabStop: int) =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
         let virtualCaretPoint = VirtualSnapshotPointUtil.OfPoint caretPoint
-        VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop false
+        let useVirtualSpace = false
+        VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop useVirtualSpace
 
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
     /// SelectionKind should specify what the current mode is (or the mode which produced the 

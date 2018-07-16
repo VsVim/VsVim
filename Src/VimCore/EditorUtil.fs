@@ -2055,6 +2055,13 @@ module VirtualSnapshotPointUtil =
         let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
         spaces + point.VirtualSpaces
 
+    /// Get the next character span in the buffer with wrap
+    let GetNextCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            VirtualSnapshotPoint(point.Position, point.VirtualSpaces + 1)
+        else
+            VirtualSnapshotPoint(SnapshotPointUtil.GetNextCharacterSpanWithWrap point.Position)
+
     /// Get the previous character span in the buffer with wrap
     let GetPreviousCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
         if point.IsInVirtualSpace then

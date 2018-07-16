@@ -818,6 +818,17 @@ namespace Vim.UnitTest
                 Assert.Equal(point1, _textView.Selection.Start);
                 Assert.Equal(point2, _textView.Selection.End);
             }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "dog", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
         }
 
         public sealed class VirtualInclusiveSelection : VisualModeIntegrationTest
@@ -911,7 +922,7 @@ namespace Vim.UnitTest
                 Create("cat", "", "");
                 _vimBuffer.Process("vj");
                 var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
-                var point2 = _textBuffer.GetVirtualPointInLine(0, 4); // or is (1, 0) better?
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
                 Assert.Equal(point1, _textView.Selection.Start);
                 Assert.Equal(point2, _textView.Selection.End);
             }

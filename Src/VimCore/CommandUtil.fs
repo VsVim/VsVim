@@ -3243,11 +3243,12 @@ type internal CommandUtil
     /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
-        let anchorPoint = x.CaretPoint
+        let anchorPoint = x.CaretVirtualPoint
         if not (_commonOperations.MoveCaretWithArrow caretMovement) then
             CommandResult.Error
         else
-            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
+            let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
+            let visualSelection = VisualSelection.CreateForVirtualPoints VisualKind.Character anchorPoint x.CaretVirtualPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind =
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
