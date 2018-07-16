@@ -829,6 +829,18 @@ namespace Vim.UnitTest
                 Assert.Equal(point1, _textView.Selection.Start);
                 Assert.Equal(point2, _textView.Selection.End);
             }
+
+            [WpfFact]
+            public void RightToEndOfLine()
+            {
+                // Reported in issue #1507.
+                Create("cat", "dog", "");
+                _vimBuffer.Process("v3l");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 3);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
         }
 
         public sealed class VirtualInclusiveSelection : VisualModeIntegrationTest
