@@ -338,6 +338,10 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                     {
                         return InputMode.Search;
                     }
+                    else if (vimBuffer.NormalMode.KeyRemapMode == KeyRemapMode.Language)
+                    {
+                        return InputMode.Insert;
+                    }
                     else
                     {
                         return InputMode.None;
