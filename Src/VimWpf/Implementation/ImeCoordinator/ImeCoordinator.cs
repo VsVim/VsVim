@@ -336,10 +336,12 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                 case ModeKind.Normal:
                     if (vimBuffer.IncrementalSearch.InSearch)
                     {
+                        // User is in the middle of a '/' or '?' search.
                         return InputMode.Search;
                     }
                     else if (vimBuffer.NormalMode.KeyRemapMode == KeyRemapMode.Language)
                     {
+                        // User is using 'f', 'F' or 'r' to input one character.
                         return InputMode.Insert;
                     }
                     else
