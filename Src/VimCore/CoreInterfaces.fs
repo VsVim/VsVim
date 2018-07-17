@@ -3887,7 +3887,7 @@ type IJumpList =
 
     /// Current value in the jump list.  Will be None if we are not currently traversing the
     /// jump list
-    abstract Current: SnapshotPoint option
+    abstract Current: VirtualSnapshotPoint option
 
     /// Current index into the jump list.  Will be None if we are not currently traversing
     /// the jump list
@@ -3904,7 +3904,7 @@ type IJumpList =
 
     /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to 
     /// the begining of the jump list
-    abstract Add: SnapshotPoint -> unit
+    abstract Add: VirtualSnapshotPoint -> unit
 
     /// Clear out all of the stored jump information.  Removes all tracking information from
     /// the IJumpList

@@ -43,8 +43,8 @@ namespace Vim.UnitTest
             public void CountTooBig()
             {
                 Create("cat", "dog");
-                _jumpList.Add(_textBuffer.GetPoint(0));
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
                 _jumpList.StartTraversal();
                 Assert.False(_jumpList.MoveOlder(10));
                 Assert.True(_jumpList.CurrentIndex.IsSome(0));
@@ -57,10 +57,10 @@ namespace Vim.UnitTest
             public void Valid()
             {
                 Create("cat", "dog");
-                _jumpList.Add(_textBuffer.GetPoint(0));
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
                 _jumpList.StartTraversal();
-                Assert.True(_jumpList.Current.IsSome(_textBuffer.GetLine(0).Start));
+                Assert.True(_jumpList.Current.IsSome(_textBuffer.GetVirtualPointInLine(0, 0)));
                 Assert.True(_jumpList.CurrentIndex.IsSome(0));
                 Assert.True(_jumpList.MoveOlder(1));
                 Assert.True(_jumpList.CurrentIndex.IsSome(1));
@@ -73,9 +73,9 @@ namespace Vim.UnitTest
             public void DontChangeLastJumpLocation()
             {
                 Create("dog", "cat", "fish", "bear");
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
-                _jumpList.Add(_textBuffer.GetLine(2).Start);
-                _jumpList.Add(_textBuffer.GetLine(3).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(2, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(3, 0));
                 _jumpList.SetLastJumpLocation(1, 0);
                 _jumpList.StartTraversal();
                 Assert.True(_jumpList.MoveOlder(1));
@@ -103,8 +103,8 @@ namespace Vim.UnitTest
             public void CountTooBig()
             {
                 Create("cat", "dog");
-                _jumpList.Add(_textBuffer.GetLine(0).Start);
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
                 _jumpList.StartTraversal();
                 Assert.True(_jumpList.MoveOlder(1));
                 Assert.False(_jumpList.MoveNewer(2));
@@ -118,8 +118,8 @@ namespace Vim.UnitTest
             public void CountValid()
             {
                 Create("cat", "dog");
-                _jumpList.Add(_textBuffer.GetLine(0).Start);
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
                 _jumpList.StartTraversal();
                 Assert.True(_jumpList.MoveOlder(1));
                 Assert.True(_jumpList.MoveNewer(1));
@@ -133,9 +133,9 @@ namespace Vim.UnitTest
             public void DontChangeLastJumpLocation()
             {
                 Create("dog", "cat", "fish", "bear");
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
-                _jumpList.Add(_textBuffer.GetLine(2).Start);
-                _jumpList.Add(_textBuffer.GetLine(3).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(2, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(3, 0));
                 _jumpList.SetLastJumpLocation(1, 0);
                 _jumpList.StartTraversal();
                 _jumpList.MoveOlder(1);
@@ -153,7 +153,7 @@ namespace Vim.UnitTest
             public void First()
             {
                 Create("");
-                _jumpList.Add(_textBuffer.GetLine(0).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 Assert.True(_jumpList.Current.IsNone());
                 Assert.True(_jumpList.CurrentIndex.IsNone());
             }
@@ -167,9 +167,9 @@ namespace Vim.UnitTest
                 Create("a", "b", "c", "d", "e");
                 for (var i = 0; i < 5; i++)
                 {
-                    var point = _textBuffer.GetLine(i).Start;
+                    var point = _textBuffer.GetVirtualPointInLine(i, 0);
                     _jumpList.Add(point);
-                    Assert.Equal(point, _jumpList.Jumps.First().Position);
+                    Assert.Equal(point, _jumpList.Jumps.First());
                 }
 
                 Assert.Equal(5, _jumpList.Jumps.Count());
@@ -183,9 +183,9 @@ namespace Vim.UnitTest
             public void SameLine()
             {
                 Create("a", "b", "c", "d", "e");
-                _jumpList.Add(_textBuffer.GetLine(0).Start);
-                _jumpList.Add(_textBuffer.GetLine(1).Start);
-                _jumpList.Add(_textBuffer.GetLine(0).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 Assert.Equal(2, _jumpList.Jumps.Count());
                 Assert.Equal(_textBuffer.GetLine(0).Start, _jumpList.Jumps.ElementAt(0).Position);
                 Assert.Equal(_textBuffer.GetLine(1).Start, _jumpList.Jumps.ElementAt(1).Position);
@@ -198,9 +198,9 @@ namespace Vim.UnitTest
             public void UpdateLastJumpLocation()
             {
                 Create("cat", "dog", "fish");
-                var point = _textBuffer.GetLine(1).Start.Add(2);
+                var point = _textBuffer.GetVirtualPointInLine(1, 2);
                 _jumpList.Add(point);
-                Assert.Equal(point, _jumpList.LastJumpLocation.Value.Position);
+                Assert.Equal(point, _jumpList.LastJumpLocation.Value);
             }
         }
 

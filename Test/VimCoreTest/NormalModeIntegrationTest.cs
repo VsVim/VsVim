@@ -7081,7 +7081,7 @@ namespace Vim.UnitTest
             public void FromLocationNotInList()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetPoint(0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
                 Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());

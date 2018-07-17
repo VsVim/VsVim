@@ -1444,7 +1444,7 @@ type internal CommandUtil
     /// since they embed caret information.  Marks are special though because they have the ability
     /// to cross files hence we special case them here
     member x.JumpToMarkCore mark exact =
-        let before = x.CaretPoint
+        let before = x.CaretVirtualPoint
 
         // If not exact, adjust point to first non-blank or start.
         let adjustPointForExact (virtualPoint: VirtualSnapshotPoint) =
@@ -1537,7 +1537,7 @@ type internal CommandUtil
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
-        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+        | Some point -> _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original
     /// indent if 'autoindent' is set.
