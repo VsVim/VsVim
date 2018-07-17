@@ -194,7 +194,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog");
                     var visualSelection = VisualSelection.NewCharacter(
-                        new CharacterSpan(_textBuffer.GetPoint(0), 1, 4),
+                        new CharacterSpan(_textBuffer.GetPoint(0), _textBuffer.GetPoint(4)),
                         SearchPath.Forward);
                     Assert.Equal(4, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
                 }
@@ -204,7 +204,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "dog");
                     var visualSelection = VisualSelection.NewCharacter(
-                        new CharacterSpan(_textBuffer.GetPoint(0), 1, 5),
+                        new CharacterSpan(_textBuffer.GetPoint(0), _textBuffer.GetPoint(5)),
                         SearchPath.Forward);
                     Assert.Equal(4, visualSelection.GetCaretPoint(SelectionKind.Inclusive));
                 }

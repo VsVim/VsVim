@@ -1523,18 +1523,6 @@ type CharacterSpan =
 
     new (start: VirtualSnapshotPoint, lineCount: int, lastLineLength: int, useVirtualSpace: bool) =
         Contract.Requires(lineCount > 0)
-
-        // Don't let the last line of the CharacterSpan end partially into a line 
-        // break.  Encompass the entire line break instead 
-        let number = start.Position.GetContainingLine().LineNumber + (lineCount - 1)
-        let line = SnapshotUtil.GetLineOrLast start.Position.Snapshot number
-        let lastLineLength = 
-            if useVirtualSpace then
-                lastLineLength
-            elif lastLineLength > line.Length then
-                line.LengthIncludingLineBreak
-            else
-                lastLineLength
         { 
             _start = start
             _lineCount = lineCount
@@ -1544,12 +1532,20 @@ type CharacterSpan =
     new (span: SnapshotSpan) = 
         let lineCount = SnapshotSpanUtil.GetLineCount span
         let lastLine = SnapshotSpanUtil.GetLastLine span
-        let lastLineLength = 
+        let startPoint =
             if lineCount = 1 then
-                span.End.Position - span.Start.Position
+                span.Start
             else
-                let diff = span.End.Position - lastLine.Start.Position
-                max 0 diff
+                lastLine.Start
+        let endPoint =
+
+            // Don't let the last line of the CharacterSpan end partially into a line
+            // break.  Encompass the entire line break instead
+            if span.End.Position > lastLine.End.Position then
+                lastLine.EndIncludingLineBreak
+            else
+                span.End
+        let lastLineLength = endPoint.Position - startPoint.Position
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
     new (span: VirtualSnapshotSpan, useVirtualSpace: bool) =
@@ -1567,9 +1563,7 @@ type CharacterSpan =
                             endColumnNumber
                     endColumnNumberInLastLine - startColumnNumber
                 else
-                    let startColumnNumber = SnapshotPointUtil.GetColumn lastLine.Start
-                    let diff = endColumnNumber - startColumnNumber
-                    max 0 diff
+                    endColumnNumber
             CharacterSpan(span.Start, lineCount, lastLineLength, useVirtualSpace)
         else
             CharacterSpan(span.SnapshotSpan)

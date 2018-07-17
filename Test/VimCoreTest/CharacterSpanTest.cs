@@ -46,7 +46,7 @@ namespace Vim.UnitTest
                 public void IntoLineBreak()
                 {
                     Create("cat", "", "dog");
-                    var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 1, 4);
+                    var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), _textBuffer.GetPoint(4));
                     Assert.Equal(5, characterSpan.LastLineLength);
                 }
 
