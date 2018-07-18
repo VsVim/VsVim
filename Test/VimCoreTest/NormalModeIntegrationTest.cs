@@ -6393,6 +6393,30 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(4);
                 AssertFirstLine(2);
             }
+
+            [WpfFact]
+            public void ScrollDownLines_AtBottom()
+            {
+                // Reported in issue #2248.
+                _globalSettings.ScrollOffset = 1;
+                var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
+                _textView.MoveCaretToLine(lineNumber);
+                _vimBuffer.ProcessNotation("<c-d>");
+                Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
+            }
+
+            [WpfFact]
+            public void ScrollUpLines_AtTop()
+            {
+                // Reported in issue #2248.
+                _globalSettings.ScrollOffset = 1;
+                var lineNumber = 0;
+                _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Top);
+                _textView.MoveCaretToLine(lineNumber);
+                _vimBuffer.ProcessNotation("<c-u>");
+                Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
+            }
         }
 
         public sealed class SmallDeleteTest : NormalModeIntegrationTest

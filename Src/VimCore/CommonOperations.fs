@@ -345,9 +345,15 @@ type internal CommonOperations
                     None
                 elif caretLineNumber < (topLineNumber + _globalSettings.ScrollOffset) || caretLineNumber > (bottomLineNumber - _globalSettings.ScrollOffset) then
                     let lineNumber = caretLineNumber
-                    let lineNumber = max lineNumber (topLineNumber + _globalSettings.ScrollOffset)
-                    let lineNumber = min lineNumber (bottomLineNumber - _globalSettings.ScrollOffset)
-                    Some lineNumber
+                    let topOffset = min caretLineNumber _globalSettings.ScrollOffset
+                    let lastVisualLineNumber = _textView.VisualSnapshot.LineCount - 1
+                    let bottomOffset = min (lastVisualLineNumber - caretLineNumber) _globalSettings.ScrollOffset
+                    let lineNumber = max lineNumber (topLineNumber + topOffset)
+                    let lineNumber = min lineNumber (bottomLineNumber - bottomOffset)
+                    if lineNumber <> caretLineNumber then
+                        Some lineNumber
+                    else
+                        None
                 else
                     None
 
