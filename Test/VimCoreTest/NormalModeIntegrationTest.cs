@@ -8412,6 +8412,27 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure we handle the 'gv' command to switch to the previous visual mode
+            /// </summary>
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SwitchPreviousVisualMode_Character(string selection)
+            {
+                Create("cat dog fish", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("wve");
+                var span = _textBuffer.GetSpan(4, 3);
+                Assert.Equal(span, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("<Esc>");
+                _vimBuffer.ProcessNotation("gv");
+                Assert.Equal(span, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("<Esc>");
+                _vimBuffer.ProcessNotation("gv");
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            /// <summary>
             /// Make sure the caret is positioned properly during undo
             /// </summary>
             [WpfFact]
