@@ -321,6 +321,12 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
 
+    /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
+    /// completes
+    abstract AdjustTextViewForScrollOffset: unit -> unit
+
+    /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
+    /// not the view port.  Make the caret consistent with the setting not the display 
     abstract AdjustCaretForScrollOffset: unit -> unit
 
     abstract member CloseWindowUnlessDirty: unit -> unit
