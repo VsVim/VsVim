@@ -8419,6 +8419,7 @@ namespace Vim.UnitTest
             [InlineData("exclusive")]
             public void SwitchPreviousVisualMode_Character(string selection)
             {
+                // Reported for 'exclusive' in issue #2186.
                 Create("cat dog fish", "");
                 _globalSettings.Selection = selection;
                 _vimBuffer.ProcessNotation("wve");
