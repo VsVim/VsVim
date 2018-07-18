@@ -699,15 +699,28 @@ type internal CommonOperations
                     result.Span.End
                 | MotionKind.CharacterWiseInclusive -> 
                     // Normal inclusive motion should move the caret to the last real point on the 
-                    // SnapshotSpan.  The one exception is when we are in visual mode with an
+                    // SnapshotSpan.  The exception is when we are in visual mode with an
                     // exclusive selection.  In that case we move as if it's an exclusive motion.  
                     // Couldn't find any documentation on this but it's indicated by several behavior 
-                    // tests ('e', 'w' movements in particular)
-                    if VisualKind.IsAnyVisual _vimTextBuffer.ModeKind && _globalSettings.SelectionKind = SelectionKind.Exclusive then
-                        result.Span.End
-                    else
+                    // tests ('e', 'w' movements in particular).  However, dollar is a special case.
+                    // In vim, it is allowed to move one further in visual mode regardless of
+                    // the selection kind. See issue #2258 and vim ':help $'.
+                    let adjustBackwards =
+                        if VisualKind.IsAnyVisual _vimTextBuffer.ModeKind then
+                            if _globalSettings.SelectionKind = SelectionKind.Exclusive then
+                                false
+                            elif result.MotionResultFlags.HasFlag MotionResultFlags.EndOfLine then
+                                false
+                            else
+                                true
+                        else
+                            true
+
+                    if adjustBackwards then
                         SnapshotPointUtil.TryGetPreviousPointOnLine result.Span.End 1 
                         |> OptionUtil.getOrDefault result.Span.End
+                    else
+                        result.Span.End
                 | MotionKind.LineWise -> 
                     match result.CaretColumn with
                     | CaretColumn.None -> 
