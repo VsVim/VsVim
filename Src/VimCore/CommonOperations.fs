@@ -172,7 +172,9 @@ type internal CommonOperations
             |> String.concat StringUtil.Empty
 
         // Filter the input to the output.
-        let results = _vimHost.RunCommand _globalSettings.Shell program input _vimData
+        let workingDirectory = _vimBufferData.WorkingDirectory
+        let shell = _globalSettings.Shell
+        let results = _vimHost.RunCommand workingDirectory shell program input
 
         // Display error output and error code, if any.
         let error = results.Error

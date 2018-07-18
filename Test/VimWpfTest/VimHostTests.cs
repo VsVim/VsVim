@@ -141,26 +141,6 @@ namespace Vim.UI.Wpf.UnitTest
                 EditorOperationsFactoryService);
         }
 
-        public sealed class RunCommandTests : VimHostTest
-        {
-            [WpfFact]
-            public void ItUsesWorkingDirectoryFromVimData()
-            {
-                const string cwd = @"C:\Windows";
-                var vimHost = new Mock<VimHost>(Mock.Of<ITextBufferFactoryService>(),
-                                          Mock.Of<ITextEditorFactoryService>(),
-                                          Mock.Of<ITextDocumentFactoryService>(),
-                                          Mock.Of<IEditorOperationsFactoryService>())
-                { CallBase = true }.Object;
-                var vimData = Mock.Of<IVimData>(x => x.CurrentDirectory == cwd);
-
-                vimHost.RunCommand("pwd", "", "", vimData);
-
-                // Not sure if we can do anything besides verify that it used the getter
-                Mock.Get(vimData).VerifyGet(x => x.CurrentDirectory);
-            }
-        }
-
         public sealed class IsDirtyTest : VimHostTest
         {
             private ITextDocument CreateTextDocument(params string[] lines)

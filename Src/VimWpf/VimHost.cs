@@ -259,7 +259,7 @@ namespace Vim.UI.Wpf
         /// Run the specified command on the supplied input, capture it's output and
         /// return it to the caller
         /// </summary>
-        public virtual RunCommandResults RunCommand(string command, string arguments, string input, IVimData vimdata)
+        public virtual RunCommandResults RunCommand(string workingDirectory, string command, string arguments, string input)
         {
             // Use a (generous) timeout since we have no way to interrupt it.
             var timeout = 30 * 1000;
@@ -270,6 +270,7 @@ namespace Vim.UI.Wpf
             // Populate the start info.
             var startInfo = new ProcessStartInfo
             {
+                WorkingDirectory = workingDirectory,
                 FileName = command,
                 Arguments = arguments,
                 UseShellExecute = false,
@@ -277,7 +278,6 @@ namespace Vim.UI.Wpf
                 RedirectStandardOutput = doRedirect,
                 RedirectStandardError = doRedirect,
                 CreateNoWindow = true,
-                WorkingDirectory = vimdata.CurrentDirectory
             };
 
             // Start the process and tasks to manage the I/O.
@@ -682,9 +682,9 @@ namespace Vim.UI.Wpf
             return Reload(textView);
         }
 
-        RunCommandResults IVimHost.RunCommand(string command, string arguments, string input, IVimData vimData)
+        RunCommandResults IVimHost.RunCommand(string workingDirectory, string command, string arguments, string input)
         {
-            return RunCommand(command, arguments, input, vimData);
+            return RunCommand(workingDirectory, command, arguments, input);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

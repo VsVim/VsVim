@@ -447,14 +447,16 @@ namespace Vim.UnitTest
 
         public sealed class RunCommandTest : InterpreterTest
         {
+            private string _workingDirectory;
             private string _command;
             private string _arguments;
             private string _input;
 
             public RunCommandTest()
             {
-                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                VimHost.RunCommandFunc = (workingDirectory, command, arguments, input) =>
                     {
+                        _workingDirectory = workingDirectory;
                         _command = command;
                         _arguments = arguments;
                         _input = input;
@@ -481,6 +483,31 @@ namespace Vim.UnitTest
                 ParseAndRun(@":!echo ""test""");
                 Assert.Equal(@"/c echo ""test""", _arguments);
             }
+
+            /// <summary>
+            /// Running an external command uses the global current directory if
+            /// the local current directory is not set
+            /// </summary>
+            [WpfFact]
+            public void GlobalWorkingDirectory()
+            {
+                ParseAndRun(":!echo test");
+                Assert.True(_vimBufferData.CurrentDirectory.IsNone());
+                Assert.Equal(_vimData.CurrentDirectory, _workingDirectory);
+            }
+
+            /// <summary>
+            /// If set, running an external command uses the local current directory
+            /// </summary>
+            [WpfFact]
+            public void LocalWorkingDirectory()
+            {
+                _vimBufferData.CurrentDirectory = @"C:\Users\user";
+                ParseAndRun(":!echo test");
+                Assert.False(_vimBufferData.CurrentDirectory.IsNone());
+                Assert.NotEqual(_vimData.CurrentDirectory, _vimBufferData.CurrentDirectory.Value);
+                Assert.Equal(_vimBufferData.CurrentDirectory.Value, _workingDirectory);
+            }
         }
 
         public sealed class RunFilterTest : InterpreterTest
@@ -502,7 +529,7 @@ namespace Vim.UnitTest
 
             public RunFilterTest()
             {
-                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                VimHost.RunCommandFunc = (workingDirectory, command, arguments, input) =>
                     {
                         _command = command;
                         _arguments = arguments;
@@ -619,7 +646,7 @@ namespace Vim.UnitTest
 
             public RunReadCommandTest()
             {
-                VimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                VimHost.RunCommandFunc = (workingDirectory, command, arguments, input) =>
                     {
                         _command = command;
                         _arguments = arguments;
@@ -2506,7 +2533,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, input, _) =>
+                    (_, command, args, input) =>
                     {
                         Assert.Equal("/c git status", args);
                         didRun = true;
@@ -2526,7 +2553,7 @@ namespace Vim.UnitTest
                 Vim.VimData.LastShellCommand = FSharpOption.Create("cat");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, input, _) =>
+                    (_, command, args, input) =>
                     {
                         Assert.Equal("/c git status cat", args);
                         didRun = true;
@@ -2546,7 +2573,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, input, _) =>
+                    (_, command, args, input) =>
                     {
                         Assert.Equal("/c git status !", args);
                         didRun = true;
@@ -2565,7 +2592,7 @@ namespace Vim.UnitTest
                 Create("");
                 var didRun = false;
                 VimHost.RunCommandFunc =
-                    (command, args, input, _) =>
+                    (_, command, args, input) =>
                     {
                         Assert.Equal(@"/c git status \!", args);
                         didRun = true;

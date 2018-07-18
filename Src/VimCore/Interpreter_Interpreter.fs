@@ -1490,6 +1490,7 @@ type VimInterpreter
             _vimData.LastShellCommand <- Some command
 
             // Prepend the shell flag before the other arguments.
+            let workingDirectory = _vimBufferData.WorkingDirectory
             let shell = _globalSettings.Shell
             let command =
                 if _globalSettings.ShellFlag.Length > 0 then
@@ -1499,7 +1500,7 @@ type VimInterpreter
 
             if isReadCommand then
                 x.RunWithPointAfterOrDefault lineRange DefaultLineRange.CurrentLine (fun point ->
-                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let results = _vimHost.RunCommand workingDirectory shell command StringUtil.Empty
                     let status = results.Error
                     let status = EditUtil.RemoveEndingNewLine status
                     _statusUtil.OnStatus status
@@ -1507,7 +1508,7 @@ type VimInterpreter
                     x.RunReadCore point output)
             else
                 if lineRange = LineRangeSpecifier.None then
-                    let results = _vimHost.RunCommand shell command StringUtil.Empty _vimData
+                    let results = _vimHost.RunCommand workingDirectory shell command StringUtil.Empty
                     let status = results.Output + results.Error
                     let status = EditUtil.RemoveEndingNewLine status
                     _statusUtil.OnStatus status

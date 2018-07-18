@@ -1968,7 +1968,7 @@ namespace Vim.UnitTest
             protected override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _vimHost.RunCommandFunc = (command, arguments, input, vimData) =>
+                _vimHost.RunCommandFunc = (workingDirectory, command, arguments, input) =>
                     {
                         _command = command;
                         _arguments = arguments;

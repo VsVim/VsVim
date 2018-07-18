@@ -32,12 +32,20 @@ type VimBufferData
             let cd = match _currentDirectory with Some s -> s | None -> _vimTextBuffer.Vim.VimData.CurrentDirectory
             SystemUtil.StripPathPrefix cd filePath |> Some
 
+    member x.WorkingDirectory =
+        match _currentDirectory with
+        | Some directory ->
+            directory
+        | None ->
+            _vimTextBuffer.Vim.VimData.CurrentDirectory
+
     interface IVimBufferData with
         member x.CurrentDirectory 
             with get() = _currentDirectory
             and set value = _currentDirectory <- value
         member x.CurrentFilePath = x.CurrentFilePath
         member x.CurrentRelativeFilePath = x.CurrentRelativeFilePath
+        member x.WorkingDirectory = x.WorkingDirectory
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value
