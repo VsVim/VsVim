@@ -4372,7 +4372,7 @@ type IVimHost =
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
 
-    /// The current directory for this particular window
+    /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set
 
     /// The current (rooted) file path for this buffer
@@ -4381,7 +4381,9 @@ and IVimBufferData =
     /// The current file path for this buffer, relative to CurrentDirectory
     abstract CurrentRelativeFilePath : string option
     
-    /// The current directory for this particular window
+    /// The working directory to use for this particular buffer,
+    /// either the current directory for the buffer, if set, or the
+    /// global current directory
     abstract WorkingDirectory: string
 
     /// This is the caret point at the start of the most recent visual mode session. It's
@@ -4708,7 +4710,7 @@ and IVimBuffer =
     /// is buffered until it is completed or the ambiguity is removed.  
     abstract BufferedKeyInputs: KeyInput list
 
-    /// The current directory for this particular window
+    /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set
 
     /// The ICommandUtil for this IVimBuffer
