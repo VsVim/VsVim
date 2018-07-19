@@ -425,11 +425,13 @@ namespace Vim.UnitTest
             /// <summary>
             /// Succeed in moving when the 'onemore' option is set 
             /// </summary>
-            [WpfFact]
-            public void CharRightAtLastOfLineWithOneMore()
+            [WpfTheory]
+            [InlineData("onemore")]
+            [InlineData("all")]
+            public void CharRightAtLastOfLineWithOneMore(string virtualEdit)
             {
                 Create("cat", "dog");
-                _globalSettings.VirtualEdit = "onemore";
+                _globalSettings.VirtualEdit = virtualEdit;
                 _textView.MoveCaretTo(2);
                 _vimBuffer.Process("l");
                 Assert.Equal(0, _vimHost.BeepCount);
@@ -3199,11 +3201,13 @@ namespace Vim.UnitTest
             /// <summary>
             /// Jumping to a mark set at the end of a line should work with 've=onemore'
             /// </summary>
-            [WpfFact]
-            public void JumpToEndOfLineMarkWithOneMore()
+            [WpfTheory]
+            [InlineData("onemore")]
+            [InlineData("all")]
+            public void JumpToEndOfLineMarkWithVirtualEdit(string virtualEdit)
             {
                 Create("cat", "dog", "bat");
-                _globalSettings.VirtualEdit = "onemore";
+                _globalSettings.VirtualEdit = virtualEdit;
                 Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
                 _vimBuffer.Process("`a");
                 Assert.Equal(_textView.GetPointInLine(1, 3).Position, _textView.GetCaretPoint().Position);
@@ -8625,6 +8629,75 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.ProcessNotation("2@:");
                 Assert.Equal(new[] { "cat", "rat", "" }, _textBuffer.GetLines());
+            }
+        }
+
+        public class VirtualEditTest : NormalModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.VirtualEdit = "all";
+                _globalSettings.WhichWrap = "<,>";
+                _localSettings.TabStop = 4;
+            }
+
+            public sealed class VirtualEditNormal : VirtualEditTest
+            {
+                /// <summary>
+                /// We should be able to move caret cursor in a tiny box after a variety of lines
+                /// and return to the same buffer position
+                /// </summary>
+                /// <param name="line1"></param>
+                /// <param name="line2"></param>
+                [WpfTheory]
+                [InlineData("", "")]
+                [InlineData("cat", "dog")]
+                [InlineData("cat", "")]
+                [InlineData("", "dog")]
+                [InlineData("cat", "\tdog")]
+                [InlineData("\tcat", "dog")]
+                [InlineData("cat dog bat bear", "cat dog bat bear")]
+                [InlineData("", "cat dog bat bear")]
+                [InlineData("cat dog bat bear", "")]
+                public void CaretBox(string line1, string line2)
+                {
+                    Create(line1, line2, "");
+                    _vimBuffer.ProcessNotation("10l");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 10), _textView.GetCaretVirtualPoint());
+                    _vimBuffer.ProcessNotation("jlkh");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 10), _textView.GetCaretVirtualPoint());
+                    _vimBuffer.ProcessNotation("<Down><Right><Up><Left>");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 10), _textView.GetCaretVirtualPoint());
+                }
+            }
+
+            public sealed class VirtualEditInsert : VirtualEditTest
+            {
+                /// <summary>
+                /// We should be able to move caret cursor in a tiny box after a variety of lines
+                /// and return to the same buffer position
+                /// </summary>
+                /// <param name="line1"></param>
+                /// <param name="line2"></param>
+                [WpfTheory]
+                [InlineData("", "")]
+                [InlineData("cat", "dog")]
+                [InlineData("cat", "")]
+                [InlineData("", "dog")]
+                [InlineData("cat", "\tdog")]
+                [InlineData("\tcat", "dog")]
+                [InlineData("cat dog bat bear", "cat dog bat bear")]
+                [InlineData("", "cat dog bat bear")]
+                [InlineData("cat dog bat bear", "")]
+                public void CaretBox(string line1, string line2)
+                {
+                    Create(line1, line2, "");
+                    _vimBuffer.ProcessNotation("10li");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 10), _textView.GetCaretVirtualPoint());
+                    _vimBuffer.ProcessNotation("<Down><Right><Up><Left>");
+                    Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 10), _textView.GetCaretVirtualPoint());
+                }
             }
         }
     }

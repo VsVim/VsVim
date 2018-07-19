@@ -49,12 +49,9 @@ namespace Vim.UnitTest
             var motionUtil = new MotionUtil(vimBufferData, _operations.Object);
             var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));
             var runner = new CommandRunner(
-                _textView,
-                Vim.RegisterMap,
+                vimBufferData,
                 capture,
-                vimBufferData.LocalSettings,
                 _commandUtil.Object,
-                (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character,
                 KeyRemapMode.Visual);
             _modeRaw = new VisualMode(vimBufferData, _operations.Object, motionUtil, visualKind, runner, capture, _tracker.Object);

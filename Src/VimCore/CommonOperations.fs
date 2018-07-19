@@ -115,6 +115,11 @@ type internal CommonOperations
     member x.GetSpacesToColumn line column = 
         SnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
 
+    /// Get the count of virtual spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces
+    member x.GetVirtualSpacesToColumn line column =
+        VirtualSnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
+
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
     member x.GetSpacesToPoint point = 
         SnapshotPointUtil.GetSpacesToPoint point _localSettings.TabStop
@@ -123,6 +128,15 @@ type internal CommonOperations
     // it goes beyond the last point in the string
     member x.GetPointForSpaces line spacesCount = 
         SnapshotLineUtil.GetSpaceOrEnd line spacesCount _localSettings.TabStop
+
+    /// Get the count of spaces to get to the specified virtual point in it's line when tabs are expanded
+    member x.GetSpacesToVirtualPoint point =
+        VirtualSnapshotPointUtil.GetSpacesToPoint point _localSettings.TabStop
+
+    // Get the virtual point in the given line which is count "spaces" into the line.  Returns End if
+    // it goes beyond the last point in the string
+    member x.GetVirtualPointForSpaces line spacesCount =
+        VirtualSnapshotLineUtil.GetSpace line spacesCount _localSettings.TabStop
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -474,12 +488,32 @@ type internal CommonOperations
     /// Move the caret in the given direction
     member x.MoveCaret caretMovement = 
 
+        /// Move the caret to the same virtual position in line as the current caret line
+        let moveToLineVirtual (line: ITextSnapshotLine) =
+            if _vimTextBuffer.UseVirtualSpace then
+                let caretPoint = x.CaretVirtualPoint
+                let tabStop = _localSettings.TabStop
+                let currentSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
+                let lineSpaces = SnapshotPointUtil.GetSpacesToPoint line.End tabStop
+                if lineSpaces < currentSpaces then
+                    let virtualSpaces = currentSpaces - lineSpaces
+                    line.End
+                    |> VirtualSnapshotPointUtil.OfPoint
+                    |> VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces
+                    |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                    true
+                else
+                    false
+            else
+                false
+
         /// Move the caret up
         let moveUp () =
             match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber - 1) with
             | None -> false
             | Some line ->
-                _editorOperations.MoveLineUp(false);
+                if not (moveToLineVirtual line) then
+                    _editorOperations.MoveLineUp(false)
                 true
 
         /// Move the caret down
@@ -487,8 +521,12 @@ type internal CommonOperations
             match SnapshotUtil.TryGetLine x.CurrentSnapshot (x.CaretLine.LineNumber + 1) with
             | None -> false
             | Some line ->
-                _editorOperations.MoveLineDown(false);
-                true
+                if SnapshotLineUtil.IsPhantomLine line then
+                    false
+                else
+                    if not (moveToLineVirtual line) then
+                        _editorOperations.MoveLineDown(false)
+                    true
 
         /// Move the caret left.  Don't go past the start of the line 
         let moveLeft () = 
@@ -567,7 +605,13 @@ type internal CommonOperations
 
         /// Move left one character taking into account 'whichwrap'
         let moveLeft () =
-            if _globalSettings.IsWhichWrapArrowLeftInsert then
+            let caretPoint = x.CaretVirtualPoint
+            if _vimTextBuffer.UseVirtualSpace && caretPoint.IsInVirtualSpace then
+                caretPoint
+                |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
+                |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                true
+            elif _globalSettings.IsWhichWrapArrowLeftInsert then
                 if SnapshotPointUtil.IsStartPoint x.CaretPoint then
                     false
                 else
@@ -579,7 +623,13 @@ type internal CommonOperations
 
         /// Move right one character taking into account 'whichwrap'
         let moveRight () =
-            if _globalSettings.IsWhichWrapArrowRightInsert then
+            let caretPoint = x.CaretVirtualPoint
+            if _vimTextBuffer.UseVirtualSpace && caretPoint.Position = x.CaretLine.End then
+                caretPoint
+                |> VirtualSnapshotPointUtil.AddOneOnSameLine
+                |> (fun point -> x.MoveCaretToVirtualPoint point ViewFlags.Standard)
+                true
+            elif _globalSettings.IsWhichWrapArrowRightInsert then
                 if SnapshotPointUtil.IsEndPoint x.CaretPoint then
                     false
                 else
@@ -594,17 +644,23 @@ type internal CommonOperations
         | CaretMovement.Right -> moveRight()
         | _ -> x.MoveCaret caretMovement
 
-    /// Move the caret to the specified point and ensure the specified view properties are 
-    /// correct at that point 
-    member x.MoveCaretToPoint point viewFlags = 
+    /// Move the caret to the specified point with the specified view properties
+    member x.MoveCaretToPoint (point: SnapshotPoint) viewFlags =
+        let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
+        x.MoveCaretToVirtualPoint virtualPoint viewFlags
+
+    /// Move the caret to the specified virtual point with the specified view properties
+    member x.MoveCaretToVirtualPoint (point: VirtualSnapshotPoint) viewFlags =
+
         // In the case where we want to expand the text we are moving to we need to do the expansion
-        // first before the move.  Before the text is expanded the point we are moving to will map to 
-        // the collapsed region.  When the text is subsequently expanded it has no memory and will 
-        // just stay in place.  
+        // first before the move.  Before the text is expanded the point we are moving to will map to
+        // the collapsed region.  When the text is subsequently expanded it has no memory and will
+        // just stay in place.
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
-            x.EnsurePointExpanded point
-        TextViewUtil.MoveCaretToPoint _textView point
-        x.EnsureAtPoint point viewFlags
+            x.EnsurePointExpanded point.Position
+
+        TextViewUtil.MoveCaretToVirtualPoint _textView point
+        x.EnsureAtPoint point.Position viewFlags
 
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
@@ -616,16 +672,21 @@ type internal CommonOperations
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result: MotionResult) =
 
+        let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         let shouldMaintainCaretColumn = Util.IsFlagSet result.MotionResultFlags MotionResultFlags.MaintainCaretColumn
         match shouldMaintainCaretColumn, result.CaretColumn with
         | true, CaretColumn.InLastLine column ->
-            
+
             // Mappings should occur visually 
             let visualLastLine = x.GetDirectionLastLineInVisualSnapshot result
 
             // First calculate the column in terms of spaces for the maintained caret.
             let caretColumnSpaces = 
-                let motionCaretColumnSpaces = x.GetSpacesToColumn x.CaretLine column
+                let motionCaretColumnSpaces =
+                    if useVirtualSpace then
+                        x.GetVirtualSpacesToColumn x.CaretLine column
+                    else
+                        x.GetSpacesToColumn x.CaretLine column
                 match _maintainCaretColumn with
                 | MaintainCaretColumn.None -> motionCaretColumnSpaces
                 | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
@@ -634,8 +695,13 @@ type internal CommonOperations
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
             let caretColumn = 
-                let column = x.GetPointForSpaces visualLastLine caretColumnSpaces |> SnapshotPointUtil.GetColumn
-                CaretColumn.InLastLine column
+                if useVirtualSpace then
+                    x.GetVirtualPointForSpaces visualLastLine caretColumnSpaces
+                    |> VirtualSnapshotPointUtil.GetColumnNumber
+                else
+                    x.GetPointForSpaces visualLastLine caretColumnSpaces
+                    |> SnapshotPointUtil.GetColumn
+                |> CaretColumn.InLastLine
             let result = 
                 { result with CaretColumn = caretColumn }
 
@@ -737,7 +803,17 @@ type internal CommonOperations
                 // Character wise motions should expand regions
                 ViewFlags.All
 
-        x.MoveCaretToPoint point viewFlags
+        match _vimTextBuffer.UseVirtualSpace, result.CaretColumn with
+        | true, CaretColumn.InLastLine column ->
+            let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
+            let virtualSpaces = max 0 (column - columnNumber)
+            point
+            |> VirtualSnapshotPointUtil.OfPoint
+            |> VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces
+            |> (fun point -> x.MoveCaretToVirtualPoint point viewFlags)
+        | _ ->
+            x.MoveCaretToPoint point viewFlags
+
         _editorOperations.ResetSelection()
 
     /// Move the caret to the proper indentation on a newly created line.  The context line 
@@ -1766,6 +1842,8 @@ type internal CommonOperations
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetPointForSpaces contextLine column = x.GetPointForSpaces contextLine column
+        member x.GetSpacesToVirtualPoint point = x.GetSpacesToVirtualPoint point
+        member x.GetVirtualPointForSpaces contextLine column = x.GetVirtualPointForSpaces contextLine column
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()
         member x.GoToGlobalDeclaration() = x.GoToGlobalDeclaration()
         member x.GoToFile() = x.GoToFile()

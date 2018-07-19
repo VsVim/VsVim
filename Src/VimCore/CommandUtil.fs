@@ -106,6 +106,9 @@ type internal CommandUtil
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -235,7 +238,7 @@ type internal CommandUtil
         | StoredVisualSpan.Block (width = width; height = height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the
             // current caret position
-            let blockSpan = BlockSpan(x.CaretPoint, _localSettings.TabStop, width, height)
+            let blockSpan = BlockSpan(x.CaretVirtualPoint, _localSettings.TabStop, width, height)
             VisualSpan.Block blockSpan
 
     member x.CalculateDeleteOperation (result: MotionResult) =
@@ -1604,10 +1607,10 @@ type internal CommandUtil
             CommandResult.Error
         | Some result ->
 
-            let point = x.CaretPoint
+            let point = x.CaretVirtualPoint
             _commonOperations.MoveCaretToMotionResult result
 
-            if point = x.CaretPoint then
+            if point = x.CaretVirtualPoint then
                 // Failure to move the caret for a motion results in a beep for certain motions.  There
                 // isn't any documentation here but experimentally it is true for 'l' and 'h'.
                 //
@@ -1788,7 +1791,8 @@ type internal CommandUtil
     /// 'p' and 'gp' command in normal mode
     member x.PutAfterCaret registerName count moveCaretAfterText =
         let register = x.GetRegister registerName
-        x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText
+        x.EditWithUndoTransaction "Put after" (fun () ->
+            x.PutAfterCaretCore (register.RegisterValue) count moveCaretAfterText)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Core put after function used by many of the put after operations
@@ -1816,6 +1820,7 @@ type internal CommandUtil
         let point =
             match registerValue.OperationKind with
             | OperationKind.CharacterWise ->
+                _commonOperations.FillInVirtualSpace()
                 if x.CaretLine.Length = 0 then
                     x.CaretLine.Start
                 elif SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then
@@ -1832,7 +1837,8 @@ type internal CommandUtil
     member x.PutAfterCaretWithIndent registerName count =
         let register = x.GetRegister registerName
         let registerValue = x.CalculateIdentStringData register.RegisterValue
-        x.PutAfterCaretCore registerValue count false
+        x.EditWithUndoTransaction "Put after with indent" (fun () ->
+            x.PutAfterCaretCore registerValue count false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
@@ -1851,7 +1857,8 @@ type internal CommandUtil
 
                 // Now run the put after command
                 let register = x.GetRegister (Some RegisterName.Unnamed)
-                x.PutAfterCaretCore register.RegisterValue 1 false
+                x.EditWithUndoTransaction "Put after mouse" (fun () ->
+                    x.PutAfterCaretCore register.RegisterValue 1 false)
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1859,7 +1866,8 @@ type internal CommandUtil
     /// 'P' and 'gP' commands in normal mode
     member x.PutBeforeCaret registerName count moveCaretAfterText =
         let register = x.GetRegister registerName
-        x.PutBeforeCaretCore register.RegisterValue count moveCaretAfterText
+        x.EditWithUndoTransaction "Put before" (fun () ->
+            x.PutBeforeCaretCore register.RegisterValue count moveCaretAfterText)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register before the caret and respect the
@@ -1867,7 +1875,8 @@ type internal CommandUtil
     member x.PutBeforeCaretWithIndent registerName count =
         let register = x.GetRegister registerName
         let registerValue = x.CalculateIdentStringData register.RegisterValue
-        x.PutBeforeCaretCore registerValue count false
+        x.EditWithUndoTransaction "Put before with indent" (fun () ->
+            x.PutBeforeCaretCore registerValue count false)
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Core put function used by many of the put before operations
@@ -1875,7 +1884,9 @@ type internal CommandUtil
         let stringData = registerValue.StringData.ApplyCount count
         let point =
             match registerValue.OperationKind with
-            | OperationKind.CharacterWise -> x.CaretPoint
+            | OperationKind.CharacterWise ->
+                _commonOperations.FillInVirtualSpace()
+                x.CaretPoint
             | OperationKind.LineWise -> x.CaretLine.Start
 
         x.PutCore point stringData registerValue.OperationKind moveCaretAfterText false
@@ -2695,8 +2706,12 @@ type internal CommandUtil
             let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
             TextViewUtil.MoveCaretToPoint _textView point
         else
-            let point = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
-            TextViewUtil.MoveCaretToPoint _textView point
+            if _vimTextBuffer.UseVirtualSpace then
+                VirtualSnapshotLineUtil.GetSpace x.CaretLine spacesToCaret _localSettings.TabStop
+            else
+                SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
+                |> VirtualSnapshotPointUtil.OfPoint
+            |> TextViewUtil.MoveCaretToVirtualPoint _textView
             _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Get the number lines in the current window

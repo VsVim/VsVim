@@ -21,15 +21,18 @@ type internal CommandRunnerData = {
 /// Implementation of the ICommandRunner interface.  
 type internal CommandRunner
     ( 
-        _textView: ITextView,
-        _registerMap: IRegisterMap,
+        _vimBufferData: IVimBufferData,
         _motionCapture: IMotionCapture,
-        _localSettings: IVimLocalSettings,
         _commandUtil: ICommandUtil,
-        _statusUtil: IStatusUtil,
         _visualKind: VisualKind,
         _defaultKeyRemapMode: KeyRemapMode
     ) =
+
+    let _textView = _vimBufferData.TextView
+    let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _registerMap = _vimBufferData.Vim.RegisterMap
+    let _localSettings = _vimBufferData.LocalSettings
+    let _statusUtil = _vimBufferData.StatusUtil
 
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
@@ -76,7 +79,10 @@ type internal CommandRunner
     member x.Inputs = _data.Inputs
 
     /// Try and get the VisualSpan for the provided kind
-    member x.GetVisualSpan kind = VisualSpan.CreateForSelection _textView kind _localSettings.TabStop
+    member x.VisualSpan =
+        let tabStop = _localSettings.TabStop
+        let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+        VisualSpan.CreateForVirtualSelection _textView _visualKind tabStop useVirtualSpace
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc
@@ -237,7 +243,7 @@ type internal CommandRunner
                 | CommandBinding.InsertBinding (_, _, insertCommand) ->
                     BindResult.Complete (Command.InsertCommand insertCommand, commandBinding)
                 | CommandBinding.VisualBinding (_, _, visualCommand) ->
-                    let visualSpan = x.GetVisualSpan _visualKind
+                    let visualSpan = x.VisualSpan
                     let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
                     BindResult.Complete (visualCommand, commandBinding)
                 | CommandBinding.MotionBinding (_, _, func) -> 
@@ -268,7 +274,7 @@ type internal CommandRunner
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Map (fun visualCommand -> 
-                        let visualSpan = x.GetVisualSpan _visualKind
+                        let visualSpan = x.VisualSpan
                         let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
                         BindResult.Complete (visualCommand, commandBinding))
                     BindResult.NeedMoreInput bindData

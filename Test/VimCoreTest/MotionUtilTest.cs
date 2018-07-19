@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         protected LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
         protected Mark _markLocalA = Mark.NewLocalMark(LocalMark.NewLetter(Letter.A));
 
-        protected void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             var textView = CreateTextView(lines);
             Create(textView);
@@ -3751,6 +3751,317 @@ more";
                 Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
                 Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
                 Assert.Equal(CaretColumn.NewScreenColumn(99), data.CaretColumn);
+            }
+        }
+
+        public sealed class VirtualEdit : MotionUtilTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.VirtualEdit = "all";
+            }
+
+            [WpfFact]
+            public void CharRightAtStartOfLine()
+            {
+                Create("foo", "");
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("f", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharRightAtDollar()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("o", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharRightAtEndOfLine()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(4), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharRightPastEndOfLine()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(5), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharLeftPastEndOfLine()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 2);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(4), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharLeftToEndOfLine()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharLeftToDollar()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("o", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void CharLeftToStartOfLine()
+            {
+                Create("foo", "");
+                _textView.MoveCaretTo(1);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("f", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharRightAtStartOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("f", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharRightAtDollar()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(2);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("o", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharRightAtEndOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(4), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharRightPastEndOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.CharRight(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(5), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharLeftPastEndOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(3, virtualSpaces: 2);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.NewInLastLine(4), data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharLeftToEndOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharLeftToDollar()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(3);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("o", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void WrapCharLeftToStartOfLine()
+            {
+                Create("foo", "");
+                _globalSettings.WhichWrap = "h,l";
+                _textView.MoveCaretTo(1);
+                var data = _motionUtil.CharLeft(1);
+                Assert.Equal("f", data.Span.GetText());
+                Assert.Equal(OperationKind.CharacterWise, data.OperationKind);
+                Assert.Equal(MotionKind.CharacterWiseExclusive, data.MotionKind);
+                Assert.Equal(CaretColumn.None, data.CaretColumn);
+            }
+
+            [WpfFact]
+            public void LineDownRealToReal()
+            {
+                Create("foo bar", "baz qux", "");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownRealToVirtual()
+            {
+                Create("foo bar", "baz", "");
+                _textView.MoveCaretTo(4);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToReal()
+            {
+                Create("foo", "bar baz", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToVirtual()
+            {
+                Create("foo", "baz", "");
+                _textView.MoveCaretTo(3, virtualSpaces: 1);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpRealToReal()
+            {
+                Create("foo bar", "baz qux", "");
+                _textView.MoveCaretToLine(1, 4);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpRealToVirtual()
+            {
+                Create("foo", "bar baz", "");
+                _textView.MoveCaretToLine(1, 4);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToReal()
+            {
+                Create("foo bar", "baz", "");
+                _textView.MoveCaretToLine(1, 3, virtualSpaces: 1);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToVirtual()
+            {
+                Create("foo", "baz", "");
+                _textView.MoveCaretToLine(1, 3, virtualSpaces: 1);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(4));
             }
         }
     }

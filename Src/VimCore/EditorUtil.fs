@@ -1202,13 +1202,6 @@ module NormalizedSnapshotSpanCollectionUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module VirtualSnapshotSpanUtil = 
-
-    /// Get the span 
-    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
-
-/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
-/// include any Vim specific logic
 module SnapshotLineUtil =
 
     /// ITextSnapshot the ITextSnapshotLine is associated with
@@ -1974,7 +1967,7 @@ module SnapshotPointUtil =
         if left.Position < right.Position then left,right
         else right,left
 
-    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    /// Get the count of spaces to get to the specified point in its line when tabs are expanded
     let GetSpacesToPoint point tabStop = 
         let column = SnapshotColumn(point)
         SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
@@ -1988,9 +1981,11 @@ module SnapshotPointUtil =
         match OrderAscending point endPointOfLastLine with
         | (firstPoint, _) -> firstPoint
 
+/// Functional operations acting on virtual snapshot points
 module VirtualSnapshotPointUtil =
     
-    let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
+    /// Create a virtual point from a non-virtual point
+    let OfPoint (point: SnapshotPoint) = VirtualSnapshotPoint(point)
 
     /// Convert the SnapshotPoint into a VirtualSnapshotPoint taking into account the editors
     /// view that SnapshotPoint values in the line break should be represented as 
@@ -2003,29 +1998,106 @@ module VirtualSnapshotPointUtil =
         else
             VirtualSnapshotPoint(point)
 
-    let GetPoint (point:VirtualSnapshotPoint) = point.Position
+    /// Get the non-virtual snapshot point from the virtual point
+    let GetPoint (point: VirtualSnapshotPoint) = point.Position
 
+    /// Get the buffer position of the non-virtual snapshot point
     let GetPosition point = 
         let point = GetPoint point
         point.Position
 
-    let GetContainingLine (point:VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
+    /// Get the snapshot line containing the specified virtual point
+    let GetContainingLine (point: VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
 
-    let IsInVirtualSpace (point:VirtualSnapshotPoint) = point.IsInVirtualSpace
+    /// Whether the specified virtual point is in virtual space
+    let IsInVirtualSpace (point: VirtualSnapshotPoint) = point.IsInVirtualSpace
 
-    /// Incremental the VirtualSnapshotPoint by one keeping it on the same 
-    /// line
-    let AddOneOnSameLine point =
-        if IsInVirtualSpace point then VirtualSnapshotPoint(point.Position, point.VirtualSpaces + 1)
+    /// Get the line number and column number of the specified virtual point
+    let GetLineColumn (point: VirtualSnapshotPoint) =
+        let line = GetContainingLine point
+        let realColumn = point.Position.Position - line.Start.Position
+        line.LineNumber, realColumn + point.VirtualSpaces
+
+    /// Get the column number of the specified virtual point
+    let GetColumnNumber (point: VirtualSnapshotPoint) =
+        match GetLineColumn point with
+        | _, columnNumber -> columnNumber
+
+    /// Add count to the VirtualSnapshotPoint keeping it on the same line
+    let AddOnSameLine count point =
+        let line = GetContainingLine point
+        let columnNumber = GetColumnNumber point
+        VirtualSnapshotPoint(line, columnNumber + count)
+
+    /// Subtract count to the VirtualSnapshotPoint keeping it on the same line
+    let SubtractOnSameLine count point = AddOnSameLine -count point
+
+    /// Add one to the VirtualSnapshotPoint keeping it on the same line
+    let AddOneOnSameLine point = AddOnSameLine 1 point
+
+    /// Try and subtract 1 from the given point unless it's the start of the buffer in which
+    /// case return the passed in value
+    let SubtractOneOrCurrent (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            AddOnSameLine -1 point
         else
-            let line = GetContainingLine point
-            if point.Position = line.EndIncludingLineBreak then VirtualSnapshotPoint(point.Position, 1)
-            else VirtualSnapshotPoint(point.Position.Add(1))
+            point.Position
+            |> SnapshotPointUtil.SubtractOneOrCurrent
+            |> OfPoint
 
-    /// Used to order two SnapshotPoint's in ascending order.  
-    let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 
-        if left.CompareTo(right) < 0 then left,right 
+    /// Put two VirtualSnapshotPoint's in ascending order
+    let OrderAscending (left: VirtualSnapshotPoint) (right: VirtualSnapshotPoint) =
+        if left.CompareTo(right) < 0 then left,right
         else right,left
+
+    /// Get the count of spaces to get to the specified point in its line when tabs are expanded
+    let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop =
+        let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
+        spaces + point.VirtualSpaces
+
+/// Contains operations that act on snapshot lines but return virtual snapshot points
+module VirtualSnapshotLineUtil =
+
+    // Get the virtual point in the given line which is just before the character that
+    // overlaps the specified column into the line
+    let GetSpace line spacesCount tabStop =
+        let overlapPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line spacesCount tabStop
+        let point = VirtualSnapshotPointUtil.OfPoint overlapPoint.Point
+        if point.Position = line.End then
+            let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length tabStop
+            let virtualSpaces = spacesCount - realSpaces
+            VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
+        else
+            point
+
+    /// Get the count of spaces to get to the specified absolute column offset.  This will count
+    /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
+    /// boundary only count for the number of spaces to get to the next tabstop boundary
+    let GetSpacesToColumn (line: ITextSnapshotLine) columnCount tabStop =
+        let realSpacesToColumn = SnapshotLineUtil.GetSpacesToColumn line columnCount tabStop
+        let realPoint = SnapshotLineUtil.GetSpaceOrEnd line realSpacesToColumn tabStop
+        let realColumnCount = SnapshotPointUtil.GetColumn realPoint
+        let virtualSpaces = columnCount - realColumnCount
+        realSpacesToColumn + virtualSpaces
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module VirtualSnapshotSpanUtil =
+
+    /// Get the span
+    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
+
+    /// Get the start point
+    let GetStartPoint (span:VirtualSnapshotSpan) = span.Start
+
+    /// Get the end point
+    let GetEndPoint (span:VirtualSnapshotSpan) = span.End
+
+    /// Get a virtual snapshot span from a snapshot span
+    let OfSpan (span: SnapshotSpan) =
+        let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
+        let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
+        VirtualSnapshotSpan(startPoint, endPoint)
 
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context
@@ -2147,8 +2219,8 @@ module BufferGraphUtil =
 /// to calculate items like motions
 type SnapshotData = {
 
-    /// SnapshotPoint for the Caret
-    CaretPoint: SnapshotPoint
+    /// VirtualSnapshotPoint for the Caret
+    CaretVirtualPoint: VirtualSnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
     CaretLine: ITextSnapshotLine
@@ -2157,6 +2229,7 @@ type SnapshotData = {
     CurrentSnapshot: ITextSnapshot
 } with
 
+    member x.CaretPoint = x.CaretVirtualPoint.Position
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
 [<System.Flags>]
@@ -2449,10 +2522,10 @@ module TextViewUtil =
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer
     let GetEditSnapshotData (textView: ITextView) = 
-        let caretPoint = GetCaretPoint textView
-        let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+        let caretPoint = GetCaretVirtualPoint textView
+        let caretLine = SnapshotPointUtil.GetContainingLine caretPoint.Position
         { 
-            CaretPoint = caretPoint
+            CaretVirtualPoint = caretPoint
             CaretLine = caretLine
             CurrentSnapshot = caretLine.Snapshot }
 
@@ -2473,8 +2546,14 @@ module TextViewUtil =
         // ITextBuffer in this case though these shouldn't matter too much
         let caretPoint = 
             let bufferGraph = textView.BufferGraph
-            let editCaretPoint = GetCaretPoint textView
-            BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint visualSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+            let editCaretPoint = GetCaretVirtualPoint textView
+            match BufferGraphUtil.MapPointUpToSnapshot bufferGraph editCaretPoint.Position visualSnapshot PointTrackingMode.Negative PositionAffinity.Predecessor with
+            | Some point ->
+                point
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> VirtualSnapshotPointUtil.AddOnSameLine editCaretPoint.VirtualSpaces
+                |> Some
+            | None -> None
 
         match caretPoint with
         | None ->
@@ -2483,9 +2562,9 @@ module TextViewUtil =
             // ITextView though
             None
         | Some caretPoint ->
-            let caretLine = SnapshotPointUtil.GetContainingLine caretPoint
+            let caretLine = SnapshotPointUtil.GetContainingLine caretPoint.Position
             { 
-                CaretPoint = caretPoint
+                CaretVirtualPoint = caretPoint
                 CaretLine = caretLine
                 CurrentSnapshot = caretLine.Snapshot } |> Some
 
@@ -2553,6 +2632,22 @@ module TrackingPointUtil =
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
             GetPoint newSnapshot trackingPoint
+
+    let GetVirtualPointInSnapshot (point: VirtualSnapshotPoint) mode (newSnapshot: ITextSnapshot) =
+        let oldSnapshot = SnapshotPointUtil.GetSnapshot point.Position
+        if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
+            Some point
+        else
+            let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position.Position, mode)
+            match GetPoint newSnapshot trackingPoint with
+            | Some newPoint ->
+                let virtualSpaces = point.VirtualSpaces
+                newPoint
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces
+                |> Some
+            | None ->
+                None
 
 /// Abstraction useful for APIs which need to work over a single SnapshotSpan 
 /// or collection of SnapshotSpan values

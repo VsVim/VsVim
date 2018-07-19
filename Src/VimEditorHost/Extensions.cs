@@ -107,11 +107,11 @@ namespace Vim.EditorHost
         /// Move the caret to the given position in the ITextView with the set amount of virtual 
         /// spaces
         /// </summary>
-        public static void MoveCaretTo(this ITextView textView, int position, int virtualSpaces)
+        public static CaretPosition MoveCaretTo(this ITextView textView, int position, int virtualSpaces)
         {
             var point = new SnapshotPoint(textView.TextSnapshot, position);
             var virtualPoint = new VirtualSnapshotPoint(point, virtualSpaces);
-            textView.Caret.MoveTo(virtualPoint);
+            return textView.Caret.MoveTo(virtualPoint);
         }
 
         public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber)
@@ -125,6 +125,14 @@ namespace Vim.EditorHost
             var snapshotLine = textView.TextSnapshot.GetLineFromLineNumber(lineNumber);
             var point = snapshotLine.Start.Add(column);
             return MoveCaretTo(textView, point.Position);
+        }
+
+        public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber, int column, int virtualSpaces)
+        {
+            var snapshotLine = textView.TextSnapshot.GetLineFromLineNumber(lineNumber);
+            var point = snapshotLine.Start.Add(column);
+            var virtualPoint = new VirtualSnapshotPoint(point, virtualSpaces);
+            return textView.Caret.MoveTo(virtualPoint);
         }
 
         public static void SetText(this ITextView textView, params string[] lines)
@@ -162,6 +170,17 @@ namespace Vim.EditorHost
             return new SnapshotPoint(buffer.CurrentSnapshot, position);
         }
 
+        public static VirtualSnapshotPoint GetVirtualPoint(this ITextBuffer buffer, int position)
+        {
+            return new VirtualSnapshotPoint(buffer.CurrentSnapshot, position);
+        }
+
+        public static VirtualSnapshotPoint GetVirtualPointInLine(this ITextBuffer buffer, int line, int column)
+        {
+            var snapshotLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line);
+            return new VirtualSnapshotPoint(snapshotLine, column);
+        }
+
         public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
         {
             return buffer.CurrentSnapshot.GetEndPoint();
@@ -195,6 +214,11 @@ namespace Vim.EditorHost
         public static SnapshotPoint GetPointInLine(this ITextBuffer textBuffer, int line, int column)
         {
             return textBuffer.CurrentSnapshot.GetPointInLine(line, column);
+        }
+
+        public static VirtualSnapshotPoint GetVirtualPointInLine(this ITextBuffer textBuffer, int line, int column, int virtualSpaces)
+        {
+            return textBuffer.CurrentSnapshot.GetVirtualPointInLine(line, column, virtualSpaces);
         }
 
         public static void SetText(this ITextBuffer buffer, params string[] lines)
@@ -355,6 +379,12 @@ namespace Vim.EditorHost
         {
             var snapshotLine = snapshot.GetLineFromLineNumber(line);
             return snapshotLine.Start.Add(column);
+        }
+
+        public static VirtualSnapshotPoint GetVirtualPointInLine(this ITextSnapshot snapshot, int line, int column, int virtualSpaces)
+        {
+            var snapshotLine = snapshot.GetLineFromLineNumber(line);
+            return new VirtualSnapshotPoint(snapshotLine.Start.Add(column), virtualSpaces);
         }
 
         public static SnapshotPoint GetStartPoint(this ITextSnapshot snapshot)

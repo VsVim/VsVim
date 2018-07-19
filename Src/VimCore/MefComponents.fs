@@ -214,7 +214,8 @@ type internal TrackingVisualSpan =
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount line count 
                 |> VisualSpan.Line
             | Block (_, tabStop, width, height) ->
-                let blockSpan = BlockSpan(point, tabStop, width, height)
+                let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
+                let blockSpan = BlockSpan(virtualPoint, tabStop, width, height)
                 VisualSpan.Block blockSpan
             |> Some
 

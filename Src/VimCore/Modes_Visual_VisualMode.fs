@@ -185,6 +185,13 @@ type internal VisualMode
         _runner.ResetState()
         _selectionTracker.Stop()
 
+    /// The current Visual Selection
+    member x.VisualSelection =
+        let selectionKind = _globalSettings.SelectionKind
+        let tabStop = _vimBufferData.LocalSettings.TabStop
+        let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
+        VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+
     member x.Process (ki: KeyInput) =  
 
         // Save the last visual selection at the global level for use with [count]V|v except
@@ -217,7 +224,9 @@ type internal VisualMode
                     if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetAnchorPoint then
                         match _vimBufferData.VisualAnchorPoint |>  OptionUtil.map2 (TrackingPointUtil.GetPoint x.CurrentSnapshot) with
                         | None -> ()
-                        | Some anchorPoint -> _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
+                        | Some anchorPoint ->
+                            let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
+                            _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->
@@ -306,7 +315,7 @@ type internal VisualMode
         member x.CommandRunner = _runner
         member x.KeyRemapMode = x.KeyRemapMode
         member x.InCount = _runner.InCount
-        member x.VisualSelection = VisualSelection.CreateForSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop
+        member x.VisualSelection = x.VisualSelection
         member x.SyncSelection () = x.SyncSelection()
 
 

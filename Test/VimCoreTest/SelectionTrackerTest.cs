@@ -31,6 +31,7 @@ namespace Vim.UnitTest
             _globalSettings = new GlobalSettings();
             var localSettings = new LocalSettings(_globalSettings);
             var vimTextBuffer = MockObjectFactory.CreateVimTextBuffer(_textView.TextBuffer, localSettings);
+            vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             _vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, _textView);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
             _tracker = new SelectionTracker(_vimBufferData, _incrementalSearch.Object, kind);
@@ -43,7 +44,7 @@ namespace Vim.UnitTest
             Create(VisualKind.Character, "foo");
             _textView.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.Equal(0, _tracker.AnchorPoint.Position);
-            Assert.Same(_textView.TextSnapshot, _tracker.AnchorPoint.Snapshot);
+            Assert.Same(_textView.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
         }
 
         /// <summary>

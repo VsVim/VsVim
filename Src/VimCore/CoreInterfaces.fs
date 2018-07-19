@@ -1544,6 +1544,17 @@ type CharacterSpan =
                 max 0 diff
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
+    new (span: VirtualSnapshotSpan) =
+        let lineCount = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
+        let lastLine = SnapshotSpanUtil.GetLastLine span.SnapshotSpan
+        let lastLineLength =
+            if lineCount = 1 then
+                span.End.Position.Position - span.Start.Position.Position + span.End.VirtualSpaces
+            else
+                let diff = span.End.Position.Position - lastLine.Start.Position + span.End.VirtualSpaces
+                max 0 diff
+        CharacterSpan(span.Start.Position, lineCount, lastLineLength)
+
     new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
@@ -1603,7 +1614,7 @@ type CharacterSpan =
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
     member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
-        if x.End = x.LastLine.End then
+        if x.End.Position >= x.LastLine.End.Position then
             let endPoint = x.LastLine.EndIncludingLineBreak
             CharacterSpan(x.Start, endPoint)
         else
@@ -1620,7 +1631,7 @@ type CharacterSpan =
 [<Struct>]
 type BlockSpan =
 
-    val private _startPoint: SnapshotPoint
+    val private _startPoint: VirtualSnapshotPoint
     val private _tabStop: int
     val private _spaces: int
     val private _height: int
@@ -1628,15 +1639,19 @@ type BlockSpan =
     new (startPoint, tabStop, spaces, height) = 
         { _startPoint = startPoint; _tabStop = tabStop; _spaces = spaces; _height = height }
 
+    new (startPoint, tabStop, spaces, height) =
+        let startPoint = VirtualSnapshotPointUtil.OfPoint startPoint
+        { _startPoint = startPoint; _tabStop = tabStop; _spaces = spaces; _height = height }
+
     /// The SnapshotPoint which begins this BlockSpan
-    member x.Start = x._startPoint
+    member x.Start = x._startPoint.Position
 
     /// In what column does this BlockSpan begin.  This will not calculate tabs as 
     /// spaces.  It just returns the literal column of the start 
-    member x.Column = SnapshotPointUtil.GetColumn x.Start
+    member x.Column = VirtualSnapshotPointUtil.GetColumnNumber x.VirtualStart
 
     /// In what space does this BlockSpan begin
-    member x.ColumnSpaces = SnapshotPointUtil.GetSpacesToPoint x._startPoint x._tabStop
+    member x.ColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint x._startPoint x._tabStop
 
     /// How many spaces does this BlockSpan occupy?  Be careful to treat this value as spaces, not columns.  The
     /// different being that tabs count as 'tabStop' spaces but only 1 column.  
@@ -1659,6 +1674,21 @@ type BlockSpan =
             SnapshotPointUtil.AddOneOrCurrent point.Point
         else
             point.Point
+
+    /// Get the virtual start point of the BlockSpan
+    member x.VirtualStart =
+        x._startPoint
+
+    /// Get the virtual end point (exclusive) of the BlockSpan
+    member x.VirtualEnd =
+        let point = VirtualSnapshotPointUtil.OfPoint x.End
+        let line = SnapshotPointUtil.GetContainingLine point.Position
+        if point.Position = line.End then
+            let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length x._tabStop
+            let virtualSpaces = x.ColumnSpaces + x.Spaces - realSpaces
+            VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
+        else
+            point
 
     /// What is the tab stop this BlockSpan is created off of
     member x.TabStop = x._tabStop
@@ -1684,6 +1714,25 @@ type BlockSpan =
 
         list
         |> NonEmptyCollectionUtil.OfSeq 
+        |> Option.get
+
+    /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information
+    member x.BlockVirtualSpans: NonEmptyCollection<VirtualSnapshotSpan> =
+        let snapshot = SnapshotPointUtil.GetSnapshot x.Start
+        let offset = x.ColumnSpaces
+        let lineNumber = SnapshotPointUtil.GetLineNumber x.Start
+        let list = System.Collections.Generic.List<VirtualSnapshotSpan>()
+        for i = lineNumber to ((x._height - 1) + lineNumber) do
+            match SnapshotUtil.TryGetLine snapshot i with
+            | None -> ()
+            | Some line ->
+                let startPoint = VirtualSnapshotLineUtil.GetSpace line offset x._tabStop
+                let endPoint = VirtualSnapshotLineUtil.GetSpace line (offset + x.Spaces) x._tabStop
+                let span = VirtualSnapshotSpan(startPoint, endPoint)
+                list.Add(span)
+
+        list
+        |> NonEmptyCollectionUtil.OfSeq
         |> Option.get
 
     /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
@@ -1717,10 +1766,13 @@ type BlockSpan =
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
     /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
     /// SnapshotSpan start
-    static member CreateForSpan (span: SnapshotSpan) tabStop =
+    static member CreateForVirtualSpan (span: VirtualSnapshotSpan) tabStop =
+
+        // The start of the span is by definition before the end of the span but we
+        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
         let startPoint, width = 
-            let startColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.Start tabStop
-            let endColumnSpaces = SnapshotPointUtil.GetSpacesToPoint span.End tabStop
+            let startColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.Start tabStop
+            let endColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.End tabStop
             let width = endColumnSpaces - startColumnSpaces 
 
             if width = 0 then
@@ -1728,13 +1780,16 @@ type BlockSpan =
             elif width > 0 then
                 span.Start, width
             else 
-                let startLine = SnapshotPointUtil.GetContainingLine span.Start
-                let start = SnapshotLineUtil.GetColumnOrEnd endColumnSpaces startLine
-                let width = abs width
-                start, width
+                let startLine = SnapshotPointUtil.GetContainingLine span.Start.Position
+                let start = VirtualSnapshotLineUtil.GetSpace startLine endColumnSpaces tabStop
+                start, -width
 
-        let height = SnapshotSpanUtil.GetLineCount span
+        let height = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
         BlockSpan(startPoint, tabStop, width, height)
+
+    static member CreateForSpan (span: SnapshotSpan) tabStop =
+        let virtualSpan = VirtualSnapshotSpanUtil.OfSpan span
+        BlockSpan.CreateForVirtualSpan virtualSpan tabStop
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -1886,7 +1941,6 @@ type VisualSpan =
             //
             // When this happens the anchor point is reset to min of the column of the SnapshotPoint the
             // caret resides in or the column of the anchor point
-            let endLine = blockSpan.End.GetContainingLine()
             let endPoint = blockSpan.OverlapEnd
             let startPoint =
                 if endPoint.SpacesBefore > 0 then
@@ -1895,16 +1949,11 @@ type VisualSpan =
                     let column = min startColumn endColumn
                     let startLine = blockSpan.Start.GetContainingLine()
                     SnapshotLineUtil.GetColumnOrEnd column startLine
+                    |> VirtualSnapshotPointUtil.OfPoint
                 else
-                    blockSpan.Start
-
-            // When calculating the actual columns to put the selection on here we need to consider
-            // all tabs as the equivalent number of spaces 
-        
+                    blockSpan.VirtualStart
             textView.Selection.Mode <- TextSelectionMode.Box
-            textView.Selection.Select(
-                VirtualSnapshotPoint(startPoint),
-                VirtualSnapshotPoint(blockSpan.End))
+            textView.Selection.Select(startPoint, blockSpan.VirtualEnd)
 
     override x.ToString() =
         match x with
@@ -1915,17 +1964,18 @@ type VisualSpan =
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
     /// to be the end of the selection and hence not included (exclusive) just as it is 
     /// in ITextSelection
-    static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
+    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop =
 
         match visualKind with
         | VisualKind.Character ->
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let characterSpan = CharacterSpan(startPoint, endPoint)
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
+            let characterSpan = CharacterSpan(span)
             Character characterSpan
         | VisualKind.Line ->
 
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint.Position
 
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
             // one line too big.  Go back on point to ensure we don't expand the span
@@ -1933,25 +1983,30 @@ type VisualSpan =
                 if startPoint = endPoint then
                     startLine
                 else
-                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
+                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint.Position
                     SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
         | VisualKind.Block -> 
-            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let span = SnapshotSpan(startPoint, endPoint)
-            BlockSpan.CreateForSpan span tabStop |> Block
+            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
+            let span = VirtualSnapshotSpan(startPoint, endPoint)
+            BlockSpan.CreateForVirtualSpan span tabStop |> Block
+
+    static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
+        let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
+        let virtualActivePoint = VirtualSnapshotPointUtil.OfPoint activePoint
+        VisualSpan.CreateForVirtualSelectionPoints visualKind virtualAnchorPoint virtualActivePoint tabStop
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
-    static member CreateForSelection (textView: ITextView) visualKind tabStop =
+    static member CreateForVirtualSelection (textView: ITextView) visualKind tabStop useVirtualSpace =
         let selection = textView.Selection
         if selection.IsEmpty then
-            let caretPoint = TextViewUtil.GetCaretPoint textView
-            VisualSpan.CreateForSelectionPoints visualKind caretPoint caretPoint tabStop
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+            VisualSpan.CreateForVirtualSelectionPoints visualKind caretPoint caretPoint tabStop
         else
-            let anchorPoint = selection.AnchorPoint.Position
-            let activePoint = selection.ActivePoint.Position 
+            let anchorPoint = selection.AnchorPoint
+            let activePoint = selection.ActivePoint
 
             // Need to special case the selection ending in, and encompassing, an empty line.  Once you 
             // get rid of the virtual points here it's impossible to distinguish from the case where the 
@@ -1961,8 +2016,14 @@ type VisualSpan =
                 let characterSpan = CharacterSpan(selection.Start.Position, endPoint)
                 Character characterSpan
             else
-                let visualSpan = VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop
-                visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
+                let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
+                if visualKind <> VisualKind.Line && useVirtualSpace then
+                    visualSpan
+                else
+                    visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
+
+    static member CreateForSelection (textView: ITextView) visualKind tabStop =
+        VisualSpan.CreateForVirtualSelection textView visualKind tabStop false
 
     static member CreateForSpan (span: SnapshotSpan) visualKind tabStop =
         match visualKind with
@@ -2053,12 +2114,12 @@ type VisualSelection =
                 // The width of a block span decreases by 1 in exclusive.  The minimum though
                 // is still 1
                 let width = max (blockSpan.Spaces - 1) 1
-                let blockSpan = BlockSpan(blockSpan.Start, blockSpan.TabStop, width, blockSpan.Height)
+                let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height)
                 VisualSelection.Block (blockSpan, blockCaretLocation)
 
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
     /// specified SelectionKind.  
-    member x.GetCaretPoint selectionKind = 
+    member x.GetCaretVirtualPoint selectionKind =
 
         let getAdjustedEnd (span: SnapshotSpan) = 
             if span.Length = 0 then
@@ -2069,6 +2130,18 @@ type VisualSelection =
                 | SelectionKind.Inclusive -> 
                     if span.Length > 0 then
                         SnapshotPointUtil.SubtractOne span.End
+                    else
+                        span.End
+
+        let getAdjustedVirtualEnd (span: VirtualSnapshotSpan) =
+            if span.Length = 0 then
+                span.Start
+            else
+                match selectionKind with
+                | SelectionKind.Exclusive -> span.End
+                | SelectionKind.Inclusive ->
+                    if span.Length > 0 then
+                        VirtualSnapshotPointUtil.SubtractOneOrCurrent span.End
                     else
                         span.End
 
@@ -2085,6 +2158,7 @@ type VisualSelection =
                 else
                     getAdjustedEnd characterSpan.Span
             | SearchPath.Backward -> characterSpan.Start
+            |> VirtualSnapshotPointUtil.OfPoint
 
         | Line (snapshotLineRange, path, column) ->
 
@@ -2100,15 +2174,33 @@ type VisualSelection =
                 SnapshotPointUtil.Add column line.Start
             else
                 line.End
+            |> VirtualSnapshotPointUtil.OfPoint
 
         | Block (blockSpan, blockCaretLocation) ->
 
             match blockCaretLocation with
-            | BlockCaretLocation.TopLeft -> blockSpan.Start
-            | BlockCaretLocation.TopRight -> getAdjustedEnd blockSpan.BlockSpans.Head
-            | BlockCaretLocation.BottomLeft -> blockSpan.BlockSpans |> SeqUtil.last |> SnapshotSpanUtil.GetStartPoint
-            | BlockCaretLocation.BottomRight -> blockSpan.BlockSpans |> SeqUtil.last |> getAdjustedEnd
+            | BlockCaretLocation.TopLeft ->
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.head
+                |> VirtualSnapshotSpanUtil.GetStartPoint
+            | BlockCaretLocation.TopRight ->
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.head
+                |> getAdjustedVirtualEnd
+            | BlockCaretLocation.BottomLeft ->
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.last
+                |> VirtualSnapshotSpanUtil.GetStartPoint
+            | BlockCaretLocation.BottomRight ->
+                blockSpan.BlockVirtualSpans
+                |> SeqUtil.last
+                |> getAdjustedVirtualEnd
 
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the
+    /// specified SelectionKind.
+    member x.GetCaretPoint selectionKind =
+        let virtualCaretPoint = x.GetCaretVirtualPoint selectionKind
+        virtualCaretPoint.Position
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =
@@ -2131,12 +2223,12 @@ type VisualSelection =
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
     /// Create the VisualSelection over the VisualSpan with the specified caret location
-    static member Create (visualSpan: VisualSpan) path (caretPoint: SnapshotPoint) =
+    static member Create (visualSpan: VisualSpan) path (caretPoint: VirtualSnapshotPoint) =
         match visualSpan with
         | VisualSpan.Character characterSpan ->
             Character (characterSpan, path)
         | VisualSpan.Line lineRange ->
-            let column = SnapshotPointUtil.GetColumn caretPoint
+            let column = VirtualSnapshotPointUtil.GetColumnNumber caretPoint
             Line (lineRange, path, column)
 
         | VisualSpan.Block blockSpan ->
@@ -2145,7 +2237,7 @@ type VisualSelection =
             // caret locations
             let blockCaretLocation = 
                 let startLine, startColumn = SnapshotPointUtil.GetLineColumn blockSpan.Start
-                let caretLine, caretColumn = SnapshotPointUtil.GetLineColumn caretPoint
+                let caretLine, caretColumn = VirtualSnapshotPointUtil.GetLineColumn caretPoint
                 match caretLine > startLine, caretColumn > startColumn with
                 | true, true -> BlockCaretLocation.BottomRight
                 | true, false -> BlockCaretLocation.BottomLeft
@@ -2157,22 +2249,31 @@ type VisualSelection =
     /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or 
     /// caretPoint, which is greater position wise is the last point included in the selection.  It
     /// is inclusive
-    static member CreateForPoints visualKind (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) tabStop =
+    static member CreateForVirtualPoints visualKind (anchorPoint: VirtualSnapshotPoint) (caretPoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
+
+        let addOne point =
+            if visualKind <> VisualKind.Line && useVirtualSpace then
+                point
+                |> VirtualSnapshotPointUtil.AddOneOnSameLine
+            else
+                point.Position
+                |> SnapshotPointUtil.AddOneOrCurrent
+                |> VirtualSnapshotPointUtil.OfPoint
 
         let createBlock () =
-            let anchorSpaces = SnapshotPointUtil.GetSpacesToPoint anchorPoint tabStop
-            let caretSpaces = SnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
+            let anchorSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint anchorPoint tabStop
+            let caretSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
             let spaces = (abs (caretSpaces - anchorSpaces)) + 1
             let column = min anchorSpaces caretSpaces
             
             let startPoint = 
-                let first, _ = SnapshotPointUtil.OrderAscending anchorPoint caretPoint
-                let line = SnapshotPointUtil.GetContainingLine first
-                SnapshotLineUtil.GetSpaceOrEnd line column tabStop
+                let first, _ = VirtualSnapshotPointUtil.OrderAscending anchorPoint caretPoint
+                let line = VirtualSnapshotPointUtil.GetContainingLine first
+                VirtualSnapshotLineUtil.GetSpace line column tabStop
 
             let height = 
-                let anchorLine = anchorPoint.GetContainingLine()
-                let caretLine = caretPoint.GetContainingLine()
+                let anchorLine = anchorPoint.Position.GetContainingLine()
+                let caretLine = caretPoint.Position.GetContainingLine()
                 (abs (anchorLine.LineNumber - caretLine.LineNumber)) + 1
 
             let path = 
@@ -2184,17 +2285,17 @@ type VisualSelection =
 
         let createNormal () = 
 
-            let isForward = anchorPoint.Position <= caretPoint.Position
+            let isForward = anchorPoint.Position.Position <= caretPoint.Position.Position
             let anchorPoint, activePoint = 
                 if isForward then
-                    let activePoint = SnapshotPointUtil.AddOneOrCurrent caretPoint
+                    let activePoint = addOne caretPoint
                     anchorPoint, activePoint
                 else
-                    let activePoint = SnapshotPointUtil.AddOneOrCurrent anchorPoint
+                    let activePoint = addOne anchorPoint
                     caretPoint, activePoint
 
             let path = SearchPath.Create isForward
-            VisualSpan.CreateForSelectionPoints visualKind anchorPoint activePoint tabStop, path
+            VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop, path
 
         let visualSpan, path = 
             match visualKind with
@@ -2204,12 +2305,20 @@ type VisualSelection =
 
         VisualSelection.Create visualSpan path caretPoint
 
+    /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or 
+    /// caretPoint, which is greater position wise is the last point included in the selection.  It
+    /// is inclusive
+    static member CreateForPoints (visualKind : VisualKind) (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) (tabStop: int) =
+        let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
+        let virtualCaretPoint = VirtualSnapshotPointUtil.OfPoint caretPoint
+        VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop false
+
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
     /// SelectionKind should specify what the current mode is (or the mode which produced the 
     /// active ITextSelection)
-    static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
-        let caretPoint = TextViewUtil.GetCaretPoint textView
-        let visualSpan = VisualSpan.CreateForSelection textView visualKind tabStop
+    static member CreateForVirtualSelection (textView: ITextView) visualKind selectionKind tabStop useVirtualSpace =
+        let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+        let visualSpan = VisualSpan.CreateForVirtualSelection textView visualKind tabStop useVirtualSpace
 
         // Get the proper VisualSpan based off of the way in which it was created.  VisualSelection
         // represents all values internally as inclusive
@@ -2224,7 +2333,7 @@ type VisualSelection =
                 | VisualSpan.Line _ -> visualSpan
                 | VisualSpan.Block blockSpan ->
                     let width = blockSpan.Spaces + 1
-                    let blockSpan = BlockSpan(blockSpan.Start, blockSpan.TabStop, width, blockSpan.Height)
+                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height)
                     VisualSpan.Block blockSpan
 
         let path = 
@@ -2233,12 +2342,15 @@ type VisualSelection =
             else
                 SearchPath.Forward
 
-        let caretPoint = TextViewUtil.GetCaretPoint textView
         VisualSelection.Create visualSpan path caretPoint 
+
+    static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
+        VisualSelection.CreateForVirtualSelection textView visualKind selectionKind tabStop false
 
     /// Create the initial Visual Selection information for the specified Kind started at 
     /// the specified point
-    static member CreateInitial visualKind caretPoint tabStop selectionKind =
+    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind =
+        let caretPoint = caretVirtualPoint.Position
         match visualKind with
         | VisualKind.Character ->
             let characterSpan = 
@@ -2255,7 +2367,7 @@ type VisualSelection =
             let column = SnapshotPointUtil.GetColumn caretPoint
             VisualSelection.Line (lineRange, SearchPath.Forward, column)
         | VisualKind.Block ->
-            let blockSpan = BlockSpan(caretPoint, tabStop, 1, 1)
+            let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
 /// This is used for commands like [count]v and [count]V to hold a visual selection
@@ -4669,6 +4781,9 @@ and IVimTextBuffer =
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
+
+    /// Whether to use virtual space
+    abstract UseVirtualSpace: bool
 
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
     /// state 
