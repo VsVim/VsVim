@@ -56,6 +56,7 @@ namespace Vim.UnitTest
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             var lineChangeTracker = new LineChangeTracker(vimBufferData);
+            var incrementalSearch = new IncrementalSearch(vimBufferData, operations);
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
@@ -69,7 +70,8 @@ namespace Vim.UnitTest
                 operations,
                 motionUtil,
                 runner,
-                capture);
+                capture,
+                incrementalSearch);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }
