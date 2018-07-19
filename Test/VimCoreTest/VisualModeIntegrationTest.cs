@@ -1749,7 +1749,7 @@ namespace Vim.UnitTest
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
             [WpfTheory]
-            [InlineData("VirtualEditOptions")]
+            [MemberData(nameof(VirtualEditOptions))]
             public void Change_LineWise(string virtualEdit)
             {
                 Create("cat", "  dog", "  bear", "tree");
@@ -1827,7 +1827,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("VirtualEditOptions")]
+            [MemberData(nameof(VirtualEditOptions))]
             public void Repeat1(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
@@ -1839,7 +1839,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("VirtualEditOptions")]
+            [MemberData(nameof(VirtualEditOptions))]
             public void Repeat2(string virtualEdit)
             {
                 Create("dog again", "cat again", "chicken");
@@ -2017,7 +2017,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("VirtualEditOptions")]
+            [MemberData(nameof(VirtualEditOptions))]
             public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
@@ -3066,7 +3066,7 @@ namespace Vim.UnitTest
                 /// was executed
                 /// </summary>
                 [WpfTheory]
-                [InlineData("VirtualEditOptions")]
+                [MemberData(nameof(VirtualEditOptions))]
                 public void LastVisualSelectionWithVeOnemore(string virtualEdit)
                 {
                     Create("cat", "dog", "fish");
@@ -3079,7 +3079,7 @@ namespace Vim.UnitTest
                 }
 
                 [WpfTheory]
-                [InlineData("VirtualEditOptions")]
+                [MemberData(nameof(VirtualEditOptions))]
                 public void ReselectLastVisual(string virtualEdit)
                 {
                     Create("cat", "dog", "fish");
