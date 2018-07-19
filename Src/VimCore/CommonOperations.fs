@@ -41,7 +41,7 @@ type internal CommonOperations
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option
-    ) =
+    ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
@@ -63,7 +63,7 @@ type internal CommonOperations
 
     do
         _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> _maintainCaretColumn <- MaintainCaretColumn.None)
+        |> Observable.subscribe (fun _ -> this.MaintainCaretColumn <- MaintainCaretColumn.None)
         |> _eventHandlers.Add
 
         _textView.Closed
@@ -675,7 +675,7 @@ type internal CommonOperations
         let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
         let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
         TextViewUtil.MoveCaretToPoint _textView point
-        _maintainCaretColumn <- MaintainCaretColumn.Spaces spaces
+        x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result: MotionResult) =
@@ -695,10 +695,13 @@ type internal CommonOperations
                         x.GetVirtualSpacesToColumn x.CaretLine column
                     else
                         x.GetSpacesToColumn x.CaretLine column
-                match _maintainCaretColumn with
+                match x.MaintainCaretColumn with
                 | MaintainCaretColumn.None -> motionCaretColumnSpaces
                 | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
                 | MaintainCaretColumn.EndOfLine -> max 0 (visualLastLine.Length - 1)
+
+            // Record the old setting.
+            let oldMaintainCaretColumn = x.MaintainCaretColumn
 
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
@@ -716,11 +719,14 @@ type internal CommonOperations
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
             x.MoveCaretToMotionResultCore result 
-            _maintainCaretColumn <-
-                if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
-                    MaintainCaretColumn.EndOfLine
-                else
-                    MaintainCaretColumn.Spaces caretColumnSpaces
+            x.MaintainCaretColumn <-
+                match oldMaintainCaretColumn with
+                | MaintainCaretColumn.EndOfLine -> MaintainCaretColumn.EndOfLine
+                | _ ->
+                    if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
+                        MaintainCaretColumn.EndOfLine
+                    else
+                        MaintainCaretColumn.Spaces caretColumnSpaces
 
         | _ -> 
 
@@ -729,7 +735,7 @@ type internal CommonOperations
 
             //If the motion wanted to maintain a specific column for the caret, we need to
             //save it.
-            _maintainCaretColumn <-
+            x.MaintainCaretColumn <-
                 if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
                     MaintainCaretColumn.EndOfLine
                 else 
