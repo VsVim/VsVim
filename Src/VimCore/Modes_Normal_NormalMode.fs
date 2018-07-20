@@ -17,7 +17,8 @@ type internal NormalMode
         _operations: ICommonOperations,
         _motionUtil: IMotionUtil,
         _runner: ICommandRunner,
-        _capture: IMotionCapture
+        _capture: IMotionCapture,
+        _incrementalSearch: IIncrementalSearch
     ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -373,6 +374,7 @@ type internal NormalMode
             x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
+            _incrementalSearch.Cancel()
             x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
 

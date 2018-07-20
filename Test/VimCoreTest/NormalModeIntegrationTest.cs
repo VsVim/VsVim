@@ -1725,6 +1725,19 @@ namespace Vim.UnitTest
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
                 Assert.Equal("cat dog" + Environment.NewLine, UnnamedRegister.StringValue);
             }
+
+            /// <summary>
+            /// Ensure that using search as an operand can be cancelled
+            /// </summary>
+            [WpfFact]
+            public void SearchCanBeCancelled()
+            {
+                // Reported in issue #2257.
+                Create("cat", "");
+                _vimBuffer.ProcessNotation("y/<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+            }
         }
 
         public sealed class UnicodeTest : NormalModeIntegrationTest

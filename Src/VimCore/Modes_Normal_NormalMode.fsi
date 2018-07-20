@@ -8,5 +8,5 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalMode =
     interface INormalMode
-    new: IVimBufferData * ICommonOperations * IMotionUtil * ICommandRunner * IMotionCapture -> NormalMode
+    new: IVimBufferData * ICommonOperations * IMotionUtil * ICommandRunner * IMotionCapture * IIncrementalSearch -> NormalMode
 
