@@ -4423,7 +4423,7 @@ type IVimHost =
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand: file: string -> arguments: string -> input: string -> vimHost: IVimData -> RunCommandResults
+    abstract RunCommand: workingDirectory: string -> file: string -> arguments: string -> input: string -> RunCommandResults
 
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit
@@ -4484,7 +4484,7 @@ type IVimHost =
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
 
-    /// The current directory for this particular window
+    /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set
 
     /// The current (rooted) file path for this buffer
@@ -4493,6 +4493,11 @@ and IVimBufferData =
     /// The current file path for this buffer, relative to CurrentDirectory
     abstract CurrentRelativeFilePath : string option
     
+    /// The working directory to use for this particular buffer,
+    /// either the current directory for the buffer, if set, or the
+    /// global current directory
+    abstract WorkingDirectory: string
+
     /// This is the caret point at the start of the most recent visual mode session. It's
     /// the actual location of the caret vs. the anchor point.
     abstract VisualCaretStartPoint: ITrackingPoint option with get, set
@@ -4820,7 +4825,7 @@ and IVimBuffer =
     /// is buffered until it is completed or the ambiguity is removed.  
     abstract BufferedKeyInputs: KeyInput list
 
-    /// The current directory for this particular window
+    /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set
 
     /// The ICommandUtil for this IVimBuffer
