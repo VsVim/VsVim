@@ -2082,6 +2082,28 @@ type internal CommandUtil
 
                     EditSpan.Block col, OperationKind.CharacterWise)
 
+        // Translate the deleted span to the current snapshot.
+        let snapshot = _textView.TextSnapshot
+        let startPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.Start PointTrackingMode.Negative snapshot
+        let endPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.End PointTrackingMode.Positive snapshot
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint ->
+
+            // Record last visual selection as if what was put were selected.
+            let tabStop = _localSettings.TabStop
+            let selectionKind = _globalSettings.SelectionKind
+            let endPoint =
+                if visualSpan.VisualKind = VisualKind.Line || selectionKind = SelectionKind.Inclusive then
+                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap endPoint
+                else
+                    endPoint
+            _vimTextBuffer.LastVisualSelection <-
+                VisualSelection.CreateForPoints visualSpan.VisualKind startPoint endPoint tabStop
+                |> (fun visualSelection -> visualSelection.AdjustForSelectionKind selectionKind)
+                |> Some
+        | _ ->
+            ()
+
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
         _commonOperations.SetRegisterValue (Some RegisterName.Unnamed) RegisterOperation.Delete value

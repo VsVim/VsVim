@@ -3359,6 +3359,58 @@ namespace Vim.UnitTest
                     Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                     Assert.Equal("bar\r\nbaz\r\n", _textView.GetSelectionSpan().GetText());
                 }
+
+                /// <summary>
+                /// Ensure that putting over a characterwise selection updates
+                /// the start/end of the last visual selection
+                /// </summary>
+                /// <param name="selection"></param>
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void PutOverCharacterwiseReselect(string selection)
+                {
+                    // Reported in issue #2260.
+                    Create("horse", "cat", "bear", "tree");
+                    _globalSettings.Selection = selection;
+                    _vimBuffer.ProcessNotation("1Gvey");
+                    Assert.Equal("horse", UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("3Gvep");
+                    Assert.Equal(new[] { "horse", "cat", "horse", "tree" }, _textBuffer.GetLines());
+                    Assert.Equal("bear", UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("gv");
+                    var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 5));
+                    Assert.Equal(span, _textView.Selection.GetSpan());
+                    _vimBuffer.ProcessNotation("y");
+                    Assert.Equal("horse", UnnamedRegister.StringValue);
+                }
+
+                /// <summary>
+                /// Ensure that putting over a linewise selection updates
+                /// the start/end of the last visual selection
+                /// </summary>
+                /// <param name="selection"></param>
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void PutOverLinewiseReselect(string selection)
+                {
+                    // Reported in issue #2260.
+                    Create("horse", "cat", "bear", "tree", "dog", "");
+                    _globalSettings.Selection = selection;
+                    _vimBuffer.ProcessNotation("1GVjy");
+                    Assert.Equal("horse" + Environment.NewLine + "cat" + Environment.NewLine,
+                        UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("4GVp");
+                    Assert.Equal(new[] { "horse", "cat", "bear", "horse", "cat", "dog", "" }, _textBuffer.GetLines());
+                    Assert.Equal("tree" + Environment.NewLine, UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("gv");
+                    var span = new SnapshotSpan(_textBuffer.GetPointInLine(3, 0), _textBuffer.GetPointInLine(5, 0));
+                    Assert.Equal(span, _textView.Selection.GetSpan());
+                    _vimBuffer.ProcessNotation("y");
+                    Assert.Equal("horse" + Environment.NewLine + "cat" + Environment.NewLine,
+                        UnnamedRegister.StringValue);
+                }
             }
         }
     }
