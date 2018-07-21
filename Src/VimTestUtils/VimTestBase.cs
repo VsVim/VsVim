@@ -578,15 +578,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// This must be public static for xunit to pick it up as a Theory data source
         /// </summary>
-        public static object[] VirtualEditOptions
+        public static IEnumerable<object[]> VirtualEditOptions
         {
             get
             {
-                return new[]
-                {
-                    new object[] { "" },
-                    new object[] { "onemore" },
-                };
+                yield return new object[] { "" };
+                yield return new object[] { "onemore" };
             }
         }
     }
