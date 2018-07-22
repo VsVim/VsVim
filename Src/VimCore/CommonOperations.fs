@@ -229,7 +229,16 @@ type internal CommonOperations
             _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
     /// Format the specified line range
-    member x.FormatLines range =
+    member x.FormatCodeLines range =
+        _vimHost.FormatLines _textView range
+
+        // Place the cursor on the first non-blank character of the first line formatted.
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+
+    /// Format the specified line range
+    member x.FormatTextLines range preserveCaretPosition =
         _vimHost.FormatLines _textView range
 
         // Place the cursor on the first non-blank character of the first line formatted.
@@ -1843,7 +1852,8 @@ type internal CommonOperations
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FilterLines range command = x.FilterLines range command
-        member x.FormatLines range = x.FormatLines range
+        member x.FormatCodeLines range = x.FormatCodeLines range
+        member x.FormatTextLines range preserveCaretPosition = x.FormatTextLines range preserveCaretPosition
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
