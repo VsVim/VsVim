@@ -1535,20 +1535,65 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
-        public void Bind_FormatLines()
+        public void Bind_FormatCodeLines()
         {
             Create("foo", "bar");
-            _commandUtil.SetupCommandNormal(NormalCommand.FormatLines);
+            _commandUtil.SetupCommandNormal(NormalCommand.FormatCodeLines);
             _mode.Process("==");
             _commandUtil.Verify();
         }
 
         [WpfFact]
-        public void Bind_FormatMotion()
+        public void Bind_FormatCodeMotion()
         {
             Create("the dog chased the ball");
-            _commandUtil.SetupCommandMotion<NormalCommand.FormatMotion>();
+            _commandUtil.SetupCommandMotion<NormalCommand.FormatCodeMotion>();
             _mode.Process("=w");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLines1()
+        {
+            Create("foo", "bar");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewFormatTextLines(false));
+            _mode.Process("gqgq");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLines2()
+        {
+            Create("foo", "bar");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewFormatTextLines(false));
+            _mode.Process("gqq");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextMotion()
+        {
+            Create("the dog chased the ball");
+            _commandUtil.SetupCommandMotion<NormalCommand.FormatTextMotion>();
+            _mode.Process("gqw");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLines1_PreservingCaretPosition()
+        {
+            Create("foo", "bar");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewFormatTextLines(true));
+            _mode.Process("gwgw");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLines2_PreservingCaretPosition()
+        {
+            Create("foo", "bar");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewFormatTextLines(true));
+            _mode.Process("gww");
             _commandUtil.Verify();
         }
 
