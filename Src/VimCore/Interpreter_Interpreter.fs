@@ -573,16 +573,39 @@ type VimInterpreter
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPosition text ->
 
             _textBuffer.Insert(destPosition, text) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView destPosition)
+            x.MoveCaretToPositionOrStartOfLine destPosition)
 
+    /// Move the text from the source address to the destination address
     member x.RunMoveTo sourceLineRange destLineRange count =
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPosition text ->
 
+            // Record the insertion point.
+            let oldSnapshot = _textBuffer.CurrentSnapshot
+            let destPoint = SnapshotPoint(oldSnapshot, destPosition)
+
+            // Perform the move.
             use edit = _textBuffer.CreateEdit()
             edit.Insert(destPosition, text) |> ignore
             edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             edit.Apply() |> ignore
-            TextViewUtil.MoveCaretToPosition _textView destPosition)
+
+            // Translate the insertion point to the current snapshot and move to it.
+            let newSnapshot = _textBuffer.CurrentSnapshot
+            match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
+            | Some destPoint -> destPoint.Position
+            | None -> destPosition
+            |> x.MoveCaretToPositionOrStartOfLine)
+
+    /// Move caret to position or the first non-blank on line if 'startofline' is set
+    member x.MoveCaretToPositionOrStartOfLine position =
+        if _globalSettings.StartOfLine then
+            SnapshotPoint(_textBuffer.CurrentSnapshot, position)
+            |> SnapshotPointUtil.GetContainingLine
+            |> SnapshotLineUtil.GetFirstNonBlankOrStart
+            |> SnapshotPointUtil.GetPosition
+        else
+            position
+        |> TextViewUtil.MoveCaretToPosition _textView
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 

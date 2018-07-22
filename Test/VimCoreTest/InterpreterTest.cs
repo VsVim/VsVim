@@ -2442,10 +2442,21 @@ namespace Vim.UnitTest
                 Create("fish", "cat", "dog", "tree");
                 _textView.MoveCaretToLine(2);
                 ParseAndRun("move -2");
-                Assert.Equal("fish", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
-                Assert.Equal("cat", _textView.GetLine(2).GetText());
-                Assert.Equal("tree", _textView.GetLine(3).GetText());
+                Assert.Equal(new[] { "fish", "dog", "cat", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// The move command should position the caret at the beginning of the first moved line
+            /// </summary>
+            [WpfFact]
+            public void Move_ForwardOneLine()
+            {
+                // Reported in issue #2272.
+                Create("fish", "cat", "dog", "tree");
+                ParseAndRun("move 2");
+                Assert.Equal(new[] { "cat", "fish", "dog", "tree" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
 
             [WpfFact]
