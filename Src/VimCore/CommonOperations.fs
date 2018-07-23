@@ -238,8 +238,95 @@ type internal CommonOperations
         _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
     /// Format the specified line range
-    member x.FormatTextLines range preserveCaretPosition =
-        _vimHost.FormatLines _textView range
+    member x.FormatTextLines (range: SnapshotLineRange) preserveCaretPosition =
+        let autoIndent = _localSettings.AutoIndent
+        let textWidth = 20
+
+        // We recognize the following types of comments.
+        let patterns =
+            [|
+                @"^\s*///\s*";
+                @"^\s*//\s*";
+                @"^\s*#\s*";
+                @"^\s*";
+            |]
+
+        // Extract the lines to be formatted and the first line.
+        let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
+        let firstLine = lines |> Seq.head
+
+        // Check the first line against a potential comment pattern.
+        let checkPattern pattern =
+            let capture = Regex.Match(firstLine, pattern)
+            if capture.Success then
+                true, pattern, capture.Value
+            else
+                false, pattern, ""
+
+        // Choose a pattern and a prefix.
+        let pattern, prefix =
+            patterns
+            |> Seq.map checkPattern
+            |> Seq.filter (fun (matches, _, _) -> matches)
+            |> Seq.map (fun (_, pattern, prefix) -> (pattern, prefix))
+            |> Seq.head
+
+        // Strip the prefix from a line.
+        let trimLine (line: string) =
+            let capture = Regex.Match(line, pattern)
+            if capture.Success then
+                line.Substring(capture.Length)
+            else
+                line
+
+        // Strip the prefix from all the lines.
+        let trimmedLines =
+            lines
+            |> Seq.map trimLine
+
+        // Split a line into words on whitespace.
+        let splitWords (line: string) =
+            Regex.Matches(line + " ", @"\S*\s*")
+            |> Seq.cast<Capture>
+            |> Seq.map (fun capture -> capture.Value)
+
+        // Concatenate a reversed list of words into a line.
+        let concatWords (words: string list) =
+            words
+            |> Seq.rev
+            |> String.concat ""
+            |> (fun line -> line.TrimEnd())
+
+        // Calculate the working limit for line length.
+        let limit = textWidth - prefix.Length
+
+        // Aggregrate individual words into lines of limited length.
+        let takeWord ((column: int), (words: string list), (lines: string list)) (word: string) =
+            if column = 0 || column + word.Length <= limit then
+                column + word.Length, word :: words, lines
+            else
+                word.Length, word :: List.Empty, concatWords words :: lines
+
+        // Split the lines into words and then format them into lines using the aggregator.
+        let formattedLines =
+            let _, words, lines =
+                trimmedLines
+                |> Seq.collect splitWords
+                |> Seq.fold takeWord (0, List.Empty, List.Empty)
+            if not words.IsEmpty then
+                concatWords words :: lines
+            else
+                lines
+            |> Seq.rev
+            |> Seq.map (fun line -> prefix + line)
+
+        // Concatenate the formatted lines.
+        let newLine = EditUtil.NewLine _editorOptions
+        let replacement = formattedLines |> String.concat newLine
+
+        // Replace the old lines with the sorted lines.
+        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
 
         // Place the cursor on the first non-blank character of the first line formatted.
         let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
