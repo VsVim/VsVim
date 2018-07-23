@@ -62,6 +62,7 @@ module LocalSettingNames =
     let QuoteEscapeName = "quoteescape"
     let EndOfLineName = "endofline"
     let FixEndOfLineName = "fixendofline"
+    let TextWidthName = "textwidth"
     let HideMarksName = "vsvim_hidemarks"
 
 module WindowSettingNames =
@@ -540,6 +541,9 @@ and IVimLocalSettings =
 
     /// Whether or not to fix any missing final newline
     abstract FixEndOfLine: bool with get, set
+
+    /// Text width used when formatting text
+    abstract TextWidth: int with get, set
 
     /// Which marks to hide from the indicator margin
     abstract HideMarks: string with get, set

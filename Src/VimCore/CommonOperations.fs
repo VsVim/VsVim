@@ -240,14 +240,19 @@ type internal CommonOperations
     /// Format the specified line range
     member x.FormatTextLines (range: SnapshotLineRange) preserveCaretPosition =
         let autoIndent = _localSettings.AutoIndent
-        let textWidth = 20
+        let textWidth =
+            if _localSettings.TextWidth = 0 then
+                79
+            else
+                _localSettings.TextWidth
 
         // We recognize the following types of comments.
         let patterns =
             [|
-                @"^\s*///\s*";
-                @"^\s*//\s*";
-                @"^\s*#\s*";
+                @"^\s*//+\s*";
+                @"^\s*#+\s*";
+                @"^\s*;+\s*";
+                @"^\s*\*+\s*";
                 @"^\s*";
             |]
 
@@ -286,9 +291,12 @@ type internal CommonOperations
 
         // Split a line into words on whitespace.
         let splitWords (line: string) =
-            Regex.Matches(line + " ", @"\S*\s*")
-            |> Seq.cast<Capture>
-            |> Seq.map (fun capture -> capture.Value)
+            if StringUtil.IsWhiteSpace line then
+                seq { yield "" }
+            else
+                Regex.Matches(line + " ", @"\S+\s+")
+                |> Seq.cast<Capture>
+                |> Seq.map (fun capture -> capture.Value)
 
         // Concatenate a reversed list of words into a line.
         let concatWords (words: string list) =
@@ -297,12 +305,21 @@ type internal CommonOperations
             |> String.concat ""
             |> (fun line -> line.TrimEnd())
 
+        // Concatenate words into a line a prepend it to a list of lines.
+        let prependLine (words: string list) (lines: string list) =
+            if words.IsEmpty then
+                lines
+            else
+                concatWords words :: lines
+
         // Calculate the working limit for line length.
         let limit = textWidth - prefix.Length
 
         // Aggregrate individual words into lines of limited length.
         let takeWord ((column: int), (words: string list), (lines: string list)) (word: string) =
-            if column = 0 || column + word.Length <= limit then
+            if word = "" then
+                0, List.Empty, "" :: prependLine words lines
+            elif column = 0 || column + word.Length <= limit then
                 column + word.Length, word :: words, lines
             else
                 word.Length, word :: List.Empty, concatWords words :: lines
@@ -313,12 +330,9 @@ type internal CommonOperations
                 trimmedLines
                 |> Seq.collect splitWords
                 |> Seq.fold takeWord (0, List.Empty, List.Empty)
-            if not words.IsEmpty then
-                concatWords words :: lines
-            else
-                lines
+            prependLine words lines
             |> Seq.rev
-            |> Seq.map (fun line -> prefix + line)
+            |> Seq.map (fun line -> (prefix + line).TrimEnd())
 
         // Concatenate the formatted lines.
         let newLine = EditUtil.NewLine _editorOptions
