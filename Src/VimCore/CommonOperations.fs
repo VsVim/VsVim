@@ -343,7 +343,7 @@ type internal CommonOperations
 
             if word = "" then
                 0, List.Empty, "" :: prependLine words lines
-            elif column = 0 || column + word.Length <= limit then
+            elif column = 0 || column + word.TrimEnd().Length <= limit then
                 column + word.Length, word :: words, lines
             else
                 word.Length, word :: List.Empty, concatWords words :: lines

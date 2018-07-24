@@ -1776,6 +1776,104 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class FormatTextLines : VisualModeIntegrationTest
+        {
+            [WpfFact]
+            public void PlainText()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void LongLine()
+            {
+                Create("cat dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void PreserveSpacing()
+            {
+                Create("cat  dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat  dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TinyWidth()
+            {
+                Create("cat dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 1;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat", "dog", "bear", "bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoAutoIndent()
+            {
+                Create("  cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.LocalSettings.AutoIndent = false;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void AutoIndent()
+            {
+                Create("  cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.LocalSettings.AutoIndent = true;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  cat dog", "  bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfTheory]
+            [InlineData(false)]
+            [InlineData(true)]
+            public void SlashSlash(bool autoIndent)
+            {
+                Create("  // cat", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.LocalSettings.AutoIndent = autoIndent;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat dog", "  // bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TripleSlash()
+            {
+                Create("  /// cat", "/// dog", "/// bear", "/// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  /// cat dog", "  /// bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void BlankParagraph()
+            {
+                Create("  // cat", "//", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat", "  //", "  // dog bear", "  // bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void WhitespaceParagraph()
+            {
+                Create("  // cat", "// ", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat", "  //", "  // dog bear", "  // bat", "" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class MiscAllTest : VisualModeIntegrationTest
         {
             /// <summary>
