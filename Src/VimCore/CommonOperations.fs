@@ -228,7 +228,7 @@ type internal CommonOperations
             TextViewUtil.MoveCaretToPoint _textView firstLine.Start
             _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
-    /// Format the specified line range
+    /// Format the code lines in the specified line range
     member x.FormatCodeLines range =
         _vimHost.FormatLines _textView range
 
@@ -237,7 +237,7 @@ type internal CommonOperations
         TextViewUtil.MoveCaretToPoint _textView firstLine.Start
         _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
-    /// Format the specified line range
+    /// Format the text lines in the specified line range
     member x.FormatTextLines (range: SnapshotLineRange) preserveCaretPosition =
         let autoIndent = _localSettings.AutoIndent
         let textWidth =
@@ -268,15 +268,19 @@ type internal CommonOperations
             else
                 false, pattern, ""
 
-        // Choose a pattern and a prefix.
-        let pattern, prefix =
+        // Choose a pattern and a leader.
+        let pattern, leader =
             patterns
             |> Seq.map checkPattern
             |> Seq.filter (fun (matches, _, _) -> matches)
-            |> Seq.map (fun (_, pattern, prefix) -> (pattern, prefix))
+            |> Seq.map (fun (_, pattern, leader) -> (pattern, leader))
             |> Seq.head
 
-        // Strip the prefix from a line.
+        // Decide whether to use the leader for all lines.
+        let useLeaderForAllLines =
+            not (StringUtil.IsWhiteSpace leader) || autoIndent
+
+        // Strip the leader from a line.
         let trimLine (line: string) =
             let capture = Regex.Match(line, pattern)
             if capture.Success then
@@ -284,7 +288,7 @@ type internal CommonOperations
             else
                 line
 
-        // Strip the prefix from all the lines.
+        // Strip the leader from all the lines.
         let trimmedLines =
             lines
             |> Seq.map trimLine
@@ -312,17 +316,29 @@ type internal CommonOperations
             else
                 concatWords words :: lines
 
-        // Calculate the working limit for line length.
-        let limit = textWidth - prefix.Length
-
         // Aggregrate individual words into lines of limited length.
         let takeWord ((column: int), (words: string list), (lines: string list)) (word: string) =
+
+            // Calculate the working limit for line length.
+            let limit =
+                if lines.IsEmpty || useLeaderForAllLines then
+                    textWidth - leader.Length
+                else
+                    textWidth
+
             if word = "" then
                 0, List.Empty, "" :: prependLine words lines
             elif column = 0 || column + word.Length <= limit then
                 column + word.Length, word :: words, lines
             else
                 word.Length, word :: List.Empty, concatWords words :: lines
+
+        // Add a leader to the formatted line if appropriate.
+        let addLeader (i: int) (line: string) =
+            if i = 0 || useLeaderForAllLines then
+                (leader + line).TrimEnd()
+            else
+                line
 
         // Split the lines into words and then format them into lines using the aggregator.
         let formattedLines =
@@ -332,7 +348,7 @@ type internal CommonOperations
                 |> Seq.fold takeWord (0, List.Empty, List.Empty)
             prependLine words lines
             |> Seq.rev
-            |> Seq.map (fun line -> (prefix + line).TrimEnd())
+            |> Seq.mapi addLeader
 
         // Concatenate the formatted lines.
         let newLine = EditUtil.NewLine _editorOptions
