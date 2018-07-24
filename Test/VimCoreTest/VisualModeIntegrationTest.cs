@@ -663,6 +663,26 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class InclusiveSelection : VisualModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.Selection = "inclusive";
+            }
+
+            /// <summary>
+            /// The $ movement should put the caret past the end of the line
+            /// </summary>
+            [WpfFact]
+            public void MoveEndOfLine_Dollar()
+            {
+                Create("cat", "dog");
+                _vimBuffer.Process("v$");
+                Assert.Equal(3, _textView.GetCaretPoint().Position);
+            }
+        }
+
         public sealed class ExclusiveSelection : VisualModeIntegrationTest
         {
             protected override void Create(params string[] lines)
