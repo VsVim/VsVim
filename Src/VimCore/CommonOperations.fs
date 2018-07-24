@@ -248,6 +248,7 @@ type internal CommonOperations
             else
                 _localSettings.TextWidth
         let comments = _localSettings.Comments
+        let tabStop = _localSettings.TabStop
 
         // Extract the lines to be formatted and the first line.
         let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
@@ -331,13 +332,18 @@ type internal CommonOperations
             else
                 concatWords words :: lines
 
+        // Calculate the length of the leader with tabs expanded.
+        let leaderLength =
+            StringUtil.ExpandTabsForColumn leader 0 tabStop
+            |> StringUtil.GetLength
+
         // Aggregrate individual words into lines of limited length.
         let takeWord ((column: int), (words: string list), (lines: string list)) (word: string) =
 
             // Calculate the working limit for line length.
             let limit =
                 if lines.IsEmpty || useLeaderForAllLines then
-                    textWidth - leader.Length
+                    textWidth - leaderLength
                 else
                     textWidth
 
