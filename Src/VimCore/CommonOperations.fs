@@ -285,11 +285,10 @@ type internal CommonOperations
                 false, pattern, ""
 
         // Choose a pattern and a leader.
-        let pattern, leader =
+        let _, pattern, leader =
             patterns
             |> Seq.map checkPattern
             |> Seq.filter (fun (matches, _, _) -> matches)
-            |> Seq.map (fun (_, pattern, leader) -> (pattern, leader))
             |> Seq.head
 
         // Decide whether to use the leader for all lines.
