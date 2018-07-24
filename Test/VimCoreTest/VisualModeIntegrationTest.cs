@@ -1788,6 +1788,35 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void InclusiveCharacterSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("v3jgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ExclusiveCharacterSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("v3jgq");
+                Assert.Equal(new[] { "cat dog", "bear", "bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void BlockSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("<C-v>3jgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
             public void LongLine()
             {
                 Create("cat dog bear bat", "");
