@@ -15,6 +15,7 @@ open System.Text
 open StringBuilderExtensions
 open System.Linq
 open System.Drawing
+open System.Globalization
 
 [<RequireQualifiedAccess>]
 type CodePointInfo = 
@@ -87,27 +88,13 @@ module internal EditorCoreUtil =
 
     /// Calculate the number of spaces that a character occupies on the screen. This 
     /// takes into account tabs, surrogate pairs and unicode wide characters.
-    let GetCharacterSpaces (point: SnapshotPoint) tabStop = 
-        match GetCodePointInfo point with
-        | CodePointInfo.SurrogatePairHighCharacter -> 1
-        | CodePointInfo.SurrogatePairLowCharacter -> 0
-        | CodePointInfo.EndPoint -> 0
-        | CodePointInfo.BrokenSurrogatePair -> 1
-        | CodePointInfo.SimpleCharacter ->
-            let c = point.GetChar()
-            match c with
-            | '\u0000' -> 1
-            | '\t' -> tabStop
-            | _ when CharUtil.IsNonSpacingCharacter c -> 0
-            | _ when CharUtil.IsWideCharacter c -> 2
-            | _ -> 1
+    let GetCharacterSpaces (point: SnapshotPoint) (tabStop: int): int =  
+        // CTODO: delete
+        0
 
-    let GetCharacterWidth (point: SnapshotPoint) tabStop = 
-        if IsEndPoint point then 
-            0
-        else
-            let c = point.GetChar()
-            CharUtil.GetCharacterWidth c tabStop
+    let GetCharacterWidth (point: SnapshotPoint) (tabStop: int): int = 
+        // CTODO: delete
+        0
 
     /// The snapshot ends with a linebreak if there is more more than one
     /// line and the last line of the snapshot (which doesn't have a linebreak)
@@ -384,6 +371,8 @@ type SnapshotCodePoint =
 
     val private _line: ITextSnapshotLine
     val private _offset: int
+
+    /// This is the CodePointInfo for the position in the ITextSnapshot
     val private _codePointInfo: CodePointInfo
 
     /// Create a SnapshotCodePoint for the given Point. In the case this points to a 
@@ -404,7 +393,7 @@ type SnapshotCodePoint =
     /// The snapshot line containing the column
     member x.Line = x._line
 
-    /// The number of positions in the ITextSnapshot this character occupies. 
+    /// The number of positions in the ITextSnapshot this character occupies.
     member x.Length = 
         if x._codePointInfo = CodePointInfo.SurrogatePairHighCharacter then 2
         else 1
@@ -413,13 +402,34 @@ type SnapshotCodePoint =
     member x.Snapshot = x._line.Snapshot
 
     /// The Point which represents the begining of this character.
-    member x.Point = x._line.Start.Add(x._offset)
+    member x.StartPoint = x._line.Start.Add(x._offset)
+
+    /// The Point which follows this CodePoint.
+    member x.EndPoint = x.StartPoint.Add(x.Length)
+
+    /// The character text for code point.
+    member x.CharacterText = 
+        let c = x.StartPoint.GetChar()
+        if x.Length = 1 then 
+            sprintf "%c" c
+        else
+            // TODO: way to convert an int codepoint into a string
+            let low = x.StartPoint.Add(1).GetChar()
+            sprintf "%c%c" c low
+
+    member x.UnicodeCategory = 
+        let c = x.StartPoint.GetChar()
+        if x.Length = 1 then 
+            CharUnicodeInfo.GetUnicodeCategory c
+        else
+            let str = x.CharacterText
+            CharUnicodeInfo.GetUnicodeCategory(str, 0)
 
     member x.Span = 
         let length = 
             if x._codePointInfo = CodePointInfo.SurrogatePairHighCharacter then 2
             else 1
-        SnapshotSpan(x.Point, length)
+        SnapshotSpan(x.StartPoint, length)
 
     member x.CodePointInfo = x._codePointInfo
 
@@ -428,27 +438,35 @@ type SnapshotCodePoint =
     member x.CodePoint = 
         match x._codePointInfo with
         | CodePointInfo.SurrogatePairHighCharacter -> 
-            let highChar = x.Point.GetChar()
-            let lowChar = x.Point.Add(1).GetChar()
+            let highChar = x.StartPoint.GetChar()
+            let lowChar = x.StartPoint.Add(1).GetChar()
             CharUtil.ConvertToCodePoint highChar lowChar
-        | _ -> int (x.Point.GetChar())
+        | _ -> int (x.StartPoint.GetChar())
 
     /// The position or text buffer offset of the column
-    member x.Position = x.Point.Position
+    member x.StartPosition = x.StartPoint.Position
 
-    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.Point
+    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.StartPoint
 
-    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.Point x._line
+    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.StartPoint x._line
+
+    /// Is the unicode character at this point represented by the specified value? This will only match
+    /// for characters in the BMP plane.
+    member x.IsCharacter(c: char) = x.Length = 1 && x.StartPoint.GetChar() = c
+
+    /// Is the codepoint represented by this string value?
+    member x.IsCharacter(text: string) = x.CharacterText = text
 
     /// Move forward by the specified number of CodePoint values
     member x.Add count =
+        // CTODO: don't re-allocate line in Add / Subtract if possible
         if count = 0 then 
             x
         elif count < 0 then
             x.Subtract (-count)
         else
             let mutable count = count
-            let mutable current = x.Point
+            let mutable current = x.StartPoint
             while count > 0 do
                 current <-
                     match EditorCoreUtil.GetCodePointInfo current with
@@ -466,7 +484,7 @@ type SnapshotCodePoint =
             x.Add (-count)
         else
             let mutable count = count
-            let mutable current = x.Point
+            let mutable current = x.StartPoint
             while count > 0 do
                 let previous = current.Subtract(1)
                 current <-
@@ -475,6 +493,74 @@ type SnapshotCodePoint =
                     | _ -> previous
                 count <- count - 1
             SnapshotCodePoint(current)
+
+    /// Get the number of spaces this point occupies on the screen.
+    member x.GetSpaces tabStop = 
+
+        // Determines if the given character occupies a single or two cells on screen.
+        let isWideCharacterBmp c =
+            // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+            // TODO: this should be checked for consistency with
+            //       Visual studio handling of each character.
+            (c >= '\u1100' &&
+                (
+                    // Hangul Jamo init. consonants
+                    c <= '\u115f' || c = '\u2329' || c = '\u232a' ||
+                    // CJK ... Yi
+                    (c >= '\u2e80' && c <= '\ua4cf' && c <> '\u303f') ||
+                    // Hangul Syllables */
+                    (c >= '\uac00' && c <= '\ud7a3') ||
+                    // CJK Compatibility Ideographs
+                    (c >= '\uf900' && c <= '\ufaff') ||
+                    // Vertical forms
+                    (c >= '\ufe10' && c <= '\ufe19') ||
+                    // CJK Compatibility Forms
+                    (c >= '\ufe30' && c <= '\ufe6f') ||
+                    // Fullwidth Forms
+                    (c >= '\uff00' && c <= '\uff60') ||
+                    (c >= '\uffe0' && c <= '\uffe6')));
+
+        let isWideCharacterAstral (cp: int) = 
+            // Supplementary ideographic plane
+            (cp >= 0x20000 && cp <= 0x2fffd) ||
+            // Tertiary ideographic plane
+            (cp >= 0x30000 && cp <= 0x3fffd)
+
+        // Determines whether the given character occupies space on screen when displayed.
+        // For instance, combining diacritics occupy the space of the previous character,
+        // while control characters are simply not displayed.
+        // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+        let isNonSpacingCategory category =
+            match category with
+            //Visual studio does not render control characters
+            | System.Globalization.UnicodeCategory.Control
+            | System.Globalization.UnicodeCategory.NonSpacingMark
+            | System.Globalization.UnicodeCategory.Format
+            | System.Globalization.UnicodeCategory.EnclosingMark ->
+                /// Contrarily to http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+                /// the Soft hyphen (\u00ad) is invisible in VS.
+                true
+            | _ -> false
+
+        // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+        let isNonSpacingBmp (c: char) =
+            if ((c = '\u200b') || ('\u1160' <= c && c <= '\u11ff')) then
+                true
+            else
+                let category = CharUnicodeInfo.GetUnicodeCategory c
+                isNonSpacingCategory category
+
+        if x.Length = 1 then
+            match x.StartPoint.GetChar() with
+            | '\u0000' -> 1
+            | '\t' -> tabStop
+            | c when isNonSpacingBmp c -> 0
+            | c when isWideCharacterBmp c -> 2
+            | _ -> 1
+        else
+            if isWideCharacterAstral x.CodePoint then 2
+            else if isNonSpacingCategory x.UnicodeCategory then 0 
+            else 1
 
     /// Get the text corresponding to the column
     member x.GetText () = x.Span.GetText()
@@ -1489,6 +1575,7 @@ module SnapshotLineUtil =
         let mutable current = SnapshotColumn(line.Start)
         let maxColumn = min column line.Length
         while current.Column < maxColumn do
+            
             let c = current.Point.GetChar()
             if c = '\t' then
                 let remainder = spaces % tabStop 
@@ -1496,7 +1583,6 @@ module SnapshotLineUtil =
             else
                 spaces <- spaces + EditorCoreUtil.GetCharacterSpaces current.Point tabStop
             current <- current.Add 1
-        
         spaces
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
