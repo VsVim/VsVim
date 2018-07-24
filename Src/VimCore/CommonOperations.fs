@@ -262,7 +262,7 @@ type internal CommonOperations
             else
                 spec.Substring(colonIndex + 1)
 
-        // Get the leader pattern for a leader string
+        // Get the leader pattern for a leader string.
         let getLeaderPattern (leader: string) =
             if leader = "" then
                 @"^\s*"
@@ -325,7 +325,7 @@ type internal CommonOperations
             |> String.concat ""
             |> (fun line -> line.TrimEnd())
 
-        // Concatenate words into a line a prepend it to a list of lines.
+        // Concatenate words into a line and prepend it to a list of lines.
         let prependLine (words: string list) (lines: string list) =
             if words.IsEmpty then
                 lines
@@ -375,7 +375,7 @@ type internal CommonOperations
         let newLine = EditUtil.NewLine _editorOptions
         let replacement = formattedLines |> String.concat newLine
 
-        // Replace the old lines with the sorted lines.
+        // Replace the old lines with the formatted lines.
         _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
 
 
