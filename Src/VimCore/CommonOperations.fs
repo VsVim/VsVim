@@ -239,26 +239,41 @@ type internal CommonOperations
 
     /// Format the text lines in the specified line range
     member x.FormatTextLines (range: SnapshotLineRange) preserveCaretPosition =
+
+        // Get formatting configuration values.
         let autoIndent = _localSettings.AutoIndent
         let textWidth =
             if _localSettings.TextWidth = 0 then
                 79
             else
                 _localSettings.TextWidth
-
-        // We recognize the following types of comments.
-        let patterns =
-            [|
-                @"^\s*//+\s*";
-                @"^\s*#+\s*";
-                @"^\s*;+\s*";
-                @"^\s*\*+\s*";
-                @"^\s*";
-            |]
+        let comments = _localSettings.Comments
 
         // Extract the lines to be formatted and the first line.
         let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
         let firstLine = lines |> Seq.head
+
+        // Extract the leader string from a comment specification, e.g. "//".
+        let getLeaderFromSpec (spec: string) =
+            let colonIndex = spec.IndexOf(':')
+            if colonIndex = -1 then
+                spec
+            else
+                spec.Substring(colonIndex + 1)
+
+        // Get the leader pattern for a leader string
+        let getLeaderPattern (leader: string) =
+            if leader = "" then
+                @"^\s*"
+            else
+                @"^\s*" + Regex.Escape(leader) + @"+\s*"
+
+        // Convert the comment specifications into leader patterns.
+        let patterns =
+            comments + ",:"
+            |> StringUtil.Split ','
+            |> Seq.map getLeaderFromSpec
+            |> Seq.map getLeaderPattern
 
         // Check the first line against a potential comment pattern.
         let checkPattern pattern =
