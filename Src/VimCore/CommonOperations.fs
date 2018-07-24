@@ -296,7 +296,7 @@ type internal CommonOperations
             not (StringUtil.IsWhiteSpace leader) || autoIndent
 
         // Strip the leader from a line.
-        let trimLine (line: string) =
+        let stripLeader (line: string) =
             let capture = Regex.Match(line, pattern)
             if capture.Success then
                 line.Substring(capture.Length)
@@ -304,9 +304,9 @@ type internal CommonOperations
                 line
 
         // Strip the leader from all the lines.
-        let trimmedLines =
+        let strippedLines =
             lines
-            |> Seq.map trimLine
+            |> Seq.map stripLeader
 
         // Split a line into words on whitespace.
         let splitWords (line: string) =
@@ -363,7 +363,7 @@ type internal CommonOperations
         // Split the lines into words and then format them into lines using the aggregator.
         let formattedLines =
             let _, words, lines =
-                trimmedLines
+                strippedLines
                 |> Seq.collect splitWords
                 |> Seq.fold takeWord (0, List.Empty, List.Empty)
             prependLine words lines

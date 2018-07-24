@@ -1035,24 +1035,16 @@ type internal CommandUtil
 
     /// Format the selected code lines
     member x.FormatCodeLinesVisual (visualSpan: VisualSpan) =
-
-        // Use a transaction so the formats occur as a single operation
-        x.EditWithUndoTransaction "Format" (fun () ->
-            visualSpan.Spans
-            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter _commonOperations.FormatCodeLines)
-
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> _commonOperations.FormatCodeLines
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Format the selected text lines
     member x.FormatTextLinesVisual (visualSpan: VisualSpan) (preserveCaretPosition: bool) =
-
-        // Use a transaction so the formats occur as a single operation
-        x.EditWithUndoTransaction "Format" (fun () ->
-            visualSpan.Spans
-            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter (fun lineRange -> _commonOperations.FormatTextLines lineRange preserveCaretPosition))
-
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> (fun lineRange -> _commonOperations.FormatTextLines lineRange preserveCaretPosition)
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Format the code lines in the Motion
