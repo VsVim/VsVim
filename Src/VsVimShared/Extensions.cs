@@ -54,7 +54,7 @@ namespace Vim.VisualStudio
         {
             if (null == command)
             {
-                throw new ArgumentException("command");
+                throw new ArgumentException(nameof(command));
             }
 
             ex = null;

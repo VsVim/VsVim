@@ -96,7 +96,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                         }
 
                     default:
-                        throw new ArgumentException("inputMode");
+                        throw new ArgumentException(nameof(inputMode));
                 }
             }
 
@@ -139,7 +139,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                                 break;
 
                             default:
-                                throw new ArgumentException("state");
+                                throw new ArgumentException(nameof(state));
                         }
                         break;
 
@@ -164,13 +164,13 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                                     break;
 
                                 default:
-                                    throw new ArgumentException("state");
+                                    throw new ArgumentException(nameof(state));
                             }
                         }
                         break;
 
                     default:
-                        throw new ArgumentException("inputMode");
+                        throw new ArgumentException(nameof(inputMode));
                 }
             }
         }
