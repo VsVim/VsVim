@@ -413,6 +413,9 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+    /// Whether to include the start point when doing the search
+    | IncludeStartPoint = 0x4
+
     /// ConsiderIgnoreCase ||| ConsiderSmartCase
     | Default = 0x3
 
@@ -1147,6 +1150,9 @@ type Motion =
 
     /// Get the motion to the nearest lowercase mark line in the specified direction
     | NextMarkLine of SearchPath
+
+    /// Operate on the next occurrence of last pattern searched for
+    | NextSearch of SearchPath
 
     /// Search for the next occurrence of the word under the caret
     | NextWord of SearchPath

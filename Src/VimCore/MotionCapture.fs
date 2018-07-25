@@ -129,6 +129,8 @@ type internal MotionCapture
                 yield ("[`", MotionFlags.CaretMovement, Motion.NextMark SearchPath.Backward)
                 yield ("]'", MotionFlags.CaretMovement, Motion.NextMarkLine SearchPath.Forward)
                 yield ("['", MotionFlags.CaretMovement, Motion.NextMarkLine SearchPath.Backward)
+                yield ("gn", MotionFlags.CaretMovement, Motion.NextSearch SearchPath.Forward)
+                yield ("gN", MotionFlags.CaretMovement, Motion.NextSearch SearchPath.Backward)
             } 
             
         motionSeq 
