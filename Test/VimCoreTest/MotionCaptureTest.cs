@@ -324,6 +324,18 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
+        public void NextMatch_Forward()
+        {
+            AssertMotion("gn", Motion.NewNextMatch(SearchPath.Forward));
+        }
+
+        [WpfFact]
+        public void NextMatch_Backward()
+        {
+            AssertMotion("gN", Motion.NewNextMatch(SearchPath.Backward));
+        }
+
+        [WpfFact]
         public void QuotedString()
         {
             AssertMotion(@"a""", Motion.NewQuotedString('"'));
