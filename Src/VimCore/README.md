@@ -18,3 +18,7 @@ spaces. This is used often when calculating indentation / columns between lines.
     - Tab: current value of `tabstop`
     - Wide characters: 2
     - Everything else: 1
+
+### TODO:
+
+Wide characters: are they handled at SnapshotCodePoint or SnapshotCharacterSpan. 

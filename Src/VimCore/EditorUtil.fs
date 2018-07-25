@@ -374,6 +374,10 @@ type SnapshotCodePoint =
     new (line: ITextSnapshotLine) =
         SnapshotCodePoint(line, line.Start)
 
+    new (line: ITextSnapshotLine, offset: int) =
+        let point = line.Start.Add(offset)
+        SnapshotCodePoint(line, point)
+
     new (line: ITextSnapshotLine, point: SnapshotPoint) =
 
         let info = EditorCoreUtil.GetCodePointInfo point
@@ -452,7 +456,6 @@ type SnapshotCodePoint =
 
     /// Move forward by the specified number of CodePoint values
     member x.Add count =
-        // CTODO: don't re-allocate line in Add / Subtract if possible
         if count = 0 then 
             x
         elif count < 0 then
@@ -466,7 +469,11 @@ type SnapshotCodePoint =
                     | CodePointInfo.SurrogatePairHighCharacter -> current.Add(2)
                     | _ -> current.Add(1)
                 count <- count - 1
-            SnapshotCodePoint(current)
+
+            let line = 
+                if current.Position < x.Line.EndIncludingLineBreak.Position then x.Line
+                else current.GetContainingLine()
+            SnapshotCodePoint(line, current)
 
     /// Go backward (positive) or forward (negative) by the specified number of
     /// CodePoint values
@@ -485,7 +492,11 @@ type SnapshotCodePoint =
                     | CodePointInfo.SurrogatePairLowCharacter -> previous.Subtract(1)
                     | _ -> previous
                 count <- count - 1
-            SnapshotCodePoint(current)
+
+            let line = 
+                if current.Position >= x.Line.Start.Position then x.Line
+                else current.GetContainingLine()
+            SnapshotCodePoint(line, current)
 
     /// Get the number of spaces this point occupies on the screen.
     member x.GetSpaces tabStop = 
