@@ -106,10 +106,6 @@ type internal CommonOperations
 
         RegisterValue(stringData, operationKind)
 
-    /// Get the spaces for the given character
-    member x.GetSpacesForCharAtPoint point = 
-        SnapshotPointUtil.GetCharacterWidth point _localSettings.TabStop
-
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
     member x.GetSpacesToColumn line column = 

@@ -639,9 +639,6 @@ module internal CharUtil =
         else
             char ((int lowerBound) + number) 
 
-    // CTODO: delete this
-    let GetCharacterWidth (c: char) (tabstop: int) = 0
-
     let GetDigitValue c = 
         match c with
         | '0' -> Some 0

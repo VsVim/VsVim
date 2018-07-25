@@ -29,7 +29,7 @@ namespace Vim.UnitTest
 
             if (position != null)
             {
-                Assert.Equal(position.Value, point.Point.Position);
+                Assert.Equal(position.Value, point.StartPoint.Position);
             }
         }
 

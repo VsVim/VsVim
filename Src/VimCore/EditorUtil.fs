@@ -86,16 +86,6 @@ module internal EditorCoreUtil =
             | CodePointInfo.SurrogatePairLowCharacter -> SnapshotSpan((point.Subtract(1)), 2)
             | _ -> SnapshotSpan(point, 1)
 
-    /// Calculate the number of spaces that a character occupies on the screen. This 
-    /// takes into account tabs, surrogate pairs and unicode wide characters.
-    let GetCharacterSpaces (point: SnapshotPoint) (tabStop: int): int =  
-        // CTODO: delete
-        0
-
-    let GetCharacterWidth (point: SnapshotPoint) (tabStop: int): int = 
-        // CTODO: delete
-        0
-
     /// The snapshot ends with a linebreak if there is more more than one
     /// line and the last line of the snapshot (which doesn't have a linebreak)
     /// is empty.
@@ -380,6 +370,9 @@ type SnapshotCodePoint =
     new (point: SnapshotPoint) =
         let line = point.GetContainingLine();
         SnapshotCodePoint(line, point)
+
+    new (line: ITextSnapshotLine) =
+        SnapshotCodePoint(line, line.Start)
 
     new (line: ITextSnapshotLine, point: SnapshotPoint) =
 
@@ -1520,43 +1513,39 @@ module SnapshotLineUtil =
     // overlaps the specified column into the line, as well as the position of 
     // that column inside the character. Returns End if it goes beyond the last 
     // point in the string
-    let GetSpaceWithOverlapOrEnd line spacesCount tabStop = 
+    let GetSpaceWithOverlapOrEnd (line: ITextSnapshotLine) spacesCount tabStop = 
 
-        let snapshot = GetSnapshot line
-        let endPoint = GetEnd line
-
-        let mutable point = line.Start
+        let mutable point = SnapshotCodePoint(line)
         let mutable spaces = 0 
         let mutable value: SnapshotOverlapPoint option = None
 
-        if point = endPoint then
-            value <- Some (SnapshotOverlapPoint(point, 0, 0))
+        if point.IsInsideLineBreak then
+            value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
 
         while Option.isNone value do
             let currentWidth = 
-                let current = point.GetChar()
-                if current = '\t' then 
+                if point.IsCharacter '\t' then
                     // A tab takes up the remaining spaces on a tabstop increment.
                     let remainder = tabStop - (spaces % tabStop)
                     if remainder = 0 then tabStop
                     else remainder
                 else
-                    CharUtil.GetCharacterWidth current tabStop
+                    point.GetSpaces tabStop
 
             if spaces = spacesCount then
                 // Landed at the SnapshotPoint in question
-                value <- Some (SnapshotOverlapPoint(point, 0, currentWidth))
+                value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, currentWidth))
             elif (spaces + currentWidth) > spacesCount then
                 // The space is a slice of a SnapshotPoint value.  Have to determine the
                 // offset
                 let before = spacesCount - spaces
-                value <- Some (SnapshotOverlapPoint(point, before, currentWidth))
+                value <- Some (SnapshotOverlapPoint(point.StartPoint, before, currentWidth))
             else
-                point <- SnapshotPoint(snapshot, point.Position + 1)
+                point <- point.Add 1
                 spaces <- spaces + currentWidth
 
-                if point = endPoint then
-                    value <- Some (SnapshotOverlapPoint(point, 0, 0))
+                if point.IsInsideLineBreak then
+                    value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
 
         Option.get value
 
@@ -1572,17 +1561,17 @@ module SnapshotLineUtil =
     /// boundary only count for the number of spaces to get to the next tabstop boundary
     let GetSpacesToColumn (line: ITextSnapshotLine) column tabStop = 
         let mutable spaces = 0
-        let mutable current = SnapshotColumn(line.Start)
-        let maxColumn = min column line.Length
-        while current.Column < maxColumn do
-            
-            let c = current.Point.GetChar()
-            if c = '\t' then
+        let mutable current = SnapshotCodePoint(line)
+        let mutable c = 0
+
+        while c < column && not current.IsEndPoint && current.StartPosition < line.End.Position do
+            if current.IsCharacter '\t' then
                 let remainder = spaces % tabStop 
                 spaces <- spaces + (tabStop - remainder)
             else
-                spaces <- spaces + EditorCoreUtil.GetCharacterSpaces current.Point tabStop
+                spaces <- spaces + (current.GetSpaces tabStop)
             current <- current.Add 1
+            c <- c + 1
         spaces
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
@@ -2057,9 +2046,6 @@ module SnapshotPointUtil =
     let GetSpacesToPoint point tabStop = 
         let column = SnapshotColumn(point)
         SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
-
-    let GetCharacterWidth point tabStop = 
-        EditorCoreUtil.GetCharacterWidth point tabStop
 
     /// Get the point or the end point of the last line, whichever is first
     let GetPointOrEndPointOfLastLine (point: SnapshotPoint) =
