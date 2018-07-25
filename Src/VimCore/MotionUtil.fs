@@ -2925,8 +2925,8 @@ type internal MotionUtil
             else
                 x.MarkLine mark
 
-    /// Operate on the next occurrence of last pattern searched for
-    member x.NextSearch path count =
+    /// Operate on the next match for last pattern searched for
+    member x.NextMatch path count =
         let last = _vimData.LastSearchData
         if StringUtil.IsNullOrEmpty last.Pattern then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
@@ -3183,7 +3183,7 @@ type internal MotionUtil
             | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
             | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
-            | Motion.NextSearch path -> x.NextSearch path motionArgument.CountOrDefault
+            | Motion.NextMatch path -> x.NextMatch path motionArgument.CountOrDefault
             | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.CountOrDefault |> Some

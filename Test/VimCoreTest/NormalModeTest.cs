@@ -529,6 +529,24 @@ namespace Vim.UnitTest
             _commandUtil.Verify();
         }
 
+        [WpfFact]
+        public void Bind_SelectNextMatch_Forward()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSelectNextMatch(SearchPath.Forward));
+            _mode.Process("gn");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_SelectNextMatch_Backward()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSelectNextMatch(SearchPath.Backward));
+            _mode.Process("gN");
+            _commandUtil.Verify();
+        }
+
         #endregion
 
         #region Motion

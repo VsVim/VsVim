@@ -2593,6 +2593,7 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3044,6 +3045,10 @@ type internal CommandUtil
         if not keepCaretColumn then
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Select the next match for the last pattern searched for
+    member x.SelectNextMatch searchPath =
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
