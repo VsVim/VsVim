@@ -6,6 +6,7 @@
     <TargetFramework>net45</TargetFramework>
     <OtherFlags>--standalone</OtherFlags>
     <NoWarn>2011</NoWarn>
+    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Resources.fs" />
