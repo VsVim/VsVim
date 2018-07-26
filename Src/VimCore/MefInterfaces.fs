@@ -486,6 +486,9 @@ type ICommonOperations =
     /// Substitute Command implementation
     abstract Substitute: pattern: string -> replace: string -> SnapshotLineRange -> flags: SubstituteFlags -> unit
 
+    /// Toggle the use of typing language characters
+    abstract ToggleLanguage: isForInsert: bool -> unit
+
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
 
