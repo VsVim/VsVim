@@ -3085,6 +3085,9 @@ type VisualCommand =
     /// Delete the selected text and put it into a register
     | DeleteSelection
 
+    /// Extend the selection to the next match for the last pattern searched for
+    | ExtendSelectionToNextMatch of SearchPath
+
     /// Filter the selected text
     | FilterLines
 

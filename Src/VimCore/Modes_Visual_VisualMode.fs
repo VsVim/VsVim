@@ -55,6 +55,8 @@ type internal VisualMode
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
+                yield ("gn", CommandFlags.Repeatable, VisualCommand.ExtendSelectionToNextMatch SearchPath.Forward)
+                yield ("gN", CommandFlags.Repeatable, VisualCommand.ExtendSelectionToNextMatch SearchPath.Backward)
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("o", CommandFlags.Movement ||| CommandFlags.ResetAnchorPoint, VisualCommand.InvertSelection false)
                 yield ("O", CommandFlags.Movement ||| CommandFlags.ResetAnchorPoint, VisualCommand.InvertSelection true)
