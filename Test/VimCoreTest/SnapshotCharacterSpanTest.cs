@@ -17,6 +17,11 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer(lines);
         }
 
+        private void CreateRaw(string content)
+        {
+            _textBuffer = CreateTextBufferRaw(content);
+        }
+
         public sealed class AddSubtractTest : SnapshotCharacterSpanTest
         {
             [WpfFact]
@@ -29,10 +34,12 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
 
-            [WpfFact]
-            public void AddNextLine()
+            [WpfTheory]
+            [InlineData("\n")]
+            [InlineData("\r\n")]
+            public void AddNextLine(string lineBreakText)
             {
-                Create("cat", "dog", "fish");
+                CreateRaw("cat" + lineBreakText + "dog" + lineBreakText + "fish");
                 var original = new SnapshotCharacterSpan(_textBuffer.GetPoint(0));
                 var column = original.Add(4);
                 Assert.Equal(0, column.ColumnNumber);
@@ -59,10 +66,12 @@ namespace Vim.UnitTest
                 Assert.Equal(0, column.LineNumber);
             }
 
-            [WpfFact]
-            public void SubtractBeforeLine()
+            [WpfTheory]
+            [InlineData("\n")]
+            [InlineData("\r\n")]
+            public void SubtractBeforeLine(string lineBreakText)
             {
-                Create("cat", "dog", "fish");
+                CreateRaw("cat" +lineBreakText + "dog" + lineBreakText + "fish");
                 var original = new SnapshotCharacterSpan(_textBuffer.GetLine(1).Start);
                 var column = original.Subtract(2);
                 Assert.Equal(2, column.ColumnNumber);
@@ -93,6 +102,15 @@ namespace Vim.UnitTest
                 Assert.Equal(3, column.ColumnNumber);
                 Assert.True(column.IsLineBreak);
                 Assert.Equal("cat", column.Line.GetText());
+            }
+
+            [WpfFact]
+            public void EndPoint()
+            {
+                Create("cat");
+                var point = _textBuffer.GetEndPoint();
+                var characterSpan = new SnapshotCharacterSpan(point);
+                Assert.True(characterSpan.Point.Position == _textBuffer.CurrentSnapshot.Length);
             }
         }
 

@@ -382,6 +382,11 @@ namespace Vim.UnitTest
             return builder.ToString();
         }
 
+        public ITextBuffer CreateTextBufferRaw(string content)
+        {
+            return _vimEditorHost.CreateTextBufferRaw(content);
+        }
+
         public ITextBuffer CreateTextBuffer(params string[] lines)
         {
             return _vimEditorHost.CreateTextBuffer(lines);
