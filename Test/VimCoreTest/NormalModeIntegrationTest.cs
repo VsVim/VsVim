@@ -7470,6 +7470,108 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("(");
                 Assert.Equal(KeyRemapMode.Normal, _vimBuffer.NormalMode.KeyRemapMode);
             }
+
+            [WpfFact]
+            public void DeleteNextMatchForward()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("dgn");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                var didHit = false;
+                _assertOnWarningMessage = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.Common_SearchForwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                Assert.True(didHit);
+            }
+
+            [WpfFact]
+            public void DeleteNextMatchBackward()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("dgN");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                var didHit = false;
+                _assertOnWarningMessage = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.Common_SearchBackwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                Assert.True(didHit);
+            }
+
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SelectNextMatchForward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SelectNextMatchForwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("2gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(4, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SelectNextMatchBackward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SelectNextMatchBackwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(0, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
         }
 
         public sealed class BackwardEndOfWordMotionTest : NormalModeIntegrationTest
