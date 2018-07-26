@@ -2593,7 +2593,7 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
-        | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath
+        | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3048,8 +3048,23 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Select the next match for the last pattern searched for
-    member x.SelectNextMatch searchPath =
-        CommandResult.Completed ModeSwitch.NoSwitch
+    member x.SelectNextMatch searchPath count =
+        let motion = Motion.NextMatch searchPath
+        let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = count)
+        match _motionUtil.GetMotion motion argument with
+        | Some motionResult when motionResult.Span.Length > 0 ->
+            let visualKind = VisualKind.Character
+            let startPoint = motionResult.Span.Start
+            let endPoint =
+                motionResult.Span.End
+                |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            let tabStop = _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            let modeKind = ModeKind.VisualCharacter
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode modeKind modeArgument
+        | _ ->
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text
