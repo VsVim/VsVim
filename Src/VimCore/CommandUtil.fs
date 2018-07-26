@@ -2753,15 +2753,17 @@ type internal CommandUtil
 
         let spacesToCaret = x.GetSpacesToCaret()
 
-        // Update the caret to the specified offset from the first visible line
+        // Update the caret to the specified offset from the first visible line if possible
         let updateCaretToOffset lineOffset =
             match TextViewUtil.GetTextViewLines _textView with
             | None -> ()
             | Some textViewLines ->
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
-                let textViewLine = textViewLines.[firstIndex + lineOffset]
-                let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
+                let caretIndex = firstIndex + lineOffset
+                if caretIndex >= 0 && caretIndex < textViewLines.Count then
+                    let textViewLine = textViewLines.[caretIndex]
+                    let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
+                    _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
         match TextViewUtil.GetTextViewLines _textView with
         | None -> ()
