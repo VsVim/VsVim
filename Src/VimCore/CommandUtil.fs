@@ -808,7 +808,7 @@ type internal CommandUtil
                     else
                         motionResult.Span.Start
             _commonOperations.MoveCaretToPoint caretPoint ViewFlags.Standard
-        | _ ->
+        | None ->
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3104,7 +3104,7 @@ type internal CommandUtil
             let modeKind = ModeKind.VisualCharacter
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
-        | _ ->
+        | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
