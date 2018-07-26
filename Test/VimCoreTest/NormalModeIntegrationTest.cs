@@ -4722,22 +4722,30 @@ namespace Vim.UnitTest
             [WpfFact]
             public void EndOfLineMotionDown()
             {
-                Create("cat", "tree");
+                Create("cat", "tree", "horse", "racoon");
                 _vimBuffer.ProcessNotation("$");
                 Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
                 _vimBuffer.ProcessNotation("j");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                _vimBuffer.ProcessNotation("j");
+                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
             }
 
             [WpfFact]
             public void EndOfLineMotionUp()
             {
-                Create("tree", "cat");
-                _textView.MoveCaretToLine(1);
+                Create("racoon", "horse", "tree", "cat");
+                _textView.MoveCaretToLine(3);
                 _vimBuffer.ProcessNotation("$");
                 Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
                 _vimBuffer.ProcessNotation("k");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                _vimBuffer.ProcessNotation("k");
+                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
             }
 
             /// <summary>
