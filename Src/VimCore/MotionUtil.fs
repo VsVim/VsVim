@@ -2936,12 +2936,12 @@ type internal MotionUtil
             let options = last.Options ||| SearchOptions.IncludeStartPoint
             let searchData = SearchData(last.Pattern, last.Offset, searchKind, options)
 
-            // All search operations update the jump list
+            // All search operations update the jump list.
             _jumpList.Add x.CaretPoint
 
             let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
 
-            // Raise the messages that go with this given result
+            // Raise the messages that go with this given result.
             CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
 
             let motionResult = 
