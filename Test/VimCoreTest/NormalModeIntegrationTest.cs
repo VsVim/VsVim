@@ -7518,8 +7518,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("inclusive")]
-            [InlineData("exclusive")]
+            [MemberData(nameof(SelectionOptions))]
             public void SelectNextMatchForward(string selection)
             {
                 Create("cat", "dog", "cat", "dog", "cat", "dog", "");
@@ -7532,8 +7531,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("inclusive")]
-            [InlineData("exclusive")]
+            [MemberData(nameof(SelectionOptions))]
             public void SelectNextMatchForwardWithCount(string selection)
             {
                 Create("cat", "dog", "cat", "dog", "cat", "dog", "");
@@ -7546,8 +7544,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("inclusive")]
-            [InlineData("exclusive")]
+            [MemberData(nameof(SelectionOptions))]
             public void SelectNextMatchBackward(string selection)
             {
                 Create("cat", "dog", "cat", "dog", "cat", "dog", "");
@@ -7560,8 +7557,7 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory]
-            [InlineData("inclusive")]
-            [InlineData("exclusive")]
+            [MemberData(nameof(SelectionOptions))]
             public void SelectNextMatchBackwardWithCount(string selection)
             {
                 Create("cat", "dog", "cat", "dog", "cat", "dog", "");

@@ -3081,8 +3081,7 @@ namespace Vim.UnitTest
                 }
 
                 [WpfTheory]
-                [InlineData("inclusive")]
-                [InlineData("exclusive")]
+                [MemberData(nameof(SelectionOptions))]
                 public void YankBlock(string selection)
                 {
                     Create("cat", "dog bear", "tree", "");
