@@ -137,6 +137,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             Connect();
             UpdateForRecordingChanged();
             UpdateTextColor();
+            UpdateStatusLineVisibility();
         }
 
         private void OnGotAggregateFocus(object sender, EventArgs e)
