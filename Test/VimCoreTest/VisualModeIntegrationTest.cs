@@ -3012,6 +3012,92 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class NextMatchTest : VisualModeIntegrationTest
+        {
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgn");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gn");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardInclusive()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>n");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgN");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gN");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardExclusive()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>nl");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgN");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gN");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardInclusiveWithCount()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>n");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardExclusiveWithCount()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>nl");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+        }
+
         public abstract class YankSelectionTest : VisualModeIntegrationTest
         {
             private void AssertRegister(params string[] lines)
