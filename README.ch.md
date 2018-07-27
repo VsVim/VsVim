@@ -1,7 +1,7 @@
 VsVim
 ===
 
-VsVim是一个以Visual Studio 2012至2017年运作的免费vim模拟器。  
+VsVim是一个以Visual Studio 2012至2017运作的免费vim模拟器。  
 
 AppVeyor状态： [![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
 
