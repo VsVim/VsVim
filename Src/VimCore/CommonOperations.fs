@@ -286,11 +286,13 @@ type internal CommonOperations
     /// have to approximate the number of lines that can be on the screen in order to calculate the proper 
     /// offset to use.  
     member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
-        Contract.Requires(offset >= 0)
+        Contract.Requires(offset > 0)
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
+        // If the text view is still being initialized, the viewport will have zero height
+        // which will force offset to zero. Likewise, if there are no text view lines,
+        // trying to scroll is pointless.
+        match _textView.ViewportHeight, TextViewUtil.GetTextViewLines _textView with
+        | height, Some textViewLines when height <> 0.0 && textViewLines.Count <> 0 ->
 
             // First calculate the actual offset.  The actual offset can't be more than half of the lines which
             // are visible on the screen.  It's tempting to use the ITextViewLinesCollection.Count to see how
@@ -298,15 +300,11 @@ type internal CommonOperations
             // to the bottom because it will be displaying the last few lines and several blanks which don't
             // count.  Instead we average out the height of the lines and divide that into the height of 
             // the view port 
-            let calcOffset () = 
-                if textViewLines.Count = 0 then
-                    0
-                else
-                    let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
-                    let lineCount = int (_textView.ViewportHeight / lineHeight) 
-                    let maxOffset = lineCount / 2
-                    min maxOffset offset
-            let offset = calcOffset ()
+            let offset =
+                let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
+                let lineCount = int (_textView.ViewportHeight / lineHeight)
+                let maxOffset = lineCount / 2
+                min maxOffset offset
 
             // This function will do the actual positioning of the scroll based on the calculated lines 
             // in the buffer
@@ -343,6 +341,7 @@ type internal CommonOperations
                 match editTopPoint, editBottomPoint with
                 | Some p1, Some p2 -> doScroll p1 p2
                 | _ -> ()
+        | _ -> ()
 
     /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
     /// not the view port.  Make the caret consistent with the setting not the display 
