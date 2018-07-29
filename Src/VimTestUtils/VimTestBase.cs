@@ -586,5 +586,17 @@ namespace Vim.UnitTest
                 yield return new object[] { "onemore" };
             }
         }
+
+        /// <summary>
+        /// Both selection settings
+        /// </summary>
+        public static IEnumerable<object[]> SelectionOptions
+        {
+            get
+            {
+                yield return new object[] { "inclusive" };
+                yield return new object[] { "exclusive" };
+            }
+        }
     }
 }

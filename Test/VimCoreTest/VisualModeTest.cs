@@ -292,6 +292,24 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
+        public void Bind_ExtendSelectionToNextMatch_Forward()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewExtendSelectionToNextMatch(SearchPath.Forward));
+            _mode.Process("gn");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ExtendSelectionToNextMatch_Backward()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewExtendSelectionToNextMatch(SearchPath.Backward));
+            _mode.Process("gN");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
         public void Bind_PutOverSelection_ViaP()
         {
             Create("");

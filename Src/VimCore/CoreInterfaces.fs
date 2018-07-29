@@ -413,6 +413,9 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+    /// Whether to include the start point when doing the search
+    | IncludeStartPoint = 0x4
+
     /// ConsiderIgnoreCase ||| ConsiderSmartCase
     | Default = 0x3
 
@@ -1147,6 +1150,9 @@ type Motion =
 
     /// Get the motion to the nearest lowercase mark line in the specified direction
     | NextMarkLine of SearchPath
+
+    /// Operate on the next match for last pattern searched for
+    | NextMatch of SearchPath
 
     /// Search for the next occurrence of the word under the caret
     | NextWord of SearchPath
@@ -2967,6 +2973,9 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of bool
 
+    /// Select the next match for the last pattern searched for
+    | SelectNextMatch of SearchPath
+
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
 
@@ -3103,6 +3112,7 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3155,6 +3165,9 @@ type VisualCommand =
 
     /// Delete the selected text and put it into a register
     | DeleteSelection
+
+    /// Extend the selection to the next match for the last pattern searched for
+    | ExtendSelectionToNextMatch of SearchPath
 
     /// Filter the selected text
     | FilterLines

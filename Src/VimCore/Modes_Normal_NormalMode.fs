@@ -67,6 +67,8 @@ type internal NormalMode
                 yield ("gt", CommandFlags.Special, NormalCommand.GoToNextTab SearchPath.Forward)
                 yield ("gT", CommandFlags.Special, NormalCommand.GoToNextTab SearchPath.Backward)
                 yield ("gv", CommandFlags.Special, NormalCommand.SwitchPreviousVisualMode)
+                yield ("gn", CommandFlags.Special, NormalCommand.SelectNextMatch SearchPath.Forward)
+                yield ("gN", CommandFlags.Special, NormalCommand.SelectNextMatch SearchPath.Backward)
                 yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("guu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("gUgU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)

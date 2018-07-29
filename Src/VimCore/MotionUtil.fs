@@ -2925,6 +2925,38 @@ type internal MotionUtil
             else
                 x.MarkLine mark
 
+    /// Operate on the next match for last pattern searched for
+    member x.NextMatch path count =
+        let last = _vimData.LastSearchData
+        if StringUtil.IsNullOrEmpty last.Pattern then
+            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
+            None
+        else
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let options = last.Options ||| SearchOptions.IncludeStartPoint
+            let searchData = SearchData(last.Pattern, last.Offset, searchKind, options)
+
+            // All search operations update the jump list.
+            _jumpList.Add x.CaretVirtualPoint
+
+            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
+
+            // Raise the messages that go with this given result.
+            CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
+
+            let motionResult = 
+                match searchResult with
+                | SearchResult.Error _ -> None
+                | SearchResult.NotFound _ -> None
+                | SearchResult.Found (_, span, _, _) ->
+
+                    let motionKind = MotionKind.CharacterWiseExclusive
+                    let isForward = path = SearchPath.Forward
+                    MotionResult.Create(span, motionKind, isForward) |> Some
+
+            _vimData.ResumeDisplayPattern()
+            motionResult
+
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
         x.NextWordCore path count false
@@ -3151,6 +3183,7 @@ type internal MotionUtil
             | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
             | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
+            | Motion.NextMatch path -> x.NextMatch path motionArgument.CountOrDefault
             | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.CountOrDefault |> Some
