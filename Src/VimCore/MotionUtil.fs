@@ -2937,7 +2937,7 @@ type internal MotionUtil
             let searchData = SearchData(last.Pattern, last.Offset, searchKind, options)
 
             // All search operations update the jump list.
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
 
