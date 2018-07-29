@@ -5084,7 +5084,7 @@ and IVimBuffer =
     abstract IsReadOnly: bool with get
 
     /// Raised Call C# script
-    abstract RaiseCallCShartScript : CallCSharpScriptEventArgs -> unit
+    abstract RaiseCallCSharpScript : CallCSharpScriptEventArgs -> unit
 
     /// VimBuffer Key Event Intercept
     abstract KeyIntercept: bool with get,set
@@ -5150,12 +5150,13 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract Closed: IDelegateEvent<System.EventHandler>
 
-    /// 
+    /// Raised when Call CSharpScript
     [<CLIEvent>]
     abstract CallCSharpScript: IDelegateEvent<System.EventHandler<CallCSharpScriptEventArgs>>
 
+    /// Raised when Key Intercept
     [<CLIEvent>]
-    abstract KeyInputIntercepted: IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
+    abstract KeyInputIntercept: IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     inherit IPropertyOwner
 
