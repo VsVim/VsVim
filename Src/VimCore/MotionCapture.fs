@@ -146,7 +146,7 @@ type internal MotionCapture
             | None -> BindResult<Motion>.Error
             | Some localMark -> BindResult<_>.Complete (func localMark)
         let bindData = {
-            KeyRemapMode = KeyRemapMode.Language
+            KeyRemapMode = KeyRemapMode.None
             BindFunction = bindFunc }
         BindDataStorage<_>.Simple bindData
 

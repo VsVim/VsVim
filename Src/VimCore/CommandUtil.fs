@@ -1481,26 +1481,33 @@ type internal CommandUtil
     /// since they embed caret information.  Marks are special though because they have the ability
     /// to cross files hence we special case them here
     member x.JumpToMarkCore mark exact =
-        let before = x.CaretPoint
+        let before = x.CaretVirtualPoint
 
         // If not exact, adjust point to first non-blank or start.
-        let adjustPointForExact point =
+        let adjustPointForExact (virtualPoint: VirtualSnapshotPoint) =
+            let point = virtualPoint.Position
             if exact then
-                if not _globalSettings.IsVirtualEditOneMore
-                    && not (SnapshotPointUtil.IsStartOfLine point)
-                    && SnapshotPointUtil.IsInsideLineBreak point then
-                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
+                if _vimTextBuffer.UseVirtualSpace then
+                    virtualPoint
                 else
-                    point
+                    if
+                        not _globalSettings.IsVirtualEditOneMore
+                        && not (SnapshotPointUtil.IsStartOfLine point)
+                        && SnapshotPointUtil.IsInsideLineBreak point then
+                        SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point
+                    else
+                        point
+                    |> VirtualSnapshotPointUtil.OfPoint
             else
                 point
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> VirtualSnapshotPointUtil.OfPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
-            let point = adjustPointForExact point.Position
-            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+            let point = adjustPointForExact point
+            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -1534,8 +1541,7 @@ type internal CommandUtil
                     jumpLocal virtualPoint
                 else
                     if
-                        adjustPointForExact virtualPoint.Position
-                        |> VirtualSnapshotPointUtil.OfPoint
+                        adjustPointForExact virtualPoint
                         |> _commonOperations.NavigateToPoint
                     then
                         _jumpList.Add before
@@ -1568,7 +1574,7 @@ type internal CommandUtil
     member x.JumpToTagCore () =
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
-        | Some point -> _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+        | Some point -> _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original
     /// indent if 'autoindent' is set.
@@ -2112,6 +2118,28 @@ type internal CommandUtil
                     x.PutCore point stringData operationKind moveCaretAfterText moveCaretAsIfSimple
 
                     EditSpan.Block col, OperationKind.CharacterWise)
+
+        // Translate the deleted span to the current snapshot.
+        let snapshot = _textView.TextSnapshot
+        let startPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.Start PointTrackingMode.Negative snapshot
+        let endPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.End PointTrackingMode.Positive snapshot
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint ->
+
+            // Record last visual selection as if what was put were selected.
+            let tabStop = _localSettings.TabStop
+            let selectionKind = _globalSettings.SelectionKind
+            let endPoint =
+                if visualSpan.VisualKind = VisualKind.Line || selectionKind = SelectionKind.Inclusive then
+                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap endPoint
+                else
+                    endPoint
+            _vimTextBuffer.LastVisualSelection <-
+                VisualSelection.CreateForPoints visualSpan.VisualKind startPoint endPoint tabStop
+                |> (fun visualSelection -> visualSelection.AdjustForSelectionKind selectionKind)
+                |> Some
+        | _ ->
+            ()
 
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
@@ -2719,7 +2747,7 @@ type internal CommandUtil
             _commonOperations.Beep()
             CommandResult.Error
         | Some mark ->
-            let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
+            let line, column = VirtualSnapshotPointUtil.GetLineColumn x.CaretVirtualPoint
             if not (_markMap.SetMark mark _vimBufferData line column) then
                 // Mark set can fail if the user chooses a readonly mark like '<'
                 _commonOperations.Beep()
@@ -2727,7 +2755,7 @@ type internal CommandUtil
 
     /// Get the current number of spaces to caret we are maintaining
     member x.GetSpacesToCaret () =
-        let spacesToCaret = _commonOperations.GetSpacesToPoint x.CaretPoint
+        let spacesToCaret = _commonOperations.GetSpacesToVirtualPoint x.CaretVirtualPoint
         match _commonOperations.MaintainCaretColumn with
         | MaintainCaretColumn.None -> spacesToCaret
         | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
@@ -2792,15 +2820,17 @@ type internal CommandUtil
 
         let spacesToCaret = x.GetSpacesToCaret()
 
-        // Update the caret to the specified offset from the first visible line
+        // Update the caret to the specified offset from the first visible line if possible
         let updateCaretToOffset lineOffset =
             match TextViewUtil.GetTextViewLines _textView with
             | None -> ()
             | Some textViewLines ->
                 let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
-                let textViewLine = textViewLines.[firstIndex + lineOffset]
-                let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
-                _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
+                let caretIndex = firstIndex + lineOffset
+                if caretIndex >= 0 && caretIndex < textViewLines.Count then
+                    let textViewLine = textViewLines.[caretIndex]
+                    let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
+                    _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
         match TextViewUtil.GetTextViewLines _textView with
         | None -> ()
@@ -3298,11 +3328,12 @@ type internal CommandUtil
     /// upon the values of 'keymodel' and 'selectmode'.  It will either move the caret potentially as
     /// a motion or initiate a select in the editor
     member x.SwitchToSelection caretMovement =
-        let anchorPoint = x.CaretPoint
+        let anchorPoint = x.CaretVirtualPoint
         if not (_commonOperations.MoveCaretWithArrow caretMovement) then
             CommandResult.Error
         else
-            let visualSelection = VisualSelection.CreateForPoints VisualKind.Character anchorPoint x.CaretPoint _localSettings.TabStop
+            let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
+            let visualSelection = VisualSelection.CreateForVirtualPoints VisualKind.Character anchorPoint x.CaretVirtualPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let modeKind =
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
@@ -3470,7 +3501,14 @@ type internal CommandUtil
 
     /// Yank the selection into the specified register
     member x.YankSelection registerName (visualSpan: VisualSpan) =
-        let data = StringData.OfEditSpan visualSpan.EditSpan
+        let data =
+            match visualSpan with
+            | VisualSpan.Character characterSpan when characterSpan.UseVirtualSpace ->
+                characterSpan.VirtualSpan
+                |> VirtualSnapshotSpanUtil.GetText
+                |> StringData.Simple
+            | _ ->
+                StringData.OfEditSpan visualSpan.EditSpan
         let value = x.CreateRegisterValue data visualSpan.OperationKind
         _commonOperations.SetRegisterValue registerName RegisterOperation.Yank value
         _commonOperations.RecordLastYank visualSpan.EditSpan.OverarchingSpan

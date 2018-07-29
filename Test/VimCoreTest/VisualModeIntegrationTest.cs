@@ -827,6 +827,159 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("vi(");
                 Assert.Equal(new SnapshotSpan(caretPoint, 0), _textView.GetSelectionSpan());
             }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 0);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "dog", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightToEndOfLine()
+            {
+                // Reported in issue #1507.
+                Create("cat", "dog", "");
+                _vimBuffer.Process("v3l");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 3);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightToEndOfLineFromMiddle()
+            {
+                Create("cat", "dog", "");
+                _vimBuffer.Process("lv2l");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 1);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 3);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+        }
+
+        public sealed class VirtualInclusiveSelection : VisualModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.Selection = "inclusive";
+                _globalSettings.VirtualEdit = "all";
+            }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightOnEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("vl");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 2);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(1, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightToVirtualSpace()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("v4l");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 5);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+        }
+
+        public sealed class VirtualExclusiveSelection : VisualModeIntegrationTest
+        {
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _globalSettings.Selection = "exclusive";
+                _globalSettings.VirtualEdit = "all";
+            }
+
+            [WpfFact]
+            public void AtStartOfEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("v");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 0);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightOnEmptyLine()
+            {
+                Create("", "");
+                _vimBuffer.Process("vl");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 1);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void DownToEmptyLine()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("vj");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
+
+            [WpfFact]
+            public void RightToVirtualSpace()
+            {
+                Create("cat", "", "");
+                _vimBuffer.Process("v4l");
+                var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                Assert.Equal(point1, _textView.Selection.Start);
+                Assert.Equal(point2, _textView.Selection.End);
+            }
         }
 
         public abstract class BlockInsertTest : VisualModeIntegrationTest
@@ -3216,6 +3369,29 @@ namespace Vim.UnitTest
                 }
             }
 
+            public sealed class VirtualCharacterTest : YankSelectionTest
+            {
+                [WpfFact]
+                public void InclusiveVirtualSpaces()
+                {
+                    Create("cat", "");
+                    _globalSettings.VirtualEdit = "all";
+                    _globalSettings.Selection = "inclusive";
+                    _vimBuffer.Process("v6ly");
+                    Assert.Equal("cat    ", UnnamedRegister.StringValue);
+                }
+
+                [WpfFact]
+                public void ExclusiveVirtualSpaces()
+                {
+                    Create("cat", "");
+                    _globalSettings.VirtualEdit = "all";
+                    _globalSettings.Selection = "exclusive";
+                    _vimBuffer.Process("v6ly");
+                    Assert.Equal("cat   ", UnnamedRegister.StringValue);
+                }
+            }
+
             public sealed class LineTest : YankSelectionTest
             {
                 /// <summary>
@@ -3287,6 +3463,58 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("gv");
                     Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                     Assert.Equal("bar\r\nbaz\r\n", _textView.GetSelectionSpan().GetText());
+                }
+
+                /// <summary>
+                /// Ensure that putting over a characterwise selection updates
+                /// the start/end of the last visual selection
+                /// </summary>
+                /// <param name="selection"></param>
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void PutOverCharacterwiseReselect(string selection)
+                {
+                    // Reported in issue #2260.
+                    Create("horse", "cat", "bear", "tree");
+                    _globalSettings.Selection = selection;
+                    _vimBuffer.ProcessNotation("1Gvey");
+                    Assert.Equal("horse", UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("3Gvep");
+                    Assert.Equal(new[] { "horse", "cat", "horse", "tree" }, _textBuffer.GetLines());
+                    Assert.Equal("bear", UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("gv");
+                    var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 5));
+                    Assert.Equal(span, _textView.Selection.GetSpan());
+                    _vimBuffer.ProcessNotation("y");
+                    Assert.Equal("horse", UnnamedRegister.StringValue);
+                }
+
+                /// <summary>
+                /// Ensure that putting over a linewise selection updates
+                /// the start/end of the last visual selection
+                /// </summary>
+                /// <param name="selection"></param>
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void PutOverLinewiseReselect(string selection)
+                {
+                    // Reported in issue #2260.
+                    Create("horse", "cat", "bear", "tree", "dog", "");
+                    _globalSettings.Selection = selection;
+                    _vimBuffer.ProcessNotation("1GVjy");
+                    Assert.Equal("horse" + Environment.NewLine + "cat" + Environment.NewLine,
+                        UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("4GVp");
+                    Assert.Equal(new[] { "horse", "cat", "bear", "horse", "cat", "dog", "" }, _textBuffer.GetLines());
+                    Assert.Equal("tree" + Environment.NewLine, UnnamedRegister.StringValue);
+                    _vimBuffer.ProcessNotation("gv");
+                    var span = new SnapshotSpan(_textBuffer.GetPointInLine(3, 0), _textBuffer.GetPointInLine(5, 0));
+                    Assert.Equal(span, _textView.Selection.GetSpan());
+                    _vimBuffer.ProcessNotation("y");
+                    Assert.Equal("horse" + Environment.NewLine + "cat" + Environment.NewLine,
+                        UnnamedRegister.StringValue);
                 }
             }
         }

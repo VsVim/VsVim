@@ -44,12 +44,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
+                TestableSynchronizationContext.RunAll();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
+                TestableSynchronizationContext.RunAll();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }

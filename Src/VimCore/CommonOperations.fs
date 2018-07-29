@@ -41,7 +41,7 @@ type internal CommonOperations
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option
-    ) =
+    ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
@@ -63,7 +63,7 @@ type internal CommonOperations
 
     do
         _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> _maintainCaretColumn <- MaintainCaretColumn.None)
+        |> Observable.subscribe (fun _ -> this.MaintainCaretColumn <- MaintainCaretColumn.None)
         |> _eventHandlers.Add
 
         _textView.Closed
@@ -286,11 +286,13 @@ type internal CommonOperations
     /// have to approximate the number of lines that can be on the screen in order to calculate the proper 
     /// offset to use.  
     member x.AdjustTextViewForScrollOffsetAtPointCore contextPoint offset = 
-        Contract.Requires(offset >= 0)
+        Contract.Requires(offset > 0)
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
+        // If the text view is still being initialized, the viewport will have zero height
+        // which will force offset to zero. Likewise, if there are no text view lines,
+        // trying to scroll is pointless.
+        match _textView.ViewportHeight, TextViewUtil.GetTextViewLines _textView with
+        | height, Some textViewLines when height <> 0.0 && textViewLines.Count <> 0 ->
 
             // First calculate the actual offset.  The actual offset can't be more than half of the lines which
             // are visible on the screen.  It's tempting to use the ITextViewLinesCollection.Count to see how
@@ -298,15 +300,11 @@ type internal CommonOperations
             // to the bottom because it will be displaying the last few lines and several blanks which don't
             // count.  Instead we average out the height of the lines and divide that into the height of 
             // the view port 
-            let calcOffset () = 
-                if textViewLines.Count = 0 then
-                    0
-                else
-                    let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
-                    let lineCount = int (_textView.ViewportHeight / lineHeight) 
-                    let maxOffset = lineCount / 2
-                    min maxOffset offset
-            let offset = calcOffset ()
+            let offset =
+                let lineHeight = textViewLines |> Seq.averageBy (fun l -> l.Height)
+                let lineCount = int (_textView.ViewportHeight / lineHeight)
+                let maxOffset = lineCount / 2
+                min maxOffset offset
 
             // This function will do the actual positioning of the scroll based on the calculated lines 
             // in the buffer
@@ -343,6 +341,7 @@ type internal CommonOperations
                 match editTopPoint, editBottomPoint with
                 | Some p1, Some p2 -> doScroll p1 p2
                 | _ -> ()
+        | _ -> ()
 
     /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
     /// not the view port.  Make the caret consistent with the setting not the display 
@@ -675,7 +674,7 @@ type internal CommonOperations
         let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
         let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
         TextViewUtil.MoveCaretToPoint _textView point
-        _maintainCaretColumn <- MaintainCaretColumn.Spaces spaces
+        x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value
     member x.MoveCaretToMotionResult (result: MotionResult) =
@@ -695,10 +694,13 @@ type internal CommonOperations
                         x.GetVirtualSpacesToColumn x.CaretLine column
                     else
                         x.GetSpacesToColumn x.CaretLine column
-                match _maintainCaretColumn with
+                match x.MaintainCaretColumn with
                 | MaintainCaretColumn.None -> motionCaretColumnSpaces
                 | MaintainCaretColumn.Spaces maintainCaretColumnSpaces -> max maintainCaretColumnSpaces motionCaretColumnSpaces
                 | MaintainCaretColumn.EndOfLine -> max 0 (visualLastLine.Length - 1)
+
+            // Record the old setting.
+            let oldMaintainCaretColumn = x.MaintainCaretColumn
 
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
@@ -716,11 +718,14 @@ type internal CommonOperations
             // Complete the motion with the updated value then reset the maintain caret.  Need
             // to do the save after the caret move since the move will clear out the saved value
             x.MoveCaretToMotionResultCore result 
-            _maintainCaretColumn <-
-                if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
-                    MaintainCaretColumn.EndOfLine
-                else
-                    MaintainCaretColumn.Spaces caretColumnSpaces
+            x.MaintainCaretColumn <-
+                match oldMaintainCaretColumn with
+                | MaintainCaretColumn.EndOfLine -> MaintainCaretColumn.EndOfLine
+                | _ ->
+                    if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
+                        MaintainCaretColumn.EndOfLine
+                    else
+                        MaintainCaretColumn.Spaces caretColumnSpaces
 
         | _ -> 
 
@@ -729,7 +734,7 @@ type internal CommonOperations
 
             //If the motion wanted to maintain a specific column for the caret, we need to
             //save it.
-            _maintainCaretColumn <-
+            x.MaintainCaretColumn <-
                 if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.EndOfLine then
                     MaintainCaretColumn.EndOfLine
                 else 
@@ -857,7 +862,7 @@ type internal CommonOperations
             Count = VimRegexReplaceCount.One }
 
     member x.GoToDefinition() =
-        let before = TextViewUtil.GetCaretPoint _textView
+        let before = TextViewUtil.GetCaretVirtualPoint _textView
         if _vimHost.GoToDefinition() then
             _jumpList.Add before
             Result.Succeeded
@@ -869,14 +874,14 @@ type internal CommonOperations
             | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
     member x.GoToLocalDeclaration() = 
-        let caretPoint = x.CaretPoint
+        let caretPoint = x.CaretVirtualPoint
         if _vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty then
             _jumpList.Add caretPoint
         else
             _vimHost.Beep()
 
     member x.GoToGlobalDeclaration () = 
-        let caretPoint = x.CaretPoint
+        let caretPoint = x.CaretVirtualPoint
         if _vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty then 
             _jumpList.Add caretPoint
         else
@@ -1838,6 +1843,31 @@ type internal CommonOperations
                 if isUnnamedOrMissing then
                     _registerMap.SetRegisterValue (RegisterName.Numbered NumberedRegister.Number0) value
 
+    /// Toggle the use of typing language characters for insert or search
+    /// (see vim ':help i_CTRL-^' and ':help c_CTRL-^')
+    member x.ToggleLanguage isForInsert =
+        let keyMap = _vimBufferData.Vim.KeyMap
+        let languageMappings = keyMap.GetKeyMappingsForMode KeyRemapMode.Language
+        let languageMappingsAreDefined = not languageMappings.IsEmpty
+        if isForInsert || _globalSettings.ImeSearch = -1 then
+            if languageMappingsAreDefined then
+                match _globalSettings.ImeInsert with
+                | 1 -> _globalSettings.ImeInsert <- 0
+                | _ -> _globalSettings.ImeInsert <- 1
+            else
+                match _globalSettings.ImeInsert with
+                | 2 -> _globalSettings.ImeInsert <- 0
+                | _ -> _globalSettings.ImeInsert <- 2
+        else
+            if languageMappingsAreDefined then
+                match _globalSettings.ImeSearch with
+                | 1 -> _globalSettings.ImeSearch <- 0
+                | _ -> _globalSettings.ImeSearch <- 1
+            else
+                match _globalSettings.ImeSearch with
+                | 2 -> _globalSettings.ImeSearch <- 0
+                | _ -> _globalSettings.ImeSearch <- 2
+
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -1878,6 +1908,7 @@ type internal CommonOperations
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
+        member x.MoveCaretToVirtualPoint point viewFlags =  x.MoveCaretToVirtualPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text
@@ -1896,6 +1927,7 @@ type internal CommonOperations
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
         member x.SortLines range reverseOrder flags pattern = x.SortLines range reverseOrder flags pattern
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
+        member x.ToggleLanguage isForInsert = x.ToggleLanguage isForInsert
         member x.Undo count = x.Undo count
 
 [<Export(typeof<ICommonOperationsFactory>)>]

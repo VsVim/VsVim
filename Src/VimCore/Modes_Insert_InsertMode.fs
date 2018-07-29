@@ -314,6 +314,7 @@ type internal InsertMode
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
+                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -902,6 +903,11 @@ type internal InsertMode
     member x.ProcessUndoStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Toggle the use of typing language characters
+    member x.ProcessToggleLanguage keyInput =
+        _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the second key of a paste operation.  

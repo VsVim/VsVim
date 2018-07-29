@@ -1380,7 +1380,7 @@ type internal MotionUtil
         | Some virtualPoint ->
 
             // Found the motion so update the jump list
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let markPoint = virtualPoint.Position
@@ -1407,7 +1407,7 @@ type internal MotionUtil
         | Some virtualPoint ->
 
             // Found the motion so update the jump list
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint virtualPoint.Position
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
@@ -1427,7 +1427,7 @@ type internal MotionUtil
         | Some 0 -> None
         | Some x when x > 100 -> None
         | Some count -> 
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             let lineCount = x.CurrentSnapshot.LineCount
             let line = (count * lineCount + 99) / 100
@@ -1448,7 +1448,7 @@ type internal MotionUtil
         | Some matchingTokenSpan ->
 
             // Search succeeded so update the jump list before moving
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             // Order the tokens appropriately to get the span 
             let span, isForward = 
@@ -1466,7 +1466,7 @@ type internal MotionUtil
         | Some matchingPoint ->
 
             // Search succeeded so update the jump list before moving
-            _jumpList.Add x.CaretPoint
+            _jumpList.Add x.CaretVirtualPoint
 
             // Order the tokens appropriately to get the span 
             let span, isForward = 
@@ -2479,7 +2479,7 @@ type internal MotionUtil
     /// Because this uses specific line numbers instead of counts we don't want to operate
     /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
     member x.LineOrFirstToFirstNonBlank numberOpt = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let endLine = 
             match numberOpt with
@@ -2493,7 +2493,7 @@ type internal MotionUtil
     /// Because this uses specific line numbers instead of counts we don't want to operate
     /// on the visual buffer here as vim line numbers always apply to the edit buffer. 
     member x.LineOrLastToFirstNonBlank numberOpt = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let endLine = 
             match numberOpt with
@@ -2529,7 +2529,7 @@ type internal MotionUtil
 
     // Line from the top of the visual buffer
     member x.LineFromTopOfVisibleWindow countOpt = 
-        _jumpList.Add x.CaretPoint 
+        _jumpList.Add x.CaretVirtualPoint 
 
         match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with 
         | NullableUtil.Null -> None
@@ -2560,7 +2560,7 @@ type internal MotionUtil
 
     // Line from the top of the visual buffer
     member x.LineFromBottomOfVisibleWindow countOpt =
-        _jumpList.Add x.CaretPoint 
+        _jumpList.Add x.CaretVirtualPoint 
 
         match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
         | NullableUtil.Null -> None
@@ -2594,7 +2594,7 @@ type internal MotionUtil
 
     /// Motion to put the caret in the middle of the visible window.  
     member x.LineInMiddleOfVisibleWindow () =
-        _jumpList.Add x.CaretPoint 
+        _jumpList.Add x.CaretVirtualPoint 
 
         match TextViewUtil.GetVisibleVisualSnapshotLineRange _textView with
         | NullableUtil.Null -> None
@@ -2618,7 +2618,7 @@ type internal MotionUtil
 
     /// Implements the core portion of section backward motions
     member x.SectionBackwardCore sectionKind count = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let startPoint = 
             x.CaretPoint
@@ -2640,7 +2640,7 @@ type internal MotionUtil
 
     /// Implements the core parts of section forward operators
     member x.SectionForwardCore sectionKind context count =
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let endPoint = 
             x.CaretPoint
@@ -2689,7 +2689,7 @@ type internal MotionUtil
         x.SectionBackwardCore SectionKind.OnCloseBrace count
 
     member x.SentenceForward count = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
         let endPoint =
             x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
@@ -2699,7 +2699,7 @@ type internal MotionUtil
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.BigDelete)
 
     member x.SentenceBackward count = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
         let startPoint = 
             x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
@@ -2710,7 +2710,7 @@ type internal MotionUtil
 
     /// Implements the '}' motion
     member x.ParagraphForward count = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let endPoint = 
             x.GetParagraphs SearchPath.Forward x.CaretPoint
@@ -2722,7 +2722,7 @@ type internal MotionUtil
 
     /// Implements the '{' motion
     member x.ParagraphBackward count = 
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         let startPoint = 
             x.GetParagraphs SearchPath.Backward x.CaretPoint
@@ -2777,7 +2777,7 @@ type internal MotionUtil
     member x.SearchCore (searchData: SearchData) searchPoint count =
 
         // All search operations update the jump list
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         // The search operation should also update the search history
         _vimData.SearchHistory.Add searchData.Pattern
@@ -2969,7 +2969,7 @@ type internal MotionUtil
     member x.NextWordCore path count isWholeWord = 
 
         // Next word motions should update the jump list
-        _jumpList.Add x.CaretPoint
+        _jumpList.Add x.CaretVirtualPoint
 
         // Pick the start point of the word.  If there are any words on this line after
         // the caret then we choose them.  Else we stick with the first non-blank.

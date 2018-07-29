@@ -60,6 +60,31 @@ namespace Vim.UnitTest
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, _vimBuffer.LocalSettings.TabStop);
                     Assert.Equal(0, visualSpan.EditSpan.OverarchingSpan.Length);
                 }
+
+                /// <summary>
+                /// Creating a virtual span for a selection doesn't depend on the contents of the line
+                /// </summary>
+                /// <param name="line1"></param>
+                [WpfTheory]
+                [InlineData("")]
+                [InlineData("a")]
+                [InlineData("ab")]
+                [InlineData("abc")]
+                [InlineData("abcd")]
+                [InlineData("abcde")]
+                public void Virtual(string line1)
+                {
+                    Create(line1, "");
+                    var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                    var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                    var span = new VirtualSnapshotSpan(point1, point2);
+                    _textView.Selection.Select(point1, point2);
+                    TestableSynchronizationContext.RunAll();
+                    var visualSpan = VisualSpan.CreateForVirtualSelection(_textView, VisualKind.Character, tabStop: 4, useVirtualSpace: true);
+                    Assert.Equal(point1, visualSpan.AsCharacter().Item.VirtualStart);
+                    Assert.Equal(point2, visualSpan.AsCharacter().Item.VirtualEnd);
+                    Assert.Equal(span.Length, visualSpan.AsCharacter().Item.VirtualLength);
+                }
             }
 
             public sealed class LineTest : CreateForSelectionTest
@@ -160,6 +185,29 @@ namespace Vim.UnitTest
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Character, point, point, _vimBuffer.LocalSettings.TabStop);
                     Assert.Equal(point, visualSpan.AsCharacter().Item.Start);
                     Assert.Equal(0, visualSpan.AsCharacter().Item.Length);
+                }
+
+                /// <summary>
+                /// A virtual span doesn't depend on the contents of the line
+                /// </summary>
+                /// <param name="line1"></param>
+                [WpfTheory]
+                [InlineData("")]
+                [InlineData("a")]
+                [InlineData("ab")]
+                [InlineData("abc")]
+                [InlineData("abcd")]
+                [InlineData("abcde")]
+                public void Virtual(string line1)
+                {
+                    Create(line1, "");
+                    var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                    var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                    var span = new VirtualSnapshotSpan(point1, point2);
+                    var visualSpan = VisualSpan.CreateForVirtualSelectionPoints(VisualKind.Character, point1, point2, _vimBuffer.LocalSettings.TabStop, true);
+                    Assert.Equal(point1, visualSpan.AsCharacter().Item.VirtualStart);
+                    Assert.Equal(point2, visualSpan.AsCharacter().Item.VirtualEnd);
+                    Assert.Equal(span.Length, visualSpan.AsCharacter().Item.VirtualLength);
                 }
             }
 
@@ -334,6 +382,31 @@ namespace Vim.UnitTest
                     TestableSynchronizationContext.RunAll();
                     Assert.Equal(4, _textView.Selection.StreamSelectionSpan.Length);
                     Assert.False(_textView.Selection.IsReversed);
+                }
+
+                /// <summary>
+                /// Selection of a virtual span doesn't depend on the contents of the line
+                /// </summary>
+                /// <param name="line1"></param>
+                [WpfTheory]
+                [InlineData("")]
+                [InlineData("a")]
+                [InlineData("ab")]
+                [InlineData("abc")]
+                [InlineData("abcd")]
+                [InlineData("abcde")]
+                public void Virtual(string line1)
+                {
+                    Create(line1, "");
+                    var point1 = _textBuffer.GetVirtualPointInLine(0, 0);
+                    var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
+                    var span = new VirtualSnapshotSpan(point1, point2);
+                    var characterSpan = new CharacterSpan(span, true);
+                    var visualSpan = VisualSpan.NewCharacter(characterSpan);
+                    visualSpan.Select(_textView, SearchPath.Forward);
+                    TestableSynchronizationContext.RunAll();
+                    Assert.Equal(point1, _textView.Selection.Start);
+                    Assert.Equal(point2, _textView.Selection.End);
                 }
             }
 

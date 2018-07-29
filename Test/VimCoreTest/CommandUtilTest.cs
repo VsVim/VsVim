@@ -428,8 +428,8 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 1);
-                var point = _textBuffer.GetPoint(1);
-                _commonOperations.Setup(x => x.MoveCaretToPoint(point, ViewFlags.Standard)).Verifiable();
+                var point = _textBuffer.GetVirtualPoint(1);
+                _commonOperations.Setup(x => x.MoveCaretToVirtualPoint(point, ViewFlags.Standard)).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
                 _commonOperations.Verify();
             }
@@ -2650,7 +2650,7 @@ namespace Vim.UnitTest
             public void JumpToOlderPosition_FromLocationNotInList()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetLine(1).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
                 _commandUtil.JumpToOlderPosition(1);
                 Assert.Equal(2, _jumpList.Jumps.Length);
                 Assert.Equal(_textView.GetPoint(0), _jumpList.Jumps.Head.Position);
@@ -2665,9 +2665,9 @@ namespace Vim.UnitTest
             public void JumpToOlderPosition_FromLocationInList()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetLine(2).Start);
-                _jumpList.Add(_textView.GetLine(1).Start);
-                _jumpList.Add(_textView.GetLine(0).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(2, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 _textView.MoveCaretToLine(1);
                 _commandUtil.JumpToOlderPosition(1);
                 Assert.Equal(3, _jumpList.Jumps.Length);
@@ -2690,8 +2690,8 @@ namespace Vim.UnitTest
             public void JumpToOlderPosition_FromLocationNotInListDuringTraversal()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetLine(1).Start);
-                _jumpList.Add(_textView.GetLine(0).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 _jumpList.StartTraversal();
                 Assert.True(_jumpList.MoveOlder(1));
                 _textView.MoveCaretToLine(2);
@@ -2708,9 +2708,9 @@ namespace Vim.UnitTest
             public void JumpToNextPosition_FromMiddle()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetLine(2).Start);
-                _jumpList.Add(_textView.GetLine(1).Start);
-                _jumpList.Add(_textView.GetLine(0).Start);
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(2, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(1, 0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 _jumpList.StartTraversal();
                 _jumpList.MoveOlder(1);
                 _commandUtil.JumpToNewerPosition(1);
