@@ -1509,61 +1509,82 @@ type KeyMappingResult =
 [<DebuggerDisplay("{ToString()}")>]
 type CharacterSpan = 
 
-    val private _start: SnapshotPoint
+    val private _start: VirtualSnapshotPoint
 
     val private _lineCount: int
 
     val private _lastLineLength: int
 
-    new (start: SnapshotPoint, lineCount: int, lastLineLength: int) =
+    val private _useVirtualSpace: bool
 
-        // Don't let the last line of the CharacterSpan end partially into a line 
-        // break.  Encompass the entire line break instead 
-        let number = start.GetContainingLine().LineNumber + (lineCount - 1)
-        let line = SnapshotUtil.GetLineOrLast start.Snapshot number
-        let lastLineLength = 
-            if line.Length = 0 then
-                line.LengthIncludingLineBreak
-            elif lastLineLength > line.Length then
-                line.LengthIncludingLineBreak
-            else
-                lastLineLength
+    new (start: SnapshotPoint, lineCount: int, lastLineLength: int) =
+        let virtualStart = VirtualSnapshotPointUtil.OfPoint start
+        CharacterSpan(virtualStart, lineCount, lastLineLength, false)
+
+    new (start: VirtualSnapshotPoint, lineCount: int, lastLineLength: int, useVirtualSpace: bool) =
+        Contract.Requires(lineCount > 0)
         { 
             _start = start
             _lineCount = lineCount
-            _lastLineLength = lastLineLength }
+            _lastLineLength = lastLineLength
+            _useVirtualSpace = useVirtualSpace }
 
     new (span: SnapshotSpan) = 
         let lineCount = SnapshotSpanUtil.GetLineCount span
         let lastLine = SnapshotSpanUtil.GetLastLine span
-        let lastLineLength = 
+        let startPoint =
             if lineCount = 1 then
-                span.End.Position - span.Start.Position
+                span.Start
             else
-                let diff = span.End.Position - lastLine.Start.Position
-                max 0 diff
+                lastLine.Start
+        let endPoint =
+
+            // Don't let the last line of the CharacterSpan end partially into a line
+            // break.  Encompass the entire line break instead
+            if span.End.Position > lastLine.End.Position then
+                lastLine.EndIncludingLineBreak
+            else
+                span.End
+        let lastLineLength = endPoint.Position - startPoint.Position
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
-    new (span: VirtualSnapshotSpan) =
-        let lineCount = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
-        let lastLine = SnapshotSpanUtil.GetLastLine span.SnapshotSpan
-        let lastLineLength =
-            if lineCount = 1 then
-                span.End.Position.Position - span.Start.Position.Position + span.End.VirtualSpaces
-            else
-                let diff = span.End.Position.Position - lastLine.Start.Position + span.End.VirtualSpaces
-                max 0 diff
-        CharacterSpan(span.Start.Position, lineCount, lastLineLength)
+    new (span: VirtualSnapshotSpan, useVirtualSpace: bool) =
+        if span.Start.IsInVirtualSpace || span.End.IsInVirtualSpace then
+            let lineCount = VirtualSnapshotSpanUtil.GetLineCount span
+            let lastLine = VirtualSnapshotSpanUtil.GetLastLine span
+            let endColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.End
+            let lastLineLength =
+                if lineCount = 1 then
+                    let startColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.Start
+                    let endColumnNumberInLastLine =
+                        if span.Length <> 0 && endColumnNumber = 0 then
+                            lastLine.LengthIncludingLineBreak
+                        else
+                            endColumnNumber
+                    endColumnNumberInLastLine - startColumnNumber
+                else
+                    endColumnNumber
+            CharacterSpan(span.Start, lineCount, lastLineLength, useVirtualSpace)
+        else
+            CharacterSpan(span.SnapshotSpan)
 
     new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
 
-    member x.Snapshot = x._start.Snapshot
+    new (startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint, useVirtualSpace: bool) =
+        let span = VirtualSnapshotSpan(startPoint, endPoint)
+        CharacterSpan(span, useVirtualSpace)
+
+    member x.UseVirtualSpace = x._useVirtualSpace
+
+    member x.Snapshot = x._start.Position.Snapshot
 
     member x.StartLine = SnapshotPointUtil.GetContainingLine x.Start
 
-    member x.Start =  x._start
+    member x.Start =  x._start.Position
+
+    member x.VirtualStart =  x._start
 
     member x.LineCount = x._lineCount
 
@@ -1582,14 +1603,23 @@ type CharacterSpan =
         else
             SnapshotPoint(x.Snapshot, endPoint.Position - 1) |> Some
 
+    /// The last virtual point included in the CharacterSpan
+    member x.VirtualLast =
+        let endPoint: VirtualSnapshotPoint = x.VirtualEnd
+        if endPoint = x.VirtualStart then
+            None
+        else
+            endPoint
+            |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            |> Some
+
     /// Get the End point of the Character Span.
     member x.End =
-        let snapshot = x.Snapshot
         let lastLine = x.LastLine
         let offset = 
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
-                SnapshotPointUtil.GetColumn x._start + x._lastLineLength
+                SnapshotPointUtil.GetColumn x._start.Position + x._lastLineLength
             else
                 x._lastLineLength
 
@@ -1602,25 +1632,47 @@ type CharacterSpan =
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
         // potential errors here
-        if x._start.Position <= endPoint.Position then
+        if x._start.Position.Position <= endPoint.Position then
             endPoint
         else
-            x._start
+            x._start.Position
+
+    /// Get the End point of the Character Span.
+    member x.VirtualEnd =
+        if x.UseVirtualSpace then
+            let lastLine = x.LastLine
+            let offset =
+                if x._lineCount = 1 then
+                    // For a single line we need to apply the offset past the start point
+                    VirtualSnapshotPointUtil.GetColumnNumber x._start + x._lastLineLength
+                else
+                    x._lastLineLength
+
+            VirtualSnapshotLineUtil.GetColumn offset lastLine
+        else
+            x.End |> VirtualSnapshotPointUtil.OfPoint
 
     member x.Span = SnapshotSpan(x.Start, x.End)
 
+    member x.VirtualSpan = VirtualSnapshotSpan(x.VirtualStart, x.VirtualEnd)
+
     member x.Length = x.Span.Length
+
+    member x.VirtualLength = x.VirtualSpan.Length
 
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
     member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
-        if x.End.Position >= x.LastLine.End.Position then
+        if x.UseVirtualSpace then
+            x
+        elif x.End.Position >= x.LastLine.End.Position then
             let endPoint = x.LastLine.EndIncludingLineBreak
             CharacterSpan(x.Start, endPoint)
         else
             x
 
-    override x.ToString() = x.Span.ToString()
+    override x.ToString() =
+        x.VirtualSpan.ToString()
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
@@ -1917,14 +1969,29 @@ type VisualSpan =
 
             textView.Selection.Select(startPoint, endPoint);
 
+        // Select the given VirtualSnapshotSpan
+        let selectVirtualSpan startPoint endPoint =
+
+            textView.Selection.Mode <- TextSelectionMode.Stream
+
+            let startPoint, endPoint =
+                match path with
+                | SearchPath.Forward -> startPoint, endPoint
+                | SearchPath.Backward -> endPoint, startPoint
+
+            textView.Selection.Select(startPoint, endPoint);
+
         match x with
         | Character characterSpan ->
-            let endPoint = 
-                if characterSpan.IncludeLastLineLineBreak then
-                    SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
-                else
-                    characterSpan.End
-            selectSpan characterSpan.Start endPoint
+            if characterSpan.UseVirtualSpace then
+                selectVirtualSpan characterSpan.VirtualStart characterSpan.VirtualEnd
+            else
+                let endPoint =
+                    if characterSpan.IncludeLastLineLineBreak then
+                        SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
+                    else
+                        characterSpan.End
+                selectSpan characterSpan.Start endPoint
         | Line lineRange ->
             selectSpan lineRange.Start lineRange.EndIncludingLineBreak
         | Block blockSpan ->
@@ -1964,13 +2031,13 @@ type VisualSpan =
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
     /// to be the end of the selection and hence not included (exclusive) just as it is 
     /// in ITextSelection
-    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop =
+    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
 
         match visualKind with
         | VisualKind.Character ->
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
             let span = VirtualSnapshotSpan(startPoint, endPoint)
-            let characterSpan = CharacterSpan(span)
+            let characterSpan = CharacterSpan(span, useVirtualSpace)
             Character characterSpan
         | VisualKind.Line ->
 
@@ -1995,7 +2062,7 @@ type VisualSpan =
     static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
         let virtualActivePoint = VirtualSnapshotPointUtil.OfPoint activePoint
-        VisualSpan.CreateForVirtualSelectionPoints visualKind virtualAnchorPoint virtualActivePoint tabStop
+        VisualSpan.CreateForVirtualSelectionPoints visualKind virtualAnchorPoint virtualActivePoint tabStop false
 
     /// Create a VisualSelection based off of the current selection.  If no selection is present
     /// then an empty VisualSpan will be created at the caret
@@ -2003,7 +2070,7 @@ type VisualSpan =
         let selection = textView.Selection
         if selection.IsEmpty then
             let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
-            VisualSpan.CreateForVirtualSelectionPoints visualKind caretPoint caretPoint tabStop
+            VisualSpan.CreateForVirtualSelectionPoints visualKind caretPoint caretPoint tabStop useVirtualSpace
         else
             let anchorPoint = selection.AnchorPoint
             let activePoint = selection.ActivePoint
@@ -2011,12 +2078,16 @@ type VisualSpan =
             // Need to special case the selection ending in, and encompassing, an empty line.  Once you 
             // get rid of the virtual points here it's impossible to distinguish from the case where the 
             // selection ends in the line above instead.  
-            if visualKind = VisualKind.Character && selection.End.Position.GetContainingLine().Length = 0 then
+            if
+                not useVirtualSpace
+                && visualKind = VisualKind.Character
+                && selection.End.Position.GetContainingLine().Length = 0
+            then
                 let endPoint = SnapshotPointUtil.AddOneOrCurrent selection.End.Position 
                 let characterSpan = CharacterSpan(selection.Start.Position, endPoint)
                 Character characterSpan
             else
-                let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
+                let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop useVirtualSpace
                 if visualKind <> VisualKind.Line && useVirtualSpace then
                     visualSpan
                 else
@@ -2100,12 +2171,16 @@ type VisualSelection =
         | SelectionKind.Exclusive -> 
             match x with
             | Character (characterSpan, path) -> 
-                if SnapshotPointUtil.IsEndPoint characterSpan.End then
+                if
+                    not characterSpan.UseVirtualSpace
+                    && SnapshotPointUtil.IsEndPoint characterSpan.End
+                then
                     x
                 else
                     // The span decreases by a single character in exclusive
-                    let endPoint = characterSpan.Last |> OptionUtil.getOrDefault characterSpan.Start
-                    let characterSpan = CharacterSpan(SnapshotSpan(characterSpan.Start, endPoint))
+                    let characterSpan =
+                        let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
+                        CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
                     VisualSelection.Character (characterSpan, path)
             | Line _ ->
                 // The span isn't effected
@@ -2295,7 +2370,7 @@ type VisualSelection =
                     caretPoint, activePoint
 
             let path = SearchPath.Create isForward
-            VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop, path
+            VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop useVirtualSpace, path
 
         let visualSpan, path = 
             match visualKind with
@@ -2311,7 +2386,8 @@ type VisualSelection =
     static member CreateForPoints (visualKind : VisualKind) (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) (tabStop: int) =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
         let virtualCaretPoint = VirtualSnapshotPointUtil.OfPoint caretPoint
-        VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop false
+        let useVirtualSpace = false
+        VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop useVirtualSpace
 
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
     /// SelectionKind should specify what the current mode is (or the mode which produced the 
@@ -2349,16 +2425,21 @@ type VisualSelection =
 
     /// Create the initial Visual Selection information for the specified Kind started at 
     /// the specified point
-    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind =
+    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind useVirtualSpace =
         let caretPoint = caretVirtualPoint.Position
         match visualKind with
         | VisualKind.Character ->
             let characterSpan = 
                 let endPoint = 
                     match selectionKind with
-                    | SelectionKind.Inclusive -> SnapshotPointUtil.AddOneOrCurrent caretPoint
-                    | SelectionKind.Exclusive -> caretPoint
-                CharacterSpan(caretPoint, endPoint)
+                    | SelectionKind.Inclusive ->
+                        if useVirtualSpace then
+                            VirtualSnapshotPointUtil.AddOneOnSameLine caretVirtualPoint
+                        else
+                            SnapshotPointUtil.AddOneOrCurrent caretPoint
+                            |> VirtualSnapshotPointUtil.OfPoint
+                    | SelectionKind.Exclusive -> caretVirtualPoint
+                CharacterSpan(caretVirtualPoint, endPoint, useVirtualSpace)
             VisualSelection.Character (characterSpan, SearchPath.Forward)
         | VisualKind.Line ->
             let lineRange = 
@@ -3806,7 +3887,7 @@ type IJumpList =
 
     /// Current value in the jump list.  Will be None if we are not currently traversing the
     /// jump list
-    abstract Current: SnapshotPoint option
+    abstract Current: VirtualSnapshotPoint option
 
     /// Current index into the jump list.  Will be None if we are not currently traversing
     /// the jump list
@@ -3823,7 +3904,7 @@ type IJumpList =
 
     /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to 
     /// the begining of the jump list
-    abstract Add: SnapshotPoint -> unit
+    abstract Add: VirtualSnapshotPoint -> unit
 
     /// Clear out all of the stored jump information.  Removes all tracking information from
     /// the IJumpList

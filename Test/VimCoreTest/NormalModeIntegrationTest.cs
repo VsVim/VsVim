@@ -7132,7 +7132,7 @@ namespace Vim.UnitTest
             public void FromLocationNotInList()
             {
                 Create("cat", "dog", "fish");
-                _jumpList.Add(_textView.GetPoint(0));
+                _jumpList.Add(_textBuffer.GetVirtualPointInLine(0, 0));
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
                 Assert.Equal(_textView.GetLine(0).Start, _textView.GetCaretPoint());
@@ -8460,6 +8460,28 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("gv");
                 Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));
+            }
+
+            /// <summary>
+            /// Make sure we handle the 'gv' command to switch to the previous visual mode
+            /// </summary>
+            [WpfTheory]
+            [InlineData("inclusive")]
+            [InlineData("exclusive")]
+            public void SwitchPreviousVisualMode_Character(string selection)
+            {
+                // Reported for 'exclusive' in issue #2186.
+                Create("cat dog fish", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("wve");
+                var span = _textBuffer.GetSpan(4, 3);
+                Assert.Equal(span, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("<Esc>");
+                _vimBuffer.ProcessNotation("gv");
+                Assert.Equal(span, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("<Esc>");
+                _vimBuffer.ProcessNotation("gv");
+                Assert.Equal(span, _textView.GetSelectionSpan());
             }
 
             /// <summary>

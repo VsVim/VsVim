@@ -2055,6 +2055,20 @@ module VirtualSnapshotPointUtil =
         let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
         spaces + point.VirtualSpaces
 
+    /// Get the next character span in the buffer with wrap
+    let GetNextCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            VirtualSnapshotPoint(point.Position, point.VirtualSpaces + 1)
+        else
+            VirtualSnapshotPoint(SnapshotPointUtil.GetNextCharacterSpanWithWrap point.Position)
+
+    /// Get the previous character span in the buffer with wrap
+    let GetPreviousCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            VirtualSnapshotPoint(point.Position, point.VirtualSpaces - 1)
+        else
+            VirtualSnapshotPoint(SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point.Position)
+
 /// Contains operations that act on snapshot lines but return virtual snapshot points
 module VirtualSnapshotLineUtil =
 
@@ -2080,6 +2094,9 @@ module VirtualSnapshotLineUtil =
         let virtualSpaces = columnCount - realColumnCount
         realSpacesToColumn + virtualSpaces
 
+    let GetColumn columnNumber (line: ITextSnapshotLine) =
+        VirtualSnapshotPoint(line, columnNumber)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module VirtualSnapshotSpanUtil =
@@ -2098,6 +2115,37 @@ module VirtualSnapshotSpanUtil =
         let startPoint = VirtualSnapshotPointUtil.OfPoint span.Start
         let endPoint = VirtualSnapshotPointUtil.OfPoint span.End
         VirtualSnapshotSpan(startPoint, endPoint)
+
+    /// Get the first line in the VirtualSnapshotSpan
+    let GetStartLine (span: VirtualSnapshotSpan) =
+        span.Start.Position.GetContainingLine()
+
+    /// Get the end line in the VirtualSnapshotSpan
+    let GetLastLine (span: VirtualSnapshotSpan) =
+        if span.End.IsInVirtualSpace then
+            span.End.Position.GetContainingLine()
+        elif span.Length > 0 then
+            span.End.Position.Subtract(1).GetContainingLine()
+        else
+            GetStartLine span
+
+    /// Get the start and end line of the VirtualSnapshotSpan
+    let GetStartAndLastLine span = GetStartLine span, GetLastLine span
+
+    /// Get the number of lines in this VirtualSnapshotSpan
+    let GetLineCount span =
+        let startLine, lastLine = GetStartAndLastLine span
+        (lastLine.LineNumber - startLine.LineNumber) + 1
+
+    /// Whether this a multiline VirtualSnapshotSpan
+    let IsMultiline span =
+        let startLine, lastLine = GetStartAndLastLine span
+        startLine.LineNumber < lastLine.LineNumber
+
+    let GetText (span: VirtualSnapshotSpan) =
+        let spanText = SnapshotSpanUtil.GetText span.SnapshotSpan
+        let virtualSpaces = StringUtil.RepeatChar span.End.VirtualSpaces ' '
+        spanText + virtualSpaces
 
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context

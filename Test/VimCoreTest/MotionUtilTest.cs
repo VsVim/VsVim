@@ -4002,7 +4002,7 @@ more";
             [WpfFact]
             public void LineDownVirtualToVirtual()
             {
-                Create("foo", "baz", "");
+                Create("foo", "bar", "");
                 _textView.MoveCaretTo(3, virtualSpaces: 1);
                 var data = _motionUtil.LineDown(1);
                 AssertData(
@@ -4010,6 +4010,20 @@ more";
                     _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                     motionKind: MotionKind.LineWise,
                     caretColumn: CaretColumn.NewInLastLine(4));
+            }
+
+            [WpfFact]
+            public void LineDownVirtualToVirtualWithTab()
+            {
+                Create("\tx", "bar", "");
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(2, virtualSpaces: 1);
+                var data = _motionUtil.LineDown(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(3));
             }
 
             [WpfFact]
@@ -4052,9 +4066,22 @@ more";
             }
 
             [WpfFact]
+            public void LineUpVirtualToRealWithTab()
+            {
+                Create("foo", "\tx", "");
+                _textView.MoveCaretToLine(1, 2, virtualSpaces: 1);
+                var data = _motionUtil.LineUp(1);
+                AssertData(
+                    data,
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    motionKind: MotionKind.LineWise,
+                    caretColumn: CaretColumn.NewInLastLine(3));
+            }
+
+            [WpfFact]
             public void LineUpVirtualToVirtual()
             {
-                Create("foo", "baz", "");
+                Create("foo", "bar", "");
                 _textView.MoveCaretToLine(1, 3, virtualSpaces: 1);
                 var data = _motionUtil.LineUp(1);
                 AssertData(

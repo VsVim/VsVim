@@ -95,6 +95,7 @@ namespace Vim.UnitTest
             view.SetupGet(x => x.Selection).Returns(selection.Object);
             var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
             vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view.Object);
             var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
@@ -113,6 +114,7 @@ namespace Vim.UnitTest
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
             var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
             vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view);
             var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);

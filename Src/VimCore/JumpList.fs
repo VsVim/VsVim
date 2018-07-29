@@ -44,7 +44,7 @@ type internal JumpList
     member x.Current = 
         match _current with
         | None -> None
-        | Some (current, _) -> current.Value.Point
+        | Some (current, _) -> current.Value.VirtualPoint
 
     /// Return the current index
     member x.CurrentIndex =
@@ -95,7 +95,7 @@ type internal JumpList
         // traversal
         _current <- None
 
-        let line, column = SnapshotPointUtil.GetLineColumn point
+        let line, column = VirtualSnapshotPointUtil.GetLineColumn point
 
         let trackingLineColumn = 
             match x.FindNodeTrackingLine line with
@@ -125,7 +125,7 @@ type internal JumpList
         // traversal
         _current <- None
 
-        let line, column = SnapshotPointUtil.GetLineColumn point
+        let line, column = VirtualSnapshotPointUtil.GetLineColumn point
         x.SetLastJumpLocation line column
 
         x.AddCore point |> ignore
@@ -190,7 +190,7 @@ type internal JumpList
 
     /// Start a traversal of the jump list
     member x.StartTraversal() = 
-        let caretPoint = TextViewUtil.GetCaretPoint _textView
+        let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView
         let node = x.AddCore caretPoint
         _current <- Some (node, 0)
 

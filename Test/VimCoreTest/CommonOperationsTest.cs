@@ -378,7 +378,7 @@ namespace Vim.UnitTest
             public void GoToDefinition1()
             {
                 Create("foo");
-                _jumpList.Setup(x => x.Add(_textView.GetCaretPoint())).Verifiable();
+                _jumpList.Setup(x => x.Add(_textView.GetCaretVirtualPoint())).Verifiable();
                 _vimHost.Setup(x => x.GoToDefinition()).Returns(true);
                 var res = _operations.GoToDefinition();
                 Assert.True(res.IsSucceeded);
@@ -1375,7 +1375,7 @@ namespace Vim.UnitTest
             public void GoToGlobalDeclaration1()
             {
                 Create("foo bar");
-                _jumpList.Setup(x => x.Add(It.IsAny<SnapshotPoint>()));
+                _jumpList.Setup(x => x.Add(It.IsAny<VirtualSnapshotPoint>()));
                 _vimHost.Setup(x => x.GoToGlobalDeclaration(_textView, "foo")).Returns(true).Verifiable();
                 _operations.GoToGlobalDeclaration();
                 _vimHost.Verify();
@@ -1395,7 +1395,7 @@ namespace Vim.UnitTest
             public void GoToLocalDeclaration1()
             {
                 Create("foo bar");
-                _jumpList.Setup(x => x.Add(It.IsAny<SnapshotPoint>()));
+                _jumpList.Setup(x => x.Add(It.IsAny<VirtualSnapshotPoint>()));
                 _vimHost.Setup(x => x.GoToLocalDeclaration(_textView, "foo")).Returns(true).Verifiable();
                 _operations.GoToLocalDeclaration();
                 _vimHost.Verify();

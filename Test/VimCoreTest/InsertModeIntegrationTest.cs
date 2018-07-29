@@ -1380,6 +1380,17 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LineDownVirtualToVirtualWithTab()
+            {
+                Create("foo", "\tx", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _textView.MoveCaretTo(3, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("<Down>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(1), 3),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
             public void LineDownVirtualToReal()
             {
                 Create("", "bar", "");
@@ -1404,6 +1415,17 @@ namespace Vim.UnitTest
             {
                 Create("foo", "bar", "");
                 _textView.MoveCaretToLine(1, 3, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("<Up>");
+                Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 6),
+                    _textView.Caret.Position.VirtualBufferPosition);
+            }
+
+            [WpfFact]
+            public void LineUpVirtualToVirtualWithTab()
+            {
+                Create("foo", "\tx", "");
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretToLine(1, 2, virtualSpaces: 1);
                 _vimBuffer.ProcessNotation("<Up>");
                 Assert.Equal(new VirtualSnapshotPoint(_textBuffer.GetLine(0), 6),
                     _textView.Caret.Position.VirtualBufferPosition);

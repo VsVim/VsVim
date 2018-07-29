@@ -862,7 +862,7 @@ type internal CommonOperations
             Count = VimRegexReplaceCount.One }
 
     member x.GoToDefinition() =
-        let before = TextViewUtil.GetCaretPoint _textView
+        let before = TextViewUtil.GetCaretVirtualPoint _textView
         if _vimHost.GoToDefinition() then
             _jumpList.Add before
             Result.Succeeded
@@ -874,14 +874,14 @@ type internal CommonOperations
             | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
     member x.GoToLocalDeclaration() = 
-        let caretPoint = x.CaretPoint
+        let caretPoint = x.CaretVirtualPoint
         if _vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty then
             _jumpList.Add caretPoint
         else
             _vimHost.Beep()
 
     member x.GoToGlobalDeclaration () = 
-        let caretPoint = x.CaretPoint
+        let caretPoint = x.CaretVirtualPoint
         if _vimHost.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty then 
             _jumpList.Add caretPoint
         else
@@ -1908,6 +1908,7 @@ type internal CommonOperations
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
+        member x.MoveCaretToVirtualPoint point viewFlags =  x.MoveCaretToVirtualPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text = x.NormalizeBlanks text

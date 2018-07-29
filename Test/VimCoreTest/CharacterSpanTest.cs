@@ -24,8 +24,19 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetLine(1).Start, 1, 0);
-                    Assert.Equal(2, characterSpan.Length);
-                    Assert.Equal(2, characterSpan.LastLineLength);
+                    Assert.Equal(0, characterSpan.Length);
+                    Assert.Equal(0, characterSpan.LastLineLength);
+                }
+
+                /// <summary>
+                /// A character span can end before the line break
+                /// </summary>
+                [WpfFact]
+                public void AtLineBreak()
+                {
+                    Create("cat", "", "dog");
+                    var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 1, 3);
+                    Assert.Equal(3, characterSpan.LastLineLength);
                 }
 
                 /// <summary>
@@ -35,21 +46,20 @@ namespace Vim.UnitTest
                 public void IntoLineBreak()
                 {
                     Create("cat", "", "dog");
-                    var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 0, 4);
-                    Assert.Equal(3, characterSpan.LastLineLength);
+                    var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), _textBuffer.GetPoint(4));
+                    Assert.Equal(5, characterSpan.LastLineLength);
                 }
 
                 [WpfFact]
                 public void IntoLineBreakDeep()
                 {
                     Create("cat", "", "dog");
-                    var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 0, 5);
-                    Assert.Equal(3, characterSpan.LastLineLength);
+                    var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 1, 5);
+                    Assert.Equal(5, characterSpan.LastLineLength);
                 }
 
                 /// <summary>
-                /// If the last line is empty it should still be included in the CharacterSpan.  This is
-                /// an odd special case we have to handle
+                /// If the last line is empty it should not be included in the CharacterSpan
                 /// </summary>
                 [WpfFact]
                 public void LastLineEmpty()
@@ -57,8 +67,8 @@ namespace Vim.UnitTest
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), 2, 0);
                     Assert.Equal(2, characterSpan.LineCount);
-                    Assert.Equal(2, characterSpan.LastLineLength);
-                    Assert.Equal(_textBuffer.GetLine(2).Start, characterSpan.End);
+                    Assert.Equal(0, characterSpan.LastLineLength);
+                    Assert.Equal(_textBuffer.GetLine(1).Start, characterSpan.End);
                 }
             }
 
@@ -120,7 +130,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "", "dog");
                 var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), 2, 0);
-                Assert.True(characterSpan.IncludeLastLineLineBreak);
+                Assert.False(characterSpan.IncludeLastLineLineBreak);
             }
 
             [WpfFact]
@@ -128,7 +138,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "", "dog");
                 var characterSpan = new CharacterSpan(_textBuffer.GetLine(1).Start, 1, 0);
-                Assert.True(characterSpan.IncludeLastLineLineBreak);
+                Assert.False(characterSpan.IncludeLastLineLineBreak);
             }
 
             [WpfFact]
