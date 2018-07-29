@@ -6433,6 +6433,7 @@ namespace Vim.UnitTest
                 var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
                 _textView.MoveCaretToLine(lineNumber);
+                TestableSynchronizationContext.RunAll();
                 _vimBuffer.ProcessNotation("<c-d>");
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }
