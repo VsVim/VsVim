@@ -1148,7 +1148,7 @@ type internal CommonOperations
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
     /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
-    member x.NormalizeBlanksAtColumn text (column: SnapshotCharacterSpan) = 
+    member x.NormalizeBlanksAtColumn text (column: SnapshotColumn) = 
         let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.ColumnNumber _localSettings.TabStop
         if spacesToColumn % _localSettings.TabStop = 0 then
             // If the column is on a 'tabstop' boundary then there is no difficulty here
@@ -1777,7 +1777,7 @@ type internal CommonOperations
                 // Collection strings are inserted at the original character
                 // position down the set of lines creating whitespace as needed
                 // to match the indent
-                let column = SnapshotCharacterSpan(point)
+                let column = SnapshotColumn(point)
                 let lineNumber, columnNumber = column.LineNumber, column.ColumnNumber
     
                 // First break the strings into the collection to edit against
@@ -1794,7 +1794,7 @@ type internal CommonOperations
                     let line =
                         lineNumber + offset
                         |> SnapshotUtil.GetLine originalSnapshot
-                    let column = SnapshotCharacterSpan(line)
+                    let column = SnapshotColumn(line)
                     let columnCount = SnapshotLineUtil.GetCharacterSpansCount SearchPath.Forward line
                     if columnCount < columnNumber then
                         let prefix = String.replicate (columnNumber - columnCount) " "

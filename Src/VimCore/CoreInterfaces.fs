@@ -2473,7 +2473,7 @@ type StoredVisualSelection =
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
         let addOrEntireLine (point: SnapshotPoint) count = 
-            let column = SnapshotCharacterSpan(point)
+            let column = SnapshotColumn(point)
             match column.TryAddInLine(count, includeLineBreak = true) with
             | Some column -> column.EndPoint
             | None -> 
@@ -2488,7 +2488,7 @@ type StoredVisualSelection =
             let characterSpan = CharacterSpan(point, endPoint)
             VisualSelection.Character (characterSpan, SearchPath.Forward)
         | StoredVisualSelection.CharacterLine (lineCount, offset)  ->
-            let startColumn = SnapshotCharacterSpan(point)
+            let startColumn = SnapshotColumn(point)
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
             let lastLine = range.LastLine
             let endPoint =

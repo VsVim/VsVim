@@ -21,4 +21,4 @@ spaces. This is used often when calculating indentation / columns between lines.
 
 ### TODO:
 
-Wide characters: are they handled at SnapshotCodePoint or SnapshotCharacterSpan. 
+Wide characters: are they handled at SnapshotCodePoint or SnapshotColumn. 

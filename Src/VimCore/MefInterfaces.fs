@@ -455,7 +455,7 @@ type ICommonOperations =
     abstract NormalizeBlanks: text: string -> string
 
     /// Normalize the spaces and tabs in the string at the given column in the buffer
-    abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotCharacterSpan -> string
+    abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
     /// Normalize the set of blanks into spaces
     abstract NormalizeBlanksToSpaces: string -> string

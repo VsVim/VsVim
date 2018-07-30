@@ -917,10 +917,10 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
-        public static SnapshotCharacterSpan GetColumn(this ITextSnapshot snapshot, int position)
+        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int position)
         {
             var point = new SnapshotPoint(snapshot, position);
-            return new SnapshotCharacterSpan(point);
+            return new SnapshotColumn(point);
         }
 
         #endregion
@@ -933,7 +933,7 @@ namespace Vim.UnitTest
             return new SnapshotColumnLegacy(column.StartPoint);
         }
 
-        public static SnapshotCharacterSpan GetColumn(this ITextBuffer textBuffer, int position)
+        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int position)
         {
             return GetColumn(textBuffer.CurrentSnapshot, position);
         }

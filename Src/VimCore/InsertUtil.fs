@@ -494,11 +494,11 @@ type internal InsertUtil
 
                     let existingRange = Span.FromBounds(insertColumn.Point.Position, x.CaretPoint.Position)
 
-                    // CTODO: the explicit SnapshotCharacterSpan shouldn't be needed here when we are done.
+                    // CTODO: the explicit SnapshotColumn shouldn't be needed here when we are done.
                     let text = 
                         let existingText = x.CurrentSnapshot.GetText(existingRange)
                         let indentText = StringUtil.RepeatChar addedSpaces ' ' 
-                        _operations.NormalizeBlanksAtColumn (existingText + indentText) (SnapshotCharacterSpan(insertColumn.Point))
+                        _operations.NormalizeBlanksAtColumn (existingText + indentText) (SnapshotColumn(insertColumn.Point))
 
                     let caretPosition = insertColumn.Point.Position + text.Length
                     _textBuffer.Replace(existingRange, text) |> ignore

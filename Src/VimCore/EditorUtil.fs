@@ -350,8 +350,8 @@ type SnapshotColumnLegacy
 /// In the case this refers to a surrogate pair then the Point will refer to the high
 /// surrogate.
 ///
-/// This is similar in structure to SnapshotCharacterSpan but a bit more low level. In
-/// general code should prefer SnapshotCharacterSpan as it deals with legal caret positions
+/// This is similar in structure to SnapshotColumn but a bit more low level. In
+/// general code should prefer SnapshotColumn as it deals with legal caret positions
 /// and characters. This type is used when a more direct mapping between positions and 
 /// code point is needed
 [<Struct>]
@@ -600,7 +600,7 @@ type SnapshotCodePoint =
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
-type SnapshotCharacterSpan =
+type SnapshotColumn =
 
     val private _codePoint : SnapshotCodePoint
     val private _columnNumber: int
@@ -608,7 +608,7 @@ type SnapshotCharacterSpan =
     /// Constructor for a character span corresponding to a point
     new (point: SnapshotPoint) =
         let line = point.GetContainingLine();
-        SnapshotCharacterSpan(line, point)
+        SnapshotColumn(line, point)
 
     /// Constructor for a character span corresponding to a point within a line
     /// that looks up the column number by searching the positions array
@@ -709,7 +709,7 @@ type SnapshotCharacterSpan =
                     codePoint <- codePoint.Add 1
                     column <- column + 1
                 count <- count - 1
-            SnapshotCharacterSpan(codePoint, column)
+            SnapshotColumn(codePoint, column)
         else
             count <- -count
             while count > 0 do
@@ -718,14 +718,14 @@ type SnapshotCharacterSpan =
 
                 if codePoint.IsStartOfLine then
                     let previousLine = x.Snapshot.GetLineFromLineNumber (codePoint.Line.LineNumber - 1)
-                    let cs = SnapshotCharacterSpan(previousLine, previousLine.End)
+                    let cs = SnapshotColumn(previousLine, previousLine.End)
                     column <- cs._columnNumber
                     codePoint <- cs._codePoint
                 else
                     codePoint <- codePoint.Subtract 1
                     column <- column - 1
                 count <- count - 1
-            SnapshotCharacterSpan(codePoint, column)
+            SnapshotColumn(codePoint, column)
 
     /// Go backward (positive) or forward (negative) by the specified number of
     /// columns
@@ -780,7 +780,7 @@ type SnapshotCharacterSpan =
         sprintf "Point: %s Line: %d Column: %d" (x.CodePoint.ToString()) x.LineNumber x.ColumnNumber
 
     static member TryCreateForColumnNumber (line: ITextSnapshotLine) (columnNumber: int) = 
-        let mutable cs = SnapshotCharacterSpan(line)
+        let mutable cs = SnapshotColumn(line)
         let mutable count = columnNumber
         let mutable isGood = true
         while count > 0 && isGood do
@@ -1427,10 +1427,10 @@ module SnapshotLineUtil =
 
     /// Get the character spans in the line in the path
     let private GetCharacterSpansCore path includeLineBreak line =
-        let startColumn = SnapshotCharacterSpan(GetStart line)
+        let startColumn = SnapshotColumn(GetStart line)
         let items = 
             seq { 
-                let mutable characterSpan = SnapshotCharacterSpan(line)
+                let mutable characterSpan = SnapshotColumn(line)
                 while (not characterSpan.IsLineBreak) do
                     yield characterSpan
                     characterSpan <- characterSpan.Add 1
@@ -2018,7 +2018,7 @@ module SnapshotPointUtil =
     /// CTODO: convert to using code point 
     /// CTODO: don't throw when going off the end of the buffer
     let TryGetPreviousCharacterSpanOnLine (point: SnapshotPoint) count =
-        let column = SnapshotCharacterSpan(point)
+        let column = SnapshotColumn(point)
         if column.ColumnNumber >= count then
             let previousColumn = column.Subtract count
             Some previousColumn.StartPoint
@@ -2030,7 +2030,7 @@ module SnapshotPointUtil =
     /// surrogate pairs)
     /// CTODO: convert to using code point 
     let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
-        let characterSpan = SnapshotCharacterSpan(point)
+        let characterSpan = SnapshotColumn(point)
         match characterSpan.TryAdd count with 
         | None -> None
         | Some next ->
@@ -2086,7 +2086,7 @@ module SnapshotPointUtil =
         /// Get the relative column in 'direction' using predicate 'isEnd'
         /// to stop the motion
         let getRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
-            let mutable column = SnapshotCharacterSpan(startPoint)
+            let mutable column = SnapshotColumn(startPoint)
             let mutable remaining = abs count
             while remaining > 0 && not (isEnd column.StartPoint) do
                 column <- column.Add direction
