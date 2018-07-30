@@ -152,5 +152,28 @@ namespace Vim.UnitTest
                 Assert.Equal(0, point2.Line.LineNumber);
             }
         }
+
+        public sealed class IsCharacterTests : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetStartPoint());
+                Assert.True(point.IsCharacter('c'));
+                Assert.False(point.IsCharacter('\t'));
+            }
+
+            /// <summary>
+            /// Don't throw when asking this at the end point. 
+            /// </summary>
+            [WpfFact]
+            public void EndPoint()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetEndPoint());
+                Assert.False(point.IsCharacter('c'));
+            }
+        }
     }
 }

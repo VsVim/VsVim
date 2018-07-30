@@ -455,7 +455,9 @@ type SnapshotCodePoint =
 
     /// Is the unicode character at this point represented by the specified value? This will only match
     /// for characters in the BMP plane.
-    member x.IsCharacter(c: char) = x.Length = 1 && x.StartPoint.GetChar() = c
+    member x.IsCharacter(c: char) = 
+        if x.IsEndPoint then false
+        else x.Length = 1 && x.StartPoint.GetChar() = c
 
     /// Is the codepoint represented by this string value?
     member x.IsCharacter(text: string) = x.CharacterText = text
@@ -567,7 +569,9 @@ type SnapshotCodePoint =
                 let category = CharUnicodeInfo.GetUnicodeCategory c
                 isNonSpacingCategory category
 
-        if x.Length = 1 then
+        if x.IsEndPoint then
+            0
+        elif x.Length = 1 then
             match x.StartPoint.GetChar() with
             | '\u0000' -> 1
             | '\t' -> tabStop
@@ -708,6 +712,31 @@ type SnapshotCharacterSpan =
     /// columns
     member x.Subtract count =
         x.Add -count
+
+    member x.TryAdd count = 
+        let mutable count = count
+        let mutable current = x  
+        let mutable isGood = true
+        if count >= 0 then
+            while count > 0 && isGood do
+                if EditorCoreUtil.IsEndPoint current.Point then
+                    isGood <- false
+                else
+                    current <- current.Add 1
+                    count <- count - 1
+        else
+            while count < 0 && isGood do
+                if current.Point.Position = 0 then
+                    isGood <- false
+                else
+                    count <- count + 1
+                    current <- current.Add -1
+            
+        if isGood then Some current
+        else None
+
+    member x.TrySubtract count = 
+        x.TryAdd -count
 
     /// Get the text corresponding to the column
     member x.GetText () =
@@ -1536,7 +1565,7 @@ module SnapshotLineUtil =
         let mutable spaces = 0 
         let mutable value: SnapshotOverlapPoint option = None
 
-        if point.IsInsideLineBreak then
+        if point.IsInsideLineBreak || point.IsEndPoint then
             value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
 
         while Option.isNone value do
@@ -1561,7 +1590,7 @@ module SnapshotLineUtil =
                 point <- point.Add 1
                 spaces <- spaces + currentWidth
 
-                if point.IsInsideLineBreak then
+                if point.IsInsideLineBreak || point.IsEndPoint then
                     value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
 
         Option.get value
@@ -1969,9 +1998,11 @@ module SnapshotPointUtil =
     /// CTODO: convert to using code point 
     let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
         let characterSpan = SnapshotCharacterSpan(point)
-        let next = characterSpan.Add count
-        if next.LineNumber <> characterSpan.LineNumber then None
-        else Some next.Point
+        match characterSpan.TryAdd count with 
+        | None -> None
+        | Some next ->
+            if next.LineNumber <> characterSpan.LineNumber then None
+            else Some next.Point
 
     /// Get a point relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
