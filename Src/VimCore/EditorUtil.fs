@@ -732,20 +732,20 @@ type SnapshotCharacterSpan =
     member x.Subtract count =
         x.Add -count
 
-    member x.TryAdd count = 
+    member private x.TryAddCore count testFunc = 
         let mutable count = count
         let mutable current = x  
         let mutable isGood = true
         if count >= 0 then
             while count > 0 && isGood do
-                if current.IsEndPoint then
+                if current.IsEndPoint || not (testFunc current) then
                     isGood <- false
                 else
                     current <- current.Add 1
                     count <- count - 1
         else
             while count < 0 && isGood do
-                if current.IsStartPoint then
+                if current.IsStartPoint || not (testFunc current) then
                     isGood <- false
                 else
                     count <- count + 1
@@ -754,8 +754,22 @@ type SnapshotCharacterSpan =
         if isGood then Some current
         else None
 
+    member x.TryAdd count = 
+        x.TryAddCore count (fun _ -> true)
+
     member x.TrySubtract count = 
         x.TryAdd -count
+
+    /// Try and add within the same ITextSnapshotLine
+    member x.TryAddInLine(count: int, ?includeLineBreak) = 
+        let includeLineBreak = defaultArg includeLineBreak false
+        let lineNumber = x.LineNumber
+        x.TryAddCore count (fun current -> 
+            current.LineNumber = lineNumber &&
+            (not current.IsLineBreak || includeLineBreak))
+
+    /// Try and add within the same ITextS
+    member x.TryAddInLine(count: int) = x.TryAddInLine(count, false)
 
     /// Get the text corresponding to the column
     member x.GetText () =

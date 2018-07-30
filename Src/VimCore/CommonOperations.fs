@@ -1148,8 +1148,8 @@ type internal CommonOperations
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
     /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
-    member x.NormalizeBlanksAtColumn text (column: SnapshotColumn) = 
-        let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.Column _localSettings.TabStop
+    member x.NormalizeBlanksAtColumn text (column: SnapshotCharacterSpan) = 
+        let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn  column.Line column.ColumnNumber _localSettings.TabStop
         if spacesToColumn % _localSettings.TabStop = 0 then
             // If the column is on a 'tabstop' boundary then there is no difficulty here
             // with accounting for partial tabs.  Just normalize as we would for any other

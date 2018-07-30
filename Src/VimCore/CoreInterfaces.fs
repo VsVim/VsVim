@@ -2472,14 +2472,14 @@ type StoredVisualSelection =
 
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
-        let addOrEntireLine point count = 
-            let column = SnapshotColumn(point)
-            let line = column.Line
-            if count + column.Column >= line.Length then 
-                match SnapshotPointUtil.TryAddOne line.EndIncludingLineBreak with 
+        let addOrEntireLine (point: SnapshotPoint) count = 
+            let column = SnapshotCharacterSpan(point)
+            match column.TryAddInLine(count, includeLineBreak = true) with
+            | Some column -> column.EndPoint
+            | None -> 
+                match SnapshotPointUtil.TryAddOne column.Line.EndIncludingLineBreak with 
                 | Some p -> p
-                | None -> line.EndIncludingLineBreak
-            else SnapshotPointUtil.Add count point 
+                | None -> column.Line.EndIncludingLineBreak
 
         match x with
         | StoredVisualSelection.Character width ->
@@ -2488,13 +2488,13 @@ type StoredVisualSelection =
             let characterSpan = CharacterSpan(point, endPoint)
             VisualSelection.Character (characterSpan, SearchPath.Forward)
         | StoredVisualSelection.CharacterLine (lineCount, offset)  ->
-            let startColumn = SnapshotColumn(point)
+            let startColumn = SnapshotCharacterSpan(point)
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
             let lastLine = range.LastLine
             let endPoint =
                 let column = 
-                    if offset >= 0 then startColumn.Column + offset + 1
-                    else startColumn.Column + offset
+                    if offset >= 0 then startColumn.ColumnNumber + offset + 1
+                    else startColumn.ColumnNumber + offset
                 addOrEntireLine lastLine.Start column
                         
             let characterSpan, searchPath = 
