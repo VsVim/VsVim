@@ -42,6 +42,7 @@ namespace Vim.UnitTest.Mock
         public IVim VimImpl;
         public FSharpOption<ModeKind> InOneTimeCommandImpl;
         public IVimGlobalSettings GlobalSettingsImpl;
+        public bool KeyInterceptImpl;
 
         public PropertyCollection Properties
         {
@@ -113,6 +114,12 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
+        public bool KeyIntercept
+        {
+            get { return KeyInterceptImpl; }
+            set { KeyInterceptImpl = value; }
+        }
+
         public IMarkMap MarkMap
         {
             get { throw new NotImplementedException(); }
@@ -154,6 +161,10 @@ namespace Vim.UnitTest.Mock
         }
 
         public ProcessResult Process(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+        public ProcessResult ProcessFromScript(KeyInput value)
         {
             throw new NotImplementedException();
         }
@@ -223,6 +234,15 @@ namespace Vim.UnitTest.Mock
             KeyInputBuffered?.Invoke(this, new KeyInputSetEventArgs(keyInputSet));
         }
 
+        public void RaiseCallCSharpScript(CallCSharpScriptEventArgs args)
+        {
+            CallCSharpScript?.Invoke(this, args);
+        }
+        
+        public void RaiseKeyInputIntercept(KeyInputEventArgs args)
+        {
+            KeyInputIntercept?.Invoke(this, args);
+        }
         public event EventHandler<StringEventArgs> StatusMessage;
 
         public event EventHandler<StringEventArgs> ErrorMessage;
@@ -244,6 +264,10 @@ namespace Vim.UnitTest.Mock
 #pragma warning restore 67
 
         public event EventHandler Closed;
+
+        public event EventHandler<CallCSharpScriptEventArgs> CallCSharpScript;
+
+        public event EventHandler<KeyInputEventArgs> KeyInputIntercept; 
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {
