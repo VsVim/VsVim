@@ -18,3 +18,5 @@ All code in this project is covered under the Apache 2 license a copy of which i
 ## Latest Builds
 
 The build representing the latest source code can be downloaded from the [Open Vsix Gallery](http://vsixgallery.com/extension/VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3/).  
+
+For Chinese Version: [中文版本](README.ch.md)
