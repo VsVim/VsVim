@@ -8,6 +8,11 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
+    // TOOD: need to test specifying a point that is the second character of a line break
+    // TODO: Consider removing position Apis and replace with start and end 
+    // TODO: rename width to length
+    // TODO: test add past end
+    // TODO: test subtract before start
     public abstract class SnapshotCharacterSpanTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
@@ -46,6 +51,27 @@ namespace Vim.UnitTest
                 Assert.Equal(1, column.LineNumber);
             }
 
+            [WpfTheory]
+            [InlineData("\n")]
+            [InlineData("\r\n")]
+            public void AddManyLines(string lineBreakText)
+            {
+                var letters = CharUtil.LettersLower.Select(x => x.ToString()).ToArray();
+                var content = string.Join(lineBreakText, letters);
+                CreateRaw(content);
+                var point = new SnapshotCharacterSpan(_textBuffer.GetPoint(0));
+                for (var i = 0; i < letters.Length; i++)
+                {
+                    Assert.Equal(letters[i], point.GetText());
+                    if (i + 1 < letters.Length)
+                    {
+                        point = point.Add(1);
+                        Assert.True(point.IsLineBreak);
+                        point = point.Add(1);
+                    }
+                }
+            }
+
             [WpfFact]
             public void AddBeforeLine()
             {
@@ -76,6 +102,31 @@ namespace Vim.UnitTest
                 var column = original.Subtract(2);
                 Assert.Equal(2, column.ColumnNumber);
                 Assert.Equal(0, column.LineNumber);
+            }
+
+            [WpfTheory]
+            [InlineData("\n")]
+            [InlineData("\r\n")]
+            public void SubtractManyLines(string lineBreakText)
+            {
+                var letters = CharUtil.LettersLower.Select(x => x.ToString()).ToArray();
+                var content = string.Join(lineBreakText, letters);
+                CreateRaw(content);
+                var i = letters.Length - 2;
+                var point = new SnapshotCharacterSpan(_textBuffer.GetEndPoint());
+                point = point.Subtract(2);
+                while (point.Point.Position != 0)
+                {
+                    Assert.True(point.IsLineBreak);
+                    point = point.Subtract(1);
+                    Assert.Equal(letters[i], point.GetText());
+
+                    if (point.Point.Position != 0)
+                    {
+                        point = point.Subtract(1);
+                        i--;
+                    }
+                }
             }
         }
 
@@ -111,26 +162,6 @@ namespace Vim.UnitTest
                 var point = _textBuffer.GetEndPoint();
                 var characterSpan = new SnapshotCharacterSpan(point);
                 Assert.True(characterSpan.Point.Position == _textBuffer.CurrentSnapshot.Length);
-            }
-        }
-
-        public sealed class SurrogatePairs : SnapshotCharacterSpanTest
-        {
-            [WpfFact]
-            public void SurrogatePair()
-            {
-                // Extraterrestrial alien emoji from issue #1786.
-                Create("'\U0001F47D'", "");
-                Assert.Equal(6, _textBuffer.GetLine(0).ExtentIncludingLineBreak.GetText().Length);
-                var column = new SnapshotCharacterSpan(_textBuffer.GetLine(0).Start);
-                Assert.Equal(4, column.ColumnCountIncludingLineBreak);
-                Assert.Equal(1, column.Width);
-                column = new SnapshotCharacterSpan(column, 1);
-                Assert.Equal(2, column.Width);
-                column = new SnapshotCharacterSpan(column, 2);
-                Assert.Equal(1, column.Width);
-                column = new SnapshotCharacterSpan(column, 3);
-                Assert.Equal(Environment.NewLine.Length, column.Width);
             }
         }
     }
