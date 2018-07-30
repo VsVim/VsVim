@@ -917,17 +917,23 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
-        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int position)
+        public static SnapshotCharacterSpan GetColumn(this ITextSnapshot snapshot, int position)
         {
             var point = new SnapshotPoint(snapshot, position);
-            return new SnapshotColumn(point);
+            return new SnapshotCharacterSpan(point);
         }
 
         #endregion
 
         #region ITextBuffer
 
-        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int position)
+        public static SnapshotColumnLegacy GetColumnLegacy(this ITextBuffer textBuffer, int position)
+        {
+            var column = GetColumn(textBuffer, position);
+            return new SnapshotColumnLegacy(column.StartPoint);
+        }
+
+        public static SnapshotCharacterSpan GetColumn(this ITextBuffer textBuffer, int position)
         {
             return GetColumn(textBuffer.CurrentSnapshot, position);
         }
@@ -1643,9 +1649,9 @@ namespace Vim.UnitTest
             return view.Caret.Position.VirtualBufferPosition;
         }
 
-        public static SnapshotColumn GetCaretColumn(this ITextView textView)
+        public static SnapshotColumnLegacy GetCaretColumn(this ITextView textView)
         {
-            return new SnapshotColumn(textView.GetCaretPoint());
+            return new SnapshotColumnLegacy(textView.GetCaretPoint());
         }
 
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
@@ -1713,9 +1719,9 @@ namespace Vim.UnitTest
             return true;
         }
 
-        public static SnapshotColumn GetColumn(this SnapshotPoint point)
+        public static SnapshotColumnLegacy GetColumn(this SnapshotPoint point)
         {
-            return new SnapshotColumn(point);
+            return new SnapshotColumnLegacy(point);
         }
 
         /// <summary>

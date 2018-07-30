@@ -33,7 +33,7 @@ namespace Vim.UnitTest
             public void SingleSpace()
             {
                 Create("a!b. c");
-                Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(4)));
+                Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumnLegacy(4)));
             }
 
             /// <summary>
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
             public void ManyTrailingCharacters()
             {
                 Create("a?)]' b.");
-                Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(5)));
+                Assert.True(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumnLegacy(5)));
             }
 
             /// <summary>
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             public void StartOfBuffer()
             {
                 Create("dog. cat");
-                Assert.False(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumn(0)));
+                Assert.False(_textObjectUtil.IsSentenceEnd(SentenceKind.Default, _textBuffer.GetColumnLegacy(0)));
             }
 
             /// <summary>

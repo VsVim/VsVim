@@ -50,7 +50,7 @@ type internal InsertUtil
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     /// The column of the caret
-    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
+    member x.CaretColumn = SnapshotColumnLegacy(x.CaretPoint)
 
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -90,7 +90,7 @@ type internal InsertUtil
                 else
                     let snapshotColumn =
                         line.Start
-                        |> SnapshotColumnUtil.GetColumns SearchPath.Forward
+                        |> SnapshotColumnUtilLegacy.GetColumns SearchPath.Forward
                         |> Seq.skipWhile (fun snapshotColumn -> snapshotColumn.Column <> column)
                         |> Seq.tryHead
                     match snapshotColumn with

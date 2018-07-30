@@ -23,7 +23,7 @@ namespace Vim.UnitTest
             public void AddSameLine()
             {
                 Create("cat", "dog", "fish");
-                var original = new SnapshotColumn(_textBuffer.GetPoint(0));
+                var original = new SnapshotColumnLegacy(_textBuffer.GetPoint(0));
                 var column = original.Add(1);
                 Assert.Equal(1, column.Column);
                 Assert.Equal(0, column.LineNumber);
@@ -33,7 +33,7 @@ namespace Vim.UnitTest
             public void AddNextLine()
             {
                 Create("cat", "dog", "fish");
-                var original = new SnapshotColumn(_textBuffer.GetPoint(0));
+                var original = new SnapshotColumnLegacy(_textBuffer.GetPoint(0));
                 var column = original.Add(5);
                 Assert.Equal(0, column.Column);
                 Assert.Equal(1, column.LineNumber);
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
             public void AddBeforeLine()
             {
                 Create("cat", "dog", "fish");
-                var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
+                var original = new SnapshotColumnLegacy(_textBuffer.GetLine(1).Start);
                 var column = original.Add(-3);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
@@ -53,7 +53,7 @@ namespace Vim.UnitTest
             public void SubtractSameLine()
             {
                 Create("cat", "dog", "fish");
-                var original = new SnapshotColumn(_textBuffer.GetPoint(1));
+                var original = new SnapshotColumnLegacy(_textBuffer.GetPoint(1));
                 var column = original.Subtract(1);
                 Assert.Equal(0, column.Column);
                 Assert.Equal(0, column.LineNumber);
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
             public void SubtractBeforeLine()
             {
                 Create("cat", "dog", "fish");
-                var original = new SnapshotColumn(_textBuffer.GetLine(1).Start);
+                var original = new SnapshotColumnLegacy(_textBuffer.GetLine(1).Start);
                 var column = original.Subtract(3);
                 Assert.Equal(2, column.Column);
                 Assert.Equal(0, column.LineNumber);
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 var point = _textBuffer.GetPoint(1);
-                var column = new SnapshotColumn(point);
+                var column = new SnapshotColumnLegacy(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(1, column.Column);
                 Assert.False(column.IsInsideLineBreak);
@@ -88,7 +88,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 var point = _textBuffer.GetPoint(_textBuffer.GetLine(0).End);
-                var column = new SnapshotColumn(point);
+                var column = new SnapshotColumnLegacy(point);
                 Assert.Equal(0, column.LineNumber);
                 Assert.Equal(3, column.Column);
                 Assert.True(column.IsInsideLineBreak);

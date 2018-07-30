@@ -302,7 +302,7 @@ type SnapshotLineRange  =
 [<Struct>]
 [<NoEquality>]
 [<NoComparison>]
-type SnapshotColumn 
+type SnapshotColumnLegacy 
     (
         _snapshotLine: ITextSnapshotLine,
         _column: int
@@ -311,7 +311,7 @@ type SnapshotColumn
     new (point: SnapshotPoint) = 
         let line = point.GetContainingLine()
         let column = point.Position - line.Start.Position
-        SnapshotColumn(line, column)
+        SnapshotColumnLegacy(line, column)
 
     member x.IsStartOfLine = _column = 0
 
@@ -330,10 +330,10 @@ type SnapshotColumn
     member x.Add count = 
         let column = _column + count
         if column > 0 && column < _snapshotLine.LengthIncludingLineBreak then
-            SnapshotColumn(_snapshotLine, _column + count)
+            SnapshotColumnLegacy(_snapshotLine, _column + count)
         else
             let point = x.Point.Add count
-            SnapshotColumn(point)
+            SnapshotColumnLegacy(point)
 
     member x.Subtract count = 
         x.Add -count
@@ -1410,13 +1410,13 @@ module SnapshotLineUtil =
         | SearchPath.Forward ->
             seq { 
                 for i = 0 to max do
-                    yield SnapshotColumn(line, i)
+                    yield SnapshotColumnLegacy(line, i)
             }
         | SearchPath.Backward ->
             seq { 
                 for i = 0 to max do
                     let column = (length - 1) - i
-                    yield SnapshotColumn(line, column)
+                    yield SnapshotColumnLegacy(line, column)
             }
 
     /// Get the columns in the specified direction 
@@ -2048,15 +2048,15 @@ module SnapshotPointUtil =
 
             /// Adjust 'column' backward or forward if it is in the
             /// middle of a line break
-            let AdjustLineBreak (column: SnapshotColumn) =
+            let AdjustLineBreak (column: SnapshotColumnLegacy) =
                 if column.Column <= column.Line.Length then
                     column
                 else if direction = -1 then
-                    SnapshotColumn(column.Line, column.Line.Length)
+                    SnapshotColumnLegacy(column.Line, column.Line.Length)
                 else
-                    SnapshotColumn(column.Line.EndIncludingLineBreak)
+                    SnapshotColumnLegacy(column.Line.EndIncludingLineBreak)
 
-            let mutable column = SnapshotColumn(startPoint)
+            let mutable column = SnapshotColumnLegacy(startPoint)
             let mutable remaining = abs count
             while remaining > 0 && not (isEnd column.Point) do
                 column <- column.Add direction |> AdjustLineBreak
@@ -2126,7 +2126,7 @@ module SnapshotPointUtil =
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
     let GetSpacesToPoint point tabStop = 
-        let column = SnapshotColumn(point)
+        let column = SnapshotColumnLegacy(point)
         SnapshotLineUtil.GetSpacesToColumn column.Line column.Column tabStop
 
     /// Get the point or the end point of the last line, whichever is first
@@ -3080,11 +3080,11 @@ type TextLine = {
 
             NonEmptyCollection(firstLine, rest)
 
-module SnapshotColumnUtil =
+module SnapshotColumnUtilLegacy =
 
-    let GetPoint (column: SnapshotColumn) = column.Point
+    let GetPoint (column: SnapshotColumnLegacy) = column.Point
 
-    let GetLine (column: SnapshotColumn) = column.Line
+    let GetLine (column: SnapshotColumnLegacy) = column.Line
     
     /// Get the columns from the given point in a forward motion 
     let private GetColumnsCore path includeLineBreak point = 
@@ -3092,8 +3092,8 @@ module SnapshotColumnUtil =
         let startLineNumber = SnapshotPointUtil.GetLineNumber point
         let filter = 
             match path with 
-            | SearchPath.Forward -> fun (c: SnapshotColumn) -> c.Point.Position >= point.Position
-            | SearchPath.Backward -> fun (c: SnapshotColumn) -> c.Point.Position <= point.Position
+            | SearchPath.Forward -> fun (c: SnapshotColumnLegacy) -> c.Point.Position >= point.Position
+            | SearchPath.Backward -> fun (c: SnapshotColumnLegacy) -> c.Point.Position <= point.Position
 
         SnapshotUtil.GetLines snapshot startLineNumber path
         |> Seq.collect (fun line -> 
@@ -3107,7 +3107,7 @@ module SnapshotColumnUtil =
 
     let GetColumnsIncludingLineBreak path point = GetColumnsCore path true point
 
-    let CreateFromPoint point = SnapshotColumn(point)
+    let CreateFromPoint point = SnapshotColumnLegacy(point)
 
 module internal ITextEditExtensions =
 

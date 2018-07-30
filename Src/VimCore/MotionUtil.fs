@@ -861,7 +861,7 @@ type MatchingTokenUtil() =
             found
 
         let line, column = 
-            let data = SnapshotColumn(point)
+            let data = SnapshotColumnLegacy(point)
             let line = data.Line
 
             // The search should normalize caret's in the line break back to the last valid 
@@ -1635,7 +1635,7 @@ type internal MotionUtil
         // AllSentence we don't want this behavior and want to start with the following sentence.  
         let sentenceKind = SentenceKind.NoTrailingCharacters
         let searchPoint = 
-            let mutable column = SnapshotColumn(x.CaretPoint)
+            let mutable column = SnapshotColumnLegacy(x.CaretPoint)
             while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not (SnapshotPointUtil.IsEndPoint column.Point) do
                 column <- column.Add 1
             column.Point
@@ -1661,7 +1661,7 @@ type internal MotionUtil
                 // The white space after the sentence is the gap between this sentence and the next
                 // sentence
                 let whiteSpaceAfter =
-                    let mutable column = SnapshotColumn(span.End)
+                    let mutable column = SnapshotColumnLegacy(span.End)
                     while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not (SnapshotPointUtil.IsEndPoint column.Point) do
                         column <- column.Add 1
 
@@ -1672,7 +1672,7 @@ type internal MotionUtil
 
                 // Include the preceding white space in the Span
                 let includePrecedingWhiteSpace () =
-                    let mutable column = SnapshotColumn(span.Start)
+                    let mutable column = SnapshotColumnLegacy(span.Start)
                     let mutable before = 
                         if SnapshotPointUtil.IsStartPoint column.Point then column
                         else column.Subtract 1

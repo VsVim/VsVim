@@ -65,7 +65,7 @@ type internal TextObjectUtil =
     member GetSentences: sentenceKind: SentenceKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
 
     /// Is the SnapshotPoint the start of a sentence 
-    member IsSentenceStart: sentenceKind: SentenceKind -> column: SnapshotColumn -> bool
+    member IsSentenceStart: sentenceKind: SentenceKind -> column: SnapshotColumnLegacy -> bool
 
     /// Is the SnapshotPoint in the white space between sentences
-    member IsSentenceWhiteSpace: sentenceKind: SentenceKind -> column: SnapshotColumn -> bool
+    member IsSentenceWhiteSpace: sentenceKind: SentenceKind -> column: SnapshotColumnLegacy -> bool
