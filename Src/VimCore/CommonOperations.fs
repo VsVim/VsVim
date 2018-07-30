@@ -244,7 +244,7 @@ type internal CommonOperations
         let autoIndent = _localSettings.AutoIndent
         let textWidth =
             if _localSettings.TextWidth = 0 then
-                79
+                VimConstants.DefaultFormatTextWidth
             else
                 _localSettings.TextWidth
         let comments = _localSettings.Comments
