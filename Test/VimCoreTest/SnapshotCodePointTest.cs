@@ -175,5 +175,19 @@ namespace Vim.UnitTest
                 Assert.False(point.IsCharacter('c'));
             }
         }
+
+        public sealed class MiscTest : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void EndPoint()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetEndPoint());
+                Assert.Equal(textBuffer.GetEndPoint(), point.StartPoint);
+                Assert.Equal(textBuffer.GetEndPoint(), point.EndPoint);
+                Assert.True(point.IsEndPoint);
+            }
+
+        }
     }
 }

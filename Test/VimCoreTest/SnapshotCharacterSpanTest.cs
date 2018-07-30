@@ -8,11 +8,10 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    // TOOD: need to test specifying a point that is the second character of a line break
-    // TODO: Consider removing position Apis and replace with start and end 
-    // TODO: rename width to length
-    // TODO: test add past end
-    // TODO: test subtract before start
+    // CTODO: need to test specifying a point that is the second character of a line break
+    // CTODO: Consider removing position Apis and replace with start and end 
+    // CTODO: test add past end
+    // CTODO: test subtract before start
     public abstract class SnapshotCharacterSpanTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
@@ -115,13 +114,13 @@ namespace Vim.UnitTest
                 var i = letters.Length - 2;
                 var point = new SnapshotCharacterSpan(_textBuffer.GetEndPoint());
                 point = point.Subtract(2);
-                while (point.Point.Position != 0)
+                while (!point.IsStartPoint)
                 {
                     Assert.True(point.IsLineBreak);
                     point = point.Subtract(1);
                     Assert.Equal(letters[i], point.GetText());
 
-                    if (point.Point.Position != 0)
+                    if (!point.IsStartPoint)
                     {
                         point = point.Subtract(1);
                         i--;
@@ -161,7 +160,7 @@ namespace Vim.UnitTest
                 Create("cat");
                 var point = _textBuffer.GetEndPoint();
                 var characterSpan = new SnapshotCharacterSpan(point);
-                Assert.True(characterSpan.Point.Position == _textBuffer.CurrentSnapshot.Length);
+                Assert.True(characterSpan.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
             }
         }
     }

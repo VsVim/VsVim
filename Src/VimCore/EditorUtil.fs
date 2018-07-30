@@ -392,8 +392,10 @@ type SnapshotCodePoint =
 
     /// The number of positions in the ITextSnapshot this character occupies.
     member x.Length = 
-        if x._codePointInfo = CodePointInfo.SurrogatePairHighCharacter then 2
-        else 1
+        match x._codePointInfo with
+        | CodePointInfo.SurrogatePairHighCharacter -> 2
+        | CodePointInfo.EndPoint -> 0
+        | _ -> 1
 
     /// The snapshot corresponding to the column
     member x.Snapshot = x._line.Snapshot
@@ -634,6 +636,11 @@ type SnapshotCharacterSpan =
     private new (codePoint: SnapshotCodePoint, columnNumber: int) = 
         { _codePoint = codePoint; _columnNumber = columnNumber }
 
+    /// Returns the SnapshotCodePoint that corresponds to this column. In the case the 
+    /// column is inside the line break this will refer to the first character inside
+    /// the line break text. 
+    member x.CodePoint = x._codePoint
+
     /// The snapshot line containing the column
     member x.Snapshot = x._codePoint.Snapshot
 
@@ -643,21 +650,33 @@ type SnapshotCharacterSpan =
     /// The line number of the line containing the column
     member x.LineNumber = x.Line.LineNumber
 
+    /// Whether the "character" at column is a linebreak
+    member x.IsLineBreak = x.CodePoint.StartPoint.Position = x.Line.End.Position
+
+    /// The number of positions this occupies in the ITextSnapshot
+    member x.Length = 
+        if x.IsLineBreak then x.Line.LineBreakLength
+        else x.CodePoint.Length
+
+    /// The point where the column begins
+    member x.StartPoint = x.CodePoint.StartPoint
+
+    member x.StartPosition = x.StartPoint.Position
+
+    member x.EndPoint = x.StartPoint.Add x.Length
+
+    member x.EndPosition = x.EndPoint.Position
+
+    member x.IsStartPoint = x.CodePoint.IsStartPoint
+
+    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.EndPoint
+
     /// The column number of the column
     /// (Warning: don't use the column number as a buffer position offset)
     member x.ColumnNumber = x._columnNumber
 
-    /// The position or text buffer offset of the column
-    member x.Position = x._codePoint.StartPosition
-
-    /// The point where the column begins
-    member x.Point = x._codePoint.StartPoint
-
     /// The position offset of the column relative the beginning of the line
-    member x.Offset = x.Position - x.Line.Start.Position
-
-    /// Whether the "character" at column is a linebreak
-    member x.IsLineBreak = x.Position = x.Line.End.Position
+    member x.Offset = x.StartPosition - x.Line.Start.Position
 
     /// The width of the column in terms of position
     member x.Width = 
@@ -665,7 +684,7 @@ type SnapshotCharacterSpan =
         else x._codePoint.Length
 
     /// The snapshot span covering the logical character at the column
-    member x.Span = new SnapshotSpan(x.Snapshot, x.Position, x.Width)
+    member x.Span = new SnapshotSpan(x.Snapshot, x.StartPosition, x.Length)
 
     /// Whether this is the first column of the line
     member x.IsStartOfLine = x._columnNumber = 0
@@ -719,14 +738,14 @@ type SnapshotCharacterSpan =
         let mutable isGood = true
         if count >= 0 then
             while count > 0 && isGood do
-                if EditorCoreUtil.IsEndPoint current.Point then
+                if current.IsEndPoint then
                     isGood <- false
                 else
                     current <- current.Add 1
                     count <- count - 1
         else
             while count < 0 && isGood do
-                if current.Point.Position = 0 then
+                if current.IsStartPoint then
                     isGood <- false
                 else
                     count <- count + 1
@@ -744,7 +763,7 @@ type SnapshotCharacterSpan =
 
     /// Debugger display
     override x.ToString() =
-        sprintf "Point: %s Line: %d Column: %d" (x.Point.ToString()) x.LineNumber x.ColumnNumber
+        sprintf "Point: %s Line: %d Column: %d" (x.CodePoint.ToString()) x.LineNumber x.ColumnNumber
 
     static member TryCreateForColumnNumber (line: ITextSnapshotLine) (columnNumber: int) = 
         let mutable cs = SnapshotCharacterSpan(line)
@@ -1988,7 +2007,7 @@ module SnapshotPointUtil =
         let column = SnapshotCharacterSpan(point)
         if column.ColumnNumber >= count then
             let previousColumn = column.Subtract count
-            Some previousColumn.Point
+            Some previousColumn.StartPoint
         else
             None
 
@@ -2002,7 +2021,7 @@ module SnapshotPointUtil =
         | None -> None
         | Some next ->
             if next.LineNumber <> characterSpan.LineNumber then None
-            else Some next.Point
+            else Some next.StartPoint
 
     /// Get a point relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
@@ -2055,7 +2074,7 @@ module SnapshotPointUtil =
         let getRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
             let mutable column = SnapshotCharacterSpan(startPoint)
             let mutable remaining = abs count
-            while remaining > 0 && not (isEnd column.Point) do
+            while remaining > 0 && not (isEnd column.StartPoint) do
                 column <- column.Add direction
                 remaining <- remaining -
                     if skipLineBreaks then
@@ -2073,7 +2092,7 @@ module SnapshotPointUtil =
             else
                 getRelativeColumn 1 IsEndPointOfLastLine
 
-        column.Point
+        column.StartPoint
 
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 
