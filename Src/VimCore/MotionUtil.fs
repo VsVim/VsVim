@@ -992,6 +992,8 @@ type internal MotionUtil
     /// The virtual caret point in the ITextView
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
+    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
+
     /// Caret line in the ITextView
     member x.CaretLine = SnapshotPointUtil.GetContainingLine x.CaretPoint
 
@@ -2290,6 +2292,7 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
     member x.CharLeftOnSameLine count = 
+<<<<<<< HEAD
         let endPoint = x.CaretVirtualPoint
         if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
             if count < endPoint.VirtualSpaces then
@@ -2315,10 +2318,19 @@ type internal MotionUtil
                 |> OptionUtil.getOrDefault x.CaretLine.Start
             let span = SnapshotSpan(startPoint, x.CaretPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+=======
+        let startColumn = 
+            match x.CaretColumn.TrySubtractInLine count with
+            | Some column -> column
+            | None -> SnapshotColumn(x.CaretLine)
+        let span = SnapshotSpan(startColumn.StartPoint, x.CaretPoint)
+        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+>>>>>>> More progress porting API
 
     /// Get the motion which is 'count' characters to the right of the caret 
     /// on the same line
     member x.CharRightOnSameLine count =
+<<<<<<< HEAD
         if _vimTextBuffer.UseVirtualSpace then
             x.CharRightVirtual count
         else
@@ -2332,6 +2344,19 @@ type internal MotionUtil
                     |> OptionUtil.getOrDefault x.CaretLine.End
             let span = SnapshotSpan(x.CaretPoint, endPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+=======
+        let endPoint = 
+            if SnapshotPointUtil.IsInsideLineBreak x.CaretPoint then 
+                x.CaretPoint
+            elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
+                x.CaretLine.End
+            else
+                match x.CaretColumn.TryAddInLine(count, includeLineBreak = true) with
+                | Some column -> column.StartPoint
+                | None -> x.CaretLine.End
+        let span = SnapshotSpan(x.CaretPoint, endPoint)
+        MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+>>>>>>> More progress porting API
 
     /// Get the motion which is 'count' characters before the caret
     /// through the buffer taking into acount 'virtualedit'

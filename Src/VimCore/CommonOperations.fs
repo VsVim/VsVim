@@ -74,6 +74,8 @@ type internal CommonOperations
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
+
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -679,18 +681,18 @@ type internal CommonOperations
 
         /// Move the caret left.  Don't go past the start of the line 
         let moveLeft () = 
-            match SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint 1 with
-            | Some point ->
-                x.MoveCaretToPoint point ViewFlags.Standard
+            match x.CaretColumn.TrySubtractInLine 1 with
+            | Some column ->
+                x.MoveCaretToPoint column.StartPoint ViewFlags.Standard
                 true
             | None ->
                 false
 
         /// Move the caret right.  Don't go off the end of the line
         let moveRight () =
-            match SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint 1 with
-            | Some point ->
-                x.MoveCaretToPoint point ViewFlags.Standard
+            match x.CaretColumn.TryAddInLine(1, includeLineBreak = true) with
+            | Some column ->
+                x.MoveCaretToPoint column.StartPoint ViewFlags.Standard
                 true
             | None ->
                 false

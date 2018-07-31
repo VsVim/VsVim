@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 using Vim.EditorHost;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -127,6 +128,59 @@ namespace Vim.UnitTest
                     }
                 }
             }
+
+            [WpfFact]
+            public void TrySubtractInSameLineBetweenLines()
+            {
+                Create("cat", "dog");
+                var column = new SnapshotColumn(_textBuffer.GetPointInLine(line: 1, column: 1));
+                var previous = column.TrySubtractInLine(1);
+                Assert.True(previous.IsSome(c => c.IsCharacter('d')));
+                previous = previous.Value.TrySubtractInLine(1);
+                Assert.True(previous.IsNone());
+            }
+
+            [WpfFact]
+            public void TrySubtractInSameLineStartOfBuffer()
+            {
+                Create("cat", "dog");
+                var column = new SnapshotColumn(_textBuffer.GetStartPoint());
+                var previous = column.TrySubtractInLine(1);
+                Assert.True(previous.IsNone());
+            }
+        }
+
+        public sealed class TryAddInSameLineTest : SnapshotCharacterSpanTest
+        {
+            [WpfFact]
+            public void ToLineBreak()
+            {
+                Create("cat", "dog");
+                var column = new SnapshotColumn(_textBuffer.GetPointInLine(line: 0, column: 2));
+                var next = column.TryAddInLine(1);
+                Assert.True(next.IsNone());
+            }
+
+            [WpfFact]
+            public void ToLineBreakWhenAllowed()
+            {
+                Create("cat", "dog");
+                var column = new SnapshotColumn(_textBuffer.GetPointInLine(line: 0, column: 2));
+                var next = column.TryAddInLine(1, includeLineBreak: FSharpOption.True);
+                Assert.True(next.IsSome(x => x.IsLineBreak));
+            }
+
+            [WpfFact]
+            public void EndPoint()
+            {
+                Create("cat", "dog");
+                var column = new SnapshotColumn(_textBuffer.GetPointInLine(line: 1, column: 2));
+                var next = column.TryAddInLine(1, includeLineBreak: FSharpOption.True);
+                Assert.True(next.IsSome(x => x.IsEndPoint));
+
+                next = column.TryAddInLine(1, includeLineBreak: FSharpOption.False);
+                Assert.True(next.IsSome(x => x.IsEndPoint));
+            }
         }
 
         public sealed class Ctor : SnapshotCharacterSpanTest
@@ -161,6 +215,18 @@ namespace Vim.UnitTest
                 var point = _textBuffer.GetEndPoint();
                 var characterSpan = new SnapshotColumn(point);
                 Assert.True(characterSpan.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
+            }
+        }
+        public sealed class MiscTest : SnapshotCharacterSpanTest
+        {
+            [WpfFact]
+            public void EndPoint()
+            {
+                Create("cat");
+                var point = _textBuffer.GetEndPoint();
+                var column = new SnapshotColumn(point);
+                Assert.True(column.IsEndPoint);
+                Assert.False(column.IsLineBreak);
             }
         }
     }

@@ -455,6 +455,8 @@ type SnapshotCodePoint =
 
     member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.StartPoint x._line
 
+    member x.IsInsideLineBreakOrEnd = x.IsEndPoint || x.IsInsideLineBreak
+
     /// Is the unicode character at this point represented by the specified value? This will only match
     /// for characters in the BMP plane.
     member x.IsCharacter(c: char) = 
@@ -651,7 +653,9 @@ type SnapshotColumn =
     member x.LineNumber = x.Line.LineNumber
 
     /// Whether the "character" at column is a linebreak
-    member x.IsLineBreak = x.CodePoint.StartPoint.Position = x.Line.End.Position
+    member x.IsLineBreak = 
+        x.CodePoint.StartPoint.Position = x.Line.End.Position &&
+        not x.IsEndPoint
 
     /// The number of positions this occupies in the ITextSnapshot
     member x.Length = 
@@ -669,7 +673,11 @@ type SnapshotColumn =
 
     member x.IsStartPoint = x.CodePoint.IsStartPoint
 
-    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.EndPoint
+    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.StartPoint
+
+    member x.IsLineBreakOrEnd = x.IsLineBreak || x.IsEndPoint
+
+    member x.IsCharacter (c: char) = x.CodePoint.IsCharacter c
 
     /// The column number of the column
     /// (Warning: don't use the column number as a buffer position offset)
@@ -738,18 +746,24 @@ type SnapshotColumn =
         let mutable isGood = true
         if count >= 0 then
             while count > 0 && isGood do
-                if current.IsEndPoint || not (testFunc current) then
+                if current.IsEndPoint then
                     isGood <- false
                 else
                     current <- current.Add 1
                     count <- count - 1
+
+                    if not (testFunc current) then
+                        isGood <- false
         else
             while count < 0 && isGood do
-                if current.IsStartPoint || not (testFunc current) then
+                if current.IsStartPoint then
                     isGood <- false
                 else
                     count <- count + 1
                     current <- current.Add -1
+
+                if not (testFunc current) then
+                    isGood <- false
             
         if isGood then Some current
         else None
@@ -768,8 +782,14 @@ type SnapshotColumn =
             current.LineNumber = lineNumber &&
             (not current.IsLineBreak || includeLineBreak))
 
-    /// Try and add within the same ITextS
-    member x.TryAddInLine(count: int) = x.TryAddInLine(count, false)
+    /// Try and add within the same ITextSnapshot
+    member x.TryAddInLine(count: int) =
+        x.TryAddInLine(count, false)
+
+    /// Try and subract within the same ITextSnapshotLine
+    member x.TrySubtractInLine(count: int) =
+        let lineNumber = x.LineNumber
+        x.TryAddCore -count (fun current -> current.LineNumber = lineNumber)
 
     /// Get the text corresponding to the column
     member x.GetText () =
@@ -1426,16 +1446,17 @@ module SnapshotLineUtil =
     let GetColumnsIncludingLineBreak path line = GetColumnsCore path true line
 
     /// Get the character spans in the line in the path
+    /// CTODO: rename and use columns
     let private GetCharacterSpansCore path includeLineBreak line =
         let startColumn = SnapshotColumn(GetStart line)
         let items = 
             seq { 
-                let mutable characterSpan = SnapshotColumn(line)
-                while (not characterSpan.IsLineBreak) do
-                    yield characterSpan
-                    characterSpan <- characterSpan.Add 1
+                let mutable column = SnapshotColumn(line)
+                while (not column.IsLineBreakOrEnd) do
+                    yield column
+                    column <- column.Add 1
                 if includeLineBreak then
-                    yield characterSpan
+                    yield column
             }
         match path with
         | SearchPath.Forward -> items
@@ -1865,12 +1886,14 @@ module SnapshotPointUtil =
         new SnapshotSpan(start, last.EndIncludingLineBreak)
 
     /// Get the line and column information for a given SnapshotPoint
+    /// CTODO: this API is not actually column based
     let GetLineColumn point = 
         let line = GetContainingLine point
         let column = point.Position - line.Start.Position
         (line.LineNumber,column)
 
     /// Get the column number 
+    /// CTODO: this API is not actually column based
     let GetColumn point = 
         let _, column = GetLineColumn point 
         column
@@ -2012,30 +2035,6 @@ module SnapshotPointUtil =
             SnapshotPoint(point.Snapshot, position) |> Some
         else
             None
-
-    /// Try and get the previous character span on the same line.  If this is at the start of the line
-    /// None will be returned (note this handles surrogate pairs)
-    /// CTODO: convert to using code point 
-    /// CTODO: don't throw when going off the end of the buffer
-    let TryGetPreviousCharacterSpanOnLine (point: SnapshotPoint) count =
-        let column = SnapshotColumn(point)
-        if column.ColumnNumber >= count then
-            let previousColumn = column.Subtract count
-            Some previousColumn.StartPoint
-        else
-            None
-
-    /// Try and get the next character span on the same line.  If this is the end of the line or if
-    /// the point is within the line break then None will be returned (note this handles
-    /// surrogate pairs)
-    /// CTODO: convert to using code point 
-    let TryGetNextCharacterSpanOnLine (point: SnapshotPoint) count =
-        let characterSpan = SnapshotColumn(point)
-        match characterSpan.TryAdd count with 
-        | None -> None
-        | Some next ->
-            if next.LineNumber <> characterSpan.LineNumber then None
-            else Some next.StartPoint
 
     /// Get a point relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is

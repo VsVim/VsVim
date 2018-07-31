@@ -2475,7 +2475,7 @@ type StoredVisualSelection =
         let addOrEntireLine (point: SnapshotPoint) count = 
             let column = SnapshotColumn(point)
             match column.TryAddInLine(count, includeLineBreak = true) with
-            | Some column -> column.EndPoint
+            | Some column -> column.StartPoint
             | None -> 
                 match SnapshotPointUtil.TryAddOne column.Line.EndIncludingLineBreak with 
                 | Some p -> p
