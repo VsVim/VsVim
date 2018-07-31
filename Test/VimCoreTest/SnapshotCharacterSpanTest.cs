@@ -13,7 +13,7 @@ namespace Vim.UnitTest
     // CTODO: Consider removing position Apis and replace with start and end 
     // CTODO: test add past end
     // CTODO: test subtract before start
-    public abstract class SnapshotCharacterSpanTest : VimTestBase
+    public abstract class SnapshotColumnTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
 
@@ -27,7 +27,7 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBufferRaw(content);
         }
 
-        public sealed class AddSubtractTest : SnapshotCharacterSpanTest
+        public sealed class AddSubtractTest : SnapshotColumnTest
         {
             [WpfFact]
             public void AddSameLine()
@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class TryAddInSameLineTest : SnapshotCharacterSpanTest
+        public sealed class TryAddInSameLineTest : SnapshotColumnTest
         {
             [WpfFact]
             public void ToLineBreak()
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Ctor : SnapshotCharacterSpanTest
+        public sealed class Ctor : SnapshotColumnTest
         {
             [WpfFact]
             public void PointSimple()
@@ -217,7 +217,7 @@ namespace Vim.UnitTest
                 Assert.True(characterSpan.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
             }
         }
-        public sealed class MiscTest : SnapshotCharacterSpanTest
+        public sealed class MiscTest : SnapshotColumnTest
         {
             [WpfFact]
             public void EndPoint()

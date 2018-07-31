@@ -8,7 +8,7 @@ using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
-    public abstract class SnapshotColumnTest : VimTestBase
+    public abstract class SnapshotColumnLegacyTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
 
@@ -17,7 +17,7 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBuffer(lines);
         }
 
-        public sealed class AddSubtractTest : SnapshotColumnTest
+        public sealed class AddSubtractTest : SnapshotColumnLegacyTest
         {
             [WpfFact]
             public void AddSameLine()
@@ -70,7 +70,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class Ctor : SnapshotColumnTest
+        public sealed class Ctor : SnapshotColumnLegacyTest
         {
             [WpfFact]
             public void PointSimple()
