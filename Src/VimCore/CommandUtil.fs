@@ -1058,26 +1058,40 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Format the 'count' lines in the buffer
-    member x.FormatLines count =
+    /// Format the 'count' code lines in the buffer
+    member x.FormatCodeLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        _commonOperations.FormatLines range
+        _commonOperations.FormatCodeLines range
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Format the selected lines
-    member x.FormatLinesVisual (visualSpan: VisualSpan) =
+    /// Format the 'count' text lines in the buffer
+    member x.FormatTextLines count preserveCaretPosition =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        _commonOperations.FormatTextLines range preserveCaretPosition
+        CommandResult.Completed ModeSwitch.NoSwitch
 
-        // Use a transaction so the formats occur as a single operation
-        x.EditWithUndoTransaction "Format" (fun () ->
-            visualSpan.Spans
-            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter _commonOperations.FormatLines)
-
+    /// Format the selected code lines
+    member x.FormatCodeLinesVisual (visualSpan: VisualSpan) =
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> _commonOperations.FormatCodeLines
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Format the lines in the Motion
-    member x.FormatMotion (result: MotionResult) =
-        _commonOperations.FormatLines result.LineRange
+    /// Format the selected text lines
+    member x.FormatTextLinesVisual (visualSpan: VisualSpan) (preserveCaretPosition: bool) =
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> (fun lineRange -> _commonOperations.FormatTextLines lineRange preserveCaretPosition)
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Format the code lines in the Motion
+    member x.FormatCodeMotion (result: MotionResult) =
+        _commonOperations.FormatCodeLines result.LineRange
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Format the text lines in the Motion
+    member x.FormatTextMotion (result: MotionResult) preserveCaretPosition =
+        _commonOperations.FormatTextLines result.LineRange preserveCaretPosition
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the appropriate register for the CommandData
@@ -2611,8 +2625,10 @@ type internal CommandUtil
         | NormalCommand.FilterMotion motion -> x.RunWithMotion motion x.FilterMotion
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
-        | NormalCommand.FormatLines -> x.FormatLines count
-        | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion
+        | NormalCommand.FormatCodeLines -> x.FormatCodeLines count
+        | NormalCommand.FormatCodeMotion motion -> x.RunWithMotion motion x.FormatCodeMotion
+        | NormalCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLines count preserveCaretPosition
+        | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> x.RunWithMotion motion (fun motion -> x.FormatTextMotion motion preserveCaretPosition)
         | NormalCommand.GoToDefinition -> x.GoToDefinition()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
@@ -2703,7 +2719,8 @@ type internal CommandUtil
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
-        | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
+        | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
+        | VisualCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLinesVisual visualSpan preserveCaretPosition
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.GoToFileInSelectionInNewWindow -> x.GoToFileInSelectionInNewWindow visualSpan
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan

@@ -2808,11 +2808,17 @@ type NormalCommand =
     /// Create a fold over the specified motion 
     | FoldMotion of MotionData
 
-    /// Format the specified lines
-    | FormatLines
+    /// Format the code in the specified lines
+    | FormatCodeLines
 
-    /// Format the specified motion
-    | FormatMotion of MotionData
+    /// Format the code in the specified motion
+    | FormatCodeMotion of MotionData
+
+    /// Format the text in the specified lines, optionally preserving the caret position
+    | FormatTextLines of bool
+
+    /// Format the text in the specified motion
+    | FormatTextMotion of bool * MotionData
 
     /// Go to the definition of hte word under the caret.
     | GoToDefinition
@@ -3030,11 +3036,13 @@ type NormalCommand =
 
     member private x.GetMotionDataCore() = 
         match x with
+        | NormalCommand.ChangeCaseMotion (changeCharacterKind, motion) -> Some ((fun motion -> NormalCommand.ChangeCaseMotion (changeCharacterKind, motion)), motion)
         | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
         | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
         | NormalCommand.FilterMotion motion -> Some (NormalCommand.FilterMotion, motion)
         | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
-        | NormalCommand.FormatMotion motion -> Some (NormalCommand.FormatMotion, motion)
+        | NormalCommand.FormatCodeMotion motion -> Some (NormalCommand.FormatCodeMotion, motion)
+        | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> Some ((fun motion -> NormalCommand.FormatTextMotion (preserveCaretPosition, motion)), motion)
         | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
         | NormalCommand.ShiftMotionLinesRight motion -> Some (NormalCommand.ShiftMotionLinesRight, motion)
         | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
@@ -3043,7 +3051,6 @@ type NormalCommand =
         | NormalCommand.AddToWord _ -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
         | NormalCommand.ChangeCaseCaretPoint _ -> None
-        | NormalCommand.ChangeCaseMotion _ -> None
         | NormalCommand.ChangeLines -> None
         | NormalCommand.ChangeTillEndOfLine -> None
         | NormalCommand.CloseAllFolds -> None
@@ -3062,7 +3069,8 @@ type NormalCommand =
         | NormalCommand.DisplayCharacterCodePoint ->None
         | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
-        | NormalCommand.FormatLines -> None
+        | NormalCommand.FormatCodeLines -> None
+        | NormalCommand.FormatTextLines _ -> None
         | NormalCommand.GoToDefinition -> None
         | NormalCommand.GoToFileUnderCaret _ -> None
         | NormalCommand.GoToGlobalDeclaration -> None
@@ -3175,8 +3183,11 @@ type VisualCommand =
     /// Fold the current selected lines
     | FoldSelection
 
-    /// Format the selected text
-    | FormatLines
+    /// Format the selected code lines
+    | FormatCodeLines
+
+    /// Format the selected text lines, optionally preserving the caret position
+    | FormatTextLines of bool
 
     /// GoTo the file under the cursor in a new window
     | GoToFileInSelectionInNewWindow

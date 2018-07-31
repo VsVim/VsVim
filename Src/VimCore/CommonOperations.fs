@@ -228,9 +228,155 @@ type internal CommonOperations
             TextViewUtil.MoveCaretToPoint _textView firstLine.Start
             _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
 
-    /// Format the specified line range
-    member x.FormatLines range =
+    /// Format the code lines in the specified line range
+    member x.FormatCodeLines range =
         _vimHost.FormatLines _textView range
+
+        // Place the cursor on the first non-blank character of the first line formatted.
+        let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
+        TextViewUtil.MoveCaretToPoint _textView firstLine.Start
+        _editorOperations.MoveToStartOfLineAfterWhiteSpace(false)
+
+    /// Format the text lines in the specified line range
+    member x.FormatTextLines (range: SnapshotLineRange) preserveCaretPosition =
+
+        // Get formatting configuration values.
+        let autoIndent = _localSettings.AutoIndent
+        let textWidth =
+            if _localSettings.TextWidth = 0 then
+                VimConstants.DefaultFormatTextWidth
+            else
+                _localSettings.TextWidth
+        let comments = _localSettings.Comments
+        let tabStop = _localSettings.TabStop
+
+        // Extract the lines to be formatted and the first line.
+        let lines = range.Lines |> Seq.map SnapshotLineUtil.GetText
+        let firstLine = lines |> Seq.head
+
+        // Extract the leader string from a comment specification, e.g. "//".
+        let getLeaderFromSpec (spec: string) =
+            let colonIndex = spec.IndexOf(':')
+            if colonIndex = -1 then
+                spec
+            else
+                spec.Substring(colonIndex + 1)
+
+        // Get the leader pattern for a leader string.
+        let getLeaderPattern (leader: string) =
+            if leader = "" then
+                @"^\s*"
+            else
+                @"^\s*" + Regex.Escape(leader) + @"+\s*"
+
+        // Convert the comment specifications into leader patterns.
+        let patterns =
+            comments + ",:"
+            |> StringUtil.Split ','
+            |> Seq.map getLeaderFromSpec
+            |> Seq.map getLeaderPattern
+
+        // Check the first line against a potential comment pattern.
+        let checkPattern pattern =
+            let capture = Regex.Match(firstLine, pattern)
+            if capture.Success then
+                true, pattern, capture.Value
+            else
+                false, pattern, ""
+
+        // Choose a pattern and a leader.
+        let _, pattern, leader =
+            patterns
+            |> Seq.map checkPattern
+            |> Seq.filter (fun (matches, _, _) -> matches)
+            |> Seq.head
+
+        // Decide whether to use the leader for all lines.
+        let useLeaderForAllLines =
+            not (StringUtil.IsWhiteSpace leader) || autoIndent
+
+        // Strip the leader from a line.
+        let stripLeader (line: string) =
+            let capture = Regex.Match(line, pattern)
+            if capture.Success then
+                line.Substring(capture.Length)
+            else
+                line
+
+        // Strip the leader from all the lines.
+        let strippedLines =
+            lines
+            |> Seq.map stripLeader
+
+        // Split a line into words on whitespace.
+        let splitWords (line: string) =
+            if StringUtil.IsWhiteSpace line then
+                seq { yield "" }
+            else
+                Regex.Matches(line + " ", @"\S+\s+")
+                |> Seq.cast<Capture>
+                |> Seq.map (fun capture -> capture.Value)
+
+        // Concatenate a reversed list of words into a line.
+        let concatWords (words: string list) =
+            words
+            |> Seq.rev
+            |> String.concat ""
+            |> (fun line -> line.TrimEnd())
+
+        // Concatenate words into a line and prepend it to a list of lines.
+        let prependLine (words: string list) (lines: string list) =
+            if words.IsEmpty then
+                lines
+            else
+                concatWords words :: lines
+
+        // Calculate the length of the leader with tabs expanded.
+        let leaderLength =
+            StringUtil.ExpandTabsForColumn leader 0 tabStop
+            |> StringUtil.GetLength
+
+        // Aggregrate individual words into lines of limited length.
+        let takeWord ((column: int), (words: string list), (lines: string list)) (word: string) =
+
+            // Calculate the working limit for line length.
+            let limit =
+                if lines.IsEmpty || useLeaderForAllLines then
+                    textWidth - leaderLength
+                else
+                    textWidth
+
+            if word = "" then
+                0, List.Empty, "" :: prependLine words lines
+            elif column = 0 || column + word.TrimEnd().Length <= limit then
+                column + word.Length, word :: words, lines
+            else
+                word.Length, word :: List.Empty, concatWords words :: lines
+
+        // Add a leader to the formatted line if appropriate.
+        let addLeader (i: int) (line: string) =
+            if i = 0 || useLeaderForAllLines then
+                (leader + line).TrimEnd()
+            else
+                line
+
+        // Split the lines into words and then format them into lines using the aggregator.
+        let formattedLines =
+            let _, words, lines =
+                strippedLines
+                |> Seq.collect splitWords
+                |> Seq.fold takeWord (0, List.Empty, List.Empty)
+            prependLine words lines
+            |> Seq.rev
+            |> Seq.mapi addLeader
+
+        // Concatenate the formatted lines.
+        let newLine = EditUtil.NewLine _editorOptions
+        let replacement = formattedLines |> String.concat newLine
+
+        // Replace the old lines with the formatted lines.
+        _textBuffer.Replace(range.Extent.Span, replacement) |> ignore
+
 
         // Place the cursor on the first non-blank character of the first line formatted.
         let firstLine = SnapshotUtil.GetLine _textView.TextSnapshot range.StartLineNumber
@@ -1887,7 +2033,8 @@ type internal CommonOperations
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FilterLines range command = x.FilterLines range command
-        member x.FormatLines range = x.FormatLines range
+        member x.FormatCodeLines range = x.FormatCodeLines range
+        member x.FormatTextLines range preserveCaretPosition = x.FormatTextLines range preserveCaretPosition
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine

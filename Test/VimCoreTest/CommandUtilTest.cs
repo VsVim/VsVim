@@ -384,34 +384,34 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void FormatLines()
+            public void FormatCodeLines()
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
-                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
-                _commandUtil.FormatLines(2);
+                _commonOperations.Setup(x => x.FormatCodeLines(range)).Verifiable();
+                _commandUtil.FormatCodeLines(2);
                 _commonOperations.Verify();
             }
 
             [WpfFact]
-            public void FormatLinesVisual()
+            public void FormatCodeLinesVisual()
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
                 var visualSpan = VisualSpan.CreateForSpan(range.Extent, VisualKind.Character, tabStop: 4);
-                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
-                _commandUtil.FormatLinesVisual(visualSpan);
+                _commonOperations.Setup(x => x.FormatCodeLines(range)).Verifiable();
+                _commandUtil.FormatCodeLinesVisual(visualSpan);
                 _commonOperations.Verify();
             }
 
             [WpfFact]
-            public void FormatLinesMotion()
+            public void FormatCodeLinesMotion()
             {
                 Create("cat", "dog", "tree");
                 var range = _textBuffer.GetLineRange(0, 1);
                 var motionResult = MotionResult.Create(range.Extent, MotionKind.CharacterWiseExclusive, isForward: true);
-                _commonOperations.Setup(x => x.FormatLines(range)).Verifiable();
-                _commandUtil.FormatMotion(motionResult);
+                _commonOperations.Setup(x => x.FormatCodeLines(range)).Verifiable();
+                _commandUtil.FormatCodeMotion(motionResult);
                 _commonOperations.Verify();
             }
 

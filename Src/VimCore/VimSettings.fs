@@ -512,6 +512,8 @@ type internal LocalSettings
             (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
+            (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
+            (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
             (HideMarksName, "vsvim_hidemarks", SettingValue.String "", SettingOptions.None)
         |]
 
@@ -594,6 +596,12 @@ type internal LocalSettings
         member x.FixEndOfLine
             with get() = _map.GetBoolValue FixEndOfLineName
             and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
+        member x.TextWidth
+            with get() = _map.GetNumberValue TextWidthName
+            and set value = _map.TrySetValue TextWidthName (SettingValue.Number value) |> ignore
+        member x.Comments
+            with get() = _map.GetStringValue CommentsName
+            and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
         member x.HideMarks
             with get() = _map.GetStringValue HideMarksName
             and set value = _map.TrySetValue HideMarksName (SettingValue.String value) |> ignore

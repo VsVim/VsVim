@@ -355,7 +355,10 @@ type ICommonOperations =
     abstract FilterLines: SnapshotLineRange -> command: string -> unit
 
     /// Format the specified line range
-    abstract FormatLines: SnapshotLineRange -> unit
+    abstract FormatCodeLines: SnapshotLineRange -> unit
+
+    /// Format the specified line range
+    abstract FormatTextLines: SnapshotLineRange -> preserveCaretPosition: bool -> unit
 
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText: SnapshotPoint -> string

@@ -168,7 +168,11 @@ type internal NormalMode
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
-                yield ("==", CommandFlags.Repeatable, NormalCommand.FormatLines)
+                yield ("==", CommandFlags.Repeatable, NormalCommand.FormatCodeLines)
+                yield ("gqgq", CommandFlags.Repeatable, NormalCommand.FormatTextLines false)
+                yield ("gqq", CommandFlags.Repeatable, NormalCommand.FormatTextLines false)
+                yield ("gwgw", CommandFlags.Repeatable, NormalCommand.FormatTextLines true)
+                yield ("gww", CommandFlags.Repeatable, NormalCommand.FormatTextLines true)
                 yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)
@@ -189,7 +193,9 @@ type internal NormalMode
                 yield ("<lt>", CommandFlags.Repeatable ||| CommandFlags.ShiftLeft, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable ||| CommandFlags.ShiftRight, NormalCommand.ShiftMotionLinesRight)
                 yield ("!", CommandFlags.Repeatable, NormalCommand.FilterMotion)
-                yield ("=", CommandFlags.Repeatable, NormalCommand.FormatMotion)
+                yield ("=", CommandFlags.Repeatable, NormalCommand.FormatCodeMotion)
+                yield ("gq", CommandFlags.Repeatable, (fun motion -> NormalCommand.FormatTextMotion (false, motion)))
+                yield ("gw", CommandFlags.Repeatable, (fun motion -> NormalCommand.FormatTextMotion (true, motion)))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.MotionBinding (keyInputSet, flags, command))
