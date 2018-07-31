@@ -293,7 +293,6 @@ type SnapshotLineRange  =
             let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
             Nullable<SnapshotLineRange>(range)
 
-
 /// This is the representation of a point within a particular line.  It's common
 /// to represent a column in vim and using a SnapshotPoint isn't always the best
 /// representation.  Finding the containing ITextSnapshotLine for a given 
@@ -465,6 +464,9 @@ type SnapshotCodePoint =
 
     /// Is the codepoint represented by this string value?
     member x.IsCharacter(text: string) = x.CharacterText = text
+
+    // CTODO: consider whether or not to move this out to a helper type
+    member x.IsBlank = x.Length = 1 && CharUtil.IsBlank (x.StartPoint.GetChar())
 
     member x.Contains (point: SnapshotPoint) = 
         if EditorCoreUtil.IsEndPoint point then 
@@ -679,17 +681,14 @@ type SnapshotColumn =
 
     member x.IsCharacter (c: char) = x.CodePoint.IsCharacter c
 
+    member x.IsCharacter(text: string) = x.CodePoint.IsCharacter text
+
     /// The column number of the column
     /// (Warning: don't use the column number as a buffer position offset)
     member x.ColumnNumber = x._columnNumber
 
     /// The position offset of the column relative the beginning of the line
     member x.Offset = x.StartPosition - x.Line.Start.Position
-
-    /// The width of the column in terms of position
-    member x.Width = 
-        if x.IsLineBreak then x.Line.LineBreakLength
-        else x._codePoint.Length
 
     /// The snapshot span covering the logical character at the column
     member x.Span = new SnapshotSpan(x.Snapshot, x.StartPosition, x.Length)
@@ -799,16 +798,33 @@ type SnapshotColumn =
     override x.ToString() =
         sprintf "Point: %s Line: %d Column: %d" (x.CodePoint.ToString()) x.LineNumber x.ColumnNumber
 
-    static member TryCreateForColumnNumber (line: ITextSnapshotLine) (columnNumber: int) = 
-        let mutable cs = SnapshotColumn(line)
+    static member TryCreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
+        let includeLineBreak = defaultArg includeLineBreak false
+        let mutable column = SnapshotColumn(line)
         let mutable count = columnNumber
         let mutable isGood = true
         while count > 0 && isGood do
-            cs <- cs.Add 1
-            if cs._codePoint.IsEndPoint || cs.LineNumber <> line.LineNumber then
+            column <- column.Add 1
+            count <- count - 1
+            if 
+                column.IsEndPoint || 
+                column.LineNumber <> line.LineNumber ||
+                (column.IsLineBreak && not includeLineBreak)
+            then
                 isGood <- false
-        if isGood then Some cs
+
+        // Account for the case when columNumber is 0 and we're on an empty line
+        if (column.IsLineBreak || column.IsEndPoint) && not includeLineBreak then None
+        elif isGood then Some column
         else None
+
+    static member TryCreateForLineAndColumnNumber((snapshot: ITextSnapshot), lineNumber: int, columnNumber: int, ?includeLineBreak) =
+        let includeLineBreak = defaultArg includeLineBreak false
+        if lineNumber < 0 || lineNumber >= snapshot.LineCount then
+            None
+        else
+            let line = snapshot.GetLineFromLineNumber(lineNumber)
+            SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak)
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 

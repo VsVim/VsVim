@@ -75,6 +75,20 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-y>");
                 Assert.Equal(1, VimHost.BeepCount);
             }
+
+            [WpfFact]
+            public void UnicodeCharacter()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}{alien}cat", "");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal($"{alien}", _textBuffer.GetLineText(1));
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 2), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("<C-y>");
+                Assert.Equal($"{alien}{alien}", _textBuffer.GetLineText(1));
+                Assert.Equal(_textBuffer.GetPointInLine(line: 1, column: 4), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class InsertCharacterBelowTest : InsertModeIntegrationTest
