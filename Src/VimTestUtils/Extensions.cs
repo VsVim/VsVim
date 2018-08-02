@@ -917,9 +917,21 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
-        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int position)
+        public static SnapshotColumn GetColumnFromPosition(this ITextSnapshot snapshot, int position)
         {
             var point = new SnapshotPoint(snapshot, position);
+            return new SnapshotColumn(point);
+        }
+
+        public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot)
+        {
+            var point = new SnapshotPoint(snapshot, snapshot.Length);
+            return new SnapshotColumn(point);
+        }
+
+        public static SnapshotColumn GetStartColumn(this ITextSnapshot snapshot)
+        {
+            var point = new SnapshotPoint(snapshot, 0);
             return new SnapshotColumn(point);
         }
 
@@ -927,9 +939,15 @@ namespace Vim.UnitTest
 
         #region ITextBuffer
 
-        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int position)
+        public static SnapshotColumnLegacy GetColumnLegacy(this ITextBuffer textBuffer, int position)
         {
-            return GetColumn(textBuffer.CurrentSnapshot, position);
+            var column = GetColumnFromPosition(textBuffer, position);
+            return new SnapshotColumnLegacy(column.StartPoint);
+        }
+
+        public static SnapshotColumn GetColumnFromPosition(this ITextBuffer textBuffer, int position)
+        {
+            return GetColumnFromPosition(textBuffer.CurrentSnapshot, position);
         }
 
         public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)
@@ -1643,9 +1661,9 @@ namespace Vim.UnitTest
             return view.Caret.Position.VirtualBufferPosition;
         }
 
-        public static SnapshotColumn GetCaretColumn(this ITextView textView)
+        public static SnapshotColumnLegacy GetCaretColumn(this ITextView textView)
         {
-            return new SnapshotColumn(textView.GetCaretPoint());
+            return new SnapshotColumnLegacy(textView.GetCaretPoint());
         }
 
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
@@ -1711,6 +1729,11 @@ namespace Vim.UnitTest
             Assert.True(option.IsSome());
             Assert.True(func(option.Value));
             return true;
+        }
+
+        public static SnapshotColumnLegacy GetColumnLegacy(this SnapshotPoint point)
+        {
+            return new SnapshotColumnLegacy(point);
         }
 
         public static SnapshotColumn GetColumn(this SnapshotPoint point)

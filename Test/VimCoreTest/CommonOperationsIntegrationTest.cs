@@ -300,14 +300,14 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void Simple()
                 {
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumn(0));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumnFromPosition(0));
                     Assert.Equal("\t\t", text);
                 }
 
                 [WpfFact]
                 public void ExtraSpacesAtEnd()
                 {
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 6), _textBuffer.GetColumn(0));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 6), _textBuffer.GetColumnFromPosition(0));
                     Assert.Equal("\t  ", text);
                 }
 
@@ -315,7 +315,7 @@ namespace Vim.UnitTest
                 public void NonTabBoundary()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 8), _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal("\t\t ", text);
                 }
 
@@ -323,7 +323,7 @@ namespace Vim.UnitTest
                 public void NonTabBoundaryExactTabPlusTab()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 7), _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 7), _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal("\t\t", text);
                 }
 
@@ -331,14 +331,14 @@ namespace Vim.UnitTest
                 public void NonTabBoundaryExactTab()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal("\t", text);
                 }
 
                 [WpfFact]
                 public void NotEnoughSpaces()
                 {
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(0));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumnFromPosition(0));
                     Assert.Equal("   ", text);
                 }
 
@@ -346,7 +346,7 @@ namespace Vim.UnitTest
                 public void NonTabBoundaryWithTabs()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn("\t\t", _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn("\t\t", _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal("\t\t", text);
                 }
             }
@@ -364,7 +364,7 @@ namespace Vim.UnitTest
                 public void ExactToTabBoundary()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 3), _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal(new string(' ', 3), text);
                 }
 
@@ -372,7 +372,7 @@ namespace Vim.UnitTest
                 public void OneOverTabBoundary()
                 {
                     _textBuffer.SetText("a");
-                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 4), _textBuffer.GetColumn(1));
+                    var text = _commonOperations.NormalizeBlanksAtColumn(new string(' ', 4), _textBuffer.GetColumnFromPosition(1));
                     Assert.Equal(new string(' ', 4), text);
                 }
             }

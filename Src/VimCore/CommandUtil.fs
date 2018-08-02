@@ -1372,9 +1372,9 @@ type internal CommandUtil
 
     /// Switch to insert mode after the caret
     member x.InsertAfterCaret count =
-        match SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint 1 with
-        | Some nextPoint ->
-            TextViewUtil.MoveCaretToPoint _textView nextPoint
+        let caretColumn = SnapshotColumn(x.CaretPoint)
+        match caretColumn.TryAddInLine(1, includeLineBreak = true) with
+        | Some nextColumn -> TextViewUtil.MoveCaretToPoint _textView nextColumn.StartPoint
         | None -> ()
 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))

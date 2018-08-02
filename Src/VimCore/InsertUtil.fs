@@ -90,7 +90,7 @@ type internal InsertUtil
                 else
                     let snapshotColumn =
                         line.Start
-                        |> SnapshotColumnUtil.GetColumns SearchPath.Forward
+                        |> SnapshotColumnUtilLegacy.GetColumns SearchPath.Forward
                         |> Seq.skipWhile (fun snapshotColumn -> snapshotColumn.Column <> column)
                         |> Seq.tryHead
                     match snapshotColumn with
@@ -390,16 +390,16 @@ type internal InsertUtil
         x.Insert s
 
     member x.InsertCharacterCore lineNumber isReplace =
-        match SnapshotUtil.TryGetPointInLine _textBuffer.CurrentSnapshot lineNumber x.CaretColumn.Column with
+        match SnapshotColumn.TryCreateForLineAndColumnNumber(x.CurrentSnapshot, lineNumber, x.CaretColumn.ColumnNumber) with
         | None -> 
             _operations.Beep()
             CommandResult.Error
-        | Some point -> 
-            let text = SnapshotPointUtil.GetChar point |> StringUtil.OfChar
+        | Some column -> 
+            let text = column.GetText()
             let position = x.CaretPoint.Position
             if isReplace then x.DeleteRight 1 |> ignore
             _textBuffer.Insert(position, text) |> ignore
-            TextViewUtil.MoveCaretToPosition _textView (position + 1)
+            TextViewUtil.MoveCaretToPosition _textView (position + column.Length)
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Insert the character immediately above the caret
@@ -488,18 +488,18 @@ type internal InsertUtil
                     // we've hit a tab boundary which is defined by 'tabstop'
                     let insertColumn = 
                         let mutable column = x.CaretColumn
-                        while column.Column > 0 && CharUtil.IsBlank (column.Point.Subtract(1).GetChar()) do
+                        while column.ColumnNumber > 0 && column.Subtract(1).CodePoint.IsBlank do
                             column <- column.Subtract(1)
                         column
 
-                    let existingRange = Span.FromBounds(insertColumn.Point.Position, x.CaretPoint.Position)
+                    let existingRange = Span.FromBounds(insertColumn.StartPoint.Position, x.CaretPoint.Position)
 
                     let text = 
                         let existingText = x.CurrentSnapshot.GetText(existingRange)
                         let indentText = StringUtil.RepeatChar addedSpaces ' ' 
                         _operations.NormalizeBlanksAtColumn (existingText + indentText) insertColumn
 
-                    let caretPosition = insertColumn.Point.Position + text.Length
+                    let caretPosition = insertColumn.StartPoint.Position + text.Length
                     _textBuffer.Replace(existingRange, text) |> ignore
                     caretPosition
 
@@ -697,10 +697,10 @@ type internal InsertUtil
 
     /// Undo replace, or equivalently, backspace in replace mode
     member x.UndoReplace () =
-        if x.CaretColumn.Column > 0 then
+        if x.CaretColumn.ColumnNumber > 0 then
             let point = x.CaretPoint.Subtract(1)
             TextViewUtil.MoveCaretToPosition _textView point.Position
-            match x.TryGetRecordedCharacter x.CaretColumn.Column with
+            match x.TryGetRecordedCharacter x.CaretColumn.ColumnNumber with
             | None -> ()
             | Some character -> 
                 let span = SnapshotSpan(x.CaretPoint, 1)
@@ -829,7 +829,7 @@ type internal InsertUtil
     /// The point we should backspace to in order to delete a character.  This will never 
     /// be called when the caret is at the start of the line
     member x.BackspaceOverCharPoint() =
-        Contract.Assert (x.CaretColumn.Column > 0)
+        Contract.Assert (x.CaretColumn.ColumnNumber > 0)
         let prevPoint = x.CaretPoint.Subtract(1)
         if _localSettings.SoftTabStop <> 0 && SnapshotPointUtil.IsBlank prevPoint && _vimTextBuffer.IsSoftTabStopValidForBackspace then
             x.BackspaceOverIndent()
@@ -840,7 +840,7 @@ type internal InsertUtil
     /// 'softtabstop' is set and there is a blank before the caret
     member x.BackspaceOverIndent() = 
         Contract.Assert (_localSettings.SoftTabStop <> 0)
-        Contract.Assert (x.CaretColumn.Column > 0)
+        Contract.Assert (x.CaretColumn.ColumnNumber > 0)
         Contract.Assert (SnapshotPointUtil.IsBlank (x.CaretPoint.Subtract(1)))
 
         let prevPoint = x.CaretPoint.Subtract(1)
@@ -880,14 +880,14 @@ type internal InsertUtil
 
     /// The point we should backspace to in order to delete a word
     member x.BackspaceOverWordPoint() =
-        Contract.Assert (x.CaretColumn.Column > 0)
+        Contract.Assert (x.CaretColumn.ColumnNumber > 0)
 
         // Jump past any blanks before the caret
         let searchPoint = 
             let mutable current = x.CaretColumn.Subtract 1
-            while current.Column > 0 && SnapshotPointUtil.IsBlank current.Point do
+            while current.ColumnNumber > 0 && current.CodePoint.IsBlank do
                 current <- current.Subtract 1
-            current.Point
+            current.StartPoint
 
         let deletePoint =  
             match _wordUtil.GetFullWordSpan WordKind.NormalWord searchPoint with
