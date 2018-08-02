@@ -3231,35 +3231,6 @@ type TextLine = {
 
             NonEmptyCollection(firstLine, rest)
 
-module SnapshotColumnUtilLegacy =
-
-    let GetPoint (column: SnapshotColumnLegacy) = column.Point
-
-    let GetLine (column: SnapshotColumnLegacy) = column.Line
-    
-    /// Get the columns from the given point in a forward motion 
-    let private GetColumnsCore path includeLineBreak point = 
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-        let startLineNumber = SnapshotPointUtil.GetLineNumber point
-        let filter = 
-            match path with 
-            | SearchPath.Forward -> fun (c: SnapshotColumnLegacy) -> c.Point.Position >= point.Position
-            | SearchPath.Backward -> fun (c: SnapshotColumnLegacy) -> c.Point.Position <= point.Position
-
-        SnapshotUtil.GetLines snapshot startLineNumber path
-        |> Seq.collect (fun line -> 
-            if includeLineBreak then
-                SnapshotLineUtil.GetColumnsIncludingLineBreak path line
-            else
-                SnapshotLineUtil.GetColumns path line)
-        |> Seq.filter filter
-
-    let GetColumns path point = GetColumnsCore path false point
-
-    let GetColumnsIncludingLineBreak path point = GetColumnsCore path true point
-
-    let CreateFromPoint point = SnapshotColumnLegacy(point)
-
 module internal ITextEditExtensions =
 
     type ITextEdit with
