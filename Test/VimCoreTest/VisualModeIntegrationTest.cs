@@ -1927,7 +1927,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllU");
                 Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -1936,7 +1936,7 @@ namespace Vim.UnitTest
                 Create("CAT dog");
                 _vimBuffer.ProcessNotation("vllu");
                 Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -1945,7 +1945,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllg?");
                 Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
             }
         }
 
@@ -3288,7 +3288,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("vi}");
 
                 var column = _textView.GetCaretColumn();
-                Assert.True(column.IsInsideLineBreak);
+                Assert.True(column.IsLineBreak);
             }
         }
 

@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             {
                 Create("  dog");
                 _vimBuffer.Process("_");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
             }
 
             /// <summary>
@@ -4724,13 +4724,13 @@ namespace Vim.UnitTest
             {
                 Create("cat", "tree", "horse", "racoon");
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(4, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(5, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -4739,13 +4739,13 @@ namespace Vim.UnitTest
                 Create("racoon", "horse", "tree", "cat");
                 _textView.MoveCaretToLine(3);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(4, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().ColumnNumber);
+                Assert.Equal(5, _textView.GetCaretColumn().ColumnNumber);
             }
 
             /// <summary>
@@ -4760,9 +4760,9 @@ namespace Vim.UnitTest
                 _globalSettings.VirtualEdit = "onemore";
                 Assert.True(_globalSettings.IsVirtualEditOneMore);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumnLegacy().Column);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]

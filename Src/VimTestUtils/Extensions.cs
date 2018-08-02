@@ -939,12 +939,6 @@ namespace Vim.UnitTest
 
         #region ITextBuffer
 
-        public static SnapshotColumnLegacy GetColumnLegacy(this ITextBuffer textBuffer, int position)
-        {
-            var column = GetColumnFromPosition(textBuffer, position);
-            return new SnapshotColumnLegacy(column.StartPoint);
-        }
-
         public static SnapshotColumn GetColumnFromPosition(this ITextBuffer textBuffer, int position)
         {
             return GetColumnFromPosition(textBuffer.CurrentSnapshot, position);
@@ -1661,9 +1655,9 @@ namespace Vim.UnitTest
             return view.Caret.Position.VirtualBufferPosition;
         }
 
-        public static SnapshotColumnLegacy GetCaretColumn(this ITextView textView)
+        public static SnapshotColumn GetCaretColumn(this ITextView textView)
         {
-            return new SnapshotColumnLegacy(textView.GetCaretPoint());
+            return new SnapshotColumn(textView.GetCaretPoint());
         }
 
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
@@ -1729,11 +1723,6 @@ namespace Vim.UnitTest
             Assert.True(option.IsSome());
             Assert.True(func(option.Value));
             return true;
-        }
-
-        public static SnapshotColumnLegacy GetColumnLegacy(this SnapshotPoint point)
-        {
-            return new SnapshotColumnLegacy(point);
         }
 
         public static SnapshotColumn GetColumn(this SnapshotPoint point)

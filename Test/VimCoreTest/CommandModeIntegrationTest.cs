@@ -1706,12 +1706,12 @@ namespace Vim.UnitTest
 
                 Assert.Equal("dug", _textView.GetLine(1).GetText());
 
-                Assert.Equal(0, _textView.Caret.Position.BufferPosition.GetColumnLegacy().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
                 Assert.Equal(0, _textView.GetCaretLine().LineNumber);
 
                 _vimBuffer.ProcessNotation("`.");
 
-                Assert.Equal(1, _textView.Caret.Position.BufferPosition.GetColumnLegacy().Column);
+                Assert.Equal(1, _textView.GetCaretColumn().ColumnNumber);
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
