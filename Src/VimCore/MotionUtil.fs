@@ -696,6 +696,7 @@ type MatchingTokenUtil() =
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
     /// to the column (going forward only). 
+    /// CTOOD: is this a column or position? 
     member x.FindMatchingTokenKindCore lineText column =
         let length = String.length lineText
         Contract.Assert(column <= length)
@@ -861,16 +862,16 @@ type MatchingTokenUtil() =
             found
 
         let line, column = 
-            let data = SnapshotColumnLegacy(point)
+            let data = SnapshotColumn(point)
             let line = data.Line
 
             // The search should normalize caret's in the line break back to the last valid 
             // point of the line. 
             let column = 
-                if data.IsInsideLineBreak then
+                if data.IsLineBreak then
                     max 0 (line.End.Position - line.Start.Position - 1)
                 else
-                    data.Column
+                    data.ColumnNumber
             (line, column)
 
         let found = 
