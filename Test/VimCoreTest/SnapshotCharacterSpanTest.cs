@@ -270,6 +270,89 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GetSpacesTest : SnapshotColumnTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("cat");
+                var column = _textBuffer.GetColumnFromPosition(0);
+                Assert.Equal(1, column.GetSpaces(42));
+            }
+
+            [WpfFact]
+            public void Tab()
+            {
+                Create("c\tt");
+                var column = _textBuffer.GetColumnFromPosition(1);
+                Assert.Equal(42, column.GetSpaces(42));
+                Assert.Equal(2, column.GetSpaces(2));
+            }
+
+            [WpfTheory]
+            [InlineData("\n")]
+            [InlineData("\r\n")]
+            public void LineBreaks(string lineBreakText)
+            {
+                CreateRaw(string.Join(lineBreakText, "cat", "dog"));
+                var column = _textBuffer.GetColumnFromPosition(3);
+                Assert.True(column.IsLineBreak);
+                Assert.Equal(1, column.GetSpaces(42));
+            }
+
+            [WpfFact]
+            public void SurrogatePair()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}{alien}");
+                for (var i = 0; i < 4; i++)
+                {
+                    var column = _textBuffer.GetColumnFromPosition(i);
+                    Assert.Equal(1, column.GetSpaces(42));
+                    Assert.Equal(alien, column.GetText());
+                }
+            }
+        }
+
+        public sealed class GetSpacesToColumn : SnapshotColumnTest
+        {
+            [WpfFact]
+            public void AfterTab()
+            {
+                Create("\tcat");
+                var column = _textBuffer.GetColumnFromPosition(1);
+                Assert.Equal(3, column.GetSpacesToColumn(3));
+                Assert.Equal(42, column.GetSpacesToColumn(42));
+            }
+
+            [WpfFact]
+            public void AfterSurrogatePair()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}cat");
+                var column = _textBuffer.GetColumnFromPosition(2);
+                Assert.Equal(1, column.GetSpacesToColumn(42));
+            }
+
+            [WpfFact]
+            public void AfterSurrogatePair2()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}{alien}cat");
+                var column = _textBuffer.GetColumnFromPosition(4);
+                Assert.Equal(2, column.GetSpacesToColumn(42));
+            }
+
+            [WpfFact]
+            public void AfterSurrogatePair3()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}a{alien}cat");
+                var column = _textBuffer.GetColumnFromPosition(5);
+                Assert.Equal(3, column.GetSpacesToColumn(42));
+            }
+        }
+
         public sealed class MiscTest : SnapshotColumnTest
         {
             [WpfFact]

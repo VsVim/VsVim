@@ -803,6 +803,28 @@ type SnapshotColumn =
     member x.GetText () =
         x.Span.GetText()
 
+    /// Get the number of spaces occupied by this column. The linebreak will return 1 here 
+    /// no matter how many characters the line break is actually comprised of.
+    member x.GetSpaces tabStop =
+        if x.IsLineBreak then 1 
+        else x.CodePoint.GetSpaces tabStop
+
+    /// Get the number of spaces before this column on the same line. 
+    member x.GetSpacesToColumn tabStop =
+        let mutable spaces = 0 
+        let mutable current = SnapshotColumn(x.Line, x.Line.Start)
+        while current.StartPosition <> x.StartPosition do
+            spaces <- spaces + (current.GetSpaces tabStop)
+            current <- current.Add 1
+        spaces
+
+    /// Get the total number of spaces on the line before and including this 
+    /// column
+    member x.GetSpacesIncludingToColumn tabStop =
+        let before = x.GetSpacesToColumn tabStop
+        let this = x.GetSpaces tabStop
+        before + this
+
     /// Debugger display
     override x.ToString() =
         sprintf "Point: %s Line: %d Column: %d" (x.CodePoint.ToString()) x.LineNumber x.ColumnNumber
@@ -2119,43 +2141,53 @@ module SnapshotPointUtil =
     /// Get a point relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
     /// specified.  Goes as far as possible in the specified direction
-    let GetRelativePoint startPoint count skipLineBreaks =
+    let GetRelativePoint (startPoint: SnapshotPoint) count skipLineBreaks =
 
         /// Get the relative column in 'direction' using predicate 'isEnd'
         /// to stop the motion
         let GetRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
 
-            /// Adjust 'column' backward or forward if it is in the
-            /// middle of a line break
-            let AdjustLineBreak (column: SnapshotColumnLegacy) =
-                if column.Column <= column.Line.Length then
-                    column
-                else if direction = -1 then
-                    SnapshotColumnLegacy(column.Line, column.Line.Length)
-                else
-                    SnapshotColumnLegacy(column.Line.EndIncludingLineBreak)
-
-            let mutable column = SnapshotColumnLegacy(startPoint)
+            let mutable current = startPoint
+            let mutable currentLine = startPoint.GetContainingLine()
             let mutable remaining = abs count
-            while remaining > 0 && not (isEnd column.Point) do
-                column <- column.Add direction |> AdjustLineBreak
+
+            let syncLine () = 
+                if not (currentLine.ExtentIncludingLineBreak.Contains(current)) then
+                    currentLine <- current.GetContainingLine()
+
+            let move () = 
+                current <- 
+                    if direction = 1 then current.Add(1)
+                    else current.Subtract(1)
+                syncLine ()
+
+                /// Adjust 'point' backward or forward if it is in the
+                /// middle of a line break
+                current <-
+                    if current.Position <= currentLine.End.Position then
+                        current
+                    else if direction = -1 then
+                        currentLine.End
+                    else
+                        currentLine.EndIncludingLineBreak
+                syncLine ()
+
+            while remaining > 0 && not (isEnd current) do
+                move ()
                 remaining <- remaining -
                     if skipLineBreaks then
-                        if column.Line.Length = 0 || not column.IsInsideLineBreak then
+                        if currentLine.Length = 0 || not (EditorCoreUtil.IsInsideLineBreak current currentLine) then
                             1
                         else
                             0
                     else
                         1
-            column
+            current
 
-        let column =
-            if count < 0 then
-                GetRelativeColumn -1 IsStartPoint
-            else
-                GetRelativeColumn 1 IsEndPointOfLastLine
-
-        column.Point
+        if count < 0 then
+            GetRelativeColumn -1 IsStartPoint
+        else
+            GetRelativeColumn 1 IsEndPointOfLastLine
 
     /// Get a character span relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is

@@ -81,21 +81,16 @@ type internal InsertUtil
             _replaceUndoLine <- SnapshotUtil.GetLine x.CurrentSnapshot x.CaretLineNumber |> Some
 
     /// Get recorded character for the current line at the specified column
-    member x.TryGetRecordedCharacter (column: int) =
+    member x.TryGetRecordedCharacter (columnNumber: int) =
         match _replaceUndoLine with
             | None -> None
             | Some line ->
                 if line.LineNumber <> x.CaretLineNumber then
                     None
                 else
-                    let snapshotColumn =
-                        line.Start
-                        |> SnapshotColumnUtilLegacy.GetColumns SearchPath.Forward
-                        |> Seq.skipWhile (fun snapshotColumn -> snapshotColumn.Column <> column)
-                        |> Seq.tryHead
-                    match snapshotColumn with
+                    match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
                     | None -> None
-                    | Some snapshotColumn -> snapshotColumn.Point.GetChar() |> Some
+                    | Some column -> Some column.CodePoint
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -702,9 +697,9 @@ type internal InsertUtil
             TextViewUtil.MoveCaretToPosition _textView point.Position
             match x.TryGetRecordedCharacter x.CaretColumn.ColumnNumber with
             | None -> ()
-            | Some character -> 
+            | Some codePoint -> 
                 let span = SnapshotSpan(x.CaretPoint, 1)
-                let text = StringUtil.OfChar character
+                let text = codePoint.GetText()
                 _textBuffer.Replace(span.Span, text) |> ignore
                 TextViewUtil.MoveCaretToPosition _textView point.Position
         else
