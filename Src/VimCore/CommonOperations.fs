@@ -110,13 +110,13 @@ type internal CommonOperations
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
-    member x.GetSpacesToColumn line column = 
-        SnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
+    member x.GetSpacesToColumn line columnNumber = 
+        SnapshotColumn.GetSpacesToColumn(line, columnNumber, _localSettings.TabStop)
 
     /// Get the count of virtual spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
-    member x.GetVirtualSpacesToColumn line column =
-        VirtualSnapshotLineUtil.GetSpacesToColumn line column _localSettings.TabStop
+    member x.GetVirtualSpacesToColumn line columnNumber =
+        VirtualSnapshotColumn.GetSpacesToColumn(line, columnNumber, _localSettings.TabStop)
 
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
     member x.GetSpacesToPoint point = 
@@ -1151,7 +1151,7 @@ type internal CommonOperations
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
     /// difficulty of mixed spaces and tabs filling up the remaining tab boundary 
     member x.NormalizeBlanksAtColumn text (column: SnapshotColumn) = 
-        let spacesToColumn = SnapshotLineUtil.GetSpacesToColumn column.Line column.ColumnNumber _localSettings.TabStop
+        let spacesToColumn = column.GetSpacesToColumn _localSettings.TabStop
         if spacesToColumn % _localSettings.TabStop = 0 then
             // If the column is on a 'tabstop' boundary then there is no difficulty here
             // with accounting for partial tabs.  Just normalize as we would for any other

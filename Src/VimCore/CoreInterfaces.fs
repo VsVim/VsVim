@@ -1742,7 +1742,7 @@ type BlockSpan =
         let point = VirtualSnapshotPointUtil.OfPoint x.End
         let line = SnapshotPointUtil.GetContainingLine point.Position
         if point.Position = line.End then
-            let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length x._tabStop
+            let realSpaces = SnapshotColumn.GetSpacesOnLine(line, x._tabStop)
             let virtualSpaces = x.ColumnSpaces + x.Spaces - realSpaces
             VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
         else

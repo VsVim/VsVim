@@ -269,9 +269,9 @@ type internal InsertUtil
 
     /// Block insert the specified text at the caret point over the specified number of lines
     member x.BlockInsert text atEndOfLine height = 
-        let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
-        let spaces = SnapshotLineUtil.GetSpacesToColumn x.CaretLine column _localSettings.TabStop
-        x.ApplyBlockInsert text atEndOfLine line spaces height 
+        let column = x.CaretColumn
+        let spaces = column.GetSpacesToColumn _localSettings.TabStop
+        x.ApplyBlockInsert text atEndOfLine column.LineNumber spaces height 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
