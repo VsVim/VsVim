@@ -469,7 +469,6 @@ type SnapshotCodePoint =
         if x.IsEndPoint then false
         else x.Length = 1 && func (x.StartPoint.GetChar())
 
-    // CTODO: consider whether or not to move this out to a helper type
     member x.IsBlank = x.IsCharacter CharUtil.IsBlank
 
     member x.IsWhiteSpace = x.IsCharacter CharUtil.IsWhiteSpace

@@ -9,10 +9,6 @@ using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
-    // CTODO: need to test specifying a point that is the second character of a line break
-    // CTODO: Consider removing position Apis and replace with start and end 
-    // CTODO: test add past end
-    // CTODO: test subtract before start
     public abstract class SnapshotColumnTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
