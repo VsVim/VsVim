@@ -1797,7 +1797,7 @@ type internal CommonOperations
                         lineNumber + offset
                         |> SnapshotUtil.GetLine originalSnapshot
                     let column = SnapshotColumn(line)
-                    let columnCount = SnapshotLineUtil.GetCharacterSpansCount SearchPath.Forward line
+                    let columnCount = SnapshotLineUtil.GetColumnsCount SearchPath.Forward line
                     if columnCount < columnNumber then
                         let prefix = String.replicate (columnNumber - columnCount) " "
                         edit.Insert(line.End.Position, prefix + str) |> ignore

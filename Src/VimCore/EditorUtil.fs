@@ -293,53 +293,6 @@ type SnapshotLineRange  =
             let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
             Nullable<SnapshotLineRange>(range)
 
-/// This is the representation of a point within a particular line.  It's common
-/// to represent a column in vim and using a SnapshotPoint isn't always the best
-/// representation.  Finding the containing ITextSnapshotLine for a given 
-/// SnapshotPoint is an allocating operation and often shows up as a critical 
-/// metric in profiling.  This structure pairs the two together in a type safe fashion
-[<Struct>]
-[<NoEquality>]
-[<NoComparison>]
-type SnapshotColumnLegacy 
-    (
-        _snapshotLine: ITextSnapshotLine,
-        _column: int
-    ) =
-
-    new (point: SnapshotPoint) = 
-        let line = point.GetContainingLine()
-        let column = point.Position - line.Start.Position
-        SnapshotColumnLegacy(line, column)
-
-    member x.IsStartOfLine = _column = 0
-
-    member x.IsInsideLineBreak = EditorCoreUtil.IsInsideLineBreak x.Point x.Line
-
-    member x.Line = _snapshotLine
-
-    member x.LineNumber = _snapshotLine.LineNumber
-
-    member x.Snapshot = _snapshotLine.Snapshot
-
-    member x.Point = _snapshotLine.Start.Add(_column)
-
-    member x.Column = _column
-
-    member x.Add count = 
-        let column = _column + count
-        if column > 0 && column < _snapshotLine.LengthIncludingLineBreak then
-            SnapshotColumnLegacy(_snapshotLine, _column + count)
-        else
-            let point = x.Point.Add count
-            SnapshotColumnLegacy(point)
-
-    member x.Subtract count = 
-        x.Add -count
-
-    override x.ToString() = 
-        x.Point.ToString()
-
 /// Conceptually this references a single CodePoint in the snapshot. This can be
 /// either:
 /// - a normal character
@@ -1583,36 +1536,9 @@ module SnapshotLineUtil =
     /// Get the points on the particular line including the line break
     let GetPointsIncludingLineBreak path line = line |> GetExtentIncludingLineBreak |> SnapshotSpanUtil.GetPoints path
 
-    /// Get the columns in the line in the path
-    let private GetColumnsCore path includeLineBreak line = 
-        let length = 
-            if includeLineBreak then
-                GetLengthIncludingLineBreak line
-            else 
-                GetLength line
-        let max = length - 1
-        match path with 
-        | SearchPath.Forward ->
-            seq { 
-                for i = 0 to max do
-                    yield SnapshotColumnLegacy(line, i)
-            }
-        | SearchPath.Backward ->
-            seq { 
-                for i = 0 to max do
-                    let column = (length - 1) - i
-                    yield SnapshotColumnLegacy(line, column)
-            }
-
-    /// Get the columns in the specified direction 
-    let GetColumns path line = GetColumnsCore path false line
-
-    /// Get the columns in the specified direction including the line break
-    let GetColumnsIncludingLineBreak path line = GetColumnsCore path true line
-
     /// Get the character spans in the line in the path
     /// CTODO: rename and use columns
-    let private GetCharacterSpansCore path includeLineBreak line =
+    let private GetColumnsCore path includeLineBreak line =
         let startColumn = SnapshotColumn(GetStart line)
         let items = 
             seq { 
@@ -1628,13 +1554,13 @@ module SnapshotLineUtil =
         | SearchPath.Backward -> Seq.rev items
 
     /// Get the character spans in the specified direction
-    let GetCharacterSpans path line = GetCharacterSpansCore path false line
+    let GetColumns path line = GetColumnsCore path false line
 
     /// Get the character spans in the specified direction including the line break
-    let GetCharacterSpansIncludingLineBreak path line = GetCharacterSpansCore path true line
+    let GetColumnsIncludingLineBreak path line = GetColumnsCore path true line
 
-    let GetCharacterSpansCount path line = 
-        let seq = GetCharacterSpans path line
+    let GetColumnsCount path line = 
+        let seq = GetColumns path line
         Seq.length seq
 
     /// Get the line break span 
