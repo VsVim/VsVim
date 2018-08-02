@@ -975,7 +975,7 @@ type internal CommonOperations
 
         match _vimTextBuffer.UseVirtualSpace, result.CaretColumn with
         | true, CaretColumn.InLastLine column ->
-            let columnNumber = SnapshotCharacterSpan(point).ColumnNumber
+            let columnNumber = SnapshotColumn(point).ColumnNumber
             let virtualSpaces = max 0 (column - columnNumber)
             point
             |> VirtualSnapshotPointUtil.OfPoint

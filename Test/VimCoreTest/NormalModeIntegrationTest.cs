@@ -4726,11 +4726,11 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("$");
                 Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -4741,11 +4741,11 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("$");
                 Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().ColumnNumber);
             }
 
             /// <summary>
