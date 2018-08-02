@@ -603,12 +603,12 @@ namespace Vim.UnitTest
 
                 Assert.Equal("dog bird", _textView.GetLine(1).GetText());
 
-                Assert.Equal(0, _textView.Caret.Position.BufferPosition.GetColumn().Column);
+                Assert.Equal(0, _textView.Caret.Position.BufferPosition.GetColumnLegacy().Column);
                 Assert.Equal(0, _textView.GetCaretLine().LineNumber);
 
                 _vimBuffer.ProcessNotation("`.");
 
-                Assert.Equal(7, _textView.Caret.Position.BufferPosition.GetColumn().Column);
+                Assert.Equal(7, _textView.Caret.Position.BufferPosition.GetColumnLegacy().Column);
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
@@ -1833,7 +1833,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
                 Assert.Equal("hhh", _textView.GetLine(1).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
             }
 
             /// <summary>
@@ -1851,7 +1851,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("3.");
                 Assert.Equal("hhha", _textView.GetLine(1).GetText());
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
             }
 
             /// <summary>

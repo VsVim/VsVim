@@ -213,8 +213,35 @@ namespace Vim.UnitTest
             {
                 Create("cat");
                 var point = _textBuffer.GetEndPoint();
-                var characterSpan = new SnapshotColumn(point);
-                Assert.True(characterSpan.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
+                var column = new SnapshotColumn(point);
+                Assert.True(column.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
+            }
+
+            [WpfFact]
+            public void EndPointOnEmptyLine()
+            {
+                Create("cat", "");
+                var point = _textBuffer.GetEndPoint();
+                var column = new SnapshotColumn(point);
+                Assert.True(column.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
+            }
+
+            [WpfFact]
+            public void EmptyLineAtEnd()
+            {
+                Create("cat", "");
+                var point = _textBuffer.GetPointInLine(line: 1, column: 0);
+                var column = new SnapshotColumn(point);
+                Assert.True(column.StartPoint.Position == _textBuffer.CurrentSnapshot.Length);
+            }
+
+            [WpfFact]
+            public void SecondPositionOfLineBreak()
+            {
+                Create("cat", "dog");
+                var point = _textBuffer.GetPoint(4);
+                var column = new SnapshotColumn(point);
+                Assert.True(column.StartPoint.Position == 3);
             }
         }
 

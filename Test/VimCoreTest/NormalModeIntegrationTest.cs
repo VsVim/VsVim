@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             {
                 Create("  dog");
                 _vimBuffer.Process("_");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
             }
 
             /// <summary>
@@ -4724,7 +4724,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "tree", "horse", "racoon");
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
                 _vimBuffer.ProcessNotation("j");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
                 _vimBuffer.ProcessNotation("j");
@@ -4739,7 +4739,7 @@ namespace Vim.UnitTest
                 Create("racoon", "horse", "tree", "cat");
                 _textView.MoveCaretToLine(3);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
                 _vimBuffer.ProcessNotation("k");
                 Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
                 _vimBuffer.ProcessNotation("k");
@@ -4760,9 +4760,9 @@ namespace Vim.UnitTest
                 _globalSettings.VirtualEdit = "onemore";
                 Assert.True(_globalSettings.IsVirtualEditOneMore);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretPoint().GetColumnLegacy().Column);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretPoint().GetColumnLegacy().Column);
             }
 
             [WpfFact]

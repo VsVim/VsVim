@@ -1501,7 +1501,7 @@ type internal MotionUtil
     /// yank line 1
     member x.AllParagraph count = 
 
-        let all = x.GetParagraphs SearchPath.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
+        let all = x.GetParagraphs SearchPath.Forward x.CaretColumn |> Seq.truncate count |> List.ofSeq
         match all with
         | [] ->
             // No paragraphs forward so return nothing
@@ -1636,13 +1636,13 @@ type internal MotionUtil
         // will start by returning the sentence which exists before the white space.  In the case of 
         // AllSentence we don't want this behavior and want to start with the following sentence.  
         let sentenceKind = SentenceKind.NoTrailingCharacters
-        let searchPoint = 
-            let mutable column = SnapshotColumnLegacy(x.CaretPoint)
-            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not (SnapshotPointUtil.IsEndPoint column.Point) do
+        let searchColumn = 
+            let mutable column = x.CaretColumn
+            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not column.IsEndPoint do
                 column <- column.Add 1
-            column.Point
+            column
 
-        let sentences = x.GetSentences sentenceKind SearchPath.Forward searchPoint |> Seq.truncate count |> List.ofSeq
+        let sentences = x.GetSentences sentenceKind SearchPath.Forward searchColumn |> Seq.truncate count |> List.ofSeq
 
         let span = 
             match sentences with
@@ -1663,33 +1663,33 @@ type internal MotionUtil
                 // The white space after the sentence is the gap between this sentence and the next
                 // sentence
                 let whiteSpaceAfter =
-                    let mutable column = SnapshotColumnLegacy(span.End)
-                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not (SnapshotPointUtil.IsEndPoint column.Point) do
+                    let mutable column = SnapshotColumn(span.End)
+                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not column.IsEndPoint do
                         column <- column.Add 1
 
-                    if SnapshotPointUtil.IsEndPoint column.Point || span.End.Position = column.Point.Position then
+                    if column.IsEndPoint || span.End.Position = column.StartPoint.Position then
                         None
                     else
-                        Some column.Point
+                        Some column
 
                 // Include the preceding white space in the Span
                 let includePrecedingWhiteSpace () =
-                    let mutable column = SnapshotColumnLegacy(span.Start)
+                    let mutable column = SnapshotColumn(span.Start)
                     let mutable before = 
-                        if SnapshotPointUtil.IsStartPoint column.Point then column
+                        if column.IsStartPoint then column
                         else column.Subtract 1
-                    while column.Point.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
+                    while column.StartPoint.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
                         column <- before
                         before <- column.Subtract 1
 
-                    SnapshotSpan(column.Point, span.End)
+                    SnapshotSpan(column.StartPoint, span.End)
 
                 // Now we need to do the standard adjustments listed at the bottom of 
                 // ':help text-objects'.
                 match isCaretInWhiteSpace, whiteSpaceAfter with
                 | true, _ -> includePrecedingWhiteSpace()
                 | false, None -> includePrecedingWhiteSpace()
-                | false, Some spaceEnd -> SnapshotSpan(span.Start, spaceEnd)
+                | false, Some spaceEnd -> SnapshotSpan(span.Start, spaceEnd.StartPoint)
 
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
@@ -2716,7 +2716,7 @@ type internal MotionUtil
     member x.SentenceForward count = 
         _jumpList.Add x.CaretVirtualPoint
         let endPoint =
-            x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretColumn
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2726,7 +2726,7 @@ type internal MotionUtil
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretVirtualPoint
         let startPoint = 
-            x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretColumn
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2738,7 +2738,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretVirtualPoint
 
         let endPoint = 
-            x.GetParagraphs SearchPath.Forward x.CaretPoint
+            x.GetParagraphs SearchPath.Forward x.CaretColumn
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2750,7 +2750,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretVirtualPoint
 
         let startPoint = 
-            x.GetParagraphs SearchPath.Backward x.CaretPoint
+            x.GetParagraphs SearchPath.Backward x.CaretColumn
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)

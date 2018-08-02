@@ -465,8 +465,14 @@ type SnapshotCodePoint =
     /// Is the codepoint represented by this string value?
     member x.IsCharacter(text: string) = x.CharacterText = text
 
+    member x.IsCharacter(func: char -> bool) =
+        if x.IsEndPoint then false
+        else x.Length = 1 && func (x.StartPoint.GetChar())
+
     // CTODO: consider whether or not to move this out to a helper type
-    member x.IsBlank = x.Length = 1 && CharUtil.IsBlank (x.StartPoint.GetChar())
+    member x.IsBlank = x.IsCharacter CharUtil.IsBlank
+
+    member x.IsWhiteSpace = x.IsCharacter CharUtil.IsWhiteSpace
 
     member x.Contains (point: SnapshotPoint) = 
         if EditorCoreUtil.IsEndPoint point then 
@@ -623,6 +629,8 @@ type SnapshotColumn =
         while not isDone do
             if codePoint.Contains point then
                 isDone <- true
+            elif codePoint.StartPosition = line.End.Position && EditorCoreUtil.IsInsideLineBreak point line then
+                isDone <- true
             elif codePoint.StartPosition >= line.End.Position then
                 invalidArg "point" "The value point is not contained on the specified line"
             else
@@ -673,8 +681,10 @@ type SnapshotColumn =
 
     member x.EndPosition = x.EndPoint.Position
 
+    // CTODO: rename StartColumn
     member x.IsStartPoint = x.CodePoint.IsStartPoint
 
+    // CTODO: rename ENdColumn
     member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.StartPoint
 
     member x.IsLineBreakOrEnd = x.IsLineBreak || x.IsEndPoint
@@ -825,6 +835,61 @@ type SnapshotColumn =
         else
             let line = snapshot.GetLineFromLineNumber(lineNumber)
             SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak)
+
+    /// Get a sequence of columns which begins with the specified searchColumn in the direction provided
+    /// by serachPath. The searchColumn will always be included in the results except if:
+    ///  - It's a line break  and line breaks are not included
+    ///  - It's the end point 
+    static member GetColumns(searchColumn: SnapshotColumn, searchPath: SearchPath, ?includeLineBreaks) =
+        let includeLineBreaks = defaultArg includeLineBreaks false
+        match searchPath with
+        | SearchPath.Forward -> 
+            seq {
+                let mutable current = searchColumn
+                while not current.IsEndPoint do
+                    if not current.IsLineBreak || includeLineBreaks then
+                        yield current
+                    current <- current.Add 1
+            }
+        | SearchPath.Backward ->
+            seq {
+                let mutable isDone = false
+                let mutable current = searchColumn
+                while not isDone do
+                    if 
+                        not current.IsEndPoint && 
+                        (not current.IsLineBreak || includeLineBreaks)
+                    then
+                        yield current
+
+                    if current.IsStartPoint then
+                        isDone <- true
+                    else
+                        current <- current.Subtract 1
+            }
+
+    /// Get all of the columns on a specified line in the specified order.
+    static member GetColumnsInLine(searchLine: ITextSnapshotLine, searchPath: SearchPath, ?includeLineBreaks) =
+        let includeLineBreaks = defaultArg includeLineBreaks false
+        let all = seq {
+            let mutable current = SnapshotColumn(searchLine)
+            while not current.IsEndPoint && current.LineNumber = searchLine.LineNumber do 
+                if not current.IsLineBreak || includeLineBreaks then
+                    yield current
+                current <- current.Add 1
+        }
+
+        match searchPath with 
+        | SearchPath.Forward -> all
+        | SearchPath.Backward -> Seq.rev all
+
+    static member GetStartColumn(snapshot: ITextSnapshot) = 
+        let startPoint = SnapshotPoint(snapshot, 0)
+        SnapshotColumn(startPoint)
+
+    static member GetEndColumn(snapshot: ITextSnapshot) = 
+        let endPoint = SnapshotPoint(snapshot, snapshot.Length)
+        SnapshotColumn(endPoint)
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 

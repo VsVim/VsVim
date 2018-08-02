@@ -3390,7 +3390,7 @@ more";
             public void GetSentences1()
             {
                 Create("a. b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "a.", "b." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3400,7 +3400,7 @@ more";
             public void GetSentences2()
             {
                 Create("a! b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "a!", "b." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3410,7 +3410,7 @@ more";
             public void GetSentences3()
             {
                 Create("a? b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "a?", "b." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3420,7 +3420,7 @@ more";
             public void GetSentences4()
             {
                 Create("a? b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetEndPoint());
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetEndColumn());
                 Assert.Equal(
                     new string[] { },
                     ret.Select(x => x.GetText()).ToList());
@@ -3433,7 +3433,7 @@ more";
             public void GetSentences_BackwardFromEndOfBuffer()
             {
                 Create("a? b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndPoint());
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndColumn());
                 Assert.Equal(
                     new[] { "b.", "a?" },
                     ret.Select(x => x.GetText()).ToList());
@@ -3447,7 +3447,7 @@ more";
             public void GetSentences_BackwardFromSingleWhitespace()
             {
                 Create("a? b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetPoint(2));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetColumnFromPosition(2));
                 Assert.Equal(
                     new[] { "a?" },
                     ret.Select(x => x.GetText()).ToList());
@@ -3460,7 +3460,7 @@ more";
             public void GetSentences_ManyTrailingChars()
             {
                 Create("a?)]' b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "a?)]'", "b." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3473,7 +3473,7 @@ more";
             public void GetSentences_BackwardWithCharBetween()
             {
                 Create("a?) b.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndPoint());
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndColumn());
                 Assert.Equal(
                     new[] { "b.", "a?)" },
                     ret.Select(x => x.GetText()).ToList());
@@ -3486,7 +3486,7 @@ more";
             public void GetSentences_NeedSpaceAfterEndCharacter()
             {
                 Create("a!b. c");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "a!b.", "c" },
                     ret.Select(x => x.GetText()).ToList());
@@ -3500,7 +3500,7 @@ more";
             public void GetSentences_IncompleteBoundary()
             {
                 Create("a!b. c");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndPoint());
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _snapshot.GetEndColumn());
                 Assert.Equal(
                     new[] { "c", "a!b." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3515,7 +3515,7 @@ more";
             public void GetSentences_ForwardBlankLinesAreBoundaries()
             {
                 Create("a", "", "", "b");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3533,7 +3533,7 @@ more";
             public void GetSentences_FromMiddleOfWord()
             {
                 Create("dog", "cat", "bear");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetEndPoint().Subtract(1));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _snapshot.GetEndColumn().Subtract(1));
                 Assert.Equal(
                     new[] { "dog" + Environment.NewLine + "cat" + Environment.NewLine + "bear" },
                     ret.Select(x => x.GetText()).ToList());
@@ -3547,7 +3547,7 @@ more";
             public void GetSentences_BackwardFromStartOfSentence()
             {
                 Create("dog. cat");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _textBuffer.GetPoint(4));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Backward, _textBuffer.GetColumnFromPosition(4));
                 Assert.Equal(
                     new[] { "dog." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3560,7 +3560,7 @@ more";
             public void GetSentences_BlankLinesAreSentences()
             {
                 Create("dog.  ", "", "cat.");
-                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _textBuffer.GetPoint(0));
+                var ret = _motionUtil.GetSentences(SentenceKind.Default, SearchPath.Forward, _textBuffer.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[] { "dog.", Environment.NewLine, "cat." },
                     ret.Select(x => x.GetText()).ToList());
@@ -3570,7 +3570,7 @@ more";
             public void GetParagraphs_SingleBreak()
             {
                 Create("a", "b", "", "c");
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3588,7 +3588,7 @@ more";
             public void GetParagraphs_ConsequtiveBreaks()
             {
                 Create("a", "b", "", "", "c");
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3605,7 +3605,7 @@ more";
             public void GetParagraphs_FormFeedShouldBeBoundary()
             {
                 Create("a", "b", "\f", "", "c");
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3624,7 +3624,7 @@ more";
             public void GetParagraphs_FormFeedIsNotConsequtive()
             {
                 Create("a", "b", "\f", "", "c");
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3643,7 +3643,7 @@ more";
             {
                 Create("a", ".hh", "bear");
                 _globalSettings.Paragraphs = "hh";
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
@@ -3661,7 +3661,7 @@ more";
             {
                 Create("a", ".j", "bear");
                 _globalSettings.Paragraphs = "hhj ";
-                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetPoint(0));
+                var ret = _motionUtil.GetParagraphs(SearchPath.Forward, _snapshot.GetColumnFromPosition(0));
                 Assert.Equal(
                     new[]
                 {
