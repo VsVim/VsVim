@@ -150,7 +150,7 @@ type internal TextObjectUtil
             // If this point is the start of a sentence line then it's the end point of the
             // previous sentence span. 
             true
-        elif column.IsStartPoint then
+        elif column.IsStartColumn then
             // Start of buffer is not the end of a sentence
             false
         else
@@ -165,7 +165,7 @@ type internal TextObjectUtil
             //  
             //  b
             let line = columnBefore.Line
-            if (columnBefore.IsLineBreak || columnBefore.IsEndPoint) && x.IsSentenceLine line then
+            if (columnBefore.IsLineBreak || columnBefore.IsEndColumn) && x.IsSentenceLine line then
                 true
             else
                 x.IsSentenceEndSimple sentenceKind column
@@ -198,7 +198,7 @@ type internal TextObjectUtil
         | SentenceKind.NoTrailingCharacters -> ()
         | SentenceKind.Default ->
             while not pastStart && isCharInList SentenceTrailingChars current do
-                if current.IsStartPoint then 
+                if current.IsStartColumn then 
                     pastStart <- true
                 else
                     current <- current.Subtract 1
@@ -210,7 +210,7 @@ type internal TextObjectUtil
     member x.IsSentenceEndWhiteSpace (column: SnapshotColumn) =
         column.CodePoint.IsWhiteSpace ||
         column.IsLineBreak ||
-        column.IsEndPoint
+        column.IsEndColumn
 
     /// Is this point the star of a sentence.  Considers sentences, paragraphs and section
     /// boundaries
@@ -240,7 +240,7 @@ type internal TextObjectUtil
                 adjustedColumn <- adjustedColumn.Subtract 1
             adjustedColumn
 
-        if column.IsStartPoint then
+        if column.IsStartColumn then
             // The start of the ITextBuffer is the start of a sentence
             true
         elif adjustedColumn.IsStartOfLine && x.IsEmptyLineWithNoEmptyAbove adjustedColumn.Line then
@@ -253,7 +253,7 @@ type internal TextObjectUtil
         else
             // Move backwards while we are on white space
             let mutable current = column.Subtract 1
-            while x.IsSentenceEndWhiteSpace current && not current.IsStartPoint do
+            while x.IsSentenceEndWhiteSpace current && not current.IsStartColumn do
                 current <- current.Subtract 1
 
             if column.StartPosition = current.StartPosition then
@@ -270,7 +270,7 @@ type internal TextObjectUtil
             false
         else
             let mutable current = column 
-            while not (x.IsSentenceEnd sentenceKind current) && x.IsSentenceEndWhiteSpace current && not current.IsStartPoint do
+            while not (x.IsSentenceEnd sentenceKind current) && x.IsSentenceEndWhiteSpace current && not current.IsStartColumn do
                 current <- current.Subtract 1
 
             x.IsSentenceEnd sentenceKind current
@@ -443,7 +443,7 @@ type internal TextObjectUtil
 
         // Wrap the get full span method to deal with <end>.  
         let getSpanFromStartColumn (column: SnapshotColumn) = 
-            if column.IsEndPoint then
+            if column.IsEndColumn then
                 SnapshotSpan(column.StartPoint, 0)
             else
                 getSpanFromStartColumn column
@@ -463,13 +463,13 @@ type internal TextObjectUtil
             |> SeqUtil.headOrDefault (SnapshotColumn.GetEndColumn column.Snapshot)
 
         // Search includes the section which contains the start point so go ahead and get it
-        match path, column.IsStartPoint with
+        match path, column.IsStartColumn with
         | SearchPath.Forward, _ ->
 
             // Get the next object.  The provided point should either be <end> or point 
             // to the start of a section
             let getNext (column: SnapshotColumn) = 
-                if column.IsEndPoint then
+                if column.IsEndColumn then
                     None
                 else
                     let span = getSpanFromStartColumn column
@@ -500,7 +500,7 @@ type internal TextObjectUtil
             // Get the previous section.  The provided point should either be 0 or point
             // to the start of a section
             let getPrevious (column: SnapshotColumn) = 
-                if column.IsStartPoint then
+                if column.IsStartColumn then
                     None
                 else
                     let startColumn = getStartBackward (column.Subtract 1)

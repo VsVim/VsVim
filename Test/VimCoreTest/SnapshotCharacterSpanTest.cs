@@ -115,13 +115,13 @@ namespace Vim.UnitTest
                 var i = letters.Length - 2;
                 var point = new SnapshotColumn(_textBuffer.GetEndPoint());
                 point = point.Subtract(2);
-                while (!point.IsStartPoint)
+                while (!point.IsStartColumn)
                 {
                     Assert.True(point.IsLineBreak);
                     point = point.Subtract(1);
                     Assert.Equal(letters[i], point.GetText());
 
-                    if (!point.IsStartPoint)
+                    if (!point.IsStartColumn)
                     {
                         point = point.Subtract(1);
                         i--;
@@ -176,10 +176,10 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 var column = new SnapshotColumn(_textBuffer.GetPointInLine(line: 1, column: 2));
                 var next = column.TryAddInLine(1, includeLineBreak: FSharpOption.True);
-                Assert.True(next.IsSome(x => x.IsEndPoint));
+                Assert.True(next.IsSome(x => x.IsEndColumn));
 
                 next = column.TryAddInLine(1, includeLineBreak: FSharpOption.False);
-                Assert.True(next.IsSome(x => x.IsEndPoint));
+                Assert.True(next.IsSome(x => x.IsEndColumn));
             }
         }
 
@@ -282,7 +282,7 @@ namespace Vim.UnitTest
                 Create("cat");
                 var point = _textBuffer.GetEndPoint();
                 var column = new SnapshotColumn(point);
-                Assert.True(column.IsEndPoint);
+                Assert.True(column.IsEndColumn);
                 Assert.False(column.IsLineBreak);
             }
         }

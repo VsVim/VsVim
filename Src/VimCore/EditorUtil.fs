@@ -665,7 +665,7 @@ type SnapshotColumn =
     /// Whether the "character" at column is a linebreak
     member x.IsLineBreak = 
         x.CodePoint.StartPoint.Position = x.Line.End.Position &&
-        not x.IsEndPoint
+        not x.IsEndColumn
 
     /// The number of positions this occupies in the ITextSnapshot
     member x.Length = 
@@ -681,13 +681,13 @@ type SnapshotColumn =
 
     member x.EndPosition = x.EndPoint.Position
 
-    // CTODO: rename StartColumn
-    member x.IsStartPoint = x.CodePoint.IsStartPoint
+    /// Is this the first column in the buffer
+    member x.IsStartColumn = x.CodePoint.IsStartPoint
 
-    // CTODO: rename ENdColumn
-    member x.IsEndPoint = EditorCoreUtil.IsEndPoint x.StartPoint
+    /// Is this the end column in the buffer
+    member x.IsEndColumn = EditorCoreUtil.IsEndPoint x.StartPoint
 
-    member x.IsLineBreakOrEnd = x.IsLineBreak || x.IsEndPoint
+    member x.IsLineBreakOrEnd = x.IsLineBreak || x.IsEndColumn
 
     member x.IsCharacter (c: char) = x.CodePoint.IsCharacter c
 
@@ -755,7 +755,7 @@ type SnapshotColumn =
         let mutable isGood = true
         if count >= 0 then
             while count > 0 && isGood do
-                if current.IsEndPoint then
+                if current.IsEndColumn then
                     isGood <- false
                 else
                     current <- current.Add 1
@@ -765,7 +765,7 @@ type SnapshotColumn =
                         isGood <- false
         else
             while count < 0 && isGood do
-                if current.IsStartPoint then
+                if current.IsStartColumn then
                     isGood <- false
                 else
                     count <- count + 1
@@ -817,14 +817,14 @@ type SnapshotColumn =
             column <- column.Add 1
             count <- count - 1
             if 
-                column.IsEndPoint || 
+                column.IsEndColumn || 
                 column.LineNumber <> line.LineNumber ||
                 (column.IsLineBreak && not includeLineBreak)
             then
                 isGood <- false
 
         // Account for the case when columNumber is 0 and we're on an empty line
-        if (column.IsLineBreak || column.IsEndPoint) && not includeLineBreak then None
+        if (column.IsLineBreak || column.IsEndColumn) && not includeLineBreak then None
         elif isGood then Some column
         else None
 
@@ -846,7 +846,7 @@ type SnapshotColumn =
         | SearchPath.Forward -> 
             seq {
                 let mutable current = searchColumn
-                while not current.IsEndPoint do
+                while not current.IsEndColumn do
                     if not current.IsLineBreak || includeLineBreaks then
                         yield current
                     current <- current.Add 1
@@ -857,12 +857,12 @@ type SnapshotColumn =
                 let mutable current = searchColumn
                 while not isDone do
                     if 
-                        not current.IsEndPoint && 
+                        not current.IsEndColumn && 
                         (not current.IsLineBreak || includeLineBreaks)
                     then
                         yield current
 
-                    if current.IsStartPoint then
+                    if current.IsStartColumn then
                         isDone <- true
                     else
                         current <- current.Subtract 1
@@ -873,7 +873,7 @@ type SnapshotColumn =
         let includeLineBreaks = defaultArg includeLineBreaks false
         let all = seq {
             let mutable current = SnapshotColumn(searchLine)
-            while not current.IsEndPoint && current.LineNumber = searchLine.LineNumber do 
+            while not current.IsEndColumn && current.LineNumber = searchLine.LineNumber do 
                 if not current.IsLineBreak || includeLineBreaks then
                     yield current
                 current <- current.Add 1

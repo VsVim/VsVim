@@ -1638,7 +1638,7 @@ type internal MotionUtil
         let sentenceKind = SentenceKind.NoTrailingCharacters
         let searchColumn = 
             let mutable column = x.CaretColumn
-            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not column.IsEndPoint do
+            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not column.IsEndColumn do
                 column <- column.Add 1
             column
 
@@ -1664,10 +1664,10 @@ type internal MotionUtil
                 // sentence
                 let whiteSpaceAfter =
                     let mutable column = SnapshotColumn(span.End)
-                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not column.IsEndPoint do
+                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not column.IsEndColumn do
                         column <- column.Add 1
 
-                    if column.IsEndPoint || span.End.Position = column.StartPoint.Position then
+                    if column.IsEndColumn || span.End.Position = column.StartPoint.Position then
                         None
                     else
                         Some column
@@ -1676,7 +1676,7 @@ type internal MotionUtil
                 let includePrecedingWhiteSpace () =
                     let mutable column = SnapshotColumn(span.Start)
                     let mutable before = 
-                        if column.IsStartPoint then column
+                        if column.IsStartColumn then column
                         else column.Subtract 1
                     while column.StartPoint.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
                         column <- before
