@@ -393,6 +393,7 @@ type internal CommandRunner
 
     interface ICommandRunner with
         member x.Commands = _commandMap |> Seq.map (fun pair -> pair.Value)
+        member x.CommandCount = _commandMap.Count
         member x.IsHandlingEscape =
             match _data.CommandFlags with
             | None -> false

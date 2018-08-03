@@ -216,7 +216,7 @@ type internal NormalMode
     member x.TextView = _vimBufferData.TextView
     member x.TextBuffer = _vimTextBuffer.TextBuffer
     member x.CaretPoint = this.TextView.Caret.Position.BufferPosition
-    member x.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
+    member x.IsCommandRunnerPopulated = _runner.CommandCount > 0
     member x.KeyRemapMode = 
         if _runner.IsWaitingForMoreInput then
             _runner.KeyRemapMode

@@ -3781,8 +3781,11 @@ type IMotionCapture =
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
 
-    /// Set of Commands currently supported
+    /// Set of Commands currently supported.
     abstract Commands: CommandBinding seq
+
+    /// Count of commands currently supported.
+    abstract CommandCount: int
 
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing
