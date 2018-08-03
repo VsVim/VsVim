@@ -1654,7 +1654,8 @@ type CharacterSpan =
                 else
                     x._lastLineLength
 
-            VirtualSnapshotLineUtil.GetColumn offset lastLine
+            let virtualColumn = VirtualSnapshotColumn.CreateForColumnNumber(lastLine, offset)
+            virtualColumn.VirtualStartPoint
         else
             x.End |> VirtualSnapshotPointUtil.OfPoint
 

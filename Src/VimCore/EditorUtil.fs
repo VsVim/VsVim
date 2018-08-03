@@ -915,6 +915,8 @@ type VirtualSnapshotColumn =
 
     member x.Column = x._column
 
+    member x.VirtualStartPoint = VirtualSnapshotPoint(x._column.StartPoint, x._virtualSpaces)
+
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
     /// boundary only count for the number of spaces to get to the next tabstop boundary. The column
@@ -924,6 +926,17 @@ type VirtualSnapshotColumn =
         let remainingSpaces = columnNumber - column.ColumnNumber
         let spaces = column.GetSpacesToColumn tabStop
         remainingSpaces + spaces
+
+    /// Create for the specified column number in the line. Any extra columns past the end will betreated
+    /// as virtual spaces
+    static member CreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int) =
+        match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
+        | Some column -> 
+            VirtualSnapshotColumn(column, 0)
+        | None -> 
+            let column = SnapshotColumn(line.End)
+            let virtualSpaces = columnNumber - column.ColumnNumber
+            VirtualSnapshotColumn(column, virtualSpaces)
 
     override x.ToString() =
         sprintf "Spaces %d %s" x._virtualSpaces (x._column.ToString())
@@ -1537,7 +1550,6 @@ module SnapshotLineUtil =
     let GetPointsIncludingLineBreak path line = line |> GetExtentIncludingLineBreak |> SnapshotSpanUtil.GetPoints path
 
     /// Get the character spans in the line in the path
-    /// CTODO: rename and use columns
     let private GetColumnsCore path includeLineBreak line =
         let startColumn = SnapshotColumn(GetStart line)
         let items = 
@@ -2323,10 +2335,6 @@ module VirtualSnapshotLineUtil =
             VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
         else
             point
-
-    // CTODO: move to be based on VirtualSnapshotColumn
-    let GetColumn columnNumber (line: ITextSnapshotLine) =
-        VirtualSnapshotPoint(line, columnNumber)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
