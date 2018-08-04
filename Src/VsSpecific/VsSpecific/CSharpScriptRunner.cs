@@ -8,7 +8,7 @@ using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using System.Reflection;
 
-namespace Vim.Plugin.Implementation.CSharpScriptRunner
+namespace Vim.VisualStudio.Specific
 {
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class CSharpScriptRunner : IVimBufferCreationListener, IDisposable
@@ -16,6 +16,7 @@ namespace Vim.Plugin.Implementation.CSharpScriptRunner
         private readonly IVim _vim;
         private readonly IVimGlobalSettings _globalSettings;
         private readonly CSharpScriptRunner _instance = null;
+        private const string ScriptFolder = "vsvimscripts";
 
         [ImportingConstructor]
         internal CSharpScriptRunner(IVim vim)
@@ -54,7 +55,15 @@ namespace Vim.Plugin.Implementation.CSharpScriptRunner
             {
                 try
                 {
-                    string scriptPath = Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), System.String.Format("{0}.csx", e.CallInfo.Name));
+                    string scriptPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    scriptPath = Path.Combine(scriptPath, ScriptFolder);
+                    scriptPath = Path.Combine(scriptPath, $"{e.CallInfo.Name}.csx");
+
+                    if (!File.Exists(scriptPath))
+                    {
+                        vimBuffer.VimBufferData.StatusUtil.OnError("script file not found.");
+                        return;
+                    }
 
                     ScriptOptions options = ScriptOptions.Default
                                     .WithImports("Vim")
@@ -66,12 +75,11 @@ namespace Vim.Plugin.Implementation.CSharpScriptRunner
                 }
                 catch (CompilationErrorException ex)
                 {
-                    Console.WriteLine("[Compile Error]");
-                    Console.WriteLine(ex.Message);
+                    vimBuffer.VimBufferData.StatusUtil.OnError(ex.Message);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    vimBuffer.VimBufferData.StatusUtil.OnError(ex.Message);
                 }
            }
         }

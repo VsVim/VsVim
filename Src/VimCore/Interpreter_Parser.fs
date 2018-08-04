@@ -2330,6 +2330,7 @@ type Parser
                 | "behave" -> noRange x.ParseBehave
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
+                | "csx" -> x.ParseCallCSharpScript lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "chdir" -> noRange x.ParseChangeDirectory
                 | "close" -> noRange x.ParseClose

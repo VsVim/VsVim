@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Vim;
 
-namespace Vim.Plugin.Implementation.CSharpScriptRunner
+namespace Vim.VisualStudio.Specific
 {
     public class CSharpScriptParam
     {
