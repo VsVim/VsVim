@@ -122,6 +122,7 @@ type Parser
         ("autocmd", "au")
         ("behave", "be")
         ("call", "cal")
+        ("csx", "cs")
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
@@ -775,6 +776,7 @@ type Parser
             | LineCommand.AddAutoCommand _ -> noRangeCommand
             | LineCommand.Behave _ -> noRangeCommand
             | LineCommand.Call _ -> noRangeCommand
+            | LineCommand.CallCSharpScript _ -> noRangeCommand
             | LineCommand.ChangeDirectory _ -> noRangeCommand
             | LineCommand.ChangeLocalDirectory _ -> noRangeCommand
             | LineCommand.ClearKeyMap _ -> noRangeCommand
@@ -1025,6 +1027,23 @@ type Parser
                 IsScriptLocal = isScriptLocal
             }
             LineCommand.Call callInfo 
+        | _ -> LineCommand.ParseError Resources.Parser_Error
+
+    member x.ParseCallCSharpScript lineRange = 
+        x.SkipBlanks()
+
+        let isScriptLocal = x.ParseScriptLocalPrefix()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            _tokenizer.MoveNextToken()
+            let arguments = x.ParseRestOfLine()
+            let callInfo = {
+                LineRange = lineRange
+                Name = name
+                Arguments = arguments
+                IsScriptLocal = isScriptLocal
+            }
+            LineCommand.CallCSharpScript callInfo 
         | _ -> LineCommand.ParseError Resources.Parser_Error
 
     /// Parse out the change directory command.  The path here is optional
