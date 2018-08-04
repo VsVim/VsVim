@@ -17,9 +17,10 @@ open StringBuilderExtensions
 [<NoComparison>]
 [<StructuralEquality>]
 type internal NumberValue =
-    | Decimal of int
-    | Octal of int
-    | Hex of int
+    | Decimal of int64
+    | Octal of uint64
+    | Hex of uint64
+    | Binary of uint64
     | Alpha of char
 
     with
@@ -29,6 +30,7 @@ type internal NumberValue =
         | Decimal _ -> NumberFormat.Decimal
         | Octal _ -> NumberFormat.Octal
         | Hex _ -> NumberFormat.Hex
+        | Binary _ -> NumberFormat.Binary
         | Alpha _ -> NumberFormat.Alpha
 
 /// There are some commands which if began in normal mode must end in normal
@@ -127,22 +129,51 @@ type internal CommandUtil
     /// Add count values to the specific word
     member x.AddToWord count =
 
-        let allowAlpha = _localSettings.IsNumberFormatSupported NumberFormat.Alpha
         match x.GetNumberValueAtCaret() with
         | None ->
             _commonOperations.Beep()
         | Some (numberValue, span) ->
 
-            // Calculate te new value of the number
+            // Calculate the new value of the number.
+            let numberText = span.GetText()
             let text =
                 match numberValue with
-                | NumberValue.Alpha c -> c |> CharUtil.AlphaAdd count |> StringUtil.OfChar
-                | NumberValue.Decimal number -> sprintf "%d" (number + count)
-                | NumberValue.Octal number -> sprintf "0%o" (number + count)
-                | NumberValue.Hex number -> sprintf "0x%x" (number + count)
 
-            // Need a transaction here in order to properly position the caret.  After the
-            // add the caret needs to be positioned on the last character in the number
+                | NumberValue.Alpha c ->
+                    c |> CharUtil.AlphaAdd count |> StringUtil.OfChar
+
+                | NumberValue.Decimal number ->
+                    let width =
+                        if numberText.StartsWith("-")
+                        then numberText.Length - 1
+                        else numberText.Length
+                    sprintf "%0*d" width (number + int64(count))
+
+                | NumberValue.Octal number ->
+                    sprintf "0%0*o" (numberText.Length - 1) (number + uint64(count))
+
+                | NumberValue.Hex number ->
+                    let prefix = numberText.Substring(0, 2)
+                    let width = numberText.Length - 2
+                    let newNumber = number + uint64(count)
+
+                    // If the number has any uppercase digits, use uppercase
+                    // for the new number.
+                    if RegularExpressions.Regex.Match(numberText, @"[A-F]").Success then
+                        sprintf "%s%0*X" prefix width newNumber
+                    else
+                        sprintf "%s%0*x" prefix width newNumber
+
+                | NumberValue.Binary number ->
+                    let prefix = numberText.Substring(0, 2)
+                    let width = numberText.Length - 2
+                    let newNumber = int64(number + uint64(count))
+                    let formattedNumber = System.Convert.ToString(newNumber, 2)
+                    prefix + formattedNumber.PadLeft(width, '0')
+
+            // Need a transaction here in order to properly position the caret.
+            // After the add the caret needs to be positioned on the last
+            // character in the number.
             x.EditWithUndoTransaction "Add" (fun () ->
 
                 _textBuffer.Replace(span.Span, text) |> ignore
@@ -1102,37 +1133,22 @@ type internal CommandUtil
     ///
     /// TODO: Need to integrate the parsing functions here with that of the tokenizer
     /// which also parses out the same set of numbers
-    member x.GetNumberValueAtCaret(): (NumberValue * SnapshotSpan) option=
+    member x.GetNumberValueAtCaret(): (NumberValue * SnapshotSpan) option =
+        let caretLine = x.CaretLine
+        let startPosition = caretLine.Start.Position
+        let index = x.CaretPoint.Position - startPosition
 
-        // Calculate the forward span of the line
-        let span =
-            let startPoint =
-                SnapshotPointUtil.OrderAscending x.CaretPoint x.CaretLine.End
-                |> fst
-            SnapshotSpan(startPoint, x.CaretLine.End)
-
-        // Get the number match out of the line with the given regex
+        // Get the match from the line with the given regex for the first
+        // number that contains the caret or is after the caret.
         let getNumber numberValue numberPattern parseFunc =
-
-            // Need to calculate the index on which to start looking for the number.  Move
-            // past blanks as they don't factor in here
-            let index =
-                span
-                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.skipWhile (fun point ->
-                    if _localSettings.IsNumberFormatSupported(NumberFormat.Alpha) then
-                        SnapshotPointUtil.IsBlank point
-                    else
-                        point |> SnapshotPointUtil.GetChar |> CharUtil.IsDigit |> not)
-                |> SeqUtil.headOrDefault span.End
-                |> SnapshotPointUtil.GetColumn
-
-            let text = SnapshotLineUtil.GetText x.CaretLine
-            System.Text.RegularExpressions.Regex.Matches(text, numberPattern)
-            |> Seq.cast<System.Text.RegularExpressions.Match>
-            |> Seq.tryFind (fun m -> index >= m.Index && index < (m.Index + m.Length))
+            caretLine
+            |> SnapshotLineUtil.GetText
+            |> (fun text -> RegularExpressions.Regex.Matches(text, numberPattern))
+            |> Seq.cast<RegularExpressions.Match>
+            |> Seq.tryFind (fun m ->
+                index >= m.Index && index < m.Index + m.Length || index < m.Index)
             |> Option.map (fun m ->
-                let span = SnapshotSpan(x.CurrentSnapshot, x.CaretLine.Start.Position + m.Index, m.Length)
+                let span = SnapshotSpan(x.CurrentSnapshot, startPosition + m.Index, m.Length)
                 let succeeded, number = parseFunc m.Value
                 if succeeded then
                     Some (numberValue number, span)
@@ -1140,41 +1156,48 @@ type internal CommandUtil
                     None)
             |> OptionUtil.collapse
 
-        // Get the point for a decimal number
+        // Get the point for a decimal number.
         let getDecimal () =
-            getNumber NumberValue.Decimal "(-?)\d+" (fun text -> System.Int32.TryParse(text))
+            getNumber NumberValue.Decimal @"-?\d+\b" (fun text ->
+                System.Int64.TryParse(text))
 
-        // Get the point for a hex number
+        // Get the point for a hex number.
         let getHex () =
-            getNumber NumberValue.Hex "(-?)0x[a-f0-9]+" (fun text ->
-                let isNegative, text =
-                    if text.[0] = '-' then
-                        true, text.Substring(3)
-                    else
-                        false, text.Substring(2)
-                let succeeded, number = System.Int32.TryParse(text, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.CurrentCulture)
-                let number =
-                    if succeeded && isNegative then
-                        -number
-                    else
-                        number
-                succeeded, number)
+            getNumber NumberValue.Hex @"\b0[xX][0-9a-fA-F]+\b" (fun text ->
+                try
+                    true, System.Convert.ToUInt64(text.Substring(2), 16)
+                with
+                | _ ->
+                    false, 0UL)
 
+        // Get the point for an octal number.
         let getOctal () =
-            //getNumber = "0(0*)\d+"
-            None
+            getNumber NumberValue.Octal @"\b0[0-7]*\b" (fun text ->
+                try
+                    true, System.Convert.ToUInt64(text, 8)
+                with
+                | _ ->
+                    false, 0UL)
+
+        // Get the point for an binary number.
+        let getBinary () =
+            getNumber NumberValue.Binary @"\b0[bB][0-1]+\b" (fun text ->
+                try
+                    true, System.Convert.ToUInt64(text.Substring(2), 2)
+                with
+                | _ ->
+                    false, 0UL)
 
         let number =
-            [
-                (getHex, NumberFormat.Hex)
-                (getOctal, NumberFormat.Octal)
-                (getDecimal, NumberFormat.Decimal)
-            ]
-            |> Seq.map (fun (func, numberFormat) ->
-                match _localSettings.IsNumberFormatSupported numberFormat, func() with
-                | false, _ -> None
-                | true, None -> None
-                | true, Some tuple -> Some tuple)
+            seq {
+                yield getBinary, NumberFormat.Binary
+                yield getHex, NumberFormat.Hex
+                yield getOctal, NumberFormat.Octal
+                yield getDecimal, NumberFormat.Decimal
+            }
+            |> Seq.filter (fun (_, numberFormat) ->
+                _localSettings.IsNumberFormatSupported numberFormat)
+            |> Seq.map (fun (func, _) -> func())
             |> SeqUtil.filterToSome
             |> SeqUtil.tryHeadOnly
 
@@ -1183,14 +1206,20 @@ type internal CommandUtil
             number
         | None ->
             if _localSettings.IsNumberFormatSupported NumberFormat.Alpha then
-                // Now check for alpha by going forward to the first alpha character
-                span
+
+                // Now check for alpha by going forward to the first alpha
+                // character.
+                SnapshotSpan(x.CaretPoint, caretLine.EndIncludingLineBreak)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.skipWhile (fun point -> point |> SnapshotPointUtil.GetChar |> CharUtil.IsAlpha |> not)
+                |> Seq.skipWhile (fun point ->
+                    point
+                    |> SnapshotPointUtil.GetChar
+                    |> CharUtil.IsAlpha
+                    |> not)
                 |> Seq.map (fun point ->
                     let c = point.GetChar()
                     NumberValue.Alpha c, SnapshotSpan(point, 1))
-                |> SeqUtil.tryHeadOnly
+                |> Seq.tryHead
             else
                 None
 

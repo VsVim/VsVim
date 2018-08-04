@@ -505,7 +505,7 @@ type internal LocalSettings
             (AutoIndentName, "ai", SettingValue.Toggle false, SettingOptions.None)
             (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
             (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
-            (NumberFormatsName, "nf", SettingValue.String "octal,hex", SettingOptions.None)
+            (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
             (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
             (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
             (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
@@ -544,6 +544,8 @@ type internal LocalSettings
         | NumberFormat.Decimal ->
             // This is always supported independent of the option value
             true
+        | NumberFormat.Binary ->
+            isSupported "bin"
         | NumberFormat.Octal ->
             isSupported "octal"
         | NumberFormat.Hex ->

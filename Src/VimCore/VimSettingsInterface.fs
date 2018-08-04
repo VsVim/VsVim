@@ -93,6 +93,7 @@ type NumberFormat =
     | Decimal
     | Hex
     | Octal
+    | Binary
 
 /// The options which can be set in the 'clipboard' setting
 [<RequireQualifiedAccess>]
