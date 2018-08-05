@@ -1889,8 +1889,8 @@ type VisualSpan =
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
     /// Return the per line spans which make up this VisualSpan instance
-    member x.PerLineSpans = 
-        match x with 
+    member x.PerLineSpans =
+        match x with
         | VisualSpan.Character characterSpan ->
             seq {
                 let leadingEdge, middle, trailingEdge =
