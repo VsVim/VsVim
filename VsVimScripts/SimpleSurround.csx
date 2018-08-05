@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+
 readonly string START_TAG = "<";
 readonly string END_TAG = ">";
 
@@ -8,6 +9,7 @@ string addText = string.Empty;
 VimBuffer.KeyIntercept = true;
 VimBuffer.KeyInputIntercept += OnKeyInputIntercept;
 VimBuffer.KeyInputEnd += OnKeyInputEnd;
+VimBuffer.Closed += OnBufferClosed;
 
 private void OnKeyInputIntercept(object sender, KeyInputEventArgs e)
 {
@@ -73,6 +75,11 @@ private void InterceptEnd()
 {
     VimBuffer.KeyInputIntercept -= OnKeyInputIntercept;
     VimBuffer.KeyInputEnd -= OnKeyInputEnd;
+    VimBuffer.Closed -= OnBufferClosed;
     VimBuffer.KeyIntercept = false;
     DisplayStatus(string.Empty);
+}
+private void OnBufferClosed(object sender, EventArgs e)
+{
+    InterceptEnd();
 }

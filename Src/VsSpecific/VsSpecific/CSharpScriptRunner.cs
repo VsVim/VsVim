@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using System.Reflection;
+using EnvDTE;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -47,7 +48,7 @@ namespace Vim.VisualStudio.Specific
             {
                 vimBuffer.CallCSharpScript -= OnCallCSharpScript;
                 vimBuffer.Closed -= OnBufferClosed;
-           }
+            }
         }
         private void OnCallCSharpScript(object sender, CallCSharpScriptEventArgs e)
         {
@@ -66,10 +67,12 @@ namespace Vim.VisualStudio.Specific
                     }
 
                     ScriptOptions options = ScriptOptions.Default
-                                    .WithImports("Vim")
-                                    .WithReferences(Assembly.GetAssembly(typeof(KeyInputEventArgs)));
+                                    .WithImports("Vim", "EnvDTE", "Microsoft.VisualStudio.Text.Editor")
+                                    .WithReferences(Assembly.GetAssembly(typeof(KeyInputEventArgs)), 
+                                                    Assembly.GetAssembly(typeof(FileCodeModel)),
+                                                    Assembly.GetAssembly(typeof(IWpfTextView)));
 
-                    var param = new CSharpScriptParam(vimBuffer, textView);
+                    var param = new CSharpScriptParam(vimBuffer, textView, e.CallInfo);
                     var script = CSharpScript.Create(File.ReadAllText(scriptPath), options, typeof(CSharpScriptParam));
                     script.RunAsync(param);
                 }
@@ -81,7 +84,7 @@ namespace Vim.VisualStudio.Specific
                 {
                     vimBuffer.VimBufferData.StatusUtil.OnError(ex.Message);
                 }
-           }
+            }
         }
         #region IVimBufferCreationListener
 
