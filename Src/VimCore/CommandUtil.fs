@@ -211,8 +211,11 @@ type internal CommandUtil
                 | NumberValue.Binary number ->
                     let prefix = numberText.Substring(0, 2)
                     let width = numberText.Length - 2
-                    let newNumber = int64(number + uint64(count))
-                    let formattedNumber = System.Convert.ToString(newNumber, 2)
+                    let newNumber = number + uint64(count)
+
+                    // There are no overloads for unsigned integer types and
+                    // binary convert is always unsigned anyway.
+                    let formattedNumber = System.Convert.ToString(int64(newNumber), 2)
                     prefix + formattedNumber.PadLeft(width, '0')
 
             Some (span, text)
