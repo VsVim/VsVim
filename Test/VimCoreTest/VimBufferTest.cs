@@ -550,7 +550,7 @@ namespace Vim.UnitTest
                 Assert.True(option.IsSome());
                 var line = VirtualSnapshotPointUtil.GetPoint(option.Value).GetColumn();
                 Assert.Equal(lineNumber, line.LineNumber);
-                Assert.Equal(column, line.Column);
+                Assert.Equal(column, line.ColumnNumber);
             }
 
             [WpfFact]

@@ -382,6 +382,11 @@ namespace Vim.UnitTest
             return builder.ToString();
         }
 
+        public ITextBuffer CreateTextBufferRaw(string content)
+        {
+            return _vimEditorHost.CreateTextBufferRaw(content);
+        }
+
         public ITextBuffer CreateTextBuffer(params string[] lines)
         {
             return _vimEditorHost.CreateTextBuffer(lines);
@@ -584,6 +589,18 @@ namespace Vim.UnitTest
             {
                 yield return new object[] { "" };
                 yield return new object[] { "onemore" };
+            }
+        }
+
+        /// <summary>
+        /// Both selection settings
+        /// </summary>
+        public static IEnumerable<object[]> SelectionOptions
+        {
+            get
+            {
+                yield return new object[] { "inclusive" };
+                yield return new object[] { "exclusive" };
             }
         }
     }

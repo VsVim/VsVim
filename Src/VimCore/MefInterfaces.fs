@@ -321,6 +321,12 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
 
+    /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
+    /// completes
+    abstract AdjustTextViewForScrollOffset: unit -> unit
+
+    /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
+    /// not the view port.  Make the caret consistent with the setting not the display 
     abstract AdjustCaretForScrollOffset: unit -> unit
 
     abstract member CloseWindowUnlessDirty: unit -> unit
@@ -349,7 +355,10 @@ type ICommonOperations =
     abstract FilterLines: SnapshotLineRange -> command: string -> unit
 
     /// Format the specified line range
-    abstract FormatLines: SnapshotLineRange -> unit
+    abstract FormatCodeLines: SnapshotLineRange -> unit
+
+    /// Format the specified line range
+    abstract FormatTextLines: SnapshotLineRange -> preserveCaretPosition: bool -> unit
 
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText: SnapshotPoint -> string

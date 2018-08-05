@@ -150,7 +150,7 @@ namespace Vim.UnitTest
             {
                 Create("  dog");
                 _vimBuffer.Process("_");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
             }
 
             /// <summary>
@@ -4724,13 +4724,13 @@ namespace Vim.UnitTest
             {
                 Create("cat", "tree", "horse", "racoon");
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(4, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(5, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -4739,13 +4739,13 @@ namespace Vim.UnitTest
                 Create("racoon", "horse", "tree", "cat");
                 _textView.MoveCaretToLine(3);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(4, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(4, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("k");
-                Assert.Equal(5, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(5, _textView.GetCaretColumn().ColumnNumber);
             }
 
             /// <summary>
@@ -4760,9 +4760,9 @@ namespace Vim.UnitTest
                 _globalSettings.VirtualEdit = "onemore";
                 Assert.True(_globalSettings.IsVirtualEditOneMore);
                 _vimBuffer.ProcessNotation("$");
-                Assert.Equal(2, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(2, _textView.GetCaretColumn().ColumnNumber);
                 _vimBuffer.ProcessNotation("j");
-                Assert.Equal(3, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(3, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -6433,6 +6433,7 @@ namespace Vim.UnitTest
                 var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
                 _textView.MoveCaretToLine(lineNumber);
+                TestableSynchronizationContext.RunAll();
                 _vimBuffer.ProcessNotation("<c-d>");
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }
@@ -7483,6 +7484,104 @@ namespace Vim.UnitTest
                 Assert.Equal(KeyRemapMode.OperatorPending, _vimBuffer.NormalMode.KeyRemapMode);
                 _vimBuffer.Process("(");
                 Assert.Equal(KeyRemapMode.Normal, _vimBuffer.NormalMode.KeyRemapMode);
+            }
+
+            [WpfFact]
+            public void DeleteNextMatchForward()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("dgn");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                var didHit = false;
+                _assertOnWarningMessage = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.Common_SearchForwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                Assert.True(didHit);
+            }
+
+            [WpfFact]
+            public void DeleteNextMatchBackward()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("dgN");
+                Assert.Equal(new[] { "cat", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "cat", "dog", "" }, _textBuffer.GetLines());
+                var didHit = false;
+                _assertOnWarningMessage = false;
+                _vimBuffer.WarningMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.Common_SearchBackwardWrapped, args.Message);
+                        didHit = true;
+                    };
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal(new[] { "", "dog", "", "dog", "", "dog", "" }, _textBuffer.GetLines());
+                Assert.True(didHit);
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("2gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(4, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchBackward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchBackwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(0, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
             }
         }
 

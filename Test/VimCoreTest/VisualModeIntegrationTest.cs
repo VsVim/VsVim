@@ -1927,7 +1927,7 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllU");
                 Assert.Equal("CAT dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -1936,7 +1936,7 @@ namespace Vim.UnitTest
                 Create("CAT dog");
                 _vimBuffer.ProcessNotation("vllu");
                 Assert.Equal("cat dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
             }
 
             [WpfFact]
@@ -1945,7 +1945,134 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 _vimBuffer.ProcessNotation("vllg?");
                 Assert.Equal("png dog", _textBuffer.GetLine(0).GetText());
-                Assert.Equal(0, _textView.GetCaretPoint().GetColumn().Column);
+                Assert.Equal(0, _textView.GetCaretColumn().ColumnNumber);
+            }
+        }
+
+        public sealed class FormatTextLines : VisualModeIntegrationTest
+        {
+            [WpfFact]
+            public void PlainText()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void InclusiveCharacterSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("v3jgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ExclusiveCharacterSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("v3jgq");
+                Assert.Equal(new[] { "cat dog", "bear", "bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void BlockSelection()
+            {
+                Create("cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("<C-v>3jgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void LongLine()
+            {
+                Create("cat dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void PreserveSpacing()
+            {
+                Create("cat  dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat  dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TinyWidth()
+            {
+                Create("cat dog bear bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 1;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "cat", "dog", "bear", "bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void NoAutoIndent()
+            {
+                Create("  cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.LocalSettings.AutoIndent = false;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  cat dog", "bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void AutoIndent()
+            {
+                Create("  cat", "dog", "bear", "bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 10;
+                _vimBuffer.LocalSettings.AutoIndent = true;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  cat dog", "  bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfTheory]
+            [InlineData(false)]
+            [InlineData(true)]
+            public void SlashSlash(bool autoIndent)
+            {
+                Create("  // cat", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.LocalSettings.AutoIndent = autoIndent;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat dog", "  // bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TripleSlash()
+            {
+                Create("  /// cat", "/// dog", "/// bear", "/// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  /// cat dog", "  /// bear bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void BlankParagraph()
+            {
+                Create("  // cat", "//", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat", "  //", "  // dog bear", "  // bat", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void WhitespaceParagraph()
+            {
+                Create("  // cat", "// ", "// dog", "// bear", "// bat", "");
+                _vimBuffer.LocalSettings.TextWidth = 15;
+                _vimBuffer.ProcessNotation("VGgq");
+                Assert.Equal(new[] { "  // cat", "  //", "  // dog bear", "  // bat", "" }, _textBuffer.GetLines());
             }
         }
 
@@ -3161,7 +3288,93 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("vi}");
 
                 var column = _textView.GetCaretColumn();
-                Assert.True(column.IsInsideLineBreak);
+                Assert.True(column.IsLineBreak);
+            }
+        }
+
+        public sealed class NextMatchTest : VisualModeIntegrationTest
+        {
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForward(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgn");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(2, 3));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gn");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void SelectNextMatchForwardWithCount(string selection)
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("/cat<CR>");
+                Assert.Equal(_textBuffer.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gn");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 3));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardInclusive()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>n");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgN");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gN");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardExclusive()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>nl");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("vgN");
+                var span1 = new SnapshotSpan(_textBuffer.GetPointInLine(2, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span1, _textView.GetSelectionSpan());
+                _vimBuffer.ProcessNotation("gN");
+                var span2 = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span2, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardInclusiveWithCount()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "inclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>n");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 0), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void SelectNextMatchBackwardExclusiveWithCount()
+            {
+                Create("cat", "dog", "cat", "dog", "cat", "dog", "");
+                _globalSettings.Selection = "exclusive";
+                _vimBuffer.ProcessNotation("/cat<CR>nl");
+                Assert.Equal(_textBuffer.GetPointInLine(4, 1), _textView.GetCaretPoint());
+                _vimBuffer.ProcessNotation("v2gN");
+                var span = new SnapshotSpan(_textBuffer.GetPointInLine(0, 0), _textBuffer.GetPointInLine(4, 1));
+                Assert.Equal(span, _textView.GetSelectionSpan());
             }
         }
 
@@ -3234,8 +3447,7 @@ namespace Vim.UnitTest
                 }
 
                 [WpfTheory]
-                [InlineData("inclusive")]
-                [InlineData("exclusive")]
+                [MemberData(nameof(SelectionOptions))]
                 public void YankBlock(string selection)
                 {
                     Create("cat", "dog bear", "tree", "");

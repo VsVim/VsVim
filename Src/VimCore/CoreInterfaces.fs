@@ -413,6 +413,9 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | ConsiderSmartCase = 0x2
 
+    /// Whether to include the start point when doing the search
+    | IncludeStartPoint = 0x4
+
     /// ConsiderIgnoreCase ||| ConsiderSmartCase
     | Default = 0x3
 
@@ -1147,6 +1150,9 @@ type Motion =
 
     /// Get the motion to the nearest lowercase mark line in the specified direction
     | NextMarkLine of SearchPath
+
+    /// Operate on the next match for last pattern searched for
+    | NextMatch of SearchPath
 
     /// Search for the next occurrence of the word under the caret
     | NextWord of SearchPath
@@ -2466,14 +2472,14 @@ type StoredVisualSelection =
 
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
-        let addOrEntireLine point count = 
+        let addOrEntireLine (point: SnapshotPoint) count = 
             let column = SnapshotColumn(point)
-            let line = column.Line
-            if count + column.Column >= line.Length then 
-                match SnapshotPointUtil.TryAddOne line.EndIncludingLineBreak with 
+            match column.TryAddInLine(count, includeLineBreak = true) with
+            | Some column -> column.StartPoint
+            | None -> 
+                match SnapshotPointUtil.TryAddOne column.Line.EndIncludingLineBreak with 
                 | Some p -> p
-                | None -> line.EndIncludingLineBreak
-            else SnapshotPointUtil.Add count point 
+                | None -> column.Line.EndIncludingLineBreak
 
         match x with
         | StoredVisualSelection.Character width ->
@@ -2487,8 +2493,8 @@ type StoredVisualSelection =
             let lastLine = range.LastLine
             let endPoint =
                 let column = 
-                    if offset >= 0 then startColumn.Column + offset + 1
-                    else startColumn.Column + offset
+                    if offset >= 0 then startColumn.ColumnNumber + offset + 1
+                    else startColumn.ColumnNumber + offset
                 addOrEntireLine lastLine.Start column
                         
             let characterSpan, searchPath = 
@@ -2802,11 +2808,17 @@ type NormalCommand =
     /// Create a fold over the specified motion 
     | FoldMotion of MotionData
 
-    /// Format the specified lines
-    | FormatLines
+    /// Format the code in the specified lines
+    | FormatCodeLines
 
-    /// Format the specified motion
-    | FormatMotion of MotionData
+    /// Format the code in the specified motion
+    | FormatCodeMotion of MotionData
+
+    /// Format the text in the specified lines, optionally preserving the caret position
+    | FormatTextLines of bool
+
+    /// Format the text in the specified motion
+    | FormatTextMotion of bool * MotionData
 
     /// Go to the definition of hte word under the caret.
     | GoToDefinition
@@ -2967,6 +2979,9 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of bool
 
+    /// Select the next match for the last pattern searched for
+    | SelectNextMatch of SearchPath
+
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
 
@@ -3021,11 +3036,13 @@ type NormalCommand =
 
     member private x.GetMotionDataCore() = 
         match x with
+        | NormalCommand.ChangeCaseMotion (changeCharacterKind, motion) -> Some ((fun motion -> NormalCommand.ChangeCaseMotion (changeCharacterKind, motion)), motion)
         | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
         | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
         | NormalCommand.FilterMotion motion -> Some (NormalCommand.FilterMotion, motion)
         | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
-        | NormalCommand.FormatMotion motion -> Some (NormalCommand.FormatMotion, motion)
+        | NormalCommand.FormatCodeMotion motion -> Some (NormalCommand.FormatCodeMotion, motion)
+        | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> Some ((fun motion -> NormalCommand.FormatTextMotion (preserveCaretPosition, motion)), motion)
         | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
         | NormalCommand.ShiftMotionLinesRight motion -> Some (NormalCommand.ShiftMotionLinesRight, motion)
         | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
@@ -3034,7 +3051,6 @@ type NormalCommand =
         | NormalCommand.AddToWord _ -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
         | NormalCommand.ChangeCaseCaretPoint _ -> None
-        | NormalCommand.ChangeCaseMotion _ -> None
         | NormalCommand.ChangeLines -> None
         | NormalCommand.ChangeTillEndOfLine -> None
         | NormalCommand.CloseAllFolds -> None
@@ -3053,7 +3069,8 @@ type NormalCommand =
         | NormalCommand.DisplayCharacterCodePoint ->None
         | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
-        | NormalCommand.FormatLines -> None
+        | NormalCommand.FormatCodeLines -> None
+        | NormalCommand.FormatTextLines _ -> None
         | NormalCommand.GoToDefinition -> None
         | NormalCommand.GoToFileUnderCaret _ -> None
         | NormalCommand.GoToGlobalDeclaration -> None
@@ -3103,6 +3120,7 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3156,14 +3174,20 @@ type VisualCommand =
     /// Delete the selected text and put it into a register
     | DeleteSelection
 
+    /// Extend the selection to the next match for the last pattern searched for
+    | ExtendSelectionToNextMatch of SearchPath
+
     /// Filter the selected text
     | FilterLines
 
     /// Fold the current selected lines
     | FoldSelection
 
-    /// Format the selected text
-    | FormatLines
+    /// Format the selected code lines
+    | FormatCodeLines
+
+    /// Format the selected text lines, optionally preserving the caret position
+    | FormatTextLines of bool
 
     /// GoTo the file under the cursor in a new window
     | GoToFileInSelectionInNewWindow

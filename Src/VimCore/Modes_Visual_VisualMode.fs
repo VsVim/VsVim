@@ -55,6 +55,8 @@ type internal VisualMode
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
+                yield ("gn", CommandFlags.Repeatable, VisualCommand.ExtendSelectionToNextMatch SearchPath.Forward)
+                yield ("gN", CommandFlags.Repeatable, VisualCommand.ExtendSelectionToNextMatch SearchPath.Backward)
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("o", CommandFlags.Movement ||| CommandFlags.ResetAnchorPoint, VisualCommand.InvertSelection false)
                 yield ("O", CommandFlags.Movement ||| CommandFlags.ResetAnchorPoint, VisualCommand.InvertSelection true)
@@ -92,7 +94,9 @@ type internal VisualMode
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
-                yield ("=", CommandFlags.Repeatable, VisualCommand.FormatLines)
+                yield ("=", CommandFlags.Repeatable, VisualCommand.FormatCodeLines)
+                yield ("gq", CommandFlags.Repeatable, VisualCommand.FormatTextLines false)
+                yield ("gw", CommandFlags.Repeatable, VisualCommand.FormatTextLines true)
                 yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

@@ -19,6 +19,11 @@ module VimConstants =
     [<Literal>]
     let DefaultHistoryLength = 20
 
+    /// The default text width that FormatTextLines will use if the 'textwidth'
+    /// setting is zero (see vim ':help gq')
+    [<Literal>]
+    let DefaultFormatTextWidth = 79
+
     [<Literal>]
     let IncrementalSearchTagName = "vsvim_incrementalsearch"
 

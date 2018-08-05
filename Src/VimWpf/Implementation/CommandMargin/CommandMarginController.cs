@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
@@ -74,6 +75,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly ICommonOperations _commonOperations;
         private readonly FrameworkElement _parentVisualElement;
+        private readonly PasteWaitMemo _pasteWaitMemo = new PasteWaitMemo();
         private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
         private bool _inCommandLineUpdate;
@@ -396,6 +398,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         internal void HandleKeyEvent(KeyEventArgs e)
         {
+            if (InPasteWait)
+            {
+                HandleKeyEventInPasteWait(e);
+                return;
+            }
             switch (e.Key)
             {
                 case Key.Escape:
@@ -447,6 +454,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         ChangeEditKind(EditKind.None);
                         e.Handled = true;
                     }
+                    else if (_margin.CommandLineTextBox.CaretIndex == 1)
+                    {
+                        // don't let the caret get behind the initial character
+                        e.Handled = true;
+                    }
                     break;
                 case Key.Tab:
                     InsertIntoCommandLine("\t", putCaretAfter: true);
@@ -459,20 +471,34 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     {
                         // During edits we are responsible for handling the command line.  Need to 
                         // put a " into the box at the edit position
+                        _pasteWaitMemo.Set(_margin.CommandLineTextBox);
                         InsertIntoCommandLine("\"", putCaretAfter: false);
 
                         // Now move the buffer into paste wait 
                         _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToChar('r', VimKeyModifiers.Control));
+                        e.Handled = true;
                     }
                     break;
                 case Key.U:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
                         var textBox = _margin.CommandLineTextBox;
-                        var text = textBox.Text.Substring(textBox.SelectionStart);
-                        textBox.Text = text;
-
-                        UpdateVimBufferStateWithCommandText(text);
+                        if(textBox.SelectionStart > 1)
+                        {
+                            var text = textBox.Text.Substring(textBox.SelectionStart);
+                            textBox.Text = text;
+                            
+                            UpdateVimBufferStateWithCommandText(text);
+                            textBox.Select(1, 0);
+                        }
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.W:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        DeleteWordBeforeCursor();
+                        e.Handled = true;
                     }
                     break;
                 case Key.P:
@@ -496,7 +522,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
             }
         }
-
+        
         /// <summary>
         /// This method handles the text composition event as it applies to command line editor.
         /// Make sure to mark the key as handled if we use it here.  If we don't then it will
@@ -944,7 +970,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateForPasteWait(WpfTextChangedEventArgs e)
         {
             Debug.Assert(InPasteWait);
-
+            
             var command = _margin.CommandLineTextBox.Text ?? "";
             if (e.Changes.Count == 1 && command.Length > 0)
             {
@@ -961,16 +987,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     // for manually updating the command line state.  Also we have to keep the caret postion
                     // correct
                     var name = RegisterName.OfChar(c);
-                    if (name.IsSome())
-                    {
-                        var toPaste = _vimBuffer.GetRegister(name.Value).StringValue;
-                        var builder = new StringBuilder();
-                        builder.Append(command, 0, change.Offset);
-                        builder.Append(toPaste);
-                        builder.Append(command, change.Offset + 2, command.Length - (change.Offset + 2));
-                        _margin.CommandLineTextBox.Text = builder.ToString();
-                        _margin.CommandLineTextBox.Select(change.Offset + toPaste.Length, 0);
-                    }
+                    var toPaste = name.IsSome() ? _vimBuffer.GetRegister(name.Value).StringValue : string.Empty;
+                    EndPasteWait(toPaste);
 
                     return;
                 }
@@ -980,6 +998,128 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // the operation.  Just pass Escape down to the buffer so it will cancel out
             // of paste wait and go back to a known state
             _vimBuffer.Process(KeyInputUtil.EscapeKey);
+        }
+
+        private void CancelPasteWait()
+        {
+            Debug.Assert(InPasteWait);
+            // Cancel the paste-wait state in the buffer
+            // TODO: see if there is a better way to do this
+            _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToChar(RegisterName.Blackhole.Char.Value, VimKeyModifiers.Control));
+            EndPasteWait();
+        }
+
+        private void EndPasteWait(string pasteText = null)
+        {
+            pasteText = pasteText ?? string.Empty;
+
+            var builder = new StringBuilder();
+            var caretIndex = _pasteWaitMemo.CaretIndex;
+            var commandText = _pasteWaitMemo.CommandText;
+            builder.Append(commandText, 0, caretIndex);
+            builder.Append(pasteText);
+            builder.Append(commandText, caretIndex, commandText.Length - caretIndex);
+            var command = builder.ToString();
+            
+            _margin.CommandLineTextBox.Text = command;
+            _margin.CommandLineTextBox.Select(caretIndex + pasteText.Length, 0);
+            _pasteWaitMemo.Clear();
+        }
+
+        private void DeleteWordBeforeCursor()
+        {
+            var textBox = _margin.CommandLineTextBox;
+            var end = textBox.SelectionStart;
+            if (end < 2)
+                return;
+            var begin = end;
+            while (begin > 1 && char.IsWhiteSpace(textBox.Text, begin - 1))
+                begin--;
+            while (begin > 1 && !char.IsWhiteSpace(textBox.Text, begin - 1))
+                begin--;
+            var text = textBox.Text.Substring(0, begin) + textBox.Text.Substring(end);
+            textBox.Text = text;
+            textBox.Select(begin, 0);
+        }
+
+        private void HandleKeyEventInPasteWait(KeyEventArgs e)
+        {
+            Debug.Assert(InPasteWait);
+            
+            switch (e.Key)
+            {
+               case Key.R:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        e.Handled = true; // remain in paste-wait state
+                    }
+                   break;
+                case Key.A:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        e.Handled = HandlePasteSpecial(KeyInputUtil.ApplyKeyModifiersToChar('a', VimKeyModifiers.Control), WordKind.BigWord);
+                    }
+                    break;
+                case Key.W:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        e.Handled = HandlePasteSpecial(KeyInputUtil.ApplyKeyModifiersToChar('w', VimKeyModifiers.Control), WordKind.NormalWord);
+                    }
+                    break;
+                case Key.J:
+                case Key.M:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        CancelPasteWait();
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.Escape:
+                case Key.Enter:
+                case Key.Left:
+                case Key.Right:
+                case Key.Back:
+                case Key.Delete:
+                    CancelPasteWait();
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        private bool HandlePasteSpecial(KeyInput keyInput, WordKind wordKind)
+        {
+            Debug.Assert(InPasteWait);
+            
+            if(!_vimBuffer.Process(keyInput).IsAnyHandled)
+                return false;
+
+            var currentWord = _vimBuffer.MotionUtil.GetMotion(Motion.NewInnerWord(wordKind), new MotionArgument(MotionContext.AfterOperator));
+            string pasteText = currentWord.IsSome() ? currentWord.Value.Span.GetText(): string.Empty;
+            
+            EndPasteWait(pasteText);
+            return true;
+        }
+
+        private class PasteWaitMemo
+        {
+            public int CaretIndex { get; private set; }
+            public string CommandText { get; private set; } = string.Empty;
+
+            public void Clear()
+            {
+                Set(0, string.Empty);
+            }
+
+            public void Set(TextBox textBox)
+            {
+                Set(textBox.CaretIndex, textBox.Text);
+            }
+
+            private void Set(int caretIndex, string commandText)
+            {
+                CaretIndex = caretIndex;
+                CommandText = commandText;
+            }
         }
     }
 }

@@ -8,6 +8,8 @@ module internal StringUtil =
 
     let Empty = System.String.Empty
 
+    let GetLength (input: string) = input.Length
+
     let FindFirst (input:seq<char>) index del =
         let found = 
             input 

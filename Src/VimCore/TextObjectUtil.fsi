@@ -47,7 +47,7 @@ type internal TextObjectUtil =
 
     /// Get the SnapshotSpan values for the paragraph object starting from the given SnapshotPoint
     /// in the specified direction.  
-    member GetParagraphs: path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+    member GetParagraphs: path: SearchPath -> column: SnapshotColumn -> SnapshotSpan seq
 
     /// Get the SnapshotLineRange values for the section values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
@@ -62,7 +62,7 @@ type internal TextObjectUtil =
     /// Get the SnapshotSpan values for the sentence values starting from the given SnapshotPoint 
     /// in the specified direction.  Note: The full span of the section will be returned if the 
     /// provided SnapshotPoint is in the middle of it
-    member GetSentences: sentenceKind: SentenceKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+    member GetSentences: sentenceKind: SentenceKind -> path: SearchPath -> column: SnapshotColumn -> SnapshotSpan seq
 
     /// Is the SnapshotPoint the start of a sentence 
     member IsSentenceStart: sentenceKind: SentenceKind -> column: SnapshotColumn -> bool

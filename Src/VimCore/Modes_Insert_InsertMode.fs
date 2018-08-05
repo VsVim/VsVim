@@ -1051,10 +1051,16 @@ type internal InsertMode
 
     member x.OnAfterRunInsertCommand (insertCommand: InsertCommand) =
 
-        // If the user typed a <Space> then 'sts' shouldn't be considered for <BS> operations
-        // until the start point is reset 
         match insertCommand with
-        | InsertCommand.Insert " " -> _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
+        | InsertCommand.Insert " " ->
+
+            // If the user typed a <Space> then 'sts' shouldn't be considered for <BS> operations
+            // until the start point is reset 
+            _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- false
+
+        | InsertCommand.InsertNewLine ->
+            _operations.AdjustTextViewForScrollOffset()
+
         | _ -> ()
 
         let updateRepeat count addNewLines textChange =

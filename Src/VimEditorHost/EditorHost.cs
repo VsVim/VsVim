@@ -59,6 +59,14 @@ namespace Vim.EditorHost
         }
 
         /// <summary>
+        /// Create an ITextBuffer instance with the given content
+        /// </summary>
+        public ITextBuffer CreateTextBufferRaw(string content, IContentType contentType = null)
+        {
+            return TextBufferFactoryService.CreateTextBufferRaw(content, contentType);
+        }
+
+        /// <summary>
         /// Create an ITextBuffer instance with the given lines
         /// </summary>
         public ITextBuffer CreateTextBuffer(params string[] lines)

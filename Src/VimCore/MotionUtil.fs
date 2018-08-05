@@ -696,6 +696,7 @@ type MatchingTokenUtil() =
     /// Find the correct MatchingTokenKind for the given line and column position on that 
     /// line.  Needs to consider all possible matching tokens and see which one is closest
     /// to the column (going forward only). 
+    /// CTOOD: is this a column or position? 
     member x.FindMatchingTokenKindCore lineText column =
         let length = String.length lineText
         Contract.Assert(column <= length)
@@ -867,10 +868,10 @@ type MatchingTokenUtil() =
             // The search should normalize caret's in the line break back to the last valid 
             // point of the line. 
             let column = 
-                if data.IsInsideLineBreak then
+                if data.IsLineBreak then
                     max 0 (line.End.Position - line.Start.Position - 1)
                 else
-                    data.Column
+                    data.ColumnNumber
             (line, column)
 
         let found = 
@@ -991,6 +992,8 @@ type internal MotionUtil
 
     /// The virtual caret point in the ITextView
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
+    member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
     /// Caret line in the ITextView
     member x.CaretLine = SnapshotPointUtil.GetContainingLine x.CaretPoint
@@ -1499,7 +1502,7 @@ type internal MotionUtil
     /// yank line 1
     member x.AllParagraph count = 
 
-        let all = x.GetParagraphs SearchPath.Forward x.CaretPoint |> Seq.truncate count |> List.ofSeq
+        let all = x.GetParagraphs SearchPath.Forward x.CaretColumn |> Seq.truncate count |> List.ofSeq
         match all with
         | [] ->
             // No paragraphs forward so return nothing
@@ -1634,13 +1637,13 @@ type internal MotionUtil
         // will start by returning the sentence which exists before the white space.  In the case of 
         // AllSentence we don't want this behavior and want to start with the following sentence.  
         let sentenceKind = SentenceKind.NoTrailingCharacters
-        let searchPoint = 
-            let mutable column = SnapshotColumn(x.CaretPoint)
-            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not (SnapshotPointUtil.IsEndPoint column.Point) do
+        let searchColumn = 
+            let mutable column = x.CaretColumn
+            while _textObjectUtil.IsSentenceWhiteSpace sentenceKind column && not column.IsEndColumn do
                 column <- column.Add 1
-            column.Point
+            column
 
-        let sentences = x.GetSentences sentenceKind SearchPath.Forward searchPoint |> Seq.truncate count |> List.ofSeq
+        let sentences = x.GetSentences sentenceKind SearchPath.Forward searchColumn |> Seq.truncate count |> List.ofSeq
 
         let span = 
             match sentences with
@@ -1662,32 +1665,32 @@ type internal MotionUtil
                 // sentence
                 let whiteSpaceAfter =
                     let mutable column = SnapshotColumn(span.End)
-                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not (SnapshotPointUtil.IsEndPoint column.Point) do
+                    while not (_textObjectUtil.IsSentenceStart sentenceKind column) && not column.IsEndColumn do
                         column <- column.Add 1
 
-                    if SnapshotPointUtil.IsEndPoint column.Point || span.End.Position = column.Point.Position then
+                    if column.IsEndColumn || span.End.Position = column.StartPoint.Position then
                         None
                     else
-                        Some column.Point
+                        Some column
 
                 // Include the preceding white space in the Span
                 let includePrecedingWhiteSpace () =
                     let mutable column = SnapshotColumn(span.Start)
                     let mutable before = 
-                        if SnapshotPointUtil.IsStartPoint column.Point then column
+                        if column.IsStartColumn then column
                         else column.Subtract 1
-                    while column.Point.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
+                    while column.StartPoint.Position > 0 && _textObjectUtil.IsSentenceWhiteSpace sentenceKind before do
                         column <- before
                         before <- column.Subtract 1
 
-                    SnapshotSpan(column.Point, span.End)
+                    SnapshotSpan(column.StartPoint, span.End)
 
                 // Now we need to do the standard adjustments listed at the bottom of 
                 // ':help text-objects'.
                 match isCaretInWhiteSpace, whiteSpaceAfter with
                 | true, _ -> includePrecedingWhiteSpace()
                 | false, None -> includePrecedingWhiteSpace()
-                | false, Some spaceEnd -> SnapshotSpan(span.Start, spaceEnd)
+                | false, Some spaceEnd -> SnapshotSpan(span.Start, spaceEnd.StartPoint)
 
         MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
@@ -2303,17 +2306,19 @@ type internal MotionUtil
 
                 // Move from virtual space to real space.
                 let rest = count - endPoint.VirtualSpaces
-                let startPoint =
-                    SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine endPoint.Position rest
-                    |> OptionUtil.getOrDefault x.CaretLine.Start
-                    |> VirtualSnapshotPointUtil.OfPoint
+                let startColumn = 
+                    match x.CaretColumn.TrySubtractInLine rest with
+                    | Some column -> column
+                    | None -> SnapshotColumn(x.CaretLine)
+                let startPoint = VirtualSnapshotPoint(startColumn.StartPoint)
                 let span = VirtualSnapshotSpan(startPoint, endPoint)
                 MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false)
         else
-            let startPoint =
-                SnapshotPointUtil.TryGetPreviousCharacterSpanOnLine x.CaretPoint count
-                |> OptionUtil.getOrDefault x.CaretLine.Start
-            let span = SnapshotSpan(startPoint, x.CaretPoint)
+            let startColumn = 
+                match x.CaretColumn.TrySubtractInLine count with
+                | Some column -> column
+                | None -> SnapshotColumn(x.CaretLine)
+            let span = SnapshotSpan(startColumn.StartPoint, x.CaretPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
 
     /// Get the motion which is 'count' characters to the right of the caret 
@@ -2328,8 +2333,9 @@ type internal MotionUtil
                 elif x.CaretPoint.Position + 1 = x.CaretLine.End.Position then
                     x.CaretLine.End
                 else
-                    SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint count
-                    |> OptionUtil.getOrDefault x.CaretLine.End
+                    match x.CaretColumn.TryAddInLine(count, includeLineBreak = true) with
+                    | Some column -> column.StartPoint
+                    | None -> x.CaretLine.End
             let span = SnapshotSpan(x.CaretPoint, endPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
 
@@ -2429,7 +2435,7 @@ type internal MotionUtil
                     if _vimTextBuffer.UseVirtualSpace then
                         VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
                     else
-                        x.CaretColumn.Column
+                        x.CaretColumn.ColumnNumber
                 let characterSpan =
                     let s = SnapshotLineUtil.GetColumnOrEnd column startLine
                     let e = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
@@ -2454,7 +2460,7 @@ type internal MotionUtil
                     if _vimTextBuffer.UseVirtualSpace then
                         VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
                     else
-                        x.CaretColumn.Column
+                        x.CaretColumn.ColumnNumber
                 let characterSpan = 
                     let e = SnapshotLineUtil.GetColumnOrEnd column lastLine
                     let e = SnapshotPointUtil.AddOneOrCurrent e
@@ -2691,7 +2697,7 @@ type internal MotionUtil
     member x.SentenceForward count = 
         _jumpList.Add x.CaretVirtualPoint
         let endPoint =
-            x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Forward x.CaretColumn
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2701,7 +2707,7 @@ type internal MotionUtil
     member x.SentenceBackward count = 
         _jumpList.Add x.CaretVirtualPoint
         let startPoint = 
-            x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretPoint
+            x.GetSentences SentenceKind.Default SearchPath.Backward x.CaretColumn
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2713,7 +2719,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretVirtualPoint
 
         let endPoint = 
-            x.GetParagraphs SearchPath.Forward x.CaretPoint
+            x.GetParagraphs SearchPath.Forward x.CaretColumn
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2725,7 +2731,7 @@ type internal MotionUtil
         _jumpList.Add x.CaretVirtualPoint
 
         let startPoint = 
-            x.GetParagraphs SearchPath.Backward x.CaretPoint
+            x.GetParagraphs SearchPath.Backward x.CaretColumn
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2924,6 +2930,38 @@ type internal MotionUtil
                 x.Mark mark
             else
                 x.MarkLine mark
+
+    /// Operate on the next match for last pattern searched for
+    member x.NextMatch path count =
+        let last = _vimData.LastSearchData
+        if StringUtil.IsNullOrEmpty last.Pattern then
+            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
+            None
+        else
+            let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+            let options = last.Options ||| SearchOptions.IncludeStartPoint
+            let searchData = SearchData(last.Pattern, last.Offset, searchKind, options)
+
+            // All search operations update the jump list.
+            _jumpList.Add x.CaretVirtualPoint
+
+            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
+
+            // Raise the messages that go with this given result.
+            CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
+
+            let motionResult = 
+                match searchResult with
+                | SearchResult.Error _ -> None
+                | SearchResult.NotFound _ -> None
+                | SearchResult.Found (_, span, _, _) ->
+
+                    let motionKind = MotionKind.CharacterWiseExclusive
+                    let isForward = path = SearchPath.Forward
+                    MotionResult.Create(span, motionKind, isForward) |> Some
+
+            _vimData.ResumeDisplayPattern()
+            motionResult
 
     /// Motion from the caret to the next occurrence of the partial word under the caret
     member x.NextPartialWord path count =
@@ -3151,6 +3189,7 @@ type internal MotionUtil
             | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
             | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault
+            | Motion.NextMatch path -> x.NextMatch path motionArgument.CountOrDefault
             | Motion.NextWord path -> x.NextWord path motionArgument.CountOrDefault
             | Motion.ParagraphBackward -> x.ParagraphBackward motionArgument.CountOrDefault |> Some
             | Motion.ParagraphForward -> x.ParagraphForward motionArgument.CountOrDefault |> Some

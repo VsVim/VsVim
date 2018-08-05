@@ -152,6 +152,45 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("o", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
         }
+        
+        public sealed class DeleteWordTest : CommandLineEditIntegrationTest
+        {
+            [WpfFact]
+            public void DeleteEditStart()
+            {
+                Create();
+                ProcessNotation(@":foo<Left><c-w>");
+                Assert.Equal(":o", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("o", _vimBuffer.CommandMode.Command);
+            }
+
+            [WpfFact]
+            public void DeleteCommand()
+            {
+                Create();
+                ProcessNotation(@":foo <c-w>");
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("", _vimBuffer.CommandMode.Command);
+            }
+
+            [WpfFact]
+            public void DeleteSearch()
+            {
+                Create();
+                ProcessNotation(@"/foo bar  <c-w>");
+                Assert.Equal("/foo ", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo ", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+
+            [WpfFact]
+            public void DeleteSearchEdit()
+            {
+                Create();
+                ProcessNotation(@"/foo bar<Left><c-w>");
+                Assert.Equal("/foo r", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo r", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+        }
 
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
         {
@@ -187,6 +226,30 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
             }
 
+            /// <summary>
+            /// Backspacing over first character should clear the command line and return to normal mode,
+            /// but only if there are no characters after the cursor (i.e. length is 1).
+            /// </summary>
+            [WpfFact]
+            public void BackspaceOverFirstCharacter()
+            {
+                Create("");
+                
+                ProcessNotation(":");
+                Assert.Equal(":", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                ProcessNotation("<bs>");
+                Assert.Equal("", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                
+                ProcessNotation(":e");
+                Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                ProcessNotation("<left><bs>");
+                Assert.Equal(":e", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+            }
+            
             /// <summary>
             /// Previously keys like caused issues because their literal char value was being appended to the
             /// beginning of the edit box
@@ -322,6 +385,23 @@ namespace Vim.UI.Wpf.UnitTest
                     ProcessNotation(@":<C-R>c");
                     Assert.Equal(":test", _marginControl.CommandLineTextBox.Text);
                 }
+                
+                [WpfFact]
+                public void SpecialWord()
+                {
+                    Create("cat");
+                    ProcessNotation(@":<C-R><C-w>");
+                    Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
+                }
+                
+                [WpfFact]
+                public void SpecialWORD()
+                {
+                    Create("cat.dog");
+
+                    ProcessNotation(@":<C-R><C-a>");
+                    Assert.Equal(":cat.dog", _marginControl.CommandLineTextBox.Text);
+                }
 
                 [WpfFact]
                 public void InPasteWait()
@@ -329,6 +409,17 @@ namespace Vim.UI.Wpf.UnitTest
                     Create("cat");
                     ProcessNotation(@":<C-R>");
                     Assert.True(_controller.InPasteWait);
+                }
+                
+                [WpfFact]
+                public void CtrlR_IgnoredInPasteWait()
+                {
+                    Create("");
+                    ProcessNotation(@":cat<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                    ProcessNotation("<C-R>");
+                    Assert.True(_controller.InPasteWait);
+                    Assert.Equal(":cat\"", _marginControl.CommandLineTextBox.Text);
                 }
             }
 
@@ -342,7 +433,23 @@ namespace Vim.UI.Wpf.UnitTest
                     ProcessNotation(@":t<Left><C-r>c");
                     Assert.Equal(":cat", _marginControl.CommandLineTextBox.Text);
                 }
-
+                
+                [WpfFact]
+                public void SpecialWord()
+                {
+                    Create("cat");
+                    ProcessNotation(@":s<Left><C-R><C-w>");
+                    Assert.Equal(":cats", _marginControl.CommandLineTextBox.Text);
+                }
+                
+                [WpfFact]
+                public void SpecialWORD()
+                {
+                    Create("cat.dog");
+                    ProcessNotation(@":s<Left><C-R><C-a>");
+                    Assert.Equal(":cat.dogs", _marginControl.CommandLineTextBox.Text);
+                }
+                
                 [WpfFact]
                 public void InPasteWait()
                 {

@@ -292,6 +292,24 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
+        public void Bind_ExtendSelectionToNextMatch_Forward()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewExtendSelectionToNextMatch(SearchPath.Forward));
+            _mode.Process("gn");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ExtendSelectionToNextMatch_Backward()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewExtendSelectionToNextMatch(SearchPath.Backward));
+            _mode.Process("gN");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
         public void Bind_PutOverSelection_ViaP()
         {
             Create("");
@@ -446,11 +464,29 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
-        public void Bind_FormatLines()
+        public void Bind_FormatCodeLines()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.FormatLines);
+            _commandUtil.SetupCommandVisual(VisualCommand.FormatCodeLines);
             _mode.Process("=");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLines()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewFormatTextLines(false));
+            _mode.Process("gq");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_FormatTextLinesPreservingCaretPosition()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewFormatTextLines(true));
+            _mode.Process("gw");
             _commandUtil.Verify();
         }
 

@@ -775,6 +775,43 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
+    /// Extend the selection to the next match for the last pattern searched for
+    member x.ExtendSelectionToNextMatch searchPath count =
+
+        // Unlike 'gN' as a motion, 'gN' from visual mode will move the caret
+        // if the text under the cursor matches the pattern. As a result, if
+        // the search is backward, we will rely on the 'N' motion if the
+        // previous search was forward or the 'n' motion if the previous
+        // search was backward.
+        let motion =
+            match searchPath with
+            | SearchPath.Forward ->
+                Motion.NextMatch searchPath
+            | SearchPath.Backward ->
+                let last = _vimData.LastSearchData
+                let reverseDirection = last.Path = SearchPath.Forward
+                Motion.LastSearch reverseDirection
+        let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = count)
+        match _motionUtil.GetMotion motion argument with
+        | Some motionResult ->
+            let caretPoint =
+                match searchPath with
+                | SearchPath.Forward ->
+                    if _globalSettings.IsSelectionInclusive && motionResult.Span.Length > 0 then
+                        motionResult.Span.End
+                        |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                    else
+                        motionResult.Span.End
+                | SearchPath.Backward ->
+                    if motionResult.IsForward then
+                        motionResult.Span.End
+                    else
+                        motionResult.Span.Start
+            _commonOperations.MoveCaretToPoint caretPoint ViewFlags.Standard
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
     member x.DeleteLines count registerName =
@@ -1021,26 +1058,40 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Format the 'count' lines in the buffer
-    member x.FormatLines count =
+    /// Format the 'count' code lines in the buffer
+    member x.FormatCodeLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
-        _commonOperations.FormatLines range
+        _commonOperations.FormatCodeLines range
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Format the selected lines
-    member x.FormatLinesVisual (visualSpan: VisualSpan) =
+    /// Format the 'count' text lines in the buffer
+    member x.FormatTextLines count preserveCaretPosition =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        _commonOperations.FormatTextLines range preserveCaretPosition
+        CommandResult.Completed ModeSwitch.NoSwitch
 
-        // Use a transaction so the formats occur as a single operation
-        x.EditWithUndoTransaction "Format" (fun () ->
-            visualSpan.Spans
-            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
-            |> Seq.iter _commonOperations.FormatLines)
-
+    /// Format the selected code lines
+    member x.FormatCodeLinesVisual (visualSpan: VisualSpan) =
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> _commonOperations.FormatCodeLines
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Format the lines in the Motion
-    member x.FormatMotion (result: MotionResult) =
-        _commonOperations.FormatLines result.LineRange
+    /// Format the selected text lines
+    member x.FormatTextLinesVisual (visualSpan: VisualSpan) (preserveCaretPosition: bool) =
+        visualSpan.EditSpan.OverarchingSpan
+        |> SnapshotLineRangeUtil.CreateForSpan
+        |> (fun lineRange -> _commonOperations.FormatTextLines lineRange preserveCaretPosition)
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Format the code lines in the Motion
+    member x.FormatCodeMotion (result: MotionResult) =
+        _commonOperations.FormatCodeLines result.LineRange
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Format the text lines in the Motion
+    member x.FormatTextMotion (result: MotionResult) preserveCaretPosition =
+        _commonOperations.FormatTextLines result.LineRange preserveCaretPosition
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the appropriate register for the CommandData
@@ -1321,9 +1372,9 @@ type internal CommandUtil
 
     /// Switch to insert mode after the caret
     member x.InsertAfterCaret count =
-        match SnapshotPointUtil.TryGetNextCharacterSpanOnLine x.CaretPoint 1 with
-        | Some nextPoint ->
-            TextViewUtil.MoveCaretToPoint _textView nextPoint
+        let caretColumn = SnapshotColumn(x.CaretPoint)
+        match caretColumn.TryAddInLine(1, includeLineBreak = true) with
+        | Some nextColumn -> TextViewUtil.MoveCaretToPoint _textView nextColumn.StartPoint
         | None -> ()
 
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
@@ -2574,8 +2625,10 @@ type internal CommandUtil
         | NormalCommand.FilterMotion motion -> x.RunWithMotion motion x.FilterMotion
         | NormalCommand.FoldLines -> x.FoldLines data.CountOrDefault
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
-        | NormalCommand.FormatLines -> x.FormatLines count
-        | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion
+        | NormalCommand.FormatCodeLines -> x.FormatCodeLines count
+        | NormalCommand.FormatCodeMotion motion -> x.RunWithMotion motion x.FormatCodeMotion
+        | NormalCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLines count preserveCaretPosition
+        | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> x.RunWithMotion motion (fun motion -> x.FormatTextMotion motion preserveCaretPosition)
         | NormalCommand.GoToDefinition -> x.GoToDefinition()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
@@ -2621,6 +2674,7 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -2663,8 +2717,10 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
+        | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
-        | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
+        | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
+        | VisualCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLinesVisual visualSpan preserveCaretPosition
         | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.GoToFileInSelectionInNewWindow -> x.GoToFileInSelectionInNewWindow visualSpan
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
@@ -3075,6 +3131,28 @@ type internal CommandUtil
             _commonOperations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Select the next match for the last pattern searched for
+    member x.SelectNextMatch searchPath count =
+        let motion = Motion.NextMatch searchPath
+        let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = count)
+        match _motionUtil.GetMotion motion argument with
+        | Some motionResult ->
+            let visualKind = VisualKind.Character
+            let startPoint = motionResult.Span.Start
+            let endPoint =
+                if motionResult.Span.Length > 0 then
+                    motionResult.Span.End
+                    |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                else
+                    motionResult.Span.End
+            let tabStop = _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            let modeKind = ModeKind.VisualCharacter
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode modeKind modeArgument
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text

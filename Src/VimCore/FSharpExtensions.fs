@@ -7,22 +7,28 @@ open Microsoft.VisualStudio.Utilities
 open Vim
 
 [<Extension>]
-module public OptionExtensions =
+type public OptionExtensions =
 
     [<Extension>]
-    let IsSome opt = Option.isSome opt
+    static member IsSome(opt): bool = Option.isSome opt
 
     [<Extension>]
-    let IsNone opt = Option.isNone opt
+    static member IsSome(opt, func): bool =
+        match opt with
+        | Some value -> func value
+        | None -> false
 
     [<Extension>]
-    let Is (opt:'a option, value) =
+    static member IsNone(opt) = Option.isNone opt
+
+    [<Extension>]
+    static member Is (opt:'a option, value) =
         match opt with 
         | Some(toTest) -> toTest = value
         | None         -> false
 
     [<Extension>]
-    let SomeOrDefault opt defaultValue = 
+    static member SomeOrDefault opt defaultValue = 
         match opt with 
         | Some(value) -> value
         | None -> defaultValue

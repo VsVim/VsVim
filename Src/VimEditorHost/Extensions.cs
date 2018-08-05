@@ -18,6 +18,23 @@ namespace Vim.EditorHost
         #region ITextBufferFactoryService
 
         /// <summary>
+        /// Create an ITextBuffer with the specified content
+        /// </summary>
+        public static ITextBuffer CreateTextBufferRaw(this ITextBufferFactoryService textBufferFactoryService, string content, IContentType contentType = null)
+        {
+            var textBuffer = contentType != null
+                ? textBufferFactoryService.CreateTextBuffer(contentType)
+                : textBufferFactoryService.CreateTextBuffer();
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                textBuffer.Replace(new Span(0, 0), content);
+            }
+
+            return textBuffer;
+        }
+
+        /// <summary>
         /// Create an ITextBuffer with the specified lines
         /// </summary>
         public static ITextBuffer CreateTextBuffer(this ITextBufferFactoryService textBufferFactoryService, params string[] lines)

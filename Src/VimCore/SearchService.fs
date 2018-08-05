@@ -146,17 +146,11 @@ type internal EditorSearchService
                     // that can return spurious matches for patterns involving dollar.
                     // Specifically, at the time of this writing, the '$' pattern can
                     // produce a spurious match at the beginning of a nonempty line.
-                    let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
-                    let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
-                    let checkPosition = matchPosition
-                    let checkResult = x.FindNextRaw checkFindData checkPosition
-
                     // The pattern actually matches if a forward search directly at the match
                     // position returns the same span.
                     let matchesResult =
-                        match checkResult with
-                        | None -> false
-                        | Some checkSpan -> checkSpan = span
+                        x.GetMatchAtPosition findData matchPosition
+                        |> Option.isSome
 
                     if not matchesResult then
                         let endPoint = SnapshotUtil.GetEndPoint snapshot
@@ -198,6 +192,20 @@ type internal EditorSearchService
 
 
         result
+
+    /// Get the match, if any, at the specified position
+    member x.GetMatchAtPosition (findData: FindData) (position: int) =
+        let snapshot = findData.TextSnapshotToSearch
+        let checkOptions = findData.FindOptions &&& (~~~FindOptions.SearchReverse)
+        let checkFindData = FindData(findData.SearchString, snapshot, checkOptions, findData.TextStructureNavigator)
+        match x.FindNextRaw checkFindData position with
+        | Some matchSpan ->
+            if matchSpan.Start.Position = position then
+                Some matchSpan
+            else
+                None
+        | None ->
+            None
 
     /// Find the next occurrence of FindData at the given position.  This will use the cache 
     /// if possible
@@ -346,7 +354,7 @@ type internal SearchService
         | :? System.ArgumentException as ex -> VimResult.Error ex.Message
 
     /// This is the core find function.  It will repeat the FindData search 'count' times.  
-    member x.FindCore (serviceSearchData: ServiceSearchData) (findData: FindData) (startPoint: SnapshotPoint) count: SearchResult =
+    member x.FindCore (serviceSearchData: ServiceSearchData) (findData: FindData) (startPoint: SnapshotPoint) count includeStartPoint: SearchResult =
 
         let searchData = serviceSearchData.SearchData
         let isForward = searchData.Kind.IsAnyForward 
@@ -357,11 +365,27 @@ type internal SearchService
         let mutable searchResult = SearchResult.NotFound (searchData, false)
         let mutable didWrap = false
 
+        // If we should include the start point, do a preliminary check for
+        // a match at the start point and adjust accordingly.
+        if includeStartPoint then
+            match _editorSearchService.GetMatchAtPosition findData position with
+            | Some patternSpan ->
+                if count = 1 then
+                    searchResult <-
+                        match x.ApplySearchOffsetData serviceSearchData patternSpan with
+                        | Some span -> SearchResult.Found (searchData, span, patternSpan, didWrap)
+                        | None -> SearchResult.NotFound (searchData, true)
+                count <- count - 1
+            | None ->
+                ()
+
         // Need to adjust the start point. If we are searching forward and the start
         // point is the last character on the line, the first search occurs on
         // the next line.  If we are searching backward, the first search occurs
         // before the start point.  
-        if isForward then
+        if count = 0 then
+            ()
+        elif isForward then
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
             let endOfLine = SnapshotLineUtil.GetEnd startLine
             if startPoint.Position = endOfLine.Position - 1 then
@@ -447,9 +471,11 @@ type internal SearchService
     member x.FindNextCore (serviceSearchData: ServiceSearchData) (startPoint: SnapshotPoint) count =
         let searchData = serviceSearchData.SearchData
         let snapshot = startPoint.Snapshot
+        let includeStartPoint =
+            Util.IsFlagSet serviceSearchData.SearchData.Options SearchOptions.IncludeStartPoint
         match SearchService.ConvertToFindDataCore serviceSearchData snapshot with
         | VimResult.Error msg -> SearchResult.Error (searchData, msg)
-        | VimResult.Result findData -> x.FindCore serviceSearchData findData startPoint count 
+        | VimResult.Result findData -> x.FindCore serviceSearchData findData startPoint count includeStartPoint
 
     /// Perform a search using the specified SearchData from the specified point with
     /// the specified navigator

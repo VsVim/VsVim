@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {
@@ -29,7 +30,7 @@ namespace Vim.UnitTest
 
             if (position != null)
             {
-                Assert.Equal(position.Value, point.Point.Position);
+                Assert.Equal(position.Value, point.StartPoint.Position);
             }
         }
 
@@ -101,6 +102,92 @@ namespace Vim.UnitTest
                 var point = new SnapshotCodePoint(textBuffer.GetEndPoint());
                 Assert.Throws<ArgumentOutOfRangeException>(() => point.Add(4));
             }
+
+            /// <summary>
+            /// Previous traces have shown that allocations of <see cref="ITextSnapshotLine"/> instances is a significant
+            /// performance issue on our core types. Ensure we keep the same reference if possible vs. requering which will
+            /// re-allocate.
+            /// </summary>
+            [WpfFact]
+            public void AddKeepsLineReference()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                var point = new SnapshotCodePoint(textBuffer.GetStartPoint());
+                var line = point.Line;
+                for (int i = 0; i < 3; i++)
+                {
+                    point = point.Add(1);
+                    Assert.Same(line, point.Line);
+                }
+            }
+
+            [WpfFact]
+            public void SubtractKeepsLineReference()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                var point = new SnapshotCodePoint(textBuffer.GetStartPoint().GetContainingLine(), 4);
+                var line = point.Line;
+                while (point.StartPosition > 0)
+                {
+                    point = point.Subtract(1);
+                    Assert.Same(line, point.Line);
+                }
+            }
+
+            [WpfFact]
+            public void AddAcrossLines()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                var point1 = new SnapshotCodePoint(textBuffer.GetStartPoint());
+                var point2 = point1.Add(5);
+                Assert.Equal(1, point2.Line.LineNumber);
+            }
+
+            [WpfFact]
+            public void SubtractAcrossLines()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                var point1 = new SnapshotCodePoint(textBuffer.GetPointInLine(line: 1, column: 0));
+                var point2 = point1.Subtract(2);
+                Assert.Equal(0, point2.Line.LineNumber);
+            }
+        }
+
+        public sealed class IsCharacterTests : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetStartPoint());
+                Assert.True(point.IsCharacter('c'));
+                Assert.False(point.IsCharacter('\t'));
+            }
+
+            /// <summary>
+            /// Don't throw when asking this at the end point. 
+            /// </summary>
+            [WpfFact]
+            public void EndPoint()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetEndPoint());
+                Assert.False(point.IsCharacter('c'));
+            }
+        }
+
+        public sealed class MiscTest : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void EndPoint()
+            {
+                var textBuffer = CreateTextBuffer("cat");
+                var point = new SnapshotCodePoint(textBuffer.GetEndPoint());
+                Assert.Equal(textBuffer.GetEndPoint(), point.StartPoint);
+                Assert.Equal(textBuffer.GetEndPoint(), point.EndPoint);
+                Assert.True(point.IsEndPoint);
+            }
+
         }
     }
 }
