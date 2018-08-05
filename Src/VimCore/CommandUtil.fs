@@ -128,10 +128,54 @@ type internal CommandUtil
 
     /// Add count values to the specific word
     member x.AddToWord count =
+        match x.AddToWordAtPoint x.CaretPoint count with
+        | Some (span, text) ->
 
-        match x.GetNumberValueAtCaret() with
+            // Need a transaction here in order to properly position the caret.
+            // After the add the caret needs to be positioned on the last
+            // character in the number.
+            x.EditWithUndoTransaction "Add to word" (fun () ->
+
+                _textBuffer.Replace(span.Span, text) |> ignore
+
+                let position = span.Start.Position + text.Length - 1
+                TextViewUtil.MoveCaretToPosition _textView position)
+
         | None ->
             _commonOperations.Beep()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Add count to the word in each line of the selection, optionally progressively
+    member x.AddToSelection (visualSpan: VisualSpan) count isProgressive =
+        let startPoint = visualSpan.Start
+
+        // Use a transaction to guarantee caret position.  Caret should be at
+        // the start during undo and redo so move it before the edit
+        TextViewUtil.MoveCaretToPoint _textView startPoint
+        x.EditWithUndoTransaction "Add to selection" (fun () ->
+            use edit = _textBuffer.CreateEdit()
+            visualSpan.PerLineSpans |> Seq.iteri (fun index span ->
+                let countForIndex =
+                    if isProgressive then
+                        count * (index + 1)
+                    else
+                        count
+                match x.AddToWordAtPoint span.Start countForIndex with
+                | Some (span, text) ->
+                    edit.Replace(span.Span, text) |> ignore
+                | None ->
+                    ())
+
+            let position = x.ApplyEditAndMapPosition edit startPoint.Position
+            TextViewUtil.MoveCaretToPosition _textView position)
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Add count values to the specific word
+    member x.AddToWordAtPoint point count: (SnapshotSpan * string) option =
+
+        match x.GetNumberValueAtPoint point with
         | Some (numberValue, span) ->
 
             // Calculate the new value of the number.
@@ -171,17 +215,9 @@ type internal CommandUtil
                     let formattedNumber = System.Convert.ToString(newNumber, 2)
                     prefix + formattedNumber.PadLeft(width, '0')
 
-            // Need a transaction here in order to properly position the caret.
-            // After the add the caret needs to be positioned on the last
-            // character in the number.
-            x.EditWithUndoTransaction "Add" (fun () ->
+            Some (span, text)
 
-                _textBuffer.Replace(span.Span, text) |> ignore
-
-                let position = span.Start.Position + text.Length - 1
-                TextViewUtil.MoveCaretToPosition _textView position)
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+        | None -> None
 
     /// Apply the ITextEdit and returned the mapped position value from the resulting
     /// ITextSnapshot into the current ITextSnapshot.
@@ -1128,27 +1164,31 @@ type internal CommandUtil
     /// Get the appropriate register for the CommandData
     member x.GetRegister name = _commonOperations.GetRegister name
 
-    /// Get the number value at the caret.  This is used for the CTRL-A and CTRL-X
-    /// command so it will look forward on the current line for the first word
-    ///
-    /// TODO: Need to integrate the parsing functions here with that of the tokenizer
-    /// which also parses out the same set of numbers
     member x.GetNumberValueAtCaret(): (NumberValue * SnapshotSpan) option =
-        let caretLine = x.CaretLine
-        let startPosition = caretLine.Start.Position
-        let index = x.CaretPoint.Position - startPosition
+        x.GetNumberValueAtPoint x.CaretPoint
+
+    /// Get the number value at the specified point.  This is used for the
+    /// CTRL-A and CTRL-X command so it will look forward on the current line
+    /// for the first word
+    ///
+    /// TODO: Need to integrate the parsing functions here with that of the
+    /// tokenizer which also parses out the same set of numbers
+    member x.GetNumberValueAtPoint point: (NumberValue * SnapshotSpan) option =
+        let line = SnapshotPointUtil.GetContainingLine point
+        let startPosition = line.Start.Position
+        let index = point.Position - startPosition
 
         // Get the match from the line with the given regex for the first
-        // number that contains the caret or is after the caret.
+        // number that contains the point or begins after the point.
         let getNumber numberValue numberPattern parseFunc =
-            caretLine
+            line
             |> SnapshotLineUtil.GetText
             |> (fun text -> RegularExpressions.Regex.Matches(text, numberPattern))
             |> Seq.cast<RegularExpressions.Match>
             |> Seq.tryFind (fun m ->
                 index >= m.Index && index < m.Index + m.Length || index < m.Index)
             |> Option.map (fun m ->
-                let span = SnapshotSpan(x.CurrentSnapshot, startPosition + m.Index, m.Length)
+                let span = SnapshotSpan(point.Snapshot, startPosition + m.Index, m.Length)
                 let succeeded, number = parseFunc m.Value
                 if succeeded then
                     Some (numberValue number, span)
@@ -1209,7 +1249,7 @@ type internal CommandUtil
 
                 // Now check for alpha by going forward to the first alpha
                 // character.
-                SnapshotSpan(x.CaretPoint, caretLine.EndIncludingLineBreak)
+                SnapshotSpan(point, line.EndIncludingLineBreak)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point ->
                     point
@@ -2738,6 +2778,7 @@ type internal CommandUtil
         let registerName = data.RegisterName
         let count = data.CountOrDefault
         match command with
+        | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection registerName visualSpan
         | VisualCommand.CloseAllFoldsInSelection -> x.CloseAllFoldsInSelection visualSpan
@@ -2762,6 +2803,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
+        | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
         | VisualCommand.SwitchModeInsert atEndOfLine -> x.SwitchModeInsert visualSpan atEndOfLine
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
         | VisualCommand.SwitchModeVisual visualKind -> x.SwitchModeVisual visualKind
@@ -3331,6 +3373,10 @@ type internal CommandUtil
     /// Subtract 'count' values from the word under the caret
     member x.SubtractFromWord count =
         x.AddToWord -count
+
+    /// Subtract count from the word in each line of the selection, optionally progressively
+    member x.SubtractFromSelection visualSpan count isProgressive =
+        x.AddToSelection visualSpan -count isProgressive
 
     /// Switch to the given mode
     member x.SwitchMode modeKind modeArgument =

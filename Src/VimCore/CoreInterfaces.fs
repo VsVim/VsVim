@@ -1888,6 +1888,34 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
+    /// Return the per line spans which make up this VisualSpan instance
+    member x.PerLineSpans = 
+        match x with 
+        | VisualSpan.Character characterSpan ->
+            seq {
+                let first, middle, last =
+                    SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
+                match first with
+                | Some span -> yield span
+                | None -> ()
+                match middle with
+                | Some lineRange ->
+                    let spans =
+                        lineRange.Lines
+                        |> Seq.map SnapshotLineUtil.GetExtent
+                    yield! spans
+                | None -> ()
+                match last with
+                | Some span -> yield span
+                | None -> ()
+            }
+        | VisualSpan.Line lineRange ->
+            lineRange.Lines
+            |> Seq.map SnapshotLineUtil.GetExtent
+        | VisualSpan.Block blockSpan ->
+            blockSpan.BlockSpans
+            :> SnapshotSpan seq
+
     member x.OverlapSpans =
         match x with 
         | VisualSpan.Block blockSpan -> seq (blockSpan.BlockOverlapSpans)
@@ -3149,6 +3177,9 @@ type NormalCommand =
 [<StructuralEquality>]
 type VisualCommand = 
 
+    /// Add count to the word in each line of the selection, optionally progressively
+    | AddToSelection of bool
+
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
@@ -3224,6 +3255,9 @@ type VisualCommand =
 
     /// Shift the selected lines to the right
     | ShiftLinesRight
+
+    /// Subtract count to the word in each line of the selection, optionally progressively
+    | SubtractFromSelection of bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line
