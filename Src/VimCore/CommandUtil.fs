@@ -188,9 +188,13 @@ type internal CommandUtil
 
                 | NumberValue.Decimal number ->
                     let newNumber = number + int64(count)
-                    let oldSignWidth = if numberText.StartsWith("-") then 1 else 0
-                    let newSignWidth = if newNumber < 0L then 1 else 0
-                    let width = numberText.Length + newSignWidth - oldSignWidth
+                    let width =
+                        if numberText.StartsWith("-0") || numberText.StartsWith("0") then
+                            let oldSignWidth = if numberText.StartsWith("-") then 1 else 0
+                            let newSignWidth = if newNumber < 0L then 1 else 0
+                            numberText.Length + newSignWidth - oldSignWidth
+                        else
+                            1
                     sprintf "%0*d" width newNumber
 
                 | NumberValue.Octal number ->
