@@ -83,6 +83,18 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             [WpfFact]
+            public void ControlCExits()
+            {
+                // Reported in issue #2292.
+                Create("cat");
+                ProcessNotation(@":ab<Left>");
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
+                ProcessNotation(@"<C-c>");
+                Assert.Equal(EditKind.None, _controller.CommandLineEditKind);
+                Assert.True(_marginControl.IsEditReadOnly);
+            }
+
+            [WpfFact]
             public void HomeKeyMovesToStart()
             {
                 Create("");
