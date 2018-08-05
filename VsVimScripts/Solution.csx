@@ -7,18 +7,23 @@ VimBuffer.Closed += OnBufferClosed;
 
 private void OnKeyInputIntercept(object sender, KeyInputEventArgs e)
 {
+    UIHierarchy solutionExplorer =DTE.ToolWindows.SolutionExplorer;
     if (e.KeyInput.Char == 'k')
     {
-        DTE.ToolWindows.SolutionExplorer.SelectUp(vsUISelectionType.vsUISelectionTypeSelect, 1);
+        solutionExplorer.SelectUp(vsUISelectionType.vsUISelectionTypeSelect, 1);
     }
     else if (e.KeyInput.Char == 'j')
     {
-        DTE.ToolWindows.SolutionExplorer.SelectDown(vsUISelectionType.vsUISelectionTypeSelect, 1);
+        solutionExplorer.SelectDown(vsUISelectionType.vsUISelectionTypeSelect, 1);
     }
     else if (e.KeyInput.Key == VimKey.Enter)
     {
-        InterceptEnd();
-        DTE.ToolWindows.SolutionExplorer.DoDefaultAction();
+        var selectedItems = solutionExplorer.SelectedItems as UIHierarchyItem[];
+        if (selectedItems == null)
+        {
+            InterceptEnd();
+        }
+        solutionExplorer.DoDefaultAction();
         return;
     }
     else
