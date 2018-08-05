@@ -7040,6 +7040,112 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal("0x1b", _textBuffer.GetLine(0).GetText());
             }
+
+            [WpfFact]
+            public void HexWithLettersFromEnd()
+            {
+                // Reported in issue #1765.
+                Create("0x00ff", "");
+                _textView.MoveCaretToLine(0, 5);
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0x0100", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void HexMatchesPrefix()
+            {
+                Create("0X00ff", "");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0X0100", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void HexMatchesLowercase()
+            {
+                Create("0x00fe", "");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0x00ff", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void HexMatchesUppercase()
+            {
+                Create("0x00FE", "");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0x00FF", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void Octal()
+            {
+                Create("0007", "");
+                _localSettings.NumberFormats = "octal";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0010", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void LoneZeroIsNotOctal()
+            {
+                Create("0", "");
+                _localSettings.NumberFormats = "octal";
+                _vimBuffer.ProcessNotation("10<C-a>");
+                Assert.Equal("10", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void DecimalWithLeadingZeroes()
+            {
+                Create("0007", "");
+                _localSettings.NumberFormats = "";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0008", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void NegativeDecimalWithLeadingZeroes()
+            {
+                Create("-0007", "");
+                _localSettings.NumberFormats = "";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("-0006", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void DecimalBecomingPositive()
+            {
+                Create("-0001", "");
+                _localSettings.NumberFormats = "";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0000", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void DecimalBecomingNegative()
+            {
+                Create("0000", "");
+                _localSettings.NumberFormats = "";
+                _vimBuffer.ProcessNotation("<C-x>");
+                Assert.Equal("-0001", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void Binary()
+            {
+                Create("0b001", "");
+                _localSettings.NumberFormats = "bin";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("0b010", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void Alpha()
+            {
+                Create("cog", "");
+                _localSettings.NumberFormats = "alpha";
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class NumberedRegisterTest : NormalModeIntegrationTest

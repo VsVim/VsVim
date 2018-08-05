@@ -187,14 +187,15 @@ type internal CommandUtil
                     c |> CharUtil.AlphaAdd count |> StringUtil.OfChar
 
                 | NumberValue.Decimal number ->
-                    let width =
-                        if numberText.StartsWith("-")
-                        then numberText.Length - 1
-                        else numberText.Length
-                    sprintf "%0*d" width (number + int64(count))
+                    let newNumber = number + int64(count)
+                    let oldSignWidth = if numberText.StartsWith("-") then 1 else 0
+                    let newSignWidth = if newNumber < 0L then 1 else 0
+                    let width = numberText.Length + newSignWidth - oldSignWidth
+                    sprintf "%0*d" width newNumber
 
                 | NumberValue.Octal number ->
-                    sprintf "0%0*o" (numberText.Length - 1) (number + uint64(count))
+                    let newNumber = number + uint64(count)
+                    sprintf "0%0*o" (numberText.Length - 1) newNumber
 
                 | NumberValue.Hex number ->
                     let prefix = numberText.Substring(0, 2)
@@ -1215,7 +1216,7 @@ type internal CommandUtil
 
         // Get the point for an octal number.
         let getOctal () =
-            getNumber NumberValue.Octal @"\b0[0-7]*\b" (fun text ->
+            getNumber NumberValue.Octal @"\b0[0-7]+\b" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text, 8)
                 with
