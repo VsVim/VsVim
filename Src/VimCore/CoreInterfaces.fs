@@ -1893,25 +1893,25 @@ type VisualSpan =
         match x with 
         | VisualSpan.Character characterSpan ->
             seq {
-                let first, middle, last =
+                let leadingEdge, middle, trailingEdge =
                     SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
-                match first with
+                match leadingEdge with
                 | Some span -> yield span
                 | None -> ()
                 match middle with
                 | Some lineRange ->
                     let spans =
                         lineRange.Lines
-                        |> Seq.map SnapshotLineUtil.GetExtent
+                        |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
                     yield! spans
                 | None -> ()
-                match last with
+                match trailingEdge with
                 | Some span -> yield span
                 | None -> ()
             }
         | VisualSpan.Line lineRange ->
             lineRange.Lines
-            |> Seq.map SnapshotLineUtil.GetExtent
+            |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
         | VisualSpan.Block blockSpan ->
             blockSpan.BlockSpans
             :> SnapshotSpan seq
