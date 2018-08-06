@@ -185,7 +185,7 @@ type internal SubstituteConfirmMode
 
     interface ISubstituteConfirmMode with
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet.OneKeyInput pair.Key)
+        member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet(pair.Key))
         member x.CurrentMatch = x.CurrentMatch
         member x.CurrentSubstitute = x.CurrentSubstitute
         member x.ModeKind = ModeKind.SubstituteConfirm

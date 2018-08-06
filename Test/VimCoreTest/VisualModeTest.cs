@@ -79,7 +79,7 @@ namespace Vim.UnitTest
             var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
-                var name = KeyInputSet.NewOneKeyInput(item);
+                var name = new KeyInputSet(item);
                 Assert.Contains(name, commands);
             }
         }

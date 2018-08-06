@@ -82,7 +82,7 @@ namespace Vim.UnitTest
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = KeyInputSet.NewManyKeyInputs(list);
+            var commandName = new KeyInputSet(list);
             var command = NormalCommand.NewPing(new PingData(fsharpFunc));
             return CommandBinding.NewNormalBinding(commandName, CommandFlags.None, command);
         }

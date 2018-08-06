@@ -8,23 +8,24 @@ namespace Vim.UnitTest
     {
         private KeyInputSet CreateOne(char c)
         {
-            return KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput(c));
+            return new KeyInputSet(KeyInputUtil.CharToKeyInput(c));
         }
 
         private KeyInputSet CreateTwo(char c1, char c2)
         {
-            return KeyInputSet.NewTwoKeyInputs(KeyInputUtil.CharToKeyInput(c1), KeyInputUtil.CharToKeyInput(c2));
+            var keyInputSet = new KeyInputSet(KeyInputUtil.CharToKeyInput(c1));
+            return keyInputSet.Add(KeyInputUtil.CharToKeyInput(c2));
         }
 
         private KeyInputSet CreateMany(params char[] all)
         {
-            return KeyInputSet.NewManyKeyInputs(all.Select(KeyInputUtil.CharToKeyInput).ToFSharpList());
+            return new KeyInputSet(all.Select(KeyInputUtil.CharToKeyInput).ToFSharpList());
         }
 
         [Fact]
         public void Add1()
         {
-            var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
+            var name1 = new KeyInputSet(KeyInputUtil.CharToKeyInput('c'));
             var name2 = name1.Add(KeyInputUtil.CharToKeyInput('a'));
             Assert.Equal("ca", name2.Name);
         }
@@ -32,7 +33,7 @@ namespace Vim.UnitTest
         [Fact]
         public void Name1()
         {
-            var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
+            var name1 = new KeyInputSet(KeyInputUtil.CharToKeyInput('c'));
             Assert.Equal("c", name1.Name);
         }
 
@@ -48,7 +49,7 @@ namespace Vim.UnitTest
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')),
                 EqualityUnit.Create(CreateOne('D')).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")),
-                EqualityUnit.Create(KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('D'))).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")));
+                EqualityUnit.Create(new KeyInputSet(KeyInputUtil.CharToKeyInput('D'))).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")));
         }
     }
 }

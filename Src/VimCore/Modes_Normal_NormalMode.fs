@@ -314,7 +314,7 @@ type internal NormalMode
 
     /// Get the information on how to handle the tilde command based on the current setting for 'tildeop'
     member x.GetTildeCommand() =
-        let name = KeyInputUtil.CharToKeyInput '~' |> KeyInputSet.OneKeyInput
+        let name = KeyInputUtil.CharToKeyInput '~' |> KeyInputSetUtil.Single
         let flags = CommandFlags.Repeatable
         let command = 
             if _globalSettings.TildeOp then
@@ -347,8 +347,8 @@ type internal NormalMode
         _data <- EmptyData
 
     member x.CanProcess (keyInput: KeyInput) =
-        let doesCommandStartWith keyInput =
-            let name = KeyInputSet.OneKeyInput keyInput
+        let doesCommandStartWith (keyInput: KeyInput) =
+            let name = KeyInputSet(keyInput)
             _runner.Commands 
             |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
             |> SeqUtil.isNotEmpty

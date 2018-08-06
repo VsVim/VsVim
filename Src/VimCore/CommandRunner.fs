@@ -319,7 +319,7 @@ type internal CommandRunner
                     BindResult.Error
 
         // Lets get it started
-        inner (KeyInputSet.OneKeyInput keyInput) KeyInputSet.Empty keyInput
+        inner (KeyInputSet(keyInput)) KeyInputSet.Empty keyInput
 
     /// Should the Escape key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 

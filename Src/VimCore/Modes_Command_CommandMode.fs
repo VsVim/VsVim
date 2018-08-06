@@ -167,7 +167,7 @@ type internal CommandMode
         member x.Command 
             with get() = x.Command
             and set value = x.ChangeCommand value
-        member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSet.OneKeyInput
+        member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSetUtil.Single
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
         member x.CanProcess keyInput = not keyInput.IsMouseKey

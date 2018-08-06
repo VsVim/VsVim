@@ -376,7 +376,7 @@ namespace Vim.UnitTest
             {
                 Map("<D-k>", "gk");
                 var ki = new KeyInput(VimKey.RawCharacter, VimKeyModifiers.Command, FSharpOption.Create('k'));
-                var kiSet = KeyInputSet.NewOneKeyInput(ki);
+                var kiSet = new KeyInputSet(ki);
                 AssertPartialMapping(kiSet, "g", "k");
             }
 
@@ -703,7 +703,7 @@ namespace Vim.UnitTest
                 _map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
 
                 var input = "aa".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = _map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
+                var res = _map.GetKeyMapping(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.Equal('b', res.AsMapped().Item.KeyInputs.Single().Char);
             }
 
@@ -713,7 +713,7 @@ namespace Vim.UnitTest
                 _map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
 
                 var input = "a".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = _map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
+                var res = _map.GetKeyMapping(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.True(res.IsNeedsMoreInput);
             }
 
