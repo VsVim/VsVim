@@ -3256,7 +3256,7 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
-    /// Subtract count to the word in each line of the selection, optionally progressively
+    /// Subtract count from the word in each line of the selection, optionally progressively
     | SubtractFromSelection of bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
