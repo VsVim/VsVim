@@ -1570,14 +1570,14 @@ type VimInterpreter
         inner 0 false
 
     /// Shift the given line range to the left
-    member x.RunShiftLeft lineRange = 
+    member x.RunShiftLeft lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.ShiftLineRangeLeft lineRange 1)
+            _commonOperations.ShiftLineRangeLeft lineRange count)
 
     /// Shift the given line range to the right
-    member x.RunShiftRight lineRange = 
+    member x.RunShiftRight lineRange count =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            _commonOperations.ShiftLineRangeRight lineRange 1)
+            _commonOperations.ShiftLineRangeRight lineRange count)
 
     /// Run the :sort command
     member x.RunSort lineRange reverseOrder flags pattern =
@@ -1838,8 +1838,8 @@ type VimInterpreter
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
         | LineCommand.ShellCommand (lineRange, command) -> x.RunShellCommand lineRange command
-        | LineCommand.ShiftLeft lineRange -> x.RunShiftLeft lineRange
-        | LineCommand.ShiftRight lineRange -> x.RunShiftRight lineRange
+        | LineCommand.ShiftLeft (lineRange, count) -> x.RunShiftLeft lineRange count
+        | LineCommand.ShiftRight (lineRange, count) -> x.RunShiftRight lineRange count
         | LineCommand.Sort (lineRange, hasBang, flags, pattern) -> x.RunSort lineRange hasBang flags pattern
         | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
