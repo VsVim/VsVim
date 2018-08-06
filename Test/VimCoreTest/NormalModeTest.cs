@@ -1129,7 +1129,7 @@ namespace Vim.UnitTest
         {
             Create(s_defaultLines);
             var def = KeyInputUtil.CharWithControlToKeyInput(']');
-            var name = KeyInputSet.NewOneKeyInput(def);
+            var name = new KeyInputSet(def);
             Assert.True(_mode.CanProcess(def));
             Assert.Contains(name, _mode.CommandNames);
         }

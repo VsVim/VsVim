@@ -403,7 +403,7 @@ namespace Vim.UnitTest
             public void Control_OpenBracket1()
             {
                 var ki = KeyInputUtil.CharWithControlToKeyInput('[');
-                var name = KeyInputSet.NewOneKeyInput(ki);
+                var name = new KeyInputSet(ki);
                 Assert.Contains(name, _mode.CommandNames);
             }
 

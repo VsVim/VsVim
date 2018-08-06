@@ -274,7 +274,7 @@ namespace Vim.UnitTest
             [Fact]
             public void EscapeLessThanLiteral()
             {
-                var set = KeyInputSet.NewTwoKeyInputs(
+                var set = new KeyInputSet(
                     KeyInputUtil.CharToKeyInput('\\'),
                     KeyInputUtil.VimKeyToKeyInput(VimKey.Home));
                 AssertMany(@"\<home>", set);

@@ -38,7 +38,7 @@ type Mapper
                 match lhs.FirstKeyInput, keyMapping.Right.FirstKeyInput with
                 | Some leftKey, Some rightKey ->
                     if leftKey = rightKey then
-                        let mappedSet = KeyInputSet.OneKeyInput leftKey
+                        let mappedSet = KeyInputSet(leftKey)
                         let remainingSet = keyMapping.Right.KeyInputs |> List.tail |> KeyInputSetUtil.OfList
                         mappedSet, remainingSet
                     else
@@ -112,7 +112,7 @@ type Mapper
                 isDone := true
             elif not _isZeroMappingEnabled && Mapper.IsFirstKeyInputZero lhs then
                 // 0 mapping is disabled and we have a 0 input so we are done
-                let mappedKeyInputSet = KeyInputUtil.CharToKeyInput '0' |> KeyInputSet.OneKeyInput
+                let mappedKeyInputSet = KeyInputUtil.CharToKeyInput '0' |> KeyInputSetUtil.Single
                 let remainingKeyInputSet = lhs.Rest |> KeyInputSetUtil.OfList
                 successfulMap mappedKeyInputSet remainingKeyInputSet
             else
@@ -149,7 +149,7 @@ type Mapper
                 else
                     // First character can't be mapped but the rest is still eligible for 
                     // mapping after that character is complete 
-                    let mapped = KeyInputSet.OneKeyInput lhs.FirstKeyInput.Value
+                    let mapped = KeyInputSet(lhs.FirstKeyInput.Value)
                     let remaining = lhs.Rest |> KeyInputSetUtil.OfList
                     result := KeyMappingResult.PartiallyMapped (mapped, remaining)
                     isDone := true

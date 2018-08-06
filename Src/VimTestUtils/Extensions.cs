@@ -653,7 +653,7 @@ namespace Vim.UnitTest
 
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            return GetKeyMapping(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+            return GetKeyMapping(keyMap, new KeyInputSet(ki), mode);
         }
 
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
@@ -663,7 +663,7 @@ namespace Vim.UnitTest
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            return GetKeyMappingResult(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+            return GetKeyMappingResult(keyMap, new KeyInputSet(ki), mode);
         }
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)

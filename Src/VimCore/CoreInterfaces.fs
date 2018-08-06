@@ -1308,110 +1308,96 @@ type VisualKind =
 /// values which make up a command name.  
 ///
 /// The intent of this type is that two values are equal if the sequence of 
-/// KeyInputs are Equal.  So a OneKeyInput can be equal to a ManyKeyInputs if the
-/// have the same values
+/// KeyInputs are Equal.  
 ///
 /// It is not possible to simple store this as a string as it is possible, and 
 /// in fact likely due to certain virtual key codes which are unable to be mapped,
 /// for KeyInput values will map to a single char.  Hence to maintain proper semantics
 /// we have to use KeyInput values directly.
-[<RequireQualifiedAccess>]
-[<CustomEquality>]
-[<CustomComparison>]
 [<DebuggerDisplay("{ToString(),nq}")>]
-type KeyInputSet =
-    | Empty
-    | OneKeyInput of KeyInput
-    | TwoKeyInputs of KeyInput * KeyInput
-    | ManyKeyInputs of KeyInput list
-    with 
+type KeyInputSet
+    (
+        _keyInputs: KeyInput list
+    ) =
+
+    let _length = _keyInputs.Length 
+
+    static let s_empty = KeyInputSet([])
+
+    new (keyInput: KeyInput) = 
+        KeyInputSet([keyInput])
+
+    new (keyInput1: KeyInput, keyInput2: KeyInput) = 
+        let list = keyInput1 :: [keyInput2]
+        KeyInputSet(list)
+
+    /// Get the list of KeyInput which represent this KeyInputSet
+    member x.KeyInputs = _keyInputs
+
+    /// Length of the contained KeyInput's
+    member x.Length = _length
 
     /// Returns the first KeyInput if present
     member x.FirstKeyInput = 
-        match x with 
-        | Empty -> None
-        | OneKeyInput(ki) -> Some ki
-        | TwoKeyInputs(ki,_) -> Some ki
-        | ManyKeyInputs(list) -> ListUtil.tryHeadOnly list
+        match x.KeyInputs with
+        | head :: _ -> Some head
+        | [] -> None
 
     /// Returns the rest of the KeyInput values after the first
     member x.Rest = 
-        match x with
-        | Empty -> List.empty
-        | OneKeyInput _ -> List.empty
-        | TwoKeyInputs (_, keyInput2) -> [ keyInput2 ]
-        | ManyKeyInputs list -> List.tail list
-
-    /// Get the list of KeyInput which represent this KeyInputSet
-    member x.KeyInputs =
-        match x with 
-        | Empty -> List.empty
-        | OneKeyInput(ki) -> [ki]
-        | TwoKeyInputs(k1,k2) -> [k1;k2]
-        | ManyKeyInputs(list) -> list
+        match x.KeyInputs with 
+        | [] -> List.Empty
+        | _ :: tail -> tail
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
     member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
 
-    /// Length of the contained KeyInput's
-    member x.Length =
-        match x with
-        | Empty -> 0
-        | OneKeyInput _ -> 1
-        | TwoKeyInputs _ -> 2
-        | ManyKeyInputs list -> list.Length
-
     /// Add a KeyInput to the end of this KeyInputSet and return the 
     /// resulting value
-    member x.Add ki =
-        match x with 
-        | Empty -> OneKeyInput ki
-        | OneKeyInput previous -> TwoKeyInputs(previous,ki)
-        | TwoKeyInputs (p1, p2) -> ManyKeyInputs [p1;p2;ki]
-        | ManyKeyInputs list -> ManyKeyInputs (list @ [ki])
+    member x.Add keyInput =
+        let list = x.KeyInputs @ [keyInput] 
+        KeyInputSet(list)
 
     /// Does the name start with the given KeyInputSet
-    member x.StartsWith (targetName: KeyInputSet) = 
-        match targetName,x with
-        | Empty, _ -> true
-        | OneKeyInput leftKi, OneKeyInput rightKi ->  leftKi = rightKi
-        | OneKeyInput leftKi, TwoKeyInputs (rightKi, _) -> leftKi = rightKi
-        | _ -> 
-            let left = targetName.KeyInputs 
-            let right = x.KeyInputs
-            if left.Length <= right.Length then
-                SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
-            else false
+    member x.StartsWith (keyInputSet: KeyInputSet) = 
+        let left = keyInputSet.KeyInputs 
+        let right = x.KeyInputs
+        if left.Length <= right.Length then
+            SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
+        else false
+
+    static member Empty = s_empty
 
     member x.CompareTo (other: KeyInputSet) = 
-        let rec inner (left:KeyInput list) (right:KeyInput list) =
-            if left.IsEmpty && right.IsEmpty then 0
-            elif left.IsEmpty then -1
-            elif right.IsEmpty then 1
-            elif left.Head < right.Head then -1
-            elif left.Head > right.Head then 1
-            else inner (List.tail left) (List.tail right)
-        inner x.KeyInputs other.KeyInputs
+        if x.Length <> other.Length then
+            x.Length - other.Length 
+        else
+            let mutable left = x.KeyInputs
+            let mutable right = other.KeyInputs
+            let mutable value = 0
+            while not left.IsEmpty do
+                value <- left.Head.CompareTo right.Head
+                if value <> 0 then
+                    left <- []
+                else
+                    left <- left.Tail
+                    right <- right.Tail
+            value
 
     override x.GetHashCode() = 
-        match x with
-        | Empty -> 1
-        | OneKeyInput ki -> ki.GetHashCode()
-        | TwoKeyInputs (k1, k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
-        | ManyKeyInputs list -> 
-            list 
-            |> Seq.ofList
-            |> Seq.map (fun ki -> ki.GetHashCode())
-            |> Seq.sum
+        let mutable hashCode = 1
+        let mutable current = x.KeyInputs
+        while not current.IsEmpty do
+            hashCode <- 
+                if hashCode = 1 then current.Head.GetHashCode()
+                else hashCode ^^^ current.Head.GetHashCode()
+            current <- current.Tail
+        hashCode
 
     override x.Equals(yobj) =
         match yobj with
-        | :? KeyInputSet as y -> 
-            match x,y with
-            | OneKeyInput(left),OneKeyInput(right) -> left = right
-            | TwoKeyInputs(l1,l2),TwoKeyInputs(r1,r2) -> l1 = r1 && l2 = r2
-            | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
+        | :? KeyInputSet as y -> (x.CompareTo y) = 0
         | _ -> false
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this,other)
@@ -1433,29 +1419,26 @@ type KeyInputSet =
 
 module KeyInputSetUtil =
 
+    let Empty = KeyInputSet([])
+
     let OfSeq sequence = 
-        match Seq.length sequence with
-        | 0 -> KeyInputSet.Empty
-        | 1 -> KeyInputSet.OneKeyInput (Seq.item 0 sequence)
-        | 2 -> KeyInputSet.TwoKeyInputs ((Seq.item 0 sequence),(Seq.item 1 sequence))
-        | _ -> sequence |> List.ofSeq |> KeyInputSet.ManyKeyInputs 
+        let list = List.ofSeq sequence
+        KeyInputSet(list)
 
-    let OfList list = 
-        match list with
-        | [] -> KeyInputSet.Empty
-        | [ki] -> KeyInputSet.OneKeyInput ki
-        | _ -> 
-            match list.Length with
-            | 2 -> KeyInputSet.TwoKeyInputs ((List.item 0 list),(List.item 1 list))
-            | _ -> KeyInputSet.ManyKeyInputs list
+    let OfList (list: KeyInput list) = 
+        KeyInputSet(list)
 
-    let OfChar c = c |> KeyInputUtil.CharToKeyInput |> KeyInputSet.OneKeyInput
+    let OfChar c = 
+        let keyInput = KeyInputUtil.CharToKeyInput c
+        KeyInputSet([keyInput])
 
     let OfCharArray ([<System.ParamArray>] arr) = 
-        arr
-        |> Seq.ofArray
-        |> Seq.map KeyInputUtil.CharToKeyInput
-        |> OfSeq
+        let list = 
+            arr
+            |> Seq.ofArray
+            |> Seq.map KeyInputUtil.CharToKeyInput
+            |> List.ofSeq
+        KeyInputSet(list)
 
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
@@ -1464,6 +1447,9 @@ module KeyInputSetUtil =
         |> Seq.ofArray 
         |> Seq.map KeyInputUtil.VimKeyToKeyInput
         |> OfSeq
+
+    let Single (keyInput: KeyInput) =
+        KeyInputSet(keyInput)
 
     let Combine (left: KeyInputSet) (right: KeyInputSet) =
         let all = left.KeyInputs @ right.KeyInputs
@@ -3781,8 +3767,11 @@ type IMotionCapture =
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
 
-    /// Set of Commands currently supported
+    /// Set of Commands currently supported.
     abstract Commands: CommandBinding seq
+
+    /// Count of commands currently supported.
+    abstract CommandCount: int
 
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing

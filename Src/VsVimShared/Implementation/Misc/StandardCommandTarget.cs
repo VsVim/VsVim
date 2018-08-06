@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             if (result.IsMapped)
             {
                 var set = ((KeyMappingResult.Mapped)result).Item;
-                if (!set.IsOneKeyInput)
+                if (set.Length != 1)
                 {
                     mapped = null;
                     return false;

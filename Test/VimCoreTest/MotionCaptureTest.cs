@@ -479,7 +479,7 @@ namespace Vim.UnitTest
         [WpfFact]
         public void CommandMapSupportsAlternateKeys()
         {
-            Assert.True(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionBindingsMap).IsSome());
+            Assert.True(MapModule.TryFind(new KeyInputSet(KeyInputUtil.EnterKey), _captureRaw.MotionBindingsMap).IsSome());
         }
 
         [WpfFact]

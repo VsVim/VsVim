@@ -9,8 +9,8 @@ namespace Vim.UnitTest
         [Fact]
         public void Compare_AlternateKeyInputShouldBeEqual()
         {
-            var left = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
-            var right = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharWithControlToKeyInput('m'));
+            var left = new KeyInputSet(KeyInputUtil.EnterKey);
+            var right = new KeyInputSet(KeyInputUtil.CharWithControlToKeyInput('m'));
             Assert.True(0 == left.CompareTo(right));
             Assert.True(0 == right.CompareTo(left));
         }
@@ -18,8 +18,8 @@ namespace Vim.UnitTest
         [Fact]
         public void Compare_AlternateKeyInputShouldBeEqualInMap()
         {
-            var left = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
-            var right = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharWithControlToKeyInput('m'));
+            var left = new KeyInputSet(KeyInputUtil.EnterKey);
+            var right = new KeyInputSet(KeyInputUtil.CharWithControlToKeyInput('m'));
             var map = MapModule.Empty<KeyInputSet, bool>().Add(left, true);
             var result = MapModule.TryFind(right, map);
             Assert.True(result.IsSome());

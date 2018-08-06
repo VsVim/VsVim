@@ -299,7 +299,7 @@ type internal InsertMode
 
     member x.CommandNames =
         x.EnsureCommandsBuilt()
-        _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map KeyInputSet.OneKeyInput
+        _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map KeyInputSetUtil.Single
 
     member x.BuildCommands () =
 
@@ -374,7 +374,7 @@ type internal InsertMode
             InsertCommandDataArray
             |> Seq.append applicableNoSelectionCommands
             |> Seq.map (fun (keyInput, insertCommand, commandFlags) ->
-                let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                let keyInputSet = KeyInputSet(keyInput)
                 let rawInsertCommand = RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags)
                 (keyInput, rawInsertCommand))
 
@@ -480,7 +480,7 @@ type internal InsertMode
                             let text = StringUtil.OfChar c
                             InsertCommand.Insert text
                     let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                    let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                    let keyInputSet = KeyInputSet(keyInput)
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
 
                 if keyInput.KeyModifiers <> VimKeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
@@ -827,7 +827,7 @@ type internal InsertMode
                     let newLine = _operations.GetNewLineText x.CaretPoint
                     EditUtil.NormalizeNewLines text newLine
 
-                let keyInputSet = KeyInputSet.OneKeyInput keyInput
+                let keyInputSet = KeyInputSet(keyInput)
                 let insertCommand = if isOverwrite then InsertCommand.Overwrite text else InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
