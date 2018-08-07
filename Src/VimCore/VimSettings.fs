@@ -181,7 +181,6 @@ type internal GlobalSettings() =
             (SmartCaseName, "scs", SettingValue.Toggle false, SettingOptions.None)
             (StartOfLineName, "sol", SettingValue.Toggle true, SettingOptions.None)
             (StatusLineName, "stl", SettingValue.String "", SettingOptions.None)
-            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
             (TildeOpName, "top", SettingValue.Toggle false, SettingOptions.None)
             (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false, SettingOptions.None)
@@ -509,6 +508,7 @@ type internal LocalSettings
             (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
             (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
             (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
+            (ListName, "list", SettingValue.Toggle false, SettingOptions.None)
             (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
@@ -587,6 +587,9 @@ type internal LocalSettings
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (SettingValue.Number value) |> ignore
+        member x.List
+            with get() = _map.GetBoolValue ListName
+            and set value = _map.TrySetValue ListName (SettingValue.Toggle value) |> ignore
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
@@ -751,6 +754,15 @@ type internal EditorToSettingSynchronizer
                             WordWrapStyles.None
                     box wordWrap)
                 IsLocal = false
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = DefaultTextViewOptions.UseVisibleWhitespaceId.Name
+                GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewOptions.UseVisibleWhitespaceId
+                VimSettingName = LocalSettingNames.ListName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ListName true
+                IsLocal = true
             })
 
     member x.StartSynchronizing (vimBuffer: IVimBuffer) settingSyncSource = 
