@@ -782,6 +782,9 @@ type IVimInterpreter =
     /// Run the Expression
     abstract RunExpression: expression: Expression -> VariableValue
 
+    /// Evaluate the text as an expression and return its value
+    abstract EvaluateExpression: text: string -> VariableValue option
+
     /// Run the given script 
     abstract RunScript: lines: string[] -> unit
 

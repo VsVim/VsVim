@@ -1508,9 +1508,17 @@ type internal CommonOperations
         // Replace one match.
         let replaceOne (capture: Match) =
             let matchSpan = getSpanforCapture capture
-            let replaceData = x.GetReplaceData x.CaretPoint
-            let oldText = matchSpan.GetText()
-            let newText = regex.Replace oldText replace replaceData _registerMap
+
+            // Get the new text to replace the match span with.
+            let newText =
+                if Util.IsFlagSet flags SubstituteFlags.LiteralReplacement then
+                    replace
+                else
+                    let replaceData = x.GetReplaceData x.CaretPoint
+                    let oldText = matchSpan.GetText()
+                    regex.Replace oldText replace replaceData _registerMap
+
+            // Perform the replacement.
             edit.Replace(matchSpan.Span, newText) |> ignore
 
         // Update the status for the substitute operation
@@ -1625,7 +1633,24 @@ type internal CommonOperations
                 else
                     range.ExtentIncludingLineBreak
 
-            x.SubstituteCore regex replace flags searchSpan replacementSpan
+            // Check for expression replace (see vim ':help :s\=').
+            if replace.StartsWith(@"\=") then
+                let expressionText = replace.Substring(2)
+                let vim = _vimBufferData.Vim
+                match vim.TryGetVimBuffer _textView with
+                | true, vimBuffer ->
+                    let vimInterpreter = vim.GetVimInterpreter vimBuffer
+                    match vimInterpreter.EvaluateExpression expressionText with
+                    | Some variableValue ->
+                        let replace = variableValue.StringValue
+                        let flags = flags ||| SubstituteFlags.LiteralReplacement
+                        x.SubstituteCore regex replace flags searchSpan replacementSpan
+                    | None ->
+                        _statusUtil.OnError Resources.Parser_Error
+                | _ ->
+                    _statusUtil.OnError Resources.Parser_InvalidArgument
+            else
+                x.SubstituteCore regex replace flags searchSpan replacementSpan
 
             // Make sure to update the saved state.  Note that there are 2 patterns stored 
             // across buffers.

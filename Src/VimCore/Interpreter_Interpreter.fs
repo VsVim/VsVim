@@ -851,6 +851,15 @@ type VimInterpreter
     member x.RunExpression expr =
         _exprInterpreter.RunExpression expr
 
+    /// Evaluate the text as an expression and return its value
+    member x.EvaluateExpression (text: string) =
+        let parser = Parser(_globalSettings, _vimData)
+        match parser.ParseExpression(text) with
+        | ParseResult.Succeeded expression ->
+            _exprInterpreter.RunExpression expression |> Some
+        | ParseResult.Failed _ ->
+            None
+
     /// Print out the applicable file history information
     member x.RunFiles () = 
         let output = List<string>()
@@ -1941,6 +1950,7 @@ type VimInterpreter
         member x.GetLineRange lineRange = x.GetLineRange lineRange
         member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
         member x.RunExpression expression = x.RunExpression expression
+        member x.EvaluateExpression text = x.EvaluateExpression text
         member x.RunScript lines = x.RunScript lines
 
 [<Export(typeof<IVimInterpreterFactory>)>]

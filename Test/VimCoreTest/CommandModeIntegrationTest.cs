@@ -1281,6 +1281,49 @@ namespace Vim.UnitTest
                     RunCommandRaw(":s/.*/xxx");
                     Assert.Equal("xxx\r\ndef\r\n", _textView.TextSnapshot.GetText());
                 }
+
+                /// <summary>
+                /// Perform an expression replace
+                /// </summary>
+                [WpfFact]
+                public void ExpressionReplace()
+                {
+                    Create("abc", "def", "");
+                    Vim.RegisterMap.GetRegister('a').UpdateValue("xyzzy");
+                    RunCommandRaw(@":s/abc/\=@a");
+                    Assert.Equal(new[] { "xyzzy", "def", "" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// An expression replacement is literal
+                /// </summary>
+                [WpfFact]
+                public void ExpressionReplaceIsLiteral()
+                {
+                    Create("abc", "def", "");
+                    Vim.RegisterMap.GetRegister('a').UpdateValue(@"\0");
+                    RunCommandRaw(@":s/abc/\=@a");
+                    Assert.Equal(new[] { @"\0", "def", "" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// An expression replace fails if there is a parse error
+                /// </summary>
+                [WpfFact]
+                public void ExpressionReplaceParseError()
+                {
+                    Create("abc", "def", "");
+                    var didHit = false;
+                    _vimBuffer.ErrorMessage +=
+                        (sender, args) =>
+                        {
+                            Assert.Equal(Resources.Parser_Error, args.Message);
+                            didHit = true;
+                        };
+                    RunCommandRaw(@":s/abc/\=@");
+                    Assert.Equal(new[] { "abc", "def", "" }, _textBuffer.GetLines());
+                    Assert.True(didHit);
+                }
             }
         }
 
