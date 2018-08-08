@@ -1498,7 +1498,7 @@ namespace Vim.UnitTest
             public void GetNewLineIndent_EditorTrumpsAutoIndent()
             {
                 Create("cat", "dog", "");
-                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption.Create(8));
+                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption.Create(8));
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(8, indent.Value);
             }
@@ -1511,7 +1511,7 @@ namespace Vim.UnitTest
             {
                 Create("  cat", "  dog", "");
                 _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
-                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption<int>.None);
+                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption<int>.None);
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(2, indent.Value);
             }

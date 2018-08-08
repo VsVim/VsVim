@@ -4453,7 +4453,7 @@ type IVimHost =
 
     /// Get the indent for the new line.  This has precedence over the 'autoindent'
     /// setting
-    abstract GetNewLineIndent: textView: ITextView -> contextLine: ITextSnapshotLine -> newLine: ITextSnapshotLine -> int option
+    abstract GetNewLineIndent: textView: ITextView -> contextLine: ITextSnapshotLine -> newLine: ITextSnapshotLine -> localSettings: IVimLocalSettings -> int option
 
     /// Get the WordWrap style which should be used for the specified ITextView if word 
     /// wrap is enabled

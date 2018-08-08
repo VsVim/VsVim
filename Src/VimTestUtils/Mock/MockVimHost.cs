@@ -191,7 +191,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
         {
             return FSharpOption<int>.None;
         }

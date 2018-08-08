@@ -3061,10 +3061,10 @@ module EditUtil =
 
     /// Get the indentation level given the context line (the line above the line which is 
     /// being indented)
-    let GetAutoIndent (contextLine: ITextSnapshotLine) =
+    let GetAutoIndent (contextLine: ITextSnapshotLine) tabStop =
         contextLine 
         |> SnapshotLineUtil.GetIndentPoint 
-        |> SnapshotPointUtil.GetColumn 
+        |> (fun point -> SnapshotPointUtil.GetSpacesToPoint point tabStop)
 
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value
