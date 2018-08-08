@@ -752,6 +752,16 @@ type SnapshotColumn =
         let lineNumber = x.LineNumber
         x.TryAddCore -count (fun current -> current.LineNumber = lineNumber)
 
+    member x.AddInLine(count: int, ?includeLineBreak) = 
+        let includeLineBreak = defaultArg includeLineBreak false
+        match x.TryAddInLine(count, includeLineBreak) with
+        | Some column -> column
+        | None -> invalidArg "count" (Resources.Common_InvalidColumnCount count)
+
+    member x.SubtractInLine(count: int, ?includeLineBreak) = 
+        let includeLineBreak = defaultArg includeLineBreak false
+        x.AddInLine(-count, includeLineBreak)
+
     /// Get the text corresponding to the column
     member x.GetText () =
         x.Span.GetText()
@@ -916,6 +926,52 @@ type VirtualSnapshotColumn =
     member x.Column = x._column
 
     member x.VirtualStartPoint = VirtualSnapshotPoint(x._column.StartPoint, x._virtualSpaces)
+
+    /// Add "count" columns on the current line. If the count exceeds the number of columns on the line 
+    /// then it will overflow into virtual space. 
+    member x.AddInLine(count: int) = 
+        if count >= 0 then
+            if x.IsInVirtualSpace then
+                VirtualSnapshotColumn(x.Column, x.VirtualSpaces + count)
+            else
+                let mutable count = count
+                let mutable current = x.Column
+                while not current.IsLineBreakOrEnd do
+                    current <- current.AddInLine 1
+                    count <- count - 1
+                if current.IsLineBreakOrEnd then VirtualSnapshotColumn(current, count)
+                else VirtualSnapshotColumn(current)
+        else
+            let originalCount = -count
+            let count = originalCount
+            if count < x.VirtualSpaces then
+                VirtualSnapshotColumn(x.Column, x.VirtualSpaces - count)
+            else
+                let mutable current = x.Column
+                let mutable count = count - x.VirtualSpaces
+                while count > 0 do
+                    if current.IsStartOfLine then
+                        invalidArg "count" (Resources.Common_InvalidColumnCount originalCount)
+                    count <- count - 1
+                    current <- current.Subtract 1
+                VirtualSnapshotColumn(current)
+
+    /// Subtract "count" columns on the current line. Will throw if the count forces it to move past the
+    /// start of the line
+    member x.SubtractInLine(count: int) = 
+        x.AddInLine(-count)
+
+    member x.TryAddInLine(count: int) = 
+        if count >= 0 then 
+            Some (x.AddInLine(count))
+        else
+            let mutable count = -count
+            let mutable current = x
+            while count > 0 && not current.Column.IsStartOfLine do
+                current <- current.SubtractInLine(1)
+                count <- count - 1
+            if count > 0 then None
+            else Some current
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'

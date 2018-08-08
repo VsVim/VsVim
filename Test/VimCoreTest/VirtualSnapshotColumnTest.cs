@@ -67,5 +67,50 @@ namespace Vim.UnitTest
                 Assert.True(column.IsInVirtualSpace);
             }
         }
+
+        public sealed class AddInSameLineTest : VirtualSnapshotColumnTest
+        {
+            [WpfFact]
+            public void SimpleAdd()
+            {
+                Create("cat", "dog");
+                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                Assert.True(column.Column.IsLineBreak);
+                column = column.AddInLine(1);
+                Assert.True(column.IsInVirtualSpace);
+                Assert.Equal(1, column.VirtualSpaces);
+            }
+
+            [WpfFact]
+            public void GiantAdd()
+            {
+                Create("cat", "dog");
+                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                Assert.True(column.Column.IsLineBreak);
+                column = column.AddInLine(300);
+                Assert.True(column.IsInVirtualSpace);
+                Assert.Equal(300, column.VirtualSpaces);
+            }
+
+            [WpfFact]
+            public void SimpleSubtract()
+            {
+                Create("cat", "dog");
+                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 4);
+                Assert.True(column.Column.IsLineBreak);
+                Assert.True(column.IsInVirtualSpace);
+                column = column.SubtractInLine(1);
+                Assert.False(column.IsInVirtualSpace);
+                Assert.Equal(0, column.VirtualSpaces);
+            }
+
+            [WpfFact]
+            public void SubtractPastStart()
+            {
+                Create("cat", "dog");
+                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 0);
+                Assert.Throws<ArgumentException>(() => column.SubtractInLine(1));
+            }
+        }
     }
 }
