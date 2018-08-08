@@ -4652,6 +4652,49 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("o");
                 Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent_Spaces()
+            {
+                Create("    {", "    }", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "    {", "    ;", "    }", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent_Tabs()
+            {
+                Create("\t{", "\t}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = false;
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "\t{", "\t;", "\t}", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host provides an auto-indent service, host indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_HostIndent()
+            {
+                Create("    {", "    }", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _vimHost.GetNewLineIndentFunc = delegate { return FSharpOption<int>.Some(8); };
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "    {", "        ;", "    }", "" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class MaintainCaretColumnTest : NormalModeIntegrationTest
