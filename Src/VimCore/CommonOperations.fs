@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open Vim.Interpreter
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
@@ -1641,12 +1642,12 @@ type internal CommonOperations
                 | true, vimBuffer ->
                     let vimInterpreter = vim.GetVimInterpreter vimBuffer
                     match vimInterpreter.EvaluateExpression expressionText with
-                    | Some variableValue ->
+                    | EvaluateResult.Succeeded variableValue ->
                         let replace = variableValue.StringValue
                         let flags = flags ||| SubstituteFlags.LiteralReplacement
                         x.SubstituteCore regex replace flags searchSpan replacementSpan
-                    | None ->
-                        _statusUtil.OnError Resources.Parser_Error
+                    | EvaluateResult.Failed message ->
+                        _statusUtil.OnError message
                 | _ ->
                     _statusUtil.OnError Resources.Parser_InvalidArgument
             else

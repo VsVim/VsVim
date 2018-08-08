@@ -856,9 +856,9 @@ type VimInterpreter
         let parser = Parser(_globalSettings, _vimData)
         match parser.ParseExpression(text) with
         | ParseResult.Succeeded expression ->
-            _exprInterpreter.RunExpression expression |> Some
-        | ParseResult.Failed _ ->
-            None
+            _exprInterpreter.RunExpression expression |> EvaluateResult.Succeeded
+        | ParseResult.Failed message ->
+            EvaluateResult.Failed message
 
     /// Print out the applicable file history information
     member x.RunFiles () = 
