@@ -2282,11 +2282,11 @@ type internal MotionUtil
     member x.LineToColumn count =
         x.MotionWithVisualSnapshot (fun x ->
             let count = count - 1
-            let targetPoint = _commonOperations.GetPointForSpaces x.CaretLine count
-            let isForward = targetPoint.Difference(x.CaretPoint) < 0
+            let targetColumn = _commonOperations.GetColumnForSpacesOrLineBreak x.CaretLine count
+            let isForward = targetColumn.StartPoint.Difference(x.CaretPoint) < 0
             let span = 
-                if isForward then SnapshotSpan(x.CaretPoint, targetPoint)
-                else SnapshotSpan(targetPoint, x.CaretPoint)
+                if isForward then SnapshotSpan(x.CaretPoint, targetColumn.StartPoint)
+                else SnapshotSpan(targetColumn.StartPoint, x.CaretPoint)
             let column = count |> CaretColumn.ScreenColumn
             MotionResult.CreateCharacterWise(span, isExclusive = true, isForward = isForward, caretColumn = column))
 

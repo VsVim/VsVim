@@ -923,6 +923,13 @@ namespace Vim.UnitTest
             return new SnapshotColumn(point);
         }
 
+        public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextSnapshot snapshot, int position, int virtualSpaces = 0)
+        {
+            var point = new SnapshotPoint(snapshot, position);
+            var column = new SnapshotColumn(point);
+            return new VirtualSnapshotColumn(column, virtualSpaces);
+        }
+
         public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot)
         {
             var point = new SnapshotPoint(snapshot, snapshot.Length);
@@ -942,6 +949,11 @@ namespace Vim.UnitTest
         public static SnapshotColumn GetColumnFromPosition(this ITextBuffer textBuffer, int position)
         {
             return GetColumnFromPosition(textBuffer.CurrentSnapshot, position);
+        }
+
+        public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextBuffer textBuffer, int position, int virtualSpaces = 0)
+        {
+            return GetVirtualColumnFromPosition(textBuffer.CurrentSnapshot, position, virtualSpaces);
         }
 
         public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)

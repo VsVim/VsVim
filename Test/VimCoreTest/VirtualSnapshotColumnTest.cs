@@ -112,5 +112,56 @@ namespace Vim.UnitTest
                 Assert.Throws<ArgumentException>(() => column.SubtractInLine(1));
             }
         }
+
+        public sealed class GetSpaces : VirtualSnapshotColumnTest
+        {
+            public static readonly int TabStop = 8;
+
+            [WpfFact]
+            public void Simple()
+            {
+                Create("cat", "dog");
+                var column = _textBuffer.GetVirtualColumnFromPosition(3, 1);
+                Assert.Equal(5, column.GetSpacesIncludingToColumn(TabStop));
+                Assert.Equal(4, column.GetSpacesToColumn(TabStop));
+                Assert.Equal(1, column.GetSpaces(TabStop));
+            }
+
+            [WpfFact]
+            public void SimpleBlankLine()
+            {
+                Create("", "dog");
+                var column = _textBuffer.GetVirtualColumnFromPosition(0, 4);
+                Assert.Equal(5, column.GetSpacesIncludingToColumn(TabStop));
+                Assert.Equal(4, column.GetSpacesToColumn(TabStop));
+                Assert.Equal(1, column.GetSpaces(TabStop));
+            }
+        }
+
+        public sealed class GetColumnForSpaces : VirtualSnapshotColumnTest
+        {
+            public static readonly int TabStop = 8;
+
+            [WpfFact]
+            public void SimpleBlankLine()
+            {
+                Create("", "dog");
+                var column = VirtualSnapshotColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 0, TabStop);
+                Assert.True(column.Column.IsLineBreak);
+                Assert.False(column.IsInVirtualSpace);
+                Assert.Equal(0, column.VirtualSpaces);
+            }
+
+            [WpfFact]
+            public void SimpleBlankLineFurther()
+            {
+                Create("", "dog");
+                var column = VirtualSnapshotColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 1, TabStop);
+                Assert.True(column.Column.IsLineBreak);
+                Assert.True(column.IsInVirtualSpace);
+                Assert.Equal(1, column.VirtualSpaces);
+                Assert.Equal(1, column.GetSpacesToColumn(TabStop));
+            }
+        }
     }
 }
