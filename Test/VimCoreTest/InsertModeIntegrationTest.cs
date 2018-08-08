@@ -374,7 +374,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Tests for inserting previously inserted text
         /// </summary>
-        public sealed class PreviouslyInsertTextText : InsertModeIntegrationTest
+        public sealed class PreviouslyInsertedTextTest : InsertModeIntegrationTest
         {
             [WpfFact]
             public void StopInsertMode()
