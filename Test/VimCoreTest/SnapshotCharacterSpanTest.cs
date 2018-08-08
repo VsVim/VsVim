@@ -326,6 +326,15 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void TabInMiddle()
+            {
+                Create("c\tat");
+                var column = _textBuffer.GetColumnFromPosition(1);
+                Assert.Equal(1, column.GetSpacesToColumn(8));
+                Assert.Equal(8, column.GetSpacesIncludingToColumn(8));
+            }
+
+            [WpfFact]
             public void AfterSurrogatePair()
             {
                 const string alien = "\U0001F47D"; // 👽
