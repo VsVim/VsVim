@@ -582,7 +582,7 @@ type SnapshotCodePoint =
 /// - a UTF32 character (represented by two UTF16 characters called the "surrogate pair")
 /// Alternatively, a character span represents the places where it is valid to set the caret.
 [<Struct>]
-[<NoEquality>]
+[<StructuralEquality>]
 [<NoComparison>]
 type SnapshotColumn =
 
@@ -816,6 +816,9 @@ type SnapshotColumn =
     override x.ToString() =
         sprintf "Point: %s Line: %d Column: %d" (x.CodePoint.ToString()) x.LineNumber x.ColumnNumber
 
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other))
+
     static member TryCreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
         let includeLineBreak = defaultArg includeLineBreak false
         let mutable column = SnapshotColumn(line)
@@ -938,7 +941,7 @@ type SnapshotColumn =
 /// BlockSpan's.  It needs to understand spaces within a single SnapshotColumn when
 /// there are multiple logical characters (like tabs).  This structure represents
 /// a value within a SnapshotPoint
-and [<Struct>] [<DebuggerDisplay("{ToString()}")>] SnapshotOverlapColumn =
+and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToString()}")>] SnapshotOverlapColumn =
 
     val private _column: SnapshotColumn
     val private _beforeSpaces: int
@@ -969,6 +972,9 @@ and [<Struct>] [<DebuggerDisplay("{ToString()}")>] SnapshotOverlapColumn =
 
     override x.ToString() = 
         sprintf "Column: %s Spaces: %d Before: %d After: %d" (x.Column.ToString()) x.TotalSpaces x.SpacesBefore x.SpacesAfter
+
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SnapshotOverlapColumn>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SnapshotOverlapColumn>.Default.Equals(this, other))
 
     static member GetColumnForSpaces(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotOverlapColumn option = 
         let totalSpaces = spaces

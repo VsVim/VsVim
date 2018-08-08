@@ -374,5 +374,60 @@ namespace Vim.UnitTest
                 Assert.False(column.IsLineBreak);
             }
         }
+
+        public sealed class EqualsTest : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void SameBuffer()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer.GetColumnFromPosition(0))
+                    .WithEqualValues(textBuffer.GetColumnFromPosition(0))
+                    .WithNotEqualValues(
+                        textBuffer.GetColumn(lineNumber: 1, columnNumber: 0),
+                        textBuffer.GetColumnFromPosition(1),
+                        textBuffer.GetColumnFromPosition(2))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+
+            [WpfFact]
+            public void SameBufferSurrogatePair()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                var textBuffer = CreateTextBuffer($"{alien}{alien}cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer.GetColumnFromPosition(0))
+                    .WithEqualValues(
+                        textBuffer.GetColumnFromPosition(0),
+                        textBuffer.GetColumnFromPosition(1))
+                    .WithNotEqualValues(
+                        textBuffer.GetColumnFromPosition(2),
+                        textBuffer.GetColumnFromPosition(3),
+                        textBuffer.GetColumnFromPosition(4))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+
+            [WpfFact]
+            public void DifferentBuffer()
+            {
+                var textBuffer1 = CreateTextBuffer("cat", "dog");
+                var textBuffer2 = CreateTextBuffer("cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer1.GetColumnFromPosition(0))
+                    .WithEqualValues(textBuffer1.GetColumnFromPosition(0))
+                    .WithNotEqualValues(
+                        textBuffer2.GetColumnFromPosition(0),
+                        textBuffer1.GetColumnFromPosition(1),
+                        textBuffer1.GetColumnFromPosition(2))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+        }
     }
 }
