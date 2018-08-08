@@ -443,6 +443,20 @@ type internal InsertUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Insert previously inserted text, optionally stopping insert
+    member x.InsertPreviouslyInsertedText stopInsert =
+        match _vimBufferData.Vim.VimData.LastTextInsert with
+        | Some text ->
+            _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
+        | None ->
+            ()
+
+        if stopInsert then
+            ModeSwitch.SwitchMode ModeKind.Normal
+        else
+            ModeSwitch.NoSwitch
+        |> CommandResult.Completed 
+
     /// Insert a single tab into the ITextBuffer.  If 'expandtab' is enabled then insert
     /// the appropriate number of spaces
     ///
@@ -622,6 +636,7 @@ type internal InsertUtil
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
             | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
+            | InsertCommand.InsertPreviouslyInsertedText stopInsert -> x.InsertPreviouslyInsertedText stopInsert
             | InsertCommand.InsertTab -> x.InsertTab()
             | InsertCommand.MoveCaret direction -> x.MoveCaret direction
             | InsertCommand.MoveCaretWithArrow direction -> x.MoveCaretWithArrow direction
