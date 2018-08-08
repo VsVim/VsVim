@@ -706,14 +706,14 @@ type CaretColumn =
     /// This column should be specified in terms of a character offset in the ITextBuffer
     /// and shouldn't consider items like how wide a tab is.  A tab should be a single
     /// character
-    | InLastLine of int
+    | InLastLine of ColumnNumber: int
 
     /// Caret should be placed in the specified column on the last line in 
     /// the MotionResult
     ///
     /// This column should be specified in terms number of screen columns, where 
     /// some characters like tabs may span many columns.
-    | ScreenColumn of int
+    | ScreenColumn of ColumnNumber: int
 
     /// Caret should be placed at the start of the line after the last line
     /// in the motion

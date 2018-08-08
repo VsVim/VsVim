@@ -1185,6 +1185,19 @@ type SnapshotColumnSpan =
 
     member x.Span = SnapshotSpan(x.Start.StartPoint, x.End.StartPoint)
 
+    member x.StartLine = x.Start.Line
+
+    member x.EndLine = x.End.Line
+
+    member x.LastLine = 
+        if not x.IsEmpty then
+            x.End.Subtract(1).Line
+        else
+            x.StartLine
+
+    member x.LineCount =
+        (x.LastLine.LineNumber - x.StartLine.LineNumber) + 1
+
     member x.GetText() = x.Span.GetText()
 
     override x.ToString() = sprintf "Start: %s End: %s" (x.Start.ToString()) (x.End.ToString())
@@ -1197,7 +1210,25 @@ type VirtualSnapshotColumnSpan =
     val private _startColumn: VirtualSnapshotColumn
     val private _endColumn: VirtualSnapshotColumn
 
+    new(span: VirtualSnapshotSpan) =
+        let startColumn = VirtualSnapshotColumn(span.Start)
+        let endColumn = VirtualSnapshotColumn(span.End)
+        { _startColumn = startColumn; _endColumn = endColumn }
+
     new(startColumn, endColumn) = 
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    new(startColumn: SnapshotColumn, endColumn: VirtualSnapshotColumn) = 
+        let startColumn = VirtualSnapshotColumn(startColumn)
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    new(startColumn: VirtualSnapshotColumn, endColumn: SnapshotColumn) = 
+        let endColumn = VirtualSnapshotColumn(endColumn)
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    new(startColumn: SnapshotColumn, endColumn: SnapshotColumn) = 
+        let startColumn = VirtualSnapshotColumn(startColumn)
+        let endColumn = VirtualSnapshotColumn(endColumn)
         { _startColumn = startColumn; _endColumn = endColumn }
 
     member x.Start = x._startColumn
@@ -1209,6 +1240,22 @@ type VirtualSnapshotColumnSpan =
     member x.ColumnSpan = SnapshotColumnSpan(x.Start.Column, x.End.Column)
 
     member x.Span = x.ColumnSpan.Span
+
+    member x.StartLine = x.Start.Line
+
+    member x.EndLine = x.End.Line
+
+    member x.LastLine = 
+        if x.End.IsInVirtualSpace then
+            x.End.Line
+        elif not x.IsEmpty then
+            x.End.Column.Subtract(1).Line
+        else
+            x.StartLine
+
+    /// Get the number of lines in this VirtualSnapshotSpan
+    member x.LineCount =
+        (x.LastLine.LineNumber - x.StartLine.LineNumber) + 1
 
     member x.GetText() = x.Span.GetText()
 
@@ -2454,12 +2501,13 @@ module SnapshotPointUtil =
     /// Get a character span relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
     /// specified.  Goes as far as possible in the specified direction
-    let GetRelativeCharacterSpan (startPoint: SnapshotPoint) count skipLineBreaks =
+    /// CTODO: this method is on the wrong type
+    let GetRelativeColumn (column: SnapshotColumn) count skipLineBreaks =
 
         /// Get the relative column in 'direction' using predicate 'isEnd'
         /// to stop the motion
         let getRelativeColumn direction (isEnd: SnapshotPoint -> bool) =
-            let mutable column = SnapshotColumn(startPoint)
+            let mutable column = column
             let mutable remaining = abs count
             while remaining > 0 && not (isEnd column.StartPoint) do
                 column <- column.Add direction
@@ -2479,7 +2527,7 @@ module SnapshotPointUtil =
             else
                 getRelativeColumn 1 IsEndPointOfLastLine
 
-        column.StartPoint
+        column
 
     /// Is this the last point on the line?
     let IsLastPointOnLine point = 
@@ -2732,10 +2780,22 @@ module BufferGraphUtil =
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
 
+    /// Map the column up to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapColumnUpToSnapshot (bufferGraph: IBufferGraph) (column: SnapshotColumn) snapshot trackingMode affinity =
+        match MapPointUpToSnapshot bufferGraph column.StartPoint snapshot trackingMode affinity with
+        | Some point -> Some (SnapshotColumn(point))
+        | None -> None
+
     /// Map the point up to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
     let MapPointUpToSnapshotStandard (bufferGraph: IBufferGraph) point snapshot =
         MapPointUpToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+
+    /// Map the column up to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapColumnUpToSnapshotStandard (bufferGraph: IBufferGraph) column snapshot =
+        MapColumnUpToSnapshot bufferGraph column snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
@@ -2747,10 +2807,22 @@ module BufferGraphUtil =
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None
 
+    /// Map the column down to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapColumnDownToSnapshot (bufferGraph: IBufferGraph) (column: SnapshotColumn) snapshot trackingMode affinity =
+        match MapPointDownToSnapshot bufferGraph column.StartPoint snapshot trackingMode affinity with
+        | Some point -> Some (SnapshotColumn(point))
+        | None -> None
+
     /// Map the point down to the given ITextSnapshot.  Returns None if the mapping is not 
     /// possible
     let MapPointDownToSnapshotStandard (bufferGraph: IBufferGraph) point snapshot =
         MapPointDownToSnapshot bufferGraph point snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
+
+    /// Map the column down to the given ITextSnapshot.  Returns None if the mapping is not 
+    /// possible
+    let MapColumnDownToSnapshotStandard (bufferGraph: IBufferGraph) column snapshot =
+        MapColumnDownToSnapshot bufferGraph column snapshot PointTrackingMode.Negative PositionAffinity.Predecessor
 
     /// Map the SnapshotSpan up to the given ITextSnapshot.  Returns None if the mapping is
     /// not possible

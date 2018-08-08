@@ -995,6 +995,8 @@ type internal MotionUtil
 
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
+    member x.CaretVirtualColumn = TextViewUtil.GetCaretVirtualColumn _textView
+
     /// Caret line in the ITextView
     member x.CaretLine = SnapshotPointUtil.GetContainingLine x.CaretPoint
 
@@ -2292,27 +2294,26 @@ type internal MotionUtil
 
     /// Get the motion which is 'count' characters to the left of the caret on
     /// the same line
-    member x.CharLeftOnSameLine count = 
-        let endPoint = x.CaretVirtualPoint
-        if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
-            if count < endPoint.VirtualSpaces then
+    member x.CharLeftOnSameLine count =
+        let endColumn = x.CaretVirtualColumn
+        if _vimTextBuffer.UseVirtualSpace && endColumn.IsInVirtualSpace then
+            if count < endColumn.VirtualSpaces then
 
                 // We are just moving in virtual space.
-                let startPoint = VirtualSnapshotPointUtil.SubtractOnSameLine count endPoint
-                let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
-                let span = VirtualSnapshotSpan(startPoint, endPoint)
-                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+                let startColumn = endColumn.SubtractInLine count
+                let columnNumber = startColumn.VirtualColumnNumber
+                let span = VirtualSnapshotColumnSpan(startColumn, endColumn)
+                MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
             else
 
                 // Move from virtual space to real space.
-                let rest = count - endPoint.VirtualSpaces
+                let rest = count - endColumn.VirtualSpaces
                 let startColumn = 
-                    match x.CaretColumn.TrySubtractInLine rest with
+                    match endColumn.Column.TrySubtractInLine rest with
                     | Some column -> column
                     | None -> SnapshotColumn(x.CaretLine)
-                let startPoint = VirtualSnapshotPoint(startColumn.StartPoint)
-                let span = VirtualSnapshotSpan(startPoint, endPoint)
-                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false)
+                let span = VirtualSnapshotColumnSpan(startColumn, endColumn)
+                MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = false)
         else
             let startColumn = 
                 match x.CaretColumn.TrySubtractInLine count with
@@ -2342,28 +2343,27 @@ type internal MotionUtil
     /// Get the motion which is 'count' characters before the caret
     /// through the buffer taking into acount 'virtualedit'
     member x.CharLeftWithLineWrap count =
-        let endPoint = x.CaretVirtualPoint
-        if _vimTextBuffer.UseVirtualSpace && endPoint.IsInVirtualSpace then
-            if count < endPoint.VirtualSpaces then
+        let endColumn = x.CaretVirtualColumn
+        if _vimTextBuffer.UseVirtualSpace && endColumn.IsInVirtualSpace then
+            if count < endColumn.VirtualSpaces then
 
                 // We are just moving in virtual space.
-                let startPoint = VirtualSnapshotPointUtil.SubtractOnSameLine count endPoint
-                let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber startPoint
-                let span = VirtualSnapshotSpan(startPoint, endPoint)
-                MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+                let startColumn = endColumn.SubtractInLine count
+                let span = VirtualSnapshotColumnSpan(startColumn, endColumn)
+                MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = false, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine startColumn.VirtualColumnNumber)
             else
 
                 // Move from virtual space to real space.
-                let rest = count - endPoint.VirtualSpaces
+                let rest = count - endColumn.VirtualSpaces
                 let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-                let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan endPoint.Position -rest skipLineBreaks
-                let span = SnapshotSpan(startPoint, endPoint.Position)
-                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+                let startColumn = SnapshotPointUtil.GetRelativeColumn endColumn.Column -rest skipLineBreaks
+                let span = VirtualSnapshotColumnSpan(startColumn, endColumn)
+                MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = false)
         else
             let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-            let startPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint -count skipLineBreaks
-            let span = SnapshotSpan(startPoint, x.CaretPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false)
+            let startColumn = SnapshotPointUtil.GetRelativeColumn x.CaretColumn -count skipLineBreaks
+            let span = SnapshotColumnSpan(startColumn, x.CaretColumn)
+            MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = false)
 
     /// Get the motion which is 'count' characters after the caret 
     /// through the buffer taking into acount 'virtualedit'
@@ -2372,19 +2372,18 @@ type internal MotionUtil
             x.CharRightVirtual count
         else
             let skipLineBreaks = not _globalSettings.IsVirtualEditOneMore
-            let endPoint = SnapshotPointUtil.GetRelativeCharacterSpan x.CaretPoint count skipLineBreaks
-            let span = SnapshotSpan(x.CaretPoint, endPoint)
-            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true)
+            let endColumn = SnapshotPointUtil.GetRelativeColumn x.CaretColumn count skipLineBreaks
+            let span = SnapshotColumnSpan(x.CaretColumn, endColumn)
+            MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = true)
 
     member x.CharRightVirtual count =
-        let startPoint = x.CaretVirtualPoint
-        let endPoint = VirtualSnapshotPointUtil.AddOnSameLine count startPoint
-        let columnNumber = VirtualSnapshotPointUtil.GetColumnNumber endPoint
-        let span = VirtualSnapshotSpan(startPoint, endPoint)
-        if endPoint.IsInVirtualSpace then
-            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine columnNumber)
+        let startColumn = x.CaretVirtualColumn
+        let endColumn = startColumn.AddInLine count
+        let span = VirtualSnapshotColumnSpan(startColumn, endColumn)
+        if endColumn.IsInVirtualSpace then
+            MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.None, caretColumn = CaretColumn.InLastLine endColumn.VirtualColumnNumber)
         else
-            MotionResult.Create(span.SnapshotSpan, MotionKind.CharacterWiseExclusive)
+            MotionResult.Create(span.Span, MotionKind.CharacterWiseExclusive)
 
     /// Get a relative character motion backward or forward 'count' characters
     /// wrapping lines if 'withLineWrap' is specified
@@ -2431,13 +2430,13 @@ type internal MotionUtil
             if x.CaretLine.LineNumber = 0 then None
             else
                 let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
-                let column =
+                let columnNumber =
                     if _vimTextBuffer.UseVirtualSpace then
-                        VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
+                        x.CaretVirtualColumn.VirtualColumnNumber
                     else
                         x.CaretColumn.ColumnNumber
                 let characterSpan =
-                    let s = SnapshotLineUtil.GetColumnOrEnd column startLine
+                    let s = SnapshotLineUtil.GetColumnOrEnd columnNumber startLine
                     let e = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
                     SnapshotSpan(s, e)
                 let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
@@ -2446,7 +2445,7 @@ type internal MotionUtil
                     spanBeforeLineWise = characterSpan,
                     isForward = false,
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
-                    caretColumn = CaretColumn.InLastLine column) |> Some)
+                    caretColumn = CaretColumn.InLastLine columnNumber) |> Some)
 
     /// Move a single line down from the current line.  Should fail if we are currenly 
     /// on the last line of the ITextBuffer
@@ -2456,13 +2455,13 @@ type internal MotionUtil
             else
                 let lineNumber = x.CaretLine.LineNumber + count
                 let lastLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
-                let column =
+                let columnNumber =
                     if _vimTextBuffer.UseVirtualSpace then
-                        VirtualSnapshotPointUtil.GetColumnNumber x.CaretVirtualPoint
+                        x.CaretVirtualColumn.VirtualColumnNumber
                     else
                         x.CaretColumn.ColumnNumber
                 let characterSpan = 
-                    let e = SnapshotLineUtil.GetColumnOrEnd column lastLine
+                    let e = SnapshotLineUtil.GetColumnOrEnd columnNumber lastLine
                     let e = SnapshotPointUtil.AddOneOrCurrent e
                     SnapshotSpan(x.CaretPoint, e)
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
@@ -2471,7 +2470,7 @@ type internal MotionUtil
                     spanBeforeLineWise = characterSpan,
                     isForward = true,
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
-                    caretColumn = CaretColumn.InLastLine column) |> Some)
+                    caretColumn = CaretColumn.InLastLine columnNumber) |> Some)
 
     /// Get the appropriate maintain caret column flag taking into account 'startofline'
     member x.GetMaintainCaretColumnFlag () =
