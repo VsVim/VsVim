@@ -1875,6 +1875,34 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
+    /// Return the per line spans which make up this VisualSpan instance
+    member x.PerLineSpans =
+        match x with
+        | VisualSpan.Character characterSpan ->
+            seq {
+                let leadingEdge, middle, trailingEdge =
+                    SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
+                match leadingEdge with
+                | Some span -> yield span
+                | None -> ()
+                match middle with
+                | Some lineRange ->
+                    let spans =
+                        lineRange.Lines
+                        |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+                    yield! spans
+                | None -> ()
+                match trailingEdge with
+                | Some span -> yield span
+                | None -> ()
+            }
+        | VisualSpan.Line lineRange ->
+            lineRange.Lines
+            |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan ->
+            blockSpan.BlockSpans
+            :> SnapshotSpan seq
+
     member x.OverlapSpans =
         match x with 
         | VisualSpan.Block blockSpan -> seq (blockSpan.BlockOverlapSpans)
@@ -3136,6 +3164,9 @@ type NormalCommand =
 [<StructuralEquality>]
 type VisualCommand = 
 
+    /// Add count to the word in each line of the selection, optionally progressively
+    | AddToSelection of bool
+
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
@@ -3211,6 +3242,9 @@ type VisualCommand =
 
     /// Shift the selected lines to the right
     | ShiftLinesRight
+
+    /// Subtract count from the word in each line of the selection, optionally progressively
+    | SubtractFromSelection of bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line

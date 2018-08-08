@@ -98,6 +98,10 @@ type internal VisualMode
                 yield ("gq", CommandFlags.Repeatable, VisualCommand.FormatTextLines false)
                 yield ("gw", CommandFlags.Repeatable, VisualCommand.FormatTextLines true)
                 yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
+                yield ("<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection false)
+                yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
+                yield ("g<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection true)
+                yield ("g<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection true)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
