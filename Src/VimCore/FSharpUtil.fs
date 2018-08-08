@@ -1004,3 +1004,20 @@ module internal SystemUtil =
             String.concat sep pathPrefix
         else
             String.concat sep pathComponents
+
+// Simple hashing combination function taken from
+// https://stackoverflow.com/questions/1646807/quick-and-simple-hash-code-combinations
+module internal HashUtil =
+
+    let Combine2 (hash1: int) (hash2: int) = 
+        let hash = 17
+        let hash = (hash * 31) + hash1
+        let hash = (hash * 31) + hash2
+        hash
+
+    let Combine3 (hash1: int) (hash2: int) (hash3: int) = 
+        let hash = 17
+        let hash = (hash * 31) + hash1
+        let hash = (hash * 31) + hash2
+        let hash = (hash * 31) + hash3
+        hash

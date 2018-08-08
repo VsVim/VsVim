@@ -187,7 +187,62 @@ namespace Vim.UnitTest
                 Assert.Equal(textBuffer.GetEndPoint(), point.EndPoint);
                 Assert.True(point.IsEndPoint);
             }
-
         }
+
+        public sealed class EqualsTest : SnapshotCodePointTest
+        {
+            [WpfFact]
+            public void SameBuffer()
+            {
+                var textBuffer = CreateTextBuffer("cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer.GetCodePointFromPosition(0))
+                    .WithEqualValues(textBuffer.GetCodePointFromPosition(0))
+                    .WithNotEqualValues(
+                        textBuffer.GetCodePoint(lineNumber: 1, columnNumber: 0),
+                        textBuffer.GetCodePointFromPosition(1),
+                        textBuffer.GetCodePointFromPosition(2))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+
+            [WpfFact]
+            public void SameBufferSurrogatePair()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                var textBuffer = CreateTextBuffer($"{alien}{alien}cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer.GetCodePointFromPosition(0))
+                    .WithEqualValues(
+                        textBuffer.GetCodePointFromPosition(0),
+                        textBuffer.GetCodePointFromPosition(1))
+                    .WithNotEqualValues(
+                        textBuffer.GetCodePointFromPosition(2),
+                        textBuffer.GetCodePointFromPosition(3),
+                        textBuffer.GetCodePointFromPosition(4))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+
+            [WpfFact]
+            public void DifferentBuffer()
+            {
+                var textBuffer1 = CreateTextBuffer("cat", "dog");
+                var textBuffer2 = CreateTextBuffer("cat", "dog");
+                EqualityUnit
+                    .Create(textBuffer1.GetCodePointFromPosition(0))
+                    .WithEqualValues(textBuffer1.GetCodePointFromPosition(0))
+                    .WithNotEqualValues(
+                        textBuffer2.GetCodePointFromPosition(0),
+                        textBuffer1.GetCodePointFromPosition(1),
+                        textBuffer1.GetCodePointFromPosition(2))
+                    .RunAll(
+                        compEqualsOperator: (x, y) => x == y,
+                        compNotEqualsOperator: (x, y) => x != y);
+            }
+        }
+
     }
 }

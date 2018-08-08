@@ -917,10 +917,23 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
+        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber, bool? includeLineBreak = true)
+        {
+            var option = FSharpOption.CreateForNullable(includeLineBreak);
+            var column = SnapshotColumn.TryCreateForLineAndColumnNumber(snapshot, lineNumber, columnNumber, option);
+            return column.Value;
+        }
+
         public static SnapshotColumn GetColumnFromPosition(this ITextSnapshot snapshot, int position)
         {
             var point = new SnapshotPoint(snapshot, position);
             return new SnapshotColumn(point);
+        }
+
+        public static VirtualSnapshotColumn GetVirtualColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber)
+        {
+            var line = snapshot.GetLine(lineNumber);
+            return VirtualSnapshotColumn.CreateForColumnNumber(line, columnNumber);
         }
 
         public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextSnapshot snapshot, int position, int virtualSpaces = 0)
@@ -928,6 +941,18 @@ namespace Vim.UnitTest
             var point = new SnapshotPoint(snapshot, position);
             var column = new SnapshotColumn(point);
             return new VirtualSnapshotColumn(column, virtualSpaces);
+        }
+
+        public static SnapshotCodePoint GetCodePoint(this ITextSnapshot snapshot, int lineNumber, int columnNumber)
+        {
+            var point = snapshot.GetPointInLine(lineNumber, columnNumber);
+            return new SnapshotCodePoint(point);
+        }
+
+        public static SnapshotCodePoint GetCodePointFromPosition(this ITextSnapshot snapshot, int position)
+        {
+            var point = new SnapshotPoint(snapshot, position);
+            return new SnapshotCodePoint(point);
         }
 
         public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot)
@@ -946,14 +971,34 @@ namespace Vim.UnitTest
 
         #region ITextBuffer
 
+        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int lineNumber, int columnNumber, bool? includeLineBreak = null)
+        {
+            return textBuffer.CurrentSnapshot.GetColumn(lineNumber, columnNumber, includeLineBreak);
+        }
+
         public static SnapshotColumn GetColumnFromPosition(this ITextBuffer textBuffer, int position)
         {
             return GetColumnFromPosition(textBuffer.CurrentSnapshot, position);
         }
 
+        public static VirtualSnapshotColumn GetVirtualColumn(this ITextBuffer textBuffer, int lineNumber, int columnNumber)
+        {
+            return GetVirtualColumn(textBuffer.CurrentSnapshot, lineNumber, columnNumber);
+        }
+
         public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextBuffer textBuffer, int position, int virtualSpaces = 0)
         {
             return GetVirtualColumnFromPosition(textBuffer.CurrentSnapshot, position, virtualSpaces);
+        }
+
+        public static SnapshotCodePoint GetCodePoint(this ITextBuffer textBuffer, int lineNumber, int columnNumber)
+        {
+            return textBuffer.CurrentSnapshot.GetCodePoint(lineNumber, columnNumber);
+        }
+
+        public static SnapshotCodePoint GetCodePointFromPosition(this ITextBuffer textBuffer, int position)
+        {
+            return GetCodePointFromPosition(textBuffer.CurrentSnapshot, position);
         }
 
         public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)

@@ -307,7 +307,7 @@ type SnapshotLineRange  =
 /// and characters. This type is used when a more direct mapping between positions and 
 /// code point is needed
 [<Struct>]
-[<NoEquality>]
+[<CustomEquality>]
 [<NoComparison>]
 type SnapshotCodePoint =
 
@@ -341,6 +341,9 @@ type SnapshotCodePoint =
 
     /// The snapshot line containing the column
     member x.Line = x._line
+
+    /// The offset into the Line that this SnapshotCodePoint occupies
+    member x.Offset = x._offset;
 
     /// The number of positions in the ITextSnapshot this character occupies.
     member x.Length = 
@@ -550,9 +553,28 @@ type SnapshotCodePoint =
     /// Get the text corresponding to the column
     member x.GetText () = x.Span.GetText()
 
+    member x.Equals(other : SnapshotCodePoint) =
+        x.Snapshot = other.Snapshot &&
+        x.Line.LineNumber = other.Line.LineNumber &&
+        x.Offset = other.Offset
+
     /// Debugger display
     override x.ToString() =
         sprintf "Line: %d Offset: %d Text: %s CodePoint: %d" x._line.LineNumber x._offset (x.GetText()) (x.CodePoint)
+
+    override x.GetHashCode() = 
+        HashUtil.Combine2 x.Line.LineNumber x.Offset
+
+    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SnapshotCodePoint>.Default.Equals(this, other)
+    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SnapshotCodePoint>.Default.Equals(this, other))
+
+    override x.Equals(other: obj) = 
+        match other with
+        | :? SnapshotCodePoint as codePoint -> x.Equals(codePoint)
+        | _ -> false
+
+    interface IEquatable<SnapshotCodePoint> with
+        member x.Equals(other: SnapshotCodePoint) = x.Equals(other)
 
 /// Conceptually, a character span corresponds to a single logical character:
 /// - a normal character

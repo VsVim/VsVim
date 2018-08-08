@@ -18,6 +18,7 @@ spaces. This is used often when calculating indentation / columns between lines.
     - Tab: current value of `tabstop`
     - Wide characters: 2
     - Everything else: 1
+- Offset: this is relative to the start of a line and counts the number of positions into a line
 
 ### TODO:
 
