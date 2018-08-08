@@ -238,6 +238,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// </summary>
         private void OnCaretPositionChanged(object sender, EventArgs e)
         {
+            RestartBlinkCycle();
+
+            UpdateCaret();
+        }
+
+        private void RestartBlinkCycle()
+        {
             if (_blinkTimer.IsEnabled)
             {
                 _blinkTimer.IsEnabled = false;
@@ -249,10 +256,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 _caretData.Value.Element.Opacity = _caretOpacity;
             }
-
-            UpdateCaret();
         }
-
 
         private void OnTextViewClosed(object sender, EventArgs e)
         {
@@ -515,6 +519,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     caretData.Element,
                     OnBlockCaretAdornmentRemoved);
             }
+
+            // When the caret display is changed (e.g. from normal to block) we
+            // need to restart the blink cycle so that the caret is immediately
+            // visible.  Reported in issue #2301.
+            RestartBlinkCycle();
         }
 
         private void UpdateCaret()
