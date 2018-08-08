@@ -3379,6 +3379,38 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "abc", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent()
+            {
+                Create("{", "", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("cc;<Esc>");
+                Assert.Equal(new[] { "{", ";", "}", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host provides an auto-indent service, host indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_HostIndent()
+            {
+                // Reported in issue #881.
+                Create("{", "", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimHost.GetNewLineIndentFunc = delegate { return FSharpOption<int>.Some(4); };
+                _vimBuffer.ProcessNotation("cc;<Esc>");
+                Assert.Equal(new[] { "{", "    ;", "}", "" }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class ChangeMotionTest : NormalModeIntegrationTest
