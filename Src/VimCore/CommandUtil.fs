@@ -423,6 +423,7 @@ type internal CommandUtil
         // position it at the equivalent location in the second line.
         //
         // There appears to be no logical reason for this behavior difference but it exists
+        let savedStartLine = range.StartLine
         let point =
             let line =
                 if range.Count = 1 then
@@ -443,7 +444,8 @@ type internal CommandUtil
 
             // Actually delete the text and position the caret
             _textBuffer.Delete(range.Extent.Span) |> ignore
-            x.MoveCaretToDeletedLineStart range.StartLine
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot savedStartLine.LineNumber
+            x.MoveCaretToNewLineIndent savedStartLine line
 
             // Update the register now that the operation is complete.  Register value is odd here
             // because we really didn't delete linewise but it's required to be a linewise
@@ -463,6 +465,7 @@ type internal CommandUtil
             // In an undo the caret position has 2 cases.
             //  - Single line range: Start of the first line
             //  - Multiline range: Start of the second line.
+            let savedStartLine = range.StartLine
             let point =
                 if range.Count = 1 then
                     range.StartLine.Start
@@ -473,7 +476,8 @@ type internal CommandUtil
 
             let commandResult = x.EditWithLinkedChange "ChangeLines" (fun () ->
                 _textBuffer.Delete(range.Extent.Span) |> ignore
-                x.MoveCaretToDeletedLineStart range.StartLine)
+                let line = SnapshotUtil.GetLine x.CurrentSnapshot savedStartLine.LineNumber
+                x.MoveCaretToNewLineIndent savedStartLine line)
 
             (EditSpan.Single range.Extent, commandResult)
 
@@ -1589,37 +1593,6 @@ type internal CommandUtil
         match _jumpList.Current with
         | None -> _commonOperations.Beep()
         | Some point -> _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
-
-    /// Move the caret to start of a line which is deleted.  Needs to preserve the original
-    /// indent if 'autoindent' is set.
-    ///
-    /// Be wary of using this function.  It has the implicit contract that the Start position
-    /// of the line is still valid.
-    member x.MoveCaretToDeletedLineStart (deletedLine: ITextSnapshotLine) =
-        Contract.Requires (deletedLine.Start.Position <= x.CurrentSnapshot.Length)
-
-        if _localSettings.AutoIndent then
-            // Caret needs to be positioned at the indentation point of the previous line.  Don't
-            // create actual whitespace, put the caret instead into virtual space
-            let point =
-                deletedLine.Start
-                |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetIndentPoint
-
-            // We are moving the caret into virtual space here.  Hence we need to do this in terms
-            // of spaces and not absolute character column.  Basically we have to expand tabs to the
-            // appropriate number of spaces
-            let column = _commonOperations.GetSpacesToPoint point
-
-            if column = 0 then
-                TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
-            else
-                let point = SnapshotUtil.GetPoint x.CurrentSnapshot deletedLine.Start.Position
-                let virtualPoint = VirtualSnapshotPoint(point, column)
-                TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
-        else
-            // Put the caret at column 0
-            TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
 
     /// Move the caret to the proper indent on the newly created line
     member x.MoveCaretToNewLineIndent contextLine newLine =
