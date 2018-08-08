@@ -2522,7 +2522,7 @@ type Parser
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with
             | Some name -> Expression.RegisterName name |>  ParseResult.Succeeded
-            | None -> ParseResult.Failed "Unrecognized register name"
+            | None -> ParseResult.Failed Resources.Parser_UnrecognizedRegisterName
         | TokenKind.Number number -> 
             _tokenizer.MoveNextToken()
             VariableValue.Number number |> Expression.ConstantValue |> ParseResult.Succeeded

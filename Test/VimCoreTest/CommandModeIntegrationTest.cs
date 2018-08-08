@@ -1317,7 +1317,7 @@ namespace Vim.UnitTest
                     _vimBuffer.ErrorMessage +=
                         (sender, args) =>
                         {
-                            Assert.Equal(Resources.Parser_Error, args.Message);
+                            Assert.Equal(Resources.Parser_UnrecognizedRegisterName, args.Message);
                             didHit = true;
                         };
                     RunCommandRaw(@":s/abc/\=@");
