@@ -723,6 +723,11 @@ type SnapshotColumn =
     member x.Subtract count =
         x.Add -count
 
+    member x.SubtractOrStart count =
+        match x.TrySubtract count with
+        | Some column -> column
+        | None -> SnapshotColumn.GetStartColumn x.Snapshot
+
     member private x.TryAddCore count testFunc = 
         let mutable count = count
         let mutable current = x  
@@ -2176,6 +2181,7 @@ module SnapshotPointUtil =
         line.ExtentIncludingLineBreak
 
     // Get the span of the character which is pointed to by the point
+    // CTODO: delete? 
     let GetCharacterSpan point =
         let line = GetContainingLine point
         SnapshotLineUtil.GetCharacterSpan line point
@@ -2202,6 +2208,7 @@ module SnapshotPointUtil =
             point.Subtract(1)
 
     /// Get the next character span in the buffer with wrap
+    /// CTODO: delete?
     let GetNextCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let nextPoint =
@@ -2213,6 +2220,7 @@ module SnapshotPointUtil =
             nextPoint
 
     /// Get the previous character span in the buffer with wrap
+    /// CTODO: delete?
     let GetPreviousCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let currentPoint =
@@ -2881,6 +2889,14 @@ module TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
+    let GetCaretColumn (textView: ITextView) = 
+        let point = textView.Caret.Position.BufferPosition
+        SnapshotColumn(point)
+
+    let GetCaretVirtualColumn (textView: ITextView) = 
+        let point = textView.Caret.Position.VirtualBufferPosition
+        VirtualSnapshotColumn(point)
+
     let GetCaretLineIndent textView = textView |> GetCaretLine |> SnapshotLineUtil.GetIndentPoint
 
     let GetCaretLineRange textView count = 
@@ -3081,6 +3097,16 @@ module TextViewUtil =
     /// selection.  Will not expand any outlining regions
     let MoveCaretToPosition textView position = 
         MoveCaretToPositionRaw textView position MoveCaretFlags.All
+
+    /// Move the caret to the given column, ensure it is on screen and clear out the previous 
+    /// selection.  Will not expand any outlining regions
+    let MoveCaretToColumnRaw textView (column: SnapshotColumn) flags = 
+        MoveCaretToPointRaw textView column.StartPoint flags
+
+    /// Move the caret to the given column, ensure it is on screen and clear out the previous 
+    /// selection.  Will not expand any outlining regions
+    let MoveCaretToColumn textView column = 
+        MoveCaretToColumnRaw textView column MoveCaretFlags.All
 
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer

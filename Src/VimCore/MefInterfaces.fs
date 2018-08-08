@@ -438,6 +438,14 @@ type ICommonOperations =
 
     /// Move the caret to a given point on the screen and ensure the view has the specified
     /// properties at that point 
+    abstract MoveCaretToColumn: column: SnapshotColumn -> viewFlags: ViewFlags -> unit
+
+    /// Move the caret to a given virtual point on the screen and ensure the view has the specified
+    /// properties at that point
+    abstract MoveCaretToVirtualColumn: column: VirtualSnapshotColumn -> viewFlags: ViewFlags -> unit
+
+    /// Move the caret to a given point on the screen and ensure the view has the specified
+    /// properties at that point 
     abstract MoveCaretToPoint: point: SnapshotPoint -> viewFlags: ViewFlags -> unit
 
     /// Move the caret to a given virtual point on the screen and ensure the view has the specified

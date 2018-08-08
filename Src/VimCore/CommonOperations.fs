@@ -74,9 +74,11 @@ type internal CommonOperations
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
 
-    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+    member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
 
@@ -168,12 +170,12 @@ type internal CommonOperations
     member x.FillInVirtualSpace () =
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks: string = 
-                let blanks = StringUtil.RepeatChar x.CaretVirtualPoint.VirtualSpaces ' '
+                let blanks = StringUtil.RepeatChar x.CaretVirtualColumn.VirtualSpaces ' '
                 x.NormalizeBlanks blanks
 
             // Make sure to position the caret to the end of the newly inserted spaces
-            let position = x.CaretPoint.Position + blanks.Length
-            _textBuffer.Insert(x.CaretPoint.Position, blanks) |> ignore
+            let position = x.CaretColumn.StartPosition + blanks.Length
+            _textBuffer.Insert(x.CaretColumn.StartPosition, blanks) |> ignore
             TextViewUtil.MoveCaretToPosition _textView position
 
     /// Filter the specified line range through the specified program
@@ -404,12 +406,11 @@ type internal CommonOperations
             VisualKind.IsAnySelect _vimTextBuffer.ModeKind
 
         if not allowPastEndOfLine && not (VisualKind.IsAnyVisual _vimTextBuffer.ModeKind) then
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = SnapshotPointUtil.GetContainingLine point
-            if point.Position >= line.End.Position && line.Length > 0 then 
-                point
-                |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
-                |> TextViewUtil.MoveCaretToPoint _textView
+            let column = TextViewUtil.GetCaretColumn _textView
+            let line = column.Line
+            if column.StartPosition >= line.End.Position && line.Length > 0 then 
+                let column = column.SubtractOrStart 1
+                TextViewUtil.MoveCaretToColumn _textView column
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
@@ -799,12 +800,20 @@ type internal CommonOperations
         | CaretMovement.Right -> moveRight()
         | _ -> x.MoveCaret caretMovement
 
+    member x.MoveCaretToColumn (point: SnapshotColumn) viewFlags = 
+        x.MoveCaretToPoint point.StartPoint viewFlags
+
+    member x.MoveCaretToVirtualColumn (point: VirtualSnapshotColumn) viewFlags = 
+        x.MoveCaretToVirtualPoint point.VirtualStartPoint viewFlags
+
     /// Move the caret to the specified point with the specified view properties
+    /// CTODO: delete
     member x.MoveCaretToPoint (point: SnapshotPoint) viewFlags =
         let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
         x.MoveCaretToVirtualPoint virtualPoint viewFlags
 
     /// Move the caret to the specified virtual point with the specified view properties
+    /// CTODO: delete
     member x.MoveCaretToVirtualPoint (point: VirtualSnapshotPoint) viewFlags =
 
         // In the case where we want to expand the text we are moving to we need to do the expansion
@@ -2058,6 +2067,8 @@ type internal CommonOperations
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
+        member x.MoveCaretToColumn column viewFlags =  x.MoveCaretToColumn column viewFlags
+        member x.MoveCaretToVirtualColumn column viewFlags =  x.MoveCaretToVirtualColumn column viewFlags
         member x.MoveCaretToPoint point viewFlags =  x.MoveCaretToPoint point viewFlags
         member x.MoveCaretToVirtualPoint point viewFlags =  x.MoveCaretToVirtualPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
