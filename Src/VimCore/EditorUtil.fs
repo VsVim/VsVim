@@ -907,6 +907,18 @@ type VirtualSnapshotColumn =
     val private _column: SnapshotColumn
     val private _virtualSpaces: int
 
+    new (point: SnapshotPoint) =
+        let column = SnapshotColumn(point)
+        { _column = column; _virtualSpaces = 0 }
+
+    new (point: VirtualSnapshotPoint) =
+        if point.IsInVirtualSpace then
+            let line = point.Position.GetContainingLine()
+            let column = SnapshotColumn(line, line.End)
+            VirtualSnapshotColumn(column, point.VirtualSpaces)
+        else
+            VirtualSnapshotColumn(point.Position)
+
     new (column: SnapshotColumn) =
         { _column = column; _virtualSpaces = 0 }
 
@@ -2563,6 +2575,7 @@ module BufferGraphUtil =
 type SnapshotData = {
 
     /// VirtualSnapshotPoint for the Caret
+    /// CTODO: delete
     CaretVirtualPoint: VirtualSnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
@@ -2572,8 +2585,10 @@ type SnapshotData = {
     CurrentSnapshot: ITextSnapshot
 } with
 
+    /// CTODO: delete
     member x.CaretPoint = x.CaretVirtualPoint.Position
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
+    member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 
 [<System.Flags>]
 type MoveCaretFlags =
