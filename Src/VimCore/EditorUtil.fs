@@ -1014,7 +1014,7 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
 
 /// This is the pair to SnapshotColumn as VirtualSnapshotPoint is to SnapshotPoint
 [<Struct>]
-[<NoEquality>]
+[<StructuralEquality>]
 [<NoComparison>]
 type VirtualSnapshotColumn =
 
@@ -1160,6 +1160,54 @@ type VirtualSnapshotColumn =
             let endColumn = SnapshotColumn(line, line.End)
             let realSpaces = endColumn.GetSpacesToColumn tabStop
             VirtualSnapshotColumn(endColumn, spaces - realSpaces)
+
+[<Struct>]
+[<StructuralEquality>]
+[<NoComparison>]
+type SnapshotColumnSpan = 
+
+    val private _startColumn: SnapshotColumn
+    val private _endColumn: SnapshotColumn
+
+    new(startColumn, endColumn) = 
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    member x.Start = x._startColumn
+
+    member x.End = x._endColumn
+
+    member x.IsEmpty = x.Start = x.End
+
+    member x.Span = SnapshotSpan(x.Start.StartPoint, x.End.StartPoint)
+
+    member x.GetText() = x.Span.GetText()
+
+    override x.ToString() = sprintf "Start: %s End: %s" (x.Start.ToString()) (x.End.ToString())
+
+[<Struct>]
+[<StructuralEquality>]
+[<NoComparison>]
+type VirtualSnapshotColumnSpan = 
+
+    val private _startColumn: VirtualSnapshotColumn
+    val private _endColumn: VirtualSnapshotColumn
+
+    new(startColumn, endColumn) = 
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    member x.Start = x._startColumn
+
+    member x.End = x._endColumn
+
+    member x.IsEmpty = x.Start = x.End
+
+    member x.ColumnSpan = SnapshotColumnSpan(x.Start.Column, x.End.Column)
+
+    member x.Span = x.ColumnSpan.Span
+
+    member x.GetText() = x.Span.GetText()
+
+    override x.ToString() = sprintf "Start: %s End: %s" (x.Start.ToString()) (x.End.ToString())
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
