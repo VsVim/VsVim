@@ -1780,7 +1780,7 @@ type BlockSpan =
         |> NonEmptyCollectionUtil.OfSeq
         |> Option.get
 
-    /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
+    /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan that each line of
     /// this block spans, along with the offset (measured in cells) of the block
     /// with respect to the start point and end point.
     member x.BlockOverlapSpans: NonEmptyCollection<SnapshotOverlapSpan> =

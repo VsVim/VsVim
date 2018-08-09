@@ -718,6 +718,16 @@ type SnapshotColumn =
                 count <- count - 1
             SnapshotColumn(codePoint, column)
 
+    member x.AddOrEnd count =
+        match x.TryAdd count with
+        | Some column -> column
+        | None -> SnapshotColumn.GetEndColumn x.Snapshot
+
+    member x.AddOneOrCurrent() =
+        match x.TryAdd 1 with
+        | Some column -> column
+        | None -> x
+
     /// Go backward (positive) or forward (negative) by the specified number of
     /// columns
     member x.Subtract count =
@@ -727,6 +737,11 @@ type SnapshotColumn =
         match x.TrySubtract count with
         | Some column -> column
         | None -> SnapshotColumn.GetStartColumn x.Snapshot
+
+    member x.SubtractOneOrCurrent() = 
+        match x.TrySubtract 1 with
+        | Some column -> column
+        | None -> x
 
     member private x.TryAddCore count testFunc = 
         let mutable count = count
@@ -803,12 +818,22 @@ type SnapshotColumn =
         elif x.IsEndColumn then 0
         else x.CodePoint.GetSpaces tabStop
 
+    /// This will get the number of spaces occupied by the column. This will accurately
+    /// measure tabs as they appear in the context of a line.
+    member x.GetSpacesInContext tabStop =
+        if x.CodePoint.IsCharacter '\t' then
+            let before = x.GetSpacesToColumn tabStop
+            let remainder = before % tabStop
+            tabStop - remainder
+        else x.GetSpaces tabStop
+
     /// Get the number of spaces before this column on the same line. 
     member x.GetSpacesToColumn tabStop =
         SnapshotColumn.GetSpacesToColumnNumber(x.Line, x.ColumnNumber, tabStop = tabStop)
 
     /// Get the total number of spaces on the line before and including this 
-    /// column
+    /// column. This will count tabs as 'tabStop' no matter where it appears on 
+    /// the line.
     member x.GetSpacesIncludingToColumn tabStop =
         if x.IsCharacter '\t' then
             x.Add(1).GetSpacesToColumn tabStop
@@ -956,6 +981,10 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
         if totalSpaces < 0 then
             invalidArg "totalSpaces" "totalSpaces must be positive"
         { _column = column; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
+
+    new (column: SnapshotColumn, tabStop: int) = 
+        let spaces = column.GetSpacesInContext tabStop
+        { _column = column; _beforeSpaces = 0; _totalSpaces = spaces }
 
     /// The number of spaces in the overlap point before this space
     member x.SpacesBefore = x._beforeSpaces
@@ -1260,6 +1289,104 @@ type VirtualSnapshotColumnSpan =
     member x.GetText() = x.Span.GetText()
 
     override x.ToString() = sprintf "Start: %s End: %s" (x.Start.ToString()) (x.End.ToString())
+
+[<Struct>] 
+[<StructuralEquality>] 
+[<NoComparison>] 
+[<DebuggerDisplay("{ToString()}")>] 
+type SnapshotOverlapColumnSpan = 
+
+    val private _start: SnapshotOverlapColumn
+    val private _end: SnapshotOverlapColumn 
+
+    new (startColumn: SnapshotOverlapColumn, endColumn: SnapshotOverlapColumn) = 
+        if startColumn.Column.StartPosition + startColumn.SpacesBefore > endColumn.Column.StartPosition + endColumn.SpacesBefore then
+            invalidArg "endColumn" "End cannot be before the start"
+        { _start = startColumn; _end = endColumn }
+
+    new (span: SnapshotColumnSpan, tabStop: int) =
+        let startColumn = SnapshotOverlapColumn(span.Start, tabStop = tabStop)
+        let endColumn = SnapshotOverlapColumn(span.End, tabStop = tabStop)
+        { _start = startColumn; _end = endColumn }
+
+    member x.Start = x._start
+
+    member x.End = x._end
+
+    /// Does this structure have any overlap
+    member x.HasOverlap = x.HasOverlapStart || x.HasOverlapEnd
+
+    /// Does this structure have any overlap at the start
+    member x.HasOverlapStart = x.Start.SpacesBefore > 0 
+
+    /// Does this structure have any overlap at the end 
+    member x.HasOverlapEnd = x.End.SpacesBefore > 0 
+
+    member x.OverarchingStart = x._start.Column
+
+    member x.OverarchingEnd = 
+        if x.End.SpacesBefore = 0 then
+            x.End.Column
+        else
+            x.End.Column.AddOneOrCurrent()
+
+    /// A SnapshotSpan which fully encompasses this overlap span 
+    member x.OverarchingSpan = SnapshotColumnSpan(x.OverarchingStart, x.OverarchingEnd)
+
+    /// This is the SnapshotSpan which contains the SnapshotColumn values which have 
+    /// full coverage.  The edges which have overlap are excluded from this span
+    member x.InnerSpan =    
+        let startColumn = 
+            if x.Start.SpacesBefore = 0 then x.Start.Column
+            else x.Start.Column.AddOneOrCurrent()
+        let endColumn = 
+            if x.End.SpacesBefore = 0 then x.End.Column
+            else x.End.Column.SubtractOneOrCurrent()
+        if startColumn.StartPosition <= endColumn.StartPosition then
+            SnapshotColumnSpan(startColumn, endColumn)
+        else
+            SnapshotColumnSpan(startColumn, startColumn)
+
+    member x.Snapshot = x._start.Snapshot
+
+    /// Get the text contained in this SnapshotOverlapSpan.  All overlap points are expressed
+    /// with the appropriate number of spaces 
+    member x.GetText() = 
+
+        let builder = StringBuilder()
+
+        if x.Start.Column = x.End.Column then
+            // Special case the scenario where the span is within a single SnapshotPoint
+            // value.  Just create the correct number of spaces here 
+            let count = x.End.SpacesBefore - x.Start.SpacesBefore 
+            for i = 1 to count do 
+                builder.AppendChar ' '
+        else
+            // First add in the spaces for the start if it is an overlap point 
+            let mutable current = x.Start.Column
+            if x.Start.SpacesBefore > 0 then
+                for i = 0 to x.Start.SpacesAfter do
+                    builder.AppendChar ' '
+                current <- current.Add 1
+
+            // Next add in the middle SnapshotPoint values which don't have any overlap
+            // to consider.  Don't use InnerSpan.GetText() here as it will unnecessarily
+            // allocate an extra string 
+            while current.StartPosition < x.End.Column.StartPosition do
+                let text = current.GetText()
+                builder.AppendString text
+                current <- current.Add 1
+
+            // Lastly add in the spaces on the end point.  Remember End is exclusive so 
+            // only add spaces which come before
+            if x.End.SpacesBefore > 0 then
+                for i = 0 to (x.End.SpacesBefore - 1) do
+                    builder.AppendChar ' '
+
+        builder.ToString()
+
+    override x.ToString() = 
+        x.OverarchingSpan.ToString()
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
