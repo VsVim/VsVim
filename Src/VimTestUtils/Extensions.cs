@@ -955,21 +955,17 @@ namespace Vim.UnitTest
             return new SnapshotCodePoint(point);
         }
 
-        public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot)
-        {
-            var point = new SnapshotPoint(snapshot, snapshot.Length);
-            return new SnapshotColumn(point);
-        }
+        public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot) => SnapshotColumn.GetEndColumn(snapshot);
 
-        public static SnapshotColumn GetStartColumn(this ITextSnapshot snapshot)
-        {
-            var point = new SnapshotPoint(snapshot, 0);
-            return new SnapshotColumn(point);
-        }
+        public static SnapshotColumn GetStartColumn(this ITextSnapshot snapshot) => SnapshotColumn.GetStartColumn(snapshot);
 
         #endregion
 
         #region ITextBuffer
+
+        public static SnapshotColumn GetStartColumn(this ITextBuffer textBuffer) => textBuffer.CurrentSnapshot.GetStartColumn();
+
+        public static SnapshotColumn GetEndColumn(this ITextBuffer textBuffer) => textBuffer.CurrentSnapshot.GetEndColumn();
 
         public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int lineNumber, int columnNumber, bool? includeLineBreak = null)
         {
