@@ -314,6 +314,27 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class GetSpacesInContextTest : SnapshotColumnTest
+        {
+            [WpfFact]
+            public void TabOffset()
+            {
+                Create("a\tb");
+                var column = _textBuffer.GetColumnFromPosition(1);
+                Assert.Equal(8, column.GetSpaces(tabStop: 8));
+                Assert.Equal(7, column.GetSpacesInContext(tabStop: 8));
+            }
+
+            [WpfFact]
+            public void TabOnZero()
+            {
+                Create("\t\tb");
+                var column = _textBuffer.GetColumnFromPosition(1);
+                Assert.Equal(8, column.GetSpaces(tabStop: 8));
+                Assert.Equal(8, column.GetSpacesInContext(tabStop: 8));
+            }
+        }
+
         public sealed class GetSpacesToColumn : SnapshotColumnTest
         {
             [WpfFact]

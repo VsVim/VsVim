@@ -983,7 +983,9 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
         { _column = column; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
 
     new (column: SnapshotColumn, tabStop: int) = 
-        let spaces = column.GetSpacesInContext tabStop
+        let spaces = 
+            if column.IsLineBreakOrEnd then 0
+            else column.GetSpacesInContext tabStop
         { _column = column; _beforeSpaces = 0; _totalSpaces = spaces }
 
     /// The number of spaces in the overlap point before this space
@@ -1045,6 +1047,15 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
                 spaces <- spaces + currentSpaces
 
         value
+
+    static member GetColumnForSpacesOrEnd(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotOverlapColumn =
+        match SnapshotOverlapColumn.GetColumnForSpaces(line, spaces, tabStop) with
+        | Some column -> column
+        | None -> 
+            // CTODO: why do we measure the end as 0 spaces here but 1 everywhere else. That should be 
+            // looked into.
+            let column = SnapshotColumn(line, line.End)
+            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0)
 
 /// This is the pair to SnapshotColumn as VirtualSnapshotPoint is to SnapshotPoint
 [<Struct>]
@@ -1307,6 +1318,11 @@ type SnapshotOverlapColumnSpan =
     new (span: SnapshotColumnSpan, tabStop: int) =
         let startColumn = SnapshotOverlapColumn(span.Start, tabStop = tabStop)
         let endColumn = SnapshotOverlapColumn(span.End, tabStop = tabStop)
+        { _start = startColumn; _end = endColumn }
+
+    new (span: SnapshotSpan, tabStop: int) =
+        let startColumn = SnapshotOverlapColumn(SnapshotColumn(span.Start), tabStop = tabStop)
+        let endColumn = SnapshotOverlapColumn(SnapshotColumn(span.End), tabStop = tabStop)
         { _start = startColumn; _end = endColumn }
 
     member x.Start = x._start
