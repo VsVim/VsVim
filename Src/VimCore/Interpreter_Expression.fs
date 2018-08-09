@@ -690,10 +690,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | ShellCommand of LineRangeSpecifier * string
 
     /// Process the '<' shift left command
-    | ShiftLeft of LineRangeSpecifier
+    | ShiftLeft of LineRangeSpecifier * int
 
     /// Process the '>' shift right command
-    | ShiftRight of LineRangeSpecifier
+    | ShiftRight of LineRangeSpecifier * int
 
     /// Sort the specified LineRange.  The options are as follows:
     /// - The LineRange to change (defaults to entire buffer)
