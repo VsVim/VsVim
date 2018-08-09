@@ -102,14 +102,18 @@ type internal CommandUtil
 
     let mutable _inRepeatLastChange = false
 
-    /// The column of the caret
-    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
-
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     /// The VirtualSnapshotPoint for the caret
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+
+    /// The column of the caret
+    /// CTODO: should be CaretColumnNumber
+    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
+
+    /// The virtual column of the caret
+    member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
@@ -1686,13 +1690,13 @@ type internal CommandUtil
             // We are moving the caret into virtual space here.  Hence we need to do this in terms
             // of spaces and not absolute character column.  Basically we have to expand tabs to the
             // appropriate number of spaces
-            let column = _commonOperations.GetSpacesToPoint point
+            let spaces = _commonOperations.GetSpacesToColumn (SnapshotColumn(point))
 
-            if column = 0 then
+            if spaces = 0 then
                 TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
             else
                 let point = SnapshotUtil.GetPoint x.CurrentSnapshot deletedLine.Start.Position
-                let virtualPoint = VirtualSnapshotPoint(point, column)
+                let virtualPoint = VirtualSnapshotPoint(point, spaces)
                 TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
         else
             // Put the caret at column 0
@@ -2851,7 +2855,7 @@ type internal CommandUtil
 
     /// Get the current number of spaces to caret we are maintaining
     member x.GetSpacesToCaret () =
-        let spacesToCaret = _commonOperations.GetSpacesToVirtualPoint x.CaretVirtualPoint
+        let spacesToCaret = _commonOperations.GetSpacesToVirtualColumn x.CaretVirtualColumn
         match _commonOperations.MaintainCaretColumn with
         | MaintainCaretColumn.None -> spacesToCaret
         | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret

@@ -917,31 +917,84 @@ namespace Vim.UnitTest
             return GetLine(snapshot, snapshot.LineCount - 1);
         }
 
+        public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber, bool? includeLineBreak = true)
+        {
+            var option = FSharpOption.CreateForNullable(includeLineBreak);
+            var column = SnapshotColumn.TryCreateForLineAndColumnNumber(snapshot, lineNumber, columnNumber, option);
+            return column.Value;
+        }
+
         public static SnapshotColumn GetColumnFromPosition(this ITextSnapshot snapshot, int position)
         {
             var point = new SnapshotPoint(snapshot, position);
             return new SnapshotColumn(point);
         }
 
-        public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot)
+        public static VirtualSnapshotColumn GetVirtualColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber)
         {
-            var point = new SnapshotPoint(snapshot, snapshot.Length);
-            return new SnapshotColumn(point);
+            var line = snapshot.GetLine(lineNumber);
+            return VirtualSnapshotColumn.CreateForColumnNumber(line, columnNumber);
         }
 
-        public static SnapshotColumn GetStartColumn(this ITextSnapshot snapshot)
+        public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextSnapshot snapshot, int position, int virtualSpaces = 0)
         {
-            var point = new SnapshotPoint(snapshot, 0);
-            return new SnapshotColumn(point);
+            var point = new SnapshotPoint(snapshot, position);
+            var column = new SnapshotColumn(point);
+            return new VirtualSnapshotColumn(column, virtualSpaces);
         }
+
+        public static SnapshotCodePoint GetCodePoint(this ITextSnapshot snapshot, int lineNumber, int columnNumber)
+        {
+            var point = snapshot.GetPointInLine(lineNumber, columnNumber);
+            return new SnapshotCodePoint(point);
+        }
+
+        public static SnapshotCodePoint GetCodePointFromPosition(this ITextSnapshot snapshot, int position)
+        {
+            var point = new SnapshotPoint(snapshot, position);
+            return new SnapshotCodePoint(point);
+        }
+
+        public static SnapshotColumn GetEndColumn(this ITextSnapshot snapshot) => SnapshotColumn.GetEndColumn(snapshot);
+
+        public static SnapshotColumn GetStartColumn(this ITextSnapshot snapshot) => SnapshotColumn.GetStartColumn(snapshot);
 
         #endregion
 
         #region ITextBuffer
 
+        public static SnapshotColumn GetStartColumn(this ITextBuffer textBuffer) => textBuffer.CurrentSnapshot.GetStartColumn();
+
+        public static SnapshotColumn GetEndColumn(this ITextBuffer textBuffer) => textBuffer.CurrentSnapshot.GetEndColumn();
+
+        public static SnapshotColumn GetColumn(this ITextBuffer textBuffer, int lineNumber, int columnNumber, bool? includeLineBreak = null)
+        {
+            return textBuffer.CurrentSnapshot.GetColumn(lineNumber, columnNumber, includeLineBreak);
+        }
+
         public static SnapshotColumn GetColumnFromPosition(this ITextBuffer textBuffer, int position)
         {
             return GetColumnFromPosition(textBuffer.CurrentSnapshot, position);
+        }
+
+        public static VirtualSnapshotColumn GetVirtualColumn(this ITextBuffer textBuffer, int lineNumber, int columnNumber)
+        {
+            return GetVirtualColumn(textBuffer.CurrentSnapshot, lineNumber, columnNumber);
+        }
+
+        public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextBuffer textBuffer, int position, int virtualSpaces = 0)
+        {
+            return GetVirtualColumnFromPosition(textBuffer.CurrentSnapshot, position, virtualSpaces);
+        }
+
+        public static SnapshotCodePoint GetCodePoint(this ITextBuffer textBuffer, int lineNumber, int columnNumber)
+        {
+            return textBuffer.CurrentSnapshot.GetCodePoint(lineNumber, columnNumber);
+        }
+
+        public static SnapshotCodePoint GetCodePointFromPosition(this ITextBuffer textBuffer, int position)
+        {
+            return GetCodePointFromPosition(textBuffer.CurrentSnapshot, position);
         }
 
         public static SnapshotPoint GetStartPoint(this ITextBuffer textBuffer)
