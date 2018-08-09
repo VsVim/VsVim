@@ -1136,8 +1136,8 @@ type VirtualSnapshotColumn =
             else
                 let mutable count = count
                 let mutable current = x.Column
-                while not current.IsLineBreakOrEnd do
-                    current <- current.AddInLine 1
+                while not current.IsLineBreakOrEnd && count > 0 do
+                    current <- current.AddInLine(1, includeLineBreak = true)
                     count <- count - 1
                 if current.IsLineBreakOrEnd then VirtualSnapshotColumn(current, count)
                 else VirtualSnapshotColumn(current)

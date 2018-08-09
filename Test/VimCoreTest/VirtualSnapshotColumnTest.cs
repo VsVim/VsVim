@@ -68,7 +68,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class AddInSameLineTest : VirtualSnapshotColumnTest
+        public sealed class AddInLineTest : VirtualSnapshotColumnTest
         {
             [WpfFact]
             public void SimpleAdd()
@@ -79,6 +79,32 @@ namespace Vim.UnitTest
                 column = column.AddInLine(1);
                 Assert.True(column.IsInVirtualSpace);
                 Assert.Equal(1, column.VirtualSpaces);
+            }
+
+            [WpfFact]
+            public void SimpleAddNoVirtual()
+            {
+                Create("cat", "dog");
+                var column = _textBuffer.GetVirtualColumnFromPosition(0);
+                Assert.False(column.Column.IsLineBreak);
+                Assert.False(column.IsInVirtualSpace);
+                column = column.AddInLine(1);
+                Assert.False(column.Column.IsLineBreak);
+                Assert.False(column.IsInVirtualSpace);
+                Assert.Equal(1, column.Column.StartPosition);
+            }
+
+            [WpfFact]
+            public void SimpleAddToLineBreak()
+            {
+                Create("cat", "dog");
+                var column = _textBuffer.GetVirtualColumnFromPosition(2);
+                Assert.False(column.Column.IsLineBreak);
+                Assert.False(column.IsInVirtualSpace);
+                column = column.AddInLine(1);
+                Assert.True(column.Column.IsLineBreak);
+                Assert.False(column.IsInVirtualSpace);
+                Assert.Equal(3, column.Column.StartPosition);
             }
 
             [WpfFact]
