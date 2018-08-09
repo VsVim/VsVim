@@ -63,6 +63,7 @@ module LocalSettingNames =
     let SoftTabStopName = "softtabstop"
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
+    let ListName = "list"
     let QuoteEscapeName = "quoteescape"
     let EndOfLineName = "endofline"
     let FixEndOfLineName = "fixendofline"
@@ -560,6 +561,9 @@ and IVimLocalSettings =
 
     /// How many spaces a tab counts for 
     abstract TabStop: int with get, set
+
+    /// Whether list mode is enabled
+    abstract List: bool with get, set
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape: string with get, set
