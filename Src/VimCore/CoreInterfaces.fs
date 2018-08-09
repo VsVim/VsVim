@@ -4891,6 +4891,10 @@ and IVimTextBuffer =
     /// The end point of the last change or yank
     abstract LastChangeOrYankEnd: SnapshotPoint option with get, set
 
+    /// If we are in the middle of processing a "one time command" (<c-o>) then this will
+    /// hold the ModeKind which will be switched back to after it's completed
+    abstract InOneTimeCommand: ModeKind option with get, set
+
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
 

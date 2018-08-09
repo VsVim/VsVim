@@ -2063,7 +2063,13 @@ type internal CommandUtil
                             let offset = text.Length - 1
                             let offset = max 0 offset
                             let point = SnapshotPointUtil.Add offset point
-                            if moveCaretAfterText then SnapshotPointUtil.AddOneOrCurrent point else point
+
+                            // Vim always moves the caret after the text when
+                            // a put is used as a one-time command.
+                            if moveCaretAfterText || _vimTextBuffer.InOneTimeCommand.IsSome then
+                                SnapshotPointUtil.AddOneOrCurrent point
+                            else
+                                point
                     | StringData.Block col, false ->
                         if moveCaretAfterText then
                             // Needs to be positioned after the last item in the collection

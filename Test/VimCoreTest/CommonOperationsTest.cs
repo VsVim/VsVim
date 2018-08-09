@@ -76,6 +76,7 @@ namespace Vim.UnitTest
                 undoRedoOperations: _undoRedoOperations,
                 factory: _factory);
             _vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
+            _vimTextBuffer.SetupGet(x => x.InOneTimeCommand).Returns(FSharpOption<ModeKind>.None);
 
             // Create the VimBufferData instance with our Mock'd services
             _jumpList = _factory.Create<IJumpList>();
