@@ -3411,6 +3411,23 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("cc;<Esc>");
                 Assert.Equal(new[] { "{", "    ;", "}", "" }, _textBuffer.GetLines());
             }
+
+            /// <summary>
+            /// Change indents when changing a linewise textobject with autoindent enabled
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_TextObject()
+            {
+                // Reported in issue #1683.
+                Create("{", "    xxx;", "    yyy;", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("ciB;<Esc>");
+                Assert.Equal(new[] { "{", "    ;", "}", "" }, _textBuffer.GetLines());
+            }
+
         }
 
         public sealed class ChangeMotionTest : NormalModeIntegrationTest

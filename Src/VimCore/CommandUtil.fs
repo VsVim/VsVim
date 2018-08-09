@@ -395,8 +395,13 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView point
         let commandResult =
             x.EditWithLinkedChange "Change" (fun () ->
+                let savedStartLine = SnapshotPointUtil.GetContainingLine span.Start
                 _textBuffer.Delete(span.Span) |> ignore
-                TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+                if result.MotionKind = MotionKind.LineWise then
+                    let line = SnapshotUtil.GetLine x.CurrentSnapshot savedStartLine.LineNumber
+                    x.MoveCaretToNewLineIndent savedStartLine line
+                else
+                    TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
 
         // Now that the delete is complete update the register
         let value = x.CreateRegisterValue (StringData.OfSpan span) result.OperationKind
