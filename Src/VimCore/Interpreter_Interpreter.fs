@@ -330,19 +330,50 @@ type VimInterpreter
             x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
 
         | LineSpecifier.NextLineWithPattern pattern ->
-            // TODO: Implement
-            None
+            x.GetMatchingLine pattern SearchPath.Forward
+            |> Option.map getLineAndNumber
+
         | LineSpecifier.NextLineWithPreviousPattern ->
-            // TODO: Implement
-            None
+            let pattern = _vim.VimData.LastSearchData.Pattern
+            x.GetMatchingLine pattern SearchPath.Forward
+            |> Option.map getLineAndNumber
+
         | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
-            // TODO: Implement
-            None
+            match _vim.VimData.LastSubstituteData with
+            | Some substituteData ->
+                let pattern = substituteData.SearchPattern
+                x.GetMatchingLine pattern SearchPath.Forward
+                |> Option.map getLineAndNumber
+            | None ->
+                None
+
         | LineSpecifier.PreviousLineWithPattern pattern ->
-            // TODO: Implement
-            None
+            x.GetMatchingLine pattern SearchPath.Backward
+            |> Option.map getLineAndNumber
+
         | LineSpecifier.PreviousLineWithPreviousPattern ->
-            // TODO: Implement
+            let pattern = _vim.VimData.LastSearchData.Pattern
+            x.GetMatchingLine pattern SearchPath.Backward
+            |> Option.map getLineAndNumber
+
+    /// Get the first line matching the specified pattern in the specified
+    /// direction
+    member x.GetMatchingLine pattern path =
+        let startPoint =
+            match path with
+            | SearchPath.Forward ->
+                x.CaretLine |> SnapshotLineUtil.GetEnd
+            | SearchPath.Backward ->
+                x.CaretLine |> SnapshotLineUtil.GetStart
+        let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+        let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
+        let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
+        match result with
+        | SearchResult.Found (searchData, span, _, _) ->
+            span.Start 
+            |> SnapshotPointUtil.GetContainingLine
+            |> Some
+        | _ ->
             None
 
     // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
