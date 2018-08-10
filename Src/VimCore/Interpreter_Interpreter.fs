@@ -1384,8 +1384,15 @@ type VimInterpreter
                 if StringUtil.IsNullOrEmpty pattern then _vimData.LastSearchData.Pattern
                 else pattern
     
-            // Searches start after the end of the specified line range
-            let startPoint = lineRange.End
+            // The search start after the end of the specified line range or
+            // before its beginning.
+            let startPoint =
+                match path with
+                | SearchPath.Forward ->
+                    lineRange.End
+                | SearchPath.Backward ->
+                    lineRange.Start
+
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
             let result = _searchService.FindNextPattern startPoint searchData _vimBufferData.VimTextBuffer.WordNavigator 1
             _commonOperations.RaiseSearchResultMessage(result)
