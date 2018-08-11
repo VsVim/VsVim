@@ -291,7 +291,7 @@ type VimInterpreter
 
     /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     /// corresponding vim line number
-    member x.GetLineAndVimLineNumberCore lineSpecifier (currentLine: ITextSnapshotLine) = 
+    member x.GetLineAndVimLineNumberCore lineSpecifier currentLine = 
 
         // To convert from a VS line number to a vim line number, simply add 1
         let getLineAndNumber (line: ITextSnapshotLine) = (line, line.LineNumber + 1)
@@ -308,7 +308,7 @@ type VimInterpreter
 
         match lineSpecifier with 
         | LineSpecifier.CurrentLine -> 
-            x.CaretLine |> getLineAndNumber |> Some
+            currentLine |> getLineAndNumber |> Some
 
         | LineSpecifier.LastLine ->
             SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot |> getLineAndNumber |> Some
@@ -335,19 +335,19 @@ type VimInterpreter
                     _vim.VimData.LastSearchData.Pattern
                 else
                     pattern
-            x.GetMatchingLine pattern SearchPath.Forward
+            x.GetMatchingLine pattern SearchPath.Forward currentLine
             |> Option.map getLineAndNumber
 
         | LineSpecifier.NextLineWithPreviousPattern ->
             let pattern = _vim.VimData.LastSearchData.Pattern
-            x.GetMatchingLine pattern SearchPath.Forward
+            x.GetMatchingLine pattern SearchPath.Forward currentLine
             |> Option.map getLineAndNumber
 
         | LineSpecifier.NextLineWithPreviousSubstitutePattern ->
             match _vim.VimData.LastSubstituteData with
             | Some substituteData ->
                 let pattern = substituteData.SearchPattern
-                x.GetMatchingLine pattern SearchPath.Forward
+                x.GetMatchingLine pattern SearchPath.Forward currentLine
                 |> Option.map getLineAndNumber
             | None ->
                 None
@@ -358,23 +358,23 @@ type VimInterpreter
                     _vim.VimData.LastSearchData.Pattern
                 else
                     pattern
-            x.GetMatchingLine pattern SearchPath.Backward
+            x.GetMatchingLine pattern SearchPath.Backward currentLine
             |> Option.map getLineAndNumber
 
         | LineSpecifier.PreviousLineWithPreviousPattern ->
             let pattern = _vim.VimData.LastSearchData.Pattern
-            x.GetMatchingLine pattern SearchPath.Backward
+            x.GetMatchingLine pattern SearchPath.Backward currentLine
             |> Option.map getLineAndNumber
 
     /// Get the first line matching the specified pattern in the specified
     /// direction
-    member x.GetMatchingLine pattern path =
+    member x.GetMatchingLine pattern path currentLine =
         let startPoint =
             match path with
             | SearchPath.Forward ->
-                x.CaretLine |> SnapshotLineUtil.GetEnd
+                currentLine |> SnapshotLineUtil.GetEnd
             | SearchPath.Backward ->
-                x.CaretLine |> SnapshotLineUtil.GetStart
+                currentLine |> SnapshotLineUtil.GetStart
         let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
         let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
         let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
