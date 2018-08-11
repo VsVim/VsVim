@@ -869,6 +869,16 @@ type SnapshotColumn =
         elif isGood then Some column
         else None
 
+    static member GetLineStart(line: ITextSnapshotLine) = SnapshotColumn(line, line.Start)
+
+    static member GetLineBreak(line: ITextSnapshotLine) = SnapshotColumn(line, line.End)
+
+    static member GetLineEnd(line: ITextSnapshotLine) = 
+        let column = SnapshotColumn.GetLineBreak(line)
+        if column.IsStartOfLine then column
+        else column.Subtract 1
+
+    // CTODO: Consider the API naming her. Everything else is Get
     static member CreateForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =
         match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = true) with
         | Some column -> column
@@ -915,12 +925,12 @@ type SnapshotColumn =
             }
 
     /// Get all of the columns on a specified line in the specified order.
-    static member GetColumnsInLine(searchLine: ITextSnapshotLine, searchPath: SearchPath, ?includeLineBreaks) =
-        let includeLineBreaks = defaultArg includeLineBreaks false
+    static member GetColumnsInLine(searchLine: ITextSnapshotLine, searchPath: SearchPath, ?includeLineBreak) =
+        let includeLineBreak = defaultArg includeLineBreak false
         let all = seq {
             let mutable current = SnapshotColumn(searchLine)
             while not current.IsEndColumn && current.LineNumber = searchLine.LineNumber do 
-                if not current.IsLineBreak || includeLineBreaks then
+                if not current.IsLineBreak || includeLineBreak then
                     yield current
                 current <- current.Add 1
         }
@@ -928,6 +938,12 @@ type SnapshotColumn =
         match searchPath with 
         | SearchPath.Forward -> all
         | SearchPath.Backward -> Seq.rev all
+
+    /// Get the total count of columns on the line, potentially including the line break / end.
+    static member GetColumnCountInLine(line: ITextSnapshotLine, ?includeLineBreak) = 
+        let includeLineBreak = defaultArg includeLineBreak false
+        SnapshotColumn.GetColumnsInLine(line, SearchPath.Forward, includeLineBreak)
+        |> Seq.length
 
     static member GetStartColumn(snapshot: ITextSnapshot) = 
         let startPoint = SnapshotPoint(snapshot, 0)
@@ -1098,7 +1114,14 @@ type VirtualSnapshotColumn =
 
     member x.Line = x._column.Line
 
+    member x.LineNumber = x.Line.LineNumber
+
+    member x.Snapshot = x.Column.Snapshot
+
     member x.VirtualColumnNumber = x.Column.ColumnNumber + x.VirtualSpaces
+
+    /// The offset in position from the start of the line
+    member x.VirtualOffset = x.Column.Offset + x.VirtualSpaces
 
     member x.VirtualStartPoint = VirtualSnapshotPoint(x._column.StartPoint, x._virtualSpaces)
 
@@ -1160,6 +1183,13 @@ type VirtualSnapshotColumn =
     /// start of the line
     member x.SubtractInLine(count: int) = 
         x.AddInLine(-count)
+    
+    member x.SubtractOneOrCurrent() =
+        if x.IsInVirtualSpace then
+            x.SubtractInLine 1
+        else
+            let column = x.Column.SubtractOneOrCurrent()
+            VirtualSnapshotColumn(column)
 
     member x.TryAddInLine(count: int) = 
         if count >= 0 then 
@@ -1175,6 +1205,14 @@ type VirtualSnapshotColumn =
 
     override x.ToString() =
         sprintf "Spaces %d %s" x._virtualSpaces (x._column.ToString())
+
+    static member GetLineStart(line: ITextSnapshotLine) = VirtualSnapshotColumn(line.Start)
+
+    static member GetLineBreak(line: ITextSnapshotLine) = VirtualSnapshotColumn(line.End)
+
+    static member GetLineEnd(line: ITextSnapshotLine) = 
+        let column = SnapshotColumn.GetLineEnd(line)
+        VirtualSnapshotColumn(column)
 
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces.  Note though that tabs which don't occur on a 'tabstop'
@@ -1214,7 +1252,16 @@ type SnapshotColumnSpan =
     val private _startColumn: SnapshotColumn
     val private _endColumn: SnapshotColumn
 
+    new(span: SnapshotSpan) =
+        let startColumn = SnapshotColumn(span.Start)
+        let endColumn = SnapshotColumn(span.End)
+        SnapshotColumnSpan(startColumn, endColumn)
+
     new(startColumn, endColumn) = 
+        { _startColumn = startColumn; _endColumn = endColumn }
+
+    new(startColumn: SnapshotColumn, columnLength: int) =
+        let endColumn = startColumn.Add(columnLength)
         { _startColumn = startColumn; _endColumn = endColumn }
 
     member x.Start = x._startColumn
@@ -1275,11 +1322,15 @@ type VirtualSnapshotColumnSpan =
 
     member x.End = x._endColumn
 
+    member x.IsInVirtualSpace = x.Start.IsInVirtualSpace || x.End.IsInVirtualSpace
+
     member x.IsEmpty = x.Start = x.End
 
     member x.ColumnSpan = SnapshotColumnSpan(x.Start.Column, x.End.Column)
 
     member x.Span = x.ColumnSpan.Span
+
+    member x.VirtualSpan = VirtualSnapshotSpan(x.Start.VirtualStartPoint, x.End.VirtualStartPoint)
 
     member x.StartLine = x.Start.Line
 
@@ -1472,8 +1523,9 @@ type SnapshotOverlapPoint =
     override x.ToString() = 
         sprintf "Point: %s Spaces: %d Before: %d After: %d" (x.Point.ToString()) x.Spaces x.SpacesBefore x.SpacesAfter
 
+// CTODO: delet
 [<StructuralEquality>] 
-[<NoComparison>] 
+[<NoComparison>]
 [<Struct>] 
 [<DebuggerDisplay("{ToString()}")>] 
 type SnapshotOverlapSpan = 
@@ -1489,6 +1541,11 @@ type SnapshotOverlapSpan =
     new (span: SnapshotSpan) =
         let startPoint = SnapshotOverlapPoint(span.Start)
         let endPoint = SnapshotOverlapPoint(span.End)
+        { _start = startPoint; _end = endPoint }
+
+    new (span: SnapshotOverlapColumnSpan) =
+        let startPoint = SnapshotOverlapPoint(span.Start.Column.StartPoint)
+        let endPoint = SnapshotOverlapPoint(span.End.Column.StartPoint)
         { _start = startPoint; _end = endPoint }
 
     member x.Start = x._start
@@ -1785,9 +1842,15 @@ module SnapshotSpanUtil =
     let GetStartAndLastLine span = GetStartLine span, GetLastLine span
 
     /// Get the number of lines in this SnapshotSpan
-    let GetLineCount span = 
+    let GetLastLineAndLineCount span = 
         let startLine, lastLine = GetStartAndLastLine span
-        (lastLine.LineNumber - startLine.LineNumber) + 1
+        let lineCount = (lastLine.LineNumber - startLine.LineNumber) + 1
+        lastLine, lineCount
+
+    /// Get the number of lines in this SnapshotSpan
+    let GetLineCount span = 
+        let _, lineCount = GetLastLineAndLineCount span
+        lineCount
 
     /// Is this a multiline SnapshotSpan
     let IsMultiline span = 
