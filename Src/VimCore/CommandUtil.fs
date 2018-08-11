@@ -305,16 +305,16 @@ type internal CommandUtil
     member x.CalculateVisualSpan stored =
 
         match stored with
-        | StoredVisualSpan.Line (count = count) ->
+        | StoredVisualSpan.Line (Count = count) ->
             // Repeating a LineWise operation just creates a span with the same
             // number of lines as the original operation
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
             VisualSpan.Line range
 
-        | StoredVisualSpan.Character (lineCount = lineCount; lastLineLength = lastLineLength) ->
-            let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineLength)
+        | StoredVisualSpan.Character (LineCount = lineCount; LastLineMaxPositionCount = lastLineMaxPositionCount) ->
+            let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineMaxPositionCount)
             VisualSpan.Character characterSpan
-        | StoredVisualSpan.Block (width = width; height = height) ->
+        | StoredVisualSpan.Block (Width = width; Height = height) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the
             // current caret position
             let blockSpan = BlockSpan(x.CaretVirtualPoint, _localSettings.TabStop, width, height)

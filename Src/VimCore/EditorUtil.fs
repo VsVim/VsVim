@@ -2515,6 +2515,10 @@ module SnapshotPointUtil =
         let _, column = GetLineColumn point 
         column
 
+    let GetLineOffset point = 
+        let line = GetContainingLine point
+        point.Position - line.Start.Position
+
     /// Get the line number
     let GetLineNumber point =
         let line = GetContainingLine point

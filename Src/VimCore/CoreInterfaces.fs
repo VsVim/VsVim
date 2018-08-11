@@ -1502,23 +1502,20 @@ type KeyMappingResult =
 type CharacterSpan = 
 
     val private _start: VirtualSnapshotPoint
-
     val private _lineCount: int
-
-    val private _lastLineLength: int
-
+    val private _lastLineMaxPositionCount: int
     val private _useVirtualSpace: bool
 
-    new (start: SnapshotPoint, lineCount: int, lastLineLength: int) =
+    new (start: SnapshotPoint, lineCount: int, lastLineMaxPositionCount: int) =
         let virtualStart = VirtualSnapshotPointUtil.OfPoint start
-        CharacterSpan(virtualStart, lineCount, lastLineLength, false)
+        CharacterSpan(virtualStart, lineCount, lastLineMaxPositionCount, false)
 
-    new (start: VirtualSnapshotPoint, lineCount: int, lastLineLength: int, useVirtualSpace: bool) =
+    new (start: VirtualSnapshotPoint, lineCount: int, lastLineMaxPositionCount: int, useVirtualSpace: bool) =
         Contract.Requires(lineCount > 0)
         { 
             _start = start
             _lineCount = lineCount
-            _lastLineLength = lastLineLength
+            _lastLineMaxPositionCount = lastLineMaxPositionCount
             _useVirtualSpace = useVirtualSpace }
 
     new (span: SnapshotSpan) = 
@@ -1580,10 +1577,21 @@ type CharacterSpan =
 
     member x.LineCount = x._lineCount
 
-    member x.LastLineLength = x._lastLineLength
+    /// The maximum number of position elements this character span should occupy on the last line. This
+    /// is maintained to allowed characters spans to maintain their ideal width across initial position
+    /// changes in the buffer.
+    member x.LastLineMaxPositionCount = x._lastLineMaxPositionCount
+
+    /// Actual number of positions in the last line
+    member x.LastLinePositionCount = 
+        let lastLineStart = 
+            let lastLine = x.LastLine
+            if x.LineCount = 1 then x.Start
+            else lastLine.Start
+        x.End.Position - lastLineStart.Position
 
     /// The last line in the CharacterSpan
-    member x.LastLine = 
+    member x.LastLine: ITextSnapshotLine = 
         let number = x.StartLine.LineNumber + (x._lineCount - 1)
         SnapshotUtil.GetLineOrLast x.Snapshot number
 
@@ -1606,14 +1614,14 @@ type CharacterSpan =
             |> Some
 
     /// Get the End point of the Character Span.
-    member x.End =
+    member x.End: SnapshotPoint =
         let lastLine = x.LastLine
         let offset = 
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
-                SnapshotPointUtil.GetColumn x._start.Position + x._lastLineLength
+                SnapshotPointUtil.GetColumn x._start.Position + x.LastLineMaxPositionCount
             else
-                x._lastLineLength
+                x.LastLineMaxPositionCount
 
         // The original SnapshotSpan could extend into the line break and hence we must
         // consider that here.  The most common case for this occurring is when the caret
@@ -1636,9 +1644,9 @@ type CharacterSpan =
             let offset =
                 if x._lineCount = 1 then
                     // For a single line we need to apply the offset past the start point
-                    VirtualSnapshotPointUtil.GetColumnNumber x._start + x._lastLineLength
+                    VirtualSnapshotPointUtil.GetColumnNumber x._start + x.LastLineMaxPositionCount
                 else
-                    x._lastLineLength
+                    x.LastLineMaxPositionCount
 
             let virtualColumn = VirtualSnapshotColumn.CreateForColumnNumber(lastLine, offset)
             virtualColumn.VirtualStartPoint
@@ -2477,8 +2485,8 @@ type VisualSelection =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type StoredVisualSelection =
-    | Character of width: int
-    | CharacterLine of lineCount: int * lastLineOffset: int 
+    | Character of Width: int
+    | CharacterLine of LineCount: int * LastLineMaxOffset : int 
     | Line of lineCount: int
 
     with 
@@ -2531,10 +2539,10 @@ type StoredVisualSelection =
         | VisualSpan.Character span ->
             if span.LineCount = 1 then StoredVisualSelection.Character span.Length |> Some
             else
-                let startColumn = SnapshotPointUtil.GetColumn span.Start
-                let endColumn = max 0 (span.LastLineLength - 1)
-                let offset = endColumn - startColumn
-                StoredVisualSelection.CharacterLine (lineCount = span.LineCount, lastLineOffset = offset) |> Some
+                let startOffset = SnapshotPointUtil.GetLineOffset span.Start
+                let endOffset = max 0 (span.LastLineMaxPositionCount - 1)
+                let offset = endOffset - startOffset
+                StoredVisualSelection.CharacterLine (LineCount = span.LineCount, LastLineMaxOffset = offset) |> Some
         | VisualSpan.Line range -> StoredVisualSelection.Line range.Count |> Some
         | VisualSpan.Block _ -> None
 
@@ -3644,21 +3652,21 @@ type StoredVisualSpan =
 
     /// Storing a character wise span.  Need to know the line count and the offset 
     /// in the last line for the end.  
-    | Character of lineCount: int * lastLineLength: int
+    | Character of LineCount: int * LastLineMaxPositionCount: int
 
     /// Storing a line wise span just stores the count of lines
-    | Line of count: int
+    | Line of Count: int
 
     /// Storing of a block span records the length of the span and the number of
     /// lines which should be affected by the Span
-    | Block of width: int * height: int
+    | Block of Width: int * Height: int
 
     with
 
     /// Create a StoredVisualSpan from the provided VisualSpan value
     static member OfVisualSpan visualSpan = 
         match visualSpan with
-        | VisualSpan.Character characterSpan -> StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineLength)
+        | VisualSpan.Character characterSpan -> StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
         | VisualSpan.Line range -> StoredVisualSpan.Line range.Count
         | VisualSpan.Block blockSpan -> StoredVisualSpan.Block (blockSpan.Spaces, blockSpan.Height)
 

@@ -177,14 +177,14 @@ type internal TrackingVisualSpan =
 
     /// Tracks the origin SnapshotPoint of the character span, the number of lines it 
     /// composes of and the length of the span on the last line
-    | Character of ITrackingLineColumn * int * int
+    | Character of TrackingLineColumn: ITrackingLineColumn * LineCount: int * LastLineMaxPositionCount: int
 
     /// Tracks the origin of the SnapshotLineRange and the number of lines it should comprise
     /// of
-    | Line of ITrackingLineColumn * int
+    | Line of TrackingLineColumn: ITrackingLineColumn * LineCount: int
 
     /// Tracks the origin of the block selection, it's tabstop by width by height
-    | Block of ITrackingLineColumn * int * int * int
+    | Block of TrackingLineColumn: ITrackingLineColumn * TabStop: int * Width: int * Height: int
 
     with
 
@@ -206,8 +206,8 @@ type internal TrackingVisualSpan =
             None
         | Some point ->
             match x with
-            | Character (_, lineCount, lastLineLength) ->
-                let characterSpan = CharacterSpan(point, lineCount, lastLineLength)
+            | Character (_, lineCount, lastLineMaxPositionCount) ->
+                let characterSpan = CharacterSpan(point, lineCount, lastLineMaxPositionCount)
                 VisualSpan.Character characterSpan
             | Line (_, count) ->
                 let line = SnapshotPointUtil.GetContainingLine point
@@ -236,7 +236,7 @@ type internal TrackingVisualSpan =
                 let line, column = VirtualSnapshotPointUtil.GetLineColumn characterSpan.VirtualStart
                 bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
 
-            TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineLength)
+            TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
 
         | VisualSpan.Line snapshotLineRange ->
 
