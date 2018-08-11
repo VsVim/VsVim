@@ -1438,9 +1438,9 @@ type internal CommandUtil
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
                     let caretSpaces, anchorSpaces =
                         if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then
-                            blockSpan.ColumnSpaces, (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1
+                            blockSpan.BeforeSpaces, (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1
                         else
-                            (blockSpan.Spaces + blockSpan.ColumnSpaces) - 1, blockSpan.ColumnSpaces
+                            (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1, blockSpan.BeforeSpaces
 
                     let tabStop = _localSettings.TabStop
                     let newCaretPoint = SnapshotLineUtil.GetSpaceOrEnd x.CaretLine caretSpaces tabStop
@@ -1796,7 +1796,7 @@ type internal CommandUtil
             | VisualSpan.Character characterSpan ->
                 let lineBreakSpan = SnapshotLineUtil.GetLineBreakSpan characterSpan.LastLine
                 characterSpan.Length <= 1 || characterSpan.Span = lineBreakSpan
-            | VisualSpan.Block blockSpan -> blockSpan.Spaces <= 1
+            | VisualSpan.Block blockSpan -> blockSpan.SpacesLength <= 1
             | VisualSpan.Line lineRange -> lineRange.Count = 1
 
         let moveTag kind =

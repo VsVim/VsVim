@@ -287,7 +287,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(3, blockSpan.Height);
-                    Assert.Equal(9, blockSpan.Spaces);
+                    Assert.Equal(9, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(3, blockSpan.Height);
-                    Assert.Equal(8, blockSpan.Spaces);
+                    Assert.Equal(8, blockSpan.SpacesLength);
                 }
             }
         }
@@ -1835,7 +1835,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1846,7 +1846,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
             }
 
@@ -1860,7 +1860,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1871,7 +1871,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1882,7 +1882,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1893,7 +1893,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
             }
         }

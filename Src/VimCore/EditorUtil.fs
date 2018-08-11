@@ -397,6 +397,14 @@ type SnapshotCodePoint =
             CharUtil.ConvertToCodePoint highChar lowChar
         | _ -> int (x.StartPoint.GetChar())
 
+    /// Returns the code point which represents this character. In the case of a broken surrogate pair
+    /// this will return the raw broken value.
+    member x.CodePointText = 
+        let codePoint = x.CodePoint
+        match x._codePointInfo with
+        | CodePointInfo.SurrogatePairHighCharacter -> sprintf "U%8X" codePoint
+        | _ -> sprintf "u%4X" codePoint
+
     /// The position or text buffer offset of the column
     member x.StartPosition = x.StartPoint.Position
 
@@ -560,7 +568,7 @@ type SnapshotCodePoint =
 
     /// Debugger display
     override x.ToString() =
-        sprintf "Line: %d Offset: %d Text: %s CodePoint: %d" x._line.LineNumber x._offset (x.GetText()) (x.CodePoint)
+        sprintf "CodePoint: %s Text: %s Line: %d Offset: %d" (x.CodePointText) (x.GetText()) (x.Line.LineNumber) (x.Offset)
 
     override x.GetHashCode() = 
         HashUtil.Combine2 x.Line.LineNumber x.Offset
@@ -1523,7 +1531,7 @@ type SnapshotOverlapPoint =
     override x.ToString() = 
         sprintf "Point: %s Spaces: %d Before: %d After: %d" (x.Point.ToString()) x.Spaces x.SpacesBefore x.SpacesAfter
 
-// CTODO: delet
+// CTODO: delete
 [<StructuralEquality>] 
 [<NoComparison>]
 [<Struct>] 
@@ -1541,11 +1549,6 @@ type SnapshotOverlapSpan =
     new (span: SnapshotSpan) =
         let startPoint = SnapshotOverlapPoint(span.Start)
         let endPoint = SnapshotOverlapPoint(span.End)
-        { _start = startPoint; _end = endPoint }
-
-    new (span: SnapshotOverlapColumnSpan) =
-        let startPoint = SnapshotOverlapPoint(span.Start.Column.StartPoint)
-        let endPoint = SnapshotOverlapPoint(span.End.Column.StartPoint)
         { _start = startPoint; _end = endPoint }
 
     member x.Start = x._start

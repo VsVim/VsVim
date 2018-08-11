@@ -251,11 +251,11 @@ type internal TrackingVisualSpan =
             // Setup an ITrackLineColumn at the top left of the block selection
             let trackingLineColumn =
                 let textBuffer = blockSpan.TextBuffer
-                let lineNumber, column = VirtualSnapshotPointUtil.GetLineColumn blockSpan.VirtualStart
+                let lineNumber, column = VirtualSnapshotPointUtil.GetLineColumn blockSpan.VirtualStart.VirtualStartPoint
 
                 bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
 
-            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.Spaces, blockSpan.Height)
+            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.SpacesLength, blockSpan.Height)
 
     interface ITrackingVisualSpan with
         member x.TextBuffer = x.TextBuffer
