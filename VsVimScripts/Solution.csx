@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 
 VimBuffer.KeyIntercept = true;
@@ -19,7 +20,10 @@ private void OnKeyInputIntercept(object sender, KeyInputEventArgs e)
     else if (e.KeyInput.Key == VimKey.Enter)
     {
         var selectedItems = solutionExplorer.SelectedItems as UIHierarchyItem[];
-        if (selectedItems == null)
+        var selectedItem = selectedItems?.FirstOrDefault();
+        if (selectedItem == null || 
+            selectedItem.UIHierarchyItems == null || 
+            (selectedItem.UIHierarchyItems.Count == 0 && (!(selectedItem.Object is EnvDTE.Project) && !(selectedItem.Object is EnvDTE.Solution))))
         {
             InterceptEnd();
         }
