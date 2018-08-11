@@ -379,7 +379,7 @@ type VimInterpreter
         let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
         let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
         match result with
-        | SearchResult.Found (searchData, span, _, _) ->
+        | SearchResult.Found (_, span, _, _) ->
             span.Start 
             |> SnapshotPointUtil.GetContainingLine
             |> Some
