@@ -2427,6 +2427,24 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LineRange_NextLineWithPatternMatchingCurrentLine()
+            {
+                Create("cat", "dog frog", "bear frog dog", "frog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("/frog/");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PreviousLineWithPatternMatchingCurrentLine()
+            {
+                Create("cat", "dog", "bear dog frog", "frog dog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("?dog?");
+                Assert.Equal(_textBuffer.GetLineRange(1, 1), lineRange);
+            }
+
+            [WpfFact]
             public void LineRange_NextLineWithEmptyPattern()
             {
                 Create("cat", "dog", "bear", "frog", "tree");

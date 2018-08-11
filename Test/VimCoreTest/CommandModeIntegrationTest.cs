@@ -421,6 +421,26 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
+            [WpfFact]
+            public void ForwardMatchingCurrentLine()
+            {
+                Create("cat dog fish", "dog", "fish");
+                RunCommandRaw(":/dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure that we can handle the incremental search command from the command line 
+            /// </summary>
+            [WpfFact]
+            public void BackwardMatchingCurrentLine()
+            {
+                Create("cat", "dog", "fish dog cat");
+                _textView.MoveCaretToLine(2);
+                RunCommandRaw(":?dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// Make sure the match goes to the first non-whitespace character on the line 
             /// </summary>
