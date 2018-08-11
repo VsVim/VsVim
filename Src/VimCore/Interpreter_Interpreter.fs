@@ -330,6 +330,11 @@ type VimInterpreter
             x.GetLine lineSpecifier |> OptionUtil.map2 (getAdjustment adjustment)
 
         | LineSpecifier.NextLineWithPattern pattern ->
+            let pattern =
+                if pattern = "" then
+                    _vim.VimData.LastSearchData.Pattern
+                else
+                    pattern
             x.GetMatchingLine pattern SearchPath.Forward
             |> Option.map getLineAndNumber
 
@@ -348,6 +353,11 @@ type VimInterpreter
                 None
 
         | LineSpecifier.PreviousLineWithPattern pattern ->
+            let pattern =
+                if pattern = "" then
+                    _vim.VimData.LastSearchData.Pattern
+                else
+                    pattern
             x.GetMatchingLine pattern SearchPath.Backward
             |> Option.map getLineAndNumber
 
