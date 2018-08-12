@@ -899,20 +899,27 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
     val private _column: SnapshotColumn
     val private _beforeSpaces: int
     val private _totalSpaces: int
+    val private _tabStop: int
 
-    private new (column: SnapshotColumn, beforeSpaces: int, totalSpaces: int) = 
+    private new (column: SnapshotColumn, beforeSpaces: int, totalSpaces: int, tabStop: int) = 
         if totalSpaces < 0 then
             invalidArg "totalSpaces" "totalSpaces must be positive"
-        { _column = column; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
+        { _column = column; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces; _tabStop = tabStop }
 
     new (column: SnapshotColumn, tabStop: int) = 
         let spaces = 
             if column.IsLineBreakOrEnd then 0
             else column.GetSpacesInContext tabStop
-        { _column = column; _beforeSpaces = 0; _totalSpaces = spaces }
+        { _column = column; _beforeSpaces = 0; _totalSpaces = spaces; _tabStop = tabStop }
+
+    member x.TabStop = x._tabStop
 
     /// The number of spaces in the overlap point before this space
     member x.SpacesBefore = x._beforeSpaces
+
+    member x.SpacesBeforeTotal = 
+        let toColumn = x.Column.GetSpacesToColumn x._tabStop
+        toColumn + x.SpacesBefore
 
     /// The number of spaces in the overlap point after this space 
     member x.SpacesAfter = max 0 ((x._totalSpaces - 1) - x._beforeSpaces)
@@ -958,13 +965,13 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
 
             if spaces = totalSpaces then
                 // Landed exactly at the SnapshotColumn in question
-                value <- Some (SnapshotOverlapColumn(current, 0, currentSpaces))
+                value <- Some (SnapshotOverlapColumn(current, 0, currentSpaces, tabStop))
                 isDone <- true
             elif (spaces + currentSpaces) > totalSpaces then
                 // The space is a slice of a SnapshotColumn value.  Have to determine the
                 // offset
                 let before = totalSpaces - spaces
-                value <- Some (SnapshotOverlapColumn(current, before, currentSpaces))
+                value <- Some (SnapshotOverlapColumn(current, before, currentSpaces, tabStop))
                 isDone <- true
             elif current.IsLineBreakOrEnd then
                 // At this point we are at the end, there are more spaces and hence this has failed.
@@ -982,7 +989,7 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
             // CTODO: why do we measure the end as 0 spaces here but 1 everywhere else. That should be 
             // looked into.
             let column = SnapshotColumn(line, line.End)
-            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0)
+            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0, tabStop = tabStop)
 
     static member GetLineStart(line: ITextSnapshotLine, tabStop: int) = 
         let startColumn = SnapshotColumn.GetLineStart(line)
