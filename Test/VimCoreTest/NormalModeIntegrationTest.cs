@@ -3563,6 +3563,26 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("uu");
                 Assert.Equal("cat cat", _textView.GetLine(0).GetText());
             }
+
+            /// <summary>
+            /// Changing characterwise should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(new[] { "at", "", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class EffectiveChangeTests : NormalModeIntegrationTest

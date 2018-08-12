@@ -398,10 +398,11 @@ type internal CommandUtil
                 let savedStartLine = SnapshotPointUtil.GetContainingLine span.Start
                 _textBuffer.Delete(span.Span) |> ignore
                 if result.MotionKind = MotionKind.LineWise then
-                    let line = SnapshotUtil.GetLine x.CurrentSnapshot savedStartLine.LineNumber
-                    x.MoveCaretToNewLineIndent savedStartLine line
+                    SnapshotUtil.GetLine x.CurrentSnapshot savedStartLine.LineNumber
+                    |> x.MoveCaretToNewLineIndent savedStartLine
                 else
-                    TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+                    span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
+                    |> TextViewUtil.MoveCaretToPoint _textView)
 
         // Now that the delete is complete update the register
         let value = x.CreateRegisterValue (StringData.OfSpan span) result.OperationKind
