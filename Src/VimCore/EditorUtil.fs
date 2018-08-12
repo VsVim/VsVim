@@ -190,109 +190,6 @@ type LineRange
         let lastLineNumber = max left.LastLineNumber right.LastLineNumber
         LineRange.CreateFromBounds startLineNumber lastLineNumber
 
-/// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
-/// because it declaratively supports lines instead of a position range
-[<StructuralEquality>]
-[<NoComparison>]
-[<Struct>]
-[<DebuggerDisplay("{ToString()}")>]
-type SnapshotLineRange  =
-
-    val private _snapshot: ITextSnapshot
-    val private _startLine: int
-    val private _count: int
-
-    member x.Snapshot = x._snapshot
-
-    member x.StartLineNumber = x._startLine;
-
-    member x.StartLine = x._snapshot.GetLineFromLineNumber(x.StartLineNumber)
-
-    member x.Start = x.StartLine.Start
-
-    member x.Count = x._count
-
-    member x.LastLineNumber = x._startLine + (x._count - 1)
-
-    member x.LastLine = x._snapshot.GetLineFromLineNumber(x.LastLineNumber)
-
-    member x.LineRange = new LineRange(x._startLine, x._count)
-
-    member x.End = x.LastLine.End
-
-    member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
-
-    member x.Extent = new SnapshotSpan(x.Start, x.End)
-
-    member x.ExtentIncludingLineBreak = new SnapshotSpan(x.Start, x.EndIncludingLineBreak)
-
-    member x.Lines = 
-        let snapshot = x._snapshot
-        let start = x.StartLineNumber
-        let last = x.LastLineNumber
-        seq { for i = start to last do yield snapshot.GetLineFromLineNumber(i) }
-
-    new (snapshot: ITextSnapshot, startLine: int, count: int) =
-        let lineCount = snapshot.LineCount
-        if startLine >= lineCount then
-            raise (new ArgumentException("startLine", "Invalid Line Number"))
-
-        if (startLine + (count - 1) >= lineCount || count < 1) then
-            raise (new ArgumentException("count", "Invalid Line Number"))
-
-        { _snapshot = snapshot; _startLine = startLine; _count = count; }
-
-    member x.GetText() = x.Extent.GetText()
-
-    member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
-
-    static member op_Equality(left: SnapshotLineRange, right) = left = right
-
-    static member op_Inequality(left: SnapshotLineRange, right) = left <> right
-
-    override x.ToString() = sprintf "[%d - %d] %O" x.StartLineNumber x.LastLineNumber x.Snapshot
-
-    /// Create for the entire ITextSnapshot
-    static member CreateForExtent (snapshot: ITextSnapshot) =
-        let lineCount = EditorCoreUtil.GetNormalizedLineCount snapshot
-        new SnapshotLineRange(snapshot, 0, lineCount)
-
-    /// Create for a single ITextSnapshotLine
-    static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
-
-    static member CreateForSpan (span: SnapshotSpan) =
-        let startLine = span.Start.GetContainingLine()
-        // TODO use GetLastLine
-        let lastLine = 
-            if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
-            else span.Start.GetContainingLine()
-        SnapshotLineRange.CreateForLineRange startLine lastLine
-
-    /// Create a range for the provided ITextSnapshotLine and with at most count 
-    /// length.  If count pushes the range past the end of the buffer then the 
-    /// span will go to the end of the buffer
-    static member CreateForLineAndMaxCount (snapshotLine: ITextSnapshotLine) (count: int) = 
-        let maxCount = (snapshotLine.Snapshot.LineCount - snapshotLine.LineNumber)
-        let count = Math.Min(count, maxCount)
-        new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, count)
-
-    /// Create a SnapshotLineRange which includes the 2 lines
-    static member CreateForLineRange (startLine: ITextSnapshotLine) (lastLine: ITextSnapshotLine) =
-        Contract.Requires(startLine.Snapshot = lastLine.Snapshot)
-        let count = (lastLine.LineNumber - startLine.LineNumber) + 1
-        new SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count)
-
-    /// <summary>
-    /// Create a SnapshotLineRange which includes the 2 lines
-    /// </summary>
-    static member CreateForLineNumberRange (snapshot: ITextSnapshot) (startLine: int) (lastLine: int): Nullable<SnapshotLineRange> =
-        Contract.Requires(startLine <= lastLine)
-        if (startLine >= snapshot.LineCount || lastLine >= snapshot.LineCount) then
-            Nullable<SnapshotLineRange>()
-        else
-            let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
-            Nullable<SnapshotLineRange>(range)
-
 /// Conceptually this references a single CodePoint in the snapshot. This can be
 /// either:
 /// - a normal character
@@ -1023,6 +920,10 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
     /// The SnapshotColumn in which this overlap occurs
     member x.Column: SnapshotColumn = x._column
 
+    member x.Line = x.Column.Line
+
+    member x.LineNumber = x.Column.LineNumber
+
     /// The number of spaces the column occupies in the editor. 
     ///
     /// An interesting case to consider here is tabs.  They will not always occupy 
@@ -1082,6 +983,14 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
             // looked into.
             let column = SnapshotColumn(line, line.End)
             SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0)
+
+    static member GetLineStart(line: ITextSnapshotLine, tabStop: int) = 
+        let startColumn = SnapshotColumn.GetLineStart(line)
+        SnapshotOverlapColumn(startColumn, tabStop)
+
+    static member GetLineEnd(line: ITextSnapshotLine, tabStop: int) = 
+        let endColumn = SnapshotColumn.GetLineEnd(line)
+        SnapshotOverlapColumn(endColumn, tabStop)
 
 /// This is the pair to SnapshotColumn as VirtualSnapshotPoint is to SnapshotPoint
 [<Struct>]
@@ -1274,6 +1183,17 @@ type SnapshotColumnSpan =
         let endColumn = startColumn.Add(columnLength)
         { _startColumn = startColumn; _endColumn = endColumn }
 
+    new(line: ITextSnapshotLine, ?includeLineBreak) =
+        let includeLineBreak = defaultArg includeLineBreak false
+        let startColumn = SnapshotColumn(line, line.Start)
+        let endColumn = 
+            if includeLineBreak then SnapshotColumn(line.EndIncludingLineBreak)
+            else SnapshotColumn(line.End)
+        { _startColumn = startColumn; _endColumn = endColumn } 
+
+    new(line: ITextSnapshotLine) =
+        SnapshotColumnSpan(line, includeLineBreak = false)
+
     member x.Start = x._startColumn
 
     member x.End = x._endColumn
@@ -1464,6 +1384,113 @@ type SnapshotOverlapColumnSpan =
 
     override x.ToString() = 
         x.OverarchingSpan.ToString()
+
+/// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
+/// because it declaratively supports lines instead of a position range
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
+type SnapshotLineRange  =
+
+    val private _snapshot: ITextSnapshot
+    val private _startLine: int
+    val private _count: int
+
+    member x.Snapshot = x._snapshot
+
+    member x.StartLineNumber = x._startLine;
+
+    member x.StartLine = x._snapshot.GetLineFromLineNumber(x.StartLineNumber)
+
+    member x.Start = x.StartLine.Start
+
+    member x.Count = x._count
+
+    member x.LastLineNumber = x._startLine + (x._count - 1)
+
+    member x.LastLine = x._snapshot.GetLineFromLineNumber(x.LastLineNumber)
+
+    member x.LineRange = new LineRange(x._startLine, x._count)
+
+    member x.End = x.LastLine.End
+
+    member x.EndIncludingLineBreak = x.LastLine.EndIncludingLineBreak
+
+    member x.Extent = new SnapshotSpan(x.Start, x.End)
+
+    member x.ExtentIncludingLineBreak = new SnapshotSpan(x.Start, x.EndIncludingLineBreak)
+
+    member x.ColumnExtent = SnapshotColumnSpan(x.Extent)
+
+    member x.ColumnExtentIncludingLineBreak = SnapshotColumnSpan(x.ExtentIncludingLineBreak)
+
+    member x.Lines = 
+        let snapshot = x._snapshot
+        let start = x.StartLineNumber
+        let last = x.LastLineNumber
+        seq { for i = start to last do yield snapshot.GetLineFromLineNumber(i) }
+
+    new (snapshot: ITextSnapshot, startLine: int, count: int) =
+        let lineCount = snapshot.LineCount
+        if startLine >= lineCount then
+            raise (new ArgumentException("startLine", "Invalid Line Number"))
+
+        if (startLine + (count - 1) >= lineCount || count < 1) then
+            raise (new ArgumentException("count", "Invalid Line Number"))
+
+        { _snapshot = snapshot; _startLine = startLine; _count = count; }
+
+    member x.GetText() = x.Extent.GetText()
+
+    member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
+
+    static member op_Equality(left: SnapshotLineRange, right) = left = right
+
+    static member op_Inequality(left: SnapshotLineRange, right) = left <> right
+
+    override x.ToString() = sprintf "[%d - %d] %O" x.StartLineNumber x.LastLineNumber x.Snapshot
+
+    /// Create for the entire ITextSnapshot
+    static member CreateForExtent (snapshot: ITextSnapshot) =
+        let lineCount = EditorCoreUtil.GetNormalizedLineCount snapshot
+        new SnapshotLineRange(snapshot, 0, lineCount)
+
+    /// Create for a single ITextSnapshotLine
+    static member CreateForLine (snapshotLine: ITextSnapshotLine) = new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, 1)
+
+    static member CreateForSpan (span: SnapshotSpan) =
+        let startLine = span.Start.GetContainingLine()
+        // TODO use GetLastLine
+        let lastLine = 
+            if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
+            else span.Start.GetContainingLine()
+        SnapshotLineRange.CreateForLineRange startLine lastLine
+
+    /// Create a range for the provided ITextSnapshotLine and with at most count 
+    /// length.  If count pushes the range past the end of the buffer then the 
+    /// span will go to the end of the buffer
+    static member CreateForLineAndMaxCount (snapshotLine: ITextSnapshotLine) (count: int) = 
+        let maxCount = (snapshotLine.Snapshot.LineCount - snapshotLine.LineNumber)
+        let count = Math.Min(count, maxCount)
+        new SnapshotLineRange(snapshotLine.Snapshot, snapshotLine.LineNumber, count)
+
+    /// Create a SnapshotLineRange which includes the 2 lines
+    static member CreateForLineRange (startLine: ITextSnapshotLine) (lastLine: ITextSnapshotLine) =
+        Contract.Requires(startLine.Snapshot = lastLine.Snapshot)
+        let count = (lastLine.LineNumber - startLine.LineNumber) + 1
+        new SnapshotLineRange(startLine.Snapshot, startLine.LineNumber, count)
+
+    /// <summary>
+    /// Create a SnapshotLineRange which includes the 2 lines
+    /// </summary>
+    static member CreateForLineNumberRange (snapshot: ITextSnapshot) (startLine: int) (lastLine: int): Nullable<SnapshotLineRange> =
+        Contract.Requires(startLine <= lastLine)
+        if (startLine >= snapshot.LineCount || lastLine >= snapshot.LineCount) then
+            Nullable<SnapshotLineRange>()
+        else
+            let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
+            Nullable<SnapshotLineRange>(range)
 
 /// The Text Editor interfaces only have granularity down to the character in the 
 /// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
@@ -3525,41 +3552,48 @@ module TrackingPointUtil =
             | None ->
                 None
 
-/// Abstraction useful for APIs which need to work over a single SnapshotSpan 
-/// or collection of SnapshotSpan values
+/// Abstraction useful for APIs which need to work over a single SnapshotColumnSpan 
+/// or collection of SnapshotColumnSpan values
 [<RequireQualifiedAccess>]
 type EditSpan = 
     /// Common case of an edit operation which occurs over a single SnapshotSpan
-    | Single of SnapshotSpan 
+    | Single of SnapshotColumnSpan 
 
     /// Occurs during block edits
-    | Block of NonEmptyCollection<SnapshotOverlapSpan>
+    | Block of NonEmptyCollection<SnapshotOverlapColumnSpan>
 
     with
 
     /// View the data as a collection.  For Single values this just creates a
     /// collection with a single element
-    member x.Spans =
+    member x.ColumnSpans =
         match x with
         | Single span -> NonEmptyCollection(span, List.empty) 
         | Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.OverarchingSpan)
 
+    member x.Spans = x.ColumnSpans |> NonEmptyCollectionUtil.Map (fun span -> span.Span)
+
     /// View the data as a collection of overlap spans.  For Single values this just creates a
     /// collection with a single element
-    member x.OverlapSpans =
+    member x.GetOverlapSpans(tabStop: int)=
         match x with
         | Single span -> 
-            let span = SnapshotOverlapSpan(span) 
+            let span = SnapshotOverlapColumnSpan(span, tabStop)
             NonEmptyCollection(span, List.empty) 
         | Block col -> col
 
     /// Returns the overarching span of the entire EditSpan value.  For Single values
     /// this is a 1-1 mapping.  For Block values it will take the min start position
     /// and combine it with the maximum end position
-    member x.OverarchingSpan =
+    member x.OverarchingColumnSpan =
         match x with 
         | Single span -> span
-        | Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.OverarchingSpan) |> SnapshotSpanUtil.GetOverarchingSpan 
+        | Block col -> 
+            let startColumn = col |> Seq.map (fun s -> s.Start.Column) |> Seq.minBy (fun s -> s.StartPosition)
+            let endColumn = col |> Seq.map (fun s -> s.End.Column) |> Seq.maxBy (fun s -> s.StartPosition)
+            SnapshotColumnSpan(startColumn, endColumn)
+
+    member x.OverarchingSpan = x.OverarchingColumnSpan.Span
 
     /// Provide an implicit conversion from SnapshotSpan.  Useful from C# code
     static member op_Implicit span = EditSpan.Single span
@@ -3772,5 +3806,20 @@ module internal ITextEditExtensions =
             match pre + post with
             | 0 -> x.Delete(span.Span) 
             | _ -> x.Replace(span.Span, String.replicate (pre + post) " ") 
+
+        /// Delete the overlapped span from the ITextBuffer.  If there is any overlap then the
+        /// remaining spaces will be filed with ' ' 
+        member x.Delete (overlapSpan: SnapshotOverlapColumnSpan) = 
+            let pre = overlapSpan.Start.SpacesBefore
+            let post = 
+                if overlapSpan.HasOverlapEnd then
+                    overlapSpan.End.SpacesAfter + 1
+                else
+                    0
+
+            let span = overlapSpan.OverarchingSpan
+            match pre + post with
+            | 0 -> x.Delete(span.Span.Span) 
+            | _ -> x.Replace(span.Span.Span, String.replicate (pre + post) " ") 
 
 

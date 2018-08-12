@@ -51,7 +51,7 @@ type StringData =
 
     static member OfEditSpan editSpan =
         match editSpan with
-        | EditSpan.Single span -> StringData.OfSpan span
+        | EditSpan.Single span -> StringData.OfSpan span.Span
         | EditSpan.Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.GetText()) |> StringData.Block 
 
 [<RequireQualifiedAccess>]

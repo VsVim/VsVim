@@ -795,8 +795,10 @@ type MotionResult = {
 
 } with
 
+    member x.ColumnSpan = SnapshotColumnSpan(x.Span) 
+
     /// The Span as an EditSpan value
-    member x.EditSpan = EditSpan.Single x.Span
+    member x.EditSpan = EditSpan.Single x.ColumnSpan
 
     /// The OperationKind of the MotionResult
     member x.OperationKind = 
@@ -1657,6 +1659,10 @@ type CharacterSpan =
 
     member x.VirtualSpan = VirtualSnapshotSpan(x.VirtualStart, x.VirtualEnd)
 
+    member x.ColumnSpan = SnapshotColumnSpan(x.Span)
+
+    member x.VirtualColumnSpan = VirtualSnapshotColumnSpan(x.VirtualSpan)
+
     member x.Length = x.Span.Length
 
     member x.VirtualLength = x.VirtualSpan.Length
@@ -1915,9 +1921,9 @@ type VisualSpan =
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
         match x with
-        | VisualSpan.Character characterSpan -> EditSpan.Single characterSpan.Span
-        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
-        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockOverlapSpans
+        | VisualSpan.Character characterSpan -> EditSpan.Single characterSpan.ColumnSpan
+        | VisualSpan.Line range -> EditSpan.Single range.ColumnExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan -> EditSpan.Block blockSpan.BlockOverlapColumnSpans
 
     /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
     /// just expand out the Span.  For Line this is an identity.  For Block it will
