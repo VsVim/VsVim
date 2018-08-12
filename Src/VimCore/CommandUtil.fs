@@ -564,7 +564,7 @@ type internal CommandUtil
                 let endColumn = 
                     let endColumn = SnapshotColumn.GetLineEnd(span.Start.Line)
                     SnapshotOverlapColumn(endColumn, _localSettings.TabStop)
-                SnapshotOverlapColumnSpan(span.Start, endColumn))
+                SnapshotOverlapColumnSpan(span.Start, endColumn, _localSettings.TabStop))
 
             // Caret should be positioned at the start of the span for undo
             TextViewUtil.MoveCaretToPoint _textView col.Head.Start.Column.StartPoint
@@ -795,7 +795,7 @@ type internal CommandUtil
                             blockSpan.BlockOverlapColumnSpans
                             |> NonEmptyCollectionUtil.Map (fun span ->
                                 let endColumn = SnapshotOverlapColumn.GetLineEnd(span.Start.Line, _localSettings.TabStop)
-                                SnapshotOverlapColumnSpan(span.Start, endColumn))
+                                SnapshotOverlapColumnSpan(span.Start, endColumn, _localSettings.TabStop))
 
                         // Actually perform the deletion
                         collection |> Seq.iter (fun span -> edit.Delete(span) |> ignore)
@@ -823,7 +823,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.OverlapSpans |> Seq.iter (fun overlapSpan ->
+            visualSpan.GetOverlapSpans _localSettings.TabStop |> Seq.iter (fun overlapSpan ->
                 let span = overlapSpan.OverarchingSpan
 
                 // If the last included point in the SnapshotSpan is inside the line break
@@ -2523,7 +2523,7 @@ type internal CommandUtil
             use edit = _textBuffer.CreateEdit()
             let builder = System.Text.StringBuilder()
 
-            for span in visualSpan.OverlapSpans do
+            for span in visualSpan.GetOverlapSpans _localSettings.TabStop do
                 if span.HasOverlapStart then
                     let startPoint = span.Start
                     builder.Length <- 0

@@ -85,6 +85,30 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class WithTabStopTest : SnapshotOverlapColumnTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("dog");
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 0, tabStop: 4);
+                Assert.Equal(4, column.TabStop);
+                Assert.Equal(8, column.WithTabStop(8).TabStop);
+            }
+
+            [WpfFact]
+            public void WithTab()
+            {
+                Create("\tdog");
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 2, tabStop: 4);
+                Assert.Equal(4, column.TabStop);
+                Assert.Equal(2, column.SpacesBefore);
+                column = column.WithTabStop(1);
+                Assert.True(column.Column.IsCharacter('o'));
+                Assert.Equal(0, column.SpacesBefore);
+            }
+        }
+
         public sealed class GetSpaceWithOverlapOrEndTest :  SnapshotOverlapColumnTest
         {
             [WpfFact]

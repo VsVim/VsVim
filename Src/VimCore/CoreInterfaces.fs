@@ -1795,7 +1795,7 @@ type BlockSpan =
         x.GetBlockSpansCore (fun line beforeSpaces ->
             let startColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
             let endColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
-            SnapshotOverlapColumnSpan(startColumn, endColumn))
+            SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
 
     /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.Span)
@@ -1913,10 +1913,15 @@ type VisualSpan =
             blockSpan.BlockSpans
             :> SnapshotSpan seq
 
-    member x.OverlapSpans =
-        match x with 
-        | VisualSpan.Block blockSpan -> seq (blockSpan.BlockOverlapSpans)
-        | _ -> x.Spans |> Seq.map (fun span -> SnapshotOverlapSpan(span))
+    member x.GetOverlapColumnSpans(tabStop: int): SnapshotOverlapColumnSpan seq =
+        match x with
+        | VisualSpan.Character characterSpan -> Seq.singleton (SnapshotOverlapColumnSpan(characterSpan.ColumnSpan, tabStop))
+        | VisualSpan.Line range -> Seq.singleton (SnapshotOverlapColumnSpan(range.ColumnExtentIncludingLineBreak, tabStop))
+        | VisualSpan.Block blockSpan -> blockSpan.BlockOverlapColumnSpans :> SnapshotOverlapColumnSpan seq
+
+    member x.GetOverlapSpans(tabStop: int) =
+        (x.GetOverlapColumnSpans tabStop)
+        |> Seq.map (fun span -> SnapshotOverlapSpan(span))
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 

@@ -21,7 +21,7 @@ namespace Vim.UnitTest
         {
             var startColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, start, tabStop);
             var endColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, start + count, tabStop);
-            return new SnapshotOverlapColumnSpan(startColumn, endColumn);
+            return new SnapshotOverlapColumnSpan(startColumn, endColumn, tabStop);
         }
 
         public abstract class GetTextTest : SnapshotOverlapColumnSpanTest
@@ -34,7 +34,8 @@ namespace Vim.UnitTest
                     Create("\tcat\t");
                     var span = new SnapshotOverlapColumnSpan(
                         new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 4, tabStop: 4),
-                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(2), beforeSpaces: 0, totalSpaces: 1, tabStop: 4));
+                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(2), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
+                        tabStop: 4);
                     Assert.Equal("\tc", span.GetText());
                 }
 
@@ -44,7 +45,8 @@ namespace Vim.UnitTest
                     Create("\tcat\t");
                     var span = new SnapshotOverlapColumnSpan(
                         new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 1, totalSpaces: 4, tabStop: 4),
-                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(2), beforeSpaces: 0, totalSpaces: 1, tabStop: 4));
+                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(2), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
+                        tabStop: 4);
                     Assert.Equal("   c", span.GetText());
                 }
 
@@ -54,7 +56,8 @@ namespace Vim.UnitTest
                     Create("\tcat\t");
                     var span = new SnapshotOverlapColumnSpan(
                         new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(3), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
-                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(5), beforeSpaces: 0, totalSpaces: 1, tabStop: 4));
+                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(5), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
+                        tabStop: 4);
                     Assert.Equal("t\t", span.GetText());
                 }
 
@@ -64,7 +67,8 @@ namespace Vim.UnitTest
                     Create("\tcat\t");
                     var span = new SnapshotOverlapColumnSpan(
                         new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(3), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
-                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(4), beforeSpaces: 3, totalSpaces: 4, tabStop: 4));
+                        new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(4), beforeSpaces: 3, totalSpaces: 4, tabStop: 4),
+                        tabStop: 4);
                     Assert.Equal("t   ", span.GetText());
                 }
 
@@ -109,7 +113,8 @@ namespace Vim.UnitTest
                 Create("cat");
                 var span = new SnapshotOverlapColumnSpan(
                     new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
-                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 0, totalSpaces: 1, tabStop: 4));
+                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
+                    tabStop: 4);
                 Assert.Equal(_textBuffer.GetColumnFromPosition(1), span.OverarchingEnd);
             }
 
@@ -124,7 +129,8 @@ namespace Vim.UnitTest
                 Create("c\tt");
                 var span = new SnapshotOverlapColumnSpan(
                     new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 1, tabStop: 4),
-                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 1, totalSpaces: 4, tabStop: 4));
+                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 1, totalSpaces: 4, tabStop: 4),
+                    tabStop: 4);
                 Assert.Equal(_textBuffer.GetColumnFromPosition(2), span.OverarchingEnd);
             }
         }
@@ -141,7 +147,8 @@ namespace Vim.UnitTest
                 Create("\tcat");
                 var span = new SnapshotOverlapColumnSpan(
                     new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 8, tabStop: 4),
-                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 2, totalSpaces: 8, tabStop: 4));
+                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 2, totalSpaces: 8, tabStop: 4),
+                    tabStop: 4);
                 Assert.Equal(1, span.OverarchingSpan.Span.Length);
             }
         }
@@ -158,7 +165,8 @@ namespace Vim.UnitTest
                 Create("\t");
                 var span = new SnapshotOverlapColumnSpan(
                     new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 8, tabStop: 4),
-                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 2, totalSpaces: 8, tabStop: 4));
+                    new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 2, totalSpaces: 8, tabStop: 4),
+                    tabStop: 4);
                 Assert.Equal(0, span.InnerSpan.Span.Length);
             }
         }
