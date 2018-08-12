@@ -808,6 +808,13 @@ type SnapshotColumn =
         | Some column -> column
         | None -> invalidArg "count" (Resources.Common_InvalidColumnCount count)
 
+    /// Add 'count' columns in the current line or return the End column of the line if 'count' goes 
+    /// past the end.
+    member x.AddInLineOrEnd(count: int) =
+        match x.TryAddInLine(count, includeLineBreak = true) with
+        | Some column -> column
+        | None -> SnapshotColumn.GetLineEnd x.Line
+
     member x.SubtractInLine(count: int, ?includeLineBreak) = 
         let includeLineBreak = defaultArg includeLineBreak false
         x.AddInLine(-count, includeLineBreak)
@@ -879,12 +886,7 @@ type SnapshotColumn =
 
     static member GetLineStart(line: ITextSnapshotLine) = SnapshotColumn(line, line.Start)
 
-    static member GetLineBreak(line: ITextSnapshotLine) = SnapshotColumn(line, line.End)
-
-    static member GetLineEnd(line: ITextSnapshotLine) = 
-        let column = SnapshotColumn.GetLineBreak(line)
-        if column.IsStartOfLine then column
-        else column.Subtract 1
+    static member GetLineEnd(line: ITextSnapshotLine) = SnapshotColumn(line, line.End)
 
     // CTODO: Consider the API naming her. Everything else is Get
     static member CreateForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =

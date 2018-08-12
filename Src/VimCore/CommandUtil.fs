@@ -109,8 +109,7 @@ type internal CommandUtil
     member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     /// The column of the caret
-    /// CTODO: should be CaretColumnNumber
-    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
+    member x.CaretColumn = TextViewUtil.GetCaretColumn _textView
 
     /// The virtual column of the caret
     member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
@@ -391,14 +390,14 @@ type internal CommandUtil
         x.EditWithUndoTransaction "Change" (fun () ->
 
             let span =
-                let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
-                SnapshotSpan(x.CaretPoint, endPoint)
+                let endColumn = x.CaretColumn.AddInLineOrEnd(count)
+                SnapshotColumnSpan(x.CaretColumn, endColumn)
 
-            let editSpan = EditSpan.Single span
+            let editSpan = EditSpan.Single span.Span
             x.ChangeCaseSpanCore kind editSpan
 
             // Move the caret but make sure to respect the 'virtualedit' option
-            let point = SnapshotPoint(x.CurrentSnapshot, span.End.Position)
+            let point = SnapshotPoint(x.CurrentSnapshot, span.End.StartPosition)
             _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -693,15 +692,16 @@ type internal CommandUtil
 
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
-        if x.CaretPoint.Position < x.CaretLine.End.Position then
-            let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
-            let span = SnapshotSpan(x.CaretPoint, endPoint)
+        if not x.CaretColumn.IsLineBreakOrEnd then
+            let span = 
+                let endColumn = x.CaretColumn.AddInLineOrEnd count
+                SnapshotColumnSpan(x.CaretColumn, endColumn)
 
             // Use a transaction so we can guarantee the caret is in the correct
             // position on undo / redo
             x.EditWithUndoTransaction "DeleteChar" (fun () ->
                 let position = x.CaretPoint.Position
-                let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
+                let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span.Span
 
                 // Need to respect the virtual edit setting here as we could have
                 // deleted the last character on the line
@@ -709,7 +709,7 @@ type internal CommandUtil
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
             // Put the deleted text into the specified register
-            let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
+            let value = RegisterValue(StringData.OfSpan span.Span, OperationKind.CharacterWise)
             _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3363,23 +3363,24 @@ type internal CommandUtil
     member x.SubstituteCharacterAtCaret count registerName =
 
         x.EditWithLinkedChange "Substitute" (fun () ->
-            if x.CaretPoint.Position >= x.CaretLine.End.Position then
+            if x.CaretColumn.IsLineBreakOrEnd then
                 // When we are past the end of the line just move the caret
                 // to the end of the line and complete the command.  Nothing should be deleted
                 TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
             else
-                let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
-                let span = SnapshotSpan(x.CaretPoint, endPoint)
+                let span = 
+                    let endColumn = x.CaretColumn.AddInLineOrEnd count
+                    SnapshotColumnSpan(x.CaretColumn, endColumn)
 
                 // Use a transaction so we can guarantee the caret is in the correct
                 // position on undo / redo
                 x.EditWithUndoTransaction "DeleteChar" (fun () ->
                     let position = x.CaretPoint.Position
-                    let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
+                    let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span.Span
                     TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
 
                 // Put the deleted text into the specified register
-                let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
+                let value = RegisterValue(StringData.OfSpan span.Span, OperationKind.CharacterWise)
                 _commonOperations.SetRegisterValue registerName RegisterOperation.Delete value)
 
     /// Subtract 'count' values from the word under the caret
