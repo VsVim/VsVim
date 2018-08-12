@@ -625,18 +625,18 @@ type internal CommandUtil
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
         if x.CaretPoint.Position < x.CaretLine.End.Position then
+            let startPoint = x.CaretPoint
             let endPoint = SnapshotLineUtil.GetColumnOrEnd (x.CaretColumn + count) x.CaretLine
-            let span = SnapshotSpan(x.CaretPoint, endPoint)
+            let span = SnapshotSpan(startPoint, endPoint)
 
             // Use a transaction so we can guarantee the caret is in the correct
             // position on undo / redo
             x.EditWithUndoTransaction "DeleteChar" (fun () ->
-                let position = x.CaretPoint.Position
-                let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
+                _textBuffer.Delete(span.Span) |> ignore
 
                 // Need to respect the virtual edit setting here as we could have
                 // deleted the last character on the line
-                let point = SnapshotPoint(snapshot, position)
+                let point = startPoint.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
             // Put the deleted text into the specified register
