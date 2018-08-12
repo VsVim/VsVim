@@ -3354,9 +3354,9 @@ type internal CommandUtil
                 // Use a transaction so we can guarantee the caret is in the correct
                 // position on undo / redo
                 x.EditWithUndoTransaction "DeleteChar" (fun () ->
-                    let position = x.CaretPoint.Position
-                    let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
-                    TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
+                    _textBuffer.Delete(span.Span) |> ignore
+                    span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
+                    |> TextViewUtil.MoveCaretToPoint _textView)
 
                 // Put the deleted text into the specified register
                 let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)

@@ -6731,6 +6731,26 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "at", "", "fish", "" }, _textBuffer.GetLines());
                 Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
+
+            /// <summary>
+            /// Substituting a character at the caret should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void SubstituteCharAtCaret_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("s");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public abstract class TagBlocksMotionTest : NormalModeIntegrationTest
