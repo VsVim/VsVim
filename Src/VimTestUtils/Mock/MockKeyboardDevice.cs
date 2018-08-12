@@ -159,24 +159,12 @@ namespace Vim.UnitTest.Mock
                 return true;
             }
 
-            switch ((int) keyInput.Char) 
+            var rawChar = (int)keyInput.Char;
+            if (rawChar >= 1 && rawChar <= 26)
             {
-                case 1:
-                    key = Key.A;
-                    modKeys = ModifierKeys.Control;
-                    return true;
-                case 18:
-                    key = Key.R;
-                    modKeys = ModifierKeys.Control;
-                    return true;
-                case 21:
-                    key = Key.U;
-                    modKeys = ModifierKeys.Control;
-                    return true;
-                case 23:
-                    key = Key.W;
-                    modKeys = ModifierKeys.Control;
-                    return true;
+                key = (Key)(Key.A + (rawChar - 1));
+                modKeys = ModifierKeys.Control;
+                return true;
             }
 
             return false;

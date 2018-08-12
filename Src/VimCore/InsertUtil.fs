@@ -269,9 +269,9 @@ type internal InsertUtil
 
     /// Block insert the specified text at the caret point over the specified number of lines
     member x.BlockInsert text atEndOfLine height = 
-        let line, column = SnapshotPointUtil.GetLineColumn x.CaretPoint
-        let spaces = SnapshotLineUtil.GetSpacesToColumn x.CaretLine column _localSettings.TabStop
-        x.ApplyBlockInsert text atEndOfLine line spaces height 
+        let column = x.CaretColumn
+        let spaces = column.GetSpacesToColumn _localSettings.TabStop
+        x.ApplyBlockInsert text atEndOfLine column.LineNumber spaces height 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
@@ -466,7 +466,7 @@ type internal InsertUtil
             // is currently on an indent boundary then we add a full indent, otherwise we just move
             // out to the end of the current indent
             let addedSpaces = 
-                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
+                let caretSpaces = _operations.GetSpacesToColumn x.CaretColumn
                 let remainder = caretSpaces % indentSpaces
                 indentSpaces - remainder
 
@@ -853,7 +853,7 @@ type internal InsertUtil
             // Backspacing over white space.  If everything between here and the previous tab boundary
             // is indent then take it all.  
             let tabBoundarySpaces = 
-                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
+                let caretSpaces = _operations.GetSpacesToColumn x.CaretColumn
                 let remainder = caretSpaces % _localSettings.SoftTabStop 
                 if remainder = 0 then 
                     caretSpaces - _localSettings.SoftTabStop
@@ -863,13 +863,13 @@ type internal InsertUtil
             if tabBoundarySpaces < 0 then
                 BackspaceCommand.Characters 1
             else
-                let tabBoundaryPoint = _operations.GetPointForSpaces x.CaretLine tabBoundarySpaces
+                let tabBoundaryColumn = _operations.GetColumnForSpacesOrLineBreak x.CaretLine tabBoundarySpaces
                 let allBlank = 
-                    SnapshotSpan(tabBoundaryPoint, x.CaretPoint)
+                    SnapshotSpan(tabBoundaryColumn.StartPoint, x.CaretPoint)
                     |> SnapshotSpanUtil.GetPoints SearchPath.Forward 
                     |> Seq.forall SnapshotPointUtil.IsBlank
                 if allBlank then
-                    BackspaceCommand.Characters (x.CaretPoint.Position - tabBoundaryPoint.Position)
+                    BackspaceCommand.Characters (x.CaretPoint.Position - tabBoundaryColumn.StartPosition)
                 else
                     BackspaceCommand.Characters 1 
 

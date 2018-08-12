@@ -674,7 +674,7 @@ let x = 42
                 var command = ParseLineCommand(range + ">");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                return shift.Item;
+                return shift.Item1;
             }
 
             [Fact]
@@ -1651,7 +1651,8 @@ let x = 42
                 var command = ParseLineCommand("'a,'b>");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                Assert.True(shift.Item.IsRange);
+                Assert.True(shift.Item1.IsRange);
+                Assert.Equal(1, shift.Item2);
             }
 
             [Fact]
@@ -1660,7 +1661,36 @@ let x = 42
                 var command = ParseLineCommand("'a,'b >");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                Assert.True(shift.Item.IsRange);
+                Assert.True(shift.Item1.IsRange);
+                Assert.Equal(1, shift.Item2);
+            }
+
+            [Fact]
+            public void ShiftDoubleLeft()
+            {
+                var command = ParseLineCommand("<<");
+                Assert.Equal(2, ((LineCommand.ShiftLeft)command).Item2);
+            }
+
+            [Fact]
+            public void ShiftDoubleRight()
+            {
+                var command = ParseLineCommand(">>");
+                Assert.Equal(2, ((LineCommand.ShiftRight)command).Item2);
+            }
+
+            [Fact]
+            public void ShiftTripleLeft()
+            {
+                var command = ParseLineCommand("<<<");
+                Assert.Equal(3, ((LineCommand.ShiftLeft)command).Item2);
+            }
+
+            [Fact]
+            public void ShiftTripleRight()
+            {
+                var command = ParseLineCommand(">>>");
+                Assert.Equal(3, ((LineCommand.ShiftRight)command).Item2);
             }
         }
 

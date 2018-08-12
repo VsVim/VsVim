@@ -706,14 +706,14 @@ type CaretColumn =
     /// This column should be specified in terms of a character offset in the ITextBuffer
     /// and shouldn't consider items like how wide a tab is.  A tab should be a single
     /// character
-    | InLastLine of int
+    | InLastLine of ColumnNumber: int
 
     /// Caret should be placed in the specified column on the last line in 
     /// the MotionResult
     ///
     /// This column should be specified in terms number of screen columns, where 
     /// some characters like tabs may span many columns.
-    | ScreenColumn of int
+    | ScreenColumn of ColumnNumber: int
 
     /// Caret should be placed at the start of the line after the last line
     /// in the motion
@@ -1640,7 +1640,8 @@ type CharacterSpan =
                 else
                     x._lastLineLength
 
-            VirtualSnapshotLineUtil.GetColumn offset lastLine
+            let virtualColumn = VirtualSnapshotColumn.CreateForColumnNumber(lastLine, offset)
+            virtualColumn.VirtualStartPoint
         else
             x.End |> VirtualSnapshotPointUtil.OfPoint
 
@@ -1728,7 +1729,7 @@ type BlockSpan =
         let point = VirtualSnapshotPointUtil.OfPoint x.End
         let line = SnapshotPointUtil.GetContainingLine point.Position
         if point.Position = line.End then
-            let realSpaces = SnapshotLineUtil.GetSpacesToColumn line line.Length x._tabStop
+            let realSpaces = SnapshotColumn.GetSpacesOnLine(line, x._tabStop)
             let virtualSpaces = x.ColumnSpaces + x.Spaces - realSpaces
             VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
         else
@@ -1779,7 +1780,7 @@ type BlockSpan =
         |> NonEmptyCollectionUtil.OfSeq
         |> Option.get
 
-    /// Get a NonEmptyCollection indicating of the SnapshotSpan that each line of
+    /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan that each line of
     /// this block spans, along with the offset (measured in cells) of the block
     /// with respect to the start point and end point.
     member x.BlockOverlapSpans: NonEmptyCollection<SnapshotOverlapSpan> =
@@ -1873,6 +1874,34 @@ type VisualSpan =
         | VisualSpan.Character characterSpan -> [characterSpan.Span] |> Seq.ofList
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
+
+    /// Return the per line spans which make up this VisualSpan instance
+    member x.PerLineSpans =
+        match x with
+        | VisualSpan.Character characterSpan ->
+            seq {
+                let leadingEdge, middle, trailingEdge =
+                    SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
+                match leadingEdge with
+                | Some span -> yield span
+                | None -> ()
+                match middle with
+                | Some lineRange ->
+                    let spans =
+                        lineRange.Lines
+                        |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+                    yield! spans
+                | None -> ()
+                match trailingEdge with
+                | Some span -> yield span
+                | None -> ()
+            }
+        | VisualSpan.Line lineRange ->
+            lineRange.Lines
+            |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan ->
+            blockSpan.BlockSpans
+            :> SnapshotSpan seq
 
     member x.OverlapSpans =
         match x with 
@@ -3135,6 +3164,9 @@ type NormalCommand =
 [<StructuralEquality>]
 type VisualCommand = 
 
+    /// Add count to the word in each line of the selection, optionally progressively
+    | AddToSelection of bool
+
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
@@ -3210,6 +3242,9 @@ type VisualCommand =
 
     /// Shift the selected lines to the right
     | ShiftLinesRight
+
+    /// Subtract count from the word in each line of the selection, optionally progressively
+    | SubtractFromSelection of bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line

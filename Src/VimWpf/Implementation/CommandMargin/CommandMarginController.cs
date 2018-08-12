@@ -410,6 +410,14 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     ChangeEditKind(EditKind.None);
                     e.Handled = true;
                     break;
+                case Key.C:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                        ChangeEditKind(EditKind.None);
+                        e.Handled = true;
+                    }
+                    break;
                 case Key.Return:
                     ExecuteCommand(_margin.CommandLineTextBox.Text);
                     e.Handled = true;

@@ -840,8 +840,8 @@ type Parser
             | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
             | LineCommand.Set _ -> noRangeCommand
             | LineCommand.ShellCommand _ -> noRangeCommand
-            | LineCommand.ShiftLeft _ -> LineCommand.ShiftLeft lineRange
-            | LineCommand.ShiftRight _ -> LineCommand.ShiftRight lineRange
+            | LineCommand.ShiftLeft (_, count) -> LineCommand.ShiftLeft (lineRange, count)
+            | LineCommand.ShiftRight (_, count) -> LineCommand.ShiftRight (lineRange, count)
             | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
             | LineCommand.Source _ -> noRangeCommand
             | LineCommand.Substitute (_, pattern, replace, flags) -> LineCommand.Substitute (lineRange, pattern, replace, flags)
@@ -1557,15 +1557,23 @@ type Parser
 
     /// Parse out the shift left pattern
     member x.ParseShiftLeft lineRange = 
+        let mutable count = 1
+        while _tokenizer.CurrentChar = '<' do
+            _tokenizer.MoveNextChar()
+            count <- count + 1
         x.SkipBlanks()
         let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
-        LineCommand.ShiftLeft (lineRange)
+        LineCommand.ShiftLeft (lineRange, count)
 
     /// Parse out the shift right pattern
     member x.ParseShiftRight lineRange = 
+        let mutable count = 1
+        while _tokenizer.CurrentChar = '>' do
+            _tokenizer.MoveNextChar()
+            count <- count + 1
         x.SkipBlanks()
         let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
-        LineCommand.ShiftRight (lineRange)
+        LineCommand.ShiftRight (lineRange, count)
 
     /// Parse out the shell command
     member x.ParseShellCommand lineRange =

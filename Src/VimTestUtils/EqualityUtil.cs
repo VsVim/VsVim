@@ -50,6 +50,15 @@ namespace Vim.UnitTest
                 EqualValues,
                 NotEqualValues.Concat(notEqualValues).ToList().AsReadOnly());
         }
+
+        public void RunAll(
+            Func<T, T, bool> compEqualsOperator,
+            Func<T, T, bool> compNotEqualsOperator,
+            bool skipOperators = false,
+            bool skipEquatable = false)
+        {
+            EqualityUtil.RunAll(compEqualsOperator, compNotEqualsOperator, skipOperators, skipEquatable, this);
+        }
     }
 
     public static class EqualityUnit

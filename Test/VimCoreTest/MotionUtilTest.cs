@@ -1183,7 +1183,7 @@ more";
                 _textView.SetVisibleLineRange(start: 0, length: 1);
                 _textView.MoveCaretTo(_textBuffer.GetLine(1).End);
                 var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1194,7 +1194,7 @@ more";
                 _textView.MoveCaretTo(_textBuffer.GetLine(1).End);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromTopOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(3, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(3, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1237,7 +1237,7 @@ more";
                 Create("a", "b", "  c", "d");
                 _textView.SetVisibleLineRange(start: 0, length: 3);
                 var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1247,7 +1247,7 @@ more";
                 _textView.SetVisibleLineRange(start: 0, length: 2);
                 _globalSettings.StartOfLine = false;
                 var data = _motionUtil.LineFromBottomOfVisibleWindow(FSharpOption<int>.None).Value;
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1275,7 +1275,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.True(!data.IsForward);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
                 Assert.True(!data.MotionResultFlags.HasFlag(MotionResultFlags.MaintainCaretColumn));
             }
 
@@ -1290,7 +1290,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
                 Assert.True(!data.IsForward);
-                Assert.Equal(4, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(4, data.CaretColumn.AsInLastLine().ColumnNumber);
                 Assert.True(data.MotionResultFlags.HasFlag(MotionResultFlags.MaintainCaretColumn));
             }
         }
@@ -1578,7 +1578,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1590,7 +1590,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
                 Assert.False(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1602,7 +1602,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -1614,7 +1614,7 @@ more";
                 Assert.Equal(span, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
         }
 
@@ -1808,7 +1808,7 @@ more";
                 Create(0, "cat", " dog");
                 var data = _motionUtil.FirstNonBlankOnLine(2);
                 Assert.Equal(_textView.GetLineRange(0, 1), data.LineRange);
-                Assert.Equal(1, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(1, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             /// <summary>
@@ -2554,7 +2554,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
                 Assert.False(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2565,7 +2565,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2576,7 +2576,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2588,7 +2588,7 @@ more";
                 Assert.Equal(_textBuffer.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.IsForward);
                 Assert.True(data.MotionKind.IsLineWise);
-                Assert.Equal(0, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(0, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2598,7 +2598,7 @@ more";
                 _textView.MoveCaretTo(_textView.GetLine(1).Start);
                 var data = _motionUtil.LineOrFirstToFirstNonBlank(FSharpOption<int>.None);
                 Assert.Equal(0, data.Span.Start.Position);
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
                 Assert.False(data.IsForward);
             }
 
@@ -2700,7 +2700,7 @@ more";
                 _textView.MoveCaretTo(1);
                 var data = _motionUtil.LineDownToFirstNonBlank(1);
                 Assert.True(data.CaretColumn.IsInLastLine);
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2710,7 +2710,7 @@ more";
                 _textView.MoveCaretTo(1);
                 var data = _motionUtil.LineDownToFirstNonBlank(1);
                 Assert.True(data.CaretColumn.IsInLastLine);
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -2720,7 +2720,7 @@ more";
                 _textView.MoveCaretTo(1);
                 var data = _motionUtil.LineDownToFirstNonBlank(2);
                 Assert.True(data.CaretColumn.IsInLastLine);
-                Assert.Equal(1, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(1, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
             [WpfFact]
@@ -3160,7 +3160,7 @@ more";
                 Create("the", "  dog", "cat");
                 _textView.MoveCaretToLine(2);
                 var data = _motionUtil.LineUpToFirstNonBlank(1);
-                Assert.Equal(2, data.CaretColumn.AsInLastLine().Item);
+                Assert.Equal(2, data.CaretColumn.AsInLastLine().ColumnNumber);
                 Assert.False(data.IsForward);
                 Assert.Equal(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
             }
