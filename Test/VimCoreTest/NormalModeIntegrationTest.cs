@@ -6673,10 +6673,30 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Deleting a character should handle an external edit
+            /// Deleting a character before the caret should handle an external edit
             /// </summary>
             [WpfFact]
-            public void DeleteChar_ExternalEdit()
+            public void DeleteCharBeforeCaret_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1, 1);
+                _vimBuffer.ProcessNotation("X");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting a character at the caret should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteCharAtCaret_ExternalEdit()
             {
                 Create("cat", "dog", "fish", "");
                 _textBuffer.Changed += (sender, obj) =>
@@ -6693,7 +6713,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Deleting a motion should handle an external edit
+            /// Deleting a characterwise motion should handle an external edit
             /// </summary>
             [WpfFact]
             public void DeleteMotion_ExternalEdit()

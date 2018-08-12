@@ -659,8 +659,9 @@ type internal CommandUtil
         // ensure it appears there during an undo
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "DeleteChar" (fun () ->
-            let snapshot = TextBufferUtil.DeleteAndGetLatest _textBuffer span.Span
-            TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
+            _textBuffer.Delete span.Span |> ignore
+            startPoint.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
+            |> TextViewUtil.MoveCaretToPoint _textView)
 
         // Put the deleted text into the specified register once the delete completes
         let value = RegisterValue(StringData.OfSpan span, OperationKind.CharacterWise)
