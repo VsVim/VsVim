@@ -101,6 +101,7 @@ module internal Resources =
     let Parser_FunctionName name = sprintf "Function name must start with a capital or contain a colon: %s" name
     let Parser_ElseIfAfterElse = ":elseif after :else"
     let Parser_MultipleElse = "multiple :else"
+    let Parser_UnrecognizedRegisterName = "Unrecognized register name"
 
     let Interpreter_Error = "An error was encountered interpreting the expression"
     let Interpreter_CantFindDirectory x = sprintf "Can't find directory \"%s\" in cdpath" x
