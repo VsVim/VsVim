@@ -874,8 +874,8 @@ type internal CommandUtil
         x.EditWithUndoTransaction "Delete" (fun () ->
             _textBuffer.Delete(span.Span) |> ignore
 
-            // Get the point on the current ITextSnapshot
-            let point = SnapshotPoint(x.CurrentSnapshot, span.Start.Position)
+            // Translate the point to the current snapshot.
+            let point = span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
             _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
 
         // Update the register with the result so long as something was actually deleted

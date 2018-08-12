@@ -6671,6 +6671,46 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("dd");
                 Assert.Equal(new[] { "cat", "tree" }, _textBuffer.GetLines());
             }
+
+            /// <summary>
+            /// Deleting a character should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteChar_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("x");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting a motion should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotion_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("dw");
+                Assert.Equal(new[] { "at", "", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public abstract class TagBlocksMotionTest : NormalModeIntegrationTest
