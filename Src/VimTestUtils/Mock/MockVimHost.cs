@@ -260,6 +260,11 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        void IVimHost.StartShell(string workingDirectory, string command, string arguments)
+        {
+            throw new NotImplementedException();
+        }
+
         bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadIntoNewWindowFunc(filePath, line, column);

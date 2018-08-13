@@ -369,6 +369,28 @@ namespace Vim.UI.Wpf
 
         public abstract void SplitViewVertically(ITextView value);
 
+        public virtual void StartShell(string workingDirectory, string command, string arguments)
+        {
+            // Populate the start info.
+            var startInfo = new ProcessStartInfo
+            {
+                WorkingDirectory = workingDirectory,
+                FileName = command,
+                Arguments = arguments,
+                UseShellExecute = false,
+            };
+
+            // Start the process.
+            try
+            {
+                var process = Process.Start(startInfo);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
         public virtual void VimCreated(IVim vim)
         {
         }
@@ -725,6 +747,11 @@ namespace Vim.UI.Wpf
         void IVimHost.SplitViewVertically(ITextView value)
         {
             SplitViewVertically(value);
+        }
+
+        void IVimHost.StartShell(string workingDirectory, string command, string arguments)
+        {
+            StartShell(workingDirectory, command, arguments);
         }
 
         bool IVimHost.TryCustomProcess(ITextView textView, InsertCommand command)

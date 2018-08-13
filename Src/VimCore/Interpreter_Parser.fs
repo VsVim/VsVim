@@ -168,6 +168,7 @@ type Parser
         ("registers", "reg")
         ("retab", "ret")
         ("set", "se")
+        ("shell", "sh")
         ("sort", "sor")
         ("source","so")
         ("split", "sp")
@@ -839,7 +840,8 @@ type Parser
             | LineCommand.Retab (_, hasBang, tabStop) -> LineCommand.Retab (lineRange, hasBang, tabStop)
             | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
             | LineCommand.Set _ -> noRangeCommand
-            | LineCommand.ShellCommand _ -> noRangeCommand
+            | LineCommand.Shell -> noRangeCommand
+            | LineCommand.ShellCommand (_, command) -> LineCommand.ShellCommand (lineRange, command)
             | LineCommand.ShiftLeft (_, count) -> LineCommand.ShiftLeft (lineRange, count)
             | LineCommand.ShiftRight (_, count) -> LineCommand.ShiftRight (lineRange, count)
             | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
@@ -1575,7 +1577,12 @@ type Parser
         let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         LineCommand.ShiftRight (lineRange, count)
 
-    /// Parse out the shell command
+    /// Parse out the ':shell' command
+    member x.ParseShell () = 
+        x.SkipBlanks()
+        LineCommand.Shell
+
+    /// Parse out the ':!' command
     member x.ParseShellCommand lineRange =
         use resetFlags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         let command = x.ParseRestOfLine()
@@ -2388,6 +2395,7 @@ type Parser
                 | "retab" -> x.ParseRetab lineRange
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "set" -> noRange x.ParseSet
+                | "shell" -> noRange x.ParseShell
                 | "sort" -> x.ParseSort lineRange
                 | "source" -> noRange x.ParseSource
                 | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
