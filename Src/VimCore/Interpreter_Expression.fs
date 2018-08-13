@@ -476,6 +476,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// bang modifier was added
     | Close of bool
 
+    /// Compose two line commands
+    | Compose of LineCommand * LineCommand
+
     /// Copy the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified

@@ -117,6 +117,29 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ComposeTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void Undo()
+            {
+                Create("cat", "dog", "bear", "");
+                RunCommand("delete | put");
+                Assert.Equal(new[] { "dog", "cat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                RunCommand("undo");
+                Assert.Equal(new[] { "cat", "dog", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Repeat()
+            {
+                Create("cat", "dog", "bear", "");
+                RunCommand("delete | put");
+                Assert.Equal(new[] { "dog", "cat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                RunCommand("@:");
+                Assert.Equal(new[] { "dog", "bear", "cat", "" }, _vimBuffer.TextBuffer.GetLines());
+            }
+        }
+
         public sealed class CopyToTest : CommandModeIntegrationTest
         {
             /// <summary>
