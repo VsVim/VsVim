@@ -314,8 +314,9 @@ type VimInterpreter
             SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot |> getLineAndNumber |> Some
 
         | LineSpecifier.MarkLine mark ->
-            // Get the line containing the mark in the context of this IVimTextBuffer
-            _markMap.GetMark mark _vimBufferData
+            match mark with
+            | Mark.GlobalMark letter -> _markMap.GetGlobalMark letter
+            | _ -> _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
             |> Option.map getLineAndNumber
@@ -377,20 +378,35 @@ type VimInterpreter
         | LineRangeSpecifier.SingleLine lineSpecifier-> 
             x.GetLine lineSpecifier |> Option.map SnapshotLineRangeUtil.CreateForLine
         | LineRangeSpecifier.Range (leftLineSpecifier, rightLineSpecifier, adjustCaret) ->
-            match x.GetLine leftLineSpecifier with
-            | None ->
-                None
-            | Some leftLine ->
-                // If the adjustCaret option was specified then we need to move the caret before
-                // interpreting the next LineSpecifier.  The caret should remain moved after this 
-                // completes
-                if adjustCaret then
-                    TextViewUtil.MoveCaretToPoint _textView leftLine.Start
+            match x.GetLine leftLineSpecifier, x.GetLine rightLineSpecifier with
+            | Some leftLine, Some rightLine ->
 
-                // Get the right line and combine the results
-                match x.GetLine rightLineSpecifier with
-                | None -> None
-                | Some rightLine -> SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine |> Some
+                // Make sure both lines belong to the same text buffer.
+                if leftLine.Snapshot = rightLine.Snapshot then
+                    let result =
+                        SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine
+                        |> Some
+
+                    // If the adjustCaret option was specified then we need to
+                    // move the caret before interpreting the next
+                    // LineSpecifier. The caret should remain moved after this
+                    // completes.
+                    if adjustCaret then
+
+                        // Be careful because the line might belong to a
+                        // different text buffer.
+                        if _textView.TextSnapshot = leftLine.Snapshot then
+                            TextViewUtil.MoveCaretToPoint _textView leftLine.Start
+                            result
+                        else
+                            None
+                    else
+                        result
+                else
+                    None
+
+            | _ -> None
+
         | LineRangeSpecifier.WithEndCount (lineRange, count) ->
 
             // WithEndCount should create for a single line which is 'count' lines below the
