@@ -209,10 +209,10 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                     | Some point ->
 
                     // Add an unloaded mark corresponding to the current position.
-                    let line, column = SnapshotPointUtil.GetLineColumn point
+                    let line, offset = SnapshotPointUtil.GetLineAndOffset point
                     _globalUnloadedMarkMap <-
                         _globalUnloadedMarkMap.Remove letter
-                        |> Map.add letter (bufferName, line, column)
+                        |> Map.add letter (bufferName, line.LineNumber, offset)
 
                 // Close the tracking item.
                 trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore

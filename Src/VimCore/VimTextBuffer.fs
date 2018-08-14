@@ -74,8 +74,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
     member x.LastInsertExitPoint
@@ -94,8 +94,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastInsertExit
@@ -116,8 +116,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.LastEditPoint
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastEdit
@@ -138,8 +138,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankStart
@@ -160,8 +160,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankEnd

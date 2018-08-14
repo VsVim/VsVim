@@ -1440,8 +1440,9 @@ type internal CommandUtil
                 if columnOnlyInBlock then
                     // In this mode the caret simple jumps to the other end of the selection on the same
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
+                    // CTODO: mixing columns and offsets here (below).
                     let caretSpaces, anchorSpaces =
-                        if (SnapshotPointUtil.GetColumn x.CaretPoint) >= (SnapshotPointUtil.GetColumn anchorPoint) then
+                        if (SnapshotPointUtil.GetLineOffset x.CaretPoint) >= (SnapshotPointUtil.GetLineOffset anchorPoint) then
                             blockSpan.BeforeSpaces, (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1
                         else
                             (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1, blockSpan.BeforeSpaces
@@ -2079,7 +2080,7 @@ type internal CommandUtil
                                 let number = oldPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
                                 let number = number + (col.Count - 1)
                                 SnapshotUtil.GetLine x.CurrentSnapshot number
-                            let offset = (SnapshotPointUtil.GetColumn point) + col.Head.Length
+                            let offset = (SnapshotPointUtil.GetLineOffset point) + col.Head.Length
                             SnapshotPointUtil.Add offset line.Start
                         else
                             // Position at the original insertion point
@@ -2851,8 +2852,8 @@ type internal CommandUtil
             _commonOperations.Beep()
             CommandResult.Error
         | Some mark ->
-            let line, column = VirtualSnapshotPointUtil.GetLineColumn x.CaretVirtualPoint
-            if not (_markMap.SetMark mark _vimBufferData line column) then
+            let lineNumber, offset = VirtualSnapshotPointUtil.GetLineNumberAndOffset x.CaretVirtualPoint
+            if not (_markMap.SetMark mark _vimBufferData lineNumber offset) then
                 // Mark set can fail if the user chooses a readonly mark like '<'
                 _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch

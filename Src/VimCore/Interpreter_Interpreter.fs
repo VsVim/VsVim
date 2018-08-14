@@ -255,7 +255,8 @@ type VimInterpreter
     let _exprInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
     /// The column of the caret
-    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
+    /// CTODO: delete 
+    member x.CaretColumn = SnapshotPointUtil.GetLineOffset x.CaretPoint
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -937,8 +938,8 @@ type VimInterpreter
                     let lineNumbers = 
                         lineRange.Lines
                         |> Seq.map (fun snapshotLine ->
-                            let line, column = SnapshotPointUtil.GetLineColumn snapshotLine.Start
-                            _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default)
+                            let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset snapshotLine.Start
+                            _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default)
                         |> List.ofSeq
 
                     // Now perform the command for every line.  Make sure to map forward to the 
@@ -1003,8 +1004,8 @@ type VimInterpreter
                             let didMatch = regex.IsMatch text
                             didMatch = matchPattern)
                         |> Seq.map (fun snapshotLine ->
-                            let line, column = SnapshotPointUtil.GetLineColumn snapshotLine.Start
-                            _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default)
+                            let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset snapshotLine.Start
+                            _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default)
                         |> List.ofSeq
     
                     // Now perform the edit for every line.  Make sure to map forward to the 

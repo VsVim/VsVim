@@ -918,10 +918,11 @@ type internal CommonOperations
             let visualLine = x.GetDirectionLastLineInVisualSnapshot result
             if not result.IsForward then
                 match result.MotionKind, result.CaretColumn with
-                | MotionKind.LineWise, CaretColumn.InLastLine column -> 
+                | MotionKind.LineWise, CaretColumn.InLastLine columnNumber -> 
                     // If we are moving linewise, but to a specific column, use
                     // that column as the target of the motion
-                    SnapshotLineUtil.GetColumnOrEnd column visualLine
+                    let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                    column.StartPoint
                 | _, _ -> 
                     result.Span.Start
             else
@@ -960,11 +961,12 @@ type internal CommonOperations
                     match result.CaretColumn with
                     | CaretColumn.None -> 
                         visualLine.End
-                    | CaretColumn.InLastLine column ->
-                        SnapshotLineUtil.GetColumnOrEnd column visualLine
+                    | CaretColumn.InLastLine columnNumber ->
+                        let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                        column.StartPoint
                     | CaretColumn.ScreenColumn columnNumber ->
-                        let column = x.GetColumnForSpacesOrEnd visualLine columnNumber
-                        SnapshotLineUtil.GetColumnOrEnd column.ColumnNumber visualLine
+                        let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                        column.StartPoint
                     | CaretColumn.AfterLastLine ->
                         match SnapshotUtil.TryGetLine visualLine.Snapshot (visualLine.LineNumber + 1) with
                         | None -> visualLine.End

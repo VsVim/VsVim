@@ -1020,8 +1020,8 @@ type internal InsertMode
                     movement command (currentY, currentX + 1) next
                 else
                     command
-            let oldPosition = SnapshotPointUtil.GetLineColumn args.OldPosition.BufferPosition
-            let newPosition = SnapshotPointUtil.GetLineColumn args.NewPosition.BufferPosition
+            let oldPosition = SnapshotPointUtil.GetLineNumberAndOffset args.OldPosition.BufferPosition
+            let newPosition = SnapshotPointUtil.GetLineNumberAndOffset args.NewPosition.BufferPosition
             let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
             x.ChangeCombinedEditCommand command
         else

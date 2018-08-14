@@ -159,8 +159,8 @@ type internal TrackingLineColumn
     override x.ToString() =
         match x.VirtualPoint with
         | Some point ->
-            let line,_ = SnapshotPointUtil.GetLineColumn point.Position
-            sprintf "%d,%d - %s" line _offset (point.ToString())
+            let line = SnapshotPointUtil.GetContainingLine point.Position
+            sprintf "%d,%d - %s" line.LineNumber _offset (point.ToString())
         | None -> "Invalid"
 
     interface ITrackingLineColumn with
@@ -235,8 +235,8 @@ type internal TrackingVisualSpan =
             // in the span and the length of the final line
             let textBuffer = characterSpan.Snapshot.TextBuffer
             let trackingLineColumn = 
-                let line, column = VirtualSnapshotPointUtil.GetLineColumn characterSpan.VirtualStart
-                bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
+                let line, offset = VirtualSnapshotPointUtil.GetLineAndOffset characterSpan.VirtualStart
+                bufferTrackingService.CreateLineColumn textBuffer line.LineNumber offset LineColumnTrackingMode.Default
 
             TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
 
@@ -253,9 +253,8 @@ type internal TrackingVisualSpan =
             // Setup an ITrackLineColumn at the top left of the block selection
             let trackingLineColumn =
                 let textBuffer = blockSpan.TextBuffer
-                let lineNumber, column = VirtualSnapshotPointUtil.GetLineColumn blockSpan.VirtualStart.VirtualStartPoint
-
-                bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
+                let line, offset = VirtualSnapshotPointUtil.GetLineAndOffset blockSpan.VirtualStart.VirtualStartPoint
+                bufferTrackingService.CreateLineColumn textBuffer line.LineNumber offset LineColumnTrackingMode.Default
 
             TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.SpacesLength, blockSpan.Height)
 

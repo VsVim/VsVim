@@ -2001,7 +2001,6 @@ module SnapshotLineUtil =
         SnapshotSpan(point,length)
 
     /// Get the indent point of the ITextSnapshotLine
-    /// CTODO: should this be GetIndentColumn? :
     let GetIndentPoint line =
         line 
         |> GetPoints SearchPath.Forward
@@ -2122,17 +2121,15 @@ module SnapshotLineUtil =
 
     /// Get a SnapshotPoint representing the nth characters into the line or the 
     /// End point of the line.  This is done using positioning 
-    /// CTODO: delete
-    let GetColumnOrEnd column (line: ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.End.Position then line.End
-        else line.Start.Add(column)
+    let GetOffsetOrEnd offset (line: ITextSnapshotLine) = 
+        if line.Start.Position + offset >= line.End.Position then line.End
+        else line.Start.Add(offset)
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
-    /// CTODO: delete
-    let GetColumnOrEndIncludingLineBreak column (line: ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
-        else line.Start.Add(column)
+    let GetOffsetOrEndIncludingLineBreak offset (line: ITextSnapshotLine) = 
+        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        else line.Start.Add(offset)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -2349,17 +2346,14 @@ module SnapshotPointUtil =
         new SnapshotSpan(start, last.EndIncludingLineBreak)
 
     /// Get the line and column information for a given SnapshotPoint
-    /// CTODO: this API is not actually column based
-    let GetLineColumn point = 
+    let GetLineAndOffset point = 
         let line = GetContainingLine point
-        let column = point.Position - line.Start.Position
-        (line.LineNumber,column)
+        let offset = point.Position - line.Start.Position
+        (line, offset)
 
-    /// Get the column number 
-    /// CTODO: this API is not actually column based
-    let GetColumn point = 
-        let _, column = GetLineColumn point 
-        column
+    let GetLineNumberAndOffset point = 
+        let line, offset = GetLineAndOffset point
+        (line.LineNumber, offset)
 
     let GetLineOffset point = 
         let line = GetContainingLine point
@@ -2645,23 +2639,25 @@ module VirtualSnapshotPointUtil =
     let IsInVirtualSpace (point: VirtualSnapshotPoint) = point.IsInVirtualSpace
 
     /// Get the line number and column number of the specified virtual point
-    /// CTODO: delete
-    let GetLineColumn (point: VirtualSnapshotPoint) =
+    let GetLineAndOffset (point: VirtualSnapshotPoint) =
         let line = GetContainingLine point
-        let realColumn = point.Position.Position - line.Start.Position
-        line.LineNumber, realColumn + point.VirtualSpaces
+        let realOffset = point.Position.Position - line.Start.Position
+        line, realOffset + point.VirtualSpaces
+
+    /// Get the line number and column number of the specified virtual point
+    let GetLineNumberAndOffset (point: VirtualSnapshotPoint) =
+        let line, offset = GetLineAndOffset point
+        (line.LineNumber, offset)
 
     /// Get the column number of the specified virtual point
-    /// CTODO: delete
-    let GetColumnNumber (point: VirtualSnapshotPoint) =
-        match GetLineColumn point with
-        | _, columnNumber -> columnNumber
+    let GetLineOffset (point: VirtualSnapshotPoint) =
+        let _, offset = GetLineAndOffset point
+        offset
 
     /// Add count to the VirtualSnapshotPoint keeping it on the same line
     let AddOnSameLine count point =
-        let line = GetContainingLine point
-        let columnNumber = GetColumnNumber point
-        VirtualSnapshotPoint(line, columnNumber + count)
+        let line, offset = GetLineAndOffset point
+        VirtualSnapshotPoint(line, offset + count)
 
     /// Subtract count to the VirtualSnapshotPoint keeping it on the same line
     let SubtractOnSameLine count point = AddOnSameLine -count point
@@ -3455,7 +3451,7 @@ module EditUtil =
     let GetAutoIndent (contextLine: ITextSnapshotLine) =
         contextLine 
         |> SnapshotLineUtil.GetIndentPoint 
-        |> SnapshotPointUtil.GetColumn 
+        |> SnapshotPointUtil.GetLineOffset 
 
     /// Does the specified string end with a valid newline string 
     let EndsWithNewLine value = 0 <> GetLineBreakLengthAtEnd value

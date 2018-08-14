@@ -939,10 +939,10 @@ namespace Vim.VisualStudio
 
         public static TextSpan ToTextSpan(this SnapshotSpan span)
         {
-            var start = SnapshotPointUtil.GetLineColumn(span.Start);
+            var start = SnapshotPointUtil.GetLineNumberAndOffset(span.Start);
             var option = SnapshotSpanUtil.GetLastIncludedPoint(span);
             var end = option.IsSome()
-                ? SnapshotPointUtil.GetLineColumn(option.Value)
+                ? SnapshotPointUtil.GetLineNumberAndOffset(option.Value)
                 : start;
             return new TextSpan
             {

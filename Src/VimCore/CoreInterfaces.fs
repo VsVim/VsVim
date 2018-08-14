@@ -1543,18 +1543,18 @@ type CharacterSpan =
         if span.Start.IsInVirtualSpace || span.End.IsInVirtualSpace then
             let lineCount = VirtualSnapshotSpanUtil.GetLineCount span
             let lastLine = VirtualSnapshotSpanUtil.GetLastLine span
-            let endColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.End
+            let endOffset = VirtualSnapshotPointUtil.GetLineOffset span.End
             let lastLineLength =
                 if lineCount = 1 then
-                    let startColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.Start
-                    let endColumnNumberInLastLine =
-                        if span.Length <> 0 && endColumnNumber = 0 then
+                    let startOffset = VirtualSnapshotPointUtil.GetLineOffset span.Start
+                    let endOffsetInLastLine =
+                        if span.Length <> 0 && endOffset = 0 then
                             lastLine.LengthIncludingLineBreak
                         else
-                            endColumnNumber
-                    endColumnNumberInLastLine - startColumnNumber
+                            endOffset
+                    endOffsetInLastLine - startOffset
                 else
-                    endColumnNumber
+                    endOffset
             CharacterSpan(span.Start, lineCount, lastLineLength, useVirtualSpace)
         else
             CharacterSpan(span.SnapshotSpan)
@@ -1621,7 +1621,7 @@ type CharacterSpan =
         let offset = 
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
-                SnapshotPointUtil.GetColumn x._start.Position + x.LastLineMaxPositionCount
+                SnapshotPointUtil.GetLineOffset x._start.Position + x.LastLineMaxPositionCount
             else
                 x.LastLineMaxPositionCount
 
@@ -1629,7 +1629,7 @@ type CharacterSpan =
         // consider that here.  The most common case for this occurring is when the caret
         // in visual mode is on the first column of an empty line.  In that case the caret
         // is really in the line break so End is one past that
-        let endPoint = SnapshotLineUtil.GetColumnOrEndIncludingLineBreak offset lastLine
+        let endPoint = SnapshotLineUtil.GetOffsetOrEndIncludingLineBreak offset lastLine
 
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
@@ -1646,7 +1646,7 @@ type CharacterSpan =
             let offset =
                 if x._lineCount = 1 then
                     // For a single line we need to apply the offset past the start point
-                    VirtualSnapshotPointUtil.GetColumnNumber x._start + x.LastLineMaxPositionCount
+                    VirtualSnapshotPointUtil.GetLineOffset x._start + x.LastLineMaxPositionCount
                 else
                     x.LastLineMaxPositionCount
 
@@ -2039,11 +2039,11 @@ type VisualSpan =
             let endPoint = blockSpan.OverlapEnd
             let startPoint =
                 if endPoint.SpacesBefore > 0 then
-                    let startColumn = SnapshotPointUtil.GetColumn blockSpan.Start.StartPoint
-                    let endColumn = SnapshotPointUtil.GetColumn endPoint.Column.StartPoint
-                    let column = min startColumn endColumn
+                    let startOffset = SnapshotPointUtil.GetLineOffset blockSpan.Start.StartPoint
+                    let endOffset = SnapshotPointUtil.GetLineOffset endPoint.Column.StartPoint
+                    let offset = min startOffset endOffset
                     let startLine = blockSpan.Start.Line
-                    SnapshotLineUtil.GetColumnOrEnd column startLine
+                    SnapshotLineUtil.GetOffsetOrEnd offset startLine
                     |> VirtualSnapshotPointUtil.OfPoint
                 else
                     blockSpan.VirtualStart.VirtualStartPoint
@@ -2320,8 +2320,8 @@ type VisualSelection =
         | VisualSpan.Character span -> 
             VisualSelection.Character (span, SearchPath.Forward)
         | VisualSpan.Line lineRange ->
-            let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
-            VisualSelection.Line (lineRange, SearchPath.Forward, column)
+            let offset = SnapshotPointUtil.GetLineOffset lineRange.LastLine.End
+            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
@@ -2331,17 +2331,17 @@ type VisualSelection =
         | VisualSpan.Character characterSpan ->
             Character (characterSpan, path)
         | VisualSpan.Line lineRange ->
-            let column = VirtualSnapshotPointUtil.GetColumnNumber caretPoint
-            Line (lineRange, path, column)
+            let offset = VirtualSnapshotPointUtil.GetLineOffset caretPoint
+            Line (lineRange, path, offset)
 
         | VisualSpan.Block blockSpan ->
 
             // Need to calculate the caret location.  Do this based on the initial anchor and
             // caret locations
             let blockCaretLocation = 
-                let startLine, startColumn = SnapshotPointUtil.GetLineColumn blockSpan.Start.StartPoint
-                let caretLine, caretColumn = VirtualSnapshotPointUtil.GetLineColumn caretPoint
-                match caretLine > startLine, caretColumn > startColumn with
+                let startLineNumber, startOffset = SnapshotPointUtil.GetLineNumberAndOffset blockSpan.Start.StartPoint
+                let caretLineNumber, caretOffset = VirtualSnapshotPointUtil.GetLineNumberAndOffset caretPoint
+                match caretLineNumber > startLineNumber, caretOffset > startOffset with
                 | true, true -> BlockCaretLocation.BottomRight
                 | true, false -> BlockCaretLocation.BottomLeft
                 | false, true -> BlockCaretLocation.TopRight
@@ -2473,8 +2473,8 @@ type VisualSelection =
             let lineRange = 
                 let line = SnapshotPointUtil.GetContainingLine caretPoint
                 SnapshotLineRangeUtil.CreateForLine line
-            let column = SnapshotPointUtil.GetColumn caretPoint
-            VisualSelection.Line (lineRange, SearchPath.Forward, column)
+            let offset = SnapshotPointUtil.GetLineOffset caretPoint
+            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualKind.Block ->
             let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
