@@ -1447,8 +1447,8 @@ type internal CommandUtil
                             (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1, blockSpan.BeforeSpaces
 
                     let tabStop = _localSettings.TabStop
-                    let newCaretColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak(x.CaretLine, caretSpaces, tabStop)
-                    let newAnchorColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak((anchorPoint.GetContainingLine()), anchorSpaces, tabStop)
+                    let newCaretColumn = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, caretSpaces, tabStop)
+                    let newAnchorColumn = SnapshotColumn.GetColumnForSpacesOrEnd((anchorPoint.GetContainingLine()), anchorSpaces, tabStop)
                     changeSelection newAnchorColumn.StartPoint newCaretColumn.StartPoint
                 else
                     changeSelection x.CaretPoint anchorPoint
@@ -2881,7 +2881,7 @@ type internal CommandUtil
                 if _vimTextBuffer.UseVirtualSpace then
                     VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
                 else
-                    let column = SnapshotColumn.GetColumnForSpacesOrLineBreak(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
                     VirtualSnapshotColumn(column)
             TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
             _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret

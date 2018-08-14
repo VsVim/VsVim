@@ -127,8 +127,8 @@ type internal CommonOperations
 
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
-    member x.GetColumnForSpacesOrLineBreak line spaces = 
-        SnapshotColumn.GetColumnForSpacesOrLineBreak(line, spaces, _localSettings.TabStop)
+    member x.GetColumnForSpacesOrEnd line spaces = 
+        SnapshotColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
 
     /// Get the count of spaces to get to the specified virtual point in it's line when tabs are expanded
     member x.GetSpacesToVirtualColumn (column: VirtualSnapshotColumn) = 
@@ -830,7 +830,7 @@ type internal CommonOperations
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
         let spaces = x.CaretColumn.GetSpacesToColumn _localSettings.TabStop
-        let column = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, spaces, _localSettings.TabStop)
+        let column = SnapshotColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
         TextViewUtil.MoveCaretToColumn _textView column
         x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
@@ -867,7 +867,7 @@ type internal CommonOperations
                     let column = x.GetVirtualColumnForSpaces visualLastLine caretColumnSpaces
                     column.VirtualColumnNumber
                 else
-                    let column = x.GetColumnForSpacesOrLineBreak visualLastLine caretColumnSpaces
+                    let column = x.GetColumnForSpacesOrEnd visualLastLine caretColumnSpaces
                     column.ColumnNumber
                 |> CaretColumn.InLastLine
             let result = 
@@ -965,7 +965,7 @@ type internal CommonOperations
                     | CaretColumn.InLastLine column ->
                         SnapshotLineUtil.GetColumnOrEnd column visualLine
                     | CaretColumn.ScreenColumn columnNumber ->
-                        let column = x.GetColumnForSpacesOrLineBreak visualLine columnNumber
+                        let column = x.GetColumnForSpacesOrEnd visualLine columnNumber
                         SnapshotLineUtil.GetColumnOrEnd column.ColumnNumber visualLine
                     | CaretColumn.AfterLastLine ->
                         match SnapshotUtil.TryGetLine visualLine.Snapshot (visualLine.LineNumber + 1) with
@@ -2078,7 +2078,7 @@ type internal CommonOperations
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToColumn column = x.GetSpacesToColumn column
-        member x.GetColumnForSpacesOrLineBreak contextLine spaces = x.GetColumnForSpacesOrLineBreak contextLine spaces
+        member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
         member x.GetVirtualColumnForSpaces contextLine spaces = x.GetVirtualColumnForSpaces contextLine spaces
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()

@@ -1806,8 +1806,8 @@ type BlockSpan =
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
-            let startColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, beforeSpaces, x.TabStop)
-            let endColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, beforeSpaces + x.SpacesLength, x.TabStop)
+            let startColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
+            let endColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
 
     /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information

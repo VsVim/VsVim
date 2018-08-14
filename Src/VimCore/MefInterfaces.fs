@@ -393,7 +393,7 @@ type ICommonOperations =
     abstract GetSpacesToColumn: column: SnapshotColumn -> int
 
     /// Get the point that visually corresponds to the specified column on its line
-    abstract GetColumnForSpacesOrLineBreak: contextLine: ITextSnapshotLine -> spaces: int -> SnapshotColumn
+    abstract GetColumnForSpacesOrEnd: contextLine: ITextSnapshotLine -> spaces: int -> SnapshotColumn
 
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the
     /// specified virtual point on it's line

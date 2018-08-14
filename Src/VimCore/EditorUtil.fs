@@ -884,7 +884,7 @@ type SnapshotColumn =
         | Some column -> Some column.Column
         | None -> None
 
-    static member GetColumnForSpacesOrLineBreak(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotColumn =
+    static member GetColumnForSpacesOrEnd(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotColumn =
         match SnapshotColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column
         | None -> SnapshotColumn(line, line.End)
@@ -986,7 +986,6 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
 
         value
 
-    // CTODO: should be OrLineBreak to match SnapshotColumn API
     static member GetColumnForSpacesOrEnd(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotOverlapColumn =
         match SnapshotOverlapColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column

@@ -228,7 +228,7 @@ type internal InsertUtil
                 let tabStop = _localSettings.TabStop
                 let column =
                     if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine)
-                    else SnapshotColumn.GetColumnForSpacesOrLineBreak(currentLine, spaces, tabStop)
+                    else SnapshotColumn.GetColumnForSpacesOrEnd(currentLine, spaces, tabStop)
                 if atEndOfLine || not column.IsLineBreakOrEnd then
                     let position = column.StartPosition
                     let text =
@@ -861,7 +861,7 @@ type internal InsertUtil
             if tabBoundarySpaces < 0 then
                 BackspaceCommand.Characters 1
             else
-                let tabBoundaryColumn = _operations.GetColumnForSpacesOrLineBreak x.CaretLine tabBoundarySpaces
+                let tabBoundaryColumn = _operations.GetColumnForSpacesOrEnd x.CaretLine tabBoundarySpaces
                 let allBlank = 
                     SnapshotSpan(tabBoundaryColumn.StartPoint, x.CaretPoint)
                     |> SnapshotSpanUtil.GetPoints SearchPath.Forward 

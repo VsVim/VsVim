@@ -292,7 +292,7 @@ namespace Vim.UnitTest
             public void GetPointForSpaces_NoTabs()
             {
                 Create("hello world");
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 2);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 2);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
             {
                 Create("\thello world");
                 _localSettings.SetupGet(x => x.TabStop).Returns(4);
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 5);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 5);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
