@@ -2244,6 +2244,7 @@ module SnapshotLineUtil =
     // overlaps the specified column into the line, as well as the position of 
     // that column inside the character. Returns End if it goes beyond the last 
     // point in the string
+    // CTODO: delete
     let GetSpaceWithOverlapOrEnd (line: ITextSnapshotLine) spacesCount tabStop = 
         SnapshotOverlapPoint.GetSpaceWithOverlapOrEnd line spacesCount tabStop
 
@@ -2823,22 +2824,6 @@ module VirtualSnapshotPointUtil =
             VirtualSnapshotPoint(point.Position, point.VirtualSpaces - 1)
         else
             VirtualSnapshotPoint(SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point.Position)
-
-/// Contains operations that act on snapshot lines but return virtual snapshot points
-module VirtualSnapshotLineUtil =
-
-    // Get the virtual point in the given line which is just before the character that
-    // overlaps the specified column into the line
-    let GetSpace line spacesCount tabStop =
-        let overlapPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line spacesCount tabStop
-        let point = VirtualSnapshotPointUtil.OfPoint overlapPoint.Point
-        if point.Position = line.End then
-            let column = SnapshotColumn(line.End)
-            let realSpaces = column.GetSpacesToColumn tabStop
-            let virtualSpaces = spacesCount - realSpaces
-            VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
-        else
-            point
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

@@ -1695,16 +1695,47 @@ type BlockSpan =
     val private _spaces: int
     val private _height: int
 
-    new (startPoint: SnapshotPoint, tabStop, spaces, height) = 
+    new(startPoint: SnapshotPoint, tabStop, spaces, height) = 
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
 
-    new (startPoint: VirtualSnapshotPoint, tabStop, spaces, height) =
+    new(startPoint: VirtualSnapshotPoint, tabStop, spaces, height) =
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
 
-    new (startColumn: VirtualSnapshotColumn, tabStop, spaces, height) =
+    new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height) =
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
+
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
+    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
+    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
+    /// SnapshotSpan start
+    new(span: VirtualSnapshotColumnSpan, tabStop: int) =
+
+        // The start of the span is by definition before the end of the span but we
+        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
+        let startColumn, width = 
+            let startColumnSpaces = span.Start.GetSpacesToColumn tabStop
+            let endColumnSpaces = span.End.GetSpacesToColumn tabStop
+            let width = endColumnSpaces - startColumnSpaces 
+
+            if width = 0 then
+                span.Start, 1
+            elif width > 0 then
+                span.Start, width
+            else 
+                VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
+
+        let height = SnapshotSpanUtil.GetLineCount span.Span
+        BlockSpan(startColumn, tabStop =tabStop, spaces = width, height = height)
+
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
+    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
+    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
+    /// SnapshotSpan start
+    new(span: VirtualSnapshotSpan, tabStop: int) =
+        let span = VirtualSnapshotColumnSpan(span)
+        BlockSpan(span, tabStop)
 
     /// Get the virtual start point of the BlockSpan
     member x.VirtualStart = x._startColumn
@@ -1809,34 +1840,9 @@ type BlockSpan =
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
 
-    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
-    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
-    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
-    /// SnapshotSpan start
-    static member CreateForVirtualSpan (span: VirtualSnapshotSpan) tabStop =
-
-        // The start of the span is by definition before the end of the span but we
-        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
-        let startPoint, width = 
-            let startColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.Start tabStop
-            let endColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.End tabStop
-            let width = endColumnSpaces - startColumnSpaces 
-
-            if width = 0 then
-                span.Start, 1
-            elif width > 0 then
-                span.Start, width
-            else 
-                let startLine = SnapshotPointUtil.GetContainingLine span.Start.Position
-                let start = VirtualSnapshotLineUtil.GetSpace startLine endColumnSpaces tabStop
-                start, -width
-
-        let height = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
-        BlockSpan(startPoint, tabStop, width, height)
-
     static member CreateForSpan (span: SnapshotSpan) tabStop =
         let virtualSpan = VirtualSnapshotSpanUtil.OfSpan span
-        BlockSpan.CreateForVirtualSpan virtualSpan tabStop
+        BlockSpan(virtualSpan, tabStop)
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2081,7 +2087,7 @@ type VisualSpan =
         | VisualKind.Block -> 
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
             let span = VirtualSnapshotSpan(startPoint, endPoint)
-            BlockSpan.CreateForVirtualSpan span tabStop |> Block
+            BlockSpan(span, tabStop) |> Block
 
     static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
@@ -2365,10 +2371,10 @@ type VisualSelection =
             let spaces = (abs (caretSpaces - anchorSpaces)) + 1
             let column = min anchorSpaces caretSpaces
             
-            let startPoint = 
+            let startColumn = 
                 let first, _ = VirtualSnapshotPointUtil.OrderAscending anchorPoint caretPoint
                 let line = VirtualSnapshotPointUtil.GetContainingLine first
-                VirtualSnapshotLineUtil.GetSpace line column tabStop
+                VirtualSnapshotColumn.GetColumnForSpaces(line, column, tabStop)
 
             let height = 
                 let anchorLine = anchorPoint.Position.GetContainingLine()
@@ -2379,7 +2385,7 @@ type VisualSelection =
                 if anchorSpaces <= caretSpaces then SearchPath.Forward
                 else SearchPath.Backward
 
-            let blockSpan = BlockSpan(startPoint, tabStop, spaces, height)
+            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height)
             VisualSpan.Block blockSpan, path
 
         let createNormal () = 

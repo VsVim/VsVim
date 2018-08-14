@@ -2877,12 +2877,13 @@ type internal CommandUtil
             let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
             TextViewUtil.MoveCaretToPoint _textView point
         else
-            if _vimTextBuffer.UseVirtualSpace then
-                VirtualSnapshotLineUtil.GetSpace x.CaretLine spacesToCaret _localSettings.TabStop
-            else
-                SnapshotLineUtil.GetSpaceOrEnd x.CaretLine spacesToCaret _localSettings.TabStop
-                |> VirtualSnapshotPointUtil.OfPoint
-            |> TextViewUtil.MoveCaretToVirtualPoint _textView
+            let virtualColumn = 
+                if _vimTextBuffer.UseVirtualSpace then
+                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                else
+                    let column = SnapshotColumn.GetColumnForSpacesOrLineBreak(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                    VirtualSnapshotColumn(column)
+            TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
             _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Get the number lines in the current window
