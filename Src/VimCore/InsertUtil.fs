@@ -584,17 +584,17 @@ type internal InsertUtil
         //
         // Block edits don't apply if the user inserts a new line into the buffer.  Check for that
         // early on
-        let isRepeatable = blockSpan.Snasphot.LineCount = x.CurrentSnapshot.LineCount && blockSpan.Height > 1 
+        let isRepeatable = blockSpan.Snapshot.LineCount = x.CurrentSnapshot.LineCount && blockSpan.Height > 1 
         match isRepeatable, insertCommand.TextChange _editorOptions |> Option.map (fun textChange -> textChange.Reduce) with
         | true, Some textChange -> 
             match textChange with
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
-                    let startLineNumber = (SnapshotPointUtil.GetLineNumber blockSpan.Start) + 1
-                    x.ApplyBlockInsert text atEndOfLine startLineNumber blockSpan.ColumnSpaces (blockSpan.Height - 1)
+                    let startLineNumber = blockSpan.Start.LineNumber + 1
+                    x.ApplyBlockInsert text atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
-                    match TrackingPointUtil.GetPointInSnapshot blockSpan.Start PointTrackingMode.Negative x.CurrentSnapshot with
+                    match TrackingPointUtil.GetPointInSnapshot blockSpan.Start.StartPoint PointTrackingMode.Negative x.CurrentSnapshot with
                     | None -> ()
                     | Some point -> TextViewUtil.MoveCaretToPoint _textView point
                     
