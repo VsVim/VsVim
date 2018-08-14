@@ -2434,11 +2434,15 @@ type internal CommandUtil
                 _inRepeatLastChange <- false
 
     /// Repeat the last substitute command.
-    member x.RepeatLastSubstitute useSameFlags =
+    member x.RepeatLastSubstitute useSameFlags useWholeBuffer =
         match _vimData.LastSubstituteData with
         | None -> _commonOperations.Beep()
         | Some data ->
-            let range = SnapshotLineRangeUtil.CreateForLine x.CaretLine
+            let range =
+                if useWholeBuffer then
+                    SnapshotLineRangeUtil.CreateForSnapshot _textView.TextSnapshot
+                else
+                    SnapshotLineRangeUtil.CreateForLine x.CaretLine
             let flags =
                 if useSameFlags then
                     data.Flags
@@ -2748,7 +2752,7 @@ type internal CommandUtil
         | NormalCommand.RecordMacroStop -> x.RecordMacroStop()
         | NormalCommand.Redo -> x.Redo count
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
-        | NormalCommand.RepeatLastSubstitute useSameFlags -> x.RepeatLastSubstitute useSameFlags
+        | NormalCommand.RepeatLastSubstitute (useSameFlags, useWholeBuffer) -> x.RepeatLastSubstitute useSameFlags useWholeBuffer
         | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunAtCommand char -> x.RunAtCommand char data.CountOrDefault
