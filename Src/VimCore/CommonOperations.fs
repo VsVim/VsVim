@@ -829,9 +829,9 @@ type internal CommonOperations
 
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
-        let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
-        let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
-        TextViewUtil.MoveCaretToPoint _textView point
+        let spaces = x.CaretColumn.GetSpacesToColumn _localSettings.TabStop
+        let column = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, spaces, _localSettings.TabStop)
+        TextViewUtil.MoveCaretToColumn _textView column
         x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value

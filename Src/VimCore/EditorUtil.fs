@@ -986,6 +986,7 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
 
         value
 
+    // CTODO: should be OrLineBreak to match SnapshotColumn API
     static member GetColumnForSpacesOrEnd(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotOverlapColumn =
         match SnapshotOverlapColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column
@@ -2230,31 +2231,17 @@ module SnapshotLineUtil =
 
     /// Get a SnapshotPoint representing the nth characters into the line or the 
     /// End point of the line.  This is done using positioning 
+    /// CTODO: delete
     let GetColumnOrEnd column (line: ITextSnapshotLine) = 
         if line.Start.Position + column >= line.End.Position then line.End
         else line.Start.Add(column)
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
+    /// CTODO: delete
     let GetColumnOrEndIncludingLineBreak column (line: ITextSnapshotLine) = 
         if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
         else line.Start.Add(column)
-
-    // Get the point in the given line which is just before the character that 
-    // overlaps the specified column into the line, as well as the position of 
-    // that column inside the character. Returns End if it goes beyond the last 
-    // point in the string
-    // CTODO: delete
-    let GetSpaceWithOverlapOrEnd (line: ITextSnapshotLine) spacesCount tabStop = 
-        SnapshotOverlapPoint.GetSpaceWithOverlapOrEnd line spacesCount tabStop
-
-    // Get the point in the given line which is just before the character that 
-    // overlaps the specified column into the line. Returns End if it goes 
-    // beyond the last point in the string
-    // CTODO: delete
-    let GetSpaceOrEnd line spacesCount tabStop = 
-        let overlapPoint = GetSpaceWithOverlapOrEnd line spacesCount tabStop
-        overlapPoint.Point
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

@@ -133,47 +133,5 @@ namespace Vim.UnitTest
                 }
             }
         }
-
-        public sealed class GetSpaceWithOverlapOrEndTest :  SnapshotOverlapPointTest
-        {
-            [WpfFact]
-            public void BeforeTab()
-            {
-                Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 0, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 0), point.Point);
-            }
-
-            [WpfFact]
-            public void PartialTab()
-            {
-                Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 4, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 2), point.Point);
-            }
-
-            /// <summary>
-            /// The number of spaces should be the same no matter where into the SnapshotPoint we end up 
-            /// indexing.  The only values that should change are SpacesBefore and SpacesAfter
-            /// </summary>
-            [WpfFact]
-            public void PartialTab2()
-            {
-                Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 2, tabStop: 4);
-                Assert.Equal(1, point.SpacesBefore);
-                Assert.Equal(3, point.Spaces);
-                Assert.Equal(_textBuffer.GetPoint(position: 1), point.Point);
-            }
-
-            [WpfFact]
-            public void AfterTab()
-            {
-                Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 5, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 3), point.Point);
-                Assert.Equal('g', point.Point.GetChar());
-            }
-        }
     }
 }

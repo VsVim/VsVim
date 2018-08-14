@@ -115,16 +115,16 @@ namespace Vim.UnitTest
             public void BeforeTab()
             {
                 Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 0, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 0), point.Point);
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 0, tabStop: 4);
+                Assert.Equal(_textBuffer.GetColumnFromPosition(position: 0), column.Column);
             }
 
             [WpfFact]
             public void PartialTab()
             {
                 Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 4, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 2), point.Point);
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 4, tabStop: 4);
+                Assert.Equal(_textBuffer.GetColumnFromPosition(position: 2), column.Column);
             }
 
             /// <summary>
@@ -135,19 +135,19 @@ namespace Vim.UnitTest
             public void PartialTab2()
             {
                 Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 2, tabStop: 4);
-                Assert.Equal(1, point.SpacesBefore);
-                Assert.Equal(3, point.Spaces);
-                Assert.Equal(_textBuffer.GetPoint(position: 1), point.Point);
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 2, tabStop: 4);
+                Assert.Equal(1, column.SpacesBefore);
+                Assert.Equal(3, column.TotalSpaces);
+                Assert.Equal(_textBuffer.GetColumnFromPosition(position: 1), column.Column);
             }
 
             [WpfFact]
             public void AfterTab()
             {
                 Create("d\tog", "extra");
-                var point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd(_textBuffer.GetLine(0), spacesCount: 5, tabStop: 4);
-                Assert.Equal(_textBuffer.GetPoint(position: 3), point.Point);
-                Assert.Equal('g', point.Point.GetChar());
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 5, tabStop: 4);
+                Assert.Equal(_textBuffer.GetColumnFromPosition(position: 3), column.Column);
+                Assert.True(column.Column.IsCharacter('g'));
             }
         }
     }

@@ -226,17 +226,14 @@ type internal InsertUtil
 
                 // Only apply the edit to lines which were included in the original selection
                 let tabStop = _localSettings.TabStop
-                let point =
-                    if atEndOfLine then
-                        SnapshotLineUtil.GetEnd currentLine
-                    else
-                        SnapshotLineUtil.GetSpaceOrEnd currentLine spaces tabStop
-                if atEndOfLine || not (SnapshotPointUtil.IsInsideLineBreak point) then
-                    let position = point.Position
-                    let column = SnapshotPointUtil.GetColumn point
+                let column =
+                    if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine)
+                    else SnapshotColumn.GetColumnForSpacesOrLineBreak(currentLine, spaces, tabStop)
+                if atEndOfLine || not column.IsLineBreakOrEnd then
+                    let position = column.StartPosition
                     let text =
                         if _localSettings.ExpandTab then
-                            StringUtil.ExpandTabsForColumn text column tabStop
+                            StringUtil.ExpandTabsForColumn text column.ColumnNumber tabStop
                         else
                             text
 
@@ -245,8 +242,9 @@ type internal InsertUtil
                     // column position.
                     if text.StartsWith("\t") then
                         let mutable n = 0
-                        while column - n > 0 && (column - n) % tabStop <> 0
-                        && point.Subtract(n + 1).GetChar() = ' ' do
+                        let columnNumber = column.ColumnNumber
+                        while columnNumber - n > 0 && (columnNumber - n) % tabStop <> 0
+                        && column.Subtract(n + 1).IsCharacter(' ') do
                             n <- n + 1
                         let span = Span(position - n, n)
                         if not (textEdit.Replace(span, text)) then
