@@ -1751,12 +1751,29 @@ type VimInterpreter
                         _vimHost.Save _textBuffer |> ignore)
 
     /// Run the 'wall' command
-    member x.RunWriteAll hasBang = 
-        for vimBuffer in _vim.VimBuffers do
+    member x.RunWriteAll hasBang andQuit =
+
+        // Write a buffer and return success or failure.
+        let writeBuffer (vimBuffer: IVimBuffer) =
             if not hasBang && _vimHost.IsReadOnly vimBuffer.TextBuffer then
                 _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
+                false
             elif _vimHost.IsDirty vimBuffer.TextBuffer then
-                _vimHost.Save vimBuffer.TextBuffer |> ignore
+                _vimHost.Save vimBuffer.TextBuffer
+            else
+                true
+
+        let succeeded =
+            _vim.VimBuffers
+            |> Seq.map writeBuffer
+            |> Seq.filter (fun succeeded -> not succeeded)
+            |> Seq.isEmpty
+
+        if andQuit then
+            if succeeded then 
+                _vimHost.Quit()
+            else
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
 
     /// Yank the specified line range into the register.  This is done in a 
     /// linewise fashion
@@ -1861,7 +1878,7 @@ type VimInterpreter
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
-        | LineCommand.WriteAll hasBang -> x.RunWriteAll hasBang
+        | LineCommand.WriteAll (hasBang, andQuit) -> x.RunWriteAll hasBang andQuit
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank registerName lineRange count
 
     member x.RunWithLineRange lineRangeSpecifier (func: SnapshotLineRange -> unit) = 
