@@ -245,6 +245,10 @@ type internal CommandUtil
         | None -> SnapshotPoint(currentSnapshot, 0)
         | Some point -> point
 
+    member x.ApplyEditAndMapColumn (textEdit: ITextEdit) position =
+        let point = x.ApplyEditAndMapPoint textEdit position
+        SnapshotColumn(point)
+
     member x.ApplyEditAndMapPosition (textEdit: ITextEdit) position =
         let point = x.ApplyEditAndMapPoint textEdit position
         point.Position
@@ -823,22 +827,22 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.GetOverlapSpans _localSettings.TabStop |> Seq.iter (fun overlapSpan ->
+            visualSpan.GetOverlapColumnSpans _localSettings.TabStop |> Seq.iter (fun overlapSpan ->
                 let span = overlapSpan.OverarchingSpan
 
                 // If the last included point in the SnapshotSpan is inside the line break
                 // portion of a line then extend the SnapshotSpan to encompass the full
                 // line break
                 let span =
-                    match SnapshotSpanUtil.GetLastIncludedPoint span with
+                    match span.Last with
                     | None ->
                         // Don't need to special case a 0 length span as it won't actually
                         // cause any change in the ITextBuffer
                         span
                     | Some last ->
-                        if SnapshotPointUtil.IsInsideLineBreak last then
-                            let line = SnapshotPointUtil.GetContainingLine last
-                            SnapshotSpan(span.Start, line.EndIncludingLineBreak)
+                        if last.IsLineBreakOrEnd then
+                            let endColumn = last.Subtract(1)
+                            SnapshotColumnSpan(span.Start, endColumn)
                         else
                             span
 
@@ -2523,17 +2527,17 @@ type internal CommandUtil
             use edit = _textBuffer.CreateEdit()
             let builder = System.Text.StringBuilder()
 
-            for span in visualSpan.GetOverlapSpans _localSettings.TabStop do
+            for span in visualSpan.GetOverlapColumnSpans _localSettings.TabStop do
                 if span.HasOverlapStart then
-                    let startPoint = span.Start
+                    let startColumn = span.Start
                     builder.Length <- 0
-                    builder.AppendCharCount ' ' startPoint.SpacesBefore
-                    builder.AppendStringCount replaceText (startPoint.Spaces - startPoint.SpacesBefore)
-                    edit.Replace(Span(startPoint.Point.Position, 1), (builder.ToString())) |> ignore
+                    builder.AppendCharCount ' ' startColumn.SpacesBefore
+                    builder.AppendStringCount replaceText (startColumn.TotalSpaces - startColumn.SpacesBefore)
+                    edit.Replace(startColumn.Column.Span.Span, (builder.ToString())) |> ignore
 
-                SnapshotSpanUtil.GetPoints SearchPath.Forward span.InnerSpan
-                |> Seq.filter (fun point -> not (SnapshotPointUtil.IsInsideLineBreak point))
-                |> Seq.iter (fun point -> edit.Replace(Span(point.Position, 1), replaceText) |> ignore)
+                span.InnerSpan.GetColumns SearchPath.Forward
+                |> Seq.filter (fun column -> not column.IsLineBreakOrEnd)
+                |> Seq.iter (fun column -> edit.Replace(column.Span.Span, replaceText) |> ignore)
 
             // Reposition the caret at the start of the edit
             let editPoint = x.ApplyEditAndMapPoint edit visualSpan.Start.Position

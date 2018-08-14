@@ -1223,8 +1223,26 @@ type SnapshotColumnSpan =
         else
             x.StartLine
 
+    member x.Last =
+        if x.IsEmpty then None
+        else x.End.Subtract(1) |> Some
+
     member x.LineCount =
         (x.LastLine.LineNumber - x.StartLine.LineNumber) + 1
+
+    member x.GetColumns(searchPath) = 
+        match searchPath with 
+        | SearchPath.Forward ->
+            let x = x
+            seq {
+                let mutable current = x.Start
+                while (current <> x.End) do
+                    yield current
+                    current <- current.Add(1)
+            }
+        | SearchPath.Backward ->
+            x.GetColumns SearchPath.Forward
+            |> Seq.rev
 
     member x.GetText() = x.Span.GetText()
 
