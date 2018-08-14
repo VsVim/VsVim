@@ -292,7 +292,7 @@ namespace Vim.UnitTest
             public void GetPointForSpaces_NoTabs()
             {
                 Create("hello world");
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 2);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 2);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
@@ -304,7 +304,7 @@ namespace Vim.UnitTest
             {
                 Create("\thello world");
                 _localSettings.SetupGet(x => x.TabStop).Returns(4);
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 5);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 5);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
@@ -999,7 +999,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(1));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 1), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1016,7 +1016,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(100));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 2), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1032,7 +1032,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(0));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 0), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1047,7 +1047,7 @@ namespace Vim.UnitTest
                     false,
                     MotionKind.CharacterWiseInclusive);
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(0, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(0, 0), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1063,7 +1063,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(2));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(0, 2), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>

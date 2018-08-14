@@ -1543,18 +1543,18 @@ type CharacterSpan =
         if span.Start.IsInVirtualSpace || span.End.IsInVirtualSpace then
             let lineCount = VirtualSnapshotSpanUtil.GetLineCount span
             let lastLine = VirtualSnapshotSpanUtil.GetLastLine span
-            let endColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.End
+            let endOffset = VirtualSnapshotPointUtil.GetLineOffset span.End
             let lastLineLength =
                 if lineCount = 1 then
-                    let startColumnNumber = VirtualSnapshotPointUtil.GetColumnNumber span.Start
-                    let endColumnNumberInLastLine =
-                        if span.Length <> 0 && endColumnNumber = 0 then
+                    let startOffset = VirtualSnapshotPointUtil.GetLineOffset span.Start
+                    let endOffsetInLastLine =
+                        if span.Length <> 0 && endOffset = 0 then
                             lastLine.LengthIncludingLineBreak
                         else
-                            endColumnNumber
-                    endColumnNumberInLastLine - startColumnNumber
+                            endOffset
+                    endOffsetInLastLine - startOffset
                 else
-                    endColumnNumber
+                    endOffset
             CharacterSpan(span.Start, lineCount, lastLineLength, useVirtualSpace)
         else
             CharacterSpan(span.SnapshotSpan)
@@ -1621,7 +1621,7 @@ type CharacterSpan =
         let offset = 
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
-                SnapshotPointUtil.GetColumn x._start.Position + x.LastLineMaxPositionCount
+                SnapshotPointUtil.GetLineOffset x._start.Position + x.LastLineMaxPositionCount
             else
                 x.LastLineMaxPositionCount
 
@@ -1629,7 +1629,7 @@ type CharacterSpan =
         // consider that here.  The most common case for this occurring is when the caret
         // in visual mode is on the first column of an empty line.  In that case the caret
         // is really in the line break so End is one past that
-        let endPoint = SnapshotLineUtil.GetColumnOrEndIncludingLineBreak offset lastLine
+        let endPoint = SnapshotLineUtil.GetOffsetOrEndIncludingLineBreak offset lastLine
 
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
@@ -1646,11 +1646,11 @@ type CharacterSpan =
             let offset =
                 if x._lineCount = 1 then
                     // For a single line we need to apply the offset past the start point
-                    VirtualSnapshotPointUtil.GetColumnNumber x._start + x.LastLineMaxPositionCount
+                    VirtualSnapshotPointUtil.GetLineOffset x._start + x.LastLineMaxPositionCount
                 else
                     x.LastLineMaxPositionCount
 
-            let virtualColumn = VirtualSnapshotColumn.CreateForColumnNumber(lastLine, offset)
+            let virtualColumn = VirtualSnapshotColumn.GetForColumnNumber(lastLine, offset)
             virtualColumn.VirtualStartPoint
         else
             x.End |> VirtualSnapshotPointUtil.OfPoint
@@ -1695,16 +1695,47 @@ type BlockSpan =
     val private _spaces: int
     val private _height: int
 
-    new (startPoint: SnapshotPoint, tabStop, spaces, height) = 
+    new(startPoint: SnapshotPoint, tabStop, spaces, height) = 
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
 
-    new (startPoint: VirtualSnapshotPoint, tabStop, spaces, height) =
+    new(startPoint: VirtualSnapshotPoint, tabStop, spaces, height) =
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
 
-    new (startColumn: VirtualSnapshotColumn, tabStop, spaces, height) =
+    new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height) =
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
+
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
+    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
+    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
+    /// SnapshotSpan start
+    new(span: VirtualSnapshotColumnSpan, tabStop: int) =
+
+        // The start of the span is by definition before the end of the span but we
+        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
+        let startColumn, width = 
+            let startColumnSpaces = span.Start.GetSpacesToColumn tabStop
+            let endColumnSpaces = span.End.GetSpacesToColumn tabStop
+            let width = endColumnSpaces - startColumnSpaces 
+
+            if width = 0 then
+                span.Start, 1
+            elif width > 0 then
+                span.Start, width
+            else 
+                VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
+
+        let height = SnapshotSpanUtil.GetLineCount span.Span
+        BlockSpan(startColumn, tabStop =tabStop, spaces = width, height = height)
+
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
+    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
+    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
+    /// SnapshotSpan start
+    new(span: VirtualSnapshotSpan, tabStop: int) =
+        let span = VirtualSnapshotColumnSpan(span)
+        BlockSpan(span, tabStop)
 
     /// Get the virtual start point of the BlockSpan
     member x.VirtualStart = x._startColumn
@@ -1775,8 +1806,8 @@ type BlockSpan =
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
-            let startColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, beforeSpaces, x.TabStop)
-            let endColumn = SnapshotColumn.GetColumnForSpacesOrLineBreak(line, beforeSpaces + x.SpacesLength, x.TabStop)
+            let startColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
+            let endColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
 
     /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information
@@ -1797,10 +1828,8 @@ type BlockSpan =
             let endColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
 
-    /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.Span)
 
-    /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
 
     override x.ToString() =
@@ -1809,34 +1838,9 @@ type BlockSpan =
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
 
-    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
-    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
-    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
-    /// SnapshotSpan start
-    static member CreateForVirtualSpan (span: VirtualSnapshotSpan) tabStop =
-
-        // The start of the span is by definition before the end of the span but we
-        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
-        let startPoint, width = 
-            let startColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.Start tabStop
-            let endColumnSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint span.End tabStop
-            let width = endColumnSpaces - startColumnSpaces 
-
-            if width = 0 then
-                span.Start, 1
-            elif width > 0 then
-                span.Start, width
-            else 
-                let startLine = SnapshotPointUtil.GetContainingLine span.Start.Position
-                let start = VirtualSnapshotLineUtil.GetSpace startLine endColumnSpaces tabStop
-                start, -width
-
-        let height = SnapshotSpanUtil.GetLineCount span.SnapshotSpan
-        BlockSpan(startPoint, tabStop, width, height)
-
     static member CreateForSpan (span: SnapshotSpan) tabStop =
         let virtualSpan = VirtualSnapshotSpanUtil.OfSpan span
-        BlockSpan.CreateForVirtualSpan virtualSpan tabStop
+        BlockSpan(virtualSpan, tabStop)
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2035,11 +2039,11 @@ type VisualSpan =
             let endPoint = blockSpan.OverlapEnd
             let startPoint =
                 if endPoint.SpacesBefore > 0 then
-                    let startColumn = SnapshotPointUtil.GetColumn blockSpan.Start.StartPoint
-                    let endColumn = SnapshotPointUtil.GetColumn endPoint.Column.StartPoint
-                    let column = min startColumn endColumn
+                    let startOffset = SnapshotPointUtil.GetLineOffset blockSpan.Start.StartPoint
+                    let endOffset = SnapshotPointUtil.GetLineOffset endPoint.Column.StartPoint
+                    let offset = min startOffset endOffset
                     let startLine = blockSpan.Start.Line
-                    SnapshotLineUtil.GetColumnOrEnd column startLine
+                    SnapshotLineUtil.GetOffsetOrEnd offset startLine
                     |> VirtualSnapshotPointUtil.OfPoint
                 else
                     blockSpan.VirtualStart.VirtualStartPoint
@@ -2081,7 +2085,7 @@ type VisualSpan =
         | VisualKind.Block -> 
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
             let span = VirtualSnapshotSpan(startPoint, endPoint)
-            BlockSpan.CreateForVirtualSpan span tabStop |> Block
+            BlockSpan(span, tabStop) |> Block
 
     static member CreateForSelectionPoints visualKind (anchorPoint: SnapshotPoint) (activePoint: SnapshotPoint) tabStop =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
@@ -2316,8 +2320,8 @@ type VisualSelection =
         | VisualSpan.Character span -> 
             VisualSelection.Character (span, SearchPath.Forward)
         | VisualSpan.Line lineRange ->
-            let column = SnapshotPointUtil.GetColumn lineRange.LastLine.End
-            VisualSelection.Line (lineRange, SearchPath.Forward, column)
+            let offset = SnapshotPointUtil.GetLineOffset lineRange.LastLine.End
+            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualSpan.Block blockSpan ->
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
@@ -2327,17 +2331,17 @@ type VisualSelection =
         | VisualSpan.Character characterSpan ->
             Character (characterSpan, path)
         | VisualSpan.Line lineRange ->
-            let column = VirtualSnapshotPointUtil.GetColumnNumber caretPoint
-            Line (lineRange, path, column)
+            let offset = VirtualSnapshotPointUtil.GetLineOffset caretPoint
+            Line (lineRange, path, offset)
 
         | VisualSpan.Block blockSpan ->
 
             // Need to calculate the caret location.  Do this based on the initial anchor and
             // caret locations
             let blockCaretLocation = 
-                let startLine, startColumn = SnapshotPointUtil.GetLineColumn blockSpan.Start.StartPoint
-                let caretLine, caretColumn = VirtualSnapshotPointUtil.GetLineColumn caretPoint
-                match caretLine > startLine, caretColumn > startColumn with
+                let startLineNumber, startOffset = SnapshotPointUtil.GetLineNumberAndOffset blockSpan.Start.StartPoint
+                let caretLineNumber, caretOffset = VirtualSnapshotPointUtil.GetLineNumberAndOffset caretPoint
+                match caretLineNumber > startLineNumber, caretOffset > startOffset with
                 | true, true -> BlockCaretLocation.BottomRight
                 | true, false -> BlockCaretLocation.BottomLeft
                 | false, true -> BlockCaretLocation.TopRight
@@ -2365,10 +2369,10 @@ type VisualSelection =
             let spaces = (abs (caretSpaces - anchorSpaces)) + 1
             let column = min anchorSpaces caretSpaces
             
-            let startPoint = 
+            let startColumn = 
                 let first, _ = VirtualSnapshotPointUtil.OrderAscending anchorPoint caretPoint
                 let line = VirtualSnapshotPointUtil.GetContainingLine first
-                VirtualSnapshotLineUtil.GetSpace line column tabStop
+                VirtualSnapshotColumn.GetColumnForSpaces(line, column, tabStop)
 
             let height = 
                 let anchorLine = anchorPoint.Position.GetContainingLine()
@@ -2379,7 +2383,7 @@ type VisualSelection =
                 if anchorSpaces <= caretSpaces then SearchPath.Forward
                 else SearchPath.Backward
 
-            let blockSpan = BlockSpan(startPoint, tabStop, spaces, height)
+            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height)
             VisualSpan.Block blockSpan, path
 
         let createNormal () = 
@@ -2469,8 +2473,8 @@ type VisualSelection =
             let lineRange = 
                 let line = SnapshotPointUtil.GetContainingLine caretPoint
                 SnapshotLineRangeUtil.CreateForLine line
-            let column = SnapshotPointUtil.GetColumn caretPoint
-            VisualSelection.Line (lineRange, SearchPath.Forward, column)
+            let offset = SnapshotPointUtil.GetLineOffset caretPoint
+            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualKind.Block ->
             let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
@@ -3970,7 +3974,7 @@ type IJumpList =
     abstract MoveNewer: int -> bool
 
     /// Set the last jump location to the given line and column
-    abstract SetLastJumpLocation: line: int -> column: int -> unit
+    abstract SetLastJumpLocation: lineNumber: int -> offset: int -> unit
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
@@ -4831,16 +4835,16 @@ and IMarkMap =
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
+    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> lineNumber: int -> offset: int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
+    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> lineNumber: int -> offset: int -> bool
 
     /// Delete the mark for the IVimTextBuffer
     abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
 
     /// Unload the buffer recording the last exited position
-    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
+    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> lineNumber: int -> offset: int -> bool
 
     /// Reload the marks associated with a buffer
     abstract ReloadBuffer: vimBufferData: IVimBufferData -> name: string -> bool
@@ -4931,7 +4935,7 @@ and IVimTextBuffer =
 
     /// Set the local mark value to the specified line and column.  Returns false if the given 
     /// mark cannot be set
-    abstract SetLocalMark: localMark: LocalMark -> line: int -> column: int -> bool
+    abstract SetLocalMark: localMark: LocalMark -> lineNumber: int -> offset: int -> bool
 
     /// Remove the specified local mark.  Returns whether a mark was actually removed
     abstract RemoveLocalMark: localMark: LocalMark -> bool

@@ -1029,7 +1029,7 @@ type internal MotionUtil
             // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
             // End version?
             let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
-            let column = SnapshotPointUtil.GetColumn point |> CaretColumn.InLastLine
+            let column = SnapshotPointUtil.GetLineOffset point |> CaretColumn.InLastLine
             { motionData with 
                 MotionKind = MotionKind.LineWise 
                 CaretColumn = column }
@@ -1215,12 +1215,12 @@ type internal MotionUtil
 
     /// Get the caret column of the specified line based on the 'startofline' option
     member x.GetCaretColumnOfLine (line: ITextSnapshotLine) =
-        let column = 
+        let offset = 
             if _globalSettings.StartOfLine then 
-                line |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetColumn
+                line |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetLineOffset
             else
-                _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
-        CaretColumn.InLastLine column
+                _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetLineOffset
+        CaretColumn.InLastLine offset
 
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
@@ -1423,7 +1423,7 @@ type internal MotionUtil
                 virtualPoint.Position
                 |> SnapshotPointUtil.GetContainingLine
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                |> SnapshotPointUtil.GetColumn
+                |> SnapshotPointUtil.GetLineOffset
                 |> CaretColumn.InLastLine
             MotionResult.Create(range.ExtentIncludingLineBreak, MotionKind.LineWise, isForward, MotionResultFlags.None, column) |> Some
 
@@ -1995,7 +1995,7 @@ type internal MotionUtil
             let endLine = 
                 let number = startLine.LineNumber + (count - 1)
                 SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetLineOffset |> CaretColumn.InLastLine
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             MotionResult.CreateLineWise(range.ExtentIncludingLineBreak, isForward = true, caretColumn = column))
 
@@ -2259,7 +2259,7 @@ type internal MotionUtil
         x.MotionWithVisualSnapshot (fun x ->
             let number = x.CaretLine.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetColumn |> CaretColumn.InLastLine
+            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetLineOffset |> CaretColumn.InLastLine
             let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
             MotionResult.CreateLineWise(span, isForward = true, caretColumn = column))
 
@@ -2274,7 +2274,7 @@ type internal MotionUtil
             let column = 
                 startLine 
                 |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                |> SnapshotPointUtil.GetColumn
+                |> SnapshotPointUtil.GetLineOffset
                 |> CaretColumn.InLastLine
             MotionResult.CreateLineWise(span, isForward = false, caretColumn = column))
 
@@ -2284,7 +2284,7 @@ type internal MotionUtil
     member x.LineToColumn count =
         x.MotionWithVisualSnapshot (fun x ->
             let count = count - 1
-            let targetColumn = _commonOperations.GetColumnForSpacesOrLineBreak x.CaretLine count
+            let targetColumn = _commonOperations.GetColumnForSpacesOrEnd x.CaretLine count
             let isForward = targetColumn.StartPoint.Difference(x.CaretPoint) < 0
             let span = 
                 if isForward then SnapshotSpan(x.CaretPoint, targetColumn.StartPoint)
@@ -2436,13 +2436,13 @@ type internal MotionUtil
                     else
                         x.CaretColumn.ColumnNumber
                 let characterSpan =
-                    let s = SnapshotLineUtil.GetColumnOrEnd columnNumber startLine
-                    let e = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-                    SnapshotSpan(s, e)
+                    let s = SnapshotColumn.GetForColumnNumberOrEnd(startLine, columnNumber)
+                    let e = x.CaretColumn.AddOneOrCurrent()
+                    SnapshotColumnSpan(s, e)
                 let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
                 MotionResult.CreateLineWise(
                     span,
-                    spanBeforeLineWise = characterSpan,
+                    spanBeforeLineWise = characterSpan.Span,
                     isForward = false,
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
                     caretColumn = CaretColumn.InLastLine columnNumber) |> Some)
@@ -2461,13 +2461,13 @@ type internal MotionUtil
                     else
                         x.CaretColumn.ColumnNumber
                 let characterSpan = 
-                    let e = SnapshotLineUtil.GetColumnOrEnd columnNumber lastLine
-                    let e = SnapshotPointUtil.AddOneOrCurrent e
-                    SnapshotSpan(x.CaretPoint, e)
+                    let e = SnapshotColumn.GetForColumnNumberOrEnd(lastLine, columnNumber)
+                    let e = e.AddOneOrCurrent()
+                    SnapshotColumnSpan(x.CaretColumn, e)
                 let span = SnapshotSpan(x.CaretLine.Start, lastLine.EndIncludingLineBreak)
                 MotionResult.CreateLineWise(
                     span, 
-                    spanBeforeLineWise = characterSpan,
+                    spanBeforeLineWise = characterSpan.Span,
                     isForward = true,
                     motionResultFlags = MotionResultFlags.MaintainCaretColumn,
                     caretColumn = CaretColumn.InLastLine columnNumber) |> Some)
@@ -2825,7 +2825,7 @@ type internal MotionUtil
                     endPoint <- endLine.EndIncludingLineBreak
                     motionKind <- MotionKind.LineWise
                     if isForward then
-                        caretColumn <- CaretColumn.InLastLine (SnapshotPointUtil.GetColumn span.Start)
+                        caretColumn <- CaretColumn.InLastLine (SnapshotPointUtil.GetLineOffset span.Start)
                 | SearchOffsetData.End _ ->
                     endPoint <- SnapshotPointUtil.AddOneOrCurrent endPoint
                     motionKind <- MotionKind.CharacterWiseInclusive 

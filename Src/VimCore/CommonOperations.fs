@@ -127,8 +127,8 @@ type internal CommonOperations
 
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
-    member x.GetColumnForSpacesOrLineBreak line spaces = 
-        SnapshotColumn.GetColumnForSpacesOrLineBreak(line, spaces, _localSettings.TabStop)
+    member x.GetColumnForSpacesOrEnd line spaces = 
+        SnapshotColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
 
     /// Get the count of spaces to get to the specified virtual point in it's line when tabs are expanded
     member x.GetSpacesToVirtualColumn (column: VirtualSnapshotColumn) = 
@@ -808,13 +808,11 @@ type internal CommonOperations
         x.MoveCaretToVirtualPoint point.VirtualStartPoint viewFlags
 
     /// Move the caret to the specified point with the specified view properties
-    /// CTODO: delete
     member x.MoveCaretToPoint (point: SnapshotPoint) viewFlags =
         let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
         x.MoveCaretToVirtualPoint virtualPoint viewFlags
 
     /// Move the caret to the specified virtual point with the specified view properties
-    /// CTODO: delete
     member x.MoveCaretToVirtualPoint (point: VirtualSnapshotPoint) viewFlags =
 
         // In the case where we want to expand the text we are moving to we need to do the expansion
@@ -829,9 +827,9 @@ type internal CommonOperations
 
     /// Move the caret to the specified line maintaining it's current column
     member x.MoveCaretToLine line = 
-        let spaces = SnapshotPointUtil.GetSpacesToPoint x.CaretPoint _localSettings.TabStop
-        let point = SnapshotLineUtil.GetSpaceOrEnd line spaces _localSettings.TabStop
-        TextViewUtil.MoveCaretToPoint _textView point
+        let spaces = x.CaretColumn.GetSpacesToColumn _localSettings.TabStop
+        let column = SnapshotColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
+        TextViewUtil.MoveCaretToColumn _textView column
         x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spaces
 
     /// Move the caret to the position dictated by the given MotionResult value
@@ -867,7 +865,7 @@ type internal CommonOperations
                     let column = x.GetVirtualColumnForSpaces visualLastLine caretColumnSpaces
                     column.VirtualColumnNumber
                 else
-                    let column = x.GetColumnForSpacesOrLineBreak visualLastLine caretColumnSpaces
+                    let column = x.GetColumnForSpacesOrEnd visualLastLine caretColumnSpaces
                     column.ColumnNumber
                 |> CaretColumn.InLastLine
             let result = 
@@ -920,10 +918,11 @@ type internal CommonOperations
             let visualLine = x.GetDirectionLastLineInVisualSnapshot result
             if not result.IsForward then
                 match result.MotionKind, result.CaretColumn with
-                | MotionKind.LineWise, CaretColumn.InLastLine column -> 
+                | MotionKind.LineWise, CaretColumn.InLastLine columnNumber -> 
                     // If we are moving linewise, but to a specific column, use
                     // that column as the target of the motion
-                    SnapshotLineUtil.GetColumnOrEnd column visualLine
+                    let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                    column.StartPoint
                 | _, _ -> 
                     result.Span.Start
             else
@@ -962,11 +961,12 @@ type internal CommonOperations
                     match result.CaretColumn with
                     | CaretColumn.None -> 
                         visualLine.End
-                    | CaretColumn.InLastLine column ->
-                        SnapshotLineUtil.GetColumnOrEnd column visualLine
+                    | CaretColumn.InLastLine columnNumber ->
+                        let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                        column.StartPoint
                     | CaretColumn.ScreenColumn columnNumber ->
-                        let column = x.GetColumnForSpacesOrLineBreak visualLine columnNumber
-                        SnapshotLineUtil.GetColumnOrEnd column.ColumnNumber visualLine
+                        let column = SnapshotColumn.GetForColumnNumberOrEnd(visualLine, columnNumber)
+                        column.StartPoint
                     | CaretColumn.AfterLastLine ->
                         match SnapshotUtil.TryGetLine visualLine.Snapshot (visualLine.LineNumber + 1) with
                         | None -> visualLine.End
@@ -2078,7 +2078,7 @@ type internal CommonOperations
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToColumn column = x.GetSpacesToColumn column
-        member x.GetColumnForSpacesOrLineBreak contextLine spaces = x.GetColumnForSpacesOrLineBreak contextLine spaces
+        member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
         member x.GetVirtualColumnForSpaces contextLine spaces = x.GetVirtualColumnForSpaces contextLine spaces
         member x.GoToLocalDeclaration() = x.GoToLocalDeclaration()

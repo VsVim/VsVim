@@ -247,7 +247,7 @@ namespace Vim.UnitTest
             public void TryCreateLineNegative()
             {
                 Create("cat");
-                var column = SnapshotColumn.TryCreateForLineAndColumnNumber(_textBuffer.CurrentSnapshot, -1, -1, FSharpOption.False);
+                var column = SnapshotColumn.GetForLineAndColumnNumber(_textBuffer.CurrentSnapshot, -1, -1, FSharpOption.False);
                 Assert.True(column.IsNone());
             }
 
@@ -255,7 +255,7 @@ namespace Vim.UnitTest
             public void TryCreateColumnSimple()
             {
                 Create("cat");
-                var column = SnapshotColumn.TryCreateForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 1, includeLineBreak: FSharpOption.False);
+                var column = SnapshotColumn.GetForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 1, includeLineBreak: FSharpOption.False);
                 Assert.True(column.IsSome(x => x.IsCharacter('a')));
             }
 
@@ -263,9 +263,9 @@ namespace Vim.UnitTest
             public void EmptyLineIsLineBreak()
             {
                 Create("", "dog");
-                var column = SnapshotColumn.TryCreateForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 0, includeLineBreak: FSharpOption.False);
+                var column = SnapshotColumn.GetForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 0, includeLineBreak: FSharpOption.False);
                 Assert.True(column.IsNone());
-                column = SnapshotColumn.TryCreateForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 0, includeLineBreak: FSharpOption.True);
+                column = SnapshotColumn.GetForLineAndColumnNumber(_textBuffer.CurrentSnapshot, lineNumber: 0, columnNumber: 0, includeLineBreak: FSharpOption.True);
                 Assert.True(column.IsSome(x => x.IsLineBreak));
             }
         }
