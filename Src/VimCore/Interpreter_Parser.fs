@@ -190,9 +190,11 @@ type Parser
         ("version", "ve")
         ("vscmd", "vsc")
         ("vsplit", "vs")
+        ("wqall", "wqa")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
+        ("xall", "xa")
         ("xit", "x")
         ("yank", "y")
         ("/", "")
@@ -1847,9 +1849,9 @@ type Parser
 
         LineCommand.Write (lineRange, hasBang, fileOptionList, fileName)
 
-    member x.ParseWriteAll() =
+    member x.ParseWriteAll andQuit =
         let hasBang = x.ParseBang()
-        LineCommand.WriteAll hasBang
+        LineCommand.WriteAll (hasBang, andQuit)
 
     /// Parse out the yank command
     member x.ParseYank lineRange =
@@ -2419,9 +2421,11 @@ type Parser
                 | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
                 | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "wall" -> noRange x.ParseWriteAll
+                | "wall" -> noRange (fun () -> x.ParseWriteAll false)
+                | "wqall" -> noRange (fun () -> x.ParseWriteAll true)
                 | "write" -> x.ParseWrite lineRange
                 | "wq" -> x.ParseQuitAndWrite lineRange
+                | "xall"-> noRange (fun () -> x.ParseWriteAll true)
                 | "xit" -> x.ParseQuitAndWrite lineRange
                 | "xmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual])
                 | "xmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual])

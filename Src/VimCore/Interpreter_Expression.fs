@@ -747,7 +747,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Write of LineRangeSpecifier * bool * FileOption list * string option
 
     /// Write out all changed buffers
-    | WriteAll of bool
+    | WriteAll of bool * bool
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option
