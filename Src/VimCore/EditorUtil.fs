@@ -989,10 +989,8 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
         match SnapshotOverlapColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column
         | None -> 
-            // CTODO: why do we measure the end as 0 spaces here but 1 everywhere else. That should be 
-            // looked into.
             let column = SnapshotColumn(line, line.End)
-            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0, tabStop = tabStop)
+            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 1, tabStop = tabStop)
 
     static member GetLineStart(line: ITextSnapshotLine, tabStop: int) = 
         let startColumn = SnapshotColumn.GetLineStart(line)

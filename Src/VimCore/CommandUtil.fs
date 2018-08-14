@@ -1440,7 +1440,6 @@ type internal CommandUtil
                 if columnOnlyInBlock then
                     // In this mode the caret simple jumps to the other end of the selection on the same
                     // line.  It doesn't switch caret + anchor, just the side the caret is on
-                    // CTODO: mixing columns and offsets here (below).
                     let caretSpaces, anchorSpaces =
                         if (SnapshotPointUtil.GetLineOffset x.CaretPoint) >= (SnapshotPointUtil.GetLineOffset anchorPoint) then
                             blockSpan.BeforeSpaces, (blockSpan.SpacesLength + blockSpan.BeforeSpaces) - 1

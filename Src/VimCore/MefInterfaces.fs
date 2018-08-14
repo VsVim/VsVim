@@ -109,8 +109,7 @@ type ITrackingVisualSelection =
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    /// CTODO: rename to CreateLineOffset
-    abstract CreateLineColumn: textBuffer: ITextBuffer -> lineNumber: int -> offset: int -> mode: LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineOffset: textBuffer: ITextBuffer -> lineNumber: int -> offset: int -> mode: LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingLineColumn at the given SnaphsotColumn
     abstract CreateColumn: column: SnapshotColumn -> mode: LineColumnTrackingMode -> ITrackingLineColumn

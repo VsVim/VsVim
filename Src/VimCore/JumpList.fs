@@ -101,7 +101,7 @@ type internal JumpList
             match x.FindNodeTrackingLine lineNumber with
             | None -> 
                 // No node currently tracking that line.  Create a new one
-                _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.SurviveDeletes
+                _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.SurviveDeletes
             | Some node ->
                 // Existing node.  Re-use the ITrackingLineColumn and remove the node from
                 // the list
@@ -180,12 +180,12 @@ type internal JumpList
             success
 
     /// Set the last jump location to the provided line and column in the ITextView
-    member x.SetLastJumpLocation line column = 
+    member x.SetLastJumpLocation lineNumber offset = 
         match _lastJumpLocation with
         | None -> ()
         | Some trackingLineColumn -> trackingLineColumn.Close()
 
-        _lastJumpLocation <- Some (_bufferTrackingService.CreateLineColumn _textView.TextBuffer line column LineColumnTrackingMode.Default)
+        _lastJumpLocation <- Some (_bufferTrackingService.CreateLineOffset _textView.TextBuffer lineNumber offset LineColumnTrackingMode.Default)
         x.RaiseMarkSet Mark.LastJump
 
     /// Start a traversal of the jump list
@@ -205,7 +205,7 @@ type internal JumpList
         member x.Clear() = x.Clear()
         member x.MoveNewer count = x.MoveNewer count
         member x.MoveOlder count = x.MoveOlder count
-        member x.SetLastJumpLocation line column = x.SetLastJumpLocation line column
+        member x.SetLastJumpLocation lineNumber offset = x.SetLastJumpLocation lineNumber offset
         member x.StartTraversal() = x.StartTraversal()
 
         [<CLIEvent>]

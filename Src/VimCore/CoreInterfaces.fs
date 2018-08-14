@@ -3974,7 +3974,7 @@ type IJumpList =
     abstract MoveNewer: int -> bool
 
     /// Set the last jump location to the given line and column
-    abstract SetLastJumpLocation: line: int -> column: int -> unit
+    abstract SetLastJumpLocation: lineNumber: int -> offset: int -> unit
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
@@ -4835,16 +4835,16 @@ and IMarkMap =
     abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> line: int -> column: int -> unit
+    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> lineNumber: int -> offset: int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> line: int -> column: int -> bool
+    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> lineNumber: int -> offset: int -> bool
 
     /// Delete the mark for the IVimTextBuffer
     abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
 
     /// Unload the buffer recording the last exited position
-    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> line: int -> column: int -> bool
+    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> lineNumber: int -> offset: int -> bool
 
     /// Reload the marks associated with a buffer
     abstract ReloadBuffer: vimBufferData: IVimBufferData -> name: string -> bool
@@ -4935,7 +4935,7 @@ and IVimTextBuffer =
 
     /// Set the local mark value to the specified line and column.  Returns false if the given 
     /// mark cannot be set
-    abstract SetLocalMark: localMark: LocalMark -> line: int -> column: int -> bool
+    abstract SetLocalMark: localMark: LocalMark -> lineNumber: int -> offset: int -> bool
 
     /// Remove the specified local mark.  Returns whether a mark was actually removed
     abstract RemoveLocalMark: localMark: LocalMark -> bool

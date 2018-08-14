@@ -254,10 +254,6 @@ type VimInterpreter
     let _variableMap = _vim.VariableMap
     let _exprInterpreter = ExpressionInterpreter(_statusUtil, _localSettings, _windowSettings, _variableMap, _registerMap)
 
-    /// The column of the caret
-    /// CTODO: delete 
-    member x.CaretColumn = SnapshotPointUtil.GetLineOffset x.CaretPoint
-
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -939,7 +935,7 @@ type VimInterpreter
                         lineRange.Lines
                         |> Seq.map (fun snapshotLine ->
                             let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset snapshotLine.Start
-                            _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default)
+                            _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default)
                         |> List.ofSeq
 
                     // Now perform the command for every line.  Make sure to map forward to the 
@@ -1005,7 +1001,7 @@ type VimInterpreter
                             didMatch = matchPattern)
                         |> Seq.map (fun snapshotLine ->
                             let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset snapshotLine.Start
-                            _bufferTrackingService.CreateLineColumn _textBuffer lineNumber offset LineColumnTrackingMode.Default)
+                            _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default)
                         |> List.ofSeq
     
                     // Now perform the edit for every line.  Make sure to map forward to the 
