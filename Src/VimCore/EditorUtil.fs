@@ -2277,7 +2277,6 @@ module SnapshotPointUtil =
         line.ExtentIncludingLineBreak
 
     // Get the span of the character which is pointed to by the point
-    // CTODO: delete? 
     let GetCharacterSpan point =
         let line = GetContainingLine point
         SnapshotLineUtil.GetCharacterSpan line point
@@ -2304,7 +2303,6 @@ module SnapshotPointUtil =
             point.Subtract(1)
 
     /// Get the next character span in the buffer with wrap
-    /// CTODO: delete?
     let GetNextCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let nextPoint =
@@ -2316,7 +2314,6 @@ module SnapshotPointUtil =
             nextPoint
 
     /// Get the previous character span in the buffer with wrap
-    /// CTODO: delete?
     let GetPreviousCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let currentPoint =
@@ -2551,7 +2548,6 @@ module SnapshotPointUtil =
     /// Get a character span relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
     /// specified.  Goes as far as possible in the specified direction
-    /// CTODO: this method is on the wrong type
     let GetRelativeColumn (column: SnapshotColumn) count skipLineBreaks =
 
         /// Get the relative column in 'direction' using predicate 'isEnd'
@@ -2596,7 +2592,6 @@ module SnapshotPointUtil =
         else right,left
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
-    /// CTODO: delete
     let GetSpacesToPoint (point: SnapshotPoint) tabStop = 
         let column = SnapshotColumn(point)
         column.GetSpacesToColumn tabStop
@@ -2682,8 +2677,8 @@ module VirtualSnapshotPointUtil =
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
     let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop =
-        let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
-        spaces + point.VirtualSpaces
+        let column = VirtualSnapshotColumn(point)
+        column.GetSpacesToColumn(tabStop)
 
     /// Get the next character span in the buffer with wrap
     let GetNextCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
