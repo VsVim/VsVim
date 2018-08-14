@@ -88,7 +88,7 @@ type internal InsertUtil
                 if line.LineNumber <> x.CaretLineNumber then
                     None
                 else
-                    match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
+                    match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = false) with
                     | None -> None
                     | Some column -> Some column.CodePoint
 
@@ -201,12 +201,12 @@ type internal InsertUtil
             for i = 0 to (height - 1) do 
 
                 let lineNumber = startLineNumber + i
-                let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
-                let point = SnapshotLineUtil.GetSpaceWithOverlapOrEnd currentLine spaces _localSettings.TabStop
-                if point.SpacesBefore > 0 then
-                    let text = StringUtil.RepeatChar point.Spaces ' '
-                    let span = Span(point.Point.Position, 1)
-                    textEdit.Replace(span, text) |> ignore
+                let line = SnapshotUtil.GetLine currentSnapshot lineNumber
+                let column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
+                if column.SpacesBefore > 0 then
+                    let text = StringUtil.RepeatChar column.TotalSpaces ' '
+                    let span = column.Column.Span
+                    textEdit.Replace(span.Span, text) |> ignore
 
             if textEdit.HasEffectiveChanges then 
                 textEdit.Apply() |> ignore
@@ -226,17 +226,14 @@ type internal InsertUtil
 
                 // Only apply the edit to lines which were included in the original selection
                 let tabStop = _localSettings.TabStop
-                let point =
-                    if atEndOfLine then
-                        SnapshotLineUtil.GetEnd currentLine
-                    else
-                        SnapshotLineUtil.GetSpaceOrEnd currentLine spaces tabStop
-                if atEndOfLine || not (SnapshotPointUtil.IsInsideLineBreak point) then
-                    let position = point.Position
-                    let column = SnapshotPointUtil.GetColumn point
+                let column =
+                    if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine)
+                    else SnapshotColumn.GetColumnForSpacesOrEnd(currentLine, spaces, tabStop)
+                if atEndOfLine || not column.IsLineBreakOrEnd then
+                    let position = column.StartPosition
                     let text =
                         if _localSettings.ExpandTab then
-                            StringUtil.ExpandTabsForColumn text column tabStop
+                            StringUtil.ExpandTabsForColumn text column.ColumnNumber tabStop
                         else
                             text
 
@@ -245,8 +242,9 @@ type internal InsertUtil
                     // column position.
                     if text.StartsWith("\t") then
                         let mutable n = 0
-                        while column - n > 0 && (column - n) % tabStop <> 0
-                        && point.Subtract(n + 1).GetChar() = ' ' do
+                        let columnNumber = column.ColumnNumber
+                        while columnNumber - n > 0 && (columnNumber - n) % tabStop <> 0
+                        && column.Subtract(n + 1).IsCharacter(' ') do
                             n <- n + 1
                         let span = Span(position - n, n)
                         if not (textEdit.Replace(span, text)) then
@@ -385,7 +383,7 @@ type internal InsertUtil
         x.Insert s
 
     member x.InsertCharacterCore lineNumber isReplace =
-        match SnapshotColumn.TryCreateForLineAndColumnNumber(x.CurrentSnapshot, lineNumber, x.CaretColumn.ColumnNumber) with
+        match SnapshotColumn.GetForLineAndColumnNumber(x.CurrentSnapshot, lineNumber, x.CaretColumn.ColumnNumber) with
         | None -> 
             _operations.Beep()
             CommandResult.Error
@@ -863,7 +861,7 @@ type internal InsertUtil
             if tabBoundarySpaces < 0 then
                 BackspaceCommand.Characters 1
             else
-                let tabBoundaryColumn = _operations.GetColumnForSpacesOrLineBreak x.CaretLine tabBoundarySpaces
+                let tabBoundaryColumn = _operations.GetColumnForSpacesOrEnd x.CaretLine tabBoundarySpaces
                 let allBlank = 
                     SnapshotSpan(tabBoundaryColumn.StartPoint, x.CaretPoint)
                     |> SnapshotSpanUtil.GetPoints SearchPath.Forward 

@@ -373,8 +373,8 @@ type internal VimBuffer
         if _isClosed then 
             invalidOp Resources.VimBuffer_AlreadyClosed
 
-        let line, column = SnapshotPointUtil.GetLineColumn (TextViewUtil.GetCaretPoint _textView)
-        _vim.MarkMap.UnloadBuffer _vimBufferData _bufferName line column |> ignore
+        let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset (TextViewUtil.GetCaretPoint _textView)
+        _vim.MarkMap.UnloadBuffer _vimBufferData _bufferName lineNumber offset |> ignore
 
         // Run the closing event in a separate try / catch.  Don't want anyone to be able
         // to disrupt the necessary actions like removing a buffer from the global list

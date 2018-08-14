@@ -159,8 +159,8 @@ type internal TrackingLineColumn
     override x.ToString() =
         match x.VirtualPoint with
         | Some point ->
-            let line,_ = SnapshotPointUtil.GetLineColumn point.Position
-            sprintf "%d,%d - %s" line _offset (point.ToString())
+            let line = SnapshotPointUtil.GetContainingLine point.Position
+            sprintf "%d,%d - %s" line.LineNumber _offset (point.ToString())
         | None -> "Invalid"
 
     interface ITrackingLineColumn with
@@ -235,8 +235,8 @@ type internal TrackingVisualSpan =
             // in the span and the length of the final line
             let textBuffer = characterSpan.Snapshot.TextBuffer
             let trackingLineColumn = 
-                let line, column = VirtualSnapshotPointUtil.GetLineColumn characterSpan.VirtualStart
-                bufferTrackingService.CreateLineColumn textBuffer line column LineColumnTrackingMode.Default
+                let line, offset = VirtualSnapshotPointUtil.GetLineAndOffset characterSpan.VirtualStart
+                bufferTrackingService.CreateLineOffset textBuffer line.LineNumber offset LineColumnTrackingMode.Default
 
             TrackingVisualSpan.Character (trackingLineColumn, characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
 
@@ -245,7 +245,7 @@ type internal TrackingVisualSpan =
             // Setup an ITrackingLineColumn at the 0 column of the first line.  This actually may be doable
             // with an ITrackingPoint but for now sticking with an ITrackinglineColumn
             let textBuffer = snapshotLineRange.Snapshot.TextBuffer
-            let trackingLineColumn = bufferTrackingService.CreateLineColumn textBuffer snapshotLineRange.StartLineNumber 0 LineColumnTrackingMode.Default
+            let trackingLineColumn = bufferTrackingService.CreateLineOffset textBuffer snapshotLineRange.StartLineNumber 0 LineColumnTrackingMode.Default
             TrackingVisualSpan.Line (trackingLineColumn, snapshotLineRange.Count)
 
         | VisualSpan.Block blockSpan ->
@@ -253,9 +253,8 @@ type internal TrackingVisualSpan =
             // Setup an ITrackLineColumn at the top left of the block selection
             let trackingLineColumn =
                 let textBuffer = blockSpan.TextBuffer
-                let lineNumber, column = VirtualSnapshotPointUtil.GetLineColumn blockSpan.VirtualStart.VirtualStartPoint
-
-                bufferTrackingService.CreateLineColumn textBuffer lineNumber column LineColumnTrackingMode.Default
+                let line, offset = VirtualSnapshotPointUtil.GetLineAndOffset blockSpan.VirtualStart.VirtualStartPoint
+                bufferTrackingService.CreateLineOffset textBuffer line.LineNumber offset LineColumnTrackingMode.Default
 
             TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.SpacesLength, blockSpan.Height)
 
@@ -358,7 +357,7 @@ type internal BufferTrackingService() =
         | Some trackedData -> trackedData.List |> Seq.iter (fun trackingLineColumn -> trackingLineColumn.OnBufferChanged e)
         | None -> ()
 
-    member x.CreateLineColumn (textBuffer: ITextBuffer) lineNumber offset mode = 
+    member x.CreateLineOffset (textBuffer: ITextBuffer) lineNumber offset mode = 
         let trackingLineColumn = TrackingLineColumn(textBuffer, offset, mode, x.Remove)
         let textSnapshot = textBuffer.CurrentSnapshot
         let textLine = textSnapshot.GetLineFromLineNumber(lineNumber)
@@ -368,13 +367,13 @@ type internal BufferTrackingService() =
 
     member x.CreateColumn (column: SnapshotColumn) mode =
         let textBuffer = column.Snapshot.TextBuffer
-        x.CreateLineColumn textBuffer column.LineNumber column.Offset mode
+        x.CreateLineOffset textBuffer column.LineNumber column.Offset mode
 
     member x.HasTrackingItems textBuffer = 
         x.FindTrackedData textBuffer |> Option.isSome
 
     interface IBufferTrackingService with
-        member x.CreateLineColumn textBuffer lineNumber offset mode = x.CreateLineColumn textBuffer lineNumber offset mode :> ITrackingLineColumn
+        member x.CreateLineOffset textBuffer lineNumber offset mode = x.CreateLineOffset textBuffer lineNumber offset mode :> ITrackingLineColumn
         member x.CreateColumn column mode = x.CreateColumn column mode :> ITrackingLineColumn
         member x.CreateVisualSpan visualSpan = TrackingVisualSpan.Create x visualSpan :> ITrackingVisualSpan
         member x.CreateVisualSelection visualSelection = TrackingVisualSelection.Create x visualSelection :> ITrackingVisualSelection

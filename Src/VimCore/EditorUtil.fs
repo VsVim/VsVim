@@ -761,7 +761,7 @@ type SnapshotColumn =
     static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other)
     static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other))
 
-    static member TryCreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
+    static member GetForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
         let includeLineBreak = defaultArg includeLineBreak false
         let mutable column = SnapshotColumn(line)
         let mutable count = columnNumber
@@ -785,19 +785,18 @@ type SnapshotColumn =
 
     static member GetLineEnd(line: ITextSnapshotLine) = SnapshotColumn(line, line.End)
 
-    // CTODO: Consider the API naming her. Everything else is Get
-    static member CreateForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =
-        match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = true) with
+    static member GetForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =
+        match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = true) with
         | Some column -> column
         | None -> SnapshotColumn(line.End)
 
-    static member TryCreateForLineAndColumnNumber((snapshot: ITextSnapshot), lineNumber: int, columnNumber: int, ?includeLineBreak) =
+    static member GetForLineAndColumnNumber((snapshot: ITextSnapshot), lineNumber: int, columnNumber: int, ?includeLineBreak) =
         let includeLineBreak = defaultArg includeLineBreak false
         if lineNumber < 0 || lineNumber >= snapshot.LineCount then
             None
         else
             let line = snapshot.GetLineFromLineNumber(lineNumber)
-            SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak)
+            SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak)
 
     /// Get a sequence of columns which begins with the specified searchColumn in the direction provided
     /// by serachPath. The searchColumn will always be included in the results except if:
@@ -884,7 +883,7 @@ type SnapshotColumn =
         | Some column -> Some column.Column
         | None -> None
 
-    static member GetColumnForSpacesOrLineBreak(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotColumn =
+    static member GetColumnForSpacesOrEnd(line: ITextSnapshotLine, spaces: int, tabStop: int): SnapshotColumn =
         match SnapshotColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column
         | None -> SnapshotColumn(line, line.End)
@@ -990,10 +989,8 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
         match SnapshotOverlapColumn.GetColumnForSpaces(line, spaces, tabStop) with
         | Some column -> column
         | None -> 
-            // CTODO: why do we measure the end as 0 spaces here but 1 everywhere else. That should be 
-            // looked into.
             let column = SnapshotColumn(line, line.End)
-            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 0, tabStop = tabStop)
+            SnapshotOverlapColumn(column, beforeSpaces = 0, totalSpaces = 1, tabStop = tabStop)
 
     static member GetLineStart(line: ITextSnapshotLine, tabStop: int) = 
         let startColumn = SnapshotColumn.GetLineStart(line)
@@ -1149,15 +1146,15 @@ type VirtualSnapshotColumn =
     /// boundary only count for the number of spaces to get to the next tabstop boundary. The column
     /// number is allowed to extend into virtual spaces.
     static member GetSpacesToColumnNumber(line: ITextSnapshotLine, columnNumber: int, tabStop: int) =
-        let column = SnapshotColumn.CreateForColumnNumberOrEnd(line, columnNumber)
+        let column = SnapshotColumn.GetForColumnNumberOrEnd(line, columnNumber)
         let remainingSpaces = columnNumber - column.ColumnNumber
         let spaces = column.GetSpacesToColumn tabStop
         remainingSpaces + spaces
 
     /// Create for the specified column number in the line. Any extra columns past the end will betreated
     /// as virtual spaces
-    static member CreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int) =
-        match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
+    static member GetForColumnNumber(line: ITextSnapshotLine, columnNumber: int) =
+        match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = false) with
         | Some column -> 
             VirtualSnapshotColumn(column, 0)
         | None -> 
@@ -1524,113 +1521,6 @@ type SnapshotLineRange  =
         else
             let range = SnapshotLineRange(snapshot, startLine, (lastLine - startLine) + 1)
             Nullable<SnapshotLineRange>(range)
-
-/// The Text Editor interfaces only have granularity down to the character in the 
-/// ITextBuffer.  However Vim needs to go a bit deeper in certain scenarios like 
-/// BlockSpan's.  It needs to understand spaces within a single SnapshotPoint when
-/// there are multiple logical characters (like tabs).  This structure represents
-/// a value within a SnapshotPoint
-/// CTODO: delete
-[<StructuralEquality>]
-[<NoComparison>]
-[<Struct>]
-[<DebuggerDisplay("{ToString()}")>]
-type SnapshotOverlapPoint =
-
-    val private _point: SnapshotPoint
-
-    /// The number of spaces into the point where this overlap point occurs
-    val private _beforeSpaces: int
-
-    /// The number of spaces the point occupies in the editor. 
-    ///
-    /// An interesting case to consider here is tabs.  They will not always occupy 
-    /// 'tabstop' spaces.  It can occupy less if there is a character in front of the 
-    /// tab which occurs on a 'tabstop' boundary. 
-    val private _totalSpaces: int
-
-    /// !!!Do not call this directly!!!
-    ///
-    /// This constructor is meant for internal usage only.  If friend types existed this would employ
-    /// a friend type to protect it.  It's far too easy to get the 'totalSpaces' parameter incorrect.  Instead
-    /// go through a supported API for creating them
-    internal new (point: SnapshotPoint, beforeSpaces: int, totalSpaces: int) = 
-        if totalSpaces < 0 then
-            invalidArg "totalSpaces" "totalSpaces must be positive"
-        { _point = point; _beforeSpaces = beforeSpaces; _totalSpaces = totalSpaces }
-
-    /// Create a SnapshotOverlapPoint over a SnapshotPoint value.  Even if the character underneath
-    /// the SnapshotPoint is wide this will treate it as a width 0 character.  It will never see it
-    /// as an overlap 
-    ///
-    /// TODO: This API is fundamentally incorrect because it treats all points as a one space item
-    /// even if the underlying character is spaces wide.  
-    new (point: SnapshotPoint) =
-        let width = 
-            if EditorCoreUtil.IsEndPoint point then
-                0
-            else
-                1
-        { _point = point; _beforeSpaces = 0; _totalSpaces = width }
-
-    /// The number of spaces in the overlap point before this space
-    member x.SpacesBefore = x._beforeSpaces
-
-    /// The number of spaces in the overlap point after this space 
-    member x.SpacesAfter = max 0 ((x._totalSpaces - 1) - x._beforeSpaces)
-
-    /// The SnapshotPoint in which this overlap occurs
-    member x.Point = x._point
-
-    /// Number of spaces this SnapshotOverlapPoint occupies
-    member x.Spaces = x._totalSpaces
-
-    member x.Snapshot = x._point.Snapshot
-
-    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<SnapshotOverlapPoint>.Default.Equals(this,other))
-
-    override x.ToString() = 
-        sprintf "Point: %s Spaces: %d Before: %d After: %d" (x.Point.ToString()) x.Spaces x.SpacesBefore x.SpacesAfter
-
-    // Get the point in the given line which is just before the character that 
-    // overlaps the specified column into the line, as well as the position of 
-    // that column inside the character. Returns End if it goes beyond the last 
-    // point in the string
-    static member GetSpaceWithOverlapOrEnd (line: ITextSnapshotLine) spacesCount tabStop = 
-        let mutable point = SnapshotCodePoint(line)
-        let mutable spaces = 0 
-        let mutable value: SnapshotOverlapPoint option = None
-
-        if point.IsInsideLineBreak || point.IsEndPoint then
-            value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
-
-        while Option.isNone value do
-            let currentWidth = 
-                if point.IsCharacter '\t' then
-                    // A tab takes up the remaining spaces on a tabstop increment.
-                    let remainder = tabStop - (spaces % tabStop)
-                    if remainder = 0 then tabStop
-                    else remainder
-                else
-                    point.GetSpaces tabStop
-
-            if spaces = spacesCount then
-                // Landed at the SnapshotPoint in question
-                value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, currentWidth))
-            elif (spaces + currentWidth) > spacesCount then
-                // The space is a slice of a SnapshotPoint value.  Have to determine the
-                // offset
-                let before = spacesCount - spaces
-                value <- Some (SnapshotOverlapPoint(point.StartPoint, before, currentWidth))
-            else
-                point <- point.Add 1
-                spaces <- spaces + currentWidth
-
-                if point.IsInsideLineBreak || point.IsEndPoint then
-                    value <- Some (SnapshotOverlapPoint(point.StartPoint, 0, 0))
-
-        Option.get value
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -2109,7 +1999,6 @@ module SnapshotLineUtil =
         SnapshotSpan(point,length)
 
     /// Get the indent point of the ITextSnapshotLine
-    /// CTODO: should this be GetIndentColumn? :
     let GetIndentPoint line =
         line 
         |> GetPoints SearchPath.Forward
@@ -2230,30 +2119,15 @@ module SnapshotLineUtil =
 
     /// Get a SnapshotPoint representing the nth characters into the line or the 
     /// End point of the line.  This is done using positioning 
-    let GetColumnOrEnd column (line: ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.End.Position then line.End
-        else line.Start.Add(column)
+    let GetOffsetOrEnd offset (line: ITextSnapshotLine) = 
+        if line.Start.Position + offset >= line.End.Position then line.End
+        else line.Start.Add(offset)
 
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
-    let GetColumnOrEndIncludingLineBreak column (line: ITextSnapshotLine) = 
-        if line.Start.Position + column >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
-        else line.Start.Add(column)
-
-    // Get the point in the given line which is just before the character that 
-    // overlaps the specified column into the line, as well as the position of 
-    // that column inside the character. Returns End if it goes beyond the last 
-    // point in the string
-    let GetSpaceWithOverlapOrEnd (line: ITextSnapshotLine) spacesCount tabStop = 
-        SnapshotOverlapPoint.GetSpaceWithOverlapOrEnd line spacesCount tabStop
-
-    // Get the point in the given line which is just before the character that 
-    // overlaps the specified column into the line. Returns End if it goes 
-    // beyond the last point in the string
-    // CTODO: delete
-    let GetSpaceOrEnd line spacesCount tabStop = 
-        let overlapPoint = GetSpaceWithOverlapOrEnd line spacesCount tabStop
-        overlapPoint.Point
+    let GetOffsetOrEndIncludingLineBreak offset (line: ITextSnapshotLine) = 
+        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        else line.Start.Add(offset)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -2401,7 +2275,6 @@ module SnapshotPointUtil =
         line.ExtentIncludingLineBreak
 
     // Get the span of the character which is pointed to by the point
-    // CTODO: delete? 
     let GetCharacterSpan point =
         let line = GetContainingLine point
         SnapshotLineUtil.GetCharacterSpan line point
@@ -2428,7 +2301,6 @@ module SnapshotPointUtil =
             point.Subtract(1)
 
     /// Get the next character span in the buffer with wrap
-    /// CTODO: delete?
     let GetNextCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let nextPoint =
@@ -2440,7 +2312,6 @@ module SnapshotPointUtil =
             nextPoint
 
     /// Get the previous character span in the buffer with wrap
-    /// CTODO: delete?
     let GetPreviousCharacterSpanWithWrap point =
         let snapshot = GetSnapshot point
         let currentPoint =
@@ -2470,17 +2341,14 @@ module SnapshotPointUtil =
         new SnapshotSpan(start, last.EndIncludingLineBreak)
 
     /// Get the line and column information for a given SnapshotPoint
-    /// CTODO: this API is not actually column based
-    let GetLineColumn point = 
+    let GetLineAndOffset point = 
         let line = GetContainingLine point
-        let column = point.Position - line.Start.Position
-        (line.LineNumber,column)
+        let offset = point.Position - line.Start.Position
+        (line, offset)
 
-    /// Get the column number 
-    /// CTODO: this API is not actually column based
-    let GetColumn point = 
-        let _, column = GetLineColumn point 
-        column
+    let GetLineNumberAndOffset point = 
+        let line, offset = GetLineAndOffset point
+        (line.LineNumber, offset)
 
     let GetLineOffset point = 
         let line = GetContainingLine point
@@ -2678,7 +2546,6 @@ module SnapshotPointUtil =
     /// Get a character span relative to a starting point backward or forward
     /// 'count' characters skipping line breaks if 'skipLineBreaks' is
     /// specified.  Goes as far as possible in the specified direction
-    /// CTODO: this method is on the wrong type
     let GetRelativeColumn (column: SnapshotColumn) count skipLineBreaks =
 
         /// Get the relative column in 'direction' using predicate 'isEnd'
@@ -2723,7 +2590,6 @@ module SnapshotPointUtil =
         else right,left
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
-    /// CTODO: delete
     let GetSpacesToPoint (point: SnapshotPoint) tabStop = 
         let column = SnapshotColumn(point)
         column.GetSpacesToColumn tabStop
@@ -2766,23 +2632,25 @@ module VirtualSnapshotPointUtil =
     let IsInVirtualSpace (point: VirtualSnapshotPoint) = point.IsInVirtualSpace
 
     /// Get the line number and column number of the specified virtual point
-    /// CTODO: delete
-    let GetLineColumn (point: VirtualSnapshotPoint) =
+    let GetLineAndOffset (point: VirtualSnapshotPoint) =
         let line = GetContainingLine point
-        let realColumn = point.Position.Position - line.Start.Position
-        line.LineNumber, realColumn + point.VirtualSpaces
+        let realOffset = point.Position.Position - line.Start.Position
+        line, realOffset + point.VirtualSpaces
+
+    /// Get the line number and column number of the specified virtual point
+    let GetLineNumberAndOffset (point: VirtualSnapshotPoint) =
+        let line, offset = GetLineAndOffset point
+        (line.LineNumber, offset)
 
     /// Get the column number of the specified virtual point
-    /// CTODO: delete
-    let GetColumnNumber (point: VirtualSnapshotPoint) =
-        match GetLineColumn point with
-        | _, columnNumber -> columnNumber
+    let GetLineOffset (point: VirtualSnapshotPoint) =
+        let _, offset = GetLineAndOffset point
+        offset
 
     /// Add count to the VirtualSnapshotPoint keeping it on the same line
     let AddOnSameLine count point =
-        let line = GetContainingLine point
-        let columnNumber = GetColumnNumber point
-        VirtualSnapshotPoint(line, columnNumber + count)
+        let line, offset = GetLineAndOffset point
+        VirtualSnapshotPoint(line, offset + count)
 
     /// Subtract count to the VirtualSnapshotPoint keeping it on the same line
     let SubtractOnSameLine count point = AddOnSameLine -count point
@@ -2807,8 +2675,8 @@ module VirtualSnapshotPointUtil =
 
     /// Get the count of spaces to get to the specified point in its line when tabs are expanded
     let GetSpacesToPoint (point: VirtualSnapshotPoint) tabStop =
-        let spaces = SnapshotPointUtil.GetSpacesToPoint point.Position tabStop
-        spaces + point.VirtualSpaces
+        let column = VirtualSnapshotColumn(point)
+        column.GetSpacesToColumn(tabStop)
 
     /// Get the next character span in the buffer with wrap
     let GetNextCharacterSpanWithWrap (point: VirtualSnapshotPoint) =
@@ -2823,22 +2691,6 @@ module VirtualSnapshotPointUtil =
             VirtualSnapshotPoint(point.Position, point.VirtualSpaces - 1)
         else
             VirtualSnapshotPoint(SnapshotPointUtil.GetPreviousCharacterSpanWithWrap point.Position)
-
-/// Contains operations that act on snapshot lines but return virtual snapshot points
-module VirtualSnapshotLineUtil =
-
-    // Get the virtual point in the given line which is just before the character that
-    // overlaps the specified column into the line
-    let GetSpace line spacesCount tabStop =
-        let overlapPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line spacesCount tabStop
-        let point = VirtualSnapshotPointUtil.OfPoint overlapPoint.Point
-        if point.Position = line.End then
-            let column = SnapshotColumn(line.End)
-            let realSpaces = column.GetSpacesToColumn tabStop
-            let virtualSpaces = spacesCount - realSpaces
-            VirtualSnapshotPointUtil.AddOnSameLine virtualSpaces point
-        else
-            point
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -3035,7 +2887,6 @@ module BufferGraphUtil =
 type SnapshotData = {
 
     /// VirtualSnapshotPoint for the Caret
-    /// CTODO: delete
     CaretVirtualPoint: VirtualSnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
@@ -3045,10 +2896,7 @@ type SnapshotData = {
     CurrentSnapshot: ITextSnapshot
 } with
 
-    /// CTODO: delete
     member x.CaretPoint = x.CaretVirtualPoint.Position
-
-    /// CTODO: make these record members. As properties they are re-calculated every time
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
     member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 
