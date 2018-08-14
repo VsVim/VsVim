@@ -1803,14 +1803,6 @@ type BlockSpan =
     /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
 
-    /// CTODO: delete this and move to BlockColumnSpans
-    member x.BlockOverlapSpans = 
-        let x = x
-        x.GetBlockSpansCore (fun line beforeSpaces ->
-            let startPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line beforeSpaces x._tabStop
-            let endPoint = SnapshotLineUtil.GetSpaceWithOverlapOrEnd line (beforeSpaces + x.SpacesLength) x._tabStop 
-            SnapshotOverlapSpan(startPoint, endPoint))
-
     override x.ToString() =
         sprintf "Point: %s Spaces: %d Height: %d" (x.Start.ToString()) x._spaces x._height
 
@@ -1918,10 +1910,6 @@ type VisualSpan =
         | VisualSpan.Character characterSpan -> Seq.singleton (SnapshotOverlapColumnSpan(characterSpan.ColumnSpan, tabStop))
         | VisualSpan.Line range -> Seq.singleton (SnapshotOverlapColumnSpan(range.ColumnExtentIncludingLineBreak, tabStop))
         | VisualSpan.Block blockSpan -> blockSpan.BlockOverlapColumnSpans :> SnapshotOverlapColumnSpan seq
-
-    member x.GetOverlapSpans(tabStop: int) =
-        (x.GetOverlapColumnSpans tabStop)
-        |> Seq.map (fun span -> SnapshotOverlapSpan(span))
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 

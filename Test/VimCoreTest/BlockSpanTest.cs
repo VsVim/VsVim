@@ -121,8 +121,6 @@ namespace Vim.UnitTest
                 string[] lines = new string[] { "hello", "h\u0327e\u0301\u200bllo\u030a\u0305" };
                 Create(lines);
                 var blockSpan = _textBuffer.GetBlockSpan(0, length: 6, startLine: 0, lineCount: 2, tabStop: 4);
-                var span = blockSpan.BlockOverlapSpans.Rest.Head;
-                Assert.Equal(lines[1], blockSpan.BlockOverlapSpans.Rest.Head.InnerSpan.GetText());
                 Assert.Equal(lines[1], blockSpan.BlockOverlapColumnSpans.Rest.Head.InnerSpan.GetText());
             }
         }
@@ -136,7 +134,7 @@ namespace Vim.UnitTest
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(position: 2), tabStop: 4, spaces: 3, height: 2);
                 Assert.Equal(
                     new[] { "uck", "  d" },
-                    blockSpan.BlockOverlapSpans.Select(x => x.GetText()));
+                    blockSpan.BlockOverlapColumnSpans.Select(x => x.GetText()));
             }
         }
     }
