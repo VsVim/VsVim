@@ -49,6 +49,9 @@ type VimRegexReplaceCount =
 /// Data for a replace operation
 type VimRegexReplaceData = {
 
+    /// The replacement of any previous substitute command
+    PreviousReplacement: string
+
     /// When the '\r' replace sequence is used what should the replace string be.  This
     /// is usually contextual to the point in the IVimBuffer
     NewLine: string
@@ -61,5 +64,5 @@ type VimRegexReplaceData = {
 
 } with
 
-    static member Default = { NewLine = Environment.NewLine; Magic = false; Count = VimRegexReplaceCount.One }
+    static member Default = { PreviousReplacement = ""; NewLine = Environment.NewLine; Magic = false; Count = VimRegexReplaceCount.One }
 
