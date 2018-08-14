@@ -808,13 +808,11 @@ type internal CommonOperations
         x.MoveCaretToVirtualPoint point.VirtualStartPoint viewFlags
 
     /// Move the caret to the specified point with the specified view properties
-    /// CTODO: delete
     member x.MoveCaretToPoint (point: SnapshotPoint) viewFlags =
         let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
         x.MoveCaretToVirtualPoint virtualPoint viewFlags
 
     /// Move the caret to the specified virtual point with the specified view properties
-    /// CTODO: delete
     member x.MoveCaretToVirtualPoint (point: VirtualSnapshotPoint) viewFlags =
 
         // In the case where we want to expand the text we are moving to we need to do the expansion

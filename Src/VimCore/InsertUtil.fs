@@ -88,7 +88,7 @@ type internal InsertUtil
                 if line.LineNumber <> x.CaretLineNumber then
                     None
                 else
-                    match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
+                    match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = false) with
                     | None -> None
                     | Some column -> Some column.CodePoint
 
@@ -383,7 +383,7 @@ type internal InsertUtil
         x.Insert s
 
     member x.InsertCharacterCore lineNumber isReplace =
-        match SnapshotColumn.TryCreateForLineAndColumnNumber(x.CurrentSnapshot, lineNumber, x.CaretColumn.ColumnNumber) with
+        match SnapshotColumn.GetForLineAndColumnNumber(x.CurrentSnapshot, lineNumber, x.CaretColumn.ColumnNumber) with
         | None -> 
             _operations.Beep()
             CommandResult.Error

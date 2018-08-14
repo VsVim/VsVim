@@ -761,7 +761,7 @@ type SnapshotColumn =
     static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other)
     static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SnapshotColumn>.Default.Equals(this, other))
 
-    static member TryCreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
+    static member GetForColumnNumber(line: ITextSnapshotLine, columnNumber: int, ?includeLineBreak) =
         let includeLineBreak = defaultArg includeLineBreak false
         let mutable column = SnapshotColumn(line)
         let mutable count = columnNumber
@@ -785,19 +785,18 @@ type SnapshotColumn =
 
     static member GetLineEnd(line: ITextSnapshotLine) = SnapshotColumn(line, line.End)
 
-    // CTODO: Consider the API naming her. Everything else is Get
-    static member CreateForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =
-        match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = true) with
+    static member GetForColumnNumberOrEnd(line: ITextSnapshotLine, columnNumber: int) =
+        match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = true) with
         | Some column -> column
         | None -> SnapshotColumn(line.End)
 
-    static member TryCreateForLineAndColumnNumber((snapshot: ITextSnapshot), lineNumber: int, columnNumber: int, ?includeLineBreak) =
+    static member GetForLineAndColumnNumber((snapshot: ITextSnapshot), lineNumber: int, columnNumber: int, ?includeLineBreak) =
         let includeLineBreak = defaultArg includeLineBreak false
         if lineNumber < 0 || lineNumber >= snapshot.LineCount then
             None
         else
             let line = snapshot.GetLineFromLineNumber(lineNumber)
-            SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak)
+            SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak)
 
     /// Get a sequence of columns which begins with the specified searchColumn in the direction provided
     /// by serachPath. The searchColumn will always be included in the results except if:
@@ -1149,15 +1148,15 @@ type VirtualSnapshotColumn =
     /// boundary only count for the number of spaces to get to the next tabstop boundary. The column
     /// number is allowed to extend into virtual spaces.
     static member GetSpacesToColumnNumber(line: ITextSnapshotLine, columnNumber: int, tabStop: int) =
-        let column = SnapshotColumn.CreateForColumnNumberOrEnd(line, columnNumber)
+        let column = SnapshotColumn.GetForColumnNumberOrEnd(line, columnNumber)
         let remainingSpaces = columnNumber - column.ColumnNumber
         let spaces = column.GetSpacesToColumn tabStop
         remainingSpaces + spaces
 
     /// Create for the specified column number in the line. Any extra columns past the end will betreated
     /// as virtual spaces
-    static member CreateForColumnNumber(line: ITextSnapshotLine, columnNumber: int) =
-        match SnapshotColumn.TryCreateForColumnNumber(line, columnNumber, includeLineBreak = false) with
+    static member GetForColumnNumber(line: ITextSnapshotLine, columnNumber: int) =
+        match SnapshotColumn.GetForColumnNumber(line, columnNumber, includeLineBreak = false) with
         | Some column -> 
             VirtualSnapshotColumn(column, 0)
         | None -> 
@@ -2899,7 +2898,6 @@ module BufferGraphUtil =
 type SnapshotData = {
 
     /// VirtualSnapshotPoint for the Caret
-    /// CTODO: delete
     CaretVirtualPoint: VirtualSnapshotPoint
 
     /// ITextSnapshotLine on which the caret resides
@@ -2909,10 +2907,7 @@ type SnapshotData = {
     CurrentSnapshot: ITextSnapshot
 } with
 
-    /// CTODO: delete
     member x.CaretPoint = x.CaretVirtualPoint.Position
-
-    /// CTODO: make these record members. As properties they are re-calculated every time
     member x.CaretColumn = SnapshotColumn(x.CaretPoint)
     member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 

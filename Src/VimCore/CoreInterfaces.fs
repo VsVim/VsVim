@@ -1650,7 +1650,7 @@ type CharacterSpan =
                 else
                     x.LastLineMaxPositionCount
 
-            let virtualColumn = VirtualSnapshotColumn.CreateForColumnNumber(lastLine, offset)
+            let virtualColumn = VirtualSnapshotColumn.GetForColumnNumber(lastLine, offset)
             virtualColumn.VirtualStartPoint
         else
             x.End |> VirtualSnapshotPointUtil.OfPoint
@@ -1828,10 +1828,8 @@ type BlockSpan =
             let endColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
 
-    /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.Span)
 
-    /// CTODO: delete this and move to BlockColumnSpans
     member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
 
     override x.ToString() =
