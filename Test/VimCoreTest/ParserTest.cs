@@ -1894,7 +1894,8 @@ let x = 42
             public void Parse_WriteAll_Simple()
             {
                 var writeAll = ParseLineCommand("wall").AsWriteAll();
-                Assert.False(writeAll.Item);
+                Assert.False(writeAll.Item1);
+                Assert.False(writeAll.Item2);
             }
 
             /// <summary>
@@ -1904,7 +1905,27 @@ let x = 42
             public void Parse_WriteAll_WithBang()
             {
                 var writeAll = ParseLineCommand("wall!").AsWriteAll();
-                Assert.True(writeAll.Item);
+                Assert.True(writeAll.Item1);
+                Assert.False(writeAll.Item2);
+            }
+
+            [Fact]
+            public void Parse_WriteQuitAll_Simple()
+            {
+                var writeAll = ParseLineCommand("wqall").AsWriteAll();
+                Assert.False(writeAll.Item1);
+                Assert.True(writeAll.Item2);
+            }
+
+            /// <summary>
+            /// Parse out the :wall command with the ! option
+            /// </summary>
+            [Fact]
+            public void Parse_WriteQuitAll_WithBang()
+            {
+                var writeAll = ParseLineCommand("wqall!").AsWriteAll();
+                Assert.True(writeAll.Item1);
+                Assert.True(writeAll.Item2);
             }
 
             /// <summary>

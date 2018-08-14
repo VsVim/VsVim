@@ -1477,10 +1477,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// Convert the SnapshotSpan into an EditSpan
         /// </summary>
-        public static EditSpan ToEditSpan(this SnapshotSpan span)
-        {
-            return EditSpan.NewSingle(span);
-        }
+        public static EditSpan ToEditSpan(this SnapshotSpan span) => ToEditSpan(new SnapshotColumnSpan(span));
+
+        /// <summary>
+        /// Convert the SnapshotSpan into an EditSpan
+        /// </summary>
+        public static EditSpan ToEditSpan(this SnapshotColumnSpan span) => EditSpan.NewSingle(span);
 
         #endregion
 

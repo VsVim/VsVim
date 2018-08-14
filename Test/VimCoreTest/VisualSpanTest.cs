@@ -472,7 +472,7 @@ namespace Vim.UnitTest
                     Create("big dog", "big cat", "big tree", "big fish");
                     var blockSpan = _textBuffer.GetBlockSpan(1, _vimBuffer.LocalSettings.TabStop, 0, 2);
 
-                    foreach (var spanWithOverlap in blockSpan.BlockOverlapSpans)
+                    foreach (var spanWithOverlap in blockSpan.BlockOverlapColumnSpans)
                     {
                         Assert.Equal(0, spanWithOverlap.Start.SpacesAfter);
                         Assert.Equal(0, spanWithOverlap.End.SpacesBefore);
@@ -487,7 +487,7 @@ namespace Vim.UnitTest
                 {
                     Create("big dog", "b\u3042 cat", "b\u3044 tree", "b\u3046 fish");
                     var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
-                    var spans = blockSpan.BlockOverlapSpans;
+                    var spans = blockSpan.BlockOverlapColumnSpans;
 
                     foreach (var spanWithOverlap in spans)
                     {
@@ -508,7 +508,7 @@ namespace Vim.UnitTest
                 {
                     Create("aiueo", "\u3042\u3044\u3046\u3048\u304A");
                     var blockSpan = _textBuffer.GetBlockSpan(column: 1, length: 2, startLine: 0, lineCount: 2, tabStop: _vimBuffer.LocalSettings.TabStop);
-                    var col = blockSpan.BlockOverlapSpans.ToReadOnlyCollection();
+                    var col = blockSpan.BlockOverlapColumnSpans.ToReadOnlyCollection();
 
                     Assert.False(col[0].HasOverlap);
                     Assert.Equal("iu", col[0].InnerSpan.GetText());
@@ -532,7 +532,7 @@ namespace Vim.UnitTest
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var actual = blockSpan.BlockOverlapSpans;
+                    var actual = blockSpan.BlockOverlapColumnSpans;
 
                     Assert.Equal(lines[1], actual.Rest.Head.InnerSpan.GetText());
                 }
@@ -548,7 +548,7 @@ namespace Vim.UnitTest
                     var expected = new List<Tuple<int, int>> {
                         Tuple.Create(0, 0),
                         Tuple.Create(0, _vimBuffer.LocalSettings.TabStop - 1) };
-                    var col = blockSpan.BlockOverlapSpans.ToReadOnlyCollection();
+                    var col = blockSpan.BlockOverlapColumnSpans.ToReadOnlyCollection();
 
                     Assert.False(col[0].HasOverlap);
 

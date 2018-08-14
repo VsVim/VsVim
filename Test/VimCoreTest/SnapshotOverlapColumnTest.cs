@@ -25,7 +25,7 @@ namespace Vim.UnitTest
                 public void TabStart()
                 {
                     Create("\t");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 4);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 4, tabStop: 4);
                     Assert.Equal(0, point.SpacesBefore);
                     Assert.Equal(3, point.SpacesAfter);
                 }
@@ -34,7 +34,7 @@ namespace Vim.UnitTest
                 public void TabEnd()
                 {
                     Create("\t");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 3, totalSpaces: 4);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 3, totalSpaces: 4, tabStop: 4);
                     Assert.Equal(3, point.SpacesBefore);
                     Assert.Equal(0, point.SpacesAfter);
                 }
@@ -43,7 +43,7 @@ namespace Vim.UnitTest
                 public void TabMiddle()
                 {
                     Create("\t");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 1, totalSpaces: 4);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 1, totalSpaces: 4, tabStop: 4);
                     Assert.Equal(1, point.SpacesBefore);
                     Assert.Equal(2, point.SpacesAfter);
                     Assert.Equal(4, point.TotalSpaces);
@@ -56,7 +56,7 @@ namespace Vim.UnitTest
                 public void Simple()
                 {
                     Create("cat");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 1);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(0), beforeSpaces: 0, totalSpaces: 1, tabStop: 4);
                     Assert.Equal(0, point.SpacesBefore);
                     Assert.Equal(0, point.SpacesAfter);
                 }
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 public void SimpleNonColumnZero()
                 {
                     Create("cat");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 0, totalSpaces: 1);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetColumnFromPosition(1), beforeSpaces: 0, totalSpaces: 1, tabStop: 4);
                     Assert.Equal(0, point.SpacesBefore);
                     Assert.Equal(0, point.SpacesAfter);
                 }
@@ -77,11 +77,35 @@ namespace Vim.UnitTest
                 public void EndOfBuffer()
                 {
                     Create("cat");
-                    var point = new SnapshotOverlapColumn(_textBuffer.GetEndColumn(), 0, 0);
+                    var point = new SnapshotOverlapColumn(_textBuffer.GetEndColumn(), 0, 0, tabStop: 4);
                     Assert.Equal(0, point.TotalSpaces);
                     Assert.Equal(0, point.SpacesBefore);
                     Assert.Equal(0, point.SpacesAfter);
                 }
+            }
+        }
+
+        public sealed class WithTabStopTest : SnapshotOverlapColumnTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                Create("dog");
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 0, tabStop: 4);
+                Assert.Equal(4, column.TabStop);
+                Assert.Equal(8, column.WithTabStop(8).TabStop);
+            }
+
+            [WpfFact]
+            public void WithTab()
+            {
+                Create("\tdog");
+                var column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), spaces: 2, tabStop: 4);
+                Assert.Equal(4, column.TabStop);
+                Assert.Equal(2, column.SpacesBefore);
+                column = column.WithTabStop(1);
+                Assert.True(column.Column.IsCharacter('o'));
+                Assert.Equal(0, column.SpacesBefore);
             }
         }
 

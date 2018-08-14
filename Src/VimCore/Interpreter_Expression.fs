@@ -66,6 +66,11 @@ type VariableValue =
 
 type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
+[<RequireQualifiedAccess>]
+type EvaluateResult = 
+    | Succeeded of VariableValue
+    | Failed of string
+
 /// The set of events Vim supports.  Defined in ':help autocmd-events'
 ///
 /// Right now we only support a very limited set of autocmd events.  Enough to 
@@ -742,7 +747,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Write of LineRangeSpecifier * bool * FileOption list * string option
 
     /// Write out all changed buffers
-    | WriteAll of bool
+    | WriteAll of bool * bool
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option
@@ -781,6 +786,9 @@ type IVimInterpreter =
 
     /// Run the Expression
     abstract RunExpression: expression: Expression -> VariableValue
+
+    /// Evaluate the text as an expression and return its value
+    abstract EvaluateExpression: text: string -> EvaluateResult
 
     /// Run the given script 
     abstract RunScript: lines: string[] -> unit

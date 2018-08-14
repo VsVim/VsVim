@@ -206,7 +206,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal bool ShouldSkip(CommandKeyBinding binding)
         {
             var scope = binding.KeyBinding.Scope;
-            if (!_includeAllScopes && _scopeData.GetScopeKind(scope) == ScopeKind.Unknown)
+            if (!_includeAllScopes && (_scopeData.GetScopeKind(scope) == ScopeKind.Unknown || _scopeData.GetScopeKind(scope) == ScopeKind.SolutionExplorer))
             {
                 return true;
             }

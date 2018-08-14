@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             public void CharacterIntoLineBreak()
             {
                 var textBuffer = CreateTextBuffer("dog", "");
-                var sel = StoredVisualSelection.NewCharacter(_width: 20);
+                var sel = StoredVisualSelection.NewCharacter(width: 20);
                 var visualSpan = sel.GetVisualSelection(textBuffer.GetStartPoint(), 1).VisualSpan;
                 var span = visualSpan.Spans.Single();
                 Assert.Equal(textBuffer.GetPointInLine(line: 1, column: 0), span.End);
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
             public void CharacterLineIntoLineBreak()
             {
                 var textBuffer = CreateTextBuffer("dog", "cat", "fish", "t");
-                var sel = StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 1);
+                var sel = StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: 1);
                 var point = textBuffer.GetPointInLine(line: 2, column: 2);
                 var visualSpan = sel.GetVisualSelection(point, count: 1).VisualSpan;
                 var span = visualSpan.Spans.Single();
@@ -68,7 +68,7 @@ namespace Vim.UnitTest
             public void ReverseSelection()
             {
                 var textBuffer = CreateTextBuffer("dog", "cat", "fish", "tree");
-                var sel = StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: -1);
+                var sel = StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: -1);
                 var point = textBuffer.GetPointInLine(line: 3, column: 2);
                 var visualSelection = sel.GetVisualSelection(point, count: 1);
                 Assert.Equal(SearchPath.Backward, visualSelection.AsCharacter().Item2);
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
                     textBuffer.GetPointInLine(line: 0, column: 2),
                     textBuffer.GetPointInLine(line: 1, column: 1));
                 var sel = StoredVisualSelection.CreateFromVisualSpan(VisualSpan.NewCharacter(characterSpan));
-                Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: -2), sel);
+                Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: -2), sel);
             }
 
             [WpfFact]
@@ -99,9 +99,9 @@ namespace Vim.UnitTest
                 var characterSpan = new CharacterSpan(
                     textBuffer.GetPointInLine(line: 0, column: 2),
                     lineCount: 2,
-                    lastLineLength: 2);
+                    lastLineMaxPositionCount: 2);
                 var sel = StoredVisualSelection.CreateFromVisualSpan(VisualSpan.NewCharacter(characterSpan));
-                Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: -1), sel);
+                Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: -1), sel);
             }
         }
     }

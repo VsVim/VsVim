@@ -111,6 +111,9 @@ type SubstituteFlags =
     /// Print the last line as if :list was used
     | PrintLastWithList = 0x1000
 
+    /// Perform a literal replacement (not expanding special characters)
+    | LiteralReplacement = 0x2000
+
 type SubstituteData = {
     SearchPattern: string
     Substitute: string

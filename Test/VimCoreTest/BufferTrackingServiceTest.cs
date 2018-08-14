@@ -33,7 +33,7 @@ namespace Vim.UnitTest
 
             private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
             {
-                return _bufferTrackingServiceRaw.Create(buffer, line, column, LineColumnTrackingMode.Default);
+                return _bufferTrackingServiceRaw.CreateLineColumn(buffer, line, column, LineColumnTrackingMode.Default);
             }
 
             private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)

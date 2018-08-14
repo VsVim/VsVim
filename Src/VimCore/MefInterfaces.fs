@@ -69,6 +69,12 @@ type ITrackingLineColumn =
     /// Get the point as a VirtualSnapshot point on the current ITextSnapshot
     abstract VirtualPoint: VirtualSnapshotPoint option
 
+    /// Get the column as it relates to current Snapshot.
+    abstract Column: SnapshotColumn option 
+
+    /// Get the column as a VirtualSnapshotColumn point on the current ITextSnapshot
+    abstract VirtualColumn: VirtualSnapshotColumn option
+
     /// Needs to be called when you are done with the ITrackingLineColumn
     abstract Close: unit -> unit
 
@@ -103,7 +109,10 @@ type ITrackingVisualSelection =
 type IBufferTrackingService = 
 
     /// Create an ITrackingLineColumn at the given position in the buffer.  
-    abstract CreateLineColumn: textBuffer: ITextBuffer -> line: int -> column: int -> LineColumnTrackingMode -> ITrackingLineColumn
+    abstract CreateLineColumn: textBuffer: ITextBuffer -> lineNumber: int -> offset: int -> mode: LineColumnTrackingMode -> ITrackingLineColumn
+
+    /// Create an ITrackingLineColumn at the given SnaphsotColumn
+    abstract CreateColumn: column: SnapshotColumn -> mode: LineColumnTrackingMode -> ITrackingLineColumn
 
     /// Create an ITrackingVisualSpan for the given VisualSpan
     abstract CreateVisualSpan: visualSpan: VisualSpan -> ITrackingVisualSpan
