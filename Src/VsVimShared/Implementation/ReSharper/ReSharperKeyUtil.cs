@@ -17,11 +17,19 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
         private readonly IVimBuffer _vimBuffer;
         private readonly IVimBufferCoordinator _vimBufferCoordinator;
+        private bool _bufferSawEscape;
 
         private ReSharperKeyUtil(IVimBufferCoordinator vimBufferCoordinator)
         {
             _vimBufferCoordinator = vimBufferCoordinator;
             _vimBuffer = vimBufferCoordinator.VimBuffer;
+            _vimBuffer.KeyInputStart += OnBufferKeyInputStart;
+        }
+
+        private void OnBufferKeyInputStart(object sender, KeyInputStartEventArgs e)
+        {
+            if (e.KeyInput.Key == VimKey.Escape)
+                _bufferSawEscape = true;
         }
 
         internal static ReSharperKeyUtil GetOrCreate(IVimBufferCoordinator vimBufferCoordinator)
@@ -38,13 +46,15 @@ namespace Vim.VisualStudio.Implementation.ReSharper
         {
             if (args.Key == Key.Escape)
             {
-                // The Escape key was pressed and we are still inside of Insert mode.  This means that R# 
+                // The Escape key was pressed and we are still inside of Insert mode.  If the buffer didn't already "see" this key then R# 
                 // handled the key stroke to dismiss intellisense.  Leave insert mode now to complete the operation
-                if (_vimBuffer.ModeKind == ModeKind.Insert)
+                if (_vimBuffer.ModeKind == ModeKind.Insert && !_bufferSawEscape)
                 {
                     VimTrace.TraceInfo("ReSharperKeyUtil::PreviewKeyUp handled escape swallowed by ReSharper");
                     _vimBuffer.Process(KeyInputUtil.EscapeKey);
                 }
+
+                _bufferSawEscape = false;
             }
             base.PreviewKeyUp(args);
         }
