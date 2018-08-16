@@ -101,6 +101,7 @@
     <Compile Include="MacroRecorder.fs" />
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
+    <Compile Include="DigraphUtil.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="VimSettings.fsi" />
     <Compile Include="VimSettings.fs" />
@@ -123,7 +124,6 @@
     <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <!-- Using element form vs. attributes to work around NuGet restore bug
          https://github.com/NuGet/Home/issues/6367 

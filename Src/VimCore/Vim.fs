@@ -681,6 +681,8 @@ type internal Vim
         _globalSettings.VimRc <- System.String.Empty
         _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
 
+        DigraphUtil.AddToMap _keyMap DigraphUtil.DefaultDigraphs
+
         match x.LoadVimRcFileContents() with
         | None -> 
             _vimRcLocalSettings <- LocalSettings(_globalSettings) 
