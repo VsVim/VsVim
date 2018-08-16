@@ -36,6 +36,7 @@
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="KeyNotationUtil.fsi" />
     <Compile Include="KeyNotationUtil.fs" />
+    <Compile Include="DigraphUtil.fs" />
     <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="HistoryUtil.fsi" />
@@ -101,7 +102,6 @@
     <Compile Include="MacroRecorder.fs" />
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
-    <Compile Include="DigraphUtil.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="VimSettings.fsi" />
     <Compile Include="VimSettings.fs" />

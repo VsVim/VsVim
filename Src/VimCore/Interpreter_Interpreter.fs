@@ -644,14 +644,9 @@ type VimInterpreter
     member x.RunFunction (func: Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
 
+    /// Run the ':digraphs' command
     member x.RunDigraphs digraphList =
-
-        let addDigraph (pair: string, code: int) =
-            let text = System.Char.ConvertFromUtf32(code)
-            _keyMap.MapWithNoRemap pair text KeyRemapMode.Digraph |> ignore
-
-        digraphList
-        |> Seq.iter addDigraph
+        DigraphUtil.AddToMap _keyMap digraphList
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
