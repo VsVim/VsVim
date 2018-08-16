@@ -180,6 +180,12 @@ type ActiveEditItem =
     /// In the middle of an undo operation.  Waiting for the next key
     | Undo 
 
+    /// In the middle of a digraph operation. Wait for the first digraph key
+    | Digraph1
+
+    /// In the middle of a digraph operation. Wait for the second digraph key
+    | Digraph2 of KeyInput
+
     /// No active items
     | None
 
@@ -315,6 +321,7 @@ type internal InsertMode
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
+                ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -899,6 +906,12 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Start a paste session in insert mode
+    member x.ProcessDigraphStart keyInput =
+        x.CancelWordCompletionSession()
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph1 }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Start a undo session in insert mode
     member x.ProcessUndoStart keyInput =
         x.CancelWordCompletionSession()
@@ -942,6 +955,43 @@ type internal InsertMode
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Process the second key of a digraph command
+    member x.ProcessDigraph1 firstKeyInput = 
+        if firstKeyInput = KeyInputUtil.EscapeKey then
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        elif firstKeyInput.RawChar.IsNone then
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+            let keyInputSet = KeyInputSet(firstKeyInput)
+            let text = KeyNotationUtil.GetDisplayName firstKeyInput
+            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            x.RunInsertCommand (InsertCommand.Insert text) keyInputSet commandFlags |> ignore
+        else
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the third key of a digraph command
+    member x.ProcessDigraph2 secondKeyInput = 
+        if secondKeyInput = KeyInputUtil.EscapeKey then
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        else
+            match _sessionData.ActiveEditItem with
+            | ActiveEditItem.Digraph2 firstKeyInput ->
+                let keyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
+                match _vimBuffer.Vim.KeyMap.GetKeyMapping keyInputSet KeyRemapMode.Digraph with
+                | KeyMappingResult.Mapped mappedKeyInput ->
+                    let text =
+                        mappedKeyInput.KeyInputs
+                        |> Seq.map (fun keyInput -> string(keyInput.Char))
+                        |> String.concat ""
+                    let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                    x.RunInsertCommand (InsertCommand.Insert text) keyInputSet commandFlags |> ignore
+                | _ ->
+                    ()
+            | _ ->
+                ()
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Process the KeyInput value
     member x.Process keyInput = 
         _isInProcess <- true
@@ -975,6 +1025,10 @@ type internal InsertMode
 
         | ActiveEditItem.Undo ->
             x.ProcessUndo keyInput
+        | ActiveEditItem.Digraph1 ->
+            x.ProcessDigraph1 keyInput
+        | ActiveEditItem.Digraph2 _ ->
+            x.ProcessDigraph2 keyInput
 
     /// Record special marks associated with a new insert point
     member x.ResetInsertPoint () =

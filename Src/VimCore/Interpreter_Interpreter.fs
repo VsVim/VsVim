@@ -644,6 +644,15 @@ type VimInterpreter
     member x.RunFunction (func: Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
 
+    member x.RunDigraphs digraphList =
+
+        let addDigraph (pair: string, code: int) =
+            let text = System.Char.ConvertFromUtf32(code)
+            _keyMap.MapWithNoRemap pair text KeyRemapMode.Digraph |> ignore
+
+        digraphList
+        |> Seq.iter addDigraph
+
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
         // Get the printable info for the set of modes
@@ -670,6 +679,7 @@ type VimInterpreter
                 | KeyRemapMode.Command -> "c"
                 | KeyRemapMode.Language -> "l"
                 | KeyRemapMode.Insert -> "i"
+                | KeyRemapMode.Digraph -> "d"
 
         // Get the printable format for the KeyInputSet 
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
@@ -1812,6 +1822,7 @@ type VimInterpreter
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
+        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
