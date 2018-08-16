@@ -994,6 +994,35 @@ type internal InsertMode
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Process the third key of a digraph command
+    member x.ProcessDigraph2 secondKeyInput = 
+        try
+            if secondKeyInput = KeyInputUtil.EscapeKey then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                match _sessionData.ActiveEditItem with
+                | ActiveEditItem.Digraph2 firstKeyInput ->
+                    if firstKeyInput = KeyInputUtil.CharToKeyInput(' ') then
+                        char(int(secondKeyInput.Char) ||| 0x80)
+                        |> KeyInputUtil.CharToKeyInput
+                        |> (fun keyInput -> KeyInputSet(keyInput))
+                        |> x.InsertKeyInputSet
+                    else
+                        match x.TryInsertDigraph firstKeyInput secondKeyInput with
+                        | Some processResult ->
+                            processResult
+                        | None ->
+                            match x.TryInsertDigraph secondKeyInput firstKeyInput with
+                            | Some processResult ->
+                                processResult
+                            | None ->
+                                KeyInputSet(secondKeyInput)
+                                |> x.InsertKeyInputSet
+                | _ ->
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+        finally
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
     // Insert the raw characters associated with a key input set
     member x.InsertKeyInputSet (keyInputSet: KeyInputSet) =
         let insertCommand =
@@ -1014,33 +1043,6 @@ type internal InsertMode
             |> Some
         | _ ->
             None
-
-    /// Process the third key of a digraph command
-    member x.ProcessDigraph2 secondKeyInput = 
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-        if secondKeyInput = KeyInputUtil.EscapeKey then
-            ProcessResult.Handled ModeSwitch.NoSwitch
-        else
-            match _sessionData.ActiveEditItem with
-            | ActiveEditItem.Digraph2 firstKeyInput ->
-                if firstKeyInput = KeyInputUtil.CharToKeyInput(' ') then
-                    char(int(secondKeyInput.Char) ||| 0x80)
-                    |> KeyInputUtil.CharToKeyInput
-                    |> (fun keyInput -> KeyInputSet(keyInput))
-                    |> x.InsertKeyInputSet
-                else
-                    match x.TryInsertDigraph firstKeyInput secondKeyInput with
-                    | Some processResult ->
-                        processResult
-                    | None ->
-                        match x.TryInsertDigraph secondKeyInput firstKeyInput with
-                        | Some processResult ->
-                            processResult
-                        | None ->
-                            KeyInputSet(secondKeyInput)
-                            |> x.InsertKeyInputSet
-            | _ ->
-                ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the KeyInput value
     member x.Process keyInput = 
