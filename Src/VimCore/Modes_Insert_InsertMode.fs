@@ -877,13 +877,26 @@ type internal InsertMode
             match insertCommand.RightMostCommand with
             | InsertCommand.Insert text -> func text
             | InsertCommand.Back ->
-                match _globalSettings.Digraph, insertCommand.SecondRightMostCommand with
-                | true, Some (InsertCommand.Insert text) when text.Length > 0 -> 
-                    let firstKeyInput =
-                        text.[text.Length - 1]
-                        |> KeyInputUtil.CharToKeyInput
-                    x.TryInsertDigraph firstKeyInput keyInput
-                | _ -> None
+                if _globalSettings.Digraph && keyInput.RawChar.IsSome then
+                    match insertCommand.SecondRightMostCommand with
+                    | Some (InsertCommand.Insert text) when text.Length > 0 -> 
+
+                        // The user entered 'char1 <BS> char2' and digraphs are
+                        // enabled, so check for try to insert 'char1 char2' as
+                        // a digraph.
+                        let firstKeyInput =
+                            text.[text.Length - 1]
+                            |> KeyInputUtil.CharToKeyInput
+                        let secondKeyInput = keyInput
+                        match x.TryInsertDigraph firstKeyInput secondKeyInput with
+                        | Some processResult ->
+                            Some processResult
+                        | None ->
+                            x.TryInsertDigraph secondKeyInput firstKeyInput
+                    | _ ->
+                        None
+                else
+                    None
             | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
@@ -981,6 +994,7 @@ type internal InsertMode
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    // Insert the raw characters associated with a key input set
     member x.InsertKeyInputSet (keyInputSet: KeyInputSet) =
         let insertCommand =
             keyInputSet.KeyInputs
@@ -990,6 +1004,7 @@ type internal InsertMode
         let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
         x.RunInsertCommand insertCommand keyInputSet commandFlags
 
+    /// Try to process a key pair as a digraph and insert it
     member x.TryInsertDigraph firstKeyInput secondKeyInput =
         let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
         let keyMap = _vimBuffer.Vim.KeyMap

@@ -442,6 +442,35 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
                 Assert.False(_vimBuffer.InsertMode.IsInPaste);
             }
+
+            [WpfFact]
+            public void NoInline()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("e<BS>:");
+                Assert.Equal(":", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Inline()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                _vimBuffer.ProcessNotation("e<BS>:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void InlineSwapped()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                _vimBuffer.ProcessNotation(":<BS>e");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
         }
 
         /// <summary>
