@@ -154,6 +154,7 @@ type internal GlobalSettings() =
             (CaretOpacityName, CaretOpacityName, SettingValue.Number 100, SettingOptions.None)
             (ClipboardName, "cb", SettingValue.String "", SettingOptions.None)
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,", SettingOptions.FileName)
+            (DigraphName, "dg", SettingValue.Toggle false, SettingOptions.None)
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
             (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
@@ -339,6 +340,9 @@ type internal GlobalSettings() =
             with get() = _map.GetStringValue CurrentDirectoryPathName
             and set value = _map.TrySetValue CurrentDirectoryPathName (SettingValue.String value) |> ignore
         member x.CurrentDirectoryPathList = x.GetPathOptionList (_map.GetStringValue CurrentDirectoryPathName)
+        member x.Digraph
+            with get() = _map.GetBoolValue DigraphName
+            and set value = _map.TrySetValue DigraphName (SettingValue.Toggle value) |> ignore
         member x.GlobalDefault
             with get() = _map.GetBoolValue GlobalDefaultName
             and set value = _map.TrySetValue GlobalDefaultName (SettingValue.Toggle value) |> ignore

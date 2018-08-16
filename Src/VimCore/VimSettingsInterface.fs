@@ -15,6 +15,7 @@ module GlobalSettingNames =
     let CaretOpacityName = "vsvimcaret"
     let CurrentDirectoryPathName = "cdpath"
     let ClipboardName = "clipboard"
+    let DigraphName = "digraph"
     let GlobalDefaultName = "gdefault"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
@@ -327,6 +328,9 @@ and IVimGlobalSettings =
     /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options 
     /// are set
     abstract Clipboard: string with get, set
+
+    /// Whether digraphs are supported in insert mode without <C-k>
+    abstract Digraph: bool with get, set
 
     /// The parsed set of clipboard options
     abstract ClipboardOptions: ClipboardOptions with get, set

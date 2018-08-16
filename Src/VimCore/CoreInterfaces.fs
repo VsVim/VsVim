@@ -3390,6 +3390,14 @@ type InsertCommand  =
         | InsertCommand.Combined (_, right) -> right.RightMostCommand
         | _ -> x
 
+    member x.SecondRightMostCommand =
+        match x with
+        | InsertCommand.Combined (left, right) ->
+            match right with
+            | InsertCommand.Combined (_, right) -> right.SecondRightMostCommand
+            | _ -> Some left
+        | _ -> None
+
     /// Convert a TextChange value into the appropriate InsertCommand structure
     static member OfTextChange textChange = 
         match textChange with

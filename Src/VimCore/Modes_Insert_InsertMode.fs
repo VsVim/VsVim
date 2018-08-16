@@ -876,6 +876,14 @@ type internal InsertMode
         | Some insertCommand ->
             match insertCommand.RightMostCommand with
             | InsertCommand.Insert text -> func text
+            | InsertCommand.Back ->
+                match _globalSettings.Digraph, insertCommand.SecondRightMostCommand with
+                | true, Some (InsertCommand.Insert text) when text.Length > 0 -> 
+                    let firstKeyInput =
+                        text.[text.Length - 1]
+                        |> KeyInputUtil.CharToKeyInput
+                    x.TryInsertDigraph firstKeyInput keyInput
+                | _ -> None
             | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
@@ -973,32 +981,30 @@ type internal InsertMode
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    member x.InsertKeyInputSet (keyInputSet: KeyInputSet) =
+        let insertCommand =
+            keyInputSet.KeyInputs
+            |> Seq.map (fun keyInput -> string(keyInput.Char))
+            |> String.concat ""
+            |> InsertCommand.Insert
+        let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+        x.RunInsertCommand insertCommand keyInputSet commandFlags
+
+    member x.TryInsertDigraph firstKeyInput secondKeyInput =
+        let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
+        let keyMap = _vimBuffer.Vim.KeyMap
+        match keyMap.GetKeyMapping digraphKeyInputSet KeyRemapMode.Digraph with
+        | KeyMappingResult.Mapped mappedKeyInputSet ->
+            x.InsertKeyInputSet mappedKeyInputSet
+            |> Some
+        | _ ->
+            None
+
     /// Process the third key of a digraph command
     member x.ProcessDigraph2 secondKeyInput = 
-
-        let insertKeyInputSet (keyInputSet: KeyInputSet) =
-            let insertCommand =
-                keyInputSet.KeyInputs
-                |> Seq.map (fun keyInput -> string(keyInput.Char))
-                |> String.concat ""
-                |> InsertCommand.Insert
-            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-            x.RunInsertCommand insertCommand keyInputSet commandFlags
-            |> ignore
-
-        let TryInsertDigraph firstKeyInput secondKeyInput =
-            let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
-            let keyMap = _vimBuffer.Vim.KeyMap
-            match keyMap.GetKeyMapping digraphKeyInputSet KeyRemapMode.Digraph with
-            | KeyMappingResult.Mapped mappedKeyInputSet ->
-                mappedKeyInputSet
-                |> insertKeyInputSet
-                true
-            | _ ->
-                false
-
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
         if secondKeyInput = KeyInputUtil.EscapeKey then
-            ()
+            ProcessResult.Handled ModeSwitch.NoSwitch
         else
             match _sessionData.ActiveEditItem with
             | ActiveEditItem.Digraph2 firstKeyInput ->
@@ -1006,19 +1012,20 @@ type internal InsertMode
                     char(int(secondKeyInput.Char) ||| 0x80)
                     |> KeyInputUtil.CharToKeyInput
                     |> (fun keyInput -> KeyInputSet(keyInput))
-                    |> insertKeyInputSet
-                elif TryInsertDigraph firstKeyInput secondKeyInput then
-                    ()
-                elif TryInsertDigraph secondKeyInput firstKeyInput then
-                    ()
+                    |> x.InsertKeyInputSet
                 else
-                    KeyInputSet(secondKeyInput)
-                    |> insertKeyInputSet
+                    match x.TryInsertDigraph firstKeyInput secondKeyInput with
+                    | Some processResult ->
+                        processResult
+                    | None ->
+                        match x.TryInsertDigraph secondKeyInput firstKeyInput with
+                        | Some processResult ->
+                            processResult
+                        | None ->
+                            KeyInputSet(secondKeyInput)
+                            |> x.InsertKeyInputSet
             | _ ->
-                ()
-
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-        ProcessResult.Handled ModeSwitch.NoSwitch
+                ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the KeyInput value
     member x.Process keyInput = 
