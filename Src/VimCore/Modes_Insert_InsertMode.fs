@@ -960,36 +960,48 @@ type internal InsertMode
         if firstKeyInput = KeyInputUtil.EscapeKey then
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
         elif firstKeyInput.RawChar.IsNone then
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
             let keyInputSet = KeyInputSet(firstKeyInput)
             let text = KeyNotationUtil.GetDisplayName firstKeyInput
             let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
             x.RunInsertCommand (InsertCommand.Insert text) keyInputSet commandFlags |> ignore
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
         else
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the third key of a digraph command
     member x.ProcessDigraph2 secondKeyInput = 
+
+        let TryInsertDigraph firstKeyInput secondKeyInput =
+            let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
+            let keyMap = _vimBuffer.Vim.KeyMap
+            match keyMap.GetKeyMapping digraphKeyInputSet KeyRemapMode.Digraph with
+            | KeyMappingResult.Mapped mappedKeyInputSet ->
+                let insertCommand =
+                    mappedKeyInputSet.KeyInputs
+                    |> Seq.map (fun keyInput -> string(keyInput.Char))
+                    |> String.concat ""
+                    |> InsertCommand.Insert
+                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                x.RunInsertCommand insertCommand mappedKeyInputSet commandFlags
+                |> ignore
+                true
+            | _ ->
+                false
+
         if secondKeyInput = KeyInputUtil.EscapeKey then
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+            ()
         else
             match _sessionData.ActiveEditItem with
             | ActiveEditItem.Digraph2 firstKeyInput ->
-                let keyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
-                match _vimBuffer.Vim.KeyMap.GetKeyMapping keyInputSet KeyRemapMode.Digraph with
-                | KeyMappingResult.Mapped mappedKeyInput ->
-                    let text =
-                        mappedKeyInput.KeyInputs
-                        |> Seq.map (fun keyInput -> string(keyInput.Char))
-                        |> String.concat ""
-                    let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                    x.RunInsertCommand (InsertCommand.Insert text) keyInputSet commandFlags |> ignore
-                | _ ->
+                if TryInsertDigraph firstKeyInput secondKeyInput then
+                    ()
+                elif TryInsertDigraph secondKeyInput firstKeyInput then
                     ()
             | _ ->
                 ()
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Process the KeyInput value
