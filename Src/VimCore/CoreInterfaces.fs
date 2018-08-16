@@ -4684,6 +4684,9 @@ and IVim =
     /// then a silent one will be returned 
     abstract ActiveStatusUtil: IStatusUtil
 
+    /// Whether to auto load digraphs
+    abstract AutoLoadDigraphs: bool with get, set
+
     /// Whether or not the vimrc file should be autoloaded before the first IVimBuffer
     /// is created
     abstract AutoLoadVimRc: bool with get, set

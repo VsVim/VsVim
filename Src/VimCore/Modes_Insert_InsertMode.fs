@@ -976,19 +976,23 @@ type internal InsertMode
     /// Process the third key of a digraph command
     member x.ProcessDigraph2 secondKeyInput = 
 
+        let insertKeyInputSet (keyInputSet: KeyInputSet) =
+            let insertCommand =
+                keyInputSet.KeyInputs
+                |> Seq.map (fun keyInput -> string(keyInput.Char))
+                |> String.concat ""
+                |> InsertCommand.Insert
+            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            x.RunInsertCommand insertCommand keyInputSet commandFlags
+            |> ignore
+
         let TryInsertDigraph firstKeyInput secondKeyInput =
             let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
             let keyMap = _vimBuffer.Vim.KeyMap
             match keyMap.GetKeyMapping digraphKeyInputSet KeyRemapMode.Digraph with
             | KeyMappingResult.Mapped mappedKeyInputSet ->
-                let insertCommand =
-                    mappedKeyInputSet.KeyInputs
-                    |> Seq.map (fun keyInput -> string(keyInput.Char))
-                    |> String.concat ""
-                    |> InsertCommand.Insert
-                let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                x.RunInsertCommand insertCommand mappedKeyInputSet commandFlags
-                |> ignore
+                mappedKeyInputSet
+                |> insertKeyInputSet
                 true
             | _ ->
                 false
@@ -998,10 +1002,18 @@ type internal InsertMode
         else
             match _sessionData.ActiveEditItem with
             | ActiveEditItem.Digraph2 firstKeyInput ->
-                if TryInsertDigraph firstKeyInput secondKeyInput then
+                if firstKeyInput = KeyInputUtil.CharToKeyInput(' ') then
+                    char(int(secondKeyInput.Char) ||| 0x80)
+                    |> KeyInputUtil.CharToKeyInput
+                    |> (fun keyInput -> KeyInputSet(keyInput))
+                    |> insertKeyInputSet
+                elif TryInsertDigraph firstKeyInput secondKeyInput then
                     ()
                 elif TryInsertDigraph secondKeyInput firstKeyInput then
                     ()
+                else
+                    KeyInputSet(secondKeyInput)
+                    |> insertKeyInputSet
             | _ ->
                 ()
 

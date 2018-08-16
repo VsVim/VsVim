@@ -371,6 +371,79 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DigraphTest : InsertModeIntegrationTest
+        {
+            public DigraphTest()
+            {
+                Vim.AutoLoadDigraphs = true;
+            }
+
+            [WpfFact]
+            public void Simple()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>e:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Swapped()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>:e");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Special()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Right>");
+                Assert.Equal("<Right>", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Undefined()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>AB");
+                Assert.Equal("B", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Space()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Space>a");
+                Assert.Equal("á", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Escape1()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Esc>");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.False(_vimBuffer.InsertMode.IsInPaste);
+            }
+
+            [WpfFact]
+            public void Escape2()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>e<Esc>");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.False(_vimBuffer.InsertMode.IsInPaste);
+            }
+        }
+
         /// <summary>
         /// Tests for the '.' register
         /// </summary>

@@ -399,8 +399,10 @@ type internal Vim
 
     /// Whether or not the vimrc file should be automatically loaded before creating the 
     /// first IVimBuffer instance
+    let mutable _autoLoadDigraphs = true
     let mutable _autoLoadVimRc = true
     let mutable _autoLoadSessionData = true
+    let mutable _digraphsAutoLoaded = false
     let mutable _sessionDataAutoLoaded = false
     let mutable _isLoadingVimRc = false
     let mutable _vimRcState = VimRcState.None
@@ -486,6 +488,10 @@ type internal Vim
         match x.ActiveBuffer with
         | Some vimBuffer -> vimBuffer.VimBufferData.StatusUtil
         | None -> _statusUtilFactory.EmptyStatusUtil
+
+    member x.AutoLoadDigraphs
+        with get() = _autoLoadDigraphs
+        and set value = _autoLoadDigraphs <- value
 
     member x.AutoLoadVimRc 
         with get() = _autoLoadVimRc
@@ -664,6 +670,10 @@ type internal Vim
 
     member x.MaybeLoadFiles() =
 
+        if x.AutoLoadDigraphs && not _digraphsAutoLoaded then
+            DigraphUtil.AddToMap _keyMap DigraphUtil.DefaultDigraphs
+            _digraphsAutoLoaded <- true
+
         // Load registers before loading the vimrc so that
         // registers that are set in the vimrc "stick".
         if x.AutoLoadSessionData && not _sessionDataAutoLoaded then
@@ -680,8 +690,6 @@ type internal Vim
         Contract.Assert(_isLoadingVimRc)
         _globalSettings.VimRc <- System.String.Empty
         _globalSettings.VimRcPaths <- _fileSystem.GetVimRcDirectories() |> String.concat ";"
-
-        DigraphUtil.AddToMap _keyMap DigraphUtil.DefaultDigraphs
 
         match x.LoadVimRcFileContents() with
         | None -> 
@@ -957,6 +965,9 @@ type internal Vim
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
         member x.ActiveStatusUtil = x.ActiveStatusUtil
+        member x.AutoLoadDigraphs 
+            with get() = x.AutoLoadDigraphs
+            and set value = x.AutoLoadDigraphs <- value
         member x.AutoLoadVimRc 
             with get() = x.AutoLoadVimRc
             and set value = x.AutoLoadVimRc <- value
