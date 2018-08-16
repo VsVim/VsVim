@@ -120,6 +120,9 @@ type VimRegexReplaceUtil
         | '&' when _replaceData.Magic ->
             x.AppendReplaceString m.Value
             _index <- _index + 1
+        | '~' when _replaceData.Magic ->
+            x.AppendReplaceString _replaceData.PreviousReplacement
+            _index <- _index + 1
         | '\\' when (_index + 1) < _replacement.Length ->
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
@@ -131,7 +134,12 @@ type VimRegexReplaceUtil
                 if _replaceData.Magic then
                     _builder.AppendChar '&'
                 else
-                    _builder.AppendChar '&'
+                    x.AppendReplaceString m.Value
+            | '~' -> 
+                if _replaceData.Magic then
+                    _builder.AppendChar '~'
+                else
+                    x.AppendReplaceString _replaceData.PreviousReplacement
             | 'u' -> _caseState <- VimReplaceCaseState.UpperChar
             | 'U' -> _caseState <- VimReplaceCaseState.UpperUntil
             | 'l' -> _caseState <- VimReplaceCaseState.LowerChar

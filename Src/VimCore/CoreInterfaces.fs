@@ -2963,9 +2963,11 @@ type NormalCommand =
     /// Repeat the last command
     | RepeatLastCommand
 
-    /// Repeat the last substitute command.  The bool value is for whether or not the flags
-    /// from the last substitute should be reused as well
-    | RepeatLastSubstitute of bool
+    /// Repeat the last substitute command.  The first bool value is for
+    /// whether or not the flags from the last substitute should be reused as
+    /// well. The second bool value is for whether the substitute should
+    /// operate on the whole buffer
+    | RepeatLastSubstitute of bool * bool
 
     /// Replace the text starting at the text by starting insert mode
     | ReplaceAtCaret

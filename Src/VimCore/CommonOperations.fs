@@ -1016,6 +1016,10 @@ type internal CommonOperations
     member x.GetReplaceData point = 
         let newLineText = x.GetNewLineText point
         {
+            PreviousReplacement =
+                _vimTextBuffer.Vim.VimData.LastSubstituteData
+                |> Option.map (fun substituteData -> substituteData.Substitute)
+                |> Option.defaultValue ""
             NewLine = newLineText
             Magic = _globalSettings.Magic
             Count = VimRegexReplaceCount.One }
