@@ -147,6 +147,7 @@ namespace Vim.UnitTest
                 Create("");
                 _mode.ProcessNotation("<C-R>");
                 Assert.True(_mode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('"'), _mode.PasteCharacter);
             }
 
             [WpfFact]
@@ -158,8 +159,27 @@ namespace Vim.UnitTest
                     var command = $"<C-R><C-{suffix}>";
                     _mode.ProcessNotation(command);
                     Assert.True(_mode.IsInPaste);
+                    Assert.Equal(FSharpOption<char>.Some('"'), _mode.PasteCharacter);
                     _mode.ProcessNotation("<Esc>");
                 }
+            }
+
+            [WpfFact]
+            public void IsInPaste_Digraph1()
+            {
+                Create("");
+                _mode.ProcessNotation("<C-k>");
+                Assert.True(_mode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('?'), _mode.PasteCharacter);
+            }
+
+            [WpfFact]
+            public void IsInPaste_Digraph2()
+            {
+                Create("");
+                _mode.ProcessNotation("<C-k>e");
+                Assert.True(_mode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('e'), _mode.PasteCharacter);
             }
         }
 

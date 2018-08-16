@@ -786,6 +786,7 @@ type Parser
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
             | LineCommand.DeleteMarks _ -> noRangeCommand
+            | LineCommand.Digraphs _ -> noRangeCommand
             | LineCommand.DisplayKeyMap _ -> noRangeCommand
             | LineCommand.DisplayLet _ -> noRangeCommand
             | LineCommand.DisplayMarks _ -> noRangeCommand

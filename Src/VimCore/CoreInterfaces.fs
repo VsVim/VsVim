@@ -5243,6 +5243,9 @@ and IInsertMode =
     /// The active IWordCompletionSession if one is active
     abstract ActiveWordCompletionSession: IWordCompletionSession option
 
+    /// The paste indication character
+    abstract PasteCharacter: char option
+
     /// Is insert mode currently in a paste operation
     abstract IsInPaste: bool
 

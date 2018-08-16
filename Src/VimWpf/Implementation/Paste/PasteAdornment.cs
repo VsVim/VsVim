@@ -19,8 +19,22 @@ namespace Vim.UI.Wpf.Implementation.Paste
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IAdornmentLayer _adornmentLayer;
         private readonly Object _tag = new object();
+        private char _pasteCharacter;
         private bool _isDisplayed;
         private bool _isAdornmentPresent;
+
+        internal char PasteCharacter
+        {
+            get { return _pasteCharacter; }
+            set
+            {
+                if (_pasteCharacter != value)
+                {
+                    _pasteCharacter = value;
+                    Refresh();
+                }
+            }
+        }
 
         internal bool IsDisplayed
         {
@@ -60,8 +74,8 @@ namespace Vim.UI.Wpf.Implementation.Paste
         }
 
         /// <summary>
-        /// Create the TextBlock and border which will display the " character with the current font
-        /// information
+        /// Create the TextBlock and border which will display the paste
+        /// character with the current font information
         /// </summary>
         private UIElement CreateControl()
         {
@@ -71,7 +85,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
 
             var textBlock = new TextBlock
             {
-                Text = "\"",
+                Text = _pasteCharacter.ToString(),
                 Foreground = properties.GetForegroundBrush(SystemColors.WindowTextBrush),
                 Background = backgroundBrush
             };
