@@ -882,8 +882,8 @@ type internal InsertMode
                     | Some (InsertCommand.Insert text) when text.Length > 0 -> 
 
                         // The user entered 'char1 <BS> char2' and digraphs are
-                        // enabled, so check for try to insert 'char1 char2' as
-                        // a digraph.
+                        // enabled, so check whether 'char1 char2' is a digraph
+                        // and if so, insert it.
                         let firstKeyInput =
                             text.[text.Length - 1]
                             |> KeyInputUtil.CharToKeyInput
@@ -931,7 +931,7 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Start a paste session in insert mode
+    /// Start a digraph session in insert mode
     member x.ProcessDigraphStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph1 }

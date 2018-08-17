@@ -646,7 +646,40 @@ type VimInterpreter
 
     /// Run the ':digraphs' command
     member x.RunDigraphs digraphList =
-        DigraphUtil.AddToMap _keyMap digraphList
+
+        // Get the two characters that make up the digraph.
+        let getChars (keyInputSet: KeyInputSet) =
+            keyInputSet.KeyInputs
+            |> Seq.map (fun keyInput -> string(keyInput.Char))
+            |> String.concat ""
+
+        // Get the display string for the replacement text.
+        let getDisplay (keyInputSet: KeyInputSet) =
+            getChars keyInputSet
+            |> StringUtil.GetDisplayString
+
+        // Get the unicode code point for the replacement text.
+        let getCode (keyInputSet: KeyInputSet) =
+            System.Char.ConvertToUtf32(getChars keyInputSet, 0)
+
+        if List.isEmpty digraphList then
+            let columns = 4
+            _keyMap.GetKeyMappingsForMode KeyRemapMode.Digraph
+            |> Seq.map (fun keyMapping ->
+                (
+                    getChars keyMapping.Left,
+                    getDisplay keyMapping.Right,
+                    getCode keyMapping.Right
+                ))
+            |> Seq.sortBy (fun (_, _, code) -> code)
+            |> Seq.mapi (fun index (digraph, text, code) ->
+                (index + 1, sprintf "%2s %-2s %5d  " digraph text code))
+            |> Seq.map (fun (index, output) ->
+                output + (if index % columns = 0 then System.Environment.NewLine else ""))
+            |> String.concat ""
+            |> _statusUtil.OnStatus
+        else
+            DigraphUtil.AddToMap _keyMap digraphList
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
