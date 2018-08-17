@@ -1747,22 +1747,22 @@ type VimInterpreter
                     else
                         _vimHost.Save _textBuffer |> ignore)
 
-    /// Run the 'wall' command
+    /// Run the 'wall' or 'wqall' command
     member x.RunWriteAll hasBang andQuit =
 
         // Write a buffer and return success or failure.
-        let writeBuffer (vimBuffer: IVimBuffer) =
+        let writeDirtyBuffer (vimBuffer: IVimBuffer) =
             if not hasBang && _vimHost.IsReadOnly vimBuffer.TextBuffer then
                 _statusUtil.OnError Resources.Interpreter_ReadOnlyOptionIsSet
                 false
-            elif _vimHost.IsDirty vimBuffer.TextBuffer then
-                _vimHost.Save vimBuffer.TextBuffer
             else
-                true
+                _vimHost.Save vimBuffer.TextBuffer
 
+        // Try to write all dirty buffers.
         let succeeded =
             _vim.VimBuffers
-            |> Seq.map writeBuffer
+            |> Seq.filter (fun vimBuffer -> _vimHost.IsDirty vimBuffer.TextBuffer)
+            |> Seq.map writeDirtyBuffer
             |> Seq.filter (fun succeeded -> not succeeded)
             |> Seq.isEmpty
 
