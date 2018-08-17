@@ -1980,10 +1980,10 @@ type internal CommonOperations
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
     member x.SetRegisterValue (name: RegisterName option) operation (value: RegisterValue) = 
-        let name, isUnnamedOrMissing = 
+        let name, isUnnamedOrMissing, isMissing = 
             match name with 
-            | None -> x.GetRegisterName None, true
-            | Some name -> name, name = RegisterName.Unnamed
+            | None -> x.GetRegisterName None, true, true
+            | Some name -> name, name = RegisterName.Unnamed, false
 
         if name <> RegisterName.Blackhole then
 
@@ -2018,7 +2018,8 @@ type internal CommonOperations
             | RegisterOperation.Delete ->
                 if hasNewLine then
                     doNumberedDelete()
-                else if name = RegisterName.Unnamed then
+                // Use small delete register unless a register was explicitly named
+                else if isMissing then
                     _registerMap.SetRegisterValue RegisterName.SmallDelete value
 
             | RegisterOperation.BigDelete ->

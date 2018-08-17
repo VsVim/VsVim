@@ -1608,13 +1608,23 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the small delete register is updated when a delete occurs on the unnamed register
+            /// Ensure the small delete register is not updated when a delete occurs on the unnamed register
             /// </summary>
             [WpfFact]
-            public void UpdateSmallDelete()
+            public void IgnoreSmallDeleteOnUnnamed()
             {
                 var reg = _registerMap.GetRegister(RegisterName.Unnamed);
                 _operations.SetRegisterValue(reg.Name, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
+            }
+            
+            /// <summary>
+            /// Ensure the small delete register is updated when a delete occurs without a specified register
+            /// </summary>
+            [WpfFact]
+            public void UpdateSmallDeleteOnUnspecified()
+            {
+                _operations.SetRegisterValue(null, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
             }
 
