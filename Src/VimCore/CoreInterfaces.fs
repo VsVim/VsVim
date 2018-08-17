@@ -3340,6 +3340,9 @@ type InsertCommand  =
     /// Insert a new line into the ITextBuffer
     | InsertNewLine
 
+    /// Insert previously inserted text, optionally stopping insert
+    | InsertPreviouslyInsertedText of bool
+
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
@@ -3422,6 +3425,7 @@ type InsertCommand  =
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
+        | InsertCommand.InsertPreviouslyInsertedText _ -> None
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None

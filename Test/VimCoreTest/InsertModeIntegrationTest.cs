@@ -372,6 +372,34 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// Tests for inserting previously inserted text
+        /// </summary>
+        public sealed class PreviouslyInsertedTextTest : InsertModeIntegrationTest
+        {
+            [WpfFact]
+            public void StopInsertMode()
+            {
+                Create("world", "");
+                _vimBuffer.Vim.VimData.LastTextInsert = FSharpOption<string>.Some("hello ");
+                _vimBuffer.ProcessNotation("<C-@>");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DontStopInsertMode()
+            {
+                Create("world", "");
+                _vimBuffer.Vim.VimData.LastTextInsert = FSharpOption<string>.Some("hello ");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        /// <summary>
         /// Tests for the '.' register
         /// </summary>
         public sealed class LastTextRegisterTest : InsertModeIntegrationTest

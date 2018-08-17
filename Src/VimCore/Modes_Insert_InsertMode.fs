@@ -243,6 +243,8 @@ type internal InsertMode
                 ("<Tab>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
                 ("<Up>", InsertCommand.MoveCaret Direction.Up, CommandFlags.Movement)
                 ("<C-i>", InsertCommand.InsertTab, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
+                ("<C-@>", InsertCommand.InsertPreviouslyInsertedText true, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
+                ("<C-a>", InsertCommand.InsertPreviouslyInsertedText false, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-d>", InsertCommand.ShiftLineLeft, CommandFlags.Repeatable)
                 ("<C-e>", InsertCommand.InsertCharacterBelowCaret, CommandFlags.Repeatable ||| CommandFlags.InsertEdit)
                 ("<C-j>", InsertCommand.InsertNewLine, CommandFlags.Repeatable ||| CommandFlags.InsertEdit ||| CommandFlags.ContextSensitive)
@@ -606,6 +608,9 @@ type internal InsertMode
         x.StartWordCompletionSession false
 
     member x.ProcessEscape _ =
+        ProcessResult.OfModeKind ModeKind.Normal
+
+    member x.StopInsert _ =
 
         x.ApplyAfterEdits()
 
@@ -891,7 +896,7 @@ type internal InsertMode
             // Any other key should cancel the IWordCompletionSession and we should process
             // the KeyInput as normal
             x.CancelWordCompletionSession()
-            x.Process keyInput
+            x.ProcessCore keyInput
 
     /// Start a paste session in insert mode
     member x.ProcessPasteStart keyInput =
@@ -946,7 +951,12 @@ type internal InsertMode
     member x.Process keyInput = 
         _isInProcess <- true
         try
-            x.ProcessCore keyInput
+            let result = x.ProcessCore keyInput
+            match result with
+            | ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Normal) ->
+                x.StopInsert keyInput
+            | _ ->
+                result
         finally
             _isInProcess <- false
 
