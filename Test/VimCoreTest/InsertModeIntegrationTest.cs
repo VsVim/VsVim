@@ -1597,6 +1597,170 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class OneTimeCommandTests : InsertModeIntegrationTest
+        {
+            [WpfFact]
+            public void Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void Replace_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>R");
+                Assert.Equal(ModeKind.Replace, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void ExCommand_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>:");
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void ExCommand()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>:pwd<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void Visual_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>v");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void Visual_ExCommand()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>v:pwd<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void Visual_ExCommand_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>v:");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_Visual_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-g>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_Visual_ExCommand_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-g>:");
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_ExCommand()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-o>:pwd<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_ExCommand_Esc()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-o>:<Esc>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_Printable()
+            {
+                Create("foo bar baz");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-o>e");
+                Assert.Equal("foo", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("x");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+                Assert.Equal("x bar baz", _textBuffer.GetLine(0).GetText());
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_Esc()
+            {
+                Create("foo bar baz");
+                _vimBuffer.ProcessNotation("<C-o>gh<C-o><Esc>");
+                Assert.Equal(null, _vimBuffer.InOneTimeCommand);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+                Assert.Equal("foo bar baz", _textBuffer.GetLine(0).GetText());
+            }
+            
+            [WpfFact]
+            public void SelectModeOneCommand_CursorMove_StartStopSelection()
+            {
+                Create("foo bar baz");
+                _globalSettings.SelectModeOptions = SelectModeOptions.Keyboard;
+                _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection | KeyModelOptions.StopSelection;
+                _vimBuffer.ProcessNotation("<C-o><S-Right><S-Right>");
+                Assert.Equal("foo", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
+                _vimBuffer.ProcessNotation("<Right>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+                Assert.Equal(null, _vimBuffer.InOneTimeCommand);
+            }
+        }
+
         public sealed class MiscTest : InsertModeIntegrationTest
         {
             /// <summary>

@@ -902,8 +902,34 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("bear ");
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal("cat bear eel", _textBuffer.GetLine(0).GetText());
-            }
+            }    
 
+            [WpfFact]
+            public void SelectOneTimeCommand_Esc()
+            {
+                Create("cat dog eel");
+                _vimBuffer.ProcessNotation("gh<C-o><Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }   
+
+            [WpfFact]
+            public void SelectOneTimeCommand_ExCommand_Esc()
+            {
+                Create("cat dog eel");
+                _vimBuffer.ProcessNotation("gh<C-o>:");
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }   
+
+            [WpfFact]
+            public void SelectOneTimeCommand_ExCommand()
+            {
+                Create("cat dog eel");
+                _vimBuffer.ProcessNotation("gh<C-o>:pwd<CR>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }   
+            
             [WpfFact]
             public void Issue1317()
             {
