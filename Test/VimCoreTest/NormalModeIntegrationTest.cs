@@ -3379,6 +3379,55 @@ namespace Vim.UnitTest
                 Assert.Equal(new[] { "abc", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent()
+            {
+                Create("{", "", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("cc;<Esc>");
+                Assert.Equal(new[] { "{", ";", "}", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host provides an auto-indent service, host indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_HostIndent()
+            {
+                // Reported in issue #881.
+                Create("{", "", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimHost.GetNewLineIndentFunc = delegate { return FSharpOption<int>.Some(4); };
+                _vimBuffer.ProcessNotation("cc;<Esc>");
+                Assert.Equal(new[] { "{", "    ;", "}", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Change indents when changing a linewise textobject with autoindent enabled
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_TextObject()
+            {
+                // Reported in issue #1683.
+                Create("{", "    xxx;", "    yyy;", "}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("ciB;<Esc>");
+                Assert.Equal(new[] { "{", "    ;", "}", "" }, _textBuffer.GetLines());
+            }
+
         }
 
         public sealed class ChangeMotionTest : NormalModeIntegrationTest
@@ -3513,6 +3562,26 @@ namespace Vim.UnitTest
                 Assert.Equal("dog dog", _textView.GetLine(0).GetText());
                 _vimBuffer.ProcessNotation("uu");
                 Assert.Equal("cat cat", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Changing characterwise should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("cw");
+                Assert.Equal(new[] { "at", "", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
         }
 
@@ -4619,6 +4688,49 @@ namespace Vim.UnitTest
                 _textView.MoveCaretToLine(1);
                 _vimBuffer.Process("o");
                 Assert.Equal(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent_Spaces()
+            {
+                Create("    {", "    }", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "    {", "    ;", "    }", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host doesn't provide an auto-indent service, vim indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_VimIndent_Tabs()
+            {
+                Create("\t{", "\t}", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = false;
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "\t{", "\t;", "\t}", "" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// When the host provides an auto-indent service, host indent is used
+            /// </summary>
+            [WpfFact]
+            public void AutoIndent_HostIndent()
+            {
+                Create("    {", "    }", "");
+                _localSettings.AutoIndent = true;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                _vimHost.GetNewLineIndentFunc = delegate { return FSharpOption<int>.Some(8); };
+                _vimBuffer.ProcessNotation("o;<Esc>");
+                Assert.Equal(new[] { "    {", "        ;", "    }", "" }, _textBuffer.GetLines());
             }
         }
 
@@ -6558,6 +6670,86 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(_textBuffer.GetLine(2).End);
                 _vimBuffer.ProcessNotation("dd");
                 Assert.Equal(new[] { "cat", "tree" }, _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Deleting a character before the caret should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteCharBeforeCaret_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1, 1);
+                _vimBuffer.ProcessNotation("X");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting a character at the caret should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteCharAtCaret_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("x");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting a characterwise motion should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotion_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("dw");
+                Assert.Equal(new[] { "at", "", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Substituting a character at the caret should handle an external edit
+            /// </summary>
+            [WpfFact]
+            public void SubstituteCharAtCaret_ExternalEdit()
+            {
+                Create("cat", "dog", "fish", "");
+                _textBuffer.Changed += (sender, obj) =>
+                {
+                    if (_textBuffer.GetSpan(0, 1).GetText() == "c")
+                    {
+                        _textBuffer.Delete(new Span(0, 1));
+                    }
+                };
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.ProcessNotation("s");
+                Assert.Equal(new[] { "at", "og", "fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
             }
         }
 

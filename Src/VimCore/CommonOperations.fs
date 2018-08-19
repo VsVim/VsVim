@@ -1004,11 +1004,11 @@ type internal CommonOperations
     /// Move the caret to the proper indentation on a newly created line.  The context line 
     /// is provided to calculate an indentation off of
     member x.GetNewLineIndent  (contextLine: ITextSnapshotLine) (newLine: ITextSnapshotLine) =
-        match _vimHost.GetNewLineIndent _textView contextLine newLine with
+        match _vimHost.GetNewLineIndent _textView contextLine newLine _localSettings with
         | Some indent -> Some indent
         | None ->
             if _localSettings.AutoIndent then
-                EditUtil.GetAutoIndent contextLine |> Some
+                EditUtil.GetAutoIndent contextLine _localSettings.TabStop |> Some
             else
                 None
 

@@ -29,6 +29,7 @@ namespace Vim.UnitTest.Mock
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
+        public Func<ITextView, ITextSnapshotLine, ITextSnapshotLine, IVimLocalSettings, FSharpOption<int>> GetNewLineIndentFunc { get; set; }
         public Func<ITextView, string, bool> GoToLocalDeclarationFunc { get; set; }
         public Func<ITextView, string, bool> GoToGlobalDeclarationFunc { get; set; }
         public Func<ITextView, bool> ReloadFunc { get; set; }
@@ -93,6 +94,7 @@ namespace Vim.UnitTest.Mock
             IsTextViewVisible = null;
             _isVisibleChanged = null;
             TryCustomProcessFunc = null;
+            GetNewLineIndentFunc = delegate { return FSharpOption<int>.None; };
             GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
             GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
@@ -191,9 +193,9 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        FSharpOption<int> IVimHost.GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
         {
-            return FSharpOption<int>.None;
+            return GetNewLineIndentFunc(textView, contextLine, newLine, localSettings);
         }
 
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
