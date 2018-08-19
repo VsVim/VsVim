@@ -31,6 +31,7 @@ type internal VimTextBuffer
     let mutable _lastChangeOrYankStart: ITrackingLineColumn option = None
     let mutable _lastChangeOrYankEnd: ITrackingLineColumn option = None
     let mutable _isSoftTabStopValidForBackspace = true
+    let mutable _inOneTimeCommand: ModeKind option = None
 
     /// Raise the mark set event
     member x.RaiseMarkSet localMark =
@@ -165,6 +166,10 @@ type internal VimTextBuffer
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankEnd
+
+     member x.InOneTimeCommand
+        with get() = _inOneTimeCommand
+        and set value = _inOneTimeCommand <- value
 
     member x.IsSoftTabStopValidForBackspace 
         with get() = _isSoftTabStopValidForBackspace
@@ -301,6 +306,9 @@ type internal VimTextBuffer
         member x.LastChangeOrYankEnd
             with get() = x.LastChangeOrYankEnd
             and set value = x.LastChangeOrYankEnd <- value
+        member x.InOneTimeCommand
+            with get() = x.InOneTimeCommand
+            and set value = x.InOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind

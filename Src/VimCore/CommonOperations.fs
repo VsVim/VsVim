@@ -401,10 +401,13 @@ type internal CommonOperations
     /// this here
     member x.AdjustCaretForVirtualEdit() =
 
+        // Vim allows the caret past the end of the line if we are in a
+        // one-time command and returning to insert mode momentarily.
         let allowPastEndOfLine = 
             _vimTextBuffer.ModeKind = ModeKind.Insert ||
             _globalSettings.IsVirtualEditOneMore ||
-            VisualKind.IsAnySelect _vimTextBuffer.ModeKind
+            VisualKind.IsAnySelect _vimTextBuffer.ModeKind ||
+            _vimTextBuffer.InOneTimeCommand.IsSome
 
         if not allowPastEndOfLine && not (VisualKind.IsAnyVisual _vimTextBuffer.ModeKind) then
             let column = TextViewUtil.GetCaretColumn _textView

@@ -1730,7 +1730,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Execute a one time command of delete word
+            /// Execute a one time command of ':put'
             /// </summary>
             [WpfFact]
             public void OneTimeCommand_CommandMode_Put()
@@ -1756,6 +1756,42 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
                 _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
+            }
+
+            /// <summary>
+            /// Using put as a one-time command should always place the caret
+            /// after the inserted text
+            /// </summary>
+            [WpfFact]
+            public void OneTimeCommand_Put_MiddleOfLine()
+            {
+                // Reported in issue #1065.
+                Create("cat", "");
+                Vim.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-o>p");
+                Assert.Equal("cadogt", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
+            }
+
+            /// <summary>
+            /// Using put as a one-time command should always place the caret
+            /// after the inserted text, even at the end of a line
+            /// </summary>
+            [WpfFact]
+            public void OneTimeCommand_Put_EndOfLine()
+            {
+                // Reported in issue #1065.
+                Create("cat", "");
+                Vim.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("<C-o>p");
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
             }
