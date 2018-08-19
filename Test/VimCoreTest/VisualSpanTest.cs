@@ -32,7 +32,7 @@ namespace Vim.UnitTest
                     _textView.Selection.Select(_textBuffer.GetPoint(0), _textBuffer.GetPoint(5));
                     TestableSynchronizationContext.RunAll();
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
-                    var characterSpan = visualSpan.AsCharacter().Item;
+                    var characterSpan = visualSpan.AsCharacter().CharacterSpan;
                     Assert.True(characterSpan.IncludeLastLineLineBreak);
                     Assert.Equal(1, characterSpan.LineCount);
                 }
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
                     TestableSynchronizationContext.RunAll();
                     Assert.Equal(1, _textView.Selection.StreamSelectionSpan.End.Position.GetContainingLine().LineNumber);
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Character, tabStop: 4);
-                    var characterSpan = visualSpan.AsCharacter().Item;
+                    var characterSpan = visualSpan.AsCharacter().CharacterSpan;
                     Assert.Equal(2, characterSpan.LineCount);
                     Assert.True(characterSpan.IncludeLastLineLineBreak);
                 }
@@ -81,9 +81,9 @@ namespace Vim.UnitTest
                     _textView.Selection.Select(point1, point2);
                     TestableSynchronizationContext.RunAll();
                     var visualSpan = VisualSpan.CreateForVirtualSelection(_textView, VisualKind.Character, tabStop: 4, useVirtualSpace: true);
-                    Assert.Equal(point1, visualSpan.AsCharacter().Item.VirtualStart);
-                    Assert.Equal(point2, visualSpan.AsCharacter().Item.VirtualEnd);
-                    Assert.Equal(span.Length, visualSpan.AsCharacter().Item.VirtualLength);
+                    Assert.Equal(point1, visualSpan.AsCharacter().CharacterSpan.VirtualStart);
+                    Assert.Equal(point2, visualSpan.AsCharacter().CharacterSpan.VirtualEnd);
+                    Assert.Equal(span.Length, visualSpan.AsCharacter().CharacterSpan.VirtualLength);
                 }
             }
 
@@ -97,7 +97,7 @@ namespace Vim.UnitTest
                 {
                     Create("hello world");
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Line, _vimBuffer.LocalSettings.TabStop);
-                    Assert.Equal(_textBuffer.GetLineRange(0), visualSpan.AsLine().Item);
+                    Assert.Equal(_textBuffer.GetLineRange(0), visualSpan.AsLine().LineRange);
                 }
             }
 
@@ -113,7 +113,7 @@ namespace Vim.UnitTest
                     Create("hello world");
                     var visualSpan = VisualSpan.CreateForSelection(_textView, VisualKind.Block, _vimBuffer.LocalSettings.TabStop);
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: _vimBuffer.LocalSettings.TabStop, spaces: 1, height: 1);
-                    Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
+                    Assert.Equal(blockSpan, visualSpan.AsBlock().BlockSpan);
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
                     var point = _textBuffer.GetPoint(2);
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, point, point, _vimBuffer.LocalSettings.TabStop);
                     var blockSpan = new BlockSpan(point, _vimBuffer.LocalSettings.TabStop, spaces: 1, height: 1);
-                    Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
+                    Assert.Equal(blockSpan, visualSpan.AsBlock().BlockSpan);
                 }
 
                 [WpfFact]
@@ -142,7 +142,7 @@ namespace Vim.UnitTest
                     Create("big cat", "big dog");
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPoint(0), _vimBuffer.LocalSettings.TabStop);
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), _vimBuffer.LocalSettings.TabStop, 2, 1);
-                    Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
+                    Assert.Equal(blockSpan, visualSpan.AsBlock().BlockSpan);
                 }
 
                 /// <summary>
@@ -155,7 +155,7 @@ namespace Vim.UnitTest
                     Create("big cat", "big dog");
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(2), _textBuffer.GetPointInLine(1, 1), _vimBuffer.LocalSettings.TabStop);
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), _vimBuffer.LocalSettings.TabStop, 1, 2);
-                    Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
+                    Assert.Equal(blockSpan, visualSpan.AsBlock().BlockSpan);
                 }
 
                 /// <summary>
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
                     Create("big cat", "big dog");
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Block, _textBuffer.GetPoint(1), _textBuffer.GetPointInLine(1, 3), _vimBuffer.LocalSettings.TabStop);
                     var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), _vimBuffer.LocalSettings.TabStop, 2, 2);
-                    Assert.Equal(blockSpan, visualSpan.AsBlock().Item);
+                    Assert.Equal(blockSpan, visualSpan.AsBlock().BlockSpan);
                 }
             }
 
@@ -183,8 +183,8 @@ namespace Vim.UnitTest
                     Create("dog cat");
                     var point = _textBuffer.GetPoint(2);
                     var visualSpan = VisualSpan.CreateForSelectionPoints(VisualKind.Character, point, point, _vimBuffer.LocalSettings.TabStop);
-                    Assert.Equal(point, visualSpan.AsCharacter().Item.Start);
-                    Assert.Equal(0, visualSpan.AsCharacter().Item.Length);
+                    Assert.Equal(point, visualSpan.AsCharacter().CharacterSpan.Start);
+                    Assert.Equal(0, visualSpan.AsCharacter().CharacterSpan.Length);
                 }
 
                 /// <summary>
@@ -205,9 +205,9 @@ namespace Vim.UnitTest
                     var point2 = _textBuffer.GetVirtualPointInLine(0, 4);
                     var span = new VirtualSnapshotSpan(point1, point2);
                     var visualSpan = VisualSpan.CreateForVirtualSelectionPoints(VisualKind.Character, point1, point2, _vimBuffer.LocalSettings.TabStop, true);
-                    Assert.Equal(point1, visualSpan.AsCharacter().Item.VirtualStart);
-                    Assert.Equal(point2, visualSpan.AsCharacter().Item.VirtualEnd);
-                    Assert.Equal(span.Length, visualSpan.AsCharacter().Item.VirtualLength);
+                    Assert.Equal(point1, visualSpan.AsCharacter().CharacterSpan.VirtualStart);
+                    Assert.Equal(point2, visualSpan.AsCharacter().CharacterSpan.VirtualEnd);
+                    Assert.Equal(span.Length, visualSpan.AsCharacter().CharacterSpan.VirtualLength);
                 }
             }
 

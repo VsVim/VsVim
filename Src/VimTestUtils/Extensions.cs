@@ -231,12 +231,12 @@ namespace Vim.UnitTest
 
         public static T AsResult<T>(this VimResult<T> vimResult)
         {
-            return ((VimResult<T>.Result)vimResult).Item;
+            return ((VimResult<T>.Result)vimResult).Result;
         }
 
         public static string AsError<T>(this VimResult<T> vimResult)
         {
-            return ((VimResult<T>.Error)vimResult).Item;
+            return ((VimResult<T>.Error)vimResult).Error; ;
         }
 
         #endregion
@@ -538,7 +538,7 @@ namespace Vim.UnitTest
 
         public static bool IsSwitchMode(this ModeSwitch mode, ModeKind kind)
         {
-            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode)mode).Item == kind;
+            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode)mode).ModeKind == kind;
         }
 
         public static bool IsSwitchModeWithArgument(this ModeSwitch mode, ModeKind kind, ModeArgument argument)
@@ -549,7 +549,7 @@ namespace Vim.UnitTest
             }
 
             var value = (ModeSwitch.SwitchModeWithArgument)mode;
-            return value.Item1 == kind && value.Item2.Equals(argument);
+            return value.ModeKind == kind && value.ModeArgument.Equals(argument);
         }
 
         #endregion

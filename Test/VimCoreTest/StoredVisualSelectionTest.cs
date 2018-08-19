@@ -21,7 +21,7 @@ namespace Vim.UnitTest
                 var textBuffer = CreateTextBuffer("hello");
                 var storedVisualSelection = StoredVisualSelection.NewCharacter(count);
                 var visualSpan = storedVisualSelection.GetVisualSelection(textBuffer.GetStartPoint(), 1).VisualSpan;
-                Assert.Equal(count, visualSpan.AsCharacter().Item.Length);
+                Assert.Equal(count, visualSpan.AsCharacter().CharacterSpan.Length);
                 Assert.Equal("hello".Substring(0, count), visualSpan.Spans.Single().GetText());
             }
 
@@ -34,7 +34,7 @@ namespace Vim.UnitTest
                 var textBuffer = CreateTextBuffer("dog", "cat", "tree", "pony");
                 var storedVisualSelection = StoredVisualSelection.NewLine(count);
                 var visualSpan = storedVisualSelection.GetVisualSelection(textBuffer.GetStartPoint(), 1).VisualSpan;
-                Assert.Equal(count, visualSpan.AsLine().Item.Count);
+                Assert.Equal(count, visualSpan.AsLine().LineRange.Count);
             }
 
             [WpfFact]
