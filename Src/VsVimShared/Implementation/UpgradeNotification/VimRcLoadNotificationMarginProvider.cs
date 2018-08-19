@@ -84,7 +84,7 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
             var state = ((VimRcState.LoadSucceeded)_vim.VimRcState);
 
             // If the notification has occured then there is nothing else to do.  We are done
-            if (!_vimApplicationSettings.HaveNotifiedVimRcLoad && state.Item1.VimRcKind == VimRcKind.VimRc)
+            if (!_vimApplicationSettings.HaveNotifiedVimRcLoad && state.VimRcPath.VimRcKind == VimRcKind.VimRc)
             {
                 var linkBanner = new LinkBanner
                 {
@@ -95,10 +95,10 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
                 _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_notifyToastKey, linkBanner, OnNotifyClosed);
             }
 
-            if (!_vimApplicationSettings.HaveNotifiedVimRcErrors && state.Item2.Length != 0)
+            if (!_vimApplicationSettings.HaveNotifiedVimRcErrors && state.Errors.Length != 0)
             {
                 var errorBanner = new ErrorBanner();
-                errorBanner.ViewClick += (sender, e) => OnViewClick(state.Item2);
+                errorBanner.ViewClick += (sender, e) => OnViewClick(state.Errors);
                 _toastNotificationServiceProvider.GetToastNoficationService(wpfTextView).Display(_errorToastKey, errorBanner, OnErrorClosed);
             }
         }

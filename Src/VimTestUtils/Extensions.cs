@@ -473,27 +473,27 @@ namespace Vim.UnitTest
 
         public static bool IsSwitchModeOneTimeCommand(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchModeOneTimeCommand;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchModeOneTimeCommand;
         }
 
         public static bool IsSwitchMode(this ProcessResult result, ModeKind kind)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchMode(kind);
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchMode(kind);
         }
 
         public static bool IsSwitchModeWithArgument(this ProcessResult result, ModeKind kind, ModeArgument argument)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchModeWithArgument(kind, argument);
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchModeWithArgument(kind, argument);
         }
 
         public static bool IsSwitchPreviousMode(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchPreviousMode;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchPreviousMode;
         }
 
         public static bool IsHandledNoSwitch(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsNoSwitch;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsNoSwitch;
         }
 
         #endregion
@@ -1457,17 +1457,17 @@ namespace Vim.UnitTest
 
         public static bool IsInsert(this TextChange change, string text)
         {
-            return change.IsInsert && change.AsInsert().Item == text;
+            return change.IsInsert && change.AsInsert().Text == text;
         }
 
         public static bool IsDeleteLeft(this TextChange change, int count)
         {
-            return change.IsDeleteLeft && change.AsDeleteLeft().Item == count;
+            return change.IsDeleteLeft && change.AsDeleteLeft().Count == count;
         }
 
         public static bool IsDeleteRight(this TextChange change, int count)
         {
-            return change.IsDeleteRight && change.AsDeleteRight().Item == count;
+            return change.IsDeleteRight && change.AsDeleteRight().Count == count;
         }
 
         #endregion

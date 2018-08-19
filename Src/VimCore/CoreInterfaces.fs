@@ -70,7 +70,7 @@ type VimRcState =
     /// The load succeeded of the specified file.  If there were any errors actually
     /// processing the load they will be captured in the string[] parameter.
     /// The load succeeded and the specified file was used 
-    | LoadSucceeded of VimRcPath * string[]
+    | LoadSucceeded of VimRcPath: VimRcPath * Errors: string[]
 
     /// The load failed 
     | LoadFailed
@@ -263,10 +263,10 @@ type IUndoRedoOperations =
 /// Represents a set of changes to a contiguous region. 
 [<RequireQualifiedAccess>]
 type TextChange = 
-    | DeleteLeft of int
-    | DeleteRight of int
-    | Insert of string
-    | Combination of TextChange * TextChange
+    | DeleteLeft of Count: int
+    | DeleteRight of Count: int
+    | Insert of Text: string
+    | Combination of Left: TextChange * Right: TextChange
 
     with 
 
@@ -3575,22 +3575,22 @@ type BindDataStorage<'T> =
 type CommandBinding = 
 
     /// KeyInputSet bound to a particular NormalCommand instance
-    | NormalBinding of KeyInputSet * CommandFlags * NormalCommand
+    | NormalBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * NormalCommand: NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
-    | ComplexNormalBinding of KeyInputSet * CommandFlags * BindDataStorage<NormalCommand>
+    | ComplexNormalBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * BindDataStorage: BindDataStorage<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
-    | MotionBinding of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
+    | MotionBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * Func: (MotionData -> NormalCommand)
 
     /// KeyInputSet bound to a particular VisualCommand instance
-    | VisualBinding of KeyInputSet * CommandFlags * VisualCommand
+    | VisualBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * VisualCommand: VisualCommand
 
     /// KeyInputSet bound to an insert mode command
-    | InsertBinding of KeyInputSet * CommandFlags * InsertCommand
+    | InsertBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * InsertCommand: InsertCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
-    | ComplexVisualBinding of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
+    | ComplexVisualBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * BindDataStorage: BindDataStorage<VisualCommand>
 
     with 
 
@@ -3691,17 +3691,17 @@ type StoredVisualSpan =
 type StoredCommand =
 
     /// The stored information about a NormalCommand
-    | NormalCommand of NormalCommand * CommandData * CommandFlags
+    | NormalCommand of NormalCommand: NormalCommand * CommandData: CommandData * CommandFlags: CommandFlags
 
     /// The stored information about a VisualCommand
-    | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
+    | VisualCommand of VisualCommand: VisualCommand * CommandData: CommandData * StoredVisualSpan: StoredVisualSpan * CommandFlags: CommandFlags
 
     /// The stored information about a InsertCommand
-    | InsertCommand of InsertCommand * CommandFlags
+    | InsertCommand of InsertCommand: InsertCommand * CommandFlags: CommandFlags
 
     /// A Linked Command links together 2 other StoredCommand objects so they
     /// can be repeated together.
-    | LinkedCommand of StoredCommand * StoredCommand
+    | LinkedCommand of Left: StoredCommand * Right: StoredCommand
 
     with
 
@@ -3768,11 +3768,11 @@ type MotionBinding =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | Static of KeyInputSet * MotionFlags * Motion
+    | Static of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * Motion: Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.
-    | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
+    | Dynamic of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * BindDataStorage: BindDataStorage<Motion>
 
     with
 
@@ -4087,7 +4087,7 @@ type IMacroRecorder =
 type ProcessResult = 
 
     /// The input was processed and provided the given ModeSwitch
-    | Handled of ModeSwitch
+    | Handled of ModeSwitch: ModeSwitch
 
     /// The input was processed but more input is needed in order to complete
     /// an operation
