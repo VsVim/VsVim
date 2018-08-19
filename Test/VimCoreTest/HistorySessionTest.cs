@@ -79,7 +79,7 @@ namespace Vim.UnitTest
         {
             var result = _bindData.BindFunction.Invoke(keyInput);
             _bindData = result.IsNeedMoreInput
-                ? ((BindResult<int>.NeedMoreInput)result).Item
+                ? ((BindResult<int>.NeedMoreInput)result).BindData
                 : null;
         }
 

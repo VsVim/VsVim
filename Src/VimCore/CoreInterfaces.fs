@@ -3174,17 +3174,17 @@ type NormalCommand =
 type VisualCommand = 
 
     /// Add count to the word in each line of the selection, optionally progressively
-    | AddToSelection of bool
+    | AddToSelection of IsProgressive: bool
 
     /// Change the case of the selected text in the specified manner
-    | ChangeCase of ChangeCharacterKind
+    | ChangeCase of ChangeCharacterKind: ChangeCharacterKind
 
     /// Delete the selection and begin insert mode.  Implements the 'c' and 's' commands
     | ChangeSelection
 
     /// Delete the selected lines and begin insert mode ('S' and 'C' commands).  The bool parameter
     /// is whether or not to treat block selection as a special case
-    | ChangeLineSelection of bool
+    | ChangeLineSelection of SpecialCaseBlockSelection: bool
 
     /// Close a fold in the selection
     | CloseFoldInSelection
@@ -3202,7 +3202,7 @@ type VisualCommand =
     | DeleteSelection
 
     /// Extend the selection to the next match for the last pattern searched for
-    | ExtendSelectionToNextMatch of SearchPath
+    | ExtendSelectionToNextMatch of SearchPath: SearchPath
 
     /// Filter the selected text
     | FilterLines
@@ -3214,7 +3214,7 @@ type VisualCommand =
     | FormatCodeLines
 
     /// Format the selected text lines, optionally preserving the caret position
-    | FormatTextLines of bool
+    | FormatTextLines of PreserveCaretPosition: bool
 
     /// GoTo the file under the cursor in a new window
     | GoToFileInSelectionInNewWindow
@@ -3223,15 +3223,15 @@ type VisualCommand =
     | GoToFileInSelection
 
     /// Join the selected lines
-    | JoinSelection of JoinKind
+    | JoinSelection of JoinKind: JoinKind
 
     /// Invert the selection by swapping the caret and anchor points.  When true it means that block mode should
     /// be special cased to invert the column only 
-    | InvertSelection of bool
+    | InvertSelection of ColumnOnlyInBlock: bool
 
     /// Move the caret to the result of the given Motion.  This movement is from a 
     /// text-object selection.  Certain motions 
-    | MoveCaretToTextObject of Motion * TextObjectKind
+    | MoveCaretToTextObject of Motion: Motion * TextObjectKind: TextObjectKind
 
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
@@ -3241,10 +3241,10 @@ type VisualCommand =
 
     /// Put the contents af the register after the selection.  The bool is for whether or not the
     // caret should be placed after the inserted text
-    | PutOverSelection of bool
+    | PutOverSelection of PlaceCaretAfterInsertedText: bool
 
     /// Replace the visual span with the provided character
-    | ReplaceSelection of KeyInput
+    | ReplaceSelection of KeyInput: KeyInput
 
     /// Shift the selected lines left
     | ShiftLinesLeft
@@ -3253,17 +3253,17 @@ type VisualCommand =
     | ShiftLinesRight
 
     /// Subtract count from the word in each line of the selection, optionally progressively
-    | SubtractFromSelection of bool
+    | SubtractFromSelection of IsProgressive: bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line
-    | SwitchModeInsert of bool
+    | SwitchModeInsert of AtEndOfLine: bool
 
     /// Switch to the previous mode
     | SwitchModePrevious
 
     /// Switch to the specified visual mode
-    | SwitchModeVisual of VisualKind
+    | SwitchModeVisual of VisualKind: VisualKind
 
     /// Toggle one fold in the selection
     | ToggleFoldInSelection
@@ -3304,26 +3304,26 @@ type InsertCommand  =
     /// Block edit of the specified TextChange value.  The bool signifies whether
     /// the insert is at the end of the line. The int represents the number of 
     /// lines on which this block insert should take place
-    | BlockInsert of string * bool * int
+    | BlockInsert of Text: string * AtEndOfLine: bool * Height: int
 
     /// This is an insert command which is a combination of other insert commands
-    | Combined of InsertCommand * InsertCommand
+    | Combined of Left: InsertCommand * Right: InsertCommand
 
     /// Complete the Insert Mode session.  This is done as a command so that it will 
     /// be a bookend of insert mode for the repeat infrastructure
     ///
     /// The bool value represents whether or not the caret needs to be moved to the
     /// left
-    | CompleteMode of bool
+    | CompleteMode of MoveCaretLeft: bool
 
     /// Delete the character under the caret
     | Delete
 
     /// Delete count characters to the left of the caret
-    | DeleteLeft of int 
+    | DeleteLeft of ColumnCount: int 
 
     /// Delete count characters to the right of the caret
-    | DeleteRight of int
+    | DeleteRight of ColumnCount: int
 
     /// Delete all indentation on the current line
     | DeleteAllIndent
@@ -3341,28 +3341,28 @@ type InsertCommand  =
     | InsertNewLine
 
     /// Insert previously inserted text, optionally stopping insert
-    | InsertPreviouslyInsertedText of bool
+    | InsertPreviouslyInsertedText of StopInsert: bool
 
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
     /// Insert of text into the ITextBuffer at the caret position 
-    | Insert of string
+    | Insert of Text: string
 
     /// Move the caret in the given direction
-    | MoveCaret of Direction
+    | MoveCaret of Direction: Direction
 
     /// Move the caret in the given direction with an arrow key
-    | MoveCaretWithArrow of Direction
+    | MoveCaretWithArrow of Direction: Direction
 
     /// Move the caret in the given direction by a whole word
-    | MoveCaretByWord of Direction
+    | MoveCaretByWord of Direction: Direction
 
     /// Move the caret to the end of the line
     | MoveCaretToEndOfLine
 
     /// Replace the character under the caret with the specified value
-    | Replace of char
+    | Replace of Character: char
 
     /// Replace the character which is immediately above the caret
     | ReplaceCharacterAboveCaret
@@ -3371,7 +3371,7 @@ type InsertCommand  =
     | ReplaceCharacterBelowCaret
 
     /// Overwrite the characters under the caret with the specified string
-    | Overwrite of string
+    | Overwrite of Text: string
 
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
@@ -3456,13 +3456,13 @@ type InsertCommand  =
 type Command =
 
     /// A Normal Mode Command
-    | NormalCommand of NormalCommand * CommandData
+    | NormalCommand of NormalCommand: NormalCommand * CommandData: CommandData
 
     /// A Visual Mode Command
-    | VisualCommand of VisualCommand * CommandData * VisualSpan
+    | VisualCommand of VisualCommand: VisualCommand * CommandData: CommandData * VisualSpan: VisualSpan
 
     /// An Insert / Replace Mode Command
-    | InsertCommand of InsertCommand
+    | InsertCommand of InsertCommand: InsertCommand
 
 /// This is the result of attemping to bind a series of KeyInput values into a Motion
 /// Command, etc ... 
@@ -3470,10 +3470,10 @@ type Command =
 type BindResult<'T> = 
 
     /// Successfully bound to a value
-    | Complete of 'T 
+    | Complete of Result: 'T 
 
     /// More input is needed to complete the binding operation
-    | NeedMoreInput of BindData<'T>
+    | NeedMoreInput of BindData: BindData<'T>
 
     /// There was an error completing the binding operation
     | Error
@@ -3548,10 +3548,10 @@ and BindData<'T> = {
 type BindDataStorage<'T> =
 
     /// Simple BindData<'T> which doesn't require activation
-    | Simple of BindData<'T> 
+    | Simple of BindData: BindData<'T> 
 
     /// Complex BindData<'T> which does require activation
-    | Complex of (unit -> BindData<'T>)
+    | Complex of CreateBindDataFunc: (unit -> BindData<'T>)
 
     with
 

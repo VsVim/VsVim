@@ -1630,7 +1630,7 @@ namespace Vim.UnitTest
                     {
                         if (command.IsInsert)
                         {
-                            Assert.Equal("#", command.AsInsert().Item);
+                            Assert.Equal("#", command.AsInsert().Text);
                             _textBuffer.Insert(0, "hello ");
                             return true;
                         }
@@ -1709,7 +1709,7 @@ namespace Vim.UnitTest
                     {
                         if (command.IsInsert)
                         {
-                            Assert.Equal("#", command.AsInsert().Item);
+                            Assert.Equal("#", command.AsInsert().Text);
                             _textBuffer.Insert(0, "hello ");
                             return true;
                         }

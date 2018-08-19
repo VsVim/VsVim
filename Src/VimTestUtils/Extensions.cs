@@ -1355,7 +1355,7 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
                 Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
             }
 
             return result;
@@ -1367,7 +1367,7 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
                 Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
             }
             return result;
         }

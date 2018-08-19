@@ -1158,7 +1158,7 @@ namespace Vim.VisualStudio
 
         public static bool IsInsert(this InsertCommand command, string text)
         {
-            return command.IsInsert && command.AsInsert().Item == text;
+            return command.IsInsert && command.AsInsert().Text == text;
         }
 
         #endregion

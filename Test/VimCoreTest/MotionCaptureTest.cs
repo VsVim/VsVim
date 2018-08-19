@@ -41,13 +41,13 @@ namespace Vim.UnitTest
             {
                 Assert.True(res.IsNeedMoreInput);
                 var needMore = res.AsNeedMoreInput();
-                res = needMore.Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput(cur));
+                res = needMore.BindData.BindFunction.Invoke(KeyInputUtil.CharToKeyInput(cur));
             }
 
             if (enter)
             {
                 var needMore = res.AsNeedMoreInput();
-                res = needMore.Item.BindFunction.Invoke(KeyInputUtil.EnterKey);
+                res = needMore.BindData.BindFunction.Invoke(KeyInputUtil.EnterKey);
             }
 
             return res.Convert(x => x.Item1);
@@ -57,14 +57,14 @@ namespace Vim.UnitTest
         {
             var result = Process(text);
             Assert.True(result.IsComplete);
-            Assert.Equal(motion, result.AsComplete().Item);
+            Assert.Equal(motion, result.AsComplete().Result);
         }
 
         private void AssertMotion(KeyInput keyInput, Motion motion)
         {
             var result = _capture.GetMotionAndCount(keyInput);
             Assert.True(result.IsComplete);
-            Assert.Equal(motion, result.AsComplete().Item.Item1);
+            Assert.Equal(motion, result.AsComplete().Result.Item1);
         }
 
         private void AssertMotion(VimKey key, Motion motion)
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
         {
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
-            var motionResult = Process("?world", enter: true).AsComplete().Item;
+            var motionResult = Process("?world", enter: true).AsComplete().Result;
             var searchData = ((Motion.Search)motionResult).Item;
             Assert.Equal("world", searchData.Pattern);
             Assert.Equal(SearchPath.Backward, searchData.Path);
@@ -367,7 +367,7 @@ namespace Vim.UnitTest
         public void IncrementalSearch_Forward()
         {
             _textView.SetText("hello world", caret: 0);
-            var motionResult = Process("/world", enter: true).AsComplete().Item;
+            var motionResult = Process("/world", enter: true).AsComplete().Result;
             var searchData = ((Motion.Search)motionResult).Item;
             Assert.Equal("world", searchData.Pattern);
             Assert.Equal(SearchPath.Forward, searchData.Path);
@@ -442,7 +442,7 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
             Assert.True(result.IsNeedMoreInput);
-            Assert.Equal(result.AsNeedMoreInput().Item.KeyRemapMode, KeyRemapMode.Command);
+            Assert.Equal(result.AsNeedMoreInput().BindData.KeyRemapMode, KeyRemapMode.Command);
         }
 
         /// <summary>
@@ -454,9 +454,9 @@ namespace Vim.UnitTest
         {
             _textView.SetText("cat dog");
             var result = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput('/'));
-            result = result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput('a'));
+            result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(KeyInputUtil.CharToKeyInput('a'));
             Assert.True(result.IsNeedMoreInput);
-            Assert.Equal(result.AsNeedMoreInput().Item.KeyRemapMode, KeyRemapMode.Command);
+            Assert.Equal(result.AsNeedMoreInput().BindData.KeyRemapMode, KeyRemapMode.Command);
         }
 
         [WpfFact]
@@ -524,7 +524,7 @@ namespace Vim.UnitTest
         {
             var result = _capture.GetMotionAndCount('/');
             Assert.True(result.IsNeedMoreInput);
-            result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            result.AsNeedMoreInput().BindData.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.False(_incrementalSearch.InSearch);
         }
 
