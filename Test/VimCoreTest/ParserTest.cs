@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         {
             var lineCommand = VimUtil.ParseLineCommand(command);
             Assert.True(lineCommand.IsParseError);
-            Assert.Equal(error, lineCommand.AsParseError().Item);
+            Assert.Equal(error, lineCommand.AsParseError().Error);
         }
 
         protected LineCommand ParseLineCommand(string text)
@@ -102,7 +102,7 @@ namespace Vim.UnitTest
             {
                 var lineCommand = ParseLineCommand(line);
                 Assert.True(lineCommand.IsAddAutoCommand);
-                return lineCommand.AsAddAutoCommand().Item;
+                return lineCommand.AsAddAutoCommand().AutoCommandDefinition;
             }
 
             [Fact]
@@ -161,7 +161,7 @@ namespace Vim.UnitTest
             {
                 var lineCommand = ParseLineCommand(line);
                 Assert.True(lineCommand.IsDisplayLet);
-                return ((LineCommand.DisplayLet)lineCommand).Item.ToList();
+                return ((LineCommand.DisplayLet)lineCommand).VariableNames.ToList();
             }
 
             [Fact]
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
             private void AssertIf(LineCommand lineCommand, params int[] expected)
             {
                 Assert.True(lineCommand.IsIf);
-                AssertIf(lineCommand.AsIf().Item.ToList(), expected, 0);
+                AssertIf(lineCommand.AsIf().Blocks.ToList(), expected, 0);
             }
 
             private void AssertIf(List<ConditionalBlock> conditionalBlockList, int[] expected, int index)
@@ -378,7 +378,7 @@ namespace Vim.UnitTest
                 var parser = CreateParserOfLines(functionText);
                 var lineCommand = parser.ParseNextCommand();
                 Assert.True(lineCommand is LineCommand.Function);
-                var func = ((LineCommand.Function)lineCommand).Item;
+                var func = ((LineCommand.Function)lineCommand).Function;
                 if (name != null)
                 {
                     Assert.Equal(name, func.Definition.Name);
@@ -407,7 +407,7 @@ namespace Vim.UnitTest
                 var parser = CreateParserOfLines(functionText);
                 var lineCommand = parser.ParseNextCommand();
                 Assert.True(lineCommand.IsFunction);
-                return ((LineCommand.Function)lineCommand).Item;
+                return ((LineCommand.Function)lineCommand).Function;
             }
 
             private FunctionDefinition ParseFunctionDefinition(string definitionText)
@@ -415,7 +415,7 @@ namespace Vim.UnitTest
                 var parser = CreateParserOfLines(definitionText);
                 var lineCommand = parser.ParseNextLine();
                 Assert.True(lineCommand.IsFunctionStart);
-                return ((LineCommand.FunctionStart)lineCommand).Item.Value;
+                return ((LineCommand.FunctionStart)lineCommand).FunctionDefinition.Value;
             }
 
             private void AssertBadFunctionDefinition(string definitionText)
@@ -423,7 +423,7 @@ namespace Vim.UnitTest
                 var parser = CreateParserOfLines(definitionText);
                 var lineCommand = parser.ParseNextLine();
                 Assert.True(lineCommand.IsFunctionStart);
-                Assert.True(((LineCommand.FunctionStart)lineCommand).Item.IsNone());
+                Assert.True(((LineCommand.FunctionStart)lineCommand).FunctionDefinition.IsNone());
             }
 
             public sealed class CompleteTest : FunctionTest
@@ -514,7 +514,7 @@ let x = 42
                     // The first command should be the completed function.  
                     var functionCommand = parser.ParseNextCommand();
                     Assert.True(functionCommand.IsFunction);
-                    var functionCommands = ((LineCommand.Function)functionCommand).Item.LineCommands;
+                    var functionCommands = ((LineCommand.Function)functionCommand).Function.LineCommands;
                     Assert.True(functionCommands[0].IsParseError);
                     Assert.True(functionCommands[1].IsLet);
 
@@ -674,7 +674,7 @@ let x = 42
                 var command = ParseLineCommand(range + ">");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                return shift.Item1;
+                return shift.LineRangeSpecifier;
             }
 
             [Fact]
@@ -776,32 +776,32 @@ let x = 42
             public void NextSimple()
             {
                 var quickFix = ParseLineCommand("cn").AsQuickFixNext();
-                Assert.True(quickFix.Item1.IsNone());
-                Assert.False(quickFix.item2);
+                Assert.True(quickFix.Count.IsNone());
+                Assert.False(quickFix.HasBang);
             }
 
             [Fact]
             public void NextWithArgs()
             {
                 var quickFix = ParseLineCommand("2cn!").AsQuickFixNext();
-                Assert.Equal(2, quickFix.Item1.Value);
-                Assert.True(quickFix.Item2);
+                Assert.Equal(2, quickFix.Count.Value);
+                Assert.True(quickFix.HasBang);
             }
 
             [Fact]
             public void PreviousSimple()
             {
                 var quickFix = ParseLineCommand("cp").AsQuickFixPrevious();
-                Assert.True(quickFix.Item1.IsNone());
-                Assert.False(quickFix.item2);
+                Assert.True(quickFix.Count.IsNone());
+                Assert.False(quickFix.HasBang);
             }
 
             [Fact]
             public void PreviousWithArgs()
             {
                 var quickFix = ParseLineCommand("2cp!").AsQuickFixPrevious();
-                Assert.Equal(2, quickFix.Item1.Value);
-                Assert.True(quickFix.Item2);
+                Assert.Equal(2, quickFix.Count.Value);
+                Assert.True(quickFix.HasBang);
             }
         }
 
@@ -856,13 +856,13 @@ let x = 42
             private void AssertSubstitute(string command, string pattern, string replace, SubstituteFlags? flags = null)
             {
                 var subCommand = ParseLineCommand(command).AsSubstitute();
-                Assert.Equal(pattern, subCommand.Item2);
-                Assert.Equal(replace, subCommand.Item3);
+                Assert.Equal(pattern, subCommand.Pattern);
+                Assert.Equal(replace, subCommand.Replace);
 
                 // Verify flags if it was passed
                 if (flags.HasValue)
                 {
-                    Assert.Equal(flags.Value, subCommand.Item4);
+                    Assert.Equal(flags.Value, subCommand.SubstituteFlags);
                 }
             }
 
@@ -872,7 +872,7 @@ let x = 42
             private void AssertSubstituteRepeat(string command, SubstituteFlags flags)
             {
                 var subCommand = ParseLineCommand(command).AsSubstituteRepeat();
-                Assert.Equal(flags, subCommand.Item2);
+                Assert.Equal(flags, subCommand.SubstituteFlags);
             }
 
             /// <summary>
@@ -1138,7 +1138,7 @@ let x = 42
             public void All()
             {
                 var command = ParseLineCommand("set all").AsSet();
-                Assert.True(command.Item.Single().IsDisplayAllButTerminal);
+                Assert.True(command.SetArguments.Single().IsDisplayAllButTerminal);
             }
 
             /// <summary>
@@ -1148,7 +1148,7 @@ let x = 42
             public void DisplaySetting()
             {
                 var command = ParseLineCommand("set example?").AsSet();
-                var option = command.Item.Single().AsDisplaySetting();
+                var option = command.SetArguments.Single().AsDisplaySetting();
                 Assert.Equal("example", option.Item);
             }
 
@@ -1159,7 +1159,7 @@ let x = 42
             public void UseSetting()
             {
                 var command = ParseLineCommand("set example").AsSet();
-                var option = command.Item.Single().AsUseSetting();
+                var option = command.SetArguments.Single().AsUseSetting();
                 Assert.Equal("example", option.Item);
             }
 
@@ -1170,7 +1170,7 @@ let x = 42
             public void ToggleOffSetting()
             {
                 var command = ParseLineCommand("set noexample").AsSet();
-                var option = command.Item.Single().AsToggleOffSetting();
+                var option = command.SetArguments.Single().AsToggleOffSetting();
                 Assert.Equal("example", option.Item);
             }
 
@@ -1181,7 +1181,7 @@ let x = 42
             public void InvertSetting()
             {
                 var command = ParseLineCommand("set example!").AsSet();
-                var option = command.Item.Single().AsInvertSetting();
+                var option = command.SetArguments.Single().AsInvertSetting();
                 Assert.Equal("example", option.Item);
             }
 
@@ -1193,7 +1193,7 @@ let x = 42
             public void InvertSetting_AlternateSyntax()
             {
                 var command = ParseLineCommand("set invexample").AsSet();
-                var option = command.Item.Single().AsInvertSetting();
+                var option = command.SetArguments.Single().AsInvertSetting();
                 Assert.Equal("example", option.Item);
             }
 
@@ -1204,7 +1204,7 @@ let x = 42
             public void AssignSetting()
             {
                 var command = ParseLineCommand("set x=y").AsSet();
-                var option = command.Item.Single().AsAssignSetting();
+                var option = command.SetArguments.Single().AsAssignSetting();
                 Assert.Equal("x", option.Item1);
                 Assert.Equal("y", option.Item2);
             }
@@ -1217,7 +1217,7 @@ let x = 42
             public void AssignSetting_AlternateSyntax()
             {
                 var command = ParseLineCommand("set x:y").AsSet();
-                var option = command.Item.Single().AsAssignSetting();
+                var option = command.SetArguments.Single().AsAssignSetting();
                 Assert.Equal("x", option.Item1);
                 Assert.Equal("y", option.Item2);
             }
@@ -1229,7 +1229,7 @@ let x = 42
             public void AssignNoValue()
             {
                 var command = ParseLineCommand("set vb=").AsSet();
-                var option = command.Item.Single().AsAssignSetting();
+                var option = command.SetArguments.Single().AsAssignSetting();
                 Assert.Equal("vb", option.Item1);
                 Assert.Equal("", option.Item2);
             }
@@ -1241,7 +1241,7 @@ let x = 42
             public void AddSetting()
             {
                 var command = ParseLineCommand("set x+=y").AsSet();
-                var option = command.Item.Single().AsAddSetting();
+                var option = command.SetArguments.Single().AsAddSetting();
                 Assert.Equal("x", option.Item1);
                 Assert.Equal("y", option.Item2);
             }
@@ -1253,7 +1253,7 @@ let x = 42
             public void SubtractSetting()
             {
                 var command = ParseLineCommand("set x-=y").AsSet();
-                var option = command.Item.Single().AsSubtractSetting();
+                var option = command.SetArguments.Single().AsSubtractSetting();
                 Assert.Equal("x", option.Item1);
                 Assert.Equal("y", option.Item2);
             }
@@ -1265,13 +1265,13 @@ let x = 42
             public void AssignWithSpaceAfter()
             {
                 var command = ParseLineCommand("set vb= ai").AsSet();
-                Assert.Equal(2, command.Item.Length);
+                Assert.Equal(2, command.SetArguments.Length);
 
-                var set = command.Item[0];
+                var set = command.SetArguments[0];
                 Assert.Equal("vb", set.AsAssignSetting().Item1);
                 Assert.Equal("", set.AsAssignSetting().Item2);
 
-                set = command.Item[1];
+                set = command.SetArguments[1];
                 Assert.Equal("ai", set.AsUseSetting().Item);
             }
 
@@ -1282,7 +1282,7 @@ let x = 42
             public void MultiplySetting()
             {
                 var command = ParseLineCommand("set x^=y").AsSet();
-                var option = command.Item.Single().AsMultiplySetting();
+                var option = command.SetArguments.Single().AsMultiplySetting();
                 Assert.Equal("x", option.Item1);
                 Assert.Equal("y", option.Item2);
             }
@@ -1432,17 +1432,17 @@ let x = 42
             private void AssertMapCore(string command, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] keyRemapModes)
             {
                 var map = ParseLineCommand(command).AsMapKeys();
-                Assert.Equal(lhs, map.Item1);
-                Assert.Equal(rhs, map.Item2);
-                Assert.Equal(keyRemapModes, map.Item3.ToArray());
-                Assert.Equal(allowRemap, map.Item4);
+                Assert.Equal(lhs, map.LeftKeyNotation);
+                Assert.Equal(rhs, map.RightKeyNotation);
+                Assert.Equal(keyRemapModes, map.KeyRemapModes.ToArray());
+                Assert.Equal(allowRemap, map.AllowRemap);
             }
 
             private void AssertUnmap(string command, string keyNotation, params KeyRemapMode[] keyRemapModes)
             {
                 var map = ParseLineCommand(command).AsUnmapKeys();
-                Assert.Equal(keyNotation, map.Item1);
-                Assert.Equal(keyRemapModes, map.Item2.ToArray());
+                Assert.Equal(keyNotation, map.KeyNotation);
+                Assert.Equal(keyRemapModes, map.KeyRemapModes.ToArray());
             }
 
             [Fact]
@@ -1536,7 +1536,7 @@ let x = 42
                 void action(string commandText, KeyMapArgument mapArgument)
                 {
                     var command = ParseLineCommand(commandText).AsMapKeys();
-                    var mapArguments = command.Item5;
+                    var mapArguments = command.KeyMapArguments;
                     Assert.Equal(1, mapArguments.Length);
                     Assert.Equal(mapArgument, mapArguments.Head);
                 }
@@ -1651,8 +1651,8 @@ let x = 42
                 var command = ParseLineCommand("'a,'b>");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                Assert.True(shift.Item1.IsRange);
-                Assert.Equal(1, shift.Item2);
+                Assert.True(shift.LineRangeSpecifier.IsRange);
+                Assert.Equal(1, shift.Count);
             }
 
             [Fact]
@@ -1661,36 +1661,36 @@ let x = 42
                 var command = ParseLineCommand("'a,'b >");
                 Assert.True(command.IsShiftRight);
                 var shift = (LineCommand.ShiftRight)command;
-                Assert.True(shift.Item1.IsRange);
-                Assert.Equal(1, shift.Item2);
+                Assert.True(shift.LineRangeSpecifier.IsRange);
+                Assert.Equal(1, shift.Count);
             }
 
             [Fact]
             public void ShiftDoubleLeft()
             {
                 var command = ParseLineCommand("<<");
-                Assert.Equal(2, ((LineCommand.ShiftLeft)command).Item2);
+                Assert.Equal(2, ((LineCommand.ShiftLeft)command).Count);
             }
 
             [Fact]
             public void ShiftDoubleRight()
             {
                 var command = ParseLineCommand(">>");
-                Assert.Equal(2, ((LineCommand.ShiftRight)command).Item2);
+                Assert.Equal(2, ((LineCommand.ShiftRight)command).Count);
             }
 
             [Fact]
             public void ShiftTripleLeft()
             {
                 var command = ParseLineCommand("<<<");
-                Assert.Equal(3, ((LineCommand.ShiftLeft)command).Item2);
+                Assert.Equal(3, ((LineCommand.ShiftLeft)command).Count);
             }
 
             [Fact]
             public void ShiftTripleRight()
             {
                 var command = ParseLineCommand(">>>");
-                Assert.Equal(3, ((LineCommand.ShiftRight)command).Item2);
+                Assert.Equal(3, ((LineCommand.ShiftRight)command).Count);
             }
         }
 
@@ -1703,7 +1703,7 @@ let x = 42
             public void Parse_ChangeDirectory_Empty()
             {
                 var command = ParseLineCommand("cd").AsChangeDirectory();
-                Assert.True(command.Item.IsEmpty);
+                Assert.True(command.SymbolicPath.IsEmpty);
             }
 
             /// <summary>
@@ -1713,9 +1713,9 @@ let x = 42
             public void Parse_ChangeDirectory_Path()
             {
                 var command = ParseLineCommand("cd test.txt").AsChangeDirectory();
-                Assert.Equal(1, command.Item.Length);
-                Assert.True(command.Item.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
+                Assert.Equal(1, command.SymbolicPath.Length);
+                Assert.True(command.SymbolicPath.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
             }
 
             /// <summary>
@@ -1726,9 +1726,9 @@ let x = 42
             public void Parse_ChangeDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("cd! test.txt").AsChangeDirectory();
-                Assert.Equal(1, command.Item.Length);
-                Assert.True(command.Item.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
+                Assert.Equal(1, command.SymbolicPath.Length);
+                Assert.True(command.SymbolicPath.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
             }
 
             /// <summary>
@@ -1738,7 +1738,7 @@ let x = 42
             public void Parse_ChangeLocalDirectory_Empty()
             {
                 var command = ParseLineCommand("lcd").AsChangeLocalDirectory();
-                Assert.True(command.Item.IsEmpty);
+                Assert.True(command.SymbolicPath.IsEmpty);
             }
 
             /// <summary>
@@ -1748,9 +1748,9 @@ let x = 42
             public void Parse_ChangeLocalDirectory_Path()
             {
                 var command = ParseLineCommand("lcd test.txt").AsChangeLocalDirectory();
-                Assert.Equal(1, command.Item.Length);
-                Assert.True(command.Item.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
+                Assert.Equal(1, command.SymbolicPath.Length);
+                Assert.True(command.SymbolicPath.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
             }
 
             /// <summary>
@@ -1761,9 +1761,9 @@ let x = 42
             public void Parse_ChangeLocalDirectory_PathAndBang()
             {
                 var command = ParseLineCommand("lcd! test.txt").AsChangeLocalDirectory();
-                Assert.Equal(1, command.Item.Length);
-                Assert.True(command.Item.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.Item.First()).Item);
+                Assert.Equal(1, command.SymbolicPath.Length);
+                Assert.True(command.SymbolicPath.First().IsLiteral);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
             }
 
             /// <summary>
@@ -1783,7 +1783,7 @@ let x = 42
             {
                 var command = ParseLineCommand("close!");
                 Assert.True(command.IsClose);
-                Assert.True(command.AsClose().Item);
+                Assert.True(command.AsClose().HasBang);
             }
 
             /// <summary>
@@ -1822,7 +1822,7 @@ let x = 42
             public void Parse_Delete_WithCount()
             {
                 var lineCommand = ParseLineCommand("delete 2");
-                var lineRange = lineCommand.AsDelete().Item1;
+                var lineRange = lineCommand.AsDelete().LineRangeSpecifier;
                 Assert.Equal(2, lineRange.AsWithEndCount().Item2);
             }
 
@@ -1837,14 +1837,14 @@ let x = 42
             public void Parse_ReadCommand_Simple()
             {
                 var command = ParseLineCommand("read !echo bar").AsReadCommand();
-                Assert.Equal("echo bar", command.Item2);
+                Assert.Equal("echo bar", command.CommandText);
             }
 
             [Fact]
             public void Parse_ReadFile_Simple()
             {
                 var command = ParseLineCommand("read test.txt").AsReadFile();
-                Assert.Equal("test.txt", command.Item3);
+                Assert.Equal("test.txt", command.FilePath);
             }
 
             /// <summary>
@@ -1854,8 +1854,8 @@ let x = 42
             public void Parse_Source_Simple()
             {
                 var command = ParseLineCommand("source test.txt").AsSource();
-                Assert.False(command.Item1);
-                Assert.Equal("test.txt", command.Item2);
+                Assert.False(command.HasBang);
+                Assert.Equal("test.txt", command.FilePath);
             }
 
             /// <summary>
@@ -1865,17 +1865,17 @@ let x = 42
             public void Parse_Source_WithBang()
             {
                 var command = ParseLineCommand("source! test.txt").AsSource();
-                Assert.True(command.Item1);
-                Assert.Equal("test.txt", command.Item2);
+                Assert.True(command.HasBang);
+                Assert.Equal("test.txt", command.FilePath);
             }
 
             [Fact]
             public void Parse_Write_Simple()
             {
                 var write = ParseLineCommand("w").AsWrite();
-                Assert.True(write.Item1.IsNone);
-                Assert.False(write.Item2);
-                Assert.True(write.Item4.IsNone());
+                Assert.True(write.LineRangeSpecifier.IsNone);
+                Assert.False(write.HasBang);
+                Assert.True(write.FilePath.IsNone());
             }
 
             /// <summary>
@@ -1885,17 +1885,17 @@ let x = 42
             public void Parse_Write_ToFile()
             {
                 var write = ParseLineCommand("w example.txt").AsWrite();
-                Assert.True(write.Item1.IsNone);
-                Assert.False(write.Item2);
-                Assert.Equal("example.txt", write.Item4.Value);
+                Assert.True(write.LineRangeSpecifier.IsNone);
+                Assert.False(write.HasBang);
+                Assert.Equal("example.txt", write.FilePath.Value);
             }
 
             [Fact]
             public void Parse_WriteAll_Simple()
             {
                 var writeAll = ParseLineCommand("wall").AsWriteAll();
-                Assert.False(writeAll.Item1);
-                Assert.False(writeAll.Item2);
+                Assert.False(writeAll.HasBang);
+                Assert.False(writeAll.Quit);
             }
 
             /// <summary>
@@ -1905,16 +1905,16 @@ let x = 42
             public void Parse_WriteAll_WithBang()
             {
                 var writeAll = ParseLineCommand("wall!").AsWriteAll();
-                Assert.True(writeAll.Item1);
-                Assert.False(writeAll.Item2);
+                Assert.True(writeAll.HasBang);
+                Assert.False(writeAll.Quit);
             }
 
             [Fact]
             public void Parse_WriteQuitAll_Simple()
             {
                 var writeAll = ParseLineCommand("wqall").AsWriteAll();
-                Assert.False(writeAll.Item1);
-                Assert.True(writeAll.Item2);
+                Assert.False(writeAll.HasBang);
+                Assert.True(writeAll.Quit);
             }
 
             /// <summary>
@@ -1924,8 +1924,8 @@ let x = 42
             public void Parse_WriteQuitAll_WithBang()
             {
                 var writeAll = ParseLineCommand("wqall!").AsWriteAll();
-                Assert.True(writeAll.Item1);
-                Assert.True(writeAll.Item2);
+                Assert.True(writeAll.HasBang);
+                Assert.True(writeAll.Quit);
             }
 
             /// <summary>

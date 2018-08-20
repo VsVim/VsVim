@@ -421,7 +421,7 @@ namespace Vim.UnitTest
 
         public static bool IsParseError(this LineCommand lineCommand, string message)
         {
-            return lineCommand.IsParseError && lineCommand.AsParseError().Item == message;
+            return lineCommand.IsParseError && lineCommand.AsParseError().Error == message;
         }
 
         #endregion
