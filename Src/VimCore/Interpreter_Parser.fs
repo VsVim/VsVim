@@ -12,8 +12,8 @@ type ParseRegisterName =
 
 [<RequireQualifiedAccess>]
 type ParseResult<'T> = 
-    | Succeeded of 'T
-    | Failed of string
+    | Succeeded of Value: 'T
+    | Failed of Error: string
 
     with 
 

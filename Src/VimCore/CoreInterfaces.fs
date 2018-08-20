@@ -442,10 +442,10 @@ type PatternDataEventArgs(_patternData: PatternData) =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type SearchOffsetData =
     | None
-    | Line of int
-    | Start of int
-    | End of int
-    | Search of PatternData
+    | Line of Line: int
+    | Start of Start: int
+    | End of End: int
+    | Search of PatternData: PatternData
 
     with 
 
@@ -654,15 +654,15 @@ type SearchResult =
     ///
     /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
-    | Found of SearchData * SnapshotSpan * SnapshotSpan * bool
+    | Found of SearchData: SearchData * SpanWithOffset: SnapshotSpan * Span: SnapshotSpan * DidWrap: bool
 
     /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
     /// but wasn't found do to the lack of a wrap in the SearchData value
-    | NotFound of SearchData * bool
+    | NotFound of SeachData: SearchData * CanFindWithWrap: bool
 
     /// There was an error converting the pattern to a searchable value.  The string value is the
     /// error message
-    | Error of SearchData * string
+    | Error of SearchData: SearchData * Error: string
 
     with
 
@@ -1000,10 +1000,10 @@ type TagBlockKind =
 type Motion =
 
     /// Implement the all block motion
-    | AllBlock of BlockKind
+    | AllBlock of BlockKind: BlockKind
 
     /// Implement the 'aw' motion.  This is called once the a key is seen.
-    | AllWord of WordKind
+    | AllWord of WordKind: WordKind
 
     /// Implement the 'ap' motion
     | AllParagraph 
@@ -1018,7 +1018,7 @@ type Motion =
     | BeginingOfLine
 
     /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word 
-    | BackwardEndOfWord of WordKind
+    | BackwardEndOfWord of WordKind: WordKind
 
     /// The left motion for h
     | CharLeft 
@@ -1039,7 +1039,7 @@ type Motion =
     | ArrowRight
 
     /// Implements the f, F, t and T motions
-    | CharSearch of CharSearchKind * SearchPath * char
+    | CharSearch of CharSearchKind: CharSearchKind * SearchPath: SearchPath * Character: char
 
     /// Get the span of "count" display lines upward.  Display lines can differ when
     /// wrap is enabled
@@ -1064,7 +1064,7 @@ type Motion =
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    | EndOfWord of WordKind
+    | EndOfWord of WordKind: WordKind
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
@@ -1079,19 +1079,19 @@ type Motion =
     | FirstNonBlankOnLine
 
     /// Forces a line wise version of the specified motion 
-    | ForceLineWise of Motion
+    | ForceLineWise of Motion: Motion
 
     /// Forces a characterwise version of the specified motion
-    | ForceCharacterWise of Motion
+    | ForceCharacterWise of Motion: Motion
 
     /// Inner word motion
-    | InnerWord of WordKind
+    | InnerWord of WordKind: WordKind
 
     /// Inner paragraph motion
     | InnerParagraph
 
     /// Inner block motion
-    | InnerBlock of BlockKind
+    | InnerBlock of BlockKind: BlockKind
 
     /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search
@@ -1099,7 +1099,7 @@ type Motion =
 
     /// Find the next occurrence of the last search.  The bool parameter is true if the search
     /// should be in the opposite direction
-    | LastSearch of bool
+    | LastSearch of UseOppositeDirection: bool
 
     /// Handle the lines down to first non-blank motion.  This is one of the motions which 
     /// can accept a count of 0.
@@ -1135,12 +1135,12 @@ type Motion =
 
     /// Get the motion to the specified mark.  This is typically accessed via
     /// the ` (back tick) operator and results in an exclusive motion
-    | Mark of LocalMark
+    | Mark of LocalMark: LocalMark
 
     /// Get the motion to the line of the specified mark.  This is typically
     /// accessed via the ' (single quote) operator and results in a 
     /// line wise motion
-    | MarkLine of LocalMark
+    | MarkLine of LocalMark: LocalMark
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
@@ -1148,19 +1148,19 @@ type Motion =
     | MatchingTokenOrDocumentPercent 
 
     /// Get the motion to the nearest lowercase mark in the specified direction
-    | NextMark of SearchPath
+    | NextMark of SearchPath: SearchPath
 
     /// Get the motion to the nearest lowercase mark line in the specified direction
-    | NextMarkLine of SearchPath
+    | NextMarkLine of SearchPath: SearchPath
 
     /// Operate on the next match for last pattern searched for
-    | NextMatch of SearchPath
+    | NextMatch of SearchPath: SearchPath
 
     /// Search for the next occurrence of the word under the caret
-    | NextWord of SearchPath
+    | NextWord of SearchPath: SearchPath
 
     /// Search for the next partial occurrence of the word under the caret
-    | NextPartialWord of SearchPath
+    | NextPartialWord of SearchPath: SearchPath
 
     /// Count paragraphs backwards
     | ParagraphBackward
@@ -1169,10 +1169,10 @@ type Motion =
     | ParagraphForward
 
     /// The quoted string including the quotes
-    | QuotedString of char
+    | QuotedString of Character: char
 
     /// The quoted string excluding the quotes
-    | QuotedStringContents of char
+    | QuotedStringContents of Character: char
 
     /// Repeat the last CharSearch value
     | RepeatLastCharSearch
@@ -1181,7 +1181,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of SearchData
+    | Search of SearchData: SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -1205,16 +1205,16 @@ type Motion =
     | ScreenColumn
 
     /// Matching xml / html tags
-    | TagBlock of TagBlockKind
+    | TagBlock of TagBlockKind: TagBlockKind
 
     /// The [(, ]), ]}, [{ motions
-    | UnmatchedToken of SearchPath * UnmatchedTokenKind
+    | UnmatchedToken of SearchPattern: SearchPath * UnmatchedTokenKind: UnmatchedTokenKind
 
     /// Implement the b/B motion
-    | WordBackward of WordKind
+    | WordBackward of WordKind: WordKind
 
     /// Implement the w/W motion
-    | WordForward of WordKind 
+    | WordForward of WordKind: WordKind 
 
 /// Interface for running Motion instances against an ITextView
 and IMotionUtil =
@@ -1464,19 +1464,19 @@ type KeyMappingResult =
 
     /// The values were mapped completely and require no further mapping. This 
     /// could be a result of a no-op mapping though
-    | Mapped of KeyInputSet
+    | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
     /// keys which were mapped are processed.  The values are 
     ///
     ///  mapped KeyInputSet * remaining KeyInputSet
-    | PartiallyMapped of KeyInputSet * KeyInputSet
+    | PartiallyMapped of MappedKeyInputSet: KeyInputSet * RemainingKeyInputSet: KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
     | Recursive
 
     /// More input is needed to resolve this mapping.
-    | NeedsMoreInput of KeyInputSet
+    | NeedsMoreInput of KeyInputSet: KeyInputSet
 
     with 
 
@@ -2143,14 +2143,14 @@ type VisualSpan =
 type VisualSelection =
 
     /// The underlying span and whether or not this is a forward looking span.  
-    | Character of CharacterSpan * SearchPath
+    | Character of CharacterSpan: CharacterSpan * SearchPath: SearchPath
 
     /// The underlying range, whether or not is forwards or backwards and the int 
     /// is which column in the range the caret should be placed in
-    | Line of SnapshotLineRange * SearchPath * int 
+    | Line of LineRange: SnapshotLineRange * SearchPath: SearchPath * ColumnNumber: int 
 
     /// Just keep the BlockSpan and the caret information for the block
-    | Block of BlockSpan * BlockCaretLocation
+    | Block of BlockSpan: BlockSpan * BlockCaretLocation: BlockCaretLocation
 
     with
 

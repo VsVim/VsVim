@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseStringLiteral();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Value.AsString().String;
+                return parseResult.AsSucceeded().Value.AsConstantValue().Value.AsString().String;
             }
 
             [Fact]
@@ -634,7 +634,7 @@ let x = 42
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseNumberConstant();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Value;
+                return parseResult.AsSucceeded().Value.AsConstantValue().Value;
             }
 
             private int ParseNumber(string text)
@@ -748,7 +748,7 @@ let x = 42
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseList();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsList().Expressions;
+                return parseResult.AsSucceeded().Value.AsList().Expressions;
             }
 
             [Fact]
@@ -813,7 +813,7 @@ let x = 42
                 parser.Tokenizer.TokenizerFlags = TokenizerFlags.AllowDoubleQuote;
                 var parseResult = parser.ParseStringConstant();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Value.AsString().String;
+                return parseResult.AsSucceeded().Value.AsConstantValue().Value.AsString().String;
             }
 
             [Fact]

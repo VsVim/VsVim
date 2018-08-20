@@ -396,7 +396,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
         {
-            return parseResult.IsFailed && message == parseResult.AsFailed().Item;
+            return parseResult.IsFailed && message == parseResult.AsFailed().Error;
         }
 
         #endregion
@@ -658,7 +658,7 @@ namespace Vim.UnitTest
 
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
         {
-            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().Item.KeyInputs;
+            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().KeyInputSet.KeyInputs;
         }
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
@@ -701,11 +701,11 @@ namespace Vim.UnitTest
         {
             if (res.IsMapped)
             {
-                return res.AsMapped().Item;
+                return res.AsMapped().KeyInputSet;
             }
 
             var partialMap = res.AsPartiallyMapped();
-            return KeyInputSetUtil.Combine(partialMap.item1, partialMap.item2);
+            return KeyInputSetUtil.Combine(partialMap.MappedKeyInputSet, partialMap.RemainingKeyInputSet);
         }
 
         #endregion
@@ -1406,7 +1406,7 @@ namespace Vim.UnitTest
 
         public static bool IsFound(this SearchResult result, int startPosition)
         {
-            return result.IsFound && result.AsFound().Item2.Start == startPosition;
+            return result.IsFound && result.AsFound().SpanWithOffset.Start == startPosition;
         }
 
         #endregion

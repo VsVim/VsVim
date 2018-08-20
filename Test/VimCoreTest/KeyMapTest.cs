@@ -39,8 +39,8 @@ namespace Vim.UnitTest
             else
             {
                 Assert.True(result.IsPartiallyMapped);
-                Assert.Equal(lhs.FirstKeyInput.Value, result.AsPartiallyMapped().Item1.FirstKeyInput.Value);
-                Assert.Equal(1, result.AsPartiallyMapped().Item1.Length);
+                Assert.Equal(lhs.FirstKeyInput.Value, result.AsPartiallyMapped().MappedKeyInputSet.FirstKeyInput.Value);
+                Assert.Equal(1, result.AsPartiallyMapped().MappedKeyInputSet.Length);
             }
 
             Assert.Equal(lhs, result.GetMappedKeyInputs());
@@ -71,8 +71,8 @@ namespace Vim.UnitTest
             Assert.True(ret.IsPartiallyMapped);
 
             var partiallyMapped = ret.AsPartiallyMapped();
-            Assert.Equal(KeyInputSetUtil.OfString(expectedMapped), partiallyMapped.Item1);
-            Assert.Equal(KeyInputSetUtil.OfString(expectedRemaining), partiallyMapped.Item2);
+            Assert.Equal(KeyInputSetUtil.OfString(expectedMapped), partiallyMapped.MappedKeyInputSet);
+            Assert.Equal(KeyInputSetUtil.OfString(expectedRemaining), partiallyMapped.RemainingKeyInputSet);
         }
 
         public sealed class MapWithNoRemapTest : KeyMapTest
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(_map.MapWithNoRemap("a", @"\<Home>", KeyRemapMode.Normal));
                 var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
-                Assert.Equal(KeyNotationUtil.StringToKeyInputSet(@"\<Home>"), result.AsMapped().Item);
+                Assert.Equal(KeyNotationUtil.StringToKeyInputSet(@"\<Home>"), result.AsMapped().KeyInputSet);
             }
 
             [Fact]
@@ -191,7 +191,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(_map.MapWithNoRemap("a", "<lt>lt>", KeyRemapMode.Normal));
                 var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
-                Assert.Equal(KeyInputSetUtil.OfString("<lt>"), result.AsMapped().Item);
+                Assert.Equal(KeyInputSetUtil.OfString("<lt>"), result.AsMapped().KeyInputSet);
             }
 
             [Fact]
@@ -259,7 +259,7 @@ namespace Vim.UnitTest
                 Assert.True(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
                 var ret = _map.GetKeyMappingResult("aaa", KeyRemapMode.Normal);
                 Assert.True(ret.IsMapped);
-                Assert.Equal(KeyInputSetUtil.OfString("bar"), ret.AsMapped().Item);
+                Assert.Equal(KeyInputSetUtil.OfString("bar"), ret.AsMapped().KeyInputSet);
             }
 
             /// <summary>
@@ -587,7 +587,7 @@ namespace Vim.UnitTest
                 Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
                 var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(res.IsMapped);
-                Assert.Equal('b', res.AsMapped().Item.KeyInputs.Single().Char);
+                Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
 
             [Fact]
@@ -596,7 +596,7 @@ namespace Vim.UnitTest
                 Assert.True(_map.MapWithNoRemap("a", "bc", KeyRemapMode.Normal));
                 var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(res.IsMapped);
-                var list = res.AsMapped().Item.KeyInputs.ToList();
+                var list = res.AsMapped().KeyInputSet.KeyInputs.ToList();
                 Assert.Equal(2, list.Count);
                 Assert.Equal('b', list[0].Char);
                 Assert.Equal('c', list[1].Char);
@@ -618,8 +618,8 @@ namespace Vim.UnitTest
             public void GetKeyMappingResult_RemainderIsMappable()
             {
                 var result = _map.GetKeyMappingResult("dog", KeyRemapMode.Normal).AsPartiallyMapped();
-                Assert.Equal(KeyInputSetUtil.OfString("d"), result.Item1);
-                Assert.Equal(KeyInputSetUtil.OfString("og"), result.Item2);
+                Assert.Equal(KeyInputSetUtil.OfString("d"), result.MappedKeyInputSet);
+                Assert.Equal(KeyInputSetUtil.OfString("og"), result.RemainingKeyInputSet);
             }
 
             /// <summary>
@@ -644,7 +644,7 @@ namespace Vim.UnitTest
                 _map.Clear(KeyRemapMode.Normal);
                 var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Insert);
                 Assert.True(res.IsMapped);
-                Assert.Equal('b', res.AsMapped().Item.KeyInputs.Single().Char);
+                Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
 
             [Fact]
@@ -704,7 +704,7 @@ namespace Vim.UnitTest
 
                 var input = "aa".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
                 var res = _map.GetKeyMapping(new KeyInputSet(input), KeyRemapMode.Normal);
-                Assert.Equal('b', res.AsMapped().Item.KeyInputs.Single().Char);
+                Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
 
             [Fact]

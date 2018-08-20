@@ -357,7 +357,7 @@ namespace Vim.UnitTest
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
             var motionResult = Process("?world", enter: true).AsComplete().Result;
-            var searchData = ((Motion.Search)motionResult).Item;
+            var searchData = ((Motion.Search)motionResult).SearchData;
             Assert.Equal("world", searchData.Pattern);
             Assert.Equal(SearchPath.Backward, searchData.Path);
             Assert.True(searchData.Kind.IsBackwardWithWrap);
@@ -368,7 +368,7 @@ namespace Vim.UnitTest
         {
             _textView.SetText("hello world", caret: 0);
             var motionResult = Process("/world", enter: true).AsComplete().Result;
-            var searchData = ((Motion.Search)motionResult).Item;
+            var searchData = ((Motion.Search)motionResult).SearchData;
             Assert.Equal("world", searchData.Pattern);
             Assert.Equal(SearchPath.Forward, searchData.Path);
             Assert.True(searchData.Kind.IsForwardWithWrap);

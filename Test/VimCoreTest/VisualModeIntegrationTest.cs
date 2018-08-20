@@ -515,7 +515,7 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation($"1{kind}");
                     Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                     var selection = _vimBuffer.VisualLineMode.VisualSelection;
-                    var range = selection.AsLine().Item1;
+                    var range = selection.AsLine().LineRange;
                     Assert.Equal(range, _textBuffer.GetLineRange(startLine: 0, endLine: 0));
                 }
 
@@ -530,7 +530,7 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                     var selection = _vimBuffer.VisualLineMode.VisualSelection;
-                    var range = selection.AsLine().Item1;
+                    var range = selection.AsLine().LineRange;
                     Assert.Equal(range, _textBuffer.GetLineRange(startLine: 0, endLine: 1));
                 }
             }

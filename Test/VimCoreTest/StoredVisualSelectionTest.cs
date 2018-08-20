@@ -71,7 +71,7 @@ namespace Vim.UnitTest
                 var sel = StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: -1);
                 var point = textBuffer.GetPointInLine(line: 3, column: 2);
                 var visualSelection = sel.GetVisualSelection(point, count: 1);
-                Assert.Equal(SearchPath.Backward, visualSelection.AsCharacter().Item2);
+                Assert.Equal(SearchPath.Backward, visualSelection.AsCharacter().SearchPath);
 
                 var span = visualSelection.VisualSpan.Spans.Single();
                 Assert.Equal(textBuffer.GetPointInLine(line: 3, column: 1), span.Start);

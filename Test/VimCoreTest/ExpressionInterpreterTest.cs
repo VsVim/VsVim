@@ -20,7 +20,7 @@ namespace Vim.UnitTest
         {
             var parseResult = VimUtil.ParseExpression(expr);
             Assert.True(parseResult.IsSucceeded, "Expression failed to parse");
-            return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
+            return _interpreter.RunExpression(parseResult.AsSucceeded().Value);
         }
 
         private void Run(string expr, string expected)

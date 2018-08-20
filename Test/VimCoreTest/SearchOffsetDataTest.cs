@@ -14,21 +14,21 @@ namespace Vim.UnitTest
             {
                 var data = SearchOffsetData.Parse(offset);
                 Assert.True(data.IsLine);
-                Assert.Equal(count, ((SearchOffsetData.Line)data).Item);
+                Assert.Equal(count, ((SearchOffsetData.Line)data).Line);
             }
 
             private static void AssertEnd(string offset, int count)
             {
                 var data = SearchOffsetData.Parse(offset);
                 Assert.True(data.IsEnd);
-                Assert.Equal(count, ((SearchOffsetData.End)data).Item);
+                Assert.Equal(count, ((SearchOffsetData.End)data).End);
             }
 
             private static void AssertStart(string offset, int count)
             {
                 var data = SearchOffsetData.Parse(offset);
                 Assert.True(data.IsStart);
-                Assert.Equal(count, ((SearchOffsetData.Start)data).Item);
+                Assert.Equal(count, ((SearchOffsetData.Start)data).Start);
             }
 
             private static void AssertSearch(string offset, string search, SearchPath direction = null)
@@ -36,8 +36,8 @@ namespace Vim.UnitTest
                 direction = direction ?? SearchPath.Forward;
                 var data = SearchOffsetData.Parse(offset);
                 Assert.True(data.IsSearch);
-                Assert.Equal(search, ((SearchOffsetData.Search)data).Item.Pattern);
-                Assert.Equal(direction, ((SearchOffsetData.Search)data).Item.Path);
+                Assert.Equal(search, ((SearchOffsetData.Search)data).PatternData.Pattern);
+                Assert.Equal(direction, ((SearchOffsetData.Search)data).PatternData.Path);
             }
 
             [Fact]

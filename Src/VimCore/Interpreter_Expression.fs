@@ -485,7 +485,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | CopyTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
 
     /// Delete the specified marks
-    | DeleteMarks of Mark list
+    | DeleteMarks of Marks: Mark list
 
     /// Delete all of the marks except A-Z and 0-9
     | DeleteAllMarks 
@@ -772,10 +772,10 @@ with
 [<NoEquality>]
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
-    | Escape of string * string
-    | Exists of string
+    | Escape of Value: string * EscapeCharacters: string
+    | Exists of Name: string
     | Localtime
-    | Nr2char of int
+    | Nr2char of Nr: int
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

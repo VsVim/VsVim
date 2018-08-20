@@ -256,7 +256,7 @@ namespace Vim.UnitTest
                 _globalSettings.WrapScan = false;
                 var result = _search.Begin(SearchPath.Forward).Run("f").Run(VimKey.Enter).AsComplete().Result;
                 Assert.True(result.IsNotFound);
-                Assert.True(result.AsNotFound().Item2);
+                Assert.True(result.AsNotFound().CanFindWithWrap);
             }
 
             /// <summary>
@@ -429,7 +429,7 @@ namespace Vim.UnitTest
                     _textView.MoveCaretTo(0);
                     var searchResult = _search.DoSearch("el", enter: true).AsComplete().Result;
                     Assert.True(searchResult.IsFound);
-                    var span = searchResult.AsFound().Item2;
+                    var span = searchResult.AsFound().SpanWithOffset;
                     Assert.Equal(new Span(1, 2), span.Span);
                     _search.DoSearch("wo", enter: false);
                     Assert.True(_search.InSearch);
