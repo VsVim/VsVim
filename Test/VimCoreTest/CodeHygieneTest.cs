@@ -131,7 +131,7 @@ namespace Vim.UnitTest
                 Assert.True(any);
                 var msg = list.Count == 0
                     ? string.Empty
-                    : list.Aggregate((x, y) => x + Environment.NewLine + y);
+                    : $"{list.Count} union values do not have explicit names" + Environment.NewLine + list.Aggregate((x, y) => x + Environment.NewLine + y);
                 Assert.True(0 == list.Count, msg);
             }
         }

@@ -346,7 +346,7 @@ namespace Vim.UnitTest
 
         public static bool IsNumber(this LineSpecifier lineSpecifier, int number)
         {
-            return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Item == number;
+            return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Number == number;
         }
 
         public static LineSpecifier.NextLineWithPattern AsNextLineWithPattern(this LineSpecifier lineSpecifier)
@@ -367,8 +367,8 @@ namespace Vim.UnitTest
         public static bool IsCurrentLineWithAdjustment(this LineSpecifier lineSpecifier, int count)
         {
             return lineSpecifier.IsLineSpecifierWithAdjustment &&
-                lineSpecifier.AsLineSpecifierWithAdjustment().Item1.IsCurrentLine &&
-                lineSpecifier.AsLineSpecifierWithAdjustment().Item2 == count;
+                lineSpecifier.AsLineSpecifierWithAdjustment().LineSpecifier.IsCurrentLine &&
+                lineSpecifier.AsLineSpecifierWithAdjustment().Adjustment == count;
         }
 
         #endregion

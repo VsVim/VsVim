@@ -189,7 +189,7 @@ type AutoCommandDefinition = {
 type LineSpecifier = 
 
     /// The line with the specified number
-    | Number of int
+    | Number of Number: int
 
     /// The current line: '.'
     | CurrentLine
@@ -198,10 +198,10 @@ type LineSpecifier =
     | LastLine
 
     /// The line containing the specified mark
-    | MarkLine of Mark
+    | MarkLine of Mark: Mark
 
     /// The next line where the given pattern matches
-    | NextLineWithPattern of string
+    | NextLineWithPattern of Pattern: string
 
     /// The next line where the previous search pattern occurs
     | NextLineWithPreviousPattern
@@ -210,13 +210,13 @@ type LineSpecifier =
     | NextLineWithPreviousSubstitutePattern
 
     /// The previous line where the given pattern matches
-    | PreviousLineWithPattern of string
+    | PreviousLineWithPattern of Pattern: string
 
     /// The previous line where the previous search pattern occurs
     | PreviousLineWithPreviousPattern
 
     /// LineSpecifier with the given line adjustment
-    | LineSpecifierWithAdjustment of LineSpecifier * int
+    | LineSpecifierWithAdjustment of LineSpecifier: LineSpecifier * Adjustment: int
 
 /// A line range in the file 
 [<RequireQualifiedAccess>]
@@ -229,25 +229,25 @@ type LineRangeSpecifier =
     | EntireBuffer 
 
     /// A single line range
-    | SingleLine of LineSpecifier
+    | SingleLine of LineSpecifier: LineSpecifier
 
     /// A range defined by two lines.  The bool is whether or not the cursor should be
     /// adjusted for the for the second line specifier (true when ';' is used to separate
     /// the LineSpecifier values)
-    | Range of LineSpecifier * LineSpecifier * bool
+    | Range of StartLineSpecifier: LineSpecifier * LastLineSpecifier: LineSpecifier * AdjustCaret: bool
 
     /// The range is an end count on top of another LineRange value.  It's possible for the 
     /// end count to exist in the abscence a range
-    | WithEndCount of LineRangeSpecifier * int
+    | WithEndCount of LineRangeSpecifier: LineRangeSpecifier * Count: int
 
     /// The LineRange value for Join is heavily special cased
-    | Join of LineRangeSpecifier * int option
+    | Join of LineRangeSpecifier: LineRangeSpecifier * Count: int option
 
 /// Represents the values for '++opt' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type FileOption =
-    | FileFormat of string
-    | Encoding of string
+    | FileFormat of FileFormat: string
+    | Encoding of Encoding: string
     | Binary 
     | NoBinary
     | Bad
@@ -282,35 +282,35 @@ type SetArgument  =
     | DisplayAllTerminal
 
     /// Display the specified setting
-    | DisplaySetting of string
+    | DisplaySetting of SettingName: string
 
     /// The 'all&' argument.  Resets all setting to their default value
     | ResetAllToDefault
 
     /// Use the setting.  Produced when an setting name is used without arguments.  The behavior 
     /// depends on the type of the setting once it's bound
-    | UseSetting of string
+    | UseSetting of SettingName: string
 
     /// Toggle the setting value off.  How the toggle works depends on the type of the setting
-    | ToggleOffSetting of string
+    | ToggleOffSetting of SettingName: string
 
     /// Invert the setting
-    | InvertSetting of string
+    | InvertSetting of SettingName: string
 
     /// Reset the setting to it's default value
-    | ResetSetting of string
+    | ResetSetting of SettingName: string
 
     /// Set the setting to the specified value
-    | AssignSetting of string * string
+    | AssignSetting of SettingName: string * Value: string
 
     /// Add the value to the setting
-    | AddSetting of string * string
+    | AddSetting of SettingName: string * Value: string
 
     /// Multiply the value of the setting with the value
-    | MultiplySetting of string * string 
+    | MultiplySetting of SettingName: string * Value: string 
 
     /// Subtracte the value of the setting with the value
-    | SubtractSetting of string * string
+    | SubtractSetting of SettingName: string * Value: string
 
 [<RequireQualifiedAccess>]
 type BinaryKind = 

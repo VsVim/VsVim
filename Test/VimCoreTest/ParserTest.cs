@@ -689,7 +689,7 @@ let x = 42
             {
                 var range = ParseLineRange(".");
                 Assert.True(range.IsSingleLine);
-                Assert.True(range.AsSingleLine().Item.IsCurrentLine);
+                Assert.True(range.AsSingleLine().LineSpecifier.IsCurrentLine);
             }
 
             [Fact]
@@ -697,7 +697,7 @@ let x = 42
             {
                 var range = ParseLineRange(".2");
                 Assert.True(range.IsSingleLine);
-                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithAdjustment(2));
+                Assert.True(range.AsSingleLine().LineSpecifier.IsCurrentLineWithAdjustment(2));
             }
 
             [Fact]
@@ -705,39 +705,39 @@ let x = 42
             {
                 var range = ParseLineRange(".+3");
                 Assert.True(range.IsSingleLine);
-                Assert.True(range.AsSingleLine().Item.IsCurrentLineWithAdjustment(3));
+                Assert.True(range.AsSingleLine().LineSpecifier.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]
             public void CurrentLineWithAdjustmentRange()
             {
                 var range = ParseLineRange(".2,.3").AsRange();
-                Assert.True(range.Item1.IsCurrentLineWithAdjustment(2));
-                Assert.True(range.Item2.IsCurrentLineWithAdjustment(3));
+                Assert.True(range.StartLineSpecifier.IsCurrentLineWithAdjustment(2));
+                Assert.True(range.LastLineSpecifier.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]
             public void CurrentLineWithAdjustmentRangeUsingPlus()
             {
                 var range = ParseLineRange(".+2,.+3").AsRange();
-                Assert.True(range.Item1.IsCurrentLineWithAdjustment(2));
-                Assert.True(range.Item2.IsCurrentLineWithAdjustment(3));
+                Assert.True(range.StartLineSpecifier.IsCurrentLineWithAdjustment(2));
+                Assert.True(range.LastLineSpecifier.IsCurrentLineWithAdjustment(3));
             }
 
             [Fact]
             public void CurrentLineAndCurrentLine()
             {
                 var range = ParseLineRange(".,.").AsRange();
-                Assert.True(range.Item1.IsCurrentLine);
-                Assert.True(range.Item2.IsCurrentLine);
+                Assert.True(range.StartLineSpecifier.IsCurrentLine);
+                Assert.True(range.LastLineSpecifier.IsCurrentLine);
             }
 
             [Fact]
             public void CurrentLineAndFixed()
             {
                 var range = ParseLineRange(".,5").AsRange();
-                Assert.True(range.Item1.IsCurrentLine);
-                Assert.True(range.Item2.IsNumber(5));
+                Assert.True(range.StartLineSpecifier.IsCurrentLine);
+                Assert.True(range.LastLineSpecifier.IsNumber(5));
             }
         }
 
@@ -1149,7 +1149,7 @@ let x = 42
             {
                 var command = ParseLineCommand("set example?").AsSet();
                 var option = command.SetArguments.Single().AsDisplaySetting();
-                Assert.Equal("example", option.Item);
+                Assert.Equal("example", option.SettingName);
             }
 
             /// <summary>
@@ -1160,7 +1160,7 @@ let x = 42
             {
                 var command = ParseLineCommand("set example").AsSet();
                 var option = command.SetArguments.Single().AsUseSetting();
-                Assert.Equal("example", option.Item);
+                Assert.Equal("example", option.SettingName);
             }
 
             /// <summary>
@@ -1171,7 +1171,7 @@ let x = 42
             {
                 var command = ParseLineCommand("set noexample").AsSet();
                 var option = command.SetArguments.Single().AsToggleOffSetting();
-                Assert.Equal("example", option.Item);
+                Assert.Equal("example", option.SettingName);
             }
 
             /// <summary>
@@ -1182,7 +1182,7 @@ let x = 42
             {
                 var command = ParseLineCommand("set example!").AsSet();
                 var option = command.SetArguments.Single().AsInvertSetting();
-                Assert.Equal("example", option.Item);
+                Assert.Equal("example", option.SettingName);
             }
 
             /// <summary>
@@ -1194,7 +1194,7 @@ let x = 42
             {
                 var command = ParseLineCommand("set invexample").AsSet();
                 var option = command.SetArguments.Single().AsInvertSetting();
-                Assert.Equal("example", option.Item);
+                Assert.Equal("example", option.SettingName);
             }
 
             /// <summary>
@@ -1205,8 +1205,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set x=y").AsSet();
                 var option = command.SetArguments.Single().AsAssignSetting();
-                Assert.Equal("x", option.Item1);
-                Assert.Equal("y", option.Item2);
+                Assert.Equal("x", option.SettingName);
+                Assert.Equal("y", option.Value);
             }
 
             /// <summary>
@@ -1218,8 +1218,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set x:y").AsSet();
                 var option = command.SetArguments.Single().AsAssignSetting();
-                Assert.Equal("x", option.Item1);
-                Assert.Equal("y", option.Item2);
+                Assert.Equal("x", option.SettingName);
+                Assert.Equal("y", option.Value);
             }
 
             /// <summary>
@@ -1230,8 +1230,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set vb=").AsSet();
                 var option = command.SetArguments.Single().AsAssignSetting();
-                Assert.Equal("vb", option.Item1);
-                Assert.Equal("", option.Item2);
+                Assert.Equal("vb", option.SettingName);
+                Assert.Equal("", option.Value);
             }
 
             /// <summary>
@@ -1242,8 +1242,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set x+=y").AsSet();
                 var option = command.SetArguments.Single().AsAddSetting();
-                Assert.Equal("x", option.Item1);
-                Assert.Equal("y", option.Item2);
+                Assert.Equal("x", option.SettingName);
+                Assert.Equal("y", option.Value);
             }
 
             /// <summary>
@@ -1254,8 +1254,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set x-=y").AsSet();
                 var option = command.SetArguments.Single().AsSubtractSetting();
-                Assert.Equal("x", option.Item1);
-                Assert.Equal("y", option.Item2);
+                Assert.Equal("x", option.SettingName);
+                Assert.Equal("y", option.Value);
             }
 
             /// <summary>
@@ -1268,11 +1268,11 @@ let x = 42
                 Assert.Equal(2, command.SetArguments.Length);
 
                 var set = command.SetArguments[0];
-                Assert.Equal("vb", set.AsAssignSetting().Item1);
-                Assert.Equal("", set.AsAssignSetting().Item2);
+                Assert.Equal("vb", set.AsAssignSetting().SettingName);
+                Assert.Equal("", set.AsAssignSetting().Value);
 
                 set = command.SetArguments[1];
-                Assert.Equal("ai", set.AsUseSetting().Item);
+                Assert.Equal("ai", set.AsUseSetting().SettingName);
             }
 
             /// <summary>
@@ -1283,8 +1283,8 @@ let x = 42
             {
                 var command = ParseLineCommand("set x^=y").AsSet();
                 var option = command.SetArguments.Single().AsMultiplySetting();
-                Assert.Equal("x", option.Item1);
-                Assert.Equal("y", option.Item2);
+                Assert.Equal("x", option.SettingName);
+                Assert.Equal("y", option.Value);
             }
 
             /// <summary>
@@ -1334,7 +1334,7 @@ let x = 42
             {
                 var lineRange = ParseLineRange("42");
                 Assert.True(lineRange.IsSingleLine);
-                Assert.True(lineRange.AsSingleLine().Item.IsNumber(42));
+                Assert.True(lineRange.AsSingleLine().LineSpecifier.IsNumber(42));
             }
 
             /// <summary>
@@ -1344,9 +1344,9 @@ let x = 42
             public void RangeOfCurrentLine()
             {
                 var lineRange = ParseLineRange(".,.");
-                Assert.True(lineRange.AsRange().Item1.IsCurrentLine);
-                Assert.True(lineRange.AsRange().Item2.IsCurrentLine);
-                Assert.False(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().StartLineSpecifier.IsCurrentLine);
+                Assert.True(lineRange.AsRange().LastLineSpecifier.IsCurrentLine);
+                Assert.False(lineRange.AsRange().AdjustCaret);
             }
 
             /// <summary>
@@ -1356,9 +1356,9 @@ let x = 42
             public void RangeOfNumbers()
             {
                 var lineRange = ParseLineRange("1,2");
-                Assert.True(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.True(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.False(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().StartLineSpecifier.IsNumber(1));
+                Assert.True(lineRange.AsRange().LastLineSpecifier.IsNumber(2));
+                Assert.False(lineRange.AsRange().AdjustCaret);
             }
 
             /// <summary>
@@ -1369,9 +1369,9 @@ let x = 42
             public void RangeOfNumbersWithAdjustCaret()
             {
                 var lineRange = ParseLineRange("1;2");
-                Assert.True(lineRange.AsRange().Item1.IsNumber(1));
-                Assert.True(lineRange.AsRange().Item2.IsNumber(2));
-                Assert.True(lineRange.AsRange().item3);
+                Assert.True(lineRange.AsRange().StartLineSpecifier.IsNumber(1));
+                Assert.True(lineRange.AsRange().LastLineSpecifier.IsNumber(2));
+                Assert.True(lineRange.AsRange().AdjustCaret);
             }
 
             /// <summary>
@@ -1381,8 +1381,8 @@ let x = 42
             public void Marks()
             {
                 var lineRange = ParseLineRange("'a,'b");
-                Assert.True(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.True(lineRange.AsRange().Item2.IsMarkLine);
+                Assert.True(lineRange.AsRange().StartLineSpecifier.IsMarkLine);
+                Assert.True(lineRange.AsRange().LastLineSpecifier.IsMarkLine);
             }
 
             /// <summary>
@@ -1392,8 +1392,8 @@ let x = 42
             public void MarksWithTrailing()
             {
                 var lineRange = ParseLineRange("'a,'bc");
-                Assert.True(lineRange.AsRange().Item1.IsMarkLine);
-                Assert.True(lineRange.AsRange().Item2.IsMarkLine);
+                Assert.True(lineRange.AsRange().StartLineSpecifier.IsMarkLine);
+                Assert.True(lineRange.AsRange().LastLineSpecifier.IsMarkLine);
             }
 
             /// <summary>
@@ -1403,7 +1403,7 @@ let x = 42
             public void NextPatternSpecifier()
             {
                 var lineSpecifier = ParseLineSpecifier("/dog/");
-                Assert.Equal("dog", lineSpecifier.AsNextLineWithPattern().Item);
+                Assert.Equal("dog", lineSpecifier.AsNextLineWithPattern().Pattern);
             }
 
             /// <summary>
@@ -1413,7 +1413,7 @@ let x = 42
             public void PreviousPatternSpecifier()
             {
                 var lineSpecifier = ParseLineSpecifier("?dog?");
-                Assert.Equal("dog", lineSpecifier.AsPreviousLineWithPattern().Item);
+                Assert.Equal("dog", lineSpecifier.AsPreviousLineWithPattern().Pattern);
             }
         }
 
@@ -1823,7 +1823,7 @@ let x = 42
             {
                 var lineCommand = ParseLineCommand("delete 2");
                 var lineRange = lineCommand.AsDelete().LineRangeSpecifier;
-                Assert.Equal(2, lineRange.AsWithEndCount().Item2);
+                Assert.Equal(2, lineRange.AsWithEndCount().Count);
             }
 
             [Fact]
