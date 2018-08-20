@@ -3437,7 +3437,7 @@ namespace Vim.UnitTest
             {
                 var data = UnnamedRegister.StringData;
                 Assert.True(data.IsBlock);
-                Assert.Equal(lines, ((StringData.Block)data).Item);
+                Assert.Equal(lines, ((StringData.Block)data).BlockTexts);
             }
 
             public sealed class BlockTest : YankSelectionTest

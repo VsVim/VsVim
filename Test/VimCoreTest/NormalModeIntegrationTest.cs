@@ -2836,7 +2836,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.Process(@":let mapleader=""x""", enter: true);
                 var value = Vim.VariableMap["mapleader"];
-                Assert.Equal("x", value.AsString().Item);
+                Assert.Equal("x", value.AsString().String);
             }
 
             [WpfFact]

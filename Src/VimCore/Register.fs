@@ -7,8 +7,8 @@ open System.Diagnostics
 /// Representation of StringData stored in a Register
 [<RequireQualifiedAccess>]
 type StringData = 
-    | Simple of string
-    | Block of NonEmptyCollection<string>
+    | Simple of Text: string
+    | Block of BlockTexts: NonEmptyCollection<string>
     with 
 
     member x.ApplyCount count =
@@ -363,14 +363,14 @@ type SelectionAndDropRegister =
 type RegisterName =
     /// The unnamed register.  This is the default register for many types of operations
     | Unnamed
-    | Numbered of NumberedRegister
+    | Numbered of NumberedRegister: NumberedRegister
     | SmallDelete
     /// The A-Z and a-z registers
-    | Named of NamedRegister
+    | Named of NamedRegister: NamedRegister
     /// The 4 read only registers :, ., % and #
-    | ReadOnly of ReadOnlyRegister
+    | ReadOnly of ReadOnlyRegister: ReadOnlyRegister
     | Expression 
-    | SelectionAndDrop of SelectionAndDropRegister
+    | SelectionAndDrop of SelectionAndDropRegister: SelectionAndDropRegister
     | Blackhole
     | LastSearchPattern 
     with

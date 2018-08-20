@@ -106,7 +106,7 @@ namespace Vim.VisualStudio
                     return;
                 }
 
-                var value = ((SettingValue.Toggle)settingValue).Item;
+                var value = ((SettingValue.Toggle)settingValue).Toggle;
                 switch (name)
                 {
                     case UseEditorIndentName:

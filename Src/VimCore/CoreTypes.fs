@@ -319,8 +319,8 @@ type NumberMark =
 [<StructuralEquality>]
 [<NoComparison>]
 type LocalMark =
-    | Letter of Letter
-    | Number of NumberMark
+    | Letter of Letter: Letter
+    | Number of NumberMark: NumberMark
     | LastInsertExit
     | LastSelectionStart
     | LastSelectionEnd
@@ -377,10 +377,10 @@ type LocalMark =
 type Mark =
 
     /// Marks which are local to the IVimTextBuffer
-    | LocalMark of LocalMark
+    | LocalMark of LocalMark: LocalMark
 
     /// Marks which are global to vim
-    | GlobalMark of Letter
+    | GlobalMark of Letter: Letter
 
     /// The last jump which is specific to a window
     | LastJump 

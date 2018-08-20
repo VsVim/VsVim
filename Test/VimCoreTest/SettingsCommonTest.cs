@@ -97,11 +97,11 @@ namespace Vim.UnitTest
         {
             var all = _settings.Settings;
             var value = all.Single(x => x.Name == NumberSettingName);
-            var prev = value.Value.AsNumber().Item;
+            var prev = value.Value.AsNumber().Number;
             Assert.NotEqual(42, prev);
             Assert.True(_settings.TrySetValue(NumberSettingName, SettingValue.NewNumber(42)));
             value = all.Single(x => x.Name == NumberSettingName);
-            Assert.Equal(prev, value.Value.AsNumber().Item);
+            Assert.Equal(prev, value.Value.AsNumber().Number);
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace Vim.UnitTest
             Assert.True(_settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggle(true)));
             var value = _settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.True(value.IsSome());
-            Assert.True(value.Value.Value.AsToggle().Item);
+            Assert.True(value.Value.Value.AsToggle().Toggle);
         }
 
         [Fact]
@@ -156,7 +156,7 @@ namespace Vim.UnitTest
             Assert.True(_settings.TrySetValue(GlobalSettingNames.ScrollOffsetName, SettingValue.NewNumber(42)));
             var value = _settings.GetSetting(GlobalSettingNames.ScrollOffsetName);
             Assert.True(value.IsSome());
-            Assert.Equal(42, value.Value.Value.AsNumber().Item);
+            Assert.Equal(42, value.Value.Value.AsNumber().Number);
         }
 
         /// <summary>
@@ -250,14 +250,14 @@ namespace Vim.UnitTest
         public void SetByAbbreviation_Number()
         {
             Assert.True(_settings.TrySetValueFromString(NumberSetting.Abbreviation, "2"));
-            Assert.Equal(2, NumberSetting.Value.AsNumber().Item);
+            Assert.Equal(2, NumberSetting.Value.AsNumber().Number);
         }
 
         [Fact]
         public void SetByAbbreviation_Toggle()
         {
             Assert.True(_settings.TrySetValueFromString(ToggleSetting.Abbreviation, "true"));
-            Assert.True(ToggleSetting.Value.AsToggle().Item);
+            Assert.True(ToggleSetting.Value.AsToggle().Toggle);
         }
 
         [Fact]
@@ -268,7 +268,7 @@ namespace Vim.UnitTest
                 {
                     var setting = args.Setting;
                     Assert.Equal(ToggleSettingName, setting.Name);
-                    Assert.True(setting.Value.AsToggle().Item);
+                    Assert.True(setting.Value.AsToggle().Toggle);
                     didRun = true;
                 };
             _settings.TrySetValue(ToggleSettingName, SettingValue.NewToggle(true));
@@ -283,7 +283,7 @@ namespace Vim.UnitTest
                 {
                     var setting = args.Setting;
                     Assert.Equal(ToggleSettingName, setting.Name);
-                    Assert.True(setting.Value.AsToggle().Item);
+                    Assert.True(setting.Value.AsToggle().Toggle);
                     didRun = true;
                 };
             _settings.TrySetValueFromString(ToggleSettingName, "true");

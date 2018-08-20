@@ -65,7 +65,7 @@ namespace Vim.UnitTest
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseStringLiteral();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
+                return parseResult.AsSucceeded().Item.AsConstantValue().Value.AsString().String;
             }
 
             [Fact]
@@ -634,12 +634,12 @@ let x = 42
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseNumberConstant();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item;
+                return parseResult.AsSucceeded().Item.AsConstantValue().Value;
             }
 
             private int ParseNumber(string text)
             {
-                return ParseNumberValue(text).AsNumber().Item;
+                return ParseNumberValue(text).AsNumber().Number;
             }
 
             [Fact]
@@ -748,7 +748,7 @@ let x = 42
                 var parser = CreateParser(text);
                 var parseResult = parser.ParseList();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsList().Item;
+                return parseResult.AsSucceeded().Item.AsList().Expressions;
             }
 
             [Fact]
@@ -813,7 +813,7 @@ let x = 42
                 parser.Tokenizer.TokenizerFlags = TokenizerFlags.AllowDoubleQuote;
                 var parseResult = parser.ParseStringConstant();
                 Assert.True(parseResult.IsSucceeded);
-                return parseResult.AsSucceeded().Item.AsConstantValue().Item.AsString().Item;
+                return parseResult.AsSucceeded().Item.AsConstantValue().Value.AsString().String;
             }
 
             [Fact]
@@ -1715,7 +1715,7 @@ let x = 42
                 var command = ParseLineCommand("cd test.txt").AsChangeDirectory();
                 Assert.Equal(1, command.SymbolicPath.Length);
                 Assert.True(command.SymbolicPath.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Literal);
             }
 
             /// <summary>
@@ -1728,7 +1728,7 @@ let x = 42
                 var command = ParseLineCommand("cd! test.txt").AsChangeDirectory();
                 Assert.Equal(1, command.SymbolicPath.Length);
                 Assert.True(command.SymbolicPath.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Literal);
             }
 
             /// <summary>
@@ -1750,7 +1750,7 @@ let x = 42
                 var command = ParseLineCommand("lcd test.txt").AsChangeLocalDirectory();
                 Assert.Equal(1, command.SymbolicPath.Length);
                 Assert.True(command.SymbolicPath.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Literal);
             }
 
             /// <summary>
@@ -1763,7 +1763,7 @@ let x = 42
                 var command = ParseLineCommand("lcd! test.txt").AsChangeLocalDirectory();
                 Assert.Equal(1, command.SymbolicPath.Length);
                 Assert.True(command.SymbolicPath.First().IsLiteral);
-                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Item);
+                Assert.Equal("test.txt", ((SymbolicPathComponent.Literal) command.SymbolicPath.First()).Literal);
             }
 
             /// <summary>

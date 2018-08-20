@@ -254,7 +254,7 @@ let x = 42
 ";
                 Run(text);
                 Assert.False(_globalSettings.HighlightSearch);
-                Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Item);
+                Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Number);
             }
 
             /// <summary>

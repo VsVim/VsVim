@@ -47,7 +47,7 @@ namespace Vim.UnitTest
                     Assert.Equal(name, Name);
                     if (settingValue.IsString)
                     {
-                        Value = ((SettingValue.String)settingValue).Item;
+                        Value = ((SettingValue.String)settingValue).String;
                     }
                 }
             }
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
             private string GetStringValue(string name)
             {
                 var setting = _globalSettings.GetSetting(name).Value;
-                return ((SettingValue.String)setting.LiveSettingValue.Value).Item;
+                return ((SettingValue.String)setting.LiveSettingValue.Value).String;
             }
 
             [Fact]
@@ -317,7 +317,7 @@ namespace Vim.UnitTest
                 Assert.Equal("", _globalSettings.SelectMode);
                 Assert.Equal(SelectModeOptions.None, _globalSettings.SelectModeOptions);
                 var setting = _globalSettings.GetSetting(GlobalSettingNames.SelectModeName).Value;
-                Assert.Equal("", setting.DefaultValue.AsString().Item);
+                Assert.Equal("", setting.DefaultValue.AsString().String);
             }
         }
     }

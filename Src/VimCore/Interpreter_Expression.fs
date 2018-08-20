@@ -33,12 +33,12 @@ type VariableType =
 
 [<RequireQualifiedAccess>]
 type VariableValue =
-    | Number of int
-    | Float of float
-    | String of string
-    | FunctionRef of string
-    | List of VariableValue list
-    | Dictionary of Map<string, VariableValue>
+    | Number of Number: int
+    | Float of Float: float
+    | String of String: string
+    | FunctionRef of FunctionName: string
+    | List of VariableValues: VariableValue list
+    | Dictionary of Map: Map<string, VariableValue>
     | Error
 
     with
@@ -68,8 +68,8 @@ type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
 [<RequireQualifiedAccess>]
 type EvaluateResult = 
-    | Succeeded of VariableValue
-    | Failed of string
+    | Succeeded of Value: VariableValue
+    | Failed of Failed: string
 
 /// The set of events Vim supports.  Defined in ':help autocmd-events'
 ///
@@ -162,7 +162,7 @@ type EventKind =
 [<StructuralEquality>]
 type AutoCommandGroup = 
     | Default
-    | Named of string 
+    | Named of Name: string 
 
 type AutoCommand = {
     Group: AutoCommandGroup
@@ -387,11 +387,11 @@ type FileNameModifier =
 [<RequireQualifiedAccess>]
 type SymbolicPathComponent =
     /// '%' + modifiers
-    | CurrentFileName of FileNameModifier list
+    | CurrentFileName of FileNameModifiers: FileNameModifier list
     /// '#'[number] + modifiers
-    | AlternateFileName of int * FileNameModifier list
+    | AlternateFileName of Count: int * FileNameModifiers: FileNameModifier list
     /// Literal text
-    | Literal of string
+    | Literal of Literal: string
 
 type SymbolicPath = SymbolicPathComponent list
 
@@ -399,9 +399,9 @@ type SymbolicPath = SymbolicPathComponent list
 [<RequireQualifiedAccess>]
 type CommandOption =
     | StartAtLastLine
-    | StartAtLine of int
-    | StartAtPattern of string
-    | ExecuteLineCommand of LineCommand
+    | StartAtLine of LineNumber: int
+    | StartAtPattern of Pattern: string
+    | ExecuteLineCommand of LineCommand: LineCommand
 
 and Function = {
 
@@ -432,25 +432,25 @@ with
 and [<RequireQualifiedAccess>] Expression =
 
     /// Binary expression
-    | Binary of BinaryKind * Expression * Expression
+    | Binary of BinaryKind: BinaryKind * Left: Expression * Right: Expression
 
     /// A constant value
-    | ConstantValue of VariableValue 
+    | ConstantValue of Value: VariableValue 
 
     /// The name of an option/setting
-    | OptionName of string
+    | OptionName of OptionName: string
 
     /// The name of a register
-    | RegisterName of RegisterName
+    | RegisterName of RegisterName: RegisterName
 
     /// The name of a variable
-    | VariableName of VariableName
+    | VariableName of VariableName: VariableName
 
     /// Invocation of a function
-    | FunctionCall of VariableName * Expression list
+    | FunctionCall of VariableName: VariableName * Arguments: Expression list
 
     /// List of expressions
-    | List of Expression list
+    | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 
