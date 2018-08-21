@@ -1217,6 +1217,18 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
                     Assert.Equal(new[] { "#dog", "#", "#tree" }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// A block insertion should add the text when the insertion is at the end column
+                /// of the line. 
+                /// </summary>
+                [WpfFact]
+                public void EndOfLine()
+                {
+                    Create("dog", "x", "tree");
+                    _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class InsertTabTest : BlockInsertTest

@@ -26,6 +26,7 @@ using System.Text;
 using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {

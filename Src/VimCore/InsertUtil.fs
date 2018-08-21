@@ -227,9 +227,10 @@ type internal InsertUtil
                 // Only apply the edit to lines which were included in the original selection
                 let tabStop = _localSettings.TabStop
                 let column =
-                    if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine)
-                    else SnapshotColumn.GetColumnForSpacesOrEnd(currentLine, spaces, tabStop)
-                if atEndOfLine || not column.IsLineBreakOrEnd || (column.Line.Length = 0 && spaces = 0) then
+                    if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine) |> Some
+                    else SnapshotColumn.GetColumnForSpaces(currentLine, spaces, tabStop)
+                match column with 
+                | Some column ->
                     let position = column.StartPosition
                     let text =
                         if _localSettings.ExpandTab then
@@ -252,6 +253,7 @@ type internal InsertUtil
                     else
                         if not (textEdit.Insert(position, text)) then
                             abortChange <- true
+                | None -> ()
 
             if abortChange then
                 textEdit.Cancel()
