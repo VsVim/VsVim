@@ -229,7 +229,7 @@ type internal InsertUtil
                 let column =
                     if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine)
                     else SnapshotColumn.GetColumnForSpacesOrEnd(currentLine, spaces, tabStop)
-                if atEndOfLine || not column.IsLineBreakOrEnd || column.Line.Length = 0 then
+                if atEndOfLine || not column.IsLineBreakOrEnd || (column.Line.Length = 0 && spaces = 0) then
                     let position = column.StartPosition
                     let text =
                         if _localSettings.ExpandTab then
