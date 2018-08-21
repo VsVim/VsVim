@@ -586,6 +586,16 @@ namespace Vim.UnitTest
                 VerifyReplace(@"Task<\(.\{-}\)>", "public Task<string> M()", @"\1", "public string M()");
                 VerifyReplace(@"a\{-1,2}", "aaaaa", "b", "baaaa", VimRegexReplaceCount.One);
             }
+
+            /// <summary>
+            /// Verify that the start and end match patterns ('\zs' and '\ze')
+            /// can be used
+            /// </summary>
+            [Fact]
+            public void WithStartEndMatch()
+            {
+                VerifyReplace(@"\<foo\zsBar\zeBaz\>", "[fooBarBaz]", "Qux", "[fooQuxBaz]");
+            }
         }
 
         public sealed class MiscTest : VimRegexTest
