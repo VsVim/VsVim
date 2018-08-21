@@ -1505,8 +1505,14 @@ type VimInterpreter
                 | SetArgument.ToggleOffSetting name -> toggleOffSetting name
                 | SetArgument.UseSetting name -> useSetting name)
 
-    /// Run the specified shell command
-    member x.RunShellCommand (lineRange: LineRangeSpecifier) (command: string) =
+    /// Run the ':shell' command
+    member x.RunShell () =
+        let shell = _globalSettings.Shell
+        let workingDirectory = _vimBufferData.WorkingDirectory
+        _vimHost.StartShell workingDirectory shell ""
+
+    /// Run the ':!' command
+    member x.RunShellCommand lineRange command =
         x.ExecuteCommand lineRange command false
 
     /// Execute the external command
@@ -1860,6 +1866,7 @@ type VimInterpreter
         | LineCommand.Retab (lineRange, hasBang, tabStop) -> x.RunRetab lineRange hasBang tabStop
         | LineCommand.Search (lineRange, path, pattern) -> x.RunSearch lineRange path pattern
         | LineCommand.Set argumentList -> x.RunSet argumentList
+        | LineCommand.Shell -> x.RunShell()
         | LineCommand.ShellCommand (lineRange, command) -> x.RunShellCommand lineRange command
         | LineCommand.ShiftLeft (lineRange, count) -> x.RunShiftLeft lineRange count
         | LineCommand.ShiftRight (lineRange, count) -> x.RunShiftRight lineRange count

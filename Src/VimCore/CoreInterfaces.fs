@@ -4596,6 +4596,9 @@ type IVimHost =
     /// Split the views horizontally
     abstract SplitViewVertically: ITextView -> unit
 
+    /// Start a shell window
+    abstract StartShell: workingDirectory: string -> file: string -> arguments: string -> unit
+
     /// Called when IVim is fully created.  This callback gives the host the oppurtunity
     /// to customize various aspects of vim including IVimGlobalSettings, IVimData, etc ...
     abstract VimCreated: vim: IVim -> unit

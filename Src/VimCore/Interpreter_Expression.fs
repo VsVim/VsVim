@@ -691,6 +691,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the '/' and '?' commands
     | Search of LineRangeSpecifier * SearchPath * string
 
+    /// Start a shell window
+    | Shell
+
     /// Filter the given line range through shell command
     | ShellCommand of LineRangeSpecifier * string
 
