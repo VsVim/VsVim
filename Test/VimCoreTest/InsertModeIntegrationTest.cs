@@ -471,6 +471,17 @@ namespace Vim.UnitTest
                 Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
+
+            [WpfFact]
+            public void AsIfTyped()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                RegisterMap.GetRegister('c').UpdateValue("e", OperationKind.CharacterWise);
+                _vimBuffer.ProcessNotation("<C-r>c<BS>:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
         }
 
         /// <summary>
