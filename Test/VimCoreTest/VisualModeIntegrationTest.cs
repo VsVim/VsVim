@@ -1204,8 +1204,32 @@ namespace Vim.UnitTest
                     Assert.Equal("og", _textView.GetLine(0).GetText());
                     Assert.Equal("cat", _textView.GetLine(1).GetText());
                 }
-            }
 
+                /// <summary>
+                /// When the block selection is in column zero then empty lines need to 
+                /// get the block insert applied as well
+                /// Issue 2342
+                /// </summary>
+                [WpfFact]
+                public void EmptyLineBlockAtStartOfLine()
+                {
+                    Create("dog", "", "tree");
+                    _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "#dog", "#", "#tree" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// A block insertion should add the text when the insertion is at the end column
+                /// of the line. 
+                /// </summary>
+                [WpfFact]
+                public void EndOfLine()
+                {
+                    Create("dog", "x", "tree");
+                    _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
+                }
+            }
 
             public sealed class InsertTabTest : BlockInsertTest
             {
