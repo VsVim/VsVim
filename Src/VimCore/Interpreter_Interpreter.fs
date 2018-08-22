@@ -419,7 +419,7 @@ type VimInterpreter
 
         | LineRangeSpecifier.EntireBuffer -> 
             SnapshotLineRangeUtil.CreateForSnapshot x.CurrentSnapshot |> Some
-        | LineRangeSpecifier.SingleLine lineSpecifier-> 
+        | LineRangeSpecifier.SingleLine lineSpecifier -> 
             x.GetLine lineSpecifier |> Option.map SnapshotLineRangeUtil.CreateForLine
         | LineRangeSpecifier.Range (leftLineSpecifier, rightLineSpecifier, adjustCaret) ->
             match x.GetLine leftLineSpecifier with
@@ -444,7 +444,7 @@ type VimInterpreter
             | None -> None
             | Some lineRange -> SnapshotLineRangeUtil.CreateForLineAndMaxCount lineRange.LastLine count |> Some
 
-        | LineRangeSpecifier.Join (lineRange, count)->
+        | LineRangeSpecifier.Join (lineRange, count) ->
             match lineRange, count with 
             | LineRangeSpecifier.None, _ ->
                 // Count is the only thing important when there is no explicit range is the
@@ -1122,7 +1122,7 @@ type VimInterpreter
 
     /// Jump to the last line of the specified line range
     member x.RunJumpToLastLine lineRange = 
-        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
+        x.RunWithLooseLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
 
             // Make sure we jump to the first non-blank on this line
             let point = 
@@ -1866,7 +1866,7 @@ type VimInterpreter
         | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
-        | LineCommand.Print (lineRange, lineCommandFlags)-> x.RunPrint lineRange lineCommandFlags
+        | LineCommand.Print (lineRange, lineCommandFlags) -> x.RunPrint lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
@@ -1908,6 +1908,35 @@ type VimInterpreter
         match x.GetLineRangeOrDefault lineRangeSpecifier defaultLineRange with
         | None -> _statusUtil.OnError Resources.Range_Invalid
         | Some lineRange -> func lineRange
+
+    /// Convert a loose line range specifier into a line range and run the
+    /// specified function on it
+    member x.RunWithLooseLineRangeOrDefault (lineRangeSpecifier: LineRangeSpecifier) defaultLineRange (func: SnapshotLineRange -> unit) = 
+        let strictLineRangeSpecifier = x.GetStrictLineRangeSpecifier lineRangeSpecifier
+        x.RunWithLineRangeOrDefault strictLineRangeSpecifier defaultLineRange func
+
+    /// Get a strict line range specifier from a loose one
+    member x.GetStrictLineRangeSpecifier looseLineRangeSpecifier =
+        match looseLineRangeSpecifier with
+        | LineRangeSpecifier.SingleLine looseLineSpecifier ->
+            let strictLineSpecifier = x.GetStrictLineSpecifier looseLineSpecifier
+            LineRangeSpecifier.SingleLine strictLineSpecifier
+        | LineRangeSpecifier.Range (looseStartLineSpecifier, looseEndLineSpecifier, moveCaret) ->
+            let strictStartLineSpecifier = x.GetStrictLineSpecifier looseStartLineSpecifier
+            let strictEndLineSpecifier = x.GetStrictLineSpecifier looseEndLineSpecifier
+            LineRangeSpecifier.Range (strictStartLineSpecifier, strictEndLineSpecifier, moveCaret)
+        | otherLineRangeSpecifier ->
+            otherLineRangeSpecifier
+
+    /// Get a strict line specifier from a loose one (a loose line specifier
+    /// tolerates line number that are too large)
+    member x.GetStrictLineSpecifier looseLineSpecifier =
+        match looseLineSpecifier with
+        | LineSpecifier.Number number ->
+            let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber x.CurrentSnapshot
+            LineSpecifier.Number (min number (lastLineNumber + 1))
+        | otherLineSpecifier  ->
+            otherLineSpecifier
 
     member x.RunWithPointAfterOrDefault (lineRangeSpecifier: LineRangeSpecifier) defaultLineRange (func: SnapshotPoint -> unit) = 
         match x.GetPointAfterOrDefault lineRangeSpecifier defaultLineRange with
