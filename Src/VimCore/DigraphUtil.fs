@@ -1315,10 +1315,12 @@ module internal DigraphUtil =
         |> Seq.map (fun (pair, code) -> (pair.[0], pair.[1], code))
         |> List.ofSeq
 
+    let GetText (code: int) =
+        System.Char.ConvertFromUtf32(code)
+
     let AddToMap (digraphMap: IDigraphMap) (digraphList: (char * char * int) seq) =
         
         let addDigraph (char1, char2, code: int) =
-            let text = System.Char.ConvertFromUtf32(code)
             digraphMap.Map char1 char2 code
 
         digraphList

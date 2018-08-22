@@ -653,15 +653,16 @@ type VimInterpreter
             string(char1) + string(char2)
 
         // Get the display string for the replacement text.
-        let getDisplay char1 char2 =
-            getChars char1 char2
+        let getDisplay code =
+            code
+            |> DigraphUtil.GetText
             |> StringUtil.GetDisplayString
 
         if List.isEmpty digraphList then
             let columns = 4
             digraphMap.Mappings
             |> Seq.map (fun (char1, char2, code) ->
-                (getChars char1 char2, getDisplay char1 char2, code))
+                (getChars char1 char2, getDisplay code, code))
             |> Seq.sortBy (fun (_, _, code) -> code)
             |> Seq.mapi (fun index (digraph, text, code) ->
                 (index + 1, sprintf "%2s %-2s %5d  " digraph text code))
@@ -698,7 +699,6 @@ type VimInterpreter
                 | KeyRemapMode.Command -> "c"
                 | KeyRemapMode.Language -> "l"
                 | KeyRemapMode.Insert -> "i"
-                | KeyRemapMode.Digraph -> "d"
 
         // Get the printable format for the KeyInputSet 
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 

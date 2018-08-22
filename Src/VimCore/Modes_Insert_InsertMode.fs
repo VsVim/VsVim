@@ -1003,10 +1003,8 @@ type internal InsertMode
                 match _sessionData.ActiveEditItem with
                 | ActiveEditItem.Digraph2 firstKeyInput ->
                     if firstKeyInput = KeyInputUtil.CharToKeyInput(' ') then
-                        char(int(secondKeyInput.Char) ||| 0x80)
-                        |> KeyInputUtil.CharToKeyInput
-                        |> (fun keyInput -> KeyInputSet(keyInput))
-                        |> x.InsertKeyInputSet
+                        string(char(int(secondKeyInput.Char) ||| 0x80))
+                        |> x.InsertText
                     else
                         match x.TryInsertDigraph firstKeyInput secondKeyInput with
                         | Some processResult ->
@@ -1016,32 +1014,34 @@ type internal InsertMode
                             | Some processResult ->
                                 processResult
                             | None ->
-                                KeyInputSet(secondKeyInput)
-                                |> x.InsertKeyInputSet
+                                string(secondKeyInput.Char)
+                                |> x.InsertText
                 | _ ->
                     ProcessResult.Handled ModeSwitch.NoSwitch
         finally
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
     // Insert the raw characters associated with a key input set
-    member x.InsertKeyInputSet (keyInputSet: KeyInputSet) =
-        let insertCommand =
-            keyInputSet.KeyInputs
-            |> Seq.map (fun keyInput -> string(keyInput.Char))
-            |> String.concat ""
-            |> InsertCommand.Insert
+    member x.InsertText (text: string): ProcessResult =
+        let insertCommand = InsertCommand.Insert text
+        let keyInputSet =
+            text
+            |> Seq.map KeyInputUtil.CharToKeyInput
+            |> List.ofSeq
+            |> (fun keyInputs -> KeyInputSet(keyInputs))
         let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
         x.RunInsertCommand insertCommand keyInputSet commandFlags
 
     /// Try to process a key pair as a digraph and insert it
     member x.TryInsertDigraph firstKeyInput secondKeyInput =
-        let digraphKeyInputSet = KeyInputSet(firstKeyInput, secondKeyInput)
-        let keyMap = _vimBuffer.Vim.KeyMap
-        match keyMap.GetKeyMapping digraphKeyInputSet KeyRemapMode.Digraph with
-        | KeyMappingResult.Mapped mappedKeyInputSet ->
-            x.InsertKeyInputSet mappedKeyInputSet
+        let digraphMap = _vimBuffer.Vim.DigraphMap
+        match digraphMap.GetMapping firstKeyInput.Char secondKeyInput.Char with
+        | Some code ->
+            code
+            |> DigraphUtil.GetText
+            |> x.InsertText
             |> Some
-        | _ ->
+        | None ->
             None
 
     /// Process the KeyInput value

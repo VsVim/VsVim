@@ -3927,7 +3927,7 @@ type IDigraphMap =
 
     abstract Unmap: char -> char -> unit
 
-    abstract GetMapping: char -> char -> int
+    abstract GetMapping: char -> char -> int option
 
     abstract Mappings: (char * char * int) seq
 

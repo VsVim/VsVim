@@ -22,7 +22,6 @@ type KeyRemapMode =
     | Insert 
     | Command 
     | Language 
-    | Digraph 
 
     with 
 
@@ -35,8 +34,7 @@ type KeyRemapMode =
             yield OperatorPending
             yield Insert
             yield Command
-            yield Language
-            yield Digraph }
+            yield Language }
 
     override x.ToString() =
         match x with 
@@ -48,7 +46,6 @@ type KeyRemapMode =
         | Insert -> "Insert"
         | Command -> "Command"
         | Language -> "Language"
-        | Digraph -> "Digraph"
 
 [<RequireQualifiedAccess>]
 type JoinKind = 

@@ -10,7 +10,11 @@ type internal DigraphMap () =
     interface IDigraphMap with
         member x.Map char1 char2 code = _map.[(char1, char2)] <- code
         member x.Unmap char1 char2 = _map.Remove((char1, char2)) |> ignore
-        member x.GetMapping char1 char2 = _map.[(char1, char2)]
+        member x.GetMapping char1 char2 =
+            if _map.ContainsKey((char1, char2)) then
+                Some _map.[(char1, char2)]
+            else
+                None
         member x.Mappings =
             _map
             |> Seq.map (fun pair ->
