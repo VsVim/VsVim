@@ -102,6 +102,8 @@
     <Compile Include="MacroRecorder.fs" />
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
+    <Compile Include="DigraphMap.fsi" />
+    <Compile Include="DigraphMap.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="VimSettings.fsi" />
     <Compile Include="VimSettings.fs" />

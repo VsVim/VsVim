@@ -2236,7 +2236,7 @@ type Parser
     /// Parse out the ':digraphs' command
     member x.ParseDigraphs () =
 
-        let mutable digraphList: (string * int) list = List.Empty
+        let mutable digraphList: (char * char * int) list = List.Empty
         let mutable (result: LineCommand option) = None
         let mutable more = true
         while more do
@@ -2244,17 +2244,17 @@ type Parser
             if _tokenizer.IsAtEndOfLine then
                 more <- false
             else
-                let firstChar = _tokenizer.CurrentChar
+                let char1 = _tokenizer.CurrentChar
                 _tokenizer.MoveNextChar()
                 if _tokenizer.IsAtEndOfLine then
                     result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
                 else
-                    let secondChar = _tokenizer.CurrentChar
+                    let char2 = _tokenizer.CurrentChar
                     _tokenizer.MoveNextChar()
                     x.SkipBlanks()
                     match x.ParseNumber() with
                     | Some number ->
-                        let digraph = (string(firstChar) + string(secondChar), number)
+                        let digraph = (char1, char2, number)
                         digraphList <- digraph :: digraphList
                     | None ->
                         result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some

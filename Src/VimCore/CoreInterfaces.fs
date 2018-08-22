@@ -3920,6 +3920,19 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
 
+/// Manages the digraph map for Vim
+type IDigraphMap =
+
+    abstract Map: char -> char -> int -> unit
+
+    abstract Unmap: char -> char -> unit
+
+    abstract GetMapping: char -> char -> int
+
+    abstract Mappings: (char * char * int) seq
+
+    abstract Clear: unit -> unit
+
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()
 
@@ -4717,6 +4730,9 @@ and IVim =
 
     /// IKeyMap for this IVim instance
     abstract KeyMap: IKeyMap
+
+    /// Digraph map for this IVim instance
+    abstract DigraphMap: IDigraphMap
 
     /// IMacroRecorder for the IVim instance
     abstract MacroRecorder: IMacroRecorder

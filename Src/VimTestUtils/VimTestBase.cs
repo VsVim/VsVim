@@ -285,6 +285,7 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             Vim.KeyMap.ClearAll();
+            Vim.DigraphMap.Clear();
             Vim.KeyMap.IsZeroMappingEnabled = true;
 
             Vim.CloseAllVimBuffers();
@@ -293,7 +294,7 @@ namespace Vim.UnitTest
             // If digraphs were loaded, reload them.
             if (Vim.AutoLoadDigraphs)
             {
-                DigraphUtil.AddToMap(Vim.KeyMap, DigraphUtil.DefaultDigraphs);
+                DigraphUtil.AddToMap(Vim.DigraphMap, DigraphUtil.DefaultDigraphs);
             }
 
             // The majority of tests run without a VimRc file but a few do customize it for specific

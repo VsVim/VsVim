@@ -391,6 +391,8 @@ type internal Vim
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _vimBufferMap = Dictionary<ITextView, IVimBuffer * IVimInterpreter * DisposableBag>()
 
+    let _digraphMap = DigraphMap() :> IDigraphMap
+
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack: IVimBuffer list = List.empty
 
@@ -671,7 +673,7 @@ type internal Vim
     member x.MaybeLoadFiles() =
 
         if x.AutoLoadDigraphs && not _digraphsAutoLoaded then
-            DigraphUtil.AddToMap _keyMap DigraphUtil.DefaultDigraphs
+            DigraphUtil.AddToMap _digraphMap DigraphUtil.DefaultDigraphs
             _digraphsAutoLoaded <- true
 
         // Load registers before loading the vimrc so that
@@ -983,6 +985,7 @@ type internal Vim
         member x.MacroRecorder = _recorder :> IMacroRecorder
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
+        member x.DigraphMap = _digraphMap
         member x.SearchService = _search
         member x.IsDisabled
             with get() = x.IsDisabled

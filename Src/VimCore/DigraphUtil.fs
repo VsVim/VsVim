@@ -1312,13 +1312,14 @@ module internal DigraphUtil =
             ("ft", 64261);
             ("st", 64262);
         |]
-        |> List.ofArray
+        |> Seq.map (fun (pair, code) -> (pair.[0], pair.[1], code))
+        |> List.ofSeq
 
-    let AddToMap (keyMap: IKeyMap) (digraphList: (string * int) list) =
+    let AddToMap (digraphMap: IDigraphMap) (digraphList: (char * char * int) seq) =
         
-        let addDigraph (pair: string, code: int) =
+        let addDigraph (char1, char2, code: int) =
             let text = System.Char.ConvertFromUtf32(code)
-            keyMap.MapWithNoRemap pair text KeyRemapMode.Digraph |> ignore
+            digraphMap.Map char1 char2 code
 
         digraphList
         |> Seq.iter addDigraph

@@ -505,7 +505,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Function of Function
 
     /// Add the specified digraphs to the digraph mapping
-    | Digraphs of (string * int) list
+    | Digraphs of (char * char * int) list
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
