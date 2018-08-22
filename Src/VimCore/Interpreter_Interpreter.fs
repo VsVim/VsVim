@@ -369,22 +369,26 @@ type VimInterpreter
     /// Get the first line matching the specified pattern in the specified
     /// direction
     member x.GetMatchingLine pattern path currentLine =
-        let startPoint =
-            match path with
-            | SearchPath.Forward ->
-                currentLine |> SnapshotLineUtil.GetEnd
-            | SearchPath.Backward ->
-                currentLine |> SnapshotLineUtil.GetStart
-        let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
-        let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
-        let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
-        match result with
-        | SearchResult.Found (_, span, _, _) ->
-            span.Start 
-            |> SnapshotPointUtil.GetContainingLine
-            |> Some
-        | _ ->
+        if StringUtil.IsNullOrEmpty pattern then
             None
+        else
+            let startPoint =
+                match path with
+                | SearchPath.Forward ->
+                    currentLine |> SnapshotLineUtil.GetEnd
+                | SearchPath.Backward ->
+                    currentLine |> SnapshotLineUtil.GetStart
+            let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
+            _vimData.LastSearchData <- searchData
+            let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
+            let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
+            match result with
+            | SearchResult.Found (_, span, _, _) ->
+                span.Start 
+                |> SnapshotPointUtil.GetContainingLine
+                |> Some
+            | _ ->
+                None
 
     // Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     // corresponding vim line number
@@ -1116,21 +1120,16 @@ type VimInterpreter
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
             _commonOperations.Join lineRange joinKind)
 
-    /// Jump to the last line
-    member x.RunJumpToLastLine() =
-        let lineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot
-        x.RunJumpToLine (lineNumber + 1)
+    /// Jump to the last line of the specified line range
+    member x.RunJumpToLastLine lineRange = 
+        x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
 
-    /// Jump to the specified line number
-    member x.RunJumpToLine number = 
-        let number = Util.VimLineToTssLine number
+            // Make sure we jump to the first non-blank on this line
+            let point = 
+                lineRange.LastLine
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
 
-        // Make sure we jump to the first non-blank on this line
-        let point = 
-            SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-            |> SnapshotLineUtil.GetFirstNonBlankOrEnd
-
-        _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
+            _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded)))
 
     /// Run the let command
     member x.RunLet (name: VariableName) expr =
@@ -1856,8 +1855,7 @@ type VimInterpreter
         | LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewHorizontally fileOptions commandOptions
         | LineCommand.HostCommand (command, argument) -> x.RunHostCommand command argument
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
-        | LineCommand.JumpToLastLine -> x.RunJumpToLastLine()
-        | LineCommand.JumpToLine number -> x.RunJumpToLine number
+        | LineCommand.JumpToLastLine lineRange -> x.RunJumpToLastLine lineRange
         | LineCommand.Let (name, value) -> x.RunLet name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments

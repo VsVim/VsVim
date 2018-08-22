@@ -715,6 +715,24 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
                 Assert.Equal(SearchPath.Backward, _vimData.LastSearchData.Path);
             }
+
+            [WpfFact]
+            public void EmptyForwardSearchNoLastPattern()
+            {
+                Create("cat", "dog");
+                ParseAndRun(":/");
+                Assert.Equal(Resources.Range_Invalid, _statusUtil.LastError);
+            }
+
+            [WpfFact]
+            public void EmptyForwardSearchUsesLastPattern()
+            {
+                Create("cat", "dog");
+                _vimData.LastSearchData = new SearchData("dog", SearchPath.Backward);
+                ParseAndRun(":/");
+                Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                Assert.Equal(SearchPath.Forward, _vimData.LastSearchData.Path);
+            }
         }
 
         public sealed class RunScriptTest : InterpreterTest
