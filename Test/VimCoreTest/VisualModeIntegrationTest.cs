@@ -287,7 +287,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(3, blockSpan.Height);
-                    Assert.Equal(9, blockSpan.Spaces);
+                    Assert.Equal(9, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -299,7 +299,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetVirtualPointInLine(2, 4, 4), _textView.GetCaretVirtualPoint());
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(3, blockSpan.Height);
-                    Assert.Equal(8, blockSpan.Spaces);
+                    Assert.Equal(8, blockSpan.SpacesLength);
                 }
             }
         }
@@ -411,7 +411,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog");
                     _vimBuffer.ProcessNotation("vy");
-                    Assert.Equal(StoredVisualSelection.NewCharacter(_width: 1), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacter(width: 1), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal("do", _textView.Selection.GetSpan().GetText());
@@ -424,7 +424,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "");
                     _vimBuffer.ProcessNotation("vly");
-                    Assert.Equal(StoredVisualSelection.NewCharacter(_width: 2), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacter(width: 2), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"20{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     _vimBuffer.ProcessNotation("y");
@@ -438,7 +438,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "tree");
                     _vimBuffer.ProcessNotation("vjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPoint(0), _textView.Selection.Start.Position);
@@ -456,7 +456,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "tree");
                     _vimBuffer.ProcessNotation("lvjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 1), _textView.Selection.Start.Position);
@@ -474,7 +474,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "t");
                     _vimBuffer.ProcessNotation("llvjy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: 0), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: 0), VimData.LastVisualSelection.Value);
                     _vimBuffer.ProcessNotation($"2{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                     Assert.Equal(_textBuffer.GetPointInLine(line: 0, column: 2), _textView.Selection.Start.Position);
@@ -493,7 +493,7 @@ namespace Vim.UnitTest
                 {
                     Create("dog", "cat", "fish", "tt");
                     _vimBuffer.ProcessNotation("llvjhy");
-                    Assert.Equal(StoredVisualSelection.NewCharacterLine(_lineCount: 2, _lastLineOffset: -1), VimData.LastVisualSelection.Value);
+                    Assert.Equal(StoredVisualSelection.NewCharacterLine(lineCount: 2, lastLineMaxOffset: -1), VimData.LastVisualSelection.Value);
                     _textView.MoveCaretToLine(lineNumber: 3, column: 2);
                     _vimBuffer.ProcessNotation($"1{kind}");
                     Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
@@ -1204,8 +1204,32 @@ namespace Vim.UnitTest
                     Assert.Equal("og", _textView.GetLine(0).GetText());
                     Assert.Equal("cat", _textView.GetLine(1).GetText());
                 }
-            }
 
+                /// <summary>
+                /// When the block selection is in column zero then empty lines need to 
+                /// get the block insert applied as well
+                /// Issue 2342
+                /// </summary>
+                [WpfFact]
+                public void EmptyLineBlockAtStartOfLine()
+                {
+                    Create("dog", "", "tree");
+                    _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "#dog", "#", "#tree" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// A block insertion should add the text when the insertion is at the end column
+                /// of the line. 
+                /// </summary>
+                [WpfFact]
+                public void EndOfLine()
+                {
+                    Create("dog", "x", "tree");
+                    _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
+                }
+            }
 
             public sealed class InsertTabTest : BlockInsertTest
             {
@@ -1835,7 +1859,7 @@ namespace Vim.UnitTest
                     Assert.Equal(0, _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1846,7 +1870,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
             }
 
@@ -1860,7 +1884,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1871,7 +1895,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1882,7 +1906,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 1), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
 
                 [WpfFact]
@@ -1893,7 +1917,7 @@ namespace Vim.UnitTest
                     Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint().Position);
                     var blockSpan = _vimBuffer.GetSelectionBlockSpan();
                     Assert.Equal(2, blockSpan.Height);
-                    Assert.Equal(2, blockSpan.Spaces);
+                    Assert.Equal(2, blockSpan.SpacesLength);
                 }
             }
         }

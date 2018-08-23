@@ -25,7 +25,7 @@ namespace Vim.UnitTest
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetLine(1).Start, 1, 0);
                     Assert.Equal(0, characterSpan.Length);
-                    Assert.Equal(0, characterSpan.LastLineLength);
+                    Assert.Equal(0, characterSpan.LastLineMaxPositionCount);
                 }
 
                 /// <summary>
@@ -36,7 +36,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 1, 3);
-                    Assert.Equal(3, characterSpan.LastLineLength);
+                    Assert.Equal(3, characterSpan.LastLinePositionCount);
                 }
 
                 /// <summary>
@@ -47,7 +47,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), _textBuffer.GetPoint(4));
-                    Assert.Equal(5, characterSpan.LastLineLength);
+                    Assert.Equal(5, characterSpan.LastLinePositionCount);
                 }
 
                 [WpfFact]
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetLine(0).Start, 1, 5);
-                    Assert.Equal(5, characterSpan.LastLineLength);
+                    Assert.Equal(5, characterSpan.LastLinePositionCount);
                 }
 
                 /// <summary>
@@ -67,8 +67,18 @@ namespace Vim.UnitTest
                     Create("cat", "", "dog");
                     var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), 2, 0);
                     Assert.Equal(2, characterSpan.LineCount);
-                    Assert.Equal(0, characterSpan.LastLineLength);
+                    Assert.Equal(0, characterSpan.LastLinePositionCount);
                     Assert.Equal(_textBuffer.GetLine(1).Start, characterSpan.End);
+                }
+
+                [WpfFact]
+                public void LongLastLinePositionCount()
+                {
+                    Create("cat", "dog");
+                    var characterSpan = new CharacterSpan(_textBuffer.GetPoint(0), lineCount: 1, lastLineMaxPositionCount: 100);
+                    Assert.Equal(1, characterSpan.LineCount);
+                    Assert.Equal(5, characterSpan.LastLinePositionCount);
+                    Assert.Equal(100, characterSpan.LastLineMaxPositionCount);
                 }
             }
 
@@ -90,7 +100,7 @@ namespace Vim.UnitTest
 
                     // The last line is included even though it's blank
                     Assert.Equal(2, characterSpan.LineCount);
-                    Assert.Equal(2, characterSpan.LastLineLength);
+                    Assert.Equal(2, characterSpan.LastLinePositionCount);
                 }
 
                 /// <summary>

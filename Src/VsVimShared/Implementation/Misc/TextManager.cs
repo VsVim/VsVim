@@ -103,7 +103,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal bool NavigateTo(VirtualSnapshotPoint point)
         {
-            var tuple = SnapshotPointUtil.GetLineColumn(point.Position);
+            var tuple = SnapshotPointUtil.GetLineNumberAndOffset(point.Position);
             var line = tuple.Item1;
             var column = tuple.Item2;
             var vsBuffer = _vsAdapter.EditorAdapter.GetBufferAdapter(point.Position.Snapshot.TextBuffer);

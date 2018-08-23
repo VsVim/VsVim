@@ -476,6 +476,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// bang modifier was added
     | Close of bool
 
+    /// Compose two line commands
+    | Compose of LineCommand * LineCommand
+
     /// Copy the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified
@@ -503,6 +506,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// A complete function 
     | Function of Function
+
+    /// Add the specified digraphs to the digraph mapping
+    | Digraphs of (char * char * int) list
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
@@ -596,11 +602,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// start the join after the line range
     | Join of LineRangeSpecifier * JoinKind
 
-    /// Jump to the specified line number 
-    | JumpToLine of int
-
-    /// Jump to the last line of the ITextBuffer
-    | JumpToLastLine
+    /// Jump to the last line of the specified line range
+    | JumpToLastLine of LineRangeSpecifier
 
     // Let command.  The first item is the name and the second is the value
     | Let of VariableName * Expression
@@ -691,6 +694,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the '/' and '?' commands
     | Search of LineRangeSpecifier * SearchPath * string
 
+    /// Start a shell window
+    | Shell
+
     /// Filter the given line range through shell command
     | ShellCommand of LineRangeSpecifier * string
 
@@ -747,7 +753,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Write of LineRangeSpecifier * bool * FileOption list * string option
 
     /// Write out all changed buffers
-    | WriteAll of bool
+    | WriteAll of bool * bool
 
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier * RegisterName option * int option

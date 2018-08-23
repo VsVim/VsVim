@@ -913,7 +913,7 @@ namespace Vim.VisualStudio
             return style;
         }
 
-        public override FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine)
+        public override FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
         {
             if (_vimApplicationSettings.UseEditorIndent)
             {
@@ -931,7 +931,7 @@ namespace Vim.VisualStudio
                     // Several editors like XAML offer the indentation service but don't actually 
                     // provide information.  User clearly wants indent there since the editor indent
                     // is enabled.  Do a best effort and us Vim style indenting
-                    return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine));
+                    return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine, localSettings.TabStop));
                 }
             }
 

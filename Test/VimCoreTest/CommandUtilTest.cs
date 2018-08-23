@@ -707,7 +707,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog fish");
                 _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.None));
-                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false, useWholeBuffer: false);
                 Assert.Equal("bat dog fish", _textBuffer.GetLine(0).GetText());
             }
 
@@ -716,7 +716,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog fish");
                 _vimData.LastSubstituteData = FSharpOption<SubstituteData>.None;
-                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false, useWholeBuffer: false);
                 Assert.Equal(1, VimHost.BeepCount);
             }
 
@@ -725,7 +725,7 @@ namespace Vim.UnitTest
             {
                 Create("cat cat fish");
                 _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.ReplaceAll));
-                _commandUtil.RepeatLastSubstitute(useSameFlags: true);
+                _commandUtil.RepeatLastSubstitute(useSameFlags: true, useWholeBuffer: false);
                 Assert.Equal("bat bat fish", _textBuffer.GetLine(0).GetText());
             }
 
@@ -734,8 +734,18 @@ namespace Vim.UnitTest
             {
                 Create("cat cat fish");
                 _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.ReplaceAll));
-                _commandUtil.RepeatLastSubstitute(useSameFlags: false);
+                _commandUtil.RepeatLastSubstitute(useSameFlags: false, useWholeBuffer: false);
                 Assert.Equal("bat cat fish", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void UseSameFlagsTrueUseWholeBufferTrue()
+            {
+                // Reported in issue #1604.
+                Create("cat cat", "cat cat", "fish", "");
+                _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.ReplaceAll));
+                _commandUtil.RepeatLastSubstitute(useSameFlags: true, useWholeBuffer: true);
+                Assert.Equal(new[] { "bat bat", "bat bat", "fish", "" }, _textBuffer.GetLines());
             }
 
             [WpfFact]
@@ -743,7 +753,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog fish");
                 _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("cat", "bat", SubstituteFlags.None));
-                RunNormalCommand(NormalCommand.NewRepeatLastSubstitute(false));
+                RunNormalCommand(NormalCommand.NewRepeatLastSubstitute(false, false));
             }
         }
 

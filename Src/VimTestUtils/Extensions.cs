@@ -920,7 +920,7 @@ namespace Vim.UnitTest
         public static SnapshotColumn GetColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber, bool? includeLineBreak = true)
         {
             var option = FSharpOption.CreateForNullable(includeLineBreak);
-            var column = SnapshotColumn.TryCreateForLineAndColumnNumber(snapshot, lineNumber, columnNumber, option);
+            var column = SnapshotColumn.GetForLineAndColumnNumber(snapshot, lineNumber, columnNumber, option);
             return column.Value;
         }
 
@@ -933,7 +933,7 @@ namespace Vim.UnitTest
         public static VirtualSnapshotColumn GetVirtualColumn(this ITextSnapshot snapshot, int lineNumber, int columnNumber)
         {
             var line = snapshot.GetLine(lineNumber);
-            return VirtualSnapshotColumn.CreateForColumnNumber(line, columnNumber);
+            return VirtualSnapshotColumn.GetForColumnNumber(line, columnNumber);
         }
 
         public static VirtualSnapshotColumn GetVirtualColumnFromPosition(this ITextSnapshot snapshot, int position, int virtualSpaces = 0)
@@ -1477,10 +1477,12 @@ namespace Vim.UnitTest
         /// <summary>
         /// Convert the SnapshotSpan into an EditSpan
         /// </summary>
-        public static EditSpan ToEditSpan(this SnapshotSpan span)
-        {
-            return EditSpan.NewSingle(span);
-        }
+        public static EditSpan ToEditSpan(this SnapshotSpan span) => ToEditSpan(new SnapshotColumnSpan(span));
+
+        /// <summary>
+        /// Convert the SnapshotSpan into an EditSpan
+        /// </summary>
+        public static EditSpan ToEditSpan(this SnapshotColumnSpan span) => EditSpan.NewSingle(span);
 
         #endregion
 

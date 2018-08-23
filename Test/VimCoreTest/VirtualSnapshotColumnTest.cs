@@ -23,13 +23,13 @@ namespace Vim.UnitTest
             _textBuffer = CreateTextBufferRaw(content);
         }
 
-        public sealed class CreateForColumnTest : VirtualSnapshotColumnTest
+        public sealed class GetForColumnTest : VirtualSnapshotColumnTest
         {
             [WpfFact]
             public void Simple()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 3);
                 Assert.Equal(0, column.VirtualSpaces);
                 Assert.True(column.Column.IsLineBreak);
             }
@@ -41,7 +41,7 @@ namespace Vim.UnitTest
             public void Middle()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 1);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 1);
                 Assert.Equal(1, column.VirtualStartPoint.Position);
                 Assert.Equal(0, column.VirtualSpaces);
                 Assert.False(column.IsInVirtualSpace);
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             public void End()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 3);
                 Assert.Equal(3, column.VirtualStartPoint.Position);
                 Assert.Equal(0, column.VirtualSpaces);
                 Assert.False(column.IsInVirtualSpace);
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             public void EndBig()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 10);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 10);
                 Assert.Equal(3, column.VirtualStartPoint.Position);
                 Assert.Equal(7, column.VirtualSpaces);
                 Assert.True(column.IsInVirtualSpace);
@@ -74,7 +74,7 @@ namespace Vim.UnitTest
             public void SimpleAdd()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 3);
                 Assert.True(column.Column.IsLineBreak);
                 column = column.AddInLine(1);
                 Assert.True(column.IsInVirtualSpace);
@@ -111,7 +111,7 @@ namespace Vim.UnitTest
             public void GiantAdd()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 3);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 3);
                 Assert.True(column.Column.IsLineBreak);
                 column = column.AddInLine(300);
                 Assert.True(column.IsInVirtualSpace);
@@ -122,7 +122,7 @@ namespace Vim.UnitTest
             public void SimpleSubtract()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 4);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 4);
                 Assert.True(column.Column.IsLineBreak);
                 Assert.True(column.IsInVirtualSpace);
                 column = column.SubtractInLine(1);
@@ -134,7 +134,7 @@ namespace Vim.UnitTest
             public void SubtractPastStart()
             {
                 Create("cat", "dog");
-                var column = VirtualSnapshotColumn.CreateForColumnNumber(_textBuffer.GetLine(0), 0);
+                var column = VirtualSnapshotColumn.GetForColumnNumber(_textBuffer.GetLine(0), 0);
                 Assert.Throws<ArgumentException>(() => column.SubtractInLine(1));
             }
         }

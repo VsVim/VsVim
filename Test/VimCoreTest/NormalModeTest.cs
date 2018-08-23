@@ -1443,7 +1443,7 @@ namespace Vim.UnitTest
         public void Bind_RepeatLastSubstitute_WithNoFlags()
         {
             Create("foo bar");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(false));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(false, false));
             _mode.Process("&");
             _commandUtil.Verify();
         }
@@ -1453,7 +1453,7 @@ namespace Vim.UnitTest
         public void Bind_RepeatLastSubstitute_WithFlags()
         {
             Create("foo bar");
-            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(true));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewRepeatLastSubstitute(true, true));
             _mode.Process("g&");
             _commandUtil.Verify();
         }

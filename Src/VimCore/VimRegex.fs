@@ -8,6 +8,9 @@ open StringBuilderExtensions
 
 module VimRegexUtils = 
 
+    let StartGroupName = "start"
+    let EndGroupName = "end"
+
     /// Profiling reveals that one of the biggest expenses of fast editing with :hlsearch
     /// enabled in large files is the creation of the regex.  With editting we never change
     /// the regex but waste up to 25% of the CPU cycles recreating it over and over 
@@ -65,9 +68,18 @@ type VimReplaceCaseState =
 type VimRegexReplaceUtil
     (
         _input: string,
+        _regex: Regex,
         _matchCollection: MatchCollection,
         _registerMap: IRegisterMap
     ) =
+
+    let _hasStartGroup =
+        _regex.GetGroupNames()
+        |> Seq.contains VimRegexUtils.StartGroupName
+
+    let _hasEndGroup =
+        _regex.GetGroupNames()
+        |> Seq.contains VimRegexUtils.EndGroupName
 
     let mutable _replaceCount = 0
     let mutable _replacement = ""
@@ -120,6 +132,9 @@ type VimRegexReplaceUtil
         | '&' when _replaceData.Magic ->
             x.AppendReplaceString m.Value
             _index <- _index + 1
+        | '~' when _replaceData.Magic ->
+            x.AppendReplaceString _replaceData.PreviousReplacement
+            _index <- _index + 1
         | '\\' when (_index + 1) < _replacement.Length ->
             match _replacement.[_index + 1] with
             | '\\' -> _builder.AppendChar '\\'
@@ -131,7 +146,12 @@ type VimRegexReplaceUtil
                 if _replaceData.Magic then
                     _builder.AppendChar '&'
                 else
-                    _builder.AppendChar '&'
+                    x.AppendReplaceString m.Value
+            | '~' -> 
+                if _replaceData.Magic then
+                    _builder.AppendChar '~'
+                else
+                    x.AppendReplaceString _replaceData.PreviousReplacement
             | 'u' -> _caseState <- VimReplaceCaseState.UpperChar
             | 'U' -> _caseState <- VimReplaceCaseState.UpperUntil
             | 'l' -> _caseState <- VimReplaceCaseState.LowerChar
@@ -172,20 +192,36 @@ type VimRegexReplaceUtil
 
         _replaceCount <- _replaceCount + 1
 
+    /// Get the position of the match start group or the start of the whole match
+    /// (the match start group is present when the regex contained '\zs')
+    member x.MatchStart (m: Match) =
+        if _hasStartGroup then
+            m.Groups.[VimRegexUtils.StartGroupName].Index
+        else
+            m.Index
+
+    /// Get the position of the match end group or the end of the whole match
+    /// (the match end group is present when the regex contained '\ze')
+    member x.MatchEnd (m: Match) =
+        if _hasEndGroup then
+            m.Groups.[VimRegexUtils.EndGroupName].Index
+        else
+            m.Index + m.Length
+
     /// Append the text which occurred before the match specified by this index.
     member private x.AppendInputBefore (matchIndex: int) =
         if matchIndex = 0 then
             let m = _matchCollection.[matchIndex]
-            _builder.AppendSubstring _input 0 m.Index
+            _builder.AppendSubstring _input 0 (x.MatchStart m)
         else
             let current = _matchCollection.[matchIndex]
             let before = _matchCollection.[matchIndex - 1]
-            let charSpan = CharSpan.FromBounds _input (before.Index + before.Length) current.Index CharComparer.Exact
+            let charSpan = CharSpan.FromBounds _input (x.MatchEnd before) (x.MatchStart current)CharComparer.Exact
             _builder.AppendCharSpan charSpan
 
     member private x.AppendInputEnd() = 
         let last = _matchCollection.[_matchCollection.Count - 1]
-        let charSpan = CharSpan.FromBounds _input (last.Index + last.Length) _input.Length CharComparer.Exact
+        let charSpan = CharSpan.FromBounds _input (x.MatchEnd last) _input.Length CharComparer.Exact
         _builder.AppendCharSpan charSpan
 
     member x.Replace (replacement: string) (replaceData: VimRegexReplaceData) = 
@@ -228,7 +264,7 @@ type VimRegex
     member x.Replace (input: string) (replacement: string) (replaceData: VimRegexReplaceData) (registerMap: IRegisterMap) = 
         let collection = _regex.Matches(input)
         if collection.Count > 0 then
-            let util = VimRegexReplaceUtil(input, collection, registerMap)
+            let util = VimRegexReplaceUtil(input, _regex, collection, registerMap)
             util.Replace replacement replaceData
         else
             input
@@ -401,6 +437,8 @@ module VimRegexFactory =
     let DotRegex = @"[^\r\n]"
     let DollarRegex = @"(?<!\r)(?=\r?$)"
     let NewLineRegex = @"(?<!\r)\r?\n"
+    let MatchStartRegex = "(?<" + VimRegexUtils.StartGroupName + ">)"
+    let MatchEndRegex = "(?<" + VimRegexUtils.EndGroupName + ">)"
 
     /// Generates strings based on a char filter func.  Easier than hand writing out
     /// the values
@@ -445,9 +483,9 @@ module VimRegexFactory =
             ("backspace", StringUtil.OfChar CharCodes.Backspace)
         |] |> Map.ofArray
 
-    /// Combine two patterns using alternation
+    /// Combine two patterns using alternation into a non-capturing group
     let CombineAlternatives (pattern1: string) (pattern2: string) =
-        "(" + pattern1 + "|" + pattern2 + ")"
+        "(?:" + pattern1 + "|" + pattern2 + ")"
 
     /// In Vim if a collection is unmatched then it is appended literally into the match 
     /// stream.  Can't determine if it's unmatched though until the string is fully 
@@ -638,6 +676,15 @@ module VimRegexFactory =
         | 'c' -> 
             data.MatchCase <- false
             data.CaseSpecifier <- CaseSpecifier.IgnoreCase
+        | 'z' -> 
+            match data.CharAtIndex with
+            | Some c -> 
+                data.IncrementIndex 1
+                match c with
+                | 's' -> data.AppendString MatchStartRegex
+                | 'e' -> data.AppendString MatchEndRegex
+                | _ -> data.Break()
+            | None -> data.Break()
         | _ -> 
             if CharUtil.IsDigit c then
                 // Convert the \1 escape into the BCL \1 for any single digit
@@ -712,7 +759,7 @@ module VimRegexFactory =
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
                 | '.' ->
-                    data.AppendString (CombineAlternatives "." NewLineRegex)
+                    data.AppendString (CombineAlternatives DotRegex NewLineRegex)
                     data.IncludesNewLine <- true
                 | _ -> data.Break()
         | 'v' -> ConvertCharAsSpecial data c
@@ -722,6 +769,7 @@ module VimRegexFactory =
         | 'c' -> ConvertCharAsSpecial data c
         | 'C' -> ConvertCharAsSpecial data c
         | 'n' -> ConvertCharAsSpecial data c
+        | 'z' -> ConvertCharAsSpecial data c
         | c -> 
             if CharUtil.IsDigit c then ConvertCharAsSpecial data c
             else data.AppendEscapedChar c

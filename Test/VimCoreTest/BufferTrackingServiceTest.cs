@@ -33,7 +33,7 @@ namespace Vim.UnitTest
 
             private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
             {
-                return _bufferTrackingServiceRaw.Create(buffer, line, column, LineColumnTrackingMode.Default);
+                return _bufferTrackingServiceRaw.CreateLineOffset(buffer, line, column, LineColumnTrackingMode.Default);
             }
 
             private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
@@ -306,7 +306,7 @@ namespace Vim.UnitTest
             public void LineColumn()
             {
                 var textBuffer = CreateTextBuffer("cat");
-                var trackingLineColumn = _bufferTrackingService.CreateLineColumn(textBuffer, 0, 0, LineColumnTrackingMode.Default);
+                var trackingLineColumn = _bufferTrackingService.CreateLineOffset(textBuffer, 0, 0, LineColumnTrackingMode.Default);
                 Assert.True(_bufferTrackingService.HasTrackingItems(textBuffer));
                 trackingLineColumn.Close();
                 Assert.False(_bufferTrackingService.HasTrackingItems(textBuffer));

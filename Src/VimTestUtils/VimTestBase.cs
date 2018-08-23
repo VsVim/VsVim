@@ -26,6 +26,7 @@ using System.Text;
 using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
+using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
@@ -241,6 +242,9 @@ namespace Vim.UnitTest
             // problems
             Vim.GlobalSettings.Timeout = false;
 
+            // Turn off autoloading of digraphs for the vast majority of tests.
+            Vim.AutoLoadDigraphs = false;
+
             // Don't let the personal VimRc of the user interfere with the unit tests
             Vim.AutoLoadVimRc = false;
             Vim.AutoLoadSessionData = false;
@@ -282,10 +286,17 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
             Vim.KeyMap.ClearAll();
+            Vim.DigraphMap.Clear();
             Vim.KeyMap.IsZeroMappingEnabled = true;
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;
+
+            // If digraphs were loaded, reload them.
+            if (Vim.AutoLoadDigraphs)
+            {
+                DigraphUtil.AddToMap(Vim.DigraphMap, DigraphUtil.DefaultDigraphs);
+            }
 
             // The majority of tests run without a VimRc file but a few do customize it for specific
             // test reasons.  Make sure it's consistent

@@ -131,6 +131,7 @@ type Parser
         ("copy", "co")
         ("delete","d")
         ("delmarks", "delm")
+        ("digraphs", "dig")
         ("display","di")
         ("echo", "ec")
         ("edit", "e")
@@ -170,6 +171,7 @@ type Parser
         ("registers", "reg")
         ("retab", "ret")
         ("set", "se")
+        ("shell", "sh")
         ("sort", "sor")
         ("source","so")
         ("split", "sp")
@@ -192,9 +194,11 @@ type Parser
         ("version", "ve")
         ("vscmd", "vsc")
         ("vsplit", "vs")
+        ("wqall", "wqa")
         ("write","w")
         ("wq", "")
         ("wall", "wa")
+        ("xall", "xa")
         ("xit", "x")
         ("yank", "y")
         ("/", "")
@@ -782,10 +786,12 @@ type Parser
             | LineCommand.ChangeLocalDirectory _ -> noRangeCommand
             | LineCommand.ClearKeyMap _ -> noRangeCommand
             | LineCommand.Close _ -> noRangeCommand
+            | LineCommand.Compose _ -> noRangeCommand
             | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
             | LineCommand.DeleteMarks _ -> noRangeCommand
+            | LineCommand.Digraphs _ -> noRangeCommand
             | LineCommand.DisplayKeyMap _ -> noRangeCommand
             | LineCommand.DisplayLet _ -> noRangeCommand
             | LineCommand.DisplayMarks _ -> noRangeCommand
@@ -813,8 +819,7 @@ type Parser
             | LineCommand.IfEnd -> noRangeCommand
             | LineCommand.IfStart _ -> noRangeCommand
             | LineCommand.Join (_, joinKind) -> LineCommand.Join (lineRange, joinKind)
-            | LineCommand.JumpToLastLine -> noRangeCommand
-            | LineCommand.JumpToLine _ -> noRangeCommand
+            | LineCommand.JumpToLastLine _ -> LineCommand.JumpToLastLine lineRange
             | LineCommand.Let _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
@@ -842,7 +847,8 @@ type Parser
             | LineCommand.Retab (_, hasBang, tabStop) -> LineCommand.Retab (lineRange, hasBang, tabStop)
             | LineCommand.Search (_, path, pattern) -> LineCommand.Search (lineRange, path, pattern)
             | LineCommand.Set _ -> noRangeCommand
-            | LineCommand.ShellCommand _ -> noRangeCommand
+            | LineCommand.Shell -> noRangeCommand
+            | LineCommand.ShellCommand (_, command) -> LineCommand.ShellCommand (lineRange, command)
             | LineCommand.ShiftLeft (_, count) -> LineCommand.ShiftLeft (lineRange, count)
             | LineCommand.ShiftRight (_, count) -> LineCommand.ShiftRight (lineRange, count)
             | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
@@ -1276,20 +1282,6 @@ type Parser
             LineCommand.Function func
         | _ -> LineCommand.ParseError Resources.Parser_Error
 
-    /// Parse out the :[digit] command
-    member x.ParseJumpToLine lineRange =
-        match lineRange with
-        | LineRangeSpecifier.SingleLine lineSpecifier ->
-            match lineSpecifier with
-            | LineSpecifier.Number number -> 
-                LineCommand.JumpToLine number
-            | LineSpecifier.LastLine ->
-                LineCommand.JumpToLastLine
-            | _ ->
-                LineCommand.ParseError Resources.Parser_Error
-        | _ ->
-            LineCommand.ParseError Resources.Parser_Error
-
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
     /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
@@ -1350,7 +1342,8 @@ type Parser
                     |> (fun number -> LineSpecifier.LineSpecifierWithAdjustment (LineSpecifier.CurrentLine, number))
                     |> Some
                 | _ ->
-                    Some LineSpecifier.CurrentLine
+                    LineSpecifier.CurrentLine |> Some
+
             elif _tokenizer.CurrentChar = '\'' then
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
@@ -1365,44 +1358,47 @@ type Parser
 
             elif _tokenizer.CurrentChar = '$' || _tokenizer.CurrentChar = '%' then
                 _tokenizer.MoveNextToken()
-                Some LineSpecifier.LastLine
-            elif _tokenizer.CurrentChar = '/' then
+                LineSpecifier.LastLine |> Some
 
-                // It's one of the forward pattern specifiers
+            elif _tokenizer.CurrentChar = '\\' then
+
+                // It's one of the previous pattern specifiers.
                 let mark = _tokenizer.Mark
-                _tokenizer.MoveNextToken()
+                _tokenizer.MoveNextChar()
                 if _tokenizer.CurrentChar = '/' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.NextLineWithPreviousPattern
                 elif _tokenizer.CurrentChar = '?' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.PreviousLineWithPreviousPattern
                 elif _tokenizer.CurrentChar = '&' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
-                else
-                    // Parse out the pattern.  The closing delimiter is required her
-                    let pattern, foundDelimeter = x.ParsePattern '/'
-                    if foundDelimeter then
-                        Some (LineSpecifier.NextLineWithPattern pattern)
-                    else
-                        _tokenizer.MoveToMark mark
-                        None
-
-            elif _tokenizer.CurrentChar = '?' then
-                // It's the ? previous search pattern
-                let mark = _tokenizer.Mark
-                _tokenizer.MoveNextToken()
-                let pattern, foundDelimeter = x.ParsePattern '?'
-                if foundDelimeter then
-                    Some (LineSpecifier.PreviousLineWithPattern pattern)
                 else
                     _tokenizer.MoveToMark mark
                     None
 
+            elif _tokenizer.CurrentChar = '/' then
+
+                // It's the / next search pattern.
+                _tokenizer.MoveNextChar()
+                let pattern, _ = x.ParsePattern '/'
+                LineSpecifier.NextLineWithPattern pattern |> Some
+
+            elif _tokenizer.CurrentChar = '?' then
+
+                // It's the ? previous search pattern.
+                _tokenizer.MoveNextChar()
+                let pattern, _ = x.ParsePattern '?'
+                LineSpecifier.PreviousLineWithPattern pattern |> Some
+
             elif _tokenizer.CurrentChar = '+' || _tokenizer.CurrentChar = '-' then
-                Some LineSpecifier.CurrentLine
+                LineSpecifier.CurrentLine |> Some
+
             else 
                 match x.ParseNumber() with
                 | None -> None
-                | Some number -> Some (LineSpecifier.Number number)
+                | Some number -> LineSpecifier.Number number |> Some
 
         // Need to check for a trailing + or - 
         match lineSpecifier with
@@ -1574,7 +1570,12 @@ type Parser
         let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         LineCommand.ShiftRight (lineRange, count)
 
-    /// Parse out the shell command
+    /// Parse out the ':shell' command
+    member x.ParseShell () = 
+        x.SkipBlanks()
+        LineCommand.Shell
+
+    /// Parse out the ':!' command
     member x.ParseShellCommand lineRange =
         use resetFlags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
         let command = x.ParseRestOfLine()
@@ -1846,9 +1847,9 @@ type Parser
 
         LineCommand.Write (lineRange, hasBang, fileOptionList, fileName)
 
-    member x.ParseWriteAll() =
+    member x.ParseWriteAll andQuit =
         let hasBang = x.ParseBang()
-        LineCommand.WriteAll hasBang
+        LineCommand.WriteAll (hasBang, andQuit)
 
     /// Parse out the yank command
     member x.ParseYank lineRange =
@@ -2228,6 +2229,39 @@ type Parser
         let hasBang = x.ParseBang()
         LineCommand.Quit hasBang
 
+    /// Parse out the ':digraphs' command
+    member x.ParseDigraphs () =
+
+        let mutable digraphList: (char * char * int) list = List.Empty
+        let mutable (result: LineCommand option) = None
+        let mutable more = true
+        while more do
+            x.SkipBlanks()
+            if _tokenizer.IsAtEndOfLine then
+                more <- false
+            else
+                let char1 = _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+                if _tokenizer.IsAtEndOfLine then
+                    result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+                else
+                    let char2 = _tokenizer.CurrentChar
+                    _tokenizer.MoveNextChar()
+                    x.SkipBlanks()
+                    match x.ParseNumber() with
+                    | Some number ->
+                        let digraph = (char1, char2, number)
+                        digraphList <- digraph :: digraphList
+                    | None ->
+                        result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+
+        match result with
+        | Some lineCommand ->
+            lineCommand
+        | None ->
+            digraphList <- List.rev digraphList
+            LineCommand.Digraphs digraphList
+
     /// Parse out the :display and :registers command.  Just takes a single argument 
     /// which is the register name
     member x.ParseDisplayRegisters () = 
@@ -2294,12 +2328,20 @@ type Parser
                     lineCommand 
                 else
                     x.SkipBlanks()
-
-                    // If there are still characters then it's illegal trailing characters
-                    if not _tokenizer.IsAtEndOfLine then
-                        LineCommand.ParseError Resources.CommandMode_TrailingCharacters
-                    else
+                    if _tokenizer.IsAtEndOfLine then
                         lineCommand
+                    elif _tokenizer.CurrentChar = '|' then
+                        _tokenizer.MoveNextChar()
+                        let nextCommand = x.ParseSingleLine()
+                        if nextCommand.Failed then
+                            nextCommand
+                        else
+                            LineCommand.Compose (lineCommand, nextCommand)
+                    else
+
+                        // If there are still characters then it's illegal
+                        // trailing characters.
+                        LineCommand.ParseError Resources.CommandMode_TrailingCharacters
             x.MoveToNextLine() |> ignore
             lineCommand
 
@@ -2331,6 +2373,7 @@ type Parser
                 | "cwindow" -> noRange x.ParseQuickFixWindow
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
+                | "digraphs" -> noRange x.ParseDigraphs
                 | "display" -> noRange x.ParseDisplayRegisters 
                 | "echo" -> noRange x.ParseEcho
                 | "edit" -> noRange x.ParseEdit
@@ -2389,6 +2432,7 @@ type Parser
                 | "retab" -> x.ParseRetab lineRange
                 | "registers" -> noRange x.ParseDisplayRegisters 
                 | "set" -> noRange x.ParseSet
+                | "shell" -> noRange x.ParseShell
                 | "sort" -> x.ParseSort lineRange
                 | "source" -> noRange x.ParseSource
                 | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
@@ -2420,9 +2464,11 @@ type Parser
                 | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
                 | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
                 | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "wall" -> noRange x.ParseWriteAll
+                | "wall" -> noRange (fun () -> x.ParseWriteAll false)
+                | "wqall" -> noRange (fun () -> x.ParseWriteAll true)
                 | "write" -> x.ParseWrite lineRange
                 | "wq" -> x.ParseQuitAndWrite lineRange
+                | "xall"-> noRange (fun () -> x.ParseWriteAll true)
                 | "xit" -> x.ParseQuitAndWrite lineRange
                 | "xmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual])
                 | "xmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual])
@@ -2442,8 +2488,8 @@ type Parser
 
             handleParseResult parseResult
 
-        // Get the command name and make sure to expand it to it's possible full
-        // name
+        // Get the command name and make sure to expand it to it's possible
+        // full name.
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
@@ -2454,9 +2500,9 @@ type Parser
         | TokenKind.EndOfLine ->
             match lineRange with
             | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop
-            | _ -> x.ParseJumpToLine lineRange |> handleParseResult
+            | _ -> LineCommand.JumpToLastLine lineRange |> handleParseResult
         | _ -> 
-            x.ParseJumpToLine lineRange |> handleParseResult
+            LineCommand.JumpToLastLine lineRange |> handleParseResult
 
     /// Parse out a single command.  Unlike ParseSingleLine this will parse linked commands.  So
     /// it won't ever return LineCommand.FuntionStart but instead will return LineCommand.Function

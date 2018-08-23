@@ -117,6 +117,29 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class ComposeTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void Undo()
+            {
+                Create("cat", "dog", "bear", "");
+                RunCommand("delete | put");
+                Assert.Equal(new[] { "dog", "cat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                RunCommand("undo");
+                Assert.Equal(new[] { "cat", "dog", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Repeat()
+            {
+                Create("cat", "dog", "bear", "");
+                RunCommand("delete | put");
+                Assert.Equal(new[] { "dog", "cat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                RunCommand("@:");
+                Assert.Equal(new[] { "dog", "bear", "cat", "" }, _vimBuffer.TextBuffer.GetLines());
+            }
+        }
+
         public sealed class CopyToTest : CommandModeIntegrationTest
         {
             /// <summary>
@@ -416,6 +439,26 @@ namespace Vim.UnitTest
             public void BackwardSimple()
             {
                 Create("cat", "dog", "fish");
+                _textView.MoveCaretToLine(2);
+                RunCommandRaw(":?dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void ForwardMatchingCurrentLine()
+            {
+                Create("cat dog fish", "dog", "fish");
+                RunCommandRaw(":/dog");
+                Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure that we can handle the incremental search command from the command line 
+            /// </summary>
+            [WpfFact]
+            public void BackwardMatchingCurrentLine()
+            {
+                Create("cat", "dog", "fish dog cat");
                 _textView.MoveCaretToLine(2);
                 RunCommandRaw(":?dog");
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());

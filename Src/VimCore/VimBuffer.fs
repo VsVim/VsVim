@@ -191,11 +191,6 @@ type internal VimBuffer
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
-    /// Are we in the middle of executing a single action in a given mode after which we
-    /// return back to insert mode.  When Some the value can only be Insert or Replace as 
-    /// they are the only modes to issue the command
-    let mutable _inOneTimeCommand: ModeKind option = None
-
     /// This is the buffered input when a remap request needs more than one 
     /// element
     let mutable _bufferedKeyInput: KeyInputSet option = None
@@ -244,8 +239,8 @@ type internal VimBuffer
         | Some keyInputSet -> keyInputSet.KeyInputs
 
     member x.InOneTimeCommand 
-        with get() = _inOneTimeCommand
-        and set value = _inOneTimeCommand <- value
+        with get() = _vimTextBuffer.InOneTimeCommand
+        and set value = _vimTextBuffer.InOneTimeCommand <- value
     
     member x.ModeMap = _modeMap
     member x.Mode = _modeMap.Mode
@@ -318,7 +313,7 @@ type internal VimBuffer
             elif keyInput.Key = VimKey.Nop then
                 // The nop key can be processed at all times
                 true
-            elif keyInput.Key = VimKey.Escape && Option.isSome _inOneTimeCommand then
+            elif keyInput.Key = VimKey.Escape && _vimTextBuffer.InOneTimeCommand.IsSome then
                 // Inside a one command state Escape is valid and returns us to the original
                 // mode.  This check is necessary because certain modes like Normal don't handle
                 // Escape themselves but Escape should force us back to Insert even here
@@ -373,8 +368,8 @@ type internal VimBuffer
         if _isClosed then 
             invalidOp Resources.VimBuffer_AlreadyClosed
 
-        let line, column = SnapshotPointUtil.GetLineColumn (TextViewUtil.GetCaretPoint _textView)
-        _vim.MarkMap.UnloadBuffer _vimBufferData _bufferName line column |> ignore
+        let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset (TextViewUtil.GetCaretPoint _textView)
+        _vim.MarkMap.UnloadBuffer _vimBufferData _bufferName lineNumber offset |> ignore
 
         // Run the closing event in a separate try / catch.  Don't want anyone to be able
         // to disrupt the necessary actions like removing a buffer from the global list
@@ -492,14 +487,14 @@ type internal VimBuffer
                     // Certain types of commands can always cause the current mode to be exited for
                     // the previous one time command mode.  Handle them here
                     let maybeLeaveOneCommand() = 
-                        match _inOneTimeCommand with
+                        match _vimTextBuffer.InOneTimeCommand with
                         | Some modeKind ->
 
                             // A completed command ends one command mode for all modes but visual.  We
                             // stay in Visual Mode until it actually exists.  Else the simplest movement
                             // command like 'l' would cause it to exit immediately
                             if VisualKind.IsAnySelect modeKind || not (VisualKind.IsAnyVisual x.Mode.ModeKind) then
-                                _inOneTimeCommand <- None
+                                _vimTextBuffer.InOneTimeCommand <- None
                                 x.SwitchMode modeKind ModeArgument.None |> ignore
                         | None ->
                             ()
@@ -518,15 +513,15 @@ type internal VimBuffer
                         | ModeSwitch.SwitchPreviousMode -> 
                             // The previous mode is interpreted as Insert when we are in the middle
                             // of a one command
-                            match _inOneTimeCommand with
+                            match _vimTextBuffer.InOneTimeCommand with
                             | Some modeKind ->
-                                _inOneTimeCommand <-None
+                                _vimTextBuffer.InOneTimeCommand <-None
                                 x.SwitchMode modeKind ModeArgument.None |> ignore
                             | None ->
                                 x.SwitchPreviousMode() |> ignore
                         | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
                             // Begins one command mode and immediately switches to the target mode
-                            _inOneTimeCommand <- Some x.Mode.ModeKind
+                            _vimTextBuffer.InOneTimeCommand <- Some x.Mode.ModeKind
                             x.SwitchMode modeKind ModeArgument.None |> ignore
                     | ProcessResult.HandledNeedMoreInput ->
                         ()

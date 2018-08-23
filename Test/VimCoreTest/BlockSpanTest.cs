@@ -22,7 +22,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, spaces: 1, height: 1);
-                Assert.Equal(0, blockSpan.ColumnSpaces);
+                Assert.Equal(0, blockSpan.BeforeSpaces);
             }
 
             [WpfFact]
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 1);
-                Assert.Equal(1, blockSpan.ColumnSpaces);
+                Assert.Equal(1, blockSpan.BeforeSpaces);
             }
 
             [WpfFact]
@@ -38,7 +38,7 @@ namespace Vim.UnitTest
             {
                 Create("\tcat dog");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(1), tabStop: 4, spaces: 1, height: 1);
-                Assert.Equal(4, blockSpan.ColumnSpaces);
+                Assert.Equal(4, blockSpan.BeforeSpaces);
             }
         }
 
@@ -52,7 +52,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 1);
-                Assert.Equal(_textBuffer.GetLine(0).Start.Add(2), blockSpan.End);
+                Assert.Equal(_textBuffer.GetColumn(lineNumber: 0, columnNumber: 2), blockSpan.End);
             }
 
             /// <summary>
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "fish");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), 4, 2, 2);
-                Assert.Equal(_textBuffer.GetLine(1).Start.Add(2), blockSpan.End);
+                Assert.Equal(_textBuffer.GetColumn(lineNumber: 1, columnNumber: 2), blockSpan.End);
             }
 
             /// <summary>
@@ -76,7 +76,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "\tdog");
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(0), tabStop: 4, spaces: 1, height: 2);
-                Assert.Equal(_textBuffer.GetPointInLine(1, 1), blockSpan.End);
+                Assert.Equal(_textBuffer.GetColumn(lineNumber: 1, columnNumber: 1), blockSpan.End);
             }
         }
 
@@ -111,6 +111,18 @@ namespace Vim.UnitTest
                 var type = typeof(BlockSpan);
                 Assert.Equal(4, type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
             }
+
+            /// <summary>
+            /// Block selection should include all non spacing characters
+            /// </summary>
+            [WpfFact]
+            public void NonSpacing()
+            {
+                string[] lines = new string[] { "hello", "h\u0327e\u0301\u200bllo\u030a\u0305" };
+                Create(lines);
+                var blockSpan = _textBuffer.GetBlockSpan(0, length: 6, startLine: 0, lineCount: 2, tabStop: 4);
+                Assert.Equal(lines[1], blockSpan.BlockOverlapColumnSpans.Rest.Head.InnerSpan.GetText());
+            }
         }
 
         public sealed class TabTest : BlockSpanTest
@@ -122,7 +134,7 @@ namespace Vim.UnitTest
                 var blockSpan = new BlockSpan(_textBuffer.GetPoint(position: 2), tabStop: 4, spaces: 3, height: 2);
                 Assert.Equal(
                     new[] { "uck", "  d" },
-                    blockSpan.BlockOverlapSpans.Select(x => x.GetText()));
+                    blockSpan.BlockOverlapColumnSpans.Select(x => x.GetText()));
             }
         }
     }

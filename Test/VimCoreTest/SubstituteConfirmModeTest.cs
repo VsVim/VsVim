@@ -29,7 +29,7 @@ namespace Vim.UnitTest
             _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), It.IsAny<ViewFlags>()));
-            _operations.Setup(x => x.GetReplaceData(It.IsAny<SnapshotPoint>())).Returns(new VimRegexReplaceData(Environment.NewLine, Vim.GlobalSettings.Magic, VimRegexReplaceCount.One));
+            _operations.Setup(x => x.GetReplaceData(It.IsAny<SnapshotPoint>())).Returns(new VimRegexReplaceData("", Environment.NewLine, Vim.GlobalSettings.Magic, VimRegexReplaceCount.One));
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
 
             var vimBufferData = CreateVimBufferData(_textView);

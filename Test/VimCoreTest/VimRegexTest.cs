@@ -297,7 +297,7 @@ namespace Vim.UnitTest
                 Assert.True(regex.IsSome());
 
                 var noMagic = VimRegexOptions.NoMagic == (options & VimRegexOptions.NoMagic);
-                var replaceData = new VimRegexReplaceData(Environment.NewLine, !noMagic, count);
+                var replaceData = new VimRegexReplaceData("xyzzy", Environment.NewLine, !noMagic, count);
                 Assert.Equal(result, regex.Value.Replace(input, replace, replaceData, _registerMap));
             }
 
@@ -382,7 +382,7 @@ namespace Vim.UnitTest
             /// the entire matched pattern
             /// </summary>
             [Fact]
-            public void Ampersand()
+            public void Ampersand_Magic()
             {
                 VerifyReplace("a", "cat", @"o&", "coat");
                 VerifyReplace(@"a\+", "caat", @"o&", "coaat");
@@ -403,10 +403,64 @@ namespace Vim.UnitTest
             /// When escaped with magic it should behave simply as an ampersand
             /// </summary>
             [Fact]
-            public void EscapedAmpersand()
+            public void EscapedAmpersand_Magic()
             {
                 VerifyReplace("a", "cat", @"o\&", "co&t");
                 VerifyReplace(@"a\+", "caat", @"o\&", "co&t");
+            }
+
+            /// <summary>
+            /// When escaped with nomagic it should replace with the entire
+            /// matched pattern
+            /// </summary>
+            [Fact]
+            public void EscapedAmpersand_NoMagic()
+            {
+                VerifyReplace(VimRegexOptions.NoMagic, "a", "cat", @"o\&", "coat");
+                VerifyReplace(VimRegexOptions.NoMagic, @"a\+", "caat", @"o\&", "coaat");
+            }
+
+            /// <summary>
+            /// When the '~' character is used in the replacement string it should replace with 
+            /// the previous replacement
+            /// </summary>
+            [Fact]
+            public void Tilde_Magic()
+            {
+                VerifyReplace("a", "cat", @"o~", "coxyzzyt");
+                VerifyReplace(@"a\+", "caat", @"o~", "coxyzzyt");
+            }
+
+            /// <summary>
+            /// When there is no magic then the tilde is not special and should replace 
+            /// as normal
+            /// </summary>
+            [Fact]
+            public void Tilde_NoMagic()
+            {
+                VerifyReplace(VimRegexOptions.NoMagic, "a", "cat", @"o~", "co~t");
+                VerifyReplace(VimRegexOptions.NoMagic, @"a\+", "caat", @"o~", "co~t");
+            }
+
+            /// <summary>
+            /// When escaped with magic it should behave simply as an tilde
+            /// </summary>
+            [Fact]
+            public void EscapedTilde_Magic()
+            {
+                VerifyReplace("a", "cat", @"o\~", "co~t");
+                VerifyReplace(@"a\+", "caat", @"o\~", "co~t");
+            }
+
+            /// <summary>
+            /// When escaped with nomagic it should replace with the previous
+            /// replacement
+            /// </summary>
+            [Fact]
+            public void EscapedTilde_NoMagic()
+            {
+                VerifyReplace(VimRegexOptions.NoMagic, "a", "cat", @"o\~", "coxyzzyt");
+                VerifyReplace(VimRegexOptions.NoMagic, @"a\+", "caat", @"o\~", "coxyzzyt");
             }
 
             /// <summary>
@@ -531,6 +585,16 @@ namespace Vim.UnitTest
             {
                 VerifyReplace(@"Task<\(.\{-}\)>", "public Task<string> M()", @"\1", "public string M()");
                 VerifyReplace(@"a\{-1,2}", "aaaaa", "b", "baaaa", VimRegexReplaceCount.One);
+            }
+
+            /// <summary>
+            /// Verify that the start and end match patterns ('\zs' and '\ze')
+            /// can be used
+            /// </summary>
+            [Fact]
+            public void WithStartEndMatch()
+            {
+                VerifyReplace(@"\<foo\zsBar\zeBaz\>", "[fooBarBaz]", "Qux", "[fooQuxBaz]");
             }
         }
 

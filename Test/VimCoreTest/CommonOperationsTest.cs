@@ -76,6 +76,7 @@ namespace Vim.UnitTest
                 undoRedoOperations: _undoRedoOperations,
                 factory: _factory);
             _vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
+            _vimTextBuffer.SetupGet(x => x.InOneTimeCommand).Returns(FSharpOption<ModeKind>.None);
 
             // Create the VimBufferData instance with our Mock'd services
             _jumpList = _factory.Create<IJumpList>();
@@ -292,7 +293,7 @@ namespace Vim.UnitTest
             public void GetPointForSpaces_NoTabs()
             {
                 Create("hello world");
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 2);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 2);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
@@ -304,7 +305,7 @@ namespace Vim.UnitTest
             {
                 Create("\thello world");
                 _localSettings.SetupGet(x => x.TabStop).Returns(4);
-                var column = _operationsRaw.GetColumnForSpacesOrLineBreak(_textBuffer.GetLine(0), 5);
+                var column = _operationsRaw.GetColumnForSpacesOrEnd(_textBuffer.GetLine(0), 5);
                 Assert.Equal(_textBuffer.GetPoint(2), column.StartPoint);
             }
 
@@ -999,7 +1000,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(1));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 1), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1016,7 +1017,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(100));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 2), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1032,7 +1033,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(0));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(1, 0), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1047,7 +1048,7 @@ namespace Vim.UnitTest
                     false,
                     MotionKind.CharacterWiseInclusive);
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(0, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(0, 0), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1063,7 +1064,7 @@ namespace Vim.UnitTest
                     MotionKind.LineWise,
                     desiredColumn: CaretColumn.NewInLastLine(2));
                 _operations.MoveCaretToMotionResult(data);
-                Assert.Equal(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
+                Assert.Equal(Tuple.Create(0, 2), SnapshotPointUtil.GetLineNumberAndOffset(_textView.GetCaretPoint()));
             }
 
             /// <summary>
@@ -1498,7 +1499,7 @@ namespace Vim.UnitTest
             public void GetNewLineIndent_EditorTrumpsAutoIndent()
             {
                 Create("cat", "dog", "");
-                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption.Create(8));
+                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption.Create(8));
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(8, indent.Value);
             }
@@ -1511,7 +1512,7 @@ namespace Vim.UnitTest
             {
                 Create("  cat", "  dog", "");
                 _localSettings.SetupGet(x => x.AutoIndent).Returns(true);
-                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>())).Returns(FSharpOption<int>.None);
+                _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption<int>.None);
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(2, indent.Value);
             }
@@ -1608,13 +1609,23 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure the small delete register is updated when a delete occurs on the unnamed register
+            /// Ensure the small delete register is not updated when a delete occurs on the unnamed register
             /// </summary>
             [WpfFact]
-            public void UpdateSmallDelete()
+            public void IgnoreSmallDeleteOnUnnamed()
             {
                 var reg = _registerMap.GetRegister(RegisterName.Unnamed);
                 _operations.SetRegisterValue(reg.Name, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
+                AssertRegister(RegisterName.SmallDelete, "", OperationKind.CharacterWise);
+            }
+            
+            /// <summary>
+            /// Ensure the small delete register is updated when a delete occurs without a specified register
+            /// </summary>
+            [WpfFact]
+            public void UpdateSmallDeleteOnUnspecified()
+            {
+                _operations.SetRegisterValue(null, RegisterOperation.Delete, new RegisterValue("foo", OperationKind.CharacterWise));
                 AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
             }
 

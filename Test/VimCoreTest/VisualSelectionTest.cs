@@ -490,7 +490,7 @@ namespace Vim.UnitTest
 
                     var endPoint = _textBuffer.GetPointInLine(1, 3);
                     Assert.Equal('g', endPoint.GetChar());
-                    Assert.Equal(endPoint, blockSpan.End);
+                    Assert.Equal(endPoint, blockSpan.End.StartPoint);
                 }
             }
         }
@@ -568,7 +568,7 @@ namespace Vim.UnitTest
                 var otherVisualSelection = visualSelection.AdjustForSelectionKind(SelectionKind.Exclusive);
                 var otherBlockSpan = otherVisualSelection.AsBlock().Item1;
                 Assert.Equal(blockSpan.Start, otherBlockSpan.Start);
-                Assert.Equal(1, otherBlockSpan.Spaces);
+                Assert.Equal(1, otherBlockSpan.SpacesLength);
                 Assert.Equal(2, otherBlockSpan.Height);
             }
 

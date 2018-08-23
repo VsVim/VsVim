@@ -371,6 +371,147 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class DigraphTest : InsertModeIntegrationTest
+        {
+            public DigraphTest()
+            {
+                Vim.AutoLoadDigraphs = true;
+            }
+
+            [WpfFact]
+            public void Simple()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>e:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Swapped()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>:e");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Special()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Right>");
+                Assert.Equal("<Right>", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Undefined()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>AB");
+                Assert.Equal("B", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Space()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Space>a");
+                Assert.Equal("á", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Escape1()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k><Esc>");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.False(_vimBuffer.InsertMode.IsInPaste);
+            }
+
+            [WpfFact]
+            public void Escape2()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-k>e<Esc>");
+                Assert.Equal("", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.False(_vimBuffer.InsertMode.IsInPaste);
+            }
+
+            [WpfFact]
+            public void NoInline()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("e<BS>:");
+                Assert.Equal(":", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void Inline()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                _vimBuffer.ProcessNotation("e<BS>:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void InlineSwapped()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                _vimBuffer.ProcessNotation(":<BS>e");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void AsIfTyped()
+            {
+                Create("", "");
+                _globalSettings.Digraph = true;
+                RegisterMap.GetRegister('c').UpdateValue("e", OperationKind.CharacterWise);
+                _vimBuffer.ProcessNotation("<C-r>c<BS>:");
+                Assert.Equal("ë", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, _textView.GetCaretPoint().Position);
+            }
+        }
+
+        /// <summary>
+        /// Tests for inserting previously inserted text
+        /// </summary>
+        public sealed class PreviouslyInsertedTextTest : InsertModeIntegrationTest
+        {
+            [WpfFact]
+            public void StopInsertMode()
+            {
+                Create("world", "");
+                _vimBuffer.Vim.VimData.LastTextInsert = FSharpOption<string>.Some("hello ");
+                _vimBuffer.ProcessNotation("<C-@>");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DontStopInsertMode()
+            {
+                Create("world", "");
+                _vimBuffer.Vim.VimData.LastTextInsert = FSharpOption<string>.Some("hello ");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
+            }
+        }
+
         /// <summary>
         /// Tests for the '.' register
         /// </summary>
@@ -1702,7 +1843,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Execute a one time command of delete word
+            /// Execute a one time command of ':put'
             /// </summary>
             [WpfFact]
             public void OneTimeCommand_CommandMode_Put()
@@ -1728,6 +1869,42 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
                 _vimBuffer.Process(VimKey.Escape);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
+            }
+
+            /// <summary>
+            /// Using put as a one-time command should always place the caret
+            /// after the inserted text
+            /// </summary>
+            [WpfFact]
+            public void OneTimeCommand_Put_MiddleOfLine()
+            {
+                // Reported in issue #1065.
+                Create("cat", "");
+                Vim.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("dog");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-o>p");
+                Assert.Equal("cadogt", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
+            }
+
+            /// <summary>
+            /// Using put as a one-time command should always place the caret
+            /// after the inserted text, even at the end of a line
+            /// </summary>
+            [WpfFact]
+            public void OneTimeCommand_Put_EndOfLine()
+            {
+                // Reported in issue #1065.
+                Create("cat", "");
+                Vim.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("dog");
+                _textView.MoveCaretTo(3);
+                _vimBuffer.ProcessNotation("<C-o>p");
+                Assert.Equal("catdog", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.True(_vimBuffer.InOneTimeCommand.IsNone());
             }

@@ -36,6 +36,7 @@
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="KeyNotationUtil.fsi" />
     <Compile Include="KeyNotationUtil.fs" />
+    <Compile Include="DigraphUtil.fs" />
     <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="HistoryUtil.fsi" />
@@ -101,6 +102,8 @@
     <Compile Include="MacroRecorder.fs" />
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
+    <Compile Include="DigraphMap.fsi" />
+    <Compile Include="DigraphMap.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="VimSettings.fsi" />
     <Compile Include="VimSettings.fs" />
@@ -123,7 +126,6 @@
     <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <!-- Using element form vs. attributes to work around NuGet restore bug
          https://github.com/NuGet/Home/issues/6367 

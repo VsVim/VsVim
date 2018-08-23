@@ -43,45 +43,42 @@
             CaretBrush="{Binding Path=TextForeground}"
             />
 
-        <ScrollViewer 
-            Grid.Row="1" 
-            Grid.Column="1"
-            HorizontalScrollBarVisibility="Auto"
-            VerticalScrollBarVisibility="Disabled">
-            <Border BorderThickness="1" BorderBrush="{Binding ElementName=_commandLineInput, Path=BorderBrush}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBox
-                        x:Name="_commandLineInput"
-                        MaxHeight="200"
-                        BorderThickness="0"
-                        VerticalAlignment="Center"
-                        IsReadOnly="{Binding Path=IsEditReadOnly}"
-                        FontFamily="{Binding Path=TextFontFamily}"
-                        FontSize="{Binding Path=TextFontSize}"
-                        Foreground="{Binding Path=TextForeground}"
-                        Background="{Binding Path=TextBackground}"
-                        CaretBrush="{Binding Path=TextForeground}" 
-                        />
-                    <TextBox
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        MinWidth="50"
-                        IsReadOnly="True"
-                        x:Name="_showCommandText"
-                        BorderThickness="0"
-                        VerticalAlignment="Center"
-                        FontFamily="{Binding Path=TextFontFamily}"
-                        FontSize="{Binding Path=TextFontSize}"
-                        Foreground="{Binding Path=TextForeground}"
-                        Background="{Binding Path=TextBackground}"
-                        CaretBrush="{Binding Path=TextForeground}" 
-                        />
-                </Grid>
-            </Border>
-        </ScrollViewer>
+        <Border Grid.Row="1"
+                Grid.Column="1"
+                BorderThickness="1" 
+                BorderBrush="{Binding ElementName=_commandLineInput, Path=BorderBrush}">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="_commandLineInput"
+                         BorderThickness="0"
+                         MaxHeight="200"
+                         VerticalAlignment="Center"
+                         HorizontalScrollBarVisibility="Auto"
+                         VerticalScrollBarVisibility="Auto"
+                         IsReadOnly="{Binding Path=IsEditReadOnly}"
+                         FontFamily="{Binding Path=TextFontFamily}"
+                         FontSize="{Binding Path=TextFontSize}"
+                         Foreground="{Binding Path=TextForeground}"
+                         Background="{Binding Path=TextBackground}"
+                         CaretBrush="{Binding Path=TextForeground}" />
+                <TextBox Grid.Row="0"
+                         Grid.Column="1"
+                         MinWidth="50"
+                         IsReadOnly="True"
+                         x:Name="_showCommandText"
+                         BorderThickness="0"
+                         VerticalAlignment="Center"
+                         FontFamily="{Binding Path=TextFontFamily}"
+                         FontSize="{Binding Path=TextFontSize}"
+                         Foreground="{Binding Path=TextForeground}"
+                         Background="{Binding Path=TextBackground}"
+                         CaretBrush="{Binding Path=TextForeground}" />
+            </Grid>
+           
+        </Border>
     </Grid>
 </UserControl>

@@ -31,6 +31,7 @@ type internal VimTextBuffer
     let mutable _lastChangeOrYankStart: ITrackingLineColumn option = None
     let mutable _lastChangeOrYankEnd: ITrackingLineColumn option = None
     let mutable _isSoftTabStopValidForBackspace = true
+    let mutable _inOneTimeCommand: ModeKind option = None
 
     /// Raise the mark set event
     member x.RaiseMarkSet localMark =
@@ -74,8 +75,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
     member x.LastInsertExitPoint
@@ -94,8 +95,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastInsertExit
@@ -116,8 +117,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.LastEditPoint
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastEdit
@@ -138,8 +139,8 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankStart
@@ -160,11 +161,15 @@ type internal VimTextBuffer
                 match value with
                 | None -> None
                 | Some point -> 
-                    let line, column = SnapshotPointUtil.GetLineColumn point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+                    let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
+                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankEnd
+
+     member x.InOneTimeCommand
+        with get() = _inOneTimeCommand
+        and set value = _inOneTimeCommand <- value
 
     member x.IsSoftTabStopValidForBackspace 
         with get() = _isSoftTabStopValidForBackspace
@@ -234,15 +239,15 @@ type internal VimTextBuffer
         | LocalMark.LastChangeOrYankEnd ->
             x.LastChangeOrYankEnd |> Option.map VirtualSnapshotPointUtil.OfPoint
 
-    /// Set the local mark at the given line and column
-    member x.SetLocalMark localMark line column = 
+    /// Set the local mark at the given line number and offset
+    member x.SetLocalMark localMark lineNumber offset = 
         match localMark with
         | LocalMark.Letter letter -> 
             // Remove the mark.  This will take core of closing out the tracking data for us so that we don't 
             // leak it
             x.RemoveLocalMark localMark |> ignore
 
-            let trackingLineColumn = _bufferTrackingService.CreateLineColumn _textBuffer line column LineColumnTrackingMode.Default
+            let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
         | LocalMark.Number _ -> false
@@ -301,6 +306,9 @@ type internal VimTextBuffer
         member x.LastChangeOrYankEnd
             with get() = x.LastChangeOrYankEnd
             and set value = x.LastChangeOrYankEnd <- value
+        member x.InOneTimeCommand
+            with get() = x.InOneTimeCommand
+            and set value = x.InOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
@@ -311,7 +319,7 @@ type internal VimTextBuffer
         member x.UseVirtualSpace = x.UseVirtualSpace
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
-        member x.SetLocalMark localMark line column = x.SetLocalMark localMark line column
+        member x.SetLocalMark localMark lineNumber offset = x.SetLocalMark localMark lineNumber offset
         member x.RemoveLocalMark localMark = x.RemoveLocalMark localMark
         member x.SwitchMode modeKind modeArgument = x.SwitchMode modeKind modeArgument
 

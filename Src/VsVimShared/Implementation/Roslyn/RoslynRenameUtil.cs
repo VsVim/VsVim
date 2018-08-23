@@ -67,6 +67,36 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         internal static bool TryCreateCore(SVsServiceProvider vsServiceProvider, out RoslynRenameUtil roslynRenameUtil)
         {
+            Type getActiveSessionChangedEventArgsType(string versionNumber)
+            {
+                var typeName = "ActiveSessionChangedEventArgs";
+
+                // This type moved between DLLS in newer versions of Visual Studio. Accept it in any of the locations.
+                var all = new[]
+                {
+                    "Microsoft.CodeAnalysis.EditorFeatures",
+                    "Microsoft.CodeAnalysis.EditorFeatures.Wpf",
+                };
+
+                foreach (var assemblyName in all)
+                {
+                    var name = $"Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService+{typeName}, {assemblyName}, Version={versionNumber}, Culture=neutral, PublicKeyToken=31bf3856ad364e35";
+                    try
+                    {
+                        var type = Type.GetType(name, throwOnError: false);
+                        if (type != null)
+                        {
+                            return type;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // There are cases it will throw even though we specified not to throw.
+                    }
+                }
+
+                throw new Exception($"Could not locate {typeName}");
+            }
             try
             {
                 var componentModel = vsServiceProvider.GetService<SComponentModel, IComponentModel>();
@@ -80,10 +110,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 // Subscribe to the event
                 var version = GetRoslynVersionNumber(inlineRenameService.GetType().Assembly);
                 var activeSessionChangedEventInfo = inlineRenameServiceType.GetEvent("ActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                var eventArgsTypeArgument = Type.GetType(
-                    string.Format(
-                        "Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameService+ActiveSessionChangedEventArgs, Microsoft.CodeAnalysis.EditorFeatures, Version={0}, Culture=neutral, PublicKeyToken=31bf3856ad364e35",
-                        version));
+                var eventArgsTypeArgument = getActiveSessionChangedEventArgsType(version);
                 var openType = typeof(EventHandler<>);
                 var delegateType = openType.MakeGenericType(eventArgsTypeArgument);
                 var methodInfo = roslynRenameUtil.GetType().GetMethod("OnActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic);

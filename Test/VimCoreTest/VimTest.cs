@@ -93,6 +93,7 @@ namespace Vim.UnitTest
                 new EditorToSettingSynchronizer(),
                 new StatusUtilFactory());
             _vim = _vimRaw;
+            _vim.AutoLoadDigraphs = false;
             _vim.AutoLoadVimRc = false;
             _vim.AutoLoadSessionData = false;
         }
