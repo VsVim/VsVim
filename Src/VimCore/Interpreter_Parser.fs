@@ -131,6 +131,7 @@ type Parser
         ("copy", "co")
         ("delete","d")
         ("delmarks", "delm")
+        ("digraphs", "dig")
         ("display","di")
         ("echo", "ec")
         ("edit", "e")
@@ -786,6 +787,7 @@ type Parser
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
             | LineCommand.DeleteMarks _ -> noRangeCommand
+            | LineCommand.Digraphs _ -> noRangeCommand
             | LineCommand.DisplayKeyMap _ -> noRangeCommand
             | LineCommand.DisplayLet _ -> noRangeCommand
             | LineCommand.DisplayMarks _ -> noRangeCommand
@@ -2238,6 +2240,39 @@ type Parser
         let hasBang = x.ParseBang()
         LineCommand.Quit hasBang
 
+    /// Parse out the ':digraphs' command
+    member x.ParseDigraphs () =
+
+        let mutable digraphList: (char * char * int) list = List.Empty
+        let mutable (result: LineCommand option) = None
+        let mutable more = true
+        while more do
+            x.SkipBlanks()
+            if _tokenizer.IsAtEndOfLine then
+                more <- false
+            else
+                let char1 = _tokenizer.CurrentChar
+                _tokenizer.MoveNextChar()
+                if _tokenizer.IsAtEndOfLine then
+                    result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+                else
+                    let char2 = _tokenizer.CurrentChar
+                    _tokenizer.MoveNextChar()
+                    x.SkipBlanks()
+                    match x.ParseNumber() with
+                    | Some number ->
+                        let digraph = (char1, char2, number)
+                        digraphList <- digraph :: digraphList
+                    | None ->
+                        result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+
+        match result with
+        | Some lineCommand ->
+            lineCommand
+        | None ->
+            digraphList <- List.rev digraphList
+            LineCommand.Digraphs digraphList
+
     /// Parse out the :display and :registers command.  Just takes a single argument 
     /// which is the register name
     member x.ParseDisplayRegisters () = 
@@ -2341,6 +2376,7 @@ type Parser
                 | "cwindow" -> noRange x.ParseQuickFixWindow
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
+                | "digraphs" -> noRange x.ParseDigraphs
                 | "display" -> noRange x.ParseDisplayRegisters 
                 | "echo" -> noRange x.ParseEcho
                 | "edit" -> noRange x.ParseEdit

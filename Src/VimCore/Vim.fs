@@ -391,6 +391,8 @@ type internal Vim
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _vimBufferMap = Dictionary<ITextView, IVimBuffer * IVimInterpreter * DisposableBag>()
 
+    let _digraphMap = DigraphMap() :> IDigraphMap
+
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack: IVimBuffer list = List.empty
 
@@ -399,8 +401,10 @@ type internal Vim
 
     /// Whether or not the vimrc file should be automatically loaded before creating the 
     /// first IVimBuffer instance
+    let mutable _autoLoadDigraphs = true
     let mutable _autoLoadVimRc = true
     let mutable _autoLoadSessionData = true
+    let mutable _digraphsAutoLoaded = false
     let mutable _sessionDataAutoLoaded = false
     let mutable _isLoadingVimRc = false
     let mutable _vimRcState = VimRcState.None
@@ -486,6 +490,10 @@ type internal Vim
         match x.ActiveBuffer with
         | Some vimBuffer -> vimBuffer.VimBufferData.StatusUtil
         | None -> _statusUtilFactory.EmptyStatusUtil
+
+    member x.AutoLoadDigraphs
+        with get() = _autoLoadDigraphs
+        and set value = _autoLoadDigraphs <- value
 
     member x.AutoLoadVimRc 
         with get() = _autoLoadVimRc
@@ -663,6 +671,10 @@ type internal Vim
             x.CreateVimBuffer textView (Some settings)
 
     member x.MaybeLoadFiles() =
+
+        if x.AutoLoadDigraphs && not _digraphsAutoLoaded then
+            DigraphUtil.AddToMap _digraphMap DigraphUtil.DefaultDigraphs
+            _digraphsAutoLoaded <- true
 
         // Load registers before loading the vimrc so that
         // registers that are set in the vimrc "stick".
@@ -955,6 +967,9 @@ type internal Vim
     interface IVim with
         member x.ActiveBuffer = x.ActiveBuffer
         member x.ActiveStatusUtil = x.ActiveStatusUtil
+        member x.AutoLoadDigraphs 
+            with get() = x.AutoLoadDigraphs
+            and set value = x.AutoLoadDigraphs <- value
         member x.AutoLoadVimRc 
             with get() = x.AutoLoadVimRc
             and set value = x.AutoLoadVimRc <- value
@@ -970,6 +985,7 @@ type internal Vim
         member x.MacroRecorder = _recorder :> IMacroRecorder
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
+        member x.DigraphMap = _digraphMap
         member x.SearchService = _search
         member x.IsDisabled
             with get() = x.IsDisabled

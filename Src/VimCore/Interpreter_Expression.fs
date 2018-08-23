@@ -504,6 +504,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// A complete function 
     | Function of Function
 
+    /// Add the specified digraphs to the digraph mapping
+    | Digraphs of (char * char * int) list
+
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
     | DisplayRegisters of RegisterName list

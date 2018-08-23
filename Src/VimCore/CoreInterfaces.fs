@@ -3395,6 +3395,14 @@ type InsertCommand  =
         | InsertCommand.Combined (_, right) -> right.RightMostCommand
         | _ -> x
 
+    member x.SecondRightMostCommand =
+        match x with
+        | InsertCommand.Combined (left, right) ->
+            match right with
+            | InsertCommand.Combined (_, right) -> right.SecondRightMostCommand
+            | _ -> Some left
+        | _ -> None
+
     /// Convert a TextChange value into the appropriate InsertCommand structure
     static member OfTextChange textChange = 
         match textChange with
@@ -3917,6 +3925,19 @@ type IKeyMap =
 
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
+
+/// Manages the digraph map for Vim
+type IDigraphMap =
+
+    abstract Map: char -> char -> int -> unit
+
+    abstract Unmap: char -> char -> unit
+
+    abstract GetMapping: char -> char -> int option
+
+    abstract Mappings: (char * char * int) seq
+
+    abstract Clear: unit -> unit
 
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()
@@ -4693,6 +4714,9 @@ and IVim =
     /// then a silent one will be returned 
     abstract ActiveStatusUtil: IStatusUtil
 
+    /// Whether to auto load digraphs
+    abstract AutoLoadDigraphs: bool with get, set
+
     /// Whether or not the vimrc file should be autoloaded before the first IVimBuffer
     /// is created
     abstract AutoLoadVimRc: bool with get, set
@@ -4715,6 +4739,9 @@ and IVim =
 
     /// IKeyMap for this IVim instance
     abstract KeyMap: IKeyMap
+
+    /// Digraph map for this IVim instance
+    abstract DigraphMap: IDigraphMap
 
     /// IMacroRecorder for the IVim instance
     abstract MacroRecorder: IMacroRecorder
@@ -5255,6 +5282,9 @@ and IInsertMode =
 
     /// The active IWordCompletionSession if one is active
     abstract ActiveWordCompletionSession: IWordCompletionSession option
+
+    /// The paste indication character
+    abstract PasteCharacter: char option
 
     /// Is insert mode currently in a paste operation
     abstract IsInPaste: bool

@@ -24,9 +24,15 @@ namespace Vim.UI.Wpf.Implementation.Paste
 
         private void OnKeyInputProcessed(object sender, EventArgs e)
         {
-            _pasteAdornment.IsDisplayed =
-                _vimBuffer.ModeKind == ModeKind.Insert &&
-                _vimBuffer.InsertMode.IsInPaste;
+            if (_vimBuffer.ModeKind == ModeKind.Insert && _vimBuffer.InsertMode.IsInPaste)
+            {
+                _pasteAdornment.PasteCharacter = _vimBuffer.InsertMode.PasteCharacter.Value;
+                _pasteAdornment.IsDisplayed = true;
+            }
+            else
+            {
+                _pasteAdornment.IsDisplayed = false;
+            }
         }
 
         private void OnVimBufferClosed(object sender, EventArgs e)

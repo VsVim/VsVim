@@ -644,6 +644,35 @@ type VimInterpreter
     member x.RunFunction (func: Function) = 
         _statusUtil.OnError Resources.Interpreter_FunctionNotSupported
 
+    /// Run the ':digraphs' command
+    member x.RunDigraphs digraphList =
+        let digraphMap = _vimBuffer.Vim.DigraphMap
+
+        // Get the two characters that make up the digraph.
+        let getChars char1 char2 =
+            string(char1) + string(char2)
+
+        // Get the display string for the replacement text.
+        let getDisplay code =
+            code
+            |> DigraphUtil.GetText
+            |> StringUtil.GetDisplayString
+
+        if List.isEmpty digraphList then
+            let columns = 4
+            digraphMap.Mappings
+            |> Seq.map (fun (char1, char2, code) ->
+                (getChars char1 char2, getDisplay code, code))
+            |> Seq.sortBy (fun (_, _, code) -> code)
+            |> Seq.mapi (fun index (digraph, text, code) ->
+                (index + 1, sprintf "%2s %-2s %5d  " digraph text code))
+            |> Seq.map (fun (index, output) ->
+                output + (if index % columns = 0 then System.Environment.NewLine else ""))
+            |> String.concat ""
+            |> _statusUtil.OnStatus
+        else
+            DigraphUtil.AddToMap _vimBuffer.Vim.DigraphMap digraphList
+
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
         // Get the printable info for the set of modes
@@ -1818,6 +1847,7 @@ type VimInterpreter
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
+        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
         | LineCommand.DisplayLet variables -> x.RunDisplayLets variables

@@ -180,6 +180,12 @@ type ActiveEditItem =
     /// In the middle of an undo operation.  Waiting for the next key
     | Undo 
 
+    /// In the middle of a digraph operation. Wait for the first digraph key
+    | Digraph1
+
+    /// In the middle of a digraph operation. Wait for the second digraph key
+    | Digraph2 of KeyInput
+
     /// No active items
     | None
 
@@ -317,6 +323,7 @@ type internal InsertMode
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
+                ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -392,11 +399,15 @@ type internal InsertMode
         | ActiveEditItem.WordCompletion wordCompletionSession -> Some wordCompletionSession
         | _ -> None
 
-    member x.IsInPaste =
+    member x.PasteCharacter =
         match _sessionData.ActiveEditItem with
-        | ActiveEditItem.Paste -> true
-        | ActiveEditItem.PasteSpecial _ -> true
-        | _ -> false
+        | ActiveEditItem.Paste -> Some '"'
+        | ActiveEditItem.PasteSpecial _ -> Some '"'
+        | ActiveEditItem.Digraph1 -> Some '?'
+        | ActiveEditItem.Digraph2 firstKeyInput -> Some firstKeyInput.Char
+        | _ -> None
+
+    member x.IsInPaste = x.PasteCharacter.IsSome
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -870,6 +881,27 @@ type internal InsertMode
         | Some insertCommand ->
             match insertCommand.RightMostCommand with
             | InsertCommand.Insert text -> func text
+            | InsertCommand.Back ->
+                if _globalSettings.Digraph && keyInput.RawChar.IsSome then
+                    match insertCommand.SecondRightMostCommand with
+                    | Some (InsertCommand.Insert text) when text.Length > 0 -> 
+
+                        // The user entered 'char1 <BS> char2' and digraphs are
+                        // enabled, so check whether 'char1 char2' is a digraph
+                        // and if so, insert it.
+                        let firstKeyInput =
+                            text.[text.Length - 1]
+                            |> KeyInputUtil.CharToKeyInput
+                        let secondKeyInput = keyInput
+                        match x.TryInsertDigraph firstKeyInput secondKeyInput with
+                        | Some processResult ->
+                            Some processResult
+                        | None ->
+                            x.TryInsertDigraph secondKeyInput firstKeyInput
+                    | _ ->
+                        None
+                else
+                    None
             | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
@@ -902,6 +934,12 @@ type internal InsertMode
     member x.ProcessPasteStart keyInput =
         x.CancelWordCompletionSession()
         _sessionData <- { _sessionData with ActiveEditItem = if _isReplace then ActiveEditItem.OverwriteReplace else ActiveEditItem.Paste }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Start a digraph session in insert mode
+    member x.ProcessDigraphStart keyInput =
+        x.CancelWordCompletionSession()
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph1 }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Start a undo session in insert mode
@@ -947,6 +985,70 @@ type internal InsertMode
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Process the second key of a digraph command
+    member x.ProcessDigraph1 firstKeyInput = 
+        if firstKeyInput = KeyInputUtil.EscapeKey then
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        elif firstKeyInput.RawChar.IsNone then
+            let keyInputSet = KeyInputSet(firstKeyInput)
+            let text = KeyNotationUtil.GetDisplayName firstKeyInput
+            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            x.RunInsertCommand (InsertCommand.Insert text) keyInputSet commandFlags |> ignore
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        else
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph2 firstKeyInput }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Process the third key of a digraph command
+    member x.ProcessDigraph2 secondKeyInput = 
+        try
+            if secondKeyInput = KeyInputUtil.EscapeKey then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                match _sessionData.ActiveEditItem with
+                | ActiveEditItem.Digraph2 firstKeyInput ->
+                    if firstKeyInput = KeyInputUtil.CharToKeyInput(' ') then
+                        string(char(int(secondKeyInput.Char) ||| 0x80))
+                        |> x.InsertText
+                    else
+                        match x.TryInsertDigraph firstKeyInput secondKeyInput with
+                        | Some processResult ->
+                            processResult
+                        | None ->
+                            match x.TryInsertDigraph secondKeyInput firstKeyInput with
+                            | Some processResult ->
+                                processResult
+                            | None ->
+                                string(secondKeyInput.Char)
+                                |> x.InsertText
+                | _ ->
+                    ProcessResult.Handled ModeSwitch.NoSwitch
+        finally
+            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
+    // Insert the raw characters associated with a key input set
+    member x.InsertText (text: string): ProcessResult =
+        let insertCommand = InsertCommand.Insert text
+        let keyInputSet =
+            text
+            |> Seq.map KeyInputUtil.CharToKeyInput
+            |> List.ofSeq
+            |> (fun keyInputs -> KeyInputSet(keyInputs))
+        let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+        x.RunInsertCommand insertCommand keyInputSet commandFlags
+
+    /// Try to process a key pair as a digraph and insert it
+    member x.TryInsertDigraph firstKeyInput secondKeyInput =
+        let digraphMap = _vimBuffer.Vim.DigraphMap
+        match digraphMap.GetMapping firstKeyInput.Char secondKeyInput.Char with
+        | Some code ->
+            code
+            |> DigraphUtil.GetText
+            |> x.InsertText
+            |> Some
+        | None ->
+            None
+
     /// Process the KeyInput value
     member x.Process keyInput = 
         _isInProcess <- true
@@ -985,6 +1087,10 @@ type internal InsertMode
 
         | ActiveEditItem.Undo ->
             x.ProcessUndo keyInput
+        | ActiveEditItem.Digraph1 ->
+            x.ProcessDigraph1 keyInput
+        | ActiveEditItem.Digraph2 _ ->
+            x.ProcessDigraph2 keyInput
 
     /// Record special marks associated with a new insert point
     member x.ResetInsertPoint () =
@@ -1248,6 +1354,7 @@ type internal InsertMode
 
     interface IInsertMode with 
         member x.ActiveWordCompletionSession = x.ActiveWordCompletionSession
+        member x.PasteCharacter = x.PasteCharacter
         member x.IsInPaste = x.IsInPaste
         member x.VimTextBuffer = _vimBuffer.VimTextBuffer
         member x.CommandNames =  x.CommandNames
