@@ -1462,15 +1462,15 @@ type Parser
     member x.ParseLineCommandFlags initialFlags = 
         let rec inner flags = 
 
-            let withFlag flag =
+            let withFlag setFlag unsetFlag =
                 _tokenizer.MoveNextChar()
-                inner (flag ||| flags)
+                inner (setFlag ||| (flags &&& ~~~unsetFlag))
 
             match _tokenizer.CurrentChar with
             | c when c = char(0) || CharUtil.IsBlank c -> ParseResult.Succeeded flags
-            | 'l' -> withFlag LineCommandFlags.List
-            | '#' -> withFlag LineCommandFlags.AddLineNumber
-            | 'p' -> withFlag LineCommandFlags.Print
+            | 'l' -> withFlag LineCommandFlags.List LineCommandFlags.Print
+            | '#' -> withFlag LineCommandFlags.AddLineNumber LineCommandFlags.None
+            | 'p' -> withFlag LineCommandFlags.Print LineCommandFlags.List
             | _ -> ParseResult.Failed Resources.Parser_InvalidArgument
 
         inner initialFlags
