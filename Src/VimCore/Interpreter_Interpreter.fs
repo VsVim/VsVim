@@ -638,6 +638,13 @@ type VimInterpreter
             | None -> destPosition
             |> x.MoveCaretToPositionOrStartOfLine)
 
+    /// Compose two line commands
+    member x.RunCompose lineCommand1 lineCommand2 =
+        use transaction = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "Compose Command" LinkedUndoTransactionFlags.CanBeEmpty
+        x.RunLineCommand lineCommand1
+        x.RunLineCommand lineCommand2
+        transaction.Complete()
+
     /// Move caret to position or the first non-blank on line if 'startofline' is set
     member x.MoveCaretToPositionOrStartOfLine position =
         if _globalSettings.StartOfLine then
@@ -1880,6 +1887,7 @@ type VimInterpreter
         | LineCommand.Call callInfo -> x.RunCall callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
+        | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang

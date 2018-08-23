@@ -783,6 +783,7 @@ type Parser
             | LineCommand.ChangeLocalDirectory _ -> noRangeCommand
             | LineCommand.ClearKeyMap _ -> noRangeCommand
             | LineCommand.Close _ -> noRangeCommand
+            | LineCommand.Compose _ -> noRangeCommand
             | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
@@ -2328,12 +2329,20 @@ type Parser
                     lineCommand 
                 else
                     x.SkipBlanks()
-
-                    // If there are still characters then it's illegal trailing characters
-                    if not _tokenizer.IsAtEndOfLine then
-                        LineCommand.ParseError Resources.CommandMode_TrailingCharacters
-                    else
+                    if _tokenizer.IsAtEndOfLine then
                         lineCommand
+                    elif _tokenizer.CurrentChar = '|' then
+                        _tokenizer.MoveNextChar()
+                        let nextCommand = x.ParseSingleLine()
+                        if nextCommand.Failed then
+                            nextCommand
+                        else
+                            LineCommand.Compose (lineCommand, nextCommand)
+                    else
+
+                        // If there are still characters then it's illegal
+                        // trailing characters.
+                        LineCommand.ParseError Resources.CommandMode_TrailingCharacters
             x.MoveToNextLine() |> ignore
             lineCommand
 
