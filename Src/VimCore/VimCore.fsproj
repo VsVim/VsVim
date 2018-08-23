@@ -19,6 +19,8 @@
     <Compile Include="VimKey.fs" />
     <Compile Include="KeyInput.fsi" />
     <Compile Include="KeyInput.fs" />
+    <Compile Include="Unicode.fsi" />
+    <Compile Include="Unicode.fs" />
     <Compile Include="CoreTypes.fs" />
     <Compile Include="EditorUtil.fs" />
     <Compile Include="Register.fs" />
