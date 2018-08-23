@@ -1738,7 +1738,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar baz");
                 _vimBuffer.ProcessNotation("<C-o>gh<C-o><Esc>");
-                Assert.Equal(null, _vimBuffer.InOneTimeCommand);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
                 Assert.Equal("foo bar baz", _textBuffer.GetLine(0).GetText());
@@ -1757,7 +1757,6 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<Right>");
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
                 Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
-                Assert.Equal(null, _vimBuffer.InOneTimeCommand);
             }
         }
 
