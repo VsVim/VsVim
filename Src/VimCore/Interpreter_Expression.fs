@@ -525,6 +525,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Display the specified let value
     | DisplayLet of VariableName list
 
+    /// Display the specified line range with the specified flags
+    | DisplayLines of LineRangeSpecifier * LineCommandFlags
+
     // The :echo command
     | Echo of Expression
 
@@ -628,9 +631,6 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// There was a parse error on the specified line
     | ParseError of string
-
-    /// Print out the specified line range 
-    | Print of LineRangeSpecifier * LineCommandFlags
 
     /// Print out the current directory
     | PrintCurrentDirectory

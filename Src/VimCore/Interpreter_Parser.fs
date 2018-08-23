@@ -150,12 +150,14 @@ type Parser
         ("join", "j")
         ("lcd", "lc")
         ("lchdir", "lch")
+        ("list", "l")
         ("let", "let")
         ("move", "m")
         ("make", "mak")
         ("marks", "")
         ("nohlsearch", "noh")
         ("normal", "norm")
+        ("number", "nu")
         ("only", "on")
         ("pwd", "pw")
         ("print", "p")
@@ -203,8 +205,9 @@ type Parser
         ("?", "")
         ("<", "")
         (">", "")
-        ("&", "&")
-        ("~", "~")
+        ("&", "")
+        ("~", "")
+        ("#", "")
         ("mapclear", "mapc")
         ("nmapclear", "nmapc")
         ("vmapclear", "vmapc")
@@ -827,7 +830,7 @@ type Parser
             | LineCommand.Normal (_, command) -> LineCommand.Normal (lineRange, command)
             | LineCommand.Only -> noRangeCommand
             | LineCommand.ParseError _ -> noRangeCommand
-            | LineCommand.Print (_, lineCommandFlags)-> LineCommand.Print (lineRange, lineCommandFlags)
+            | LineCommand.DisplayLines (_, lineCommandFlags)-> LineCommand.DisplayLines (lineRange, lineCommandFlags)
             | LineCommand.PrintCurrentDirectory -> noRangeCommand
             | LineCommand.PutAfter (_, registerName) -> LineCommand.PutAfter (lineRange, registerName)
             | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
@@ -1452,25 +1455,21 @@ type Parser
                     LineRangeSpecifier.SingleLine left 
 
     /// Parse out the valid ex-flags
-    member x.ParseLineCommandFlags() = 
+    member x.ParseLineCommandFlags initialFlags = 
         let rec inner flags = 
 
-            let withFlag flag =
-                _tokenizer.MoveNextToken()
-                inner (flag ||| flags)
+            let withFlag setFlag unsetFlag =
+                _tokenizer.MoveNextChar()
+                inner (setFlag ||| (flags &&& ~~~unsetFlag))
 
-            match _tokenizer.CurrentTokenKind with
-            | TokenKind.Character 'l' -> withFlag LineCommandFlags.List
-            | TokenKind.Character '#' -> withFlag LineCommandFlags.AddLineNumber
-            | TokenKind.Character 'p' -> withFlag LineCommandFlags.Print
-            | TokenKind.Character c ->
-                if CharUtil.IsBlank c then
-                    ParseResult.Succeeded flags
-                else 
-                    ParseResult.Failed Resources.Parser_InvalidArgument
-            | _ -> ParseResult.Succeeded flags
+            match _tokenizer.CurrentChar with
+            | c when c = char(0) || CharUtil.IsBlank c -> ParseResult.Succeeded flags
+            | 'l' -> withFlag LineCommandFlags.List LineCommandFlags.Print
+            | '#' -> withFlag LineCommandFlags.AddLineNumber LineCommandFlags.None
+            | 'p' -> withFlag LineCommandFlags.Print LineCommandFlags.List
+            | _ -> ParseResult.Failed Resources.Parser_InvalidArgument
 
-        inner LineCommandFlags.None
+        inner initialFlags
 
     /// Parse out the substitute command.  This should be called with the index just after
     /// the end of the :substitute word
@@ -2037,13 +2036,13 @@ type Parser
         else
             LineCommand.PutAfter (lineRange, registerName)
 
-    member x.ParsePrint lineRange =
+    member x.ParseDisplayLines lineRange initialFlags =
         x.SkipBlanks()
         let lineRange = x.ParseLineRangeSpecifierEndCount lineRange
         x.SkipBlanks()
         _lineCommandBuilder { 
-            let! flags = x.ParseLineCommandFlags()
-            return LineCommand.Print (lineRange, flags) }
+            let! flags = x.ParseLineCommandFlags initialFlags
+            return LineCommand.DisplayLines (lineRange, flags) }
 
     /// Parse out the :read command
     member x.ParseRead lineRange = 
@@ -2400,6 +2399,7 @@ type Parser
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
+                | "list" -> x.ParseDisplayLines lineRange LineCommandFlags.List
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
@@ -2412,6 +2412,7 @@ type Parser
                 | "nmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Normal])
                 | "nmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Normal])
                 | "nnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Normal])
+                | "number" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
                 | "nunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Normal])
                 | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch)
                 | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
@@ -2421,7 +2422,7 @@ type Parser
                 | "onoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.OperatorPending])
                 | "ounmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.OperatorPending])
                 | "put" -> x.ParsePut lineRange
-                | "print" -> x.ParsePrint lineRange
+                | "print" -> x.ParseDisplayLines lineRange LineCommandFlags.Print
                 | "pwd" -> noRange (fun () -> LineCommand.PrintCurrentDirectory)
                 | "quit" -> noRange x.ParseQuit
                 | "qall" -> noRange x.ParseQuitAll
@@ -2482,6 +2483,7 @@ type Parser
                 | "~" -> x.ParseSubstituteRepeat lineRange SubstituteFlags.UsePreviousSearchPattern
                 | "!" -> x.ParseShellCommand lineRange
                 | "@" -> x.ParseAtCommand lineRange
+                | "#" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
                 | _ -> LineCommand.ParseError Resources.Parser_Error
 
             handleParseResult parseResult

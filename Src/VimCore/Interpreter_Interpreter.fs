@@ -1224,15 +1224,51 @@ type VimInterpreter
         _statusUtil.OnError msg
 
     /// Print out the contents of the specified range
-    member x.RunPrint lineRange lineCommandFlags = 
-        
+    member x.RunDisplayLines lineRange lineCommandFlags =
+
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-            if lineCommandFlags <> LineCommandFlags.None then
-                _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "[ex-flags]")
-            else
-                lineRange.Lines
-                |> Seq.map SnapshotLineUtil.GetText
-                |> _statusUtil.OnStatusLong)
+
+            // Leave enough room to right justify any line number, with a
+            // minimum of three digits to mimic vim.
+            let snapshot = SnapshotLineUtil.GetSnapshot lineRange.StartLine
+            let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber snapshot
+            let digits = max 3 (int(floor(log10(double(lastLineNumber + 1)))) + 1)
+
+            let hasListFlag = Util.IsFlagSet lineCommandFlags LineCommandFlags.List
+            let addLineNumber = Util.IsFlagSet lineCommandFlags LineCommandFlags.AddLineNumber
+
+            // List line with control characters encoded.
+            let listLine (line: ITextSnapshotLine) =
+                line
+                |> SnapshotLineUtil.GetText
+                |> (fun text -> (StringUtil.GetDisplayString text) + "$")
+
+            // Print line with tabs expanded.
+            let printLine (line: ITextSnapshotLine) =
+                line
+                |> SnapshotLineUtil.GetText
+                |> (fun text -> StringUtil.ExpandTabsForColumn text 0 _localSettings.TabStop)
+
+            // Print or list line.
+            let printOrListLine (line: ITextSnapshotLine) =
+                line
+                |> if hasListFlag then listLine else printLine
+
+            // Display line with leading line number
+            let formatLineNumberAndLine (line: ITextSnapshotLine) =
+                line
+                |> printOrListLine
+                |> sprintf "%*d %s" digits (line.LineNumber + 1)
+
+            let formatLine (line: ITextSnapshotLine) =
+                if addLineNumber || _localSettings.Number then
+                    formatLineNumberAndLine line
+                else
+                    printOrListLine line
+
+            lineRange.Lines
+            |> Seq.map formatLine
+            |> _statusUtil.OnStatusLong)
 
     /// Print out the current directory
     member x.RunPrintCurrentDirectory() =
@@ -1933,7 +1969,7 @@ type VimInterpreter
         | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.ParseError msg -> x.RunParseError msg
-        | LineCommand.Print (lineRange, lineCommandFlags) -> x.RunPrint lineRange lineCommandFlags
+        | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
