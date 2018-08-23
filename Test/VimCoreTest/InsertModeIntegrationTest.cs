@@ -1670,7 +1670,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 _vimBuffer.ProcessNotation("<C-o>v:");
-                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.InOneTimeCommand);
                 _vimBuffer.ProcessNotation("<Esc>");
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
