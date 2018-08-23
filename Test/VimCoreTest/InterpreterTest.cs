@@ -715,6 +715,24 @@ namespace Vim.UnitTest
                 Assert.Equal("dog", _vimData.LastSearchData.Pattern);
                 Assert.Equal(SearchPath.Backward, _vimData.LastSearchData.Path);
             }
+
+            [WpfFact]
+            public void EmptyForwardSearchNoLastPattern()
+            {
+                Create("cat", "dog");
+                ParseAndRun(":/");
+                Assert.Equal(Resources.Range_Invalid, _statusUtil.LastError);
+            }
+
+            [WpfFact]
+            public void EmptyForwardSearchUsesLastPattern()
+            {
+                Create("cat", "dog");
+                _vimData.LastSearchData = new SearchData("dog", SearchPath.Backward);
+                ParseAndRun(":/");
+                Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                Assert.Equal(SearchPath.Forward, _vimData.LastSearchData.Path);
+            }
         }
 
         public sealed class RunScriptTest : InterpreterTest
@@ -2406,6 +2424,92 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "bear", "frog", "tree");
                 var lineRange = ParseAndGetLineRange(".,+2");
                 Assert.Equal(_textBuffer.GetLineRange(0, 2), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_NextLineWithPattern()
+            {
+                Create("cat", "dog frog", "bear", "frog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("/frog/");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PreviousLineWithPattern()
+            {
+                Create("cat", "dog", "bear", "frog dog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("?dog?");
+                Assert.Equal(_textBuffer.GetLineRange(1, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_NextLineWithPatternMatchingCurrentLine()
+            {
+                Create("cat", "dog frog", "bear frog dog", "frog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("/frog/");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PreviousLineWithPatternMatchingCurrentLine()
+            {
+                Create("cat", "dog", "bear dog frog", "frog dog", "tree");
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("?dog?");
+                Assert.Equal(_textBuffer.GetLineRange(1, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_NextLineWithEmptyPattern()
+            {
+                Create("cat", "dog", "bear", "frog", "tree");
+                _vimData.LastSearchData = new SearchData("frog", SearchPath.Forward);
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("//");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PreviousLineWithEmptyPattern()
+            {
+                Create("cat", "dog", "bear", "frog", "tree");
+                _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange("??");
+                Assert.Equal(_textBuffer.GetLineRange(1, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_NextLineWithPreviousPattern()
+            {
+                Create("cat", "dog", "bear", "frog", "tree");
+                _vimData.LastSearchData = new SearchData("frog", SearchPath.Forward);
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(@"\/");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_PreviousLineWithPreviousPattern()
+            {
+                Create("cat", "dog", "bear", "frog", "tree");
+                _vimData.LastSearchData = new SearchData("dog", SearchPath.Forward);
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(@"\?");
+                Assert.Equal(_textBuffer.GetLineRange(1, 1), lineRange);
+            }
+
+            [WpfFact]
+            public void LineRange_NextLineWithPreviousSubstitutePattern()
+            {
+                Create("cat", "dog", "bear", "frog", "tree");
+                _vimData.LastSubstituteData = new SubstituteData("frog", "xyzzy", SubstituteFlags.None);
+                _textView.MoveCaretToLine(2);
+                var lineRange = ParseAndGetLineRange(@"\&");
+                Assert.Equal(_textBuffer.GetLineRange(3, 3), lineRange);
             }
 
             /// <summary>

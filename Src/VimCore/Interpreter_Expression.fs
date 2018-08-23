@@ -596,11 +596,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// start the join after the line range
     | Join of LineRangeSpecifier * JoinKind
 
-    /// Jump to the specified line number 
-    | JumpToLine of int
-
-    /// Jump to the last line of the ITextBuffer
-    | JumpToLastLine
+    /// Jump to the last line of the specified line range
+    | JumpToLastLine of LineRangeSpecifier
 
     // Let command.  The first item is the name and the second is the value
     | Let of VariableName * Expression

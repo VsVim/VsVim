@@ -815,8 +815,7 @@ type Parser
             | LineCommand.IfEnd -> noRangeCommand
             | LineCommand.IfStart _ -> noRangeCommand
             | LineCommand.Join (_, joinKind) -> LineCommand.Join (lineRange, joinKind)
-            | LineCommand.JumpToLastLine -> noRangeCommand
-            | LineCommand.JumpToLine _ -> noRangeCommand
+            | LineCommand.JumpToLastLine _ -> LineCommand.JumpToLastLine lineRange
             | LineCommand.Let _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
@@ -1279,20 +1278,6 @@ type Parser
             LineCommand.Function func
         | _ -> LineCommand.ParseError Resources.Parser_Error
 
-    /// Parse out the :[digit] command
-    member x.ParseJumpToLine lineRange =
-        match lineRange with
-        | LineRangeSpecifier.SingleLine lineSpecifier ->
-            match lineSpecifier with
-            | LineSpecifier.Number number -> 
-                LineCommand.JumpToLine number
-            | LineSpecifier.LastLine ->
-                LineCommand.JumpToLastLine
-            | _ ->
-                LineCommand.ParseError Resources.Parser_Error
-        | _ ->
-            LineCommand.ParseError Resources.Parser_Error
-
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
     /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
     /// of the pattern and a bool.  The bool will represent whether or not the delimiter was found.
@@ -1353,7 +1338,8 @@ type Parser
                     |> (fun number -> LineSpecifier.LineSpecifierWithAdjustment (LineSpecifier.CurrentLine, number))
                     |> Some
                 | _ ->
-                    Some LineSpecifier.CurrentLine
+                    LineSpecifier.CurrentLine |> Some
+
             elif _tokenizer.CurrentChar = '\'' then
                 let mark = _tokenizer.Mark
                 _tokenizer.MoveNextToken()
@@ -1368,44 +1354,47 @@ type Parser
 
             elif _tokenizer.CurrentChar = '$' || _tokenizer.CurrentChar = '%' then
                 _tokenizer.MoveNextToken()
-                Some LineSpecifier.LastLine
-            elif _tokenizer.CurrentChar = '/' then
+                LineSpecifier.LastLine |> Some
 
-                // It's one of the forward pattern specifiers
+            elif _tokenizer.CurrentChar = '\\' then
+
+                // It's one of the previous pattern specifiers.
                 let mark = _tokenizer.Mark
-                _tokenizer.MoveNextToken()
+                _tokenizer.MoveNextChar()
                 if _tokenizer.CurrentChar = '/' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.NextLineWithPreviousPattern
                 elif _tokenizer.CurrentChar = '?' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.PreviousLineWithPreviousPattern
                 elif _tokenizer.CurrentChar = '&' then
+                    _tokenizer.MoveNextChar()
                     Some LineSpecifier.NextLineWithPreviousSubstitutePattern
-                else
-                    // Parse out the pattern.  The closing delimiter is required her
-                    let pattern, foundDelimeter = x.ParsePattern '/'
-                    if foundDelimeter then
-                        Some (LineSpecifier.NextLineWithPattern pattern)
-                    else
-                        _tokenizer.MoveToMark mark
-                        None
-
-            elif _tokenizer.CurrentChar = '?' then
-                // It's the ? previous search pattern
-                let mark = _tokenizer.Mark
-                _tokenizer.MoveNextToken()
-                let pattern, foundDelimeter = x.ParsePattern '?'
-                if foundDelimeter then
-                    Some (LineSpecifier.PreviousLineWithPattern pattern)
                 else
                     _tokenizer.MoveToMark mark
                     None
 
+            elif _tokenizer.CurrentChar = '/' then
+
+                // It's the / next search pattern.
+                _tokenizer.MoveNextChar()
+                let pattern, _ = x.ParsePattern '/'
+                LineSpecifier.NextLineWithPattern pattern |> Some
+
+            elif _tokenizer.CurrentChar = '?' then
+
+                // It's the ? previous search pattern.
+                _tokenizer.MoveNextChar()
+                let pattern, _ = x.ParsePattern '?'
+                LineSpecifier.PreviousLineWithPattern pattern |> Some
+
             elif _tokenizer.CurrentChar = '+' || _tokenizer.CurrentChar = '-' then
-                Some LineSpecifier.CurrentLine
+                LineSpecifier.CurrentLine |> Some
+
             else 
                 match x.ParseNumber() with
                 | None -> None
-                | Some number -> Some (LineSpecifier.Number number)
+                | Some number -> LineSpecifier.Number number |> Some
 
         // Need to check for a trailing + or - 
         match lineSpecifier with
@@ -2488,8 +2477,8 @@ type Parser
 
             handleParseResult parseResult
 
-        // Get the command name and make sure to expand it to it's possible full
-        // name
+        // Get the command name and make sure to expand it to it's possible
+        // full name.
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
@@ -2500,9 +2489,9 @@ type Parser
         | TokenKind.EndOfLine ->
             match lineRange with
             | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop
-            | _ -> x.ParseJumpToLine lineRange |> handleParseResult
+            | _ -> LineCommand.JumpToLastLine lineRange |> handleParseResult
         | _ -> 
-            x.ParseJumpToLine lineRange |> handleParseResult
+            LineCommand.JumpToLastLine lineRange |> handleParseResult
 
     /// Parse out a single command.  Unlike ParseSingleLine this will parse linked commands.  So
     /// it won't ever return LineCommand.FuntionStart but instead will return LineCommand.Function
