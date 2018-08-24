@@ -311,8 +311,9 @@ type VimInterpreter
             SnapshotUtil.GetLastNormalizedLine x.CurrentSnapshot |> getLineAndNumber |> Some
 
         | LineSpecifier.MarkLine mark ->
-            // Get the line containing the mark in the context of this IVimTextBuffer
-            _markMap.GetMark mark _vimBufferData
+            match mark with
+            | Mark.GlobalMark letter -> _markMap.GetGlobalMark letter
+            | _ -> _markMap.GetMark mark _vimBufferData
             |> Option.map VirtualSnapshotPointUtil.GetPoint
             |> Option.map SnapshotPointUtil.GetContainingLine
             |> Option.map getLineAndNumber
@@ -419,20 +420,35 @@ type VimInterpreter
         | LineRangeSpecifier.SingleLine lineSpecifier -> 
             x.GetLine lineSpecifier |> Option.map SnapshotLineRangeUtil.CreateForLine
         | LineRangeSpecifier.Range (leftLineSpecifier, rightLineSpecifier, adjustCaret) ->
-            match x.GetLine leftLineSpecifier with
-            | None ->
-                None
-            | Some leftLine ->
-                // If the adjustCaret option was specified then we need to move the caret before
-                // interpreting the next LineSpecifier.  The caret should remain moved after this 
-                // completes
-                if adjustCaret then
-                    TextViewUtil.MoveCaretToPoint _textView leftLine.Start
+            match x.GetLine leftLineSpecifier, x.GetLine rightLineSpecifier with
+            | Some leftLine, Some rightLine ->
 
-                // Get the right line and combine the results
-                match x.GetLine rightLineSpecifier with
-                | None -> None
-                | Some rightLine -> SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine |> Some
+                // Make sure both lines belong to the same text buffer.
+                if leftLine.Snapshot = rightLine.Snapshot then
+                    let result =
+                        SnapshotLineRangeUtil.CreateForLineRange leftLine rightLine
+                        |> Some
+
+                    // If the adjustCaret option was specified then we need to
+                    // move the caret before interpreting the next
+                    // LineSpecifier. The caret should remain moved after this
+                    // completes.
+                    if adjustCaret then
+
+                        // Be careful because the line might belong to a
+                        // different text buffer.
+                        if _textView.TextSnapshot = leftLine.Snapshot then
+                            TextViewUtil.MoveCaretToPoint _textView leftLine.Start
+                            result
+                        else
+                            None
+                    else
+                        result
+                else
+                    None
+
+            | _ -> None
+
         | LineRangeSpecifier.WithEndCount (lineRange, count) ->
 
             // WithEndCount should create for a single line which is 'count' lines below the
@@ -583,60 +599,73 @@ type VimInterpreter
             
             | Some (destLine, destLineNum) -> 
 
-                let destPosition = 
+                let destPoint = 
                     if destLineNum = 0 then
                         // If the target line is vim line 0, the intent is to insert the text
                         // above the first line
-                        destLine.Start.Position
+                        destLine.Start
                     else 
-                        destLine.EndIncludingLineBreak.Position
+                        destLine.EndIncludingLineBreak
 
                 let text = 
-                    if destLine.LineBreakLength = 0 then
-                        // Last line in the ITextBuffer.  Inserted text must begin with a line 
-                        // break to force a new line and additionally don't use the final new
-                        // line from the source as it would add an extra line to the buffer
-                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                        newLineText + (sourceLineRange.GetText())
-                    elif sourceLineRange.LastLine.LineBreakLength = 0 then
-                        // Last line in the source doesn't have a new line (last line).  Need
-                        // to add one to create a break for line after
-                        let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
-                        (sourceLineRange.GetText()) + newLineText 
+                    if _textView.TextSnapshot = destPoint.Snapshot then
+                        if destLine.LineBreakLength = 0 then
+                            // Last line in the ITextBuffer.  Inserted text must begin with a line 
+                            // break to force a new line and additionally don't use the final new
+                            // line from the source as it would add an extra line to the buffer
+                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                            newLineText + (sourceLineRange.GetText())
+                        elif sourceLineRange.LastLine.LineBreakLength = 0 then
+                            // Last line in the source doesn't have a new line (last line).  Need
+                            // to add one to create a break for line after
+                            let newLineText = _commonOperations.GetNewLineText destLine.EndIncludingLineBreak
+                            (sourceLineRange.GetText()) + newLineText 
+                        else
+                            sourceLineRange.GetTextIncludingLineBreak()
                     else
                         sourceLineRange.GetTextIncludingLineBreak()
 
                 // Use an undo transaction so that the caret move and insert is a single
                 // operation
-                _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPosition text))
+                if _textView.TextSnapshot = destPoint.Snapshot then
+                    _undoRedoOperations.EditWithUndoTransaction transactionName _textView (fun() -> editOperation sourceLineRange destPoint text)
+                else
+                    editOperation sourceLineRange destPoint text)
 
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPosition text ->
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPoint text ->
 
-            _textBuffer.Insert(destPosition, text) |> ignore
-            x.MoveCaretToPositionOrStartOfLine destPosition)
+            let destTextBuffer = destPoint.Snapshot.TextBuffer
+            destTextBuffer.Insert(destPoint.Position, text) |> ignore
+            x.MoveCaretToPositionOrStartOfLine destPoint.Position)
 
     /// Move the text from the source address to the destination address
     member x.RunMoveTo sourceLineRange destLineRange count =
-        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPosition text ->
-
-            // Record the insertion point.
-            let oldSnapshot = _textBuffer.CurrentSnapshot
-            let destPoint = SnapshotPoint(oldSnapshot, destPosition)
+        x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPoint text ->
 
             // Perform the move.
-            use edit = _textBuffer.CreateEdit()
-            edit.Insert(destPosition, text) |> ignore
-            edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
+            let destTextBuffer = destPoint.Snapshot.TextBuffer
+            let sourceTextBuffer = sourceLineRange.Start.Snapshot.TextBuffer
+            use edit = destTextBuffer.CreateEdit()
+            edit.Insert(destPoint.Position, text) |> ignore
+            if sourceLineRange.Start.Snapshot = destPoint.Snapshot then
+                edit.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
+            else
+                sourceTextBuffer.Delete(sourceLineRange.ExtentIncludingLineBreak.Span) |> ignore
             edit.Apply() |> ignore
 
-            // Translate the insertion point to the current snapshot and move to it.
-            let newSnapshot = _textBuffer.CurrentSnapshot
-            match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
-            | Some destPoint -> destPoint.Position
-            | None -> destPosition
-            |> x.MoveCaretToPositionOrStartOfLine)
+            // If the destination belongs to the current text buffer, move the
+            // caret.
+            let newSnapshot = destTextBuffer.CurrentSnapshot
+            if newSnapshot = _textView.TextSnapshot then
+
+                // Translate the insertion point to the current snapshot and
+                // move to it.
+                match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
+                | Some destPoint -> destPoint.Position
+                | None -> destPoint.Position
+                |> x.MoveCaretToPositionOrStartOfLine)
 
     /// Compose two line commands
     member x.RunCompose lineCommand1 lineCommand2 =

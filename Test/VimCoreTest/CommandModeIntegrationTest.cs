@@ -241,6 +241,54 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(2).GetText());
                 Assert.Equal("cat", _textBuffer.GetLine(3).GetText());
             }
+
+            [WpfFact]
+            public void CopyToOtherBuffer()
+            {
+                // Reported in issue #1982.
+                Create("cat", "dog", "bear", "");
+                var otherBuffer = CreateVimBuffer("bat", "hat", "goose", "");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherBuffer.VimTextBuffer, 1, 0);
+                RunCommand("2 co 'A");
+                Assert.Equal(new[] { "cat", "dog", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                Assert.Equal(new[] { "bat", "hat", "dog", "goose", "" }, otherBuffer.TextBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void CopyFromOtherBuffer()
+            {
+                // Reported in issue #1982.
+                Create("cat", "dog", "bear", "");
+                var otherBuffer = CreateVimBuffer("bat", "hat", "goose", "");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherBuffer.VimTextBuffer, 1, 0);
+                RunCommand("'A co 2");
+                Assert.Equal(new[] { "cat", "dog", "hat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                Assert.Equal(new[] { "bat", "hat", "goose", "" }, otherBuffer.TextBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void MoveToOtherBuffer()
+            {
+                // Reported in issue #1982.
+                Create("cat", "dog", "bear", "");
+                var otherBuffer = CreateVimBuffer("bat", "hat", "goose", "");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherBuffer.VimTextBuffer, 1, 0);
+                RunCommand("2 m 'A");
+                Assert.Equal(new[] { "cat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                Assert.Equal(new[] { "bat", "hat", "dog", "goose", "" }, otherBuffer.TextBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void MoveFromOtherBuffer()
+            {
+                // Reported in issue #1982.
+                Create("cat", "dog", "bear", "");
+                var otherBuffer = CreateVimBuffer("bat", "hat", "goose", "");
+                Vim.MarkMap.SetGlobalMark(Letter.A, otherBuffer.VimTextBuffer, 1, 0);
+                RunCommand("'A m 2");
+                Assert.Equal(new[] { "cat", "dog", "hat", "bear", "" }, _vimBuffer.TextBuffer.GetLines());
+                Assert.Equal(new[] { "bat", "goose", "" }, otherBuffer.TextBuffer.GetLines());
+            }
         }
 
         public sealed class DeleteMarksTest : CommandModeIntegrationTest
