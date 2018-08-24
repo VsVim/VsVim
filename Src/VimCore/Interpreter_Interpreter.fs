@@ -527,6 +527,10 @@ type VimInterpreter
     member x.RunCall (callInfo: CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
 
+    member x.RunCallCSharpScript (callInfo: CallInfo) = 
+        let args = CallCSharpScriptEventArgs(callInfo)
+        _vimBuffer.RaiseCallCSharpScript args
+
     /// Change the directory to the given value
     member x.RunChangeDirectory symbolicPath = 
         match symbolicPath with
@@ -1950,6 +1954,7 @@ type VimInterpreter
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.Call callInfo -> x.RunCall callInfo
+        | LineCommand.CallCSharpScript callInfo -> x.RunCallCSharpScript callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
         | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2

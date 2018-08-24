@@ -9,6 +9,8 @@
     <Import_RootNamespace>VsSpecific</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptParam.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptRunner.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.Peek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />

@@ -4,10 +4,16 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio.Vs2017</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Vs2017</AssemblyName>
-    <TargetFramework>net46</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.8.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="EnvDTE80">
+      <HintPath>..\..\..\References\Vs2010\envdte80.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />

@@ -463,6 +463,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :call command to invoke a function.  The first string is the 
     | Call of CallInfo
 
+    /// The :callcsharpscript command to run C# script.
+    | CallCSharpScript of CallInfo
+
     /// Change the current directory to the given value
     | ChangeDirectory of SymbolicPath
 

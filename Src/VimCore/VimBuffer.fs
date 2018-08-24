@@ -200,12 +200,16 @@ type internal VimBuffer
     let _keyInputProcessedEvent = StandardEvent<KeyInputProcessedEventArgs>()
     let _keyInputBufferedEvent = StandardEvent<KeyInputSetEventArgs>()
     let _keyInputEndEvent = StandardEvent<KeyInputEventArgs>()
+    let _callCSharpScriptEvent = StandardEvent<CallCSharpScriptEventArgs>()
     let _errorMessageEvent = StandardEvent<StringEventArgs>()
     let _warningMessageEvent = StandardEvent<StringEventArgs>()
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
     let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
     let _bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
+    let _keyInputInterceptEvent = StandardEvent<KeyInputEventArgs>()
+
+    let mutable _keyIntercept = false
 
     do 
         // Adjust local settings.
@@ -609,6 +613,47 @@ type internal VimBuffer
         // Raise the event that we received the key
         let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args
+        if _keyIntercept then
+            _keyInputInterceptEvent.Trigger x args
+
+        try
+            if _keyIntercept then
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            elif args.Handled then
+                // If one of the event handlers handled the KeyInput themselves then 
+                // the key is considered handled and nothing changed.  Need to raise 
+                // the process events here since it was technically processed at this
+                // point
+                let keyInputProcessingEventArgs = KeyInputStartEventArgs(keyInput)
+                keyInputProcessingEventArgs.Handled <- true
+                _keyInputProcessingEvent.Trigger x keyInputProcessingEventArgs
+
+                let processResult = ProcessResult.Handled ModeSwitch.NoSwitch
+                let keyInputProcessedEventArgs = KeyInputProcessedEventArgs(keyInput, processResult)
+                _keyInputProcessedEvent.Trigger x keyInputProcessedEventArgs
+
+                processResult
+            else
+
+                // Combine this KeyInput with the buffered KeyInput values and clear it out.  If 
+                // this KeyInput needs more input then it will be re-buffered
+                let keyInputSet = 
+                    match _bufferedKeyInput with
+                    | None -> KeyInputSet.OneKeyInput keyInput
+                    | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
+                _bufferedKeyInput <- None
+
+                x.ProcessCore keyInputSet
+
+        finally 
+            _keyInputEndEvent.Trigger x args
+
+    /// Actually process the input key.  Raise the change event on an actual change
+    member x.ProcessFromScript (keyInput: KeyInput) =
+
+        // Raise the event that we received the key
+        let args = KeyInputStartEventArgs(keyInput)
+        _keyInputStartEvent.Trigger x args
 
         try
             if args.Handled then
@@ -758,12 +803,20 @@ type internal VimBuffer
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.Process keyInput = x.Process keyInput
         member x.ProcessBufferedKeyInputs() = x.ProcessBufferedKeyInputs()
+        member x.ProcessFromScript keyInput = x.ProcessFromScript keyInput
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
 
         member x.IsReadOnly
             with get () =  x.IsReadOnly
+
+        member x.RaiseCallCSharpScript args = 
+            _callCSharpScriptEvent.Trigger x args
+
+        member x.KeyIntercept
+            with get() = _keyIntercept
+            and set value = _keyIntercept <- value
 
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent.Publish
@@ -787,6 +840,11 @@ type internal VimBuffer
         member x.Closing = _closingEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
+        [<CLIEvent>]
+        member x.CallCSharpScript = _callCSharpScriptEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputIntercept = _keyInputInterceptEvent.Publish
+
 
     interface IVimBufferInternal with
         member x.TextView = _textView

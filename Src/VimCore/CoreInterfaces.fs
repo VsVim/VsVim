@@ -4210,6 +4210,14 @@ type KeyInputProcessedEventArgs(_keyInput: KeyInput, _processResult: ProcessResu
 
     override x.ToString() = _keyInput.ToString()
 
+type CallCSharpScriptEventArgs (_callInfo: CallInfo) = 
+    inherit System.EventArgs()
+
+    member x.CallInfo = _callInfo
+
+    override x.ToString() = _callInfo.ToString()
+
+
 /// Implements a list for storing history items.  This is used for the 5 types
 /// of history lists in Vim (:help history).  
 type HistoryList () = 
@@ -5136,6 +5144,9 @@ and IVimBuffer =
     /// Process all of the buffered KeyInput values.
     abstract ProcessBufferedKeyInputs: unit -> unit
 
+    /// Process from C# script
+    abstract ProcessFromScript: KeyInput -> ProcessResult
+    
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode
     abstract CanProcess: KeyInput -> bool
@@ -5166,6 +5177,12 @@ and IVimBuffer =
     
     /// Whether the buffer is readonly
     abstract IsReadOnly: bool with get
+
+    /// Raised Call C# script
+    abstract RaiseCallCSharpScript : CallCSharpScriptEventArgs -> unit
+
+    /// VimBuffer Key Event Intercept
+    abstract KeyIntercept: bool with get,set
 
     /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
@@ -5227,6 +5244,14 @@ and IVimBuffer =
     /// Raised when the IVimBuffer is closed
     [<CLIEvent>]
     abstract Closed: IDelegateEvent<System.EventHandler>
+
+    /// Raised when Call CSharpScript
+    [<CLIEvent>]
+    abstract CallCSharpScript: IDelegateEvent<System.EventHandler<CallCSharpScriptEventArgs>>
+
+    /// Raised when Key Intercept
+    [<CLIEvent>]
+    abstract KeyInputIntercept: IDelegateEvent<System.EventHandler<KeyInputEventArgs>>
 
     inherit IPropertyOwner
 
