@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UnitTest;
+using Vim.UnitTest.Exports;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
@@ -18,16 +19,19 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly Mock<IVim> _vim;
         private readonly CommandMarginProvider _commandMarginProviderRaw;
         private readonly IWpfTextViewMarginProvider _commandMarginProvider;
+        private readonly TestableClipboardDevice _clipboardDevice;
 
         public CommandMarginProviderTest()
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _vim = _factory.Create<IVim>();
+            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
             _commandMarginProviderRaw = new CommandMarginProvider(
                 _vim.Object,
                 VimEditorHost.EditorFormatMapService,
                 VimEditorHost.ClassificationFormatMapService,
-                CommonOperationsFactory);
+                CommonOperationsFactory,
+                _clipboardDevice);
             _commandMarginProvider = _commandMarginProviderRaw;
         }
 

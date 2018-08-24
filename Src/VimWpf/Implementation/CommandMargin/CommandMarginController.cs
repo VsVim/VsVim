@@ -74,6 +74,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly ICommonOperations _commonOperations;
+        private readonly IClipboardDevice _clipboardDevice;
         private readonly FrameworkElement _parentVisualElement;
         private readonly PasteWaitMemo _pasteWaitMemo = new PasteWaitMemo();
         private VimBufferKeyEventState _vimBufferKeyEventState;
@@ -127,7 +128,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations)
+        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations, IClipboardDevice clipboardDevice)
         {
             _vimBuffer = buffer;
             _margin = control;
@@ -135,6 +136,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _editorFormatMap = editorFormatMap;
             _classificationFormatMap = classificationFormatMap;
             _commonOperations = commonOperations;
+            _clipboardDevice = clipboardDevice;
 
             Connect();
             UpdateForRecordingChanged();
@@ -413,8 +415,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case Key.C:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
-                        _vimBuffer.Process(KeyInputUtil.EscapeKey);
-                        ChangeEditKind(EditKind.None);
+                        if (_margin.CommandLineTextBox.SelectionLength != 0)
+                        {
+                            // Let the text box handle <C-c> if there is a selection.
+                            // Reported in issue #2338.
+                            _clipboardDevice.Text = _margin.CommandLineTextBox.SelectedText;
+                        }
+                        else
+                        {
+                            _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                            ChangeEditKind(EditKind.None);
+                        }
                         e.Handled = true;
                     }
                     break;

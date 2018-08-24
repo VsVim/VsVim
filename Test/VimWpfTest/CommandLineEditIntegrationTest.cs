@@ -12,6 +12,7 @@ using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -24,6 +25,7 @@ namespace Vim.UI.Wpf.UnitTest
         private ITextBuffer _textBuffer;
         private ITextView _textView;
         private MockKeyboardDevice _keyboardDevice;
+        private TestableClipboardDevice _clipboardDevice;
 
         protected virtual void Create(params string[] lines)
         {
@@ -34,6 +36,7 @@ namespace Vim.UI.Wpf.UnitTest
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _keyboardDevice = new MockKeyboardDevice();
+            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             var parentVisualElement = _factory.Create<FrameworkElement>();
 
@@ -43,7 +46,8 @@ namespace Vim.UI.Wpf.UnitTest
                 _marginControl,
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
                 VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
-                CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData));
+                CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData),
+                _clipboardDevice);
         }
 
         /// <summary>
@@ -92,6 +96,19 @@ namespace Vim.UI.Wpf.UnitTest
                 ProcessNotation(@"<C-c>");
                 Assert.Equal(EditKind.None, _controller.CommandLineEditKind);
                 Assert.True(_marginControl.IsEditReadOnly);
+            }
+
+            [WpfFact]
+            public void ControlCWithSelectionCopies()
+            {
+                // Reported in issue #2338.
+                Create("cat");
+                ProcessNotation(@":ab");
+                _marginControl.CommandLineTextBox.Select(1, 2);
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
+                ProcessNotation(@"<C-c>");
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
+                Assert.Equal("ab", _clipboardDevice.Text);
             }
 
             [WpfFact]
