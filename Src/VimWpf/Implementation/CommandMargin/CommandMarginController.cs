@@ -417,7 +417,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     {
                         if (_margin.CommandLineTextBox.SelectionLength != 0)
                         {
-                            // Let the text box handle <C-c> if there is a selection.
+                            // Copy if there is a selection.
                             // Reported in issue #2338.
                             _clipboardDevice.Text = _margin.CommandLineTextBox.SelectedText;
                         }
