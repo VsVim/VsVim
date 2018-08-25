@@ -190,7 +190,6 @@ type internal VimBuffer
     let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
-    let mutable _inSelectModeOneCommand = false
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
@@ -488,10 +487,10 @@ type internal VimBuffer
                     // Certain types of commands can always cause the current mode to be exited for
                     // the previous one time command mode.  Handle them here
                     let maybeLeaveOneCommand() = 
-                        if _inSelectModeOneCommand then
+                        if _vimTextBuffer.InSelectModeOneTimeCommand then
                             // completing any command (even cursor movements) in a one-command mode initiated from a 
                             // select mode will revert to the analogous select mode
-                            _inSelectModeOneCommand <- false
+                            _vimTextBuffer.InSelectModeOneTimeCommand <- false
                             match VisualKind.OfModeKind x.Mode.ModeKind with
                             | Some visualModeKind -> 
                                 x.SwitchMode visualModeKind.SelectModeKind ModeArgument.None |> ignore
@@ -525,7 +524,7 @@ type internal VimBuffer
                             // Begins one command mode and immediately switches to the target mode.
                             // One command mode initiated from select mode is tracked separately.
                             if VisualKind.IsAnySelect x.Mode.ModeKind then
-                                _inSelectModeOneCommand <- true
+                                _vimTextBuffer.InSelectModeOneTimeCommand <- true
                             else
                                 _vimTextBuffer.InOneTimeCommand <- Some x.Mode.ModeKind
                             _modeMap.SwitchMode modeKind ModeArgument.None |> ignore
@@ -692,19 +691,19 @@ type internal VimBuffer
         let overrideModeKind =
             if VimExtensions.IsAnyInsert modeKind then
                 // switches to an insert mode end one command mode
-                _inSelectModeOneCommand <- false
+                _vimTextBuffer.InSelectModeOneTimeCommand <- false
                 _vimTextBuffer.InOneTimeCommand <- None
                 modeKind
             elif VisualKind.IsAnyVisualOrSelect modeKind then
                 // Switching from an insert mode to a visual/select mode automatically initiates one command mode
                 if VimExtensions.IsAnyInsert x.Mode.ModeKind then
-                    _inSelectModeOneCommand <- false
+                    _vimTextBuffer.InSelectModeOneTimeCommand <- false
                     _vimTextBuffer.InOneTimeCommand <- Some x.Mode.ModeKind
                 modeKind
             elif modeKind = ModeKind.Normal then
                 match _vimTextBuffer.InOneTimeCommand with
                 | Some oneTimeModeKind ->
-                    _inSelectModeOneCommand <- false
+                    _vimTextBuffer.InSelectModeOneTimeCommand <- false
                     _vimTextBuffer.InOneTimeCommand <- None
                     oneTimeModeKind
                 | None ->
@@ -718,7 +717,7 @@ type internal VimBuffer
         // The previous mode is overridden when we are in one command mode
         match _vimTextBuffer.InOneTimeCommand with
         | Some modeKind ->
-            _inSelectModeOneCommand <- false
+            _vimTextBuffer.InSelectModeOneTimeCommand <- false
             _vimTextBuffer.InOneTimeCommand <- None
             x.SwitchMode modeKind ModeArgument.None
         | None ->
