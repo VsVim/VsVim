@@ -509,15 +509,35 @@ type internal VimBuffer
                             | None ->
                                 ()
 
+                    let maybeOverrideModeSwich modeKind =
+                        // switching to an insert mode should cancel one command mode
+                        if VimExtensions.IsAnyInsert modeKind then
+                            _vimTextBuffer.InSelectModeOneTimeCommand <- false
+                            _vimTextBuffer.InOneTimeCommand <- None
+                            modeKind
+                        // switching to normal mode should end one command mode, reverting to the stored mode
+                        elif modeKind = ModeKind.Normal then
+                            match _vimTextBuffer.InOneTimeCommand with
+                            | Some oneTimeModeKind ->
+                                _vimTextBuffer.InSelectModeOneTimeCommand <- false
+                                _vimTextBuffer.InOneTimeCommand <- None
+                                oneTimeModeKind
+                            | None ->
+                                modeKind
+                        else
+                            modeKind
+
                     match result with
                     | ProcessResult.Handled modeSwitch ->
                         match modeSwitch with
                         | ModeSwitch.NoSwitch -> 
                             maybeLeaveOneCommand()
                         | ModeSwitch.SwitchMode kind -> 
-                            x.SwitchMode kind ModeArgument.None |> ignore
+                            let switchKind = maybeOverrideModeSwich kind
+                            x.SwitchMode switchKind ModeArgument.None |> ignore
                         | ModeSwitch.SwitchModeWithArgument (kind, argument) -> 
-                            x.SwitchMode kind argument |> ignore
+                            let switchKind = maybeOverrideModeSwich kind
+                            x.SwitchMode switchKind argument |> ignore
                         | ModeSwitch.SwitchPreviousMode -> 
                             x.SwitchPreviousMode() |> ignore
                         | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
@@ -527,7 +547,7 @@ type internal VimBuffer
                                 _vimTextBuffer.InSelectModeOneTimeCommand <- true
                             else
                                 _vimTextBuffer.InOneTimeCommand <- Some x.Mode.ModeKind
-                            _modeMap.SwitchMode modeKind ModeArgument.None |> ignore
+                            x.SwitchMode modeKind ModeArgument.None |> ignore
                     | ProcessResult.HandledNeedMoreInput ->
                         ()
                     | ProcessResult.NotHandled -> 
@@ -686,32 +706,8 @@ type internal VimBuffer
     member x.RemoveMode mode = _modeMap.RemoveMode mode
 
     /// Switch to the desired mode
-    member x.SwitchMode modeKind modeArgument =
-        // Some mode switches can implicitly modify or be modified by the current one command mode
-        let overrideModeKind =
-            if VimExtensions.IsAnyInsert modeKind then
-                // switches to an insert mode end one command mode
-                _vimTextBuffer.InSelectModeOneTimeCommand <- false
-                _vimTextBuffer.InOneTimeCommand <- None
-                modeKind
-            elif VisualKind.IsAnyVisualOrSelect modeKind then
-                // Switching from an insert mode to a visual/select mode automatically initiates one command mode
-                if VimExtensions.IsAnyInsert x.Mode.ModeKind then
-                    _vimTextBuffer.InSelectModeOneTimeCommand <- false
-                    _vimTextBuffer.InOneTimeCommand <- Some x.Mode.ModeKind
-                modeKind
-            elif modeKind = ModeKind.Normal then
-                match _vimTextBuffer.InOneTimeCommand with
-                | Some oneTimeModeKind ->
-                    _vimTextBuffer.InSelectModeOneTimeCommand <- false
-                    _vimTextBuffer.InOneTimeCommand <- None
-                    oneTimeModeKind
-                | None ->
-                    modeKind
-            else
-                modeKind
-        
-        _modeMap.SwitchMode overrideModeKind modeArgument
+    member x.SwitchMode modeKind modeArgument =        
+        _modeMap.SwitchMode modeKind modeArgument
 
     member x.SwitchPreviousMode () =
         // The previous mode is overridden when we are in one command mode

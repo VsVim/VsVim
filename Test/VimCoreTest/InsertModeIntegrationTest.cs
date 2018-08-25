@@ -1645,6 +1645,15 @@ namespace Vim.UnitTest
             }
             
             [WpfFact]
+            public void ExCommand_Normal()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-o>:norm d<CR>");
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                Assert.Equal(FSharpOption<ModeKind>.None, _vimBuffer.InOneTimeCommand);
+            }
+            
+            [WpfFact]
             public void Visual_Esc()
             {
                 Create("");
