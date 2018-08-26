@@ -415,8 +415,8 @@ namespace Vim.UnitTest
             {
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}o{alien}");
-                Assert.Equal(1, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(3)));
+                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
+                Assert.Equal(3, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(3)));
             }
 
             [WpfFact]

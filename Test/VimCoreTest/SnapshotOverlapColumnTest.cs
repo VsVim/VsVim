@@ -155,7 +155,7 @@ namespace Vim.UnitTest
             {
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien} dog", "cat");
-                var column = SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 1, tabStop: 4);
+                var column = SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 2, tabStop: 4);
                 AssertColumn(column, expected: _textBuffer.GetColumnFromPosition(2), spacesBefore: 0, spacesAfter: 0);
             }
 

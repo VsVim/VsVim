@@ -22,7 +22,7 @@ type internal EastAsianWidth =
         | "A" -> EastAsianWidth.Ambiguous
         | _ -> invalidArg "text" "Not a valid value"
 
-type UnicodeRangeEntry = {
+type internal UnicodeRangeEntry = {
     Start: int
     Last: int
     Width: EastAsianWidth
@@ -34,38 +34,110 @@ type UnicodeRangeEntry = {
 
     override x.ToString() = sprintf "%d -> %d %O" x.Start x.Last x.Width
 
-/// A balanced internal tree for efficient lookup of unicode information
-type internal IntervalTreeNode = {
-    Entry: UnicodeRangeEntry
-    Left: IntervalTreeNode option
-    Right: IntervalTreeNode option
-}
+type internal IntervalTreeNode
+    (
+        _entry: UnicodeRangeEntry,
+        _left: IntervalTreeNode option,
+        _right: IntervalTreeNode option
+    ) =
 
-// TODO: needs to be balanced
+    let _height = 1 + (max (IntervalTreeNode.GetHeight _left) (IntervalTreeNode.GetHeight _right))
+    let _count = 1 + (IntervalTreeNode.GetCount _left) + (IntervalTreeNode.GetCount _right)
+
+    new(entry: UnicodeRangeEntry) =
+        IntervalTreeNode(entry, None, None)
+
+    member x.Entry = _entry
+    member x.Left = _left
+    member x.Right = _right
+    member x.Height = _height
+    member x.Count = _count
+    member x.BalanceFactor = 
+        let leftHeight = IntervalTreeNode.GetHeight x.Left
+        let rightHeight = IntervalTreeNode.GetHeight x.Right
+        rightHeight - leftHeight
+
+    member x.WithEntry entry = IntervalTreeNode(entry, x.Left, x.Right)
+    member x.WithLeft (left: IntervalTreeNode) = IntervalTreeNode(x.Entry, Some left, x.Right)
+    member x.WithLeft (left: IntervalTreeNode option) = IntervalTreeNode(x.Entry, left, x.Right)
+    member x.WithRight (right: IntervalTreeNode) = IntervalTreeNode(x.Entry, x.Left, Some right)
+    member x.WithRight (right: IntervalTreeNode option) = IntervalTreeNode(x.Entry, x.Left, right)
+
+    static member private GetHeight (node: IntervalTreeNode option) = 
+        match node with 
+        | None -> 0
+        | Some node -> node.Height
+
+    static member private GetCount (node: IntervalTreeNode option) = 
+        match node with 
+        | None -> 0
+        | Some node -> node.Count
+
+/// A balanced internal tree for efficient lookup of unicode information
 type internal IntervalTree
     (
-        root: IntervalTreeNode option
-    ) = 
-
-    let _root = root;
+        _root: IntervalTreeNode option
+    ) =
 
     new() = 
         IntervalTree(None)
 
+    member x.Root = _root
+    member x.Height = match x.Root with Some node -> node.Height | None -> 0
+    member x.Count = match x.Root with Some node -> node.Count | None -> 0
+
     member x.Insert entry = 
-        let rec insertCore node entry = 
-            match node with
-            | None -> { Entry = entry; Left = None; Right = None } 
-            | Some node -> 
-                if entry.Start < node.Entry.Start then 
-                    { node with Left = Some (insertCore node.Left entry) }
+        let rotateLeft (node: IntervalTreeNode) (right: IntervalTreeNode) =
+            let node = node.WithRight right.Left
+            let right = right.WithLeft node
+            right
+
+        let rotateRight (node: IntervalTreeNode) (left: IntervalTreeNode) =
+            let node = node.WithLeft left.Right
+            let left = left.WithRight node
+            left
+
+        let balance (node: IntervalTreeNode) =
+            let factor = node.BalanceFactor
+            if factor > 1 then 
+                let right = Option.get node.Right
+                if right.BalanceFactor > 0 then 
+                    rotateLeft node right
+                else 
+                    let right = rotateRight right (Option.get right.Left)
+                    rotateLeft node right
+            elif factor < -1 then
+                let left = Option.get node.Left
+                if left.BalanceFactor < 0 then
+                    rotateRight node left
                 else
-                    { node with Right = Some (insertCore node.Right entry) }
+                    let left = rotateLeft left (Option.get left.Right)
+                    rotateRight node left
+            else
+                node
+
+        let rec insertCore (node: IntervalTreeNode option) entry = 
+            match node with
+            | None -> IntervalTreeNode(entry)
+            | Some node -> 
+                let current = node.Entry
+                if 
+                    (entry.Start = current.Last || entry.Last = current.Start) &&
+                    entry.Width = current.Width
+                then
+                    let current = { current with Start = min current.Start entry.Start; Last = max current.Last entry.Last }
+                    node.WithEntry current
+                else
+                    let node = 
+                        if entry.Start < current.Start then node.WithLeft (insertCore node.Left entry)
+                        else node.WithRight (insertCore node.Right entry)
+                    balance node
+
         let root = insertCore _root entry
         IntervalTree(Some root)
 
     member x.Find codePoint = 
-        let rec findCore node codePoint = 
+        let rec findCore (node: IntervalTreeNode option) codePoint = 
             match node with 
             | None -> None
             | Some node -> 
@@ -80,6 +152,7 @@ module UnicodeUtil =
 
     /// All of the known categories. This is taken from the following table 
     /// https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
+    /// EastAsianWidth-11.0.0.txt
     ///
     /// This is deliberately done as a function to prevent the array from being persisted 
     /// throughout the execution of the process. The other data structures created from this
@@ -2479,6 +2552,8 @@ module UnicodeUtil =
             { Start = 0x100000; Last = 0x10FFFD; Width = EastAsianWidth.OfText "A"  } // 100000..10FFFD;A # Co [65534] <private-use-100000>..<private-use-10FFFD>
         |]
 
+    let IsInBmp codePoint = codePoint <= 0xFFFF
+
     let WideBmpIntervalTree, WideAstralIntervalTree = 
         let mutable rootBmp = IntervalTree.Empty
         let mutable rootAstral = IntervalTree.Empty
@@ -2486,7 +2561,7 @@ module UnicodeUtil =
         for i = 0 to all.Length - 1 do 
             let current = all.[i]
             if current.Width = EastAsianWidth.Wide then
-                if current.Last <= 0xFFFF then
+                if IsInBmp current.Last then
                     rootBmp <- rootBmp.Insert current
                 else
                     rootAstral <- rootAstral.Insert current
@@ -2501,4 +2576,8 @@ module UnicodeUtil =
         match WideAstralIntervalTree.Find codePoint with
         | Some _ -> true
         | None -> false
+
+    let IsWide codePoint =
+        if IsInBmp codePoint then IsWideBmp codePoint
+        else IsWideAstral codePoint
 

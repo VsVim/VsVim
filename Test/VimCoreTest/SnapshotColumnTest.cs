@@ -308,7 +308,7 @@ namespace Vim.UnitTest
                 for (var i = 0; i < 4; i++)
                 {
                     var column = _textBuffer.GetColumnFromPosition(i);
-                    Assert.Equal(1, column.GetSpaces(42));
+                    Assert.Equal(2, column.GetSpaces(42));
                     Assert.Equal(alien, column.GetText());
                 }
             }
@@ -361,7 +361,7 @@ namespace Vim.UnitTest
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}cat");
                 var column = _textBuffer.GetColumnFromPosition(2);
-                Assert.Equal(1, column.GetSpacesToColumn(42));
+                Assert.Equal(2, column.GetSpacesToColumn(42));
             }
 
             [WpfFact]
@@ -370,7 +370,7 @@ namespace Vim.UnitTest
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}{alien}cat");
                 var column = _textBuffer.GetColumnFromPosition(4);
-                Assert.Equal(2, column.GetSpacesToColumn(42));
+                Assert.Equal(4, column.GetSpacesToColumn(42));
             }
 
             [WpfFact]
@@ -379,7 +379,7 @@ namespace Vim.UnitTest
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}a{alien}cat");
                 var column = _textBuffer.GetColumnFromPosition(5);
-                Assert.Equal(3, column.GetSpacesToColumn(42));
+                Assert.Equal(5, column.GetSpacesToColumn(42));
             }
         }
 
