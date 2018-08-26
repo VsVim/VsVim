@@ -388,35 +388,6 @@ type SnapshotCodePoint =
     /// Get the number of spaces this point occupies on the screen.
     member x.GetSpaces tabStop = 
 
-        // Determines if the given character occupies a single or two cells on screen.
-        let isWideCharacterBmp c =
-            // based on http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-            // TODO: this should be checked for consistency with
-            //       Visual studio handling of each character.
-            (c >= '\u1100' &&
-                (
-                    // Hangul Jamo init. consonants
-                    c <= '\u115f' || c = '\u2329' || c = '\u232a' ||
-                    // CJK ... Yi
-                    (c >= '\u2e80' && c <= '\ua4cf' && c <> '\u303f') ||
-                    // Hangul Syllables */
-                    (c >= '\uac00' && c <= '\ud7a3') ||
-                    // CJK Compatibility Ideographs
-                    (c >= '\uf900' && c <= '\ufaff') ||
-                    // Vertical forms
-                    (c >= '\ufe10' && c <= '\ufe19') ||
-                    // CJK Compatibility Forms
-                    (c >= '\ufe30' && c <= '\ufe6f') ||
-                    // Fullwidth Forms
-                    (c >= '\uff00' && c <= '\uff60') ||
-                    (c >= '\uffe0' && c <= '\uffe6')));
-
-        let isWideCharacterAstral (cp: int) = 
-            // Supplementary ideographic plane
-            (cp >= 0x20000 && cp <= 0x2fffd) ||
-            // Tertiary ideographic plane
-            (cp >= 0x30000 && cp <= 0x3fffd)
-
         // Determines whether the given character occupies space on screen when displayed.
         // For instance, combining diacritics occupy the space of the previous character,
         // while control characters are simply not displayed.
@@ -448,10 +419,10 @@ type SnapshotCodePoint =
             | '\u0000' -> 1
             | '\t' -> tabStop
             | c when isNonSpacingBmp c -> 0
-            | c when isWideCharacterBmp c -> 2
+            | c when UnicodeUtil.IsWideBmp (int c) -> 2
             | _ -> 1
         else
-            if isWideCharacterAstral x.CodePoint then 2
+            if UnicodeUtil.IsWideAstral x.CodePoint then 2
             else if isNonSpacingCategory x.UnicodeCategory then 0 
             else 1
 

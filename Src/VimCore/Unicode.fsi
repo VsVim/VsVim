@@ -4,4 +4,6 @@ namespace Vim
 
 module UnicodeUtil = 
 
-    val PlaceHolder: unit -> unit
+    val IsWideBmp: codePoint: int -> bool
+
+    val IsWideAstral: codePoint: int -> bool

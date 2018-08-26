@@ -3,7 +3,7 @@
 namespace Vim
 
 [<RequireQualifiedAccess>]
-type EastAsianWidth = 
+type internal EastAsianWidth = 
     | FullWidth
     | HalfWidth
     | Wide
@@ -22,7 +22,6 @@ type EastAsianWidth =
         | "A" -> EastAsianWidth.Ambiguous
         | _ -> invalidArg "text" "Not a valid value"
 
-[<Struct>]
 type UnicodeRangeEntry = {
     Start: int
     Last: int
@@ -31,13 +30,61 @@ type UnicodeRangeEntry = {
 
     with
 
+    member x.Contains codePoint = codePoint >= x.Start && codePoint <= x.Last
+
     override x.ToString() = sprintf "%d -> %d %O" x.Start x.Last x.Width
+
+/// A balanced internal tree for efficient lookup of unicode information
+type internal IntervalTreeNode = {
+    Entry: UnicodeRangeEntry
+    Left: IntervalTreeNode option
+    Right: IntervalTreeNode option
+}
+
+// TODO: needs to be balanced
+type internal IntervalTree
+    (
+        root: IntervalTreeNode option
+    ) = 
+
+    let _root = root;
+
+    new() = 
+        IntervalTree(None)
+
+    member x.Insert entry = 
+        let rec insertCore node entry = 
+            match node with
+            | None -> { Entry = entry; Left = None; Right = None } 
+            | Some node -> 
+                if entry.Start < node.Entry.Start then 
+                    { node with Left = Some (insertCore node.Left entry) }
+                else
+                    { node with Right = Some (insertCore node.Right entry) }
+        let root = insertCore _root entry
+        IntervalTree(Some root)
+
+    member x.Find codePoint = 
+        let rec findCore node codePoint = 
+            match node with 
+            | None -> None
+            | Some node -> 
+                 if node.Entry.Contains codePoint then Some node.Entry
+                 elif codePoint < node.Entry.Start then findCore node.Left codePoint
+                 else findCore node.Right codePoint
+        findCore _root codePoint
+
+    static member Empty = IntervalTree(None)
 
 module UnicodeUtil =
 
-    // All of the known categories. This is taken from the following table 
-    // https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
-    let UnicodeRangeEntries = 
+    /// All of the known categories. This is taken from the following table 
+    /// https://www.unicode.org/Public/UCD/latest/ucd/EastAsianWidth.txt
+    ///
+    /// This is deliberately done as a function to prevent the array from being persisted 
+    /// throughout the execution of the process. The other data structures created from this
+    /// hold the necessary data.
+    let CreateUnicodeRangeEntries() = 
         [|
             { Start = 0x0000; Last = 0x001F; Width = EastAsianWidth.OfText "N"  } // 0000..001F;N     # Cc    [32] <control-0000>..<control-001F>
             { Start = 0x0020; Last = 0x0020; Width = EastAsianWidth.OfText "Na" } // 0020;Na          # Zs         SPACE
@@ -2432,5 +2479,26 @@ module UnicodeUtil =
             { Start = 0x100000; Last = 0x10FFFD; Width = EastAsianWidth.OfText "A"  } // 100000..10FFFD;A # Co [65534] <private-use-100000>..<private-use-10FFFD>
         |]
 
-    let PlaceHolder () = ()
+    let WideBmpIntervalTree, WideAstralIntervalTree = 
+        let mutable rootBmp = IntervalTree.Empty
+        let mutable rootAstral = IntervalTree.Empty
+        let all = CreateUnicodeRangeEntries()
+        for i = 0 to all.Length - 1 do 
+            let current = all.[i]
+            if current.Width = EastAsianWidth.Wide then
+                if current.Last <= 0xFFFF then
+                    rootBmp <- rootBmp.Insert current
+                else
+                    rootAstral <- rootAstral.Insert current
+        rootBmp, rootAstral
+
+    let IsWideBmp codePoint = 
+        match WideBmpIntervalTree.Find codePoint with
+        | Some _ -> true
+        | None -> false
+
+    let IsWideAstral codePoint = 
+        match WideAstralIntervalTree.Find codePoint with
+        | Some _ -> true
+        | None -> false
 
