@@ -847,6 +847,31 @@ namespace Vim.UnitTest
                 Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 2).IsCompleted);
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }
+
+            /// <summary>
+            /// Replacing a surrogate pair should replace both surrogates
+            /// </summary>
+            [WpfFact]
+            public void SurrogatePair()
+            {
+                // Reported in issue #2352.
+                const string alien = "\U0001F47D"; // 👽
+                Create(alien);
+                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('x'), 1).IsCompleted);
+                Assert.Equal("x", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            }
+
+            /// <summary>
+            /// Multiply replacing a string with surrogate pairs should replace all surrogates
+            /// </summary>
+            [WpfFact]
+            public void SurrogatePairs()
+            {
+                const string alien = "\U0001F47D"; // 👽
+                Create($"{alien}o{alien}ooo");
+                Assert.True(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('x'), 3).IsCompleted);
+                Assert.Equal("xxxooo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            }
         }
 
         public abstract class ScrollLinesTest : CommandUtilTest
