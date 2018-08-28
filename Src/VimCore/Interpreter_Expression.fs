@@ -477,7 +477,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Close of HasBang: bool
 
     /// Compose two line commands
-    | Compose of LineCommand * LineCommand
+    | Compose of First: LineCommand * Second: LineCommand
 
     /// Copy the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination.  The last entry is an optional count
@@ -508,7 +508,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Function of Function: Function
 
     /// Add the specified digraphs to the digraph mapping
-    | Digraphs of (char * char * int) list
+    | Digraphs of Digraphs: (char * char * int) list
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
@@ -526,7 +526,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | DisplayLet of VariableNames: VariableName list
 
     /// Display the specified line range with the specified flags
-    | DisplayLines of LineRangeSpecifier * LineCommandFlags
+    | DisplayLines of LineRangeSpecifier: LineRangeSpecifier * LineCommandFlags: LineCommandFlags
 
     // The :echo command
     | Echo of Expression: Expression
