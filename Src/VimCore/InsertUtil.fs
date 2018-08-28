@@ -203,7 +203,7 @@ type internal InsertUtil
                 let lineNumber = startLineNumber + i
                 let line = SnapshotUtil.GetLine currentSnapshot lineNumber
                 let column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
-                if column.SpacesBefore > 0 then
+                if column.SpacesBefore > 0 && not column.CodePoint.IsSurrogatePair then
                     let text = StringUtil.RepeatChar column.TotalSpaces ' '
                     let span = column.Column.Span
                     textEdit.Replace(span.Span, text) |> ignore
