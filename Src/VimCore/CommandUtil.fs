@@ -2449,14 +2449,16 @@ type internal CommandUtil
         let line = point.GetContainingLine()
 
         let replaceChar () =
-            let span = new Span(point.Position, count)
+            let span =
+                let endColumn = x.CaretColumn.AddInLineOrEnd count
+                SnapshotColumnSpan(x.CaretColumn, endColumn)
             let position =
                 if keyInput = KeyInputUtil.EnterKey then
                     // Special case for replacement with a newline.  First, vim only inserts a
                     // single newline regardless of the count.  Second, let the host do any magic
                     // by simulating a keystroke, e.g. from inside a C# documentation comment.
                     // The caret goes one character to the left of whereever it ended up
-                    _textBuffer.Delete(span) |> ignore
+                    _textBuffer.Delete(span.Span.Span) |> ignore
                     _insertUtil.RunInsertCommand(InsertCommand.InsertNewLine) |> ignore
                     let caretPoint = TextViewUtil.GetCaretPoint _textView
                     caretPoint.Position - 1
@@ -2464,7 +2466,7 @@ type internal CommandUtil
                     // The caret should move to the end of the replace operation which is
                     // 'count - 1' characters from the original position
                     let replaceText = new System.String(keyInput.Char, count)
-                    _textBuffer.Replace(span, replaceText) |> ignore
+                    _textBuffer.Replace(span.Span.Span, replaceText) |> ignore
                     point.Position + count - 1
 
             // Don't use the ITextSnapshot that is returned from Replace.  This represents the ITextSnapshot
