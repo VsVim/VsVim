@@ -228,8 +228,8 @@ namespace Vim.UnitTest
             _textBuffer.Replace(new Span(0, 3), "dog");
             var change = _tracker.CurrentChange.Value;
             Assert.True(change.IsCombination);
-            Assert.True(change.AsCombination().Item1.IsDeleteLeft(3));
-            Assert.True(change.AsCombination().Item2.IsInsert("dog"));
+            Assert.True(change.AsCombination().Left.IsDeleteLeft(3));
+            Assert.True(change.AsCombination().Right.IsInsert("dog"));
         }
 
         /// <summary>
@@ -243,8 +243,8 @@ namespace Vim.UnitTest
             _textBuffer.Replace(new Span(0, 5), "dog");
             var change = _tracker.CurrentChange.Value;
             Assert.True(change.IsCombination);
-            Assert.True(change.AsCombination().Item1.IsDeleteLeft(5));
-            Assert.True(change.AsCombination().Item2.IsInsert("dog"));
+            Assert.True(change.AsCombination().Left.IsDeleteLeft(5));
+            Assert.True(change.AsCombination().Right.IsInsert("dog"));
         }
 
         /// <summary>
@@ -258,8 +258,8 @@ namespace Vim.UnitTest
             _textBuffer.Replace(new Span(0, 3), "house");
             var change = _tracker.CurrentChange.Value;
             Assert.True(change.IsCombination);
-            Assert.True(change.AsCombination().Item1.IsDeleteLeft(3));
-            Assert.True(change.AsCombination().Item2.IsInsert("house"));
+            Assert.True(change.AsCombination().Left.IsDeleteLeft(3));
+            Assert.True(change.AsCombination().Right.IsInsert("house"));
         }
 
         /// <summary>
@@ -274,8 +274,8 @@ namespace Vim.UnitTest
             _textBuffer.Replace(new Span(1, 3), "cat");
             var change = _trackerRaw.CurrentChange.Value;
             Assert.True(change.IsCombination);
-            Assert.True(change.AsCombination().Item1.IsInsert("i"));
-            Assert.True(change.AsCombination().Item2.IsCombination);
+            Assert.True(change.AsCombination().Left.IsInsert("i"));
+            Assert.True(change.AsCombination().Right.IsCombination);
         }
     }
 }

@@ -96,6 +96,44 @@ namespace Vim.UnitTest
                     : list.Aggregate((x, y) => x + Environment.NewLine + y);
                 Assert.True(0 == list.Count, msg);
             }
+
+            /// <summary>
+            /// Make sure all discriminated union values have explicit names
+            /// </summary>
+            [Fact]
+            public void UseExplicitRecordNames()
+            {
+                var any = false;
+                var list = new List<string>();
+                var types = _sourceAssembly
+                    .GetTypes()
+                    .Where(x => x.BaseType != null && IsDiscriminatedUnion(x.BaseType))
+                    .Where(x => !IsFSharpCore(x));
+                foreach (var type in types)
+                {
+                    any = true;
+                    var anyItem = false;
+                    foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                    {
+                        if (prop.Name.StartsWith("Item"))
+                        {
+                            anyItem = true;
+                            break;
+                        }
+                    }
+
+                    if (anyItem)
+                    {
+                        list.Add($"{type.BaseType.Name}.{type.Name} values do not have an expliict name");
+                    }
+                }
+
+                Assert.True(any);
+                var msg = list.Count == 0
+                    ? string.Empty
+                    : $"{list.Count} union values do not have explicit names" + Environment.NewLine + list.Aggregate((x, y) => x + Environment.NewLine + y);
+                Assert.True(0 == list.Count, msg);
+            }
         }
 
         /// <summary>

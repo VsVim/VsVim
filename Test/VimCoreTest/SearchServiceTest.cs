@@ -204,7 +204,7 @@ namespace Vim.UnitTest
                 Create(@"cat bthe thedog");
                 var data = VimUtil.CreateSearchData(@"\<the");
                 var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordNavigator);
-                Assert.Equal(9, result.AsFound().Item2.Start.Position);
+                Assert.Equal(9, result.AsFound().SpanWithOffset.Start.Position);
             }
 
             /// <summary>
@@ -241,7 +241,7 @@ namespace Vim.UnitTest
                 Create(" cat dog cat");
                 var data = VimUtil.CreateSearchData("cat");
                 var result = _search.FindNextPattern(_textBuffer.GetPoint(0), data, _wordNavigator, 2);
-                Assert.Equal(9, result.AsFound().Item2.Start.Position);
+                Assert.Equal(9, result.AsFound().SpanWithOffset.Start.Position);
             }
         }
 
@@ -256,8 +256,8 @@ namespace Vim.UnitTest
                 Create("cat dog cat", "cat");
                 var result = FindNextPattern("cat", SearchPath.Forward, _textBuffer.GetPoint(0), 2);
                 Assert.True(result.IsFound);
-                Assert.Equal(_textBuffer.GetLine(1).Extent, result.AsFound().Item2);
-                Assert.False(result.AsFound().Item4);
+                Assert.Equal(_textBuffer.GetLine(1).Extent, result.AsFound().SpanWithOffset);
+                Assert.False(result.AsFound().DidWrap);
             }
 
             /// <summary>
@@ -317,7 +317,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar", "foo");
                 var result = FindNextPattern("foo", SearchPath.Forward, _textBuffer.GetPoint(0), 1);
-                Assert.Equal(_textBuffer.GetLine(1).Start, result.AsFound().Item2.Start);
+                Assert.Equal(_textBuffer.GetLine(1).Start, result.AsFound().SpanWithOffset.Start);
             }
 
             /// <summary>
@@ -329,7 +329,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar", "foo");
                 var result = FindNextPattern("foo", SearchPath.Backward, _textBuffer.GetLine(1).Start, 1);
-                Assert.Equal(_textBuffer.GetPoint(0), result.AsFound().Item2.Start);
+                Assert.Equal(_textBuffer.GetPoint(0), result.AsFound().SpanWithOffset.Start);
             }
 
             /// <summary>
@@ -342,7 +342,7 @@ namespace Vim.UnitTest
                 _globalSettings.WrapScan = false;
                 var result = FindNextPattern("dog", SearchPath.Forward, _textBuffer.GetPoint(0), 1);
                 Assert.True(result.IsNotFound);
-                Assert.True(result.AsNotFound().Item2);
+                Assert.True(result.AsNotFound().CanFindWithWrap);
             }
 
             /// <summary>
@@ -355,7 +355,7 @@ namespace Vim.UnitTest
                 _globalSettings.WrapScan = false;
                 var result = FindNextPattern("dog", SearchPath.Backward, _textBuffer.GetPoint(0), 1);
                 Assert.True(result.IsNotFound);
-                Assert.True(result.AsNotFound().Item2);
+                Assert.True(result.AsNotFound().CanFindWithWrap);
             }
 
             /// <summary>

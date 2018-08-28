@@ -112,7 +112,7 @@ namespace Vim.UnitTest.Mock
             commandUtil
                 .Setup(x => x.RunCommand(It.Is<Command>(c =>
                     c.IsNormalCommand &&
-                    c.AsNormalCommand().Item1 is T)))
+                    c.AsNormalCommand().NormalCommand is T)))
                 .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
                 .Verifiable();
         }
@@ -135,8 +135,8 @@ namespace Vim.UnitTest.Mock
                 commandUtil
                     .Setup(x => x.RunCommand(It.Is<Command>(command =>
                             command.IsVisualCommand &&
-                            command.AsVisualCommand().Item1.Equals(visualCommand) &&
-                            command.AsVisualCommand().Item2.Equals(commandData))))
+                            command.AsVisualCommand().VisualCommand.Equals(visualCommand) &&
+                            command.AsVisualCommand().CommandData.Equals(commandData))))
                     .Returns(CommandResult.NewCompleted(ModeSwitch.SwitchPreviousMode))
                     .Verifiable();
             }

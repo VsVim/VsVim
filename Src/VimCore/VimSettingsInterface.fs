@@ -127,7 +127,7 @@ type KeyModelOptions =
 type PathOption =
 
     /// An actual named path
-    | Named of string
+    | Named of Named: string
 
     /// Use the current directory
     | CurrentDirectory
@@ -153,9 +153,9 @@ type SettingKind =
 [<StructuralEquality>]
 [<NoComparison>]
 type SettingValue =
-    | Number of int
-    | String of string
-    | Toggle of bool
+    | Number of Number: int
+    | String of String: string
+    | Toggle of Toggle: bool
 
     member x.Kind = 
         match x with
@@ -178,11 +178,11 @@ type IVimCustomSettingSource =
 /// default
 [<RequireQualifiedAccess>]
 type LiveSettingValue =
-    | Number of int * int
-    | String of string * string
-    | Toggle of bool * bool
-    | CalculatedNumber of int option * (unit -> int)
-    | Custom of string * IVimCustomSettingSource
+    | Number of Value: int * DefaultValue: int
+    | String of Value: string * DefaultValue: string
+    | Toggle of Value: bool * DefaultValue: bool
+    | CalculatedNumber of Value: int option * DefaultValueFunc: (unit -> int)
+    | Custom of Value: string * DefaultValueSource: IVimCustomSettingSource
 
     /// Is this a calculated value
     member x.IsCalculated = 

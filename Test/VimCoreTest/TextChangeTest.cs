@@ -88,7 +88,7 @@ namespace Vim.UnitTest
                             TextChange.NewInsert("cat"),
                             TextChange.NewDeleteLeft(3)),
                         TextChange.NewDeleteRight(3));
-                    Assert.Equal(3, textChange.AsDeleteRight().Item);
+                    Assert.Equal(3, textChange.AsDeleteRight().Count);
                 }
 
                 /// <summary>
@@ -103,7 +103,7 @@ namespace Vim.UnitTest
                         TextChange.NewCombination(
                             TextChange.NewInsert("cat"),
                             TextChange.NewDeleteLeft(3)));
-                    Assert.Equal(3, textChange.AsDeleteRight().Item);
+                    Assert.Equal(3, textChange.AsDeleteRight().Count);
                 }
             }
 
@@ -115,7 +115,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewInsert("a"),
                         TextChange.NewInsert("b"));
-                    Assert.Equal("ab", textChange.AsInsert().Item);
+                    Assert.Equal("ab", textChange.AsInsert().Text);
                 }
 
                 [Fact]
@@ -124,7 +124,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewDeleteLeft(5),
                         TextChange.NewDeleteLeft(6));
-                    Assert.Equal(11, textChange.AsDeleteLeft().Item);
+                    Assert.Equal(11, textChange.AsDeleteLeft().Count);
                 }
 
                 [Fact]
@@ -133,7 +133,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewDeleteRight(5),
                         TextChange.NewDeleteRight(6));
-                    Assert.Equal(11, textChange.AsDeleteRight().Item);
+                    Assert.Equal(11, textChange.AsDeleteRight().Count);
                 }
 
                 [Fact]
@@ -142,7 +142,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewInsert("cat"),
                         TextChange.NewDeleteLeft(2));
-                    Assert.Equal("c", textChange.AsInsert().Item);
+                    Assert.Equal("c", textChange.AsInsert().Text);
                 }
 
                 [Fact]
@@ -151,7 +151,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewInsert("cat"),
                         TextChange.NewDeleteLeft(4));
-                    Assert.Equal(1, textChange.AsDeleteLeft().Item);
+                    Assert.Equal(1, textChange.AsDeleteLeft().Count);
                 }
 
                 [Fact]
@@ -160,7 +160,7 @@ namespace Vim.UnitTest
                     var textChange = TextChange.CreateReduced(
                         TextChange.NewInsert("cat"),
                         TextChange.NewDeleteLeft(3));
-                    Assert.Equal("", textChange.AsInsert().Item);
+                    Assert.Equal("", textChange.AsInsert().Text);
                 }
 
                 /// <summary>
@@ -175,7 +175,7 @@ namespace Vim.UnitTest
                             TextChange.NewInsert("pr"),
                             TextChange.NewDeleteLeft(2)),
                         TextChange.NewInsert("protected"));
-                    Assert.Equal("protected", textChange.AsInsert().Item);
+                    Assert.Equal("protected", textChange.AsInsert().Text);
                 }
 
                 /// <summary>
@@ -190,7 +190,7 @@ namespace Vim.UnitTest
                         TextChange.NewCombination(
                             TextChange.NewDeleteLeft(2),
                             TextChange.NewInsert("protected")));
-                    Assert.Equal("protected", textChange.AsInsert().Item);
+                    Assert.Equal("protected", textChange.AsInsert().Text);
                 }
             }
         }

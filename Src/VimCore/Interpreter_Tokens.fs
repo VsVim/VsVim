@@ -12,13 +12,13 @@ type TokenKind =
     | Blank
 
     /// A decimal number 
-    | Number of int
+    | Number of Number: int
 
     /// A contiguous set of letters in the text
-    | Word of string
+    | Word of Word: string
 
     /// A single non-letter character
-    | Character of char
+    | Character of Character: char
 
     /// The end of the line
     | EndOfLine

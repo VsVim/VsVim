@@ -5,8 +5,8 @@ open Vim
 
 [<RequireQualifiedAccess>]
 type ParseResult<'T> = 
-    | Succeeded of 'T
-    | Failed of string
+    | Succeeded of Value: 'T
+    | Failed of Error: string
 
 [<Sealed>]
 [<Class>]

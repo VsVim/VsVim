@@ -250,7 +250,7 @@ type IClipboardDevice =
 [<NoEquality>]
 type Result = 
     | Succeeded
-    | Failed of string
+    | Failed of Error: string
 
 [<Flags>]
 type ViewFlags = 
@@ -290,7 +290,7 @@ type MaintainCaretColumn =
 
     /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
     /// this setting to a motion
-    | Spaces of int
+    | Spaces of Count: int
 
     /// The caret was moved with the $ motion and the further moves should move to the end of 
     /// the line 

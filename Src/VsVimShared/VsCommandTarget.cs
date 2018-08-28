@@ -163,9 +163,9 @@ namespace Vim.VisualStudio
             if (command.IsInsert)
             {
                 var insert = (InsertCommand.Insert)command;
-                if (insert.Item != null && insert.Item.Length == 1)
+                if (insert.Text != null && insert.Text.Length == 1)
                 {
-                    commandData = OleCommandData.CreateTypeChar(insert.Item[0]);
+                    commandData = OleCommandData.CreateTypeChar(insert.Text[0]);
                     return true;
                 }
             }

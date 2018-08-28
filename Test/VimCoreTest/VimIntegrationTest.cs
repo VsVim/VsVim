@@ -254,7 +254,7 @@ let x = 42
 ";
                 Run(text);
                 Assert.False(_globalSettings.HighlightSearch);
-                Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Item);
+                Assert.Equal(42, Vim.VariableMap["x"].AsNumber().Number);
             }
 
             /// <summary>
@@ -308,7 +308,7 @@ autocmd BufEnter *.html set ts=12
 ";
                 Run(text);
 
-                var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Item2;
+                var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Errors;
                 Assert.Single(errorArray);
                 Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
             }

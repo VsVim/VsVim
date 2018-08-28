@@ -254,9 +254,9 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 _globalSettings.WrapScan = false;
-                var result = _search.Begin(SearchPath.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
+                var result = _search.Begin(SearchPath.Forward).Run("f").Run(VimKey.Enter).AsComplete().Result;
                 Assert.True(result.IsNotFound);
-                Assert.True(result.AsNotFound().Item2);
+                Assert.True(result.AsNotFound().CanFindWithWrap);
             }
 
             /// <summary>
@@ -269,7 +269,7 @@ namespace Vim.UnitTest
                 Create("cat bar");
                 _globalSettings.WrapScan = false;
                 _textView.MoveCaretTo(2);
-                var result = _search.Begin(SearchPath.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
+                var result = _search.Begin(SearchPath.Backward).Run("t").Run(VimKey.Enter).AsComplete().Result;
                 Assert.True(result.IsNotFound);
             }
         }
@@ -427,9 +427,9 @@ namespace Vim.UnitTest
                 for (var i = 0; i < 5; i++)
                 {
                     _textView.MoveCaretTo(0);
-                    var searchResult = _search.DoSearch("el", enter: true).AsComplete().Item;
+                    var searchResult = _search.DoSearch("el", enter: true).AsComplete().Result;
                     Assert.True(searchResult.IsFound);
-                    var span = searchResult.AsFound().Item2;
+                    var span = searchResult.AsFound().SpanWithOffset;
                     Assert.Equal(new Span(1, 2), span.Span);
                     _search.DoSearch("wo", enter: false);
                     Assert.True(_search.InSearch);

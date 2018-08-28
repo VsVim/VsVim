@@ -70,7 +70,7 @@ type VimRcState =
     /// The load succeeded of the specified file.  If there were any errors actually
     /// processing the load they will be captured in the string[] parameter.
     /// The load succeeded and the specified file was used 
-    | LoadSucceeded of VimRcPath * string[]
+    | LoadSucceeded of VimRcPath: VimRcPath * Errors: string[]
 
     /// The load failed 
     | LoadFailed
@@ -263,10 +263,10 @@ type IUndoRedoOperations =
 /// Represents a set of changes to a contiguous region. 
 [<RequireQualifiedAccess>]
 type TextChange = 
-    | DeleteLeft of int
-    | DeleteRight of int
-    | Insert of string
-    | Combination of TextChange * TextChange
+    | DeleteLeft of Count: int
+    | DeleteRight of Count: int
+    | Insert of Text: string
+    | Combination of Left: TextChange * Right: TextChange
 
     with 
 
@@ -442,10 +442,10 @@ type PatternDataEventArgs(_patternData: PatternData) =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type SearchOffsetData =
     | None
-    | Line of int
-    | Start of int
-    | End of int
-    | Search of PatternData
+    | Line of Line: int
+    | Start of Start: int
+    | End of End: int
+    | Search of PatternData: PatternData
 
     with 
 
@@ -654,15 +654,15 @@ type SearchResult =
     ///
     /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
-    | Found of SearchData * SnapshotSpan * SnapshotSpan * bool
+    | Found of SearchData: SearchData * SpanWithOffset: SnapshotSpan * Span: SnapshotSpan * DidWrap: bool
 
     /// The pattern was not found.  The bool is true if the word was present in the ITextBuffer
     /// but wasn't found do to the lack of a wrap in the SearchData value
-    | NotFound of SearchData * bool
+    | NotFound of SeachData: SearchData * CanFindWithWrap: bool
 
     /// There was an error converting the pattern to a searchable value.  The string value is the
     /// error message
-    | Error of SearchData * string
+    | Error of SearchData: SearchData * Error: string
 
     with
 
@@ -1000,10 +1000,10 @@ type TagBlockKind =
 type Motion =
 
     /// Implement the all block motion
-    | AllBlock of BlockKind
+    | AllBlock of BlockKind: BlockKind
 
     /// Implement the 'aw' motion.  This is called once the a key is seen.
-    | AllWord of WordKind
+    | AllWord of WordKind: WordKind
 
     /// Implement the 'ap' motion
     | AllParagraph 
@@ -1018,7 +1018,7 @@ type Motion =
     | BeginingOfLine
 
     /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word 
-    | BackwardEndOfWord of WordKind
+    | BackwardEndOfWord of WordKind: WordKind
 
     /// The left motion for h
     | CharLeft 
@@ -1039,7 +1039,7 @@ type Motion =
     | ArrowRight
 
     /// Implements the f, F, t and T motions
-    | CharSearch of CharSearchKind * SearchPath * char
+    | CharSearch of CharSearchKind: CharSearchKind * SearchPath: SearchPath * Character: char
 
     /// Get the span of "count" display lines upward.  Display lines can differ when
     /// wrap is enabled
@@ -1064,7 +1064,7 @@ type Motion =
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    | EndOfWord of WordKind
+    | EndOfWord of WordKind: WordKind
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
@@ -1079,19 +1079,19 @@ type Motion =
     | FirstNonBlankOnLine
 
     /// Forces a line wise version of the specified motion 
-    | ForceLineWise of Motion
+    | ForceLineWise of Motion: Motion
 
     /// Forces a characterwise version of the specified motion
-    | ForceCharacterWise of Motion
+    | ForceCharacterWise of Motion: Motion
 
     /// Inner word motion
-    | InnerWord of WordKind
+    | InnerWord of WordKind: WordKind
 
     /// Inner paragraph motion
     | InnerParagraph
 
     /// Inner block motion
-    | InnerBlock of BlockKind
+    | InnerBlock of BlockKind: BlockKind
 
     /// Find the last non-blank character on the line.  Count causes it to go "count" lines
     /// down and perform the search
@@ -1099,7 +1099,7 @@ type Motion =
 
     /// Find the next occurrence of the last search.  The bool parameter is true if the search
     /// should be in the opposite direction
-    | LastSearch of bool
+    | LastSearch of UseOppositeDirection: bool
 
     /// Handle the lines down to first non-blank motion.  This is one of the motions which 
     /// can accept a count of 0.
@@ -1135,12 +1135,12 @@ type Motion =
 
     /// Get the motion to the specified mark.  This is typically accessed via
     /// the ` (back tick) operator and results in an exclusive motion
-    | Mark of LocalMark
+    | Mark of LocalMark: LocalMark
 
     /// Get the motion to the line of the specified mark.  This is typically
     /// accessed via the ' (single quote) operator and results in a 
     /// line wise motion
-    | MarkLine of LocalMark
+    | MarkLine of LocalMark: LocalMark
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
@@ -1148,19 +1148,19 @@ type Motion =
     | MatchingTokenOrDocumentPercent 
 
     /// Get the motion to the nearest lowercase mark in the specified direction
-    | NextMark of SearchPath
+    | NextMark of SearchPath: SearchPath
 
     /// Get the motion to the nearest lowercase mark line in the specified direction
-    | NextMarkLine of SearchPath
+    | NextMarkLine of SearchPath: SearchPath
 
     /// Operate on the next match for last pattern searched for
-    | NextMatch of SearchPath
+    | NextMatch of SearchPath: SearchPath
 
     /// Search for the next occurrence of the word under the caret
-    | NextWord of SearchPath
+    | NextWord of SearchPath: SearchPath
 
     /// Search for the next partial occurrence of the word under the caret
-    | NextPartialWord of SearchPath
+    | NextPartialWord of SearchPath: SearchPath
 
     /// Count paragraphs backwards
     | ParagraphBackward
@@ -1169,10 +1169,10 @@ type Motion =
     | ParagraphForward
 
     /// The quoted string including the quotes
-    | QuotedString of char
+    | QuotedString of Character: char
 
     /// The quoted string excluding the quotes
-    | QuotedStringContents of char
+    | QuotedStringContents of Character: char
 
     /// Repeat the last CharSearch value
     | RepeatLastCharSearch
@@ -1181,7 +1181,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of SearchData
+    | Search of SearchData: SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -1205,16 +1205,16 @@ type Motion =
     | ScreenColumn
 
     /// Matching xml / html tags
-    | TagBlock of TagBlockKind
+    | TagBlock of TagBlockKind: TagBlockKind
 
     /// The [(, ]), ]}, [{ motions
-    | UnmatchedToken of SearchPath * UnmatchedTokenKind
+    | UnmatchedToken of SearchPattern: SearchPath * UnmatchedTokenKind: UnmatchedTokenKind
 
     /// Implement the b/B motion
-    | WordBackward of WordKind
+    | WordBackward of WordKind: WordKind
 
     /// Implement the w/W motion
-    | WordForward of WordKind 
+    | WordForward of WordKind: WordKind 
 
 /// Interface for running Motion instances against an ITextView
 and IMotionUtil =
@@ -1464,19 +1464,19 @@ type KeyMappingResult =
 
     /// The values were mapped completely and require no further mapping. This 
     /// could be a result of a no-op mapping though
-    | Mapped of KeyInputSet
+    | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
     /// keys which were mapped are processed.  The values are 
     ///
     ///  mapped KeyInputSet * remaining KeyInputSet
-    | PartiallyMapped of KeyInputSet * KeyInputSet
+    | PartiallyMapped of MappedKeyInputSet: KeyInputSet * RemainingKeyInputSet: KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
     | Recursive
 
     /// More input is needed to resolve this mapping.
-    | NeedsMoreInput of KeyInputSet
+    | NeedsMoreInput of KeyInputSet: KeyInputSet
 
     with 
 
@@ -1864,13 +1864,13 @@ type BlockCaretLocation =
 type VisualSpan =
 
     /// A character wise span.  The 'End' of the span is not selected.
-    | Character of CharacterSpan
+    | Character of CharacterSpan: CharacterSpan
 
     /// A line wise span
-    | Line of SnapshotLineRange
+    | Line of LineRange: SnapshotLineRange
 
     /// A block span.  
-    | Block of BlockSpan
+    | Block of BlockSpan: BlockSpan
 
     with
 
@@ -2143,14 +2143,14 @@ type VisualSpan =
 type VisualSelection =
 
     /// The underlying span and whether or not this is a forward looking span.  
-    | Character of CharacterSpan * SearchPath
+    | Character of CharacterSpan: CharacterSpan * SearchPath: SearchPath
 
     /// The underlying range, whether or not is forwards or backwards and the int 
     /// is which column in the range the caret should be placed in
-    | Line of SnapshotLineRange * SearchPath * int 
+    | Line of LineRange: SnapshotLineRange * SearchPath: SearchPath * ColumnNumber: int 
 
     /// Just keep the BlockSpan and the caret information for the block
-    | Block of BlockSpan * BlockCaretLocation
+    | Block of BlockSpan: BlockSpan * BlockCaretLocation: BlockCaretLocation
 
     with
 
@@ -2486,7 +2486,7 @@ type VisualSelection =
 type StoredVisualSelection =
     | Character of Width: int
     | CharacterLine of LineCount: int * LastLineMaxOffset : int 
-    | Line of lineCount: int
+    | Line of LineCount: int
 
     with 
 
@@ -2562,31 +2562,31 @@ type ModeArgument =
     /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
     /// option provided is meant to be the initial caret point.  If not provided the actual 
     /// caret point is used
-    | InitialVisualSelection of VisualSelection * SnapshotPoint option
+    | InitialVisualSelection of Selection: VisualSelection * CaretPoint: SnapshotPoint option
 
     /// Begins a block insertion.  This can possibly have a linked undo transaction that needs
     /// to be carried forward through the insert
-    | InsertBlock of BlockSpan * bool * ILinkedUndoTransaction
+    | InsertBlock of BlockSpan: BlockSpan * AtEndOfLine: bool * LinkedUndoTransaction: ILinkedUndoTransaction
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
-    | InsertWithCount of int
+    | InsertWithCount of Count: int
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits.  Each extra time
     /// should be on a new line
-    | InsertWithCountAndNewLine of int * ILinkedUndoTransaction
+    | InsertWithCountAndNewLine of Count: int * LinkedUndoTransaction: ILinkedUndoTransaction
 
     /// Begins insert mode with an existing UndoTransaction.  This is used to link 
     /// change commands with text changes.  For example C, c, etc ...
-    | InsertWithTransaction of ILinkedUndoTransaction
+    | InsertWithTransaction of LinkedUndoTransaction: ILinkedUndoTransaction
 
     /// Passing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
     /// match to process and the range is the full range to consider for a replace
-    | Substitute of SnapshotSpan * SnapshotLineRange * SubstituteData
+    | Substitute of Span: SnapshotSpan * LineRange: SnapshotLineRange * SubstituteData: SubstituteData
 
     /// Enter command mode with a partially entered command and then return to normal mode
-    | PartialCommand of string
+    | PartialCommand of Command: string
 
 with
 
@@ -2609,13 +2609,13 @@ with
 [<NoEquality>]
 type ModeSwitch =
     | NoSwitch
-    | SwitchMode of ModeKind
-    | SwitchModeWithArgument of ModeKind * ModeArgument
+    | SwitchMode of ModeKind: ModeKind
+    | SwitchModeWithArgument of ModeKind: ModeKind * ModeArgument: ModeArgument
     | SwitchPreviousMode 
 
     /// Switch to the given mode for a single command.  After the command is processed switch
     /// back to the original mode
-    | SwitchModeOneTimeCommand of ModeKind
+    | SwitchModeOneTimeCommand of ModeKind: ModeKind
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2623,7 +2623,7 @@ type CommandResult =
 
     /// The command completed and requested a switch to the provided Mode which 
     /// may just be a no-op
-    | Completed of ModeSwitch
+    | Completed of ModeSwitch: ModeSwitch
 
     /// An error was encountered and the command was unable to run.  If this is encountered
     /// during a macro run it will cause the macro to stop executing
@@ -2633,8 +2633,8 @@ type CommandResult =
 [<NoComparison>]
 [<NoEquality>]
 type VimResult<'T> =
-    | Result of 'T
-    | Error of string
+    | Result of Result: 'T
+    | Error of Error: string
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -2755,16 +2755,16 @@ type NormalCommand =
 
     /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
     /// command
-    | ChangeMotion of MotionData
+    | ChangeMotion of MotionData: MotionData
 
     /// Change the characters on the caret line 
-    | ChangeCaseCaretLine of ChangeCharacterKind
+    | ChangeCaseCaretLine of ChangeCharacterKind: ChangeCharacterKind
 
     /// Change the characters on the caret line 
-    | ChangeCaseCaretPoint of ChangeCharacterKind
+    | ChangeCaseCaretPoint of ChangeCharacterKind: ChangeCharacterKind
 
     /// Change case of the specified motion
-    | ChangeCaseMotion of ChangeCharacterKind * MotionData
+    | ChangeCaseMotion of ChangeCharacterKind: ChangeCharacterKind * MotionData: MotionData
 
     /// Delete 'count' lines and begin insert mode
     | ChangeLines
@@ -2807,7 +2807,7 @@ type NormalCommand =
     | DeleteLines
 
     /// Delete the specified motion of text
-    | DeleteMotion of MotionData
+    | DeleteMotion of MotionData: MotionData
 
     /// Delete till the end of the line and 'count - 1' more lines down
     | DeleteTillEndOfLine
@@ -2825,29 +2825,29 @@ type NormalCommand =
     | FilterLines
 
     /// Filter the specified motion
-    | FilterMotion of MotionData
+    | FilterMotion of MotionData: MotionData
 
     /// Create a fold over the specified motion 
-    | FoldMotion of MotionData
+    | FoldMotion of MotionData: MotionData
 
     /// Format the code in the specified lines
     | FormatCodeLines
 
     /// Format the code in the specified motion
-    | FormatCodeMotion of MotionData
+    | FormatCodeMotion of MotionData: MotionData
 
     /// Format the text in the specified lines, optionally preserving the caret position
-    | FormatTextLines of bool
+    | FormatTextLines of PreserveCaretPosition: bool
 
     /// Format the text in the specified motion
-    | FormatTextMotion of bool * MotionData
+    | FormatTextMotion of PreserveCaretPosition: bool * MotionData: MotionData
 
     /// Go to the definition of hte word under the caret.
     | GoToDefinition
 
     /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
     /// a different window
-    | GoToFileUnderCaret of bool
+    | GoToFileUnderCaret of UseNewWindow: bool
 
     /// Go to the global declaration of the word under the caret
     | GoToGlobalDeclaration
@@ -2856,10 +2856,10 @@ type NormalCommand =
     | GoToLocalDeclaration
 
     /// Go to the next tab in the specified direction
-    | GoToNextTab of SearchPath
+    | GoToNextTab of SearchPath: SearchPath
 
     /// Go to the window of the specified kind
-    | GoToWindow of WindowKind
+    | GoToWindow of WindowKind: WindowKind
 
     /// Go to the nth most recent view
     | GoToRecentView
@@ -2886,13 +2886,13 @@ type NormalCommand =
     | InsertLineBelow
 
     /// Join the specified lines
-    | JoinLines of JoinKind
+    | JoinLines of JoinKind: JoinKind
 
     /// Jump to the specified mark 
-    | JumpToMark of Mark
+    | JumpToMark of Mark: Mark
 
     /// Jump to the start of the line for the specified mark
-    | JumpToMarkLine of Mark
+    | JumpToMarkLine of Mark: Mark
 
     /// Jump to the next older item in the tag list
     | JumpToOlderPosition
@@ -2901,7 +2901,7 @@ type NormalCommand =
     | JumpToNewerPosition
 
     /// Move the caret to the result of the given Motion.
-    | MoveCaretToMotion of Motion
+    | MoveCaretToMotion of Motion: Motion
 
     /// Undo count operations in the ITextBuffer
     | Undo
@@ -2926,11 +2926,11 @@ type NormalCommand =
 
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
-    | Ping of PingData
+    | Ping of PingData: PingData
 
     /// Put the contents of the register into the buffer after the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutAfterCaret of bool
+    | PutAfterCaret of PlaceCaretAfterInsertedText: bool
 
     /// Put the contents of the register into the buffer after the cursor and respecting 
     /// the indent of the current line
@@ -2942,7 +2942,7 @@ type NormalCommand =
 
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutBeforeCaret of bool
+    | PutBeforeCaret of PlaceCaretAfterInsertedText: bool
 
     /// Put the contents of the register into the buffer before the cursor and respecting 
     /// the indent of the current line
@@ -2952,7 +2952,7 @@ type NormalCommand =
     | PrintFileInformation
 
     /// Start the recording of a macro to the specified Register
-    | RecordMacroStart of char
+    | RecordMacroStart of RegisterName: char
 
     /// Stop the recording of a macro to the specified Register
     | RecordMacroStop
@@ -2967,44 +2967,44 @@ type NormalCommand =
     /// whether or not the flags from the last substitute should be reused as
     /// well. The second bool value is for whether the substitute should
     /// operate on the whole buffer
-    | RepeatLastSubstitute of bool * bool
+    | RepeatLastSubstitute of UseSameFlags: bool * UseWholeBuffer: bool
 
     /// Replace the text starting at the text by starting insert mode
     | ReplaceAtCaret
 
     /// Replace the char under the cursor with the given char
-    | ReplaceChar of KeyInput
+    | ReplaceChar of KeyInput: KeyInput
 
     /// Run an 'at' command for the specified character
-    | RunAtCommand of char
+    | RunAtCommand of Character: char
 
     /// Set the specified mark to the current value of the caret
-    | SetMarkToCaret of char
+    | SetMarkToCaret of Character: char
 
     /// Scroll the caret in the specified direciton.  The bool is whether to use
     /// the 'scroll' option or 'count'
-    | ScrollLines of ScrollDirection * bool
+    | ScrollLines of ScrollDirection: ScrollDirection * UseScrollOption: bool
 
     /// Move the display a single page in the specified direction
-    | ScrollPages of ScrollDirection
+    | ScrollPages of ScrollDirection: ScrollDirection
 
     /// Scroll the window in the specified direction by 'count' lines
-    | ScrollWindow of ScrollDirection
+    | ScrollWindow of ScrollDirection: ScrollDirection
 
     /// Scroll the current line to the top of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
-    | ScrollCaretLineToTop of bool
+    | ScrollCaretLineToTop of MaintainCaretColumn: bool
 
     /// Scroll the caret line to the middle of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
-    | ScrollCaretLineToMiddle of bool
+    | ScrollCaretLineToMiddle of MaintainCaretColumn: bool
 
     /// Scroll the caret line to the bottom of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
-    | ScrollCaretLineToBottom of bool
+    | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
     /// Select the next match for the last pattern searched for
-    | SelectNextMatch of SearchPath
+    | SelectNextMatch of SearchPath: SearchPath
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3013,10 +3013,10 @@ type NormalCommand =
     | ShiftLinesRight
 
     /// Shift 'motion' lines from the cursor left
-    | ShiftMotionLinesLeft of MotionData
+    | ShiftMotionLinesLeft of MotionData: MotionData
 
     /// Shift 'motion' lines from the cursor right
-    | ShiftMotionLinesRight of MotionData
+    | ShiftMotionLinesRight of MotionData: MotionData
 
     /// Split the view horizontally
     | SplitViewHorizontally
@@ -3031,22 +3031,22 @@ type NormalCommand =
     | SubtractFromWord
 
     /// Switch modes with the specified information
-    | SwitchMode of ModeKind * ModeArgument
+    | SwitchMode of ModeKind: ModeKind * ModeArgument: ModeArgument
 
     /// Switch to the visual mode specified by 'selectmode=cmd'
-    | SwitchModeVisualCommand of VisualKind
+    | SwitchModeVisualCommand of VisualKind: VisualKind
 
     /// Switch to the previous Visual Mode selection
     | SwitchPreviousVisualMode
 
     /// Switch to a selection dictated by the given caret movement
-    | SwitchToSelection of CaretMovement
+    | SwitchToSelection of CaretMovement: CaretMovement
 
     /// Write out the ITextBuffer and quit
     | WriteBufferAndQuit
 
     /// Yank the given motion into a register
-    | Yank of MotionData
+    | Yank of MotionData: MotionData
 
     /// Yank the specified number of lines
     | YankLines
@@ -3174,17 +3174,17 @@ type NormalCommand =
 type VisualCommand = 
 
     /// Add count to the word in each line of the selection, optionally progressively
-    | AddToSelection of bool
+    | AddToSelection of IsProgressive: bool
 
     /// Change the case of the selected text in the specified manner
-    | ChangeCase of ChangeCharacterKind
+    | ChangeCase of ChangeCharacterKind: ChangeCharacterKind
 
     /// Delete the selection and begin insert mode.  Implements the 'c' and 's' commands
     | ChangeSelection
 
     /// Delete the selected lines and begin insert mode ('S' and 'C' commands).  The bool parameter
     /// is whether or not to treat block selection as a special case
-    | ChangeLineSelection of bool
+    | ChangeLineSelection of SpecialCaseBlockSelection: bool
 
     /// Close a fold in the selection
     | CloseFoldInSelection
@@ -3202,7 +3202,7 @@ type VisualCommand =
     | DeleteSelection
 
     /// Extend the selection to the next match for the last pattern searched for
-    | ExtendSelectionToNextMatch of SearchPath
+    | ExtendSelectionToNextMatch of SearchPath: SearchPath
 
     /// Filter the selected text
     | FilterLines
@@ -3214,7 +3214,7 @@ type VisualCommand =
     | FormatCodeLines
 
     /// Format the selected text lines, optionally preserving the caret position
-    | FormatTextLines of bool
+    | FormatTextLines of PreserveCaretPosition: bool
 
     /// GoTo the file under the cursor in a new window
     | GoToFileInSelectionInNewWindow
@@ -3223,15 +3223,15 @@ type VisualCommand =
     | GoToFileInSelection
 
     /// Join the selected lines
-    | JoinSelection of JoinKind
+    | JoinSelection of JoinKind: JoinKind
 
     /// Invert the selection by swapping the caret and anchor points.  When true it means that block mode should
     /// be special cased to invert the column only 
-    | InvertSelection of bool
+    | InvertSelection of ColumnOnlyInBlock: bool
 
     /// Move the caret to the result of the given Motion.  This movement is from a 
     /// text-object selection.  Certain motions 
-    | MoveCaretToTextObject of Motion * TextObjectKind
+    | MoveCaretToTextObject of Motion: Motion * TextObjectKind: TextObjectKind
 
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
@@ -3241,10 +3241,10 @@ type VisualCommand =
 
     /// Put the contents af the register after the selection.  The bool is for whether or not the
     // caret should be placed after the inserted text
-    | PutOverSelection of bool
+    | PutOverSelection of PlaceCaretAfterInsertedText: bool
 
     /// Replace the visual span with the provided character
-    | ReplaceSelection of KeyInput
+    | ReplaceSelection of KeyInput: KeyInput
 
     /// Shift the selected lines left
     | ShiftLinesLeft
@@ -3253,17 +3253,17 @@ type VisualCommand =
     | ShiftLinesRight
 
     /// Subtract count from the word in each line of the selection, optionally progressively
-    | SubtractFromSelection of bool
+    | SubtractFromSelection of IsProgressive: bool
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line
-    | SwitchModeInsert of bool
+    | SwitchModeInsert of AtEndOfLine: bool
 
     /// Switch to the previous mode
     | SwitchModePrevious
 
     /// Switch to the specified visual mode
-    | SwitchModeVisual of VisualKind
+    | SwitchModeVisual of VisualKind: VisualKind
 
     /// Toggle one fold in the selection
     | ToggleFoldInSelection
@@ -3304,26 +3304,26 @@ type InsertCommand  =
     /// Block edit of the specified TextChange value.  The bool signifies whether
     /// the insert is at the end of the line. The int represents the number of 
     /// lines on which this block insert should take place
-    | BlockInsert of string * bool * int
+    | BlockInsert of Text: string * AtEndOfLine: bool * Height: int
 
     /// This is an insert command which is a combination of other insert commands
-    | Combined of InsertCommand * InsertCommand
+    | Combined of Left: InsertCommand * Right: InsertCommand
 
     /// Complete the Insert Mode session.  This is done as a command so that it will 
     /// be a bookend of insert mode for the repeat infrastructure
     ///
     /// The bool value represents whether or not the caret needs to be moved to the
     /// left
-    | CompleteMode of bool
+    | CompleteMode of MoveCaretLeft: bool
 
     /// Delete the character under the caret
     | Delete
 
     /// Delete count characters to the left of the caret
-    | DeleteLeft of int 
+    | DeleteLeft of ColumnCount: int 
 
     /// Delete count characters to the right of the caret
-    | DeleteRight of int
+    | DeleteRight of ColumnCount: int
 
     /// Delete all indentation on the current line
     | DeleteAllIndent
@@ -3341,28 +3341,28 @@ type InsertCommand  =
     | InsertNewLine
 
     /// Insert previously inserted text, optionally stopping insert
-    | InsertPreviouslyInsertedText of bool
+    | InsertPreviouslyInsertedText of StopInsert: bool
 
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
     /// Insert of text into the ITextBuffer at the caret position 
-    | Insert of string
+    | Insert of Text: string
 
     /// Move the caret in the given direction
-    | MoveCaret of Direction
+    | MoveCaret of Direction: Direction
 
     /// Move the caret in the given direction with an arrow key
-    | MoveCaretWithArrow of Direction
+    | MoveCaretWithArrow of Direction: Direction
 
     /// Move the caret in the given direction by a whole word
-    | MoveCaretByWord of Direction
+    | MoveCaretByWord of Direction: Direction
 
     /// Move the caret to the end of the line
     | MoveCaretToEndOfLine
 
     /// Replace the character under the caret with the specified value
-    | Replace of char
+    | Replace of Character: char
 
     /// Replace the character which is immediately above the caret
     | ReplaceCharacterAboveCaret
@@ -3371,7 +3371,7 @@ type InsertCommand  =
     | ReplaceCharacterBelowCaret
 
     /// Overwrite the characters under the caret with the specified string
-    | Overwrite of string
+    | Overwrite of Text: string
 
     /// Shift the current line one indent width to the left
     | ShiftLineLeft 
@@ -3456,13 +3456,13 @@ type InsertCommand  =
 type Command =
 
     /// A Normal Mode Command
-    | NormalCommand of NormalCommand * CommandData
+    | NormalCommand of NormalCommand: NormalCommand * CommandData: CommandData
 
     /// A Visual Mode Command
-    | VisualCommand of VisualCommand * CommandData * VisualSpan
+    | VisualCommand of VisualCommand: VisualCommand * CommandData: CommandData * VisualSpan: VisualSpan
 
     /// An Insert / Replace Mode Command
-    | InsertCommand of InsertCommand
+    | InsertCommand of InsertCommand: InsertCommand
 
 /// This is the result of attemping to bind a series of KeyInput values into a Motion
 /// Command, etc ... 
@@ -3470,10 +3470,10 @@ type Command =
 type BindResult<'T> = 
 
     /// Successfully bound to a value
-    | Complete of 'T 
+    | Complete of Result: 'T 
 
     /// More input is needed to complete the binding operation
-    | NeedMoreInput of BindData<'T>
+    | NeedMoreInput of BindData: BindData<'T>
 
     /// There was an error completing the binding operation
     | Error
@@ -3548,10 +3548,10 @@ and BindData<'T> = {
 type BindDataStorage<'T> =
 
     /// Simple BindData<'T> which doesn't require activation
-    | Simple of BindData<'T> 
+    | Simple of BindData: BindData<'T> 
 
     /// Complex BindData<'T> which does require activation
-    | Complex of (unit -> BindData<'T>)
+    | Complex of CreateBindDataFunc: (unit -> BindData<'T>)
 
     with
 
@@ -3575,22 +3575,22 @@ type BindDataStorage<'T> =
 type CommandBinding = 
 
     /// KeyInputSet bound to a particular NormalCommand instance
-    | NormalBinding of KeyInputSet * CommandFlags * NormalCommand
+    | NormalBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * NormalCommand: NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
-    | ComplexNormalBinding of KeyInputSet * CommandFlags * BindDataStorage<NormalCommand>
+    | ComplexNormalBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * BindDataStorage: BindDataStorage<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
-    | MotionBinding of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
+    | MotionBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * Func: (MotionData -> NormalCommand)
 
     /// KeyInputSet bound to a particular VisualCommand instance
-    | VisualBinding of KeyInputSet * CommandFlags * VisualCommand
+    | VisualBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * VisualCommand: VisualCommand
 
     /// KeyInputSet bound to an insert mode command
-    | InsertBinding of KeyInputSet * CommandFlags * InsertCommand
+    | InsertBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * InsertCommand: InsertCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
-    | ComplexVisualBinding of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
+    | ComplexVisualBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * BindDataStorage: BindDataStorage<VisualCommand>
 
     with 
 
@@ -3691,17 +3691,17 @@ type StoredVisualSpan =
 type StoredCommand =
 
     /// The stored information about a NormalCommand
-    | NormalCommand of NormalCommand * CommandData * CommandFlags
+    | NormalCommand of NormalCommand: NormalCommand * CommandData: CommandData * CommandFlags: CommandFlags
 
     /// The stored information about a VisualCommand
-    | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
+    | VisualCommand of VisualCommand: VisualCommand * CommandData: CommandData * StoredVisualSpan: StoredVisualSpan * CommandFlags: CommandFlags
 
     /// The stored information about a InsertCommand
-    | InsertCommand of InsertCommand * CommandFlags
+    | InsertCommand of InsertCommand: InsertCommand * CommandFlags: CommandFlags
 
     /// A Linked Command links together 2 other StoredCommand objects so they
     /// can be repeated together.
-    | LinkedCommand of StoredCommand * StoredCommand
+    | LinkedCommand of Left: StoredCommand * Right: StoredCommand
 
     with
 
@@ -3768,11 +3768,11 @@ type MotionBinding =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | Static of KeyInputSet * MotionFlags * Motion
+    | Static of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * Motion: Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.
-    | Dynamic of KeyInputSet * MotionFlags * BindDataStorage<Motion>
+    | Dynamic of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * BindDataStorage: BindDataStorage<Motion>
 
     with
 
@@ -4087,7 +4087,7 @@ type IMacroRecorder =
 type ProcessResult = 
 
     /// The input was processed and provided the given ModeSwitch
-    | Handled of ModeSwitch
+    | Handled of ModeSwitch: ModeSwitch
 
     /// The input was processed but more input is needed in order to complete
     /// an operation

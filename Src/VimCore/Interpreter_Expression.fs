@@ -33,12 +33,12 @@ type VariableType =
 
 [<RequireQualifiedAccess>]
 type VariableValue =
-    | Number of int
-    | Float of float
-    | String of string
-    | FunctionRef of string
-    | List of VariableValue list
-    | Dictionary of Map<string, VariableValue>
+    | Number of Number: int
+    | Float of Float: float
+    | String of String: string
+    | FunctionRef of FunctionName: string
+    | List of VariableValues: VariableValue list
+    | Dictionary of Map: Map<string, VariableValue>
     | Error
 
     with
@@ -68,8 +68,8 @@ type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
 [<RequireQualifiedAccess>]
 type EvaluateResult = 
-    | Succeeded of VariableValue
-    | Failed of string
+    | Succeeded of Value: VariableValue
+    | Failed of Failed: string
 
 /// The set of events Vim supports.  Defined in ':help autocmd-events'
 ///
@@ -162,7 +162,7 @@ type EventKind =
 [<StructuralEquality>]
 type AutoCommandGroup = 
     | Default
-    | Named of string 
+    | Named of Name: string 
 
 type AutoCommand = {
     Group: AutoCommandGroup
@@ -189,7 +189,7 @@ type AutoCommandDefinition = {
 type LineSpecifier = 
 
     /// The line with the specified number
-    | Number of int
+    | Number of Number: int
 
     /// The current line: '.'
     | CurrentLine
@@ -198,10 +198,10 @@ type LineSpecifier =
     | LastLine
 
     /// The line containing the specified mark
-    | MarkLine of Mark
+    | MarkLine of Mark: Mark
 
     /// The next line where the given pattern matches
-    | NextLineWithPattern of string
+    | NextLineWithPattern of Pattern: string
 
     /// The next line where the previous search pattern occurs
     | NextLineWithPreviousPattern
@@ -210,13 +210,13 @@ type LineSpecifier =
     | NextLineWithPreviousSubstitutePattern
 
     /// The previous line where the given pattern matches
-    | PreviousLineWithPattern of string
+    | PreviousLineWithPattern of Pattern: string
 
     /// The previous line where the previous search pattern occurs
     | PreviousLineWithPreviousPattern
 
     /// LineSpecifier with the given line adjustment
-    | LineSpecifierWithAdjustment of LineSpecifier * int
+    | LineSpecifierWithAdjustment of LineSpecifier: LineSpecifier * Adjustment: int
 
 /// A line range in the file 
 [<RequireQualifiedAccess>]
@@ -229,25 +229,25 @@ type LineRangeSpecifier =
     | EntireBuffer 
 
     /// A single line range
-    | SingleLine of LineSpecifier
+    | SingleLine of LineSpecifier: LineSpecifier
 
     /// A range defined by two lines.  The bool is whether or not the cursor should be
     /// adjusted for the for the second line specifier (true when ';' is used to separate
     /// the LineSpecifier values)
-    | Range of LineSpecifier * LineSpecifier * bool
+    | Range of StartLineSpecifier: LineSpecifier * LastLineSpecifier: LineSpecifier * AdjustCaret: bool
 
     /// The range is an end count on top of another LineRange value.  It's possible for the 
     /// end count to exist in the abscence a range
-    | WithEndCount of LineRangeSpecifier * int
+    | WithEndCount of LineRangeSpecifier: LineRangeSpecifier * Count: int
 
     /// The LineRange value for Join is heavily special cased
-    | Join of LineRangeSpecifier * int option
+    | Join of LineRangeSpecifier: LineRangeSpecifier * Count: int option
 
 /// Represents the values for '++opt' which can occur on commands like :edit
 [<RequireQualifiedAccess>]
 type FileOption =
-    | FileFormat of string
-    | Encoding of string
+    | FileFormat of FileFormat: string
+    | Encoding of Encoding: string
     | Binary 
     | NoBinary
     | Bad
@@ -282,35 +282,35 @@ type SetArgument  =
     | DisplayAllTerminal
 
     /// Display the specified setting
-    | DisplaySetting of string
+    | DisplaySetting of SettingName: string
 
     /// The 'all&' argument.  Resets all setting to their default value
     | ResetAllToDefault
 
     /// Use the setting.  Produced when an setting name is used without arguments.  The behavior 
     /// depends on the type of the setting once it's bound
-    | UseSetting of string
+    | UseSetting of SettingName: string
 
     /// Toggle the setting value off.  How the toggle works depends on the type of the setting
-    | ToggleOffSetting of string
+    | ToggleOffSetting of SettingName: string
 
     /// Invert the setting
-    | InvertSetting of string
+    | InvertSetting of SettingName: string
 
     /// Reset the setting to it's default value
-    | ResetSetting of string
+    | ResetSetting of SettingName: string
 
     /// Set the setting to the specified value
-    | AssignSetting of string * string
+    | AssignSetting of SettingName: string * Value: string
 
     /// Add the value to the setting
-    | AddSetting of string * string
+    | AddSetting of SettingName: string * Value: string
 
     /// Multiply the value of the setting with the value
-    | MultiplySetting of string * string 
+    | MultiplySetting of SettingName: string * Value: string 
 
     /// Subtracte the value of the setting with the value
-    | SubtractSetting of string * string
+    | SubtractSetting of SettingName: string * Value: string
 
 [<RequireQualifiedAccess>]
 type BinaryKind = 
@@ -387,11 +387,11 @@ type FileNameModifier =
 [<RequireQualifiedAccess>]
 type SymbolicPathComponent =
     /// '%' + modifiers
-    | CurrentFileName of FileNameModifier list
+    | CurrentFileName of FileNameModifiers: FileNameModifier list
     /// '#'[number] + modifiers
-    | AlternateFileName of int * FileNameModifier list
+    | AlternateFileName of Count: int * FileNameModifiers: FileNameModifier list
     /// Literal text
-    | Literal of string
+    | Literal of Literal: string
 
 type SymbolicPath = SymbolicPathComponent list
 
@@ -399,9 +399,9 @@ type SymbolicPath = SymbolicPathComponent list
 [<RequireQualifiedAccess>]
 type CommandOption =
     | StartAtLastLine
-    | StartAtLine of int
-    | StartAtPattern of string
-    | ExecuteLineCommand of LineCommand
+    | StartAtLine of LineNumber: int
+    | StartAtPattern of Pattern: string
+    | ExecuteLineCommand of LineCommand: LineCommand
 
 and Function = {
 
@@ -432,128 +432,128 @@ with
 and [<RequireQualifiedAccess>] Expression =
 
     /// Binary expression
-    | Binary of BinaryKind * Expression * Expression
+    | Binary of BinaryKind: BinaryKind * Left: Expression * Right: Expression
 
     /// A constant value
-    | ConstantValue of VariableValue 
+    | ConstantValue of Value: VariableValue 
 
     /// The name of an option/setting
-    | OptionName of string
+    | OptionName of OptionName: string
 
     /// The name of a register
-    | RegisterName of RegisterName
+    | RegisterName of RegisterName: RegisterName
 
     /// The name of a variable
-    | VariableName of VariableName
+    | VariableName of VariableName: VariableName
 
     /// Invocation of a function
-    | FunctionCall of VariableName * Expression list
+    | FunctionCall of VariableName: VariableName * Arguments: Expression list
 
     /// List of expressions
-    | List of Expression list
+    | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
-    | AddAutoCommand of AutoCommandDefinition
+    | AddAutoCommand of AutoCommandDefinition: AutoCommandDefinition
 
     /// The :behave command to set common behaviors in certain environments
-    | Behave of string
+    | Behave of Text: string
 
     /// The :call command to invoke a function.  The first string is the 
-    | Call of CallInfo
+    | Call of CallInfo: CallInfo
 
     /// Change the current directory to the given value
-    | ChangeDirectory of SymbolicPath
+    | ChangeDirectory of SymbolicPath: SymbolicPath
 
     /// Change the current directory for the local window
-    | ChangeLocalDirectory of SymbolicPath
+    | ChangeLocalDirectory of SymbolicPath: SymbolicPath
 
     /// Clear out the keyboard map for the given modes
-    | ClearKeyMap of KeyRemapMode list * KeyMapArgument list
+    | ClearKeyMap of KeyRemapModes: KeyRemapMode list * KeyMapArguments: KeyMapArgument list
 
     /// The :close command.  The bool value represents whether or not the 
     /// bang modifier was added
-    | Close of bool
+    | Close of HasBang: bool
 
     /// Compose two line commands
-    | Compose of LineCommand * LineCommand
+    | Compose of First: LineCommand * Second: LineCommand
 
     /// Copy the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified
-    | CopyTo of LineRangeSpecifier * LineRangeSpecifier * int option
+    | CopyTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
 
     /// Delete the specified marks
-    | DeleteMarks of Mark list
+    | DeleteMarks of Marks: Mark list
 
     /// Delete all of the marks except A-Z and 0-9
     | DeleteAllMarks 
 
     /// Move the specific line range to the given position.  The first line range is the 
     /// source and the second is the destination
-    | MoveTo of LineRangeSpecifier * LineRangeSpecifier * int option
+    | MoveTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
 
     /// The :delete command
-    | Delete of LineRangeSpecifier * RegisterName option
+    | Delete of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
     /// The beginning of a function definition.  When 'None' is present that means there was
     /// an error parsing the function definition.
-    | FunctionStart of FunctionDefinition option
+    | FunctionStart of FunctionDefinition: FunctionDefinition option
 
     /// The :endfunc member
     | FunctionEnd
 
     /// A complete function 
-    | Function of Function
+    | Function of Function: Function
 
     /// Add the specified digraphs to the digraph mapping
-    | Digraphs of (char * char * int) list
+    | Digraphs of Digraphs: (char * char * int) list
 
     /// Display the contents of registers.  Unless a specific register name is 
     /// given all registers will be displayed
-    | DisplayRegisters of RegisterName list
+    | DisplayRegisters of RegisterNames: RegisterName list
 
     /// Display the specified marks.  If no Mark values are provided then display 
     /// all marks
-    | DisplayMarks of Mark list
+    | DisplayMarks of Marks: Mark list
 
     /// Display the keymap for the given modes.  Restrict the display to the provided
     /// key notation if it's provided
-    | DisplayKeyMap of KeyRemapMode list * string option
+    | DisplayKeyMap of KeyRemapModes: KeyRemapMode list * Notation: string option
 
     /// Display the specified let value
-    | DisplayLet of VariableName list
+    | DisplayLet of VariableNames: VariableName list
 
     /// Display the specified line range with the specified flags
-    | DisplayLines of LineRangeSpecifier * LineCommandFlags
+    | DisplayLines of LineRangeSpecifier: LineRangeSpecifier * LineCommandFlags: LineCommandFlags
 
     // The :echo command
-    | Echo of Expression
+    | Echo of Expression: Expression
 
     // The :execute command
-    | Execute of Expression
+    | Execute of Expression: Expression
 
     /// The :edit command.  The values range as follows
     ///  - ! option present
     ///  - The provided ++opt
     ///  - The provided +cmd 
     ///  - The provided file to edit 
-    | Edit of bool * FileOption list * CommandOption option * SymbolicPath
+    | Edit of HasBang: bool * FileOptions: FileOption list * CommandOptions: CommandOption option * SymbolicPath: SymbolicPath
 
     /// List recent files
     | Files
 
     /// Fold the selected LineRange
-    | Fold of LineRangeSpecifier
+    | Fold of LineRangeSpecifier: LineRangeSpecifier
 
     /// Run the given command against all lines in the specified range (default is the 
     /// entire buffer) which match the predicate pattern.  If the bool provided is false
     /// then it will be run on the lines which don't match the pattern
-    | Global of LineRangeSpecifier * string * bool * LineCommand
+    | Global of LineRangeSpecifier: LineRangeSpecifier * Pattern: string * MatchPattern: bool * LineCommand: LineCommand
 
     // Executes the given key strokes as if they were typed in normal mode
-    | Normal of LineRangeSpecifier * KeyInput list
+    | Normal of LineRangeSpecifier: LineRangeSpecifier * KeyInputs: KeyInput list
 
     /// Go to the first tab 
     | GoToFirstTab
@@ -562,10 +562,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | GoToLastTab
 
     /// Go to the next tab
-    | GoToNextTab of int option
+    | GoToNextTab of Count: int option
 
     /// Go to the previous tab
-    | GoToPreviousTab of int option
+    | GoToPreviousTab of Count: int option
 
     /// Get help on VsVim
     | Help
@@ -574,20 +574,20 @@ and [<RequireQualifiedAccess>] LineCommand =
     | History
 
     /// Run a host command.  The first string is the command and the second string is the argument
-    | HostCommand of string * string
+    | HostCommand of Command: string * Argument: string
 
     /// Process the 'split' command.  The values range as follows
     ///  - Height of the window if specified.  Expressed as a range.  The actual documentation
     ///    doesn't specify a range can be used here but usage indicates it can
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | HorizontalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+    | HorizontalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptiosn: FileOption list * CommandOption: CommandOption option
 
     /// The if command
-    | If of ConditionalBlock list
+    | If of Blocks: ConditionalBlock list
 
     /// The :if definition command
-    | IfStart of Expression
+    | IfStart of Expression: Expression
 
     /// The :endif definition
     | IfEnd
@@ -596,29 +596,29 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Else
 
     /// The :elseif definition 
-    | ElseIf of Expression
+    | ElseIf of Expression: Expression
 
     /// Join the lines in the specified range.  Optionally provides a count of lines to 
     /// start the join after the line range
-    | Join of LineRangeSpecifier * JoinKind
+    | Join of LineRangeSpecifier: LineRangeSpecifier * JoinKind: JoinKind
 
     /// Jump to the last line of the specified line range
-    | JumpToLastLine of LineRangeSpecifier
+    | JumpToLastLine of LineRangeSpecifier: LineRangeSpecifier
 
     // Let command.  The first item is the name and the second is the value
-    | Let of VariableName * Expression
+    | Let of VariableName: VariableName * Expression: Expression
 
     // Let command applied to a register. The first item is the name and the second is the value
-    | LetRegister of RegisterName * Expression
+    | LetRegister of RegisterName: RegisterName * Expression: Expression
 
     /// Make command.  The options are as follows
     ///   - The ! option
     ///   - All of the text after the !
-    | Make of bool * string
+    | Make of HasBang: bool * Text: string
 
     /// Map the key notation in the given modes.  The bool is whether or not the right
     /// notation can allow remapping
-    | MapKeys of string * string * KeyRemapMode list * bool * KeyMapArgument list
+    | MapKeys of LeftKeyNotation: string * RightKeyNotation: string * KeyRemapModes: KeyRemapMode list * AllowRemap: bool * KeyMapArguments: KeyMapArgument list
 
     /// Temporarily disable the 'hlsearch' option
     | NoHighlightSearch
@@ -630,35 +630,35 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Only
 
     /// There was a parse error on the specified line
-    | ParseError of string
+    | ParseError of Error: string
 
     /// Print out the current directory
     | PrintCurrentDirectory
 
     /// Put the contents of the given register after the line identified by the
     /// LineRange (defaults to current)
-    | PutAfter of LineRangeSpecifier * RegisterName option
+    | PutAfter of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
     /// Put the contents of the given register before the line identified by the
     /// LineRange (defaults to current)
-    | PutBefore of LineRangeSpecifier * RegisterName option
+    | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
     /// Display the quick fix window
     | QuickFixWindow
 
     /// Next error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixNext of int option * bool
+    | QuickFixNext of Count: int option * HasBang: bool
 
     /// Previous error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixPrevious of int option * bool
+    | QuickFixPrevious of Count: int option * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
-    | Quit of bool
+    | Quit of HasBang: bool
 
     /// Quit all windows without writing their content and exit Vim.  If the boolean
     /// option is present then don't warn about writing a dirty window
-    | QuitAll of bool
+    | QuitAll of HasBang: bool
 
     /// Quit the current window after writing out it's contents.  The values range as 
     /// follows
@@ -666,97 +666,97 @@ and [<RequireQualifiedAccess>] LineCommand =
     ///  - ! option present
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | QuitWithWrite of LineRangeSpecifier * bool * FileOption list * string option 
+    | QuitWithWrite of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * FileOptions: FileOption list * FilePath: string option 
 
     /// Read the contents of the specified file and put it after the specified
     /// line range or the caret
-    | ReadFile of LineRangeSpecifier * FileOption list * string
+    | ReadFile of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * FilePath: string
 
     /// Read the contens of the specified command and put it after the specified
     /// line range or the caret
-    | ReadCommand of LineRangeSpecifier * string
+    | ReadCommand of LineRangeSpecifier: LineRangeSpecifier * CommandText: string
 
     /// Redo the last item on the undo stack
     | Redo
 
     /// Remove all auto commands with the specified definition
-    | RemoveAutoCommands of AutoCommandDefinition
+    | RemoveAutoCommands of AutoCommandDefinition: AutoCommandDefinition
 
     /// Retab the specified LineRange.  The options are as follows
     ///  - The LineRange to change (defaults to entire buffer)
     ///  - True to replace both tabs and spaces, false for just spaces
     ///  - new tabstop value
-    | Retab of LineRangeSpecifier * bool * int option
+    | Retab of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * TabStop: int option
 
     /// Process the 'set' command
-    | Set of SetArgument list
+    | Set of SetArguments: SetArgument list
 
     /// Process the '/' and '?' commands
-    | Search of LineRangeSpecifier * SearchPath * string
+    | Search of LineRangeSpecifier: LineRangeSpecifier * SearchPath: SearchPath * Pattern: string
 
     /// Start a shell window
     | Shell
 
     /// Filter the given line range through shell command
-    | ShellCommand of LineRangeSpecifier * string
+    | ShellCommand of LineRangeSpecifier: LineRangeSpecifier * CommandText: string
 
     /// Process the '<' shift left command
-    | ShiftLeft of LineRangeSpecifier * int
+    | ShiftLeft of LineRangeSpecifier: LineRangeSpecifier * Count: int
 
     /// Process the '>' shift right command
-    | ShiftRight of LineRangeSpecifier * int
+    | ShiftRight of LineRangeSpecifier: LineRangeSpecifier * Count: int
 
     /// Sort the specified LineRange.  The options are as follows:
     /// - The LineRange to change (defaults to entire buffer)
     /// - True to reverse sort
     /// - sort flags
     /// - optional pattern
-    | Sort of LineRangeSpecifier * bool * SortFlags * string option
+    | Sort of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * SortFlags: SortFlags * Pattern: string option
 
     /// Process the 'source' command.  
-    | Source of bool * string
+    | Source of HasBang: bool * FilePath: string
 
     // Close all tabs but this one
     | TabOnly
 
     /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
-    | TabNew of SymbolicPath
+    | TabNew of SymbolicPath: SymbolicPath
 
     /// The version command
     | Version
 
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
-    | VerticalSplit of LineRangeSpecifier * FileOption list * CommandOption option
+    | VerticalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * CommandOption: CommandOption option
 
     /// The :substitute command.  The argument order is range, pattern, replace,
     /// substitute flags and count
-    | Substitute of LineRangeSpecifier * string * string * SubstituteFlags
+    | Substitute of LineRangeSpecifier: LineRangeSpecifier * Pattern: string * Replace: string * SubstituteFlags: SubstituteFlags
 
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
-    | SubstituteRepeat of LineRangeSpecifier * SubstituteFlags
+    | SubstituteRepeat of LineRangeSpecifier: LineRangeSpecifier * SubstituteFlags: SubstituteFlags
 
     /// Undo the last change
     | Undo
 
     /// Unlet a value.  
-    | Unlet of bool * string list
+    | Unlet of HasBang: bool * Names: string list
 
     /// Unmap the key notation in the given modes
-    | UnmapKeys of string * KeyRemapMode list * KeyMapArgument list
+    | UnmapKeys of KeyNotation: string * KeyRemapModes: KeyRemapMode list * KeyMapArguments: KeyMapArgument list
 
     /// Write the 
     ///  - The line range to write out
     ///  - Whether or not a ! was provided
     ///  - The provided ++opt
     ///  - The file name to write to
-    | Write of LineRangeSpecifier * bool * FileOption list * string option
+    | Write of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * FileOptions: FileOption list * FilePath: string option
 
     /// Write out all changed buffers
-    | WriteAll of bool * bool
+    | WriteAll of HasBang: bool * Quit: bool
 
     /// Yank the line range into the given register with the specified count
-    | Yank of LineRangeSpecifier * RegisterName option * int option
+    | Yank of LineRangeSpecifier: LineRangeSpecifier * RegisterNames: RegisterName option * Count: int option
 
 with 
 
@@ -772,10 +772,10 @@ with
 [<NoEquality>]
 [<RequireQualifiedAccess>]
 type BuiltinFunctionCall =
-    | Escape of string * string
-    | Exists of string
+    | Escape of Value: string * EscapeCharacters: string
+    | Exists of Name: string
     | Localtime
-    | Nr2char of int
+    | Nr2char of Nr: int
 
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =

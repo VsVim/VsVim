@@ -3311,10 +3311,10 @@ module TrackingPointUtil =
 [<RequireQualifiedAccess>]
 type EditSpan = 
     /// Common case of an edit operation which occurs over a single SnapshotSpan
-    | Single of SnapshotColumnSpan 
+    | Single of ColumnSpan: SnapshotColumnSpan 
 
     /// Occurs during block edits
-    | Block of NonEmptyCollection<SnapshotOverlapColumnSpan>
+    | Block of ColumnSpans: NonEmptyCollection<SnapshotOverlapColumnSpan>
 
     with
 

@@ -20,19 +20,19 @@ namespace Vim.UnitTest
         {
             var parseResult = VimUtil.ParseExpression(expr);
             Assert.True(parseResult.IsSucceeded, "Expression failed to parse");
-            return _interpreter.RunExpression(parseResult.AsSucceeded().Item);
+            return _interpreter.RunExpression(parseResult.AsSucceeded().Value);
         }
 
         private void Run(string expr, string expected)
         {
             var value = Run(expr);
-            Assert.Equal(expected, value.AsString().Item);
+            Assert.Equal(expected, value.AsString().String);
         }
 
         private void Run(string expr, int expected)
         {
             var value = Run(expr);
-            Assert.Equal(expected, value.AsNumber().Item);
+            Assert.Equal(expected, value.AsNumber().Number);
         }
 
         /// <summary>
@@ -59,13 +59,13 @@ namespace Vim.UnitTest
         [Fact]
         public void Empty_list()
         {
-            Assert.True(Run("[]").AsList().Item.IsEmpty);
+            Assert.True(Run("[]").AsList().VariableValues.IsEmpty);
         }
 
         [Fact]
         public void Run_builtin_function_of_no_arguments()
         {
-            Assert.NotEqual(0, Run("localtime()").AsNumber().Item);
+            Assert.NotEqual(0, Run("localtime()").AsNumber().Number);
         }
 
         [Fact]

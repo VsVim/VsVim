@@ -95,11 +95,11 @@ namespace Vim.UnitTest
         protected void AssertInsertWithTransaction(CommandResult result)
         {
             Assert.True(result.IsCompleted);
-            var modeSwitch = result.AsCompleted().Item;
+            var modeSwitch = result.AsCompleted().ModeSwitch;
             Assert.True(modeSwitch.IsSwitchModeWithArgument);
             var data = modeSwitch.AsSwitchModeWithArgument();
-            Assert.Equal(ModeKind.Insert, data.Item1);
-            Assert.True(data.Item2.IsInsertWithTransaction);
+            Assert.Equal(ModeKind.Insert, data.ModeKind);
+            Assert.True(data.ModeArgument.IsInsertWithTransaction);
         }
 
         /// <summary>
@@ -1412,7 +1412,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
                 var expected = new SnapshotSpan(_textView.GetPoint(1), _textView.GetLine(1).Start.Add(1));
-                Assert.Equal(expected, restored.AsCharacter().Item.Span);
+                Assert.Equal(expected, restored.AsCharacter().CharacterSpan.Span);
             }
 
             /// <summary>
@@ -1429,7 +1429,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
                 var expected = new SnapshotSpan(_textView.GetPoint(1), 4);
-                Assert.Equal(expected, restored.AsCharacter().Item.Span);
+                Assert.Equal(expected, restored.AsCharacter().CharacterSpan.Span);
             }
 
             /// <summary>
@@ -1442,7 +1442,7 @@ namespace Vim.UnitTest
                 var span = new SnapshotSpan(_textBuffer.GetPoint(0), _textBuffer.GetLine(1).Start.Add(1));
                 var stored = StoredVisualSpan.OfVisualSpan(VimUtil.CreateVisualSpanCharacter(span));
                 var restored = _commandUtil.CalculateVisualSpan(stored);
-                Assert.Equal(_textBuffer.GetSpan(0, 7), restored.AsCharacter().Item.Span);
+                Assert.Equal(_textBuffer.GetSpan(0, 7), restored.AsCharacter().CharacterSpan.Span);
             }
 
             /// <summary>
@@ -1469,7 +1469,7 @@ namespace Vim.UnitTest
                 var stored = StoredVisualSpan.OfVisualSpan(span);
                 _textView.MoveCaretToLine(1);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
-                Assert.Equal(_textView.GetLineRange(1, 2), restored.AsLine().Item);
+                Assert.Equal(_textView.GetLineRange(1, 2), restored.AsLine().LineRange);
             }
 
             /// <summary>
@@ -1484,7 +1484,7 @@ namespace Vim.UnitTest
                 var stored = StoredVisualSpan.OfVisualSpan(span);
                 _textView.MoveCaretToLine(3);
                 var restored = _commandUtil.CalculateVisualSpan(stored);
-                Assert.Equal(_textView.GetLineRange(3, 3), restored.AsLine().Item);
+                Assert.Equal(_textView.GetLineRange(3, 3), restored.AsLine().LineRange);
             }
 
             /// <summary>
@@ -1521,7 +1521,7 @@ namespace Vim.UnitTest
                     _textView.GetLineSpan(0, 1, 1),
                     _textView.GetLineSpan(1, 1, 1)
                 },
-                    restored.AsBlock().Item.BlockSpans);
+                    restored.AsBlock().BlockSpan.BlockSpans);
             }
 
             [WpfFact]

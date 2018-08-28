@@ -16,10 +16,10 @@ namespace Vim.UnitTest
             var result = CountCapture.GetCount(KeyRemapMode.None, first);
             if (text.Length > 1)
             {
-                return result.Run(text.Substring(1)).AsComplete().Item;
+                return result.Run(text.Substring(1)).AsComplete().Result;
             }
 
-            return result.AsComplete().Item;
+            return result.AsComplete().Result;
         }
 
         /// <summary>

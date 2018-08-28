@@ -393,7 +393,7 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
                 var res = _operations.GoToDefinition();
                 Assert.True(res.IsFailed);
-                Assert.Contains("foo", ((Result.Failed)res).Item);
+                Assert.Contains("foo", ((Result.Failed)res).Error);
             }
 
             /// <summary>
@@ -415,7 +415,7 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
                 var res = _operations.GoToDefinition();
                 Assert.True(res.IsFailed);
-                Assert.Equal(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Item);
+                Assert.Equal(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Error);
             }
 
             [WpfFact]
@@ -425,7 +425,7 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GoToDefinition()).Returns(false);
                 var res = _operations.GoToDefinition();
                 Assert.True(res.IsFailed);
-                Assert.Equal(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Item);
+                Assert.Equal(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Error);
             }
 
             /// <summary>
@@ -851,7 +851,7 @@ namespace Vim.UnitTest
                     desiredColumn: CaretColumn.NewInLastLine(2),
                     flags: MotionResultFlags.MaintainCaretColumn);
                 _operations.MoveCaretToMotionResult(motionResult);
-                Assert.Equal(2, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
+                Assert.Equal(2, _operationsRaw.MaintainCaretColumn.AsSpaces().Count);
             }
 
             /// <summary>
@@ -866,7 +866,7 @@ namespace Vim.UnitTest
                     motionKind: MotionKind.CharacterWiseExclusive,
                     desiredColumn: CaretColumn.NewScreenColumn(100));
                 _operations.MoveCaretToMotionResult(motionResult);
-                Assert.Equal(100, _operationsRaw.MaintainCaretColumn.AsSpaces().Item);
+                Assert.Equal(100, _operationsRaw.MaintainCaretColumn.AsSpaces().Count);
             }
 
 

@@ -231,12 +231,12 @@ namespace Vim.UnitTest
 
         public static T AsResult<T>(this VimResult<T> vimResult)
         {
-            return ((VimResult<T>.Result)vimResult).Item;
+            return ((VimResult<T>.Result)vimResult).Result;
         }
 
         public static string AsError<T>(this VimResult<T> vimResult)
         {
-            return ((VimResult<T>.Error)vimResult).Item;
+            return ((VimResult<T>.Error)vimResult).Error; ;
         }
 
         #endregion
@@ -346,7 +346,7 @@ namespace Vim.UnitTest
 
         public static bool IsNumber(this LineSpecifier lineSpecifier, int number)
         {
-            return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Item == number;
+            return lineSpecifier.IsNumber && lineSpecifier.AsNumber().Number == number;
         }
 
         public static LineSpecifier.NextLineWithPattern AsNextLineWithPattern(this LineSpecifier lineSpecifier)
@@ -367,8 +367,8 @@ namespace Vim.UnitTest
         public static bool IsCurrentLineWithAdjustment(this LineSpecifier lineSpecifier, int count)
         {
             return lineSpecifier.IsLineSpecifierWithAdjustment &&
-                lineSpecifier.AsLineSpecifierWithAdjustment().Item1.IsCurrentLine &&
-                lineSpecifier.AsLineSpecifierWithAdjustment().Item2 == count;
+                lineSpecifier.AsLineSpecifierWithAdjustment().LineSpecifier.IsCurrentLine &&
+                lineSpecifier.AsLineSpecifierWithAdjustment().Adjustment == count;
         }
 
         #endregion
@@ -396,7 +396,7 @@ namespace Vim.UnitTest
         /// </summary>
         public static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
         {
-            return parseResult.IsFailed && message == parseResult.AsFailed().Item;
+            return parseResult.IsFailed && message == parseResult.AsFailed().Error;
         }
 
         #endregion
@@ -421,7 +421,7 @@ namespace Vim.UnitTest
 
         public static bool IsParseError(this LineCommand lineCommand, string message)
         {
-            return lineCommand.IsParseError && lineCommand.AsParseError().Item == message;
+            return lineCommand.IsParseError && lineCommand.AsParseError().Error == message;
         }
 
         #endregion
@@ -473,27 +473,27 @@ namespace Vim.UnitTest
 
         public static bool IsSwitchModeOneTimeCommand(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchModeOneTimeCommand;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchModeOneTimeCommand;
         }
 
         public static bool IsSwitchMode(this ProcessResult result, ModeKind kind)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchMode(kind);
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchMode(kind);
         }
 
         public static bool IsSwitchModeWithArgument(this ProcessResult result, ModeKind kind, ModeArgument argument)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchModeWithArgument(kind, argument);
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchModeWithArgument(kind, argument);
         }
 
         public static bool IsSwitchPreviousMode(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsSwitchPreviousMode;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsSwitchPreviousMode;
         }
 
         public static bool IsHandledNoSwitch(this ProcessResult result)
         {
-            return result.IsHandled && result.AsHandled().Item.IsNoSwitch;
+            return result.IsHandled && result.AsHandled().ModeSwitch.IsNoSwitch;
         }
 
         #endregion
@@ -538,7 +538,7 @@ namespace Vim.UnitTest
 
         public static bool IsSwitchMode(this ModeSwitch mode, ModeKind kind)
         {
-            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode)mode).Item == kind;
+            return mode.IsSwitchMode && ((ModeSwitch.SwitchMode)mode).ModeKind == kind;
         }
 
         public static bool IsSwitchModeWithArgument(this ModeSwitch mode, ModeKind kind, ModeArgument argument)
@@ -549,7 +549,7 @@ namespace Vim.UnitTest
             }
 
             var value = (ModeSwitch.SwitchModeWithArgument)mode;
-            return value.Item1 == kind && value.Item2.Equals(argument);
+            return value.ModeKind == kind && value.ModeArgument.Equals(argument);
         }
 
         #endregion
@@ -658,7 +658,7 @@ namespace Vim.UnitTest
 
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
         {
-            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().Item.KeyInputs;
+            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().KeyInputSet.KeyInputs;
         }
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
@@ -701,11 +701,11 @@ namespace Vim.UnitTest
         {
             if (res.IsMapped)
             {
-                return res.AsMapped().Item;
+                return res.AsMapped().KeyInputSet;
             }
 
             var partialMap = res.AsPartiallyMapped();
-            return KeyInputSetUtil.Combine(partialMap.item1, partialMap.item2);
+            return KeyInputSetUtil.Combine(partialMap.MappedKeyInputSet, partialMap.RemainingKeyInputSet);
         }
 
         #endregion
@@ -1355,7 +1355,7 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
                 Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
             }
 
             return result;
@@ -1367,7 +1367,7 @@ namespace Vim.UnitTest
             {
                 var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
                 Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
             }
             return result;
         }
@@ -1406,7 +1406,7 @@ namespace Vim.UnitTest
 
         public static bool IsFound(this SearchResult result, int startPosition)
         {
-            return result.IsFound && result.AsFound().Item2.Start == startPosition;
+            return result.IsFound && result.AsFound().SpanWithOffset.Start == startPosition;
         }
 
         #endregion
@@ -1457,17 +1457,17 @@ namespace Vim.UnitTest
 
         public static bool IsInsert(this TextChange change, string text)
         {
-            return change.IsInsert && change.AsInsert().Item == text;
+            return change.IsInsert && change.AsInsert().Text == text;
         }
 
         public static bool IsDeleteLeft(this TextChange change, int count)
         {
-            return change.IsDeleteLeft && change.AsDeleteLeft().Item == count;
+            return change.IsDeleteLeft && change.AsDeleteLeft().Count == count;
         }
 
         public static bool IsDeleteRight(this TextChange change, int count)
         {
-            return change.IsDeleteRight && change.AsDeleteRight().Item == count;
+            return change.IsDeleteRight && change.AsDeleteRight().Count == count;
         }
 
         #endregion

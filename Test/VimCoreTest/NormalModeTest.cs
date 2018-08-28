@@ -574,7 +574,7 @@ namespace Vim.UnitTest
                 .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonBlank, arg))
                 .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, motionKind: MotionKind.LineWise)));
             _commandUtil
-                .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().Item2.Count.IsNone())))
+                .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().CommandData.Count.IsNone())))
                 .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
                 .Verifiable();
             _mode.Process("yG");
