@@ -11,6 +11,7 @@ using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -23,6 +24,7 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly CommandMarginController _controller;
         private readonly MockVimBuffer _vimBuffer;
         private readonly Mock<IIncrementalSearch> _search;
+        private readonly TestableClipboardDevice _clipboardDevice;
         private Mock<IVimGlobalSettings> _globalSettings;
 
         protected CommandMarginControllerTest()
@@ -53,13 +55,16 @@ namespace Vim.UI.Wpf.UnitTest
 
             var parentVisualElement = _factory.Create<FrameworkElement>();
 
+            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
+
             _controller = new CommandMarginController(
                 _vimBuffer,
                 parentVisualElement.Object,
                 _marginControl,
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
                 VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
-                CommonOperationsFactory.GetCommonOperations(vimBufferData));
+                CommonOperationsFactory.GetCommonOperations(vimBufferData),
+                _clipboardDevice);
         }
 
         public sealed class InCommandLineUpdateTest : CommandMarginControllerTest

@@ -28,18 +28,21 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IEditorFormatMapService _editorFormatMapService;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly ICommonOperationsFactory _commonOperationsFactory;
+        private readonly IClipboardDevice _clipboardDevice;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
             IVim vim,
             IEditorFormatMapService editorFormatMapService,
             IClassificationFormatMapService classificationFormatMapService,
-            ICommonOperationsFactory commonOperationsFactory)
+            ICommonOperationsFactory commonOperationsFactory,
+            IClipboardDevice clipboardDevice)
         {
             _vim = vim;
             _editorFormatMapService = editorFormatMapService;
             _classificationFormatMapService = classificationFormatMapService;
             _commonOperationsFactory = commonOperationsFactory;
+            _clipboardDevice = clipboardDevice;
         }
 
         internal bool TryGetCommandMargin(IVimBuffer vimBuffer, out CommandMargin commandMargin)
@@ -55,7 +58,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextView);
             var commonOperations = _commonOperationsFactory.GetCommonOperations(vimBuffer.VimBufferData);
-            var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap, commonOperations);
+            var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap, commonOperations, _clipboardDevice);
 
             vimBuffer.Properties.AddProperty(s_key, commandMargin);
             vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(s_key); };
