@@ -3802,6 +3802,20 @@ namespace Vim.UnitTest
                 Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
             }
 
+            /// <summary>
+            /// Undo of insert with caret movements preceded by suppression of
+            /// breaking the undo sequence
+            /// </summary>
+            [WpfFact]
+            public void Undo_InsertSuppressBreakUndoSequence()
+            {
+                Create("aaa bbb ccc");
+                _vimBuffer.ProcessNotation("1Gwid <C-g>U<Left>dd<C-g>U<Right>eee <Esc>");
+                Assert.Equal("aaa ddd eee bbb ccc", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation("u");
+                Assert.Equal("aaa bbb ccc", _textBuffer.GetLineText(0));
+            }
+
             [WpfFact]
             public void Undo_InsertAndPaste()
             {

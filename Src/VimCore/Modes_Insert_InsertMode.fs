@@ -203,6 +203,10 @@ type InsertSessionData = {
 
     /// The Active edit item 
     ActiveEditItem: ActiveEditItem
+
+    /// Whether we should suppress breaking the undo sequence for the
+    /// next left/right caret movement
+    SuppressBreakUndoSequence: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -234,6 +238,7 @@ type internal InsertMode
         Transaction = None
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
+        SuppressBreakUndoSequence = false
     }
 
     /// The set of commands supported by insert mode
@@ -758,6 +763,14 @@ type internal InsertMode
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
         let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
 
+        /// Handle suppression of breaking the undo sequence.
+        let suppressBreakUndoSequence =
+            match _sessionData.SuppressBreakUndoSequence, command with
+            | true, InsertCommand.MoveCaretWithArrow Direction.Left -> true
+            | true, InsertCommand.MoveCaretWithArrow Direction.Right -> true
+            | _ ->  false
+        _sessionData <- { _sessionData with SuppressBreakUndoSequence = false }
+
         if isContextSensitive then
             _textChangeTracker.StopTrackingEffectiveChange()
 
@@ -771,7 +784,8 @@ type internal InsertMode
                 | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             x.ChangeCombinedEditCommand (Some command)
 
-        else
+        elif not suppressBreakUndoSequence then
+
             // Not an edit command.  If there is an existing edit command then go ahead and flush
             // it out before raising this command
             x.CompleteCombinedEditCommand()
@@ -792,7 +806,7 @@ type internal InsertMode
                 x.BreakUndoSequence "Insert after motion" 
 
         // Arrow keys start a new insert point.
-        if isMovement then
+        if isMovement && not suppressBreakUndoSequence then
             x.ResetInsertPoint()
         else
             _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- Some x.CaretPoint
@@ -980,6 +994,8 @@ type internal InsertMode
         // Handle the next key.
         if keyInput = KeyInputUtil.CharToKeyInput 'u' then
             x.BreakUndoSequence "Break undo sequence"
+        elif keyInput = KeyInputUtil.CharToKeyInput 'U' then
+            _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
 
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
@@ -1307,6 +1323,7 @@ type internal InsertMode
             InsertKind = insertKind
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
+            SuppressBreakUndoSequence = false
         }
 
         // If this is replace mode then go ahead and setup overwrite
