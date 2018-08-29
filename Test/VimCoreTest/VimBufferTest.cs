@@ -362,6 +362,36 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Closing the buffer while not processing input should raise InputClosed event.
+            /// </summary>
+            [WpfFact]
+            public void ExternalCloseShouldRaiseInputClosed()
+            {
+                var count = 0;
+                _vimBuffer.InputClosed += delegate { count++; };
+                _vimBuffer.Close();
+                Assert.Equal(1, count);
+            }
+            
+            /// <summary>
+            /// Closing the buffer while processing input should also raise InputClosed event.
+            /// </summary>
+            [WpfFact]
+            public void CloseCommandShouldRaiseInputClosed()
+            {
+                var count = 0;
+                _vimBuffer.InputClosed += delegate { count++; };
+                
+                var normal = CreateAndAddNormalMode(MockBehavior.Loose);
+                normal.Setup(x => x.Process(It.IsAny<KeyInput>()))
+                      .Callback(() => _vimBuffer.Close())
+                      .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process("Q");
+                Assert.Equal(1, count);
+            }
+            
+            /// <summary>
             /// Double close should throw
             /// </summary>
             [WpfFact]

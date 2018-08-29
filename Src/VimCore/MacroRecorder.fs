@@ -59,7 +59,7 @@ type internal MacroRecorder (_registerMap: IRegisterMap) =
         let bag = DisposableBag()
         buffer.KeyInputStart.Subscribe x.OnKeyInputStart |> bag.Add
         buffer.KeyInputEnd.Subscribe x.OnKeyInputEnd |> bag.Add
-        buffer.Closed.AddHandler (fun _ _ -> bag.DisposeAll())
+        buffer.InputClosed.AddHandler (fun _ _ -> bag.DisposeAll())
 
     member x.OnKeyInputStart _ = 
         _nestingDepth <- _nestingDepth + 1

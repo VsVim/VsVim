@@ -62,6 +62,32 @@ namespace Vim.UnitTest
                 Assert.Equal("dw", TestRegister.StringValue);
                 Assert.Equal("@c", _vimBuffer.GetRegister('a').StringValue);
             }
+
+            /// <summary>
+            /// Recording should capture final keystroke of a command that closes the current buffer.
+            /// Reported in issue #2356
+            /// </summary>
+            [WpfFact]
+            public void CloseBufferDuringRecord()
+            {
+                var textView2 = CreateTextView("another buffer");
+                var vimBuffer2 = Vim.CreateVimBuffer(textView2);
+                vimBuffer2.SwitchMode(ModeKind.Normal, ModeArgument.None);
+
+                Create("hello world");
+
+                // Stand-in for HostFactory which calls IVimBuffer.Close in response to the associated ITextView.Closed.
+                // The root cause of the referenced issue was that MacroRecorder disposed its buffer event handlers on IVimBuffer.Close.
+                // Since IVimBuffer.Close is raised before the final IVimBuffer.KeyInputEnd is raised, the last keystroke failed to record.
+                _textView.Closed += (s, e) => _vimBuffer.Close();
+
+                _vimBuffer.Process("qaZQ");
+                Assert.True(_vimBuffer.IsClosed);
+            
+                VimHost.FocusedTextView = textView2;
+                vimBuffer2.Process("q");
+                Assert.Equal("ZQ", _vimBuffer.GetRegister('a').StringValue);
+            }
         }
 
         public sealed class RunMacroTest : MacroIntegrationTest
