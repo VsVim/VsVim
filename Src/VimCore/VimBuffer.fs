@@ -205,7 +205,7 @@ type internal VimBuffer
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
     let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
-    let _inputClosedEvent = StandardEvent()
+    let _postClosedEvent = StandardEvent()
     let _bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
@@ -387,11 +387,11 @@ type internal VimBuffer
             _undoRedoOperations.Close()
             _jumpList.Clear()
             _closedEvent.Trigger x
-            if not x.IsProcessingInput then
-                _inputClosedEvent.Trigger x
         finally 
             _isClosed <- true
-
+            if not x.IsProcessingInput then
+                _postClosedEvent.Trigger x
+            
             // Stop listening to events
             _bag.DisposeAll()
 
@@ -646,7 +646,7 @@ type internal VimBuffer
         finally 
             _keyInputEndEvent.Trigger x args
             if _isClosed && not x.IsProcessingInput then
-                _inputClosedEvent.Trigger x
+                _postClosedEvent.Trigger x
 
     /// Process all of the buffered KeyInput values 
     member x.ProcessBufferedKeyInputs() = 
@@ -672,7 +672,10 @@ type internal VimBuffer
 
             keyInputSet.KeyInputs
             |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput |> ignore)
-
+ 
+            if _isClosed && not x.IsProcessingInput then
+                _postClosedEvent.Trigger x   
+    
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
         _errorMessageEvent.Trigger x args
@@ -796,7 +799,7 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
         [<CLIEvent>]
-        member x.InputClosed = _inputClosedEvent.Publish
+        member x.PostClosed = _postClosedEvent.Publish
 
     interface IVimBufferInternal with
         member x.TextView = _textView

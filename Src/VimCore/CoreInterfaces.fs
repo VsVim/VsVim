@@ -5228,11 +5228,11 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract Closed: IDelegateEvent<System.EventHandler>
 
-    /// Raised after the buffer is closed AND any pending KeyInputEnd has been raised.
-    /// A buffer can be closed internally (i.e. while processing its own keyboard input), which will raise Closed -> KeyInputEnd -> InputClosed.
-    /// It can also be closed externally, which will raise Closed -> InputClosed.
+    /// Raised after the buffer is closed AND all pending KeyInputEnd events have been raised.
+    /// A buffer can be closed internally (i.e. while processing its own keyboard input), which will raise Closed -> KeyInputEnd -> PostClosed.
+    /// It can also be closed externally, which will raise Closed -> PostClosed.
     [<CLIEvent>]
-    abstract InputClosed: IDelegateEvent<System.EventHandler>
+    abstract PostClosed: IDelegateEvent<System.EventHandler>
     
     inherit IPropertyOwner
 

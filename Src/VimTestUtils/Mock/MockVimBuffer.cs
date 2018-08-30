@@ -241,7 +241,7 @@ namespace Vim.UnitTest.Mock
         public event EventHandler<KeyInputStartEventArgs> KeyInputProcessing;
 
         public event EventHandler Closing;
-        public event EventHandler InputClosed;
+        public event EventHandler PostClosed;
 #pragma warning restore 67
 
         public event EventHandler Closed;
