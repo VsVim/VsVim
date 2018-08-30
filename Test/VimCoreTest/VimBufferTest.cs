@@ -390,8 +390,8 @@ namespace Vim.UnitTest
                                 {
                                     if (keyCount == 0)
                                     {
-                                        _vimBuffer.Process("Q");
                                         keyCount = 1;
+                                        _vimBuffer.Process("Q");
                                         Assert.Equal(0, count);
                                     }
                                     else
