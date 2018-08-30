@@ -190,7 +190,6 @@ type internal VimBuffer
     let _keyMap = _vim.KeyMap
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
-    let mutable _isInputClosed = false
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
@@ -389,17 +388,12 @@ type internal VimBuffer
             _jumpList.Clear()
             _closedEvent.Trigger x
             if not x.IsProcessingInput then
-                x.CloseInput()
+                _inputClosedEvent.Trigger x
         finally 
             _isClosed <- true
 
             // Stop listening to events
             _bag.DisposeAll()
-
-    member x.CloseInput () =
-        if not _isInputClosed then
-            _isInputClosed <- true
-            _inputClosedEvent.Trigger x
 
     /// Get the key mapping for the given KeyInputSet and KeyRemapMode.  This will take into
     /// account whether the buffer is currently in the middle of a count operation.  In this
@@ -651,8 +645,8 @@ type internal VimBuffer
 
         finally 
             _keyInputEndEvent.Trigger x args
-            if _isClosed then
-                x.CloseInput()
+            if _isClosed && not x.IsProcessingInput then
+                _inputClosedEvent.Trigger x
 
     /// Process all of the buffered KeyInput values 
     member x.ProcessBufferedKeyInputs() = 

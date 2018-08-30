@@ -381,10 +381,22 @@ namespace Vim.UnitTest
             {
                 var count = 0;
                 _vimBuffer.InputClosed += delegate { count++; };
-                
+
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
+
+                int keyCount = 0;
                 normal.Setup(x => x.Process(It.IsAny<KeyInput>()))
-                      .Callback(() => _vimBuffer.Close())
+                      .Callback(() =>
+                                {
+                                    if (keyCount == 0)
+                                    {
+                                        _vimBuffer.Process("Q");
+                                        keyCount = 1;
+                                        Assert.Equal(0, count);
+                                    }
+                                    else
+                                        _vimBuffer.Close();
+                                })
                       .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process("Q");
