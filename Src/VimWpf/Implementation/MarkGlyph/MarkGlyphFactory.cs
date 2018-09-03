@@ -28,6 +28,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 var foregroundBrush = textRunProperties.ForegroundBrush;
                 var typeface = textRunProperties.Typeface;
                 var fontSize = textRunProperties.FontRenderingEmSize;
+                var tooltip = $"VsVim Marks {chars}";
 
                 // Don't display any more than three mark characters.
                 if (chars.Length > 3)
@@ -52,6 +53,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     FontWeight = typeface.Weight,
                     FontStyle = typeface.Style,
                     FontSize = fontSize,
+                    ToolTip = tooltip,
                 };
 
                 return textBlock;
