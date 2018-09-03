@@ -362,6 +362,72 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Closing the buffer while not processing input should raise PostClosed event.
+            /// </summary>
+            [WpfFact]
+            public void ExternalCloseShouldRaisePostClosed()
+            {
+                var count = 0;
+                _vimBuffer.PostClosed += delegate { count++; };
+                _vimBuffer.Close();
+                Assert.Equal(1, count);
+            }
+            
+            /// <summary>
+            /// Closing the buffer while processing input should also raise PostClosed event.
+            /// </summary>
+            [WpfFact]
+            public void ProcessCloseCommandShouldRaisePostClosed()
+            {
+                var count = 0;
+                _vimBuffer.PostClosed += delegate { count++; };
+
+                var normal = CreateAndAddNormalMode(MockBehavior.Loose);
+
+                int keyCount = 0;
+                normal.Setup(x => x.Process(It.IsAny<KeyInput>()))
+                      .Callback(() =>
+                                {
+                                    if (keyCount == 0)
+                                    {
+                                        keyCount = 1;
+                                        _vimBuffer.Process("Q");
+                                        Assert.Equal(0, count);
+                                    }
+                                    else
+                                        _vimBuffer.Close();
+                                })
+                      .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process("Q");
+                Assert.Equal(1, count);
+            }
+            
+            /// <summary>
+            /// Closing the buffer while processing buffered key input should raise PostClosed event.
+            /// </summary>
+            [WpfFact]
+            public void ProcessBufferedCloseCommandShouldRaisePostClosed()
+            {
+                var count = 0;
+                _vimBuffer.PostClosed += delegate { count++; };
+
+                var normal = CreateAndAddNormalMode(MockBehavior.Loose);
+                normal.Setup(x => x.Process(It.Is<KeyInput>(k => k.Equals(KeyInputUtil.CharToKeyInput('A')))))
+                      .Callback(() => { _vimBuffer.Close(); })
+                      .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                
+                _vimBuffer.Vim.KeyMap.MapWithNoRemap("Q", "A", KeyRemapMode.Normal);
+                _vimBuffer.Vim.KeyMap.MapWithNoRemap("QQ", "B", KeyRemapMode.Normal);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                
+                _vimBuffer.Process("Q");
+                Assert.Equal(0, count);
+                _vimBuffer.ProcessBufferedKeyInputs();
+                Assert.Equal(1, count);
+            }
+            
+            /// <summary>
             /// Double close should throw
             /// </summary>
             [WpfFact]

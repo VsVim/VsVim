@@ -205,6 +205,7 @@ type internal VimBuffer
     let _statusMessageEvent = StandardEvent<StringEventArgs>()
     let _closingEvent = StandardEvent()
     let _closedEvent = StandardEvent()
+    let _postClosedEvent = StandardEvent()
     let _bufferName = _vim.VimHost.GetName _vimBufferData.TextBuffer
 
     do 
@@ -388,7 +389,9 @@ type internal VimBuffer
             _closedEvent.Trigger x
         finally 
             _isClosed <- true
-
+            if not x.IsProcessingInput then
+                _postClosedEvent.Trigger x
+            
             // Stop listening to events
             _bag.DisposeAll()
 
@@ -459,6 +462,9 @@ type internal VimBuffer
             let fixEndOfLineSetting = localSettings.FixEndOfLine
             if fixEndOfLineSetting then
                 TextViewUtil.InsertFinalNewLine textView
+
+    member x.IsProcessingInput
+        with get(): bool = _processingInputCount > 0
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
@@ -609,7 +615,7 @@ type internal VimBuffer
         // Raise the event that we received the key
         let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args
-
+        
         try
             if args.Handled then
                 // If one of the event handlers handled the KeyInput themselves then 
@@ -639,6 +645,8 @@ type internal VimBuffer
 
         finally 
             _keyInputEndEvent.Trigger x args
+            if _isClosed && not x.IsProcessingInput then
+                _postClosedEvent.Trigger x
 
     /// Process all of the buffered KeyInput values 
     member x.ProcessBufferedKeyInputs() = 
@@ -664,7 +672,10 @@ type internal VimBuffer
 
             keyInputSet.KeyInputs
             |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput |> ignore)
-
+ 
+            if _isClosed && not x.IsProcessingInput then
+                _postClosedEvent.Trigger x   
+    
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
         _errorMessageEvent.Trigger x args
@@ -724,7 +735,7 @@ type internal VimBuffer
         member x.IncrementalSearch = _incrementalSearch
         member x.InOneTimeCommand = x.InOneTimeCommand
         member x.IsClosed = _isClosed
-        member x.IsProcessingInput = _processingInputCount > 0
+        member x.IsProcessingInput = x.IsProcessingInput 
         member x.IsSwitchingMode = _modeMap.IsSwitchingMode
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
@@ -787,6 +798,8 @@ type internal VimBuffer
         member x.Closing = _closingEvent.Publish
         [<CLIEvent>]
         member x.Closed = _closedEvent.Publish
+        [<CLIEvent>]
+        member x.PostClosed = _postClosedEvent.Publish
 
     interface IVimBufferInternal with
         member x.TextView = _textView

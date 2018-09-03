@@ -5228,6 +5228,12 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract Closed: IDelegateEvent<System.EventHandler>
 
+    /// Raised after the buffer is closed AND all pending KeyInputEnd events have been raised.
+    /// A buffer can be closed internally (i.e. while processing its own keyboard input), which will raise Closed -> KeyInputEnd -> PostClosed.
+    /// It can also be closed externally, which will raise Closed -> PostClosed.
+    [<CLIEvent>]
+    abstract PostClosed: IDelegateEvent<System.EventHandler>
+    
     inherit IPropertyOwner
 
 /// Interface for a given Mode of Vim.  For example normal, insert, etc ...
