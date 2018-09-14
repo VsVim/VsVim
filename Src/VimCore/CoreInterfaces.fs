@@ -3006,6 +3006,9 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
+    /// Select the current block
+    | SelectBlock
+
     /// Select the current line
     | SelectLine
 
@@ -3154,6 +3157,7 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.SelectBlock -> None
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.SelectWord -> None
@@ -3261,8 +3265,14 @@ type VisualCommand =
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput: KeyInput
 
+    /// Select current block
+    | SelectBlock
+
     /// Select current line
     | SelectLine
+
+    /// Select current word
+    | SelectWord
 
     /// Shift the selected lines left
     | ShiftLinesLeft

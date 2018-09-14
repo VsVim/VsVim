@@ -37,7 +37,9 @@ type internal SelectMode
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
                 yield ("<C-a>", CommandFlags.Special, VisualCommand.SelectAll)
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWord)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))

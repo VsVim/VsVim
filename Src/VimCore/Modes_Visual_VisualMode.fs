@@ -103,7 +103,9 @@ type internal VisualMode
                 yield ("g<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection true)
                 yield ("g<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection true)
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWord)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
