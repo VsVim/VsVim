@@ -2779,7 +2779,9 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
+        | NormalCommand.SelectWord -> x.SelectWord()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3241,6 +3243,10 @@ type internal CommandUtil
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Select the current line
+    member x.SelectLine () =
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =
         let motion = Motion.NextMatch searchPath
@@ -3262,6 +3268,10 @@ type internal CommandUtil
             x.SwitchMode modeKind modeArgument
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Select the current word
+    member x.SelectWord () =
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text

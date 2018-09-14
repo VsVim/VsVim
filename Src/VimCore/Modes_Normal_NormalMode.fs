@@ -181,6 +181,8 @@ type internal NormalMode
                 yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWord)
+                yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))

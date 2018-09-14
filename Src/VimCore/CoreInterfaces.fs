@@ -3006,8 +3006,14 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
+    /// Select the current line
+    | SelectLine
+
     /// Select the next match for the last pattern searched for
     | SelectNextMatch of SearchPath: SearchPath
+
+    /// Select the current word
+    | SelectWord
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3148,7 +3154,9 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
+        | NormalCommand.SelectWord -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
