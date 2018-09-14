@@ -2840,6 +2840,7 @@ type internal CommandUtil
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
+        | VisualCommand.SelectLine -> x.SelectLine()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
@@ -3245,7 +3246,12 @@ type internal CommandUtil
 
     /// Select the current line
     member x.SelectLine () =
-        CommandResult.Completed ModeSwitch.NoSwitch
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectLine
+            else
+                ModeKind.VisualLine
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
 
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =

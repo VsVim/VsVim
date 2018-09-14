@@ -3261,6 +3261,9 @@ type VisualCommand =
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput: KeyInput
 
+    /// Select current line
+    | SelectLine
+
     /// Shift the selected lines left
     | ShiftLinesLeft
 
