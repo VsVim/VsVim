@@ -18,9 +18,10 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             _keyboardDevice = keyboardDevice;
         }
 
-        internal bool TryProcess(VimKey vimKey)
+        internal bool TryProcess(VimKey vimKey, int clickCount = 1)
         {
             var keyInput = KeyInputUtil.ApplyKeyModifiersToKey(vimKey, _keyboardDevice.KeyModifiers);
+            keyInput = KeyInputUtil.ApplyClickCount(keyInput, clickCount);
 
             // If the user has explicitly set the mouse to be <nop> then we don't want to report this as 
             // handled.  Otherwise it will swallow the mouse event and as a consequence disable other
@@ -71,19 +72,19 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             switch (e.ChangedButton)
             {
                 case MouseButton.Left:
-                    e.Handled = TryProcess(VimKey.LeftMouse);
+                    e.Handled = TryProcess(VimKey.LeftMouse, e.ClickCount);
                     break;
                 case MouseButton.Middle:
-                    e.Handled = TryProcess(VimKey.MiddleMouse);
+                    e.Handled = TryProcess(VimKey.MiddleMouse, e.ClickCount);
                     break;
                 case MouseButton.Right:
-                    e.Handled = TryProcess(VimKey.RightMouse);
+                    e.Handled = TryProcess(VimKey.RightMouse, e.ClickCount);
                     break;
                 case MouseButton.XButton1:
-                    e.Handled = TryProcess(VimKey.X1Mouse);
+                    e.Handled = TryProcess(VimKey.X1Mouse, e.ClickCount);
                     break;
                 case MouseButton.XButton2:
-                    e.Handled = TryProcess(VimKey.X2Mouse);
+                    e.Handled = TryProcess(VimKey.X2Mouse, e.ClickCount);
                     break;
             }
         }

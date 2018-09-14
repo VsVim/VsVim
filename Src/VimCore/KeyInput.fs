@@ -410,6 +410,15 @@ module KeyInputUtil =
         let keyInput = CharToKeyInput c
         ApplyKeyModifiers keyInput modifiers
 
+    let ApplyClickCount keyInput clickCount =
+        let modifiers =
+            match clickCount with
+            | 2 -> VimKeyModifiers.Double
+            | 3 -> VimKeyModifiers.Triple
+            | 4 -> VimKeyModifiers.Quadruple
+            | _ -> VimKeyModifiers.None
+        ApplyKeyModifiers keyInput modifiers
+
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  
         ApplyKeyModifiers keyInput VimKeyModifiers.Control

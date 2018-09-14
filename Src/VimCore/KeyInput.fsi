@@ -85,6 +85,9 @@ module KeyInputUtil =
     /// Apply the modifiers to the given VimKey
     val ApplyKeyModifiersToKey: vimKey: VimKey -> modifiers: VimKeyModifiers -> KeyInput
 
+    /// Apply a click count to the given key input
+    val ApplyClickCount: keyInput: KeyInput -> clickCount: int -> KeyInput
+
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput: c: char -> KeyInput
 
