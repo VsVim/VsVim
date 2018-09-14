@@ -3271,7 +3271,29 @@ type internal CommandUtil
 
     /// Select the current word
     member x.SelectWord () =
-        CommandResult.Completed ModeSwitch.NoSwitch
+        let motion = Motion.InnerWord WordKind.NormalWord
+        let argument = MotionArgument(MotionContext.Movement)
+        match _motionUtil.GetMotion motion argument with
+        | Some motionResult ->
+            let visualKind = VisualKind.Character
+            let startPoint = motionResult.Span.Start
+            let endPoint =
+                if motionResult.Span.Length > 0 then
+                    motionResult.Span.End
+                    |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                else
+                    motionResult.Span.End
+            let tabStop = _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode modeKind modeArgument
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text
