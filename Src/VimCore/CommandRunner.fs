@@ -410,7 +410,7 @@ type internal CommandRunner
             | None -> KeyRemapMode.None
             | Some bindData -> bindData.KeyRemapMode
         member x.DoesCommandStartWith keyInput =
-            let name = KeyInputSet.OneKeyInput keyInput
+            let name = KeyInputSet(keyInput)
             _commandMap
             |> Seq.filter (fun pair -> pair.Value.KeyInputSet.StartsWith name)
             |> SeqUtil.isNotEmpty
