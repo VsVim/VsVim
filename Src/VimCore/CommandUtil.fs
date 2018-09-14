@@ -3251,7 +3251,7 @@ type internal CommandUtil
                 ModeKind.SelectLine
             else
                 ModeKind.VisualLine
-        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
+        CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
 
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =
@@ -3478,7 +3478,7 @@ type internal CommandUtil
                     visualKind.SelectModeKind
                 else
                     visualKind.VisualModeKind
-            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
+            CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
 
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () =
