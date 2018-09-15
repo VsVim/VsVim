@@ -1093,7 +1093,7 @@ type internal CommandUtil
                 visualSpan.Start
             |> VirtualSnapshotPointUtil.OfPoint
         x.MoveCaretToMouse() |> ignore
-        let endPoint = _textView.Caret.Position.VirtualBufferPosition
+        let endPoint = x.CaretVirtualPoint
         _textView.Selection.Select(startPoint, endPoint)
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2007,7 +2007,7 @@ type internal CommandUtil
     member x.PutAfterCaretMouse() =
         if x.MoveCaretToMouse() then
 
-            // Run the put after command
+            // Run the put after command.
             let register = x.GetRegister (Some RegisterName.Unnamed)
             x.EditWithUndoTransaction "Put after mouse" (fun () ->
                 x.PutAfterCaretCore register.RegisterValue 1 false)
