@@ -1679,6 +1679,31 @@ namespace Vim.UnitTest
                     var span = new Span(_textBuffer.GetPoint(0), _textBuffer.CurrentSnapshot.Length);
                     Assert.Equal(span, _textView.GetSelectionSpan());
                 }
+
+                [WpfFact]
+                public void SelectInnerExpandAll()
+                {
+                    Create("<parent>", "<child>", "<grandchild />", "</child>", "</parent>");
+
+                    var initialPosition = _textBuffer.GetLineFromLineNumber(2).Start;
+                    _textView.MoveCaretTo(initialPosition);
+                    _vimBuffer.Process("vitat");
+                    Assert.Equal(_textBuffer.GetLineRange(1, 3).Extent, _textView.GetSelectionSpan());
+                }
+
+                [WpfFact]
+                public void EmptyTag_SelectInnerExpandInner()
+                {
+                    Create("<parent>", "<child>", "<grandchild></grandchild>", "</child>", "</parent>");
+
+                    var initialPosition = _textBuffer.GetLineSpan(2, "<grandchild>".Length - 1, 0).Start;
+                    _textView.MoveCaretTo(initialPosition);
+                    _vimBuffer.Process("vit");
+                    Assert.Equal(_textBuffer.GetLineSpan(2, "<grandchild>".Length, 1), _textView.GetSelectionSpan());
+
+                    _vimBuffer.Process("it");
+                    Assert.Equal(_textBuffer.GetLine(2).Extent, _textView.GetSelectionSpan());
+                }
             }
 
             public sealed class ExpandSelectionTest : TagBlockTest

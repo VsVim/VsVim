@@ -2017,7 +2017,11 @@ type internal MotionUtil
             let span = 
                 match kind with
                 | TagBlockKind.All -> tagBlock.FullSpan
-                | TagBlockKind.Inner -> tagBlock.InnerSpan
+                | TagBlockKind.Inner -> 
+                    if tagBlock.InnerSpan.IsEmpty && point.Position = tagBlock.InnerSpan.Start then
+                        tagBlock.FullSpan
+                    else
+                        tagBlock.InnerSpan
             let span = SnapshotSpan(x.CurrentSnapshot, span)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.SuppressAdjustment) |> Some
 
@@ -2028,7 +2032,11 @@ type internal MotionUtil
         | Some tagBlock -> 
             let span = 
                 match kind with
-                | TagBlockKind.All -> tagBlock.Parent |> Option.map (fun t -> t.FullSpan)
+                | TagBlockKind.All -> 
+                    if tagBlock.InnerSpan.Contains point.Position then
+                        Some tagBlock.FullSpan
+                    else
+                        tagBlock.Parent |> Option.map (fun t -> t.FullSpan)
                 | TagBlockKind.Inner ->
                     if tagBlock.InnerSpan.Contains point.Position then
                         Some tagBlock.FullSpan
