@@ -1,4 +1,5 @@
 ﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition;
 using System.Windows;
@@ -11,6 +12,7 @@ namespace Vim.UnitTest.Exports
     {
         public bool IsLeftButtonPressed { get; set; }
         public bool InDragOperationImpl { get; set; }
+        public VimPoint? Position { get; set; }
 
         bool IMouseDevice.IsLeftButtonPressed
         {
@@ -19,12 +21,21 @@ namespace Vim.UnitTest.Exports
 
         public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
-            return null;
+            return Position;
         }
 
         public bool InDragOperation(ITextView textView)
         {
             return InDragOperationImpl;
+        }
+
+        public void SetPosition(ITextView textView, SnapshotPoint point)
+        {
+            var textViewLine = textView.TextViewLines.GetTextViewLineContainingBufferPosition(point);
+            var bounds = textViewLine.GetCharacterBounds(point);
+            var xCoordinate = (bounds.Left + bounds.Right) / 2;
+            var yCoordinate = (textViewLine.Top + textViewLine.Bottom) / 2;
+            Position = new VimPoint(xCoordinate, yCoordinate);
         }
     }
 }

@@ -26,11 +26,13 @@ namespace Vim.UnitTest
             _textSelection = _textView.Selection;
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = true;
+            _testableMouseDevice.Position = null;
         }
 
         public override void Dispose()
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Position = null;
             base.Dispose();
         }
 
@@ -91,6 +93,32 @@ namespace Vim.UnitTest
                 Create("cat");
                 _vimBuffer.ProcessNotation("g<C-H>");
                 Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+            }
+
+            [WpfFact]
+            public void ExclusiveDoubleClick()
+            {
+                Create("cat dog bear", "");
+                _globalSettings.Selection = "exclusive";
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.SetPosition(_textView, point);
+                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void InclusiveDoubleClick()
+            {
+                Create("cat dog bear", "");
+                _globalSettings.Selection = "inclusive";
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.SetPosition(_textView, point);
+                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(6, _textView.GetCaretPoint().Position);
             }
         }
 
