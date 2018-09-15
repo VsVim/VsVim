@@ -2071,6 +2071,7 @@ type internal CommonOperations
 
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
+        member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()
         member x.Beep() = x.Beep()
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind

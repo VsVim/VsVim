@@ -1890,6 +1890,7 @@ type internal CommandUtil
 
     member x.NormalMoveCaretToMouse () =
         if x.MoveCaretToMouse() then
+            _commonOperations.AdjustCaretForVirtualEdit()
             CommandResult.Completed ModeSwitch.NoSwitch
         else
             CommandResult.Error

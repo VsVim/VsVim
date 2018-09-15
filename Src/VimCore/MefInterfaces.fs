@@ -338,6 +338,9 @@ type ICommonOperations =
     /// not the view port.  Make the caret consistent with the setting not the display 
     abstract AdjustCaretForScrollOffset: unit -> unit
 
+    /// Adjust the caret if it is past the end of line and 'virtualedit=onemore' is not set
+    abstract AdjustCaretForVirtualEdit: unit -> unit
+
     abstract member CloseWindowUnlessDirty: unit -> unit
 
     /// Create a possibly LineWise register value with the specified string value at the given 
