@@ -2782,6 +2782,7 @@ type internal CommandUtil
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
+        | NormalCommand.SelectText -> x.SelectText()
         | NormalCommand.SelectWord -> x.SelectWord()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
@@ -3286,6 +3287,17 @@ type internal CommandUtil
             x.SwitchMode modeKind modeArgument
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Select text between the caret and the mouse
+    member x.SelectText () =
+        let oldCaretPoint = x.CaretVirtualPoint
+        x.MoveCaretToMouse() |> ignore
+        let newCaretPoint = x.CaretVirtualPoint
+        let startPoint, endPoint =
+            VirtualSnapshotPointUtil.OrderAscending oldCaretPoint newCaretPoint
+        if startPoint <> endPoint then
+            _textView.Selection.Select(startPoint, endPoint)
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Select the current word
     member x.SelectWord () =

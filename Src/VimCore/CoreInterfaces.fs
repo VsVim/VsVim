@@ -3015,6 +3015,9 @@ type NormalCommand =
     /// Select the next match for the last pattern searched for
     | SelectNextMatch of SearchPath: SearchPath
 
+    /// Select text
+    | SelectText
+
     /// Select the current word
     | SelectWord
 
@@ -3160,6 +3163,7 @@ type NormalCommand =
         | NormalCommand.SelectBlock -> None
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
+        | NormalCommand.SelectText -> None
         | NormalCommand.SelectWord -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
