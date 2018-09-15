@@ -3252,6 +3252,9 @@ type VisualCommand =
     /// be special cased to invert the column only 
     | InvertSelection of ColumnOnlyInBlock: bool
 
+    /// Move the caret to the mouse position
+    | MoveCaretToMouse
+
     /// Move the caret to the result of the given Motion.  This movement is from a 
     /// text-object selection.  Certain motions 
     | MoveCaretToTextObject of Motion: Motion * TextObjectKind: TextObjectKind

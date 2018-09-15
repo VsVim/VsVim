@@ -36,6 +36,7 @@ type internal SelectMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
                 yield ("<C-a>", CommandFlags.Special, VisualCommand.SelectAll)
+                yield ("<LeftMouse>", CommandFlags.Special, VisualCommand.MoveCaretToMouse)
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
                 yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWord)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)

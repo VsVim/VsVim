@@ -1875,25 +1875,30 @@ type internal CommandUtil
 
     /// Move the caret to position of the mouse cursor
     member x.MoveCaretToMouse () =
-        match TextViewUtil.GetTextViewLines _textView with
-        | Some textViewLines ->
-            match _mouseDevice.GetPosition _textView with
-            | Some position ->
+        match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
+        | Some textViewLines, Some position ->
 
-                // Move the caret to the current mouse position.
-                let x = position.X + _textView.ViewportLeft
-                let y = position.Y + _textView.ViewportTop
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(y)
-                if textViewLine <> null then
-                    _textView.Caret.MoveTo(textViewLine, x) |> ignore
-                    CommandResult.Completed ModeSwitch.NoSwitch
-                else
-                    CommandResult.Error
-            | None ->
-                CommandResult.Error
-        | None ->
+            // Move the caret to the current mouse position.
+            let x = position.X + _textView.ViewportLeft
+            let y = position.Y + _textView.ViewportTop
+            let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(y)
+            if textViewLine <> null then
+                _textView.Caret.MoveTo(textViewLine, x) |> ignore
+            true
+        | _ ->
+            false
+
+    member x.NormalMoveCaretToMouse () =
+        if x.MoveCaretToMouse() then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
             CommandResult.Error
 
+    member x.VisualMoveCaretToMouse () =
+        if x.MoveCaretToMouse() then
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        else
+            CommandResult.Error
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
@@ -2000,15 +2005,14 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        match x.MoveCaretToMouse() with
-        | CommandResult.Completed _ ->
+        if x.MoveCaretToMouse() then
 
             // Run the put after command
             let register = x.GetRegister (Some RegisterName.Unnamed)
             x.EditWithUndoTransaction "Put after mouse" (fun () ->
                 x.PutAfterCaretCore register.RegisterValue 1 false)
             CommandResult.Completed ModeSwitch.NoSwitch
-        | _ ->
+        else
             CommandResult.Error
 
     /// Put the contents of the specified register before the cursor.  Used for the
@@ -2753,7 +2757,7 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
-        | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
+        | NormalCommand.MoveCaretToMouse -> x.NormalMoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
@@ -2837,6 +2841,7 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
+        | VisualCommand.MoveCaretToMouse -> x.VisualMoveCaretToMouse()
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
@@ -3250,21 +3255,35 @@ type internal CommandUtil
 
     /// Select the current block
     member x.SelectBlock () =
+        x.MoveCaretToMouse() |> ignore
         let modeKind =
             if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
                 ModeKind.SelectBlock
             else
                 ModeKind.VisualBlock
-        CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
+        let visualKind = VisualKind.Block
+        let startPoint = x.CaretPoint
+        let endPoint = x.CaretPoint
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
 
     /// Select the current line
     member x.SelectLine () =
+        x.MoveCaretToMouse() |> ignore
         let modeKind =
             if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
                 ModeKind.SelectLine
             else
                 ModeKind.VisualLine
-        CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
+        let visualKind = VisualKind.Line
+        let startPoint = x.CaretPoint
+        let endPoint = x.CaretPoint
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
 
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =
