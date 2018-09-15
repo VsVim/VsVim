@@ -12,7 +12,7 @@ namespace Vim.UnitTest.Exports
     {
         public bool IsLeftButtonPressed { get; set; }
         public bool InDragOperationImpl { get; set; }
-        public VimPoint? Position { get; set; }
+        public SnapshotPoint? Point { get; set; }
 
         bool IMouseDevice.IsLeftButtonPressed
         {
@@ -21,21 +21,21 @@ namespace Vim.UnitTest.Exports
 
         public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
-            return Position;
+            if (Point.HasValue)
+            {
+                var point = Point.Value;
+                var textViewLine = textView.TextViewLines.GetTextViewLineContainingBufferPosition(point);
+                var bounds = textViewLine.GetCharacterBounds(point);
+                var xCoordinate = bounds.Left - textView.ViewportLeft;
+                var yCoordinate = (textViewLine.Top + textViewLine.Bottom) / 2 - textView.ViewportTop;
+                return new VimPoint(xCoordinate, yCoordinate);
+            }
+            return null;
         }
 
         public bool InDragOperation(ITextView textView)
         {
             return InDragOperationImpl;
-        }
-
-        public void SetPosition(ITextView textView, SnapshotPoint point)
-        {
-            var textViewLine = textView.TextViewLines.GetTextViewLineContainingBufferPosition(point);
-            var bounds = textViewLine.GetCharacterBounds(point);
-            var xCoordinate = (bounds.Left + bounds.Right) / 2;
-            var yCoordinate = (textViewLine.Top + textViewLine.Bottom) / 2;
-            Position = new VimPoint(xCoordinate, yCoordinate);
         }
     }
 }
