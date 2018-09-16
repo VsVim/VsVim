@@ -184,6 +184,34 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void TokenDoubleClick()
+            {
+                Create("cat (dog) bear", "");
+                _globalSettings.Selection = "inclusive";
+                var point = _textView.GetPointInLine(0, 4); // open paren
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("(dog)", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(8, _textView.GetCaretPoint().Position); // close paren
+            }
+
+            [WpfFact]
+            public void DirectiveDoubleClick()
+            {
+                Create("cat", "#if DEBUG", "xyzzy", "#endif", "dog", "");
+                _globalSettings.Selection = "inclusive";
+                var startPoint = _textView.GetPointInLine(1, 0); // '#' in '#if'
+                _testableMouseDevice.Point = startPoint;
+                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                var range = SnapshotLineRange.CreateForLineNumberRange(_textView.TextSnapshot, 1, 3);
+                Assert.Equal(range.Value.ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+                var endPoint = _textView.GetPointInLine(3, 0); // '#' in '#endif'
+                Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
             public void TripleClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
