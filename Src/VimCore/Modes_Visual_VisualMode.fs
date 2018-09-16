@@ -102,6 +102,7 @@ type internal VisualMode
                 yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
                 yield ("g<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection true)
                 yield ("g<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection true)
+                yield ("<LeftMouse>", CommandFlags.Special, VisualCommand.MoveCaretToMouse)
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionToMouse)
                 yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)

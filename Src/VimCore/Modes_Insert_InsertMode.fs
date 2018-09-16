@@ -1001,19 +1001,26 @@ type internal InsertMode
                 let endPoint = _textView.Caret.Position.VirtualBufferPosition
                 if startPoint <> endPoint then
 
-                    // The drag moved far enough to encompass at least one character,
-                    // so select the text and let the selection change tracker choose
-                    // which mode we will go into.
+                    // The drag moved far enough to encompass at least one
+                    // character, so switch to select or visual mode.
                     _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-                    _textView.Selection.Select(startPoint, endPoint)
-                    ()
+                    let visualKind = VisualKind.Character
+                    let tabStop = _vimBuffer.LocalSettings.TabStop
+                    let visualSelection = VisualSelection.CreateForPoints visualKind startPoint.Position endPoint.Position tabStop
+                    let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+                    let modeKind =
+                        if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                            ModeKind.SelectCharacter
+                        else
+                            ModeKind.VisualCharacter
+                    let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint.Position)
+                    ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
+                else
+                    ProcessResult.Handled ModeSwitch.NoSwitch
             | _ ->
-                ()
+                ProcessResult.Handled ModeSwitch.NoSwitch
         | _ ->
-            ()
-
-        ProcessResult.Handled ModeSwitch.NoSwitch
-
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Left mouse up
     member x.LeftMouseUp keyInput =
