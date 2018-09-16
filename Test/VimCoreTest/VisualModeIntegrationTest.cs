@@ -1679,7 +1679,7 @@ namespace Vim.UnitTest
                     var span = new Span(_textBuffer.GetPoint(0), _textBuffer.CurrentSnapshot.Length);
                     Assert.Equal(span, _textView.GetSelectionSpan());
                 }
-
+                
                 [WpfFact]
                 public void SelectInnerExpandAll()
                 {
@@ -1691,15 +1691,18 @@ namespace Vim.UnitTest
                     Assert.Equal(_textBuffer.GetLineRange(1, 3).Extent, _textView.GetSelectionSpan());
                 }
 
-                [WpfFact]
-                public void EmptyTag_SelectInnerExpandInner()
+                [WpfTheory]
+                [InlineData("inclusive", 1)]
+                [InlineData("exclusive", 0)]
+                public void EmptyTag_SelectInnerExpandInner(string selectionSetting, int selectionLength)
                 {
                     Create("<parent>", "<child>", "<grandchild></grandchild>", "</child>", "</parent>");
+                    _globalSettings.Selection = selectionSetting;
 
                     var initialPosition = _textBuffer.GetLineSpan(2, "<grandchild>".Length - 1, 0).Start;
                     _textView.MoveCaretTo(initialPosition);
                     _vimBuffer.Process("vit");
-                    Assert.Equal(_textBuffer.GetLineSpan(2, "<grandchild>".Length, 1), _textView.GetSelectionSpan());
+                    Assert.Equal(_textBuffer.GetLineSpan(2, "<grandchild>".Length, selectionLength), _textView.GetSelectionSpan());
 
                     _vimBuffer.Process("it");
                     Assert.Equal(_textBuffer.GetLine(2).Extent, _textView.GetSelectionSpan());
