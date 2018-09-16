@@ -1229,7 +1229,7 @@ and IMotionUtil =
     abstract GetTextObject: motion: Motion -> point: SnapshotPoint -> MotionResult option
 
     /// Get the expanded tag point for the given tag block kind
-    abstract GetExpandedTagBlock: point: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
+    abstract GetExpandedTagBlock: startPoint: SnapshotPoint -> endPoint: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
 
 type ModeKind = 
     | Normal = 1

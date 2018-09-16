@@ -1788,7 +1788,7 @@ type internal CommandUtil
                 | None -> onError()
                 | Some motionResult -> setSelection motionResult.Span
             else
-                match _motionUtil.GetExpandedTagBlock visualSpan.Start kind with
+                match _motionUtil.GetExpandedTagBlock visualSpan.Start visualSpan.End kind with
                 | None -> onError()
                 | Some span -> setSelection span
 

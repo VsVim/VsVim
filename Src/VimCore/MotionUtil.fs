@@ -2026,24 +2026,27 @@ type internal MotionUtil
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true, motionResultFlags = MotionResultFlags.SuppressAdjustment) |> Some
 
     /// Get the expanded tag block based on the current kind and point
-    member x.GetExpandedTagBlock point kind = 
-        match TagBlockUtil.GetTagBlockForPoint point with
+    member x.GetExpandedTagBlock startPoint (endPoint: SnapshotPoint) kind: SnapshotSpan option = 
+        match TagBlockUtil.GetTagBlockForPoint startPoint with
         | None -> None
         | Some tagBlock -> 
             let span = 
                 match kind with
                 | TagBlockKind.All -> 
-                    if tagBlock.InnerSpan.Contains point.Position then
+                    if tagBlock.InnerSpan.Contains startPoint.Position then
                         Some tagBlock.FullSpan
                     else
                         tagBlock.Parent |> Option.map (fun t -> t.FullSpan)
                 | TagBlockKind.Inner ->
-                    if tagBlock.InnerSpan.Contains point.Position then
-                        Some tagBlock.FullSpan
+                    if tagBlock.InnerSpan.Contains startPoint.Position then
+                        if tagBlock.InnerSpan = Span.FromBounds(startPoint.Position, endPoint.Position) then
+                            Some tagBlock.FullSpan
+                        else
+                            Some tagBlock.InnerSpan
                     else
                         tagBlock.Parent |> Option.map (fun t -> if t.InnerSpan = tagBlock.FullSpan then t.FullSpan else t.InnerSpan)
 
-            span |> Option.map (fun s -> SnapshotSpan(point.Snapshot, s))
+            span |> Option.map (fun s -> SnapshotSpan(startPoint.Snapshot, s))
 
 
     /// An inner block motion is just the all block motion with the start and 
@@ -3240,4 +3243,4 @@ type internal MotionUtil
         member x.TextView = _textView
         member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
         member x.GetTextObject motion point = x.GetTextObject motion point
-        member x.GetExpandedTagBlock point kind = x.GetExpandedTagBlock point kind
+        member x.GetExpandedTagBlock startPoint endPoint kind = x.GetExpandedTagBlock startPoint endPoint kind

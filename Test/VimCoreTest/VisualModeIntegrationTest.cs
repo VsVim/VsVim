@@ -1680,8 +1680,21 @@ namespace Vim.UnitTest
                     Assert.Equal(span, _textView.GetSelectionSpan());
                 }
                 
+                [WpfTheory]
+                [InlineData("inclusive")]
+                [InlineData("exclusive")]
+                public void SelectPartialInnerExpandAll(string selectionSetting)
+                {
+                    Create("<a><b><c/></b></a>");
+                    _globalSettings.Selection = selectionSetting;
+
+                    _textView.MoveCaretTo("<a><b><c".Length);
+                    _vimBuffer.Process("vlit");
+                    Assert.Equal("<c/>", _textView.GetSelectionSpan().GetText());
+                }
+
                 [WpfFact]
-                public void SelectInnerExpandAll()
+                public void SelectFullInnerExpandAll()
                 {
                     Create("<parent>", "<child>", "<grandchild />", "</child>", "</parent>");
 
