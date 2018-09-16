@@ -95,6 +95,10 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
             }
 
+        }
+
+        public sealed class LeftMouseTest : SelectModeIntegrationTest
+        {
             [WpfFact]
             public void ExclusiveDrag()
             {
