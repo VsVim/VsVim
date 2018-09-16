@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             _globalSettings.SelectModeOptions = SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
             _textSelection = _textView.Selection;
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
-            _testableMouseDevice.IsLeftButtonPressed = true;
+            _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
         }
 

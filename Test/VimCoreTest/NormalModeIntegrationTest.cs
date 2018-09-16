@@ -32,6 +32,7 @@ namespace Vim.UnitTest
         protected INormalMode _normalMode;
         protected MockVimHost _vimHost;
         protected TestableClipboardDevice _clipboardDevice;
+        protected TestableMouseDevice _testableMouseDevice;
         protected bool _assertOnErrorMessage = true;
         protected bool _assertOnWarningMessage = true;
 
@@ -70,12 +71,45 @@ namespace Vim.UnitTest
             _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
             // for the Visual portion so we can root out any bad mixing of instances between
             // the two
             Assert.True(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            base.Dispose();
+        }
+
+        public sealed class LeftMouseTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void LeftMouse()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
+            }
+
+            [WpfFact]
+            public void LeftMouseOneMore()
+            {
+                Create("cat", "");
+                _globalSettings.VirtualEdit = "onemore";
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position); // after 't' in 'cat'
+            }
         }
 
         public sealed class MoveTest : NormalModeIntegrationTest

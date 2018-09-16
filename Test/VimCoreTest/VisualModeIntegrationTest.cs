@@ -45,7 +45,7 @@ namespace Vim.UnitTest
             ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
-            _testableMouseDevice.IsLeftButtonPressed = true;
+            _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
         }
 
