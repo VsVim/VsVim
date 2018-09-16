@@ -181,6 +181,18 @@ namespace Vim.UnitTest
                     _textView.GetSelectionSpan().GetText());
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
             }
+
+            [WpfFact]
+            public void QuadrupleClick()
+            {
+                Create("cat dog bear", "");
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse><3-LeftMouse><4-LeftMouse>");
+                Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
+                Assert.Equal("o", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
         }
 
         public sealed class SpecialKeysFromNormal : SelectModeIntegrationTest
