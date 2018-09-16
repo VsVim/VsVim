@@ -2788,7 +2788,7 @@ type internal CommandUtil
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SelectText -> x.SelectText()
-        | NormalCommand.SelectWord -> x.SelectWord()
+        | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -2850,7 +2850,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
         | VisualCommand.SelectLine -> x.SelectLine()
-        | VisualCommand.SelectWord -> x.SelectWord()
+        | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
@@ -3328,13 +3328,28 @@ type internal CommandUtil
         else
             CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Select the current word
-    member x.SelectWord () =
-        let motion = Motion.InnerWord WordKind.NormalWord
-        let argument = MotionArgument(MotionContext.Movement)
-        match _motionUtil.GetMotion motion argument with
+    /// Select the current word or matching token
+    member x.SelectWordOrMatchingToken () =
+        let text =
+            x.CaretPoint
+            |> SnapshotPointUtil.GetCharacterSpan
+            |> SnapshotSpanUtil.GetText
+        let result, isToken =
+            let isWord = text.Length = 1 && TextUtil.IsWordChar WordKind.NormalWord text.[0]
+            let argument = MotionArgument(MotionContext.Movement)
+            let motion = Motion.MatchingTokenOrDocumentPercent
+            match isWord, _motionUtil.GetMotion motion argument with
+            | false, Some motionResult -> 
+                Some motionResult, true
+            | _ ->
+                let motion = Motion.InnerWord WordKind.NormalWord
+                match _motionUtil.GetMotion motion argument with
+                | Some motionResult ->
+                    Some motionResult, false
+                | None ->
+                    None, false
+        match result with
         | Some motionResult ->
-            let visualKind = VisualKind.Character
             let startPoint = motionResult.Span.Start
             let endPoint =
                 if motionResult.Span.Length > 0 then
@@ -3342,14 +3357,20 @@ type internal CommandUtil
                     |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
                 else
                     motionResult.Span.End
+            let visualKind =
+                match isToken, text with
+                | true, "#" ->
+                    VisualKind.Line
+                | _ ->
+                    VisualKind.Character
             let tabStop = _localSettings.TabStop
             let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
             let modeKind =
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    ModeKind.SelectCharacter
+                    visualKind.SelectModeKind
                 else
-                    ModeKind.VisualCharacter
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+                    visualKind.VisualModeKind
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some endPoint)
             x.SwitchMode modeKind modeArgument
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch

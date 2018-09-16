@@ -3018,8 +3018,8 @@ type NormalCommand =
     /// Select text
     | SelectText
 
-    /// Select the current word
-    | SelectWord
+    /// Select the current word or matching token
+    | SelectWordOrMatchingToken
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3164,7 +3164,7 @@ type NormalCommand =
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.SelectText -> None
-        | NormalCommand.SelectWord -> None
+        | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3278,8 +3278,8 @@ type VisualCommand =
     /// Select current line
     | SelectLine
 
-    /// Select current word
-    | SelectWord
+    /// Select current word or matching token
+    | SelectWordOrMatchingToken
 
     /// Shift the selected lines left
     | ShiftLinesLeft
