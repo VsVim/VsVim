@@ -204,6 +204,16 @@ type internal SelectMode
                         | BindResult.NeedMoreInput _ ->
                             ProcessResult.HandledNeedMoreInput
                         | BindResult.Complete commandRanData ->
+                            match commandRanData.CommandResult with
+                            | CommandResult.Error ->
+                                _selectionTracker.UpdateSelection()
+                            | CommandResult.Completed modeSwitch ->
+                                match modeSwitch with
+                                | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                                | ModeSwitch.SwitchMode _ -> ()
+                                | ModeSwitch.SwitchModeWithArgument _ -> ()
+                                | ModeSwitch.SwitchPreviousMode -> ()
+                                | ModeSwitch.SwitchModeOneTimeCommand _ -> ()
                             ProcessResult.OfCommandResult commandRanData.CommandResult
                         | BindResult.Error ->
                             _commonOperations.Beep()
