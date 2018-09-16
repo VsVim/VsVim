@@ -3310,14 +3310,23 @@ type internal CommandUtil
 
     /// Select text between the caret and the mouse
     member x.SelectText () =
-        let oldCaretPoint = x.CaretVirtualPoint
+        let startPoint = x.CaretPoint
         x.MoveCaretToMouse() |> ignore
-        let newCaretPoint = x.CaretVirtualPoint
-        let startPoint, endPoint =
-            VirtualSnapshotPointUtil.OrderAscending oldCaretPoint newCaretPoint
+        let endPoint = x.CaretPoint
         if startPoint <> endPoint then
-            _textView.Selection.Select(startPoint, endPoint)
-        CommandResult.Completed ModeSwitch.NoSwitch
+            let visualKind = VisualKind.Character
+            let tabStop = _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+            x.SwitchMode modeKind modeArgument
+        else
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Select the current word
     member x.SelectWord () =
