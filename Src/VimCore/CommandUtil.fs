@@ -1877,11 +1877,28 @@ type internal CommandUtil
     member x.MoveCaretToMouse () =
         match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
         | Some textViewLines, Some position ->
-
-            // Move the caret to the current mouse position.
             let x = position.X + _textView.ViewportLeft
             let y = position.Y + _textView.ViewportTop
             let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(y)
+
+            // Avoid the phantom line.
+            let textViewLine =
+                if textViewLine <> null then
+                    let isPhantomLine =
+                        textViewLine.Start
+                        |> SnapshotPointUtil.GetContainingLine
+                        |> SnapshotLineUtil.IsPhantomLine
+                    if isPhantomLine then
+                        let index = textViewLines.GetIndexOfTextLine textViewLine
+                        if index > 0 then
+                            textViewLines.[index - 1]
+                        else
+                            textViewLine
+                    else
+                        textViewLine
+                else
+                    textViewLine
+
             if textViewLine <> null then
                 _textView.Caret.MoveTo(textViewLine, x) |> ignore
             true
