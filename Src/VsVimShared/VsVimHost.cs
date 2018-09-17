@@ -21,6 +21,7 @@ using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -147,6 +148,7 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
+        private readonly ICSharpScriptExecutor _cSharpScriptExecutor;
         private IVim _vim;
 
         internal _DTE DTE
@@ -202,7 +204,8 @@ namespace Vim.VisualStudio
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             SVsServiceProvider serviceProvider,
-            ITelemetryProvider telemetryProvider)
+            ITelemetryProvider telemetryProvider,
+            [Import(AllowDefault = true)]ICSharpScriptExecutor cSharpScriptExecutor)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -217,6 +220,7 @@ namespace Vim.VisualStudio
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
+            _cSharpScriptExecutor = cSharpScriptExecutor;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
@@ -646,6 +650,17 @@ namespace Vim.VisualStudio
         public override void Quit()
         {
             _dte.Quit();
+        }
+
+        public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        {
+            if (_cSharpScriptExecutor == null)
+            {
+                _vim.ActiveStatusUtil.OnError(global::Vim.VisualStudio.Properties.Resource.CsxNotSupported);
+                return;
+            }
+
+            _cSharpScriptExecutor.Execute(callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)

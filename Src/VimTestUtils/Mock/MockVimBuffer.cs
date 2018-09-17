@@ -163,6 +163,11 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
+        public ProcessResult ProcessFromScript(KeyInput value)
+        {
+            throw new NotImplementedException();
+        }
+
         public IRegisterMap RegisterMap
         {
             get { throw new NotImplementedException(); }

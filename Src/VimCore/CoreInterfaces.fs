@@ -4588,6 +4588,9 @@ type IVimHost =
     /// output
     abstract RunCommand: workingDirectory: string -> file: string -> arguments: string -> input: string -> RunCommandResults
 
+    /// Run C# Script
+    abstract RunCSharpScript: callInfo: CallInfo -> createEachTime: bool -> unit
+
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit
 
@@ -5135,6 +5138,9 @@ and IVimBuffer =
 
     /// Process all of the buffered KeyInput values.
     abstract ProcessBufferedKeyInputs: unit -> unit
+
+    /// Process from C# script
+    abstract ProcessFromScript: KeyInput -> ProcessResult
 
     /// Can the passed in KeyInput be processed by the current state of IVimBuffer.  The
     /// provided KeyInput will participate in remapping based on the current mode

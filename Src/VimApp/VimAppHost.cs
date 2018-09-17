@@ -12,6 +12,7 @@ using Vim.UI.Wpf;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace VimApp
 {
@@ -280,6 +281,11 @@ namespace VimApp
                 }
             }
             return false;
+        }
+
+        public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        {
+            throw new NotImplementedException();
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)

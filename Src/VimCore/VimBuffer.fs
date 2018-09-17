@@ -675,7 +675,23 @@ type internal VimBuffer
  
             if _isClosed && not x.IsProcessingInput then
                 _postClosedEvent.Trigger x   
-    
+
+    /// Process from C# script
+    member x.ProcessFromScript (keyInput: KeyInput) =
+
+        try
+            let keyInputSet = 
+                match _bufferedKeyInput with
+                | None -> KeyInputSet(keyInput)
+                | Some bufferedKeyInputSet -> bufferedKeyInputSet.Add keyInput
+            _bufferedKeyInput <- None
+
+            x.ProcessCore keyInputSet
+
+        finally 
+            if _isClosed && not x.IsProcessingInput then
+                _postClosedEvent.Trigger x
+
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
         _errorMessageEvent.Trigger x args
@@ -769,6 +785,7 @@ type internal VimBuffer
         member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.Process keyInput = x.Process keyInput
         member x.ProcessBufferedKeyInputs() = x.ProcessBufferedKeyInputs()
+        member x.ProcessFromScript keyInput = x.ProcessFromScript keyInput
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode() = x.SwitchPreviousMode()
         member x.SimulateProcessed keyInput = x.SimulateProcessed keyInput
