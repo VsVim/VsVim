@@ -35,7 +35,7 @@ namespace Vim.VisualStudio.Specific
                 if (!TryGetScript(vim, callInfo.Name, createEachTime, out script))
                     return;
 
-                var globals = new CSharptScripGlobals(callInfo, vim);
+                var globals = new CSharptScriptGlobals(callInfo, vim);
                 script.RunAsync(globals).Wait();
             }
             catch (CompilationErrorException ex)
@@ -110,7 +110,7 @@ namespace Vim.VisualStudio.Specific
             if (_scriptOptions == null)
                 _scriptOptions = GetScriptOptions(scriptPath);
 
-            script = CSharpScript.Create(File.ReadAllText(scriptFilePath), _scriptOptions, typeof(CSharptScripGlobals));
+            script = CSharpScript.Create(File.ReadAllText(scriptFilePath), _scriptOptions, typeof(CSharptScriptGlobals));
             _scripts[scriptName] = script;
             return true;
         }
