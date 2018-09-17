@@ -1231,6 +1231,108 @@ namespace Vim.UnitTest
                 }
             }
 
+            public sealed class SurrogatePairTest: BlockInsertTest
+            {
+                /// <summary>
+                /// Block insert should not be splitting surrogate pairs into spaces as it does for non-surrogate
+                /// pairs which comprise multiple spaces.
+                /// </summary>
+                [WpfFact]
+                public void MiddleOfSurrogatePair()
+                {
+                    const string alien = "\U0001F47D"; // 👽
+                    Create(
+                        "dogs",
+                        $"{alien}{alien}{alien}",
+                        "trees");
+                    _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
+                    Assert.Equal(
+                        new[]
+                        {
+                            "d#ogs",
+                            $"#{alien}{alien}{alien}",
+                            "t#rees"
+                        },
+                        _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void MiddleOfSurrogatePairNonFirstColumn()
+                {
+                    const string alien = "\U0001F47D"; // 👽
+                    Create(
+                        "dogs",
+                        $"{alien}{alien}{alien}",
+                        "trees");
+                    _vimBuffer.ProcessNotation(@"lll<C-q>jjI#<Esc>");
+                    Assert.Equal(
+                        new[]
+                        {
+                            "dog#s",
+                            $"{alien}#{alien}{alien}",
+                            "tre#es"
+                        },
+                        _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void Normal()
+                {
+                    const string alien = "\U0001F47D"; // 👽
+                    Create(
+                        "doggies",
+                        $"{alien}{alien}{alien}",
+                        "trees");
+                    _vimBuffer.ProcessNotation(@"ll<C-q>jjI#<Esc>");
+                    Assert.Equal(
+                        new[]
+                        {
+                            "do#ggies",
+                            $"{alien}#{alien}{alien}",
+                            "tr#ees"
+                        },
+                        _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void EndOfLine()
+                {
+                    const string alien = "\U0001F47D"; // 👽
+                    Create(
+                        "dos",
+                        $"{alien}",
+                        "bi");
+                    _vimBuffer.ProcessNotation(@"ll<C-q>jjIg<Esc>");
+                    Assert.Equal(
+                        new[]
+                        {
+                            "dogs",
+                            $"{alien}g",
+                            "big",
+                        },
+                        _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void StartingOnSurrogatePair()
+                {
+                    const string alien = "\U0001F47D"; // 👽
+                    Create(
+                        $"{alien}{alien}{alien}",
+                        "dogs",
+                        "trees");
+                    _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
+                    Assert.Equal(
+                        new[]
+                        {
+                            $"{alien}#{alien}{alien}",
+                            "do#gs",
+                            "tr#ees",
+                        },
+                        _textBuffer.GetLines());
+                }
+            }
+
             public sealed class InsertTabTest : BlockInsertTest
             {
                 /// <summary>

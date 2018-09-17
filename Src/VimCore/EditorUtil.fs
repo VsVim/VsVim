@@ -317,6 +317,8 @@ type SnapshotCodePoint =
 
     member x.IsInsideLineBreakOrEnd = x.IsEndPoint || x.IsInsideLineBreak
 
+    member x.IsSurrogatePair = x.CodePointInfo = CodePointInfo.SurrogatePairHighCharacter
+
     /// Is the unicode character at this point represented by the specified value? This will only match
     /// for characters in the BMP plane.
     member x.IsCharacter(c: char) = 
@@ -896,6 +898,8 @@ and [<Struct>] [<StructuralEquality>] [<NoComparison>] [<DebuggerDisplay("{ToStr
 
     /// The SnapshotColumn in which this overlap occurs
     member x.Column: SnapshotColumn = x._column
+
+    member x.CodePoint = x.Column.CodePoint
 
     member x.Line = x.Column.Line
 
