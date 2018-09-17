@@ -4,7 +4,7 @@ using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
 {
-    public class CSharptScriptGlobals
+    public class CSharpScriptGlobals
     {
         public string Name { get; } = string.Empty;
         public string Arguments { get; } = string.Empty;
@@ -12,7 +12,7 @@ namespace Vim.VisualStudio.Specific
         public bool IsScriptLocal { get; } = false;
         public IVim Vim { get; } = null;
 
-        public CSharptScriptGlobals(CallInfo callInfo, IVim vim)
+        public CSharpScriptGlobals(CallInfo callInfo, IVim vim)
         {
             Name = callInfo.Name;
             Arguments = callInfo.Arguments;
