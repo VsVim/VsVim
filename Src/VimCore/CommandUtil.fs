@@ -102,6 +102,9 @@ type internal CommandUtil
 
     let mutable _inRepeatLastChange = false
 
+    /// The last mouse down position before it was adjusted for virtual edit
+    let mutable (_leftMouseDownPoint: SnapshotPoint option) = None
+
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -1907,6 +1910,7 @@ type internal CommandUtil
 
     member x.NormalMoveCaretToMouse () =
         if x.MoveCaretToMouse() then
+            _leftMouseDownPoint <- Some x.CaretPoint
             _commonOperations.AdjustCaretForVirtualEdit()
             CommandResult.Completed ModeSwitch.NoSwitch
         else
@@ -3327,7 +3331,12 @@ type internal CommandUtil
 
     /// Select text between the caret and the mouse
     member x.SelectText () =
-        let startPoint = x.CaretPoint
+        let startPoint =
+            match _leftMouseDownPoint with
+            | Some point when point.Snapshot = _textView.TextSnapshot ->
+                point
+            | _ ->
+                x.CaretPoint
         x.MoveCaretToMouse() |> ignore
         let endPoint = x.CaretPoint
         if startPoint <> endPoint then
@@ -3343,6 +3352,7 @@ type internal CommandUtil
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
             x.SwitchMode modeKind modeArgument
         else
+            _commonOperations.AdjustCaretForVirtualEdit()
             CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Select the current word or matching token
