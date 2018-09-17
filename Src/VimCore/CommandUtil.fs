@@ -1918,6 +1918,7 @@ type internal CommandUtil
 
     member x.VisualMoveCaretToMouse () =
         if x.MoveCaretToMouse() then
+            _leftMouseDownPoint <- Some x.CaretPoint
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
         else
             CommandResult.Error
