@@ -94,6 +94,7 @@ module KeyNotationUtil =
         |> Map.ofSeq
 
     /// Table of key modifier notation prefixes
+    /// (see ':help double-click' for 2/3/4)
     let ModifierNotationTable =
         [|
             VimKeyModifiers.Control, "C";
