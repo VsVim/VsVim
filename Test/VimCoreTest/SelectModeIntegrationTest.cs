@@ -282,8 +282,8 @@ namespace Vim.UnitTest
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse><3-LeftMouse>");
                 Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
-                Assert.Equal("pig horse bat" + Environment.NewLine,
-                    _textView.GetSelectionSpan().GetText());
+                Assert.Equal(_textBuffer.GetLineRange(1).ExtentIncludingLineBreak,
+                    _textView.GetSelectionSpan());
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
             }
 

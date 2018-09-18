@@ -186,6 +186,78 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void ExclusiveShiftClick()
+            {
+                Create("cat dog bear", "");
+                _globalSettings.Selection = "exclusive";
+                var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
+                _testableMouseDevice.Point = startPoint;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
+                var endPoint = _textView.GetPointInLine(0, 7); // ' ' after 'dog'
+                _testableMouseDevice.Point = endPoint;
+                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void InclusiveShiftClick()
+            {
+                Create("cat dog bear", "");
+                _globalSettings.Selection = "inclusive";
+                var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
+                _testableMouseDevice.Point = startPoint;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
+                var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
+                _testableMouseDevice.Point = endPoint;
+                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void InsertShiftClick()
+            {
+                Create("cat dog bear", "");
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
+                _testableMouseDevice.Point = startPoint;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
+                var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
+                _testableMouseDevice.Point = endPoint;
+                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
+                _testableMouseDevice.Point = startPoint;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
+                Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind); // back to insert
+            }
+
+            [WpfFact]
+            public void LinewiseShiftClick()
+            {
+                Create("cat dog bear", "pig horse bat", "");
+                _vimBuffer.ProcessNotation("V");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                Assert.Equal(_textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
+                    _textView.GetSelectionSpan());
+                var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textView.GetSelectionSpan());
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
             public void ExclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
@@ -247,8 +319,8 @@ namespace Vim.UnitTest
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse><3-LeftMouse>");
                 Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
-                Assert.Equal("pig horse bat" + Environment.NewLine,
-                    _textView.GetSelectionSpan().GetText());
+                Assert.Equal(_textBuffer.GetLineRange(1).ExtentIncludingLineBreak,
+                    _textView.GetSelectionSpan());
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
             }
 
