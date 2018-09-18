@@ -158,7 +158,7 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void DragFromInsert()
+            public void InsertDrag()
             {
                 Create("cat dog bear", "");
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);

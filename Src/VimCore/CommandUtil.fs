@@ -2804,6 +2804,7 @@ type internal CommandUtil
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SelectText -> x.SelectText()
+        | NormalCommand.SelectTextWithDrag -> x.SelectTextWithDrag()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
@@ -3326,6 +3327,11 @@ type internal CommandUtil
 
     /// Select text between the caret and the mouse
     member x.SelectText () =
+        _leftMouseDownPoint <- None
+        x.SelectTextWithDrag()
+
+    /// Select text between the caret and the mouse while dragging the mouse
+    member x.SelectTextWithDrag () =
         let startPoint =
             match _leftMouseDownPoint with
             | Some point when point.Snapshot = _textView.TextSnapshot ->

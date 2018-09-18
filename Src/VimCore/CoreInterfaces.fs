@@ -3018,6 +3018,9 @@ type NormalCommand =
     /// Select text
     | SelectText
 
+    /// Select text as part of a drag operation
+    | SelectTextWithDrag
+
     /// Select the current word or matching token
     | SelectWordOrMatchingToken
 
@@ -3164,6 +3167,7 @@ type NormalCommand =
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.SelectText -> None
+        | NormalCommand.SelectTextWithDrag -> None
         | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
