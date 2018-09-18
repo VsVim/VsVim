@@ -103,7 +103,7 @@ type internal CommandUtil
     let mutable _inRepeatLastChange = false
 
     /// The last mouse down position before it was adjusted for virtual edit
-    let mutable (_leftMouseDownPoint: SnapshotPoint option) = None
+    let mutable _leftMouseDownPoint: SnapshotPoint option = None
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
