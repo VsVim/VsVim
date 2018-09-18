@@ -1089,10 +1089,8 @@ type internal CommandUtil
 
     /// Extend the selection to the mouse
     member x.ExtendSelectionToMouse (visualSpan: VisualSpan) =
-        if x.MoveCaretToMouse() then
-            CommandResult.Completed ModeSwitch.NoSwitch
-        else
-            CommandResult.Error
+        x.MoveCaretToMouseIfChanged() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get a line range specifier
     member x.GetLineRangeSpecifier (lineRange: SnapshotLineRange) =
@@ -1872,11 +1870,32 @@ type internal CommandUtil
 
     /// Move the caret to position of the mouse cursor
     member x.MoveCaretToMouse () =
+        match x.CaretMousePoint with
+        | Some point ->
+            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+            _leftMouseDownPoint <- Some x.CaretPoint
+            true
+        | None ->
+            false
+
+    /// Move the caret to the position of the mouse cursor if
+    /// the position is different than the previous one
+    member x.MoveCaretToMouseIfChanged () =
+        match x.LeftMouseDownPoint, x.CaretMousePoint with
+        | Some startPoint, Some endPoint ->
+            if startPoint <> endPoint then
+                x.MoveCaretToMouse() |> ignore
+            true
+        | _ ->
+            false
+
+    /// The snapshot point in the buffer under the mouse cursor
+    member x.CaretMousePoint =
         match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
         | Some textViewLines, Some position ->
-            let x = position.X + _textView.ViewportLeft
-            let y = position.Y + _textView.ViewportTop
-            let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(y)
+            let xCoordinate = position.X + _textView.ViewportLeft
+            let yCoordinate = position.Y + _textView.ViewportTop
+            let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
 
             // Avoid the phantom line.
             let textViewLine =
@@ -1897,14 +1916,22 @@ type internal CommandUtil
                     textViewLine
 
             if textViewLine <> null then
-                _textView.Caret.MoveTo(textViewLine, x) |> ignore
-            true
+                textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
+                |> NullableUtil.ToOption
+            else
+                None
         | _ ->
-            false
+            None
+
+    member x.LeftMouseDownPoint =
+        match _leftMouseDownPoint with
+        | Some startPoint when startPoint.Snapshot = _textView.TextSnapshot ->
+            Some startPoint
+        | _ ->
+            None
 
     member x.NormalMoveCaretToMouse () =
         if x.MoveCaretToMouse() then
-            _leftMouseDownPoint <- Some x.CaretPoint
             _commonOperations.AdjustCaretForVirtualEdit()
             CommandResult.Completed ModeSwitch.NoSwitch
         else
@@ -1912,7 +1939,6 @@ type internal CommandUtil
 
     member x.VisualMoveCaretToMouse () =
         if x.MoveCaretToMouse() then
-            _leftMouseDownPoint <- Some x.CaretPoint
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
         else
             CommandResult.Error
@@ -3327,34 +3353,34 @@ type internal CommandUtil
 
     /// Select text between the caret and the mouse
     member x.SelectText () =
-        _leftMouseDownPoint <- None
-        x.SelectTextWithDrag()
-
-    /// Select text between the caret and the mouse while dragging the mouse
-    member x.SelectTextWithDrag () =
-        let startPoint =
-            match _leftMouseDownPoint with
-            | Some point when point.Snapshot = _textView.TextSnapshot ->
-                point
-            | _ ->
-                x.CaretPoint
+        let startPoint = x.CaretPoint
         x.MoveCaretToMouse() |> ignore
-        let endPoint = x.CaretPoint
-        if startPoint <> endPoint then
-            let visualKind = VisualKind.Character
-            let tabStop = _localSettings.TabStop
-            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
-            let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    ModeKind.SelectCharacter
-                else
-                    ModeKind.VisualCharacter
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
-            x.SwitchMode modeKind modeArgument
-        else
-            _commonOperations.AdjustCaretForVirtualEdit()
+        x.SelectTextCore startPoint
+
+    /// Select text between the mouse down point and the mouse while dragging the mouse
+    member x.SelectTextWithDrag () =
+        match x.LeftMouseDownPoint with
+        | Some startPoint ->
+            if x.MoveCaretToMouseIfChanged() then
+                x.SelectTextCore startPoint
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
+        | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    member x.SelectTextCore startPoint =
+        let endPoint = x.CaretPoint
+        let visualKind = VisualKind.Character
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectCharacter
+            else
+                ModeKind.VisualCharacter
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
 
     /// Select the current word or matching token
     member x.SelectWordOrMatchingToken () =
