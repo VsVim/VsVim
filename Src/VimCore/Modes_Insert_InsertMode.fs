@@ -335,6 +335,7 @@ type internal InsertMode
                 ("<LeftMouse>", RawInsertCommand.CustomCommand this.LeftMouseDown)
                 ("<LeftDrag>", RawInsertCommand.CustomCommand this.LeftMouseDrag)
                 ("<LeftRelease>", RawInsertCommand.CustomCommand this.LeftMouseUp)
+                ("<S-LeftMouse>", RawInsertCommand.CustomCommand this.ShiftLeftMouseDown)
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -423,6 +424,9 @@ type internal InsertMode
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
@@ -984,7 +988,7 @@ type internal InsertMode
         match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
         | CommandResult.Completed _ ->
             x.BreakUndoSequence "Set cursor position"
-            let position = _textView.Caret.Position.VirtualBufferPosition
+            let position = x.CaretVirtualPoint
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.LeftMouseDown position }
         | _ ->
             ()
@@ -998,23 +1002,13 @@ type internal InsertMode
         | ActiveEditItem.LeftMouseDown startPoint ->
             match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
             | CommandResult.Completed _ ->
-                let endPoint = _textView.Caret.Position.VirtualBufferPosition
+                let endPoint = x.CaretVirtualPoint
                 if startPoint <> endPoint then
+                    _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
                     // The drag moved far enough to encompass at least one
                     // character, so switch to select or visual mode.
-                    _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-                    let visualKind = VisualKind.Character
-                    let tabStop = _vimBuffer.LocalSettings.TabStop
-                    let visualSelection = VisualSelection.CreateForPoints visualKind startPoint.Position endPoint.Position tabStop
-                    let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-                    let modeKind =
-                        if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                            ModeKind.SelectCharacter
-                        else
-                            ModeKind.VisualCharacter
-                    let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint.Position)
-                    ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
+                    x.SelectText startPoint endPoint
                 else
                     ProcessResult.Handled ModeSwitch.NoSwitch
             | _ ->
@@ -1033,6 +1027,31 @@ type internal InsertMode
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Shift left mouse down
+    member x.ShiftLeftMouseDown keyInput =
+        let startPoint = x.CaretVirtualPoint
+        match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
+        | CommandResult.Completed _ ->
+            let endPoint = x.CaretVirtualPoint
+            x.SelectText startPoint endPoint
+        | _ ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Select the text between start point and end point
+    member x.SelectText startPoint endPoint =
+        let visualKind = VisualKind.Character
+        let tabStop = _vimBuffer.LocalSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint.Position endPoint.Position tabStop
+        let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectCharacter
+            else
+                ModeKind.VisualCharacter
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint.Position)
+        ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
+
+    /// Return the 
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 

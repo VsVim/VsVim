@@ -1089,16 +1089,10 @@ type internal CommandUtil
 
     /// Extend the selection to the mouse
     member x.ExtendSelectionToMouse (visualSpan: VisualSpan) =
-        let startPoint =
-            if x.CaretPoint = visualSpan.Start then
-                visualSpan.End
-            else
-                visualSpan.Start
-            |> VirtualSnapshotPointUtil.OfPoint
-        x.MoveCaretToMouse() |> ignore
-        let endPoint = x.CaretVirtualPoint
-        _textView.Selection.Select(startPoint, endPoint)
-        CommandResult.Completed ModeSwitch.NoSwitch
+        if x.MoveCaretToMouse() then
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Error
 
     /// Get a line range specifier
     member x.GetLineRangeSpecifier (lineRange: SnapshotLineRange) =
