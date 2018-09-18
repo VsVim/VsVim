@@ -2829,8 +2829,8 @@ type internal CommandUtil
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
-        | NormalCommand.SelectText -> x.SelectText()
-        | NormalCommand.SelectTextWithDrag -> x.SelectTextWithDrag()
+        | NormalCommand.SelectTextFromCaretToMouse -> x.SelectTextFromCaretToMouse()
+        | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
@@ -3351,14 +3351,14 @@ type internal CommandUtil
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Select text between the caret and the mouse
-    member x.SelectText () =
+    /// Select text from the caret to the mouse
+    member x.SelectTextFromCaretToMouse () =
         let startPoint = x.CaretPoint
         x.MoveCaretToMouse() |> ignore
         x.SelectTextCore startPoint
 
-    /// Select text between the mouse down point and the mouse while dragging the mouse
-    member x.SelectTextWithDrag () =
+    /// Select text for a mouse drag event
+    member x.SelectTextForMouseDrag () =
         match x.LeftMouseDownPoint with
         | Some startPoint ->
             if x.MoveCaretToMouseIfChanged() then

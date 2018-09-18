@@ -3015,11 +3015,11 @@ type NormalCommand =
     /// Select the next match for the last pattern searched for
     | SelectNextMatch of SearchPath: SearchPath
 
-    /// Select text
-    | SelectText
+    /// Select text from the caret to the mouse
+    | SelectTextFromCaretToMouse
 
-    /// Select text as part of a drag operation
-    | SelectTextWithDrag
+    /// Select text for a mouse drag event
+    | SelectTextForMouseDrag
 
     /// Select the current word or matching token
     | SelectWordOrMatchingToken
@@ -3166,8 +3166,8 @@ type NormalCommand =
         | NormalCommand.SelectBlock -> None
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
-        | NormalCommand.SelectText -> None
-        | NormalCommand.SelectTextWithDrag -> None
+        | NormalCommand.SelectTextFromCaretToMouse -> None
+        | NormalCommand.SelectTextForMouseDrag -> None
         | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
