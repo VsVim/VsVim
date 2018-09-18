@@ -12,8 +12,6 @@ namespace Vim.UI.Wpf.Implementation.Mouse
         private readonly IVimBuffer _vimBuffer;
         private readonly IKeyboardDevice _keyboardDevice;
 
-        private bool _isMutipleClickInProgress = false;
-
         internal VimMouseProcessor(IVimBuffer vimBuffer, IKeyboardDevice keyboardDevice)
         {
             _vimBuffer = vimBuffer;
@@ -71,8 +69,6 @@ namespace Vim.UI.Wpf.Implementation.Mouse
 
         public override void PreprocessMouseDown(MouseButtonEventArgs e)
         {
-            _isMutipleClickInProgress = e.ClickCount > 1;
-
             switch (e.ChangedButton)
             {
                 case MouseButton.Left:
@@ -113,18 +109,10 @@ namespace Vim.UI.Wpf.Implementation.Mouse
                     e.Handled = TryProcess(VimKey.X2Release);
                     break;
             }
-
-            _isMutipleClickInProgress = false;
         }
 
         public override void PreprocessMouseMove(MouseEventArgs e)
         {
-            // Suppress drag during multiple click events.
-            if (_isMutipleClickInProgress)
-            {
-                return;
-            }
-
             TryProcessDrag(e, e.LeftButton, VimKey.LeftDrag);
             TryProcessDrag(e, e.MiddleButton, VimKey.RightDrag);
             TryProcessDrag(e, e.RightButton, VimKey.RightDrag);
