@@ -153,7 +153,7 @@ namespace Vim.UnitTest
             public void DeleteToMouse()
             {
                 Create("cat dog mouse", "");
-                _textView.MoveCaretTo(4); // 'd' in dog
+                _textView.MoveCaretTo(4); // 'd' in 'dog'
                 var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("d<LeftMouse>");
