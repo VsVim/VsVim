@@ -143,10 +143,21 @@ namespace Vim.UnitTest
             public void NonPhantomLine()
             {
                 Create("cat", "dog");
-                var point = _textView.GetPointInLine(1, 0); // 'd' in dog
+                var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse>");
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DeleteToMouse()
+            {
+                Create("cat dog mouse", "");
+                _textView.MoveCaretTo(4); // 'd' in dog
+                var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("d<LeftMouse>");
+                Assert.Equal(new[] { "cat mouse", "", }, _textBuffer.GetLines());
             }
         }
 
