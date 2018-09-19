@@ -1881,7 +1881,7 @@ type internal CommandUtil
 
     /// Move the caret to position of the mouse cursor
     member x.MoveCaretToMouse () =
-        match x.CaretMousePoint with
+        match x.MousePoint with
         | Some point ->
             _commonOperations.MoveCaretToPoint point ViewFlags.Standard
             _leftMouseDownPoint <- Some x.CaretPoint
@@ -1892,7 +1892,7 @@ type internal CommandUtil
     /// Move the caret to the position of the mouse cursor if
     /// the position is different than the previous one
     member x.MoveCaretToMouseIfChanged () =
-        match x.LeftMouseDownPoint, x.CaretMousePoint with
+        match x.LeftMouseDownPoint, x.MousePoint with
         | Some startPoint, Some endPoint ->
             if startPoint <> endPoint then
                 x.MoveCaretToMouse() |> ignore
@@ -1903,7 +1903,7 @@ type internal CommandUtil
             false
 
     /// The snapshot point in the buffer under the mouse cursor
-    member x.CaretMousePoint =
+    member x.MousePoint =
         match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
         | Some textViewLines, Some position ->
             let xCoordinate = position.X + _textView.ViewportLeft
@@ -1928,11 +1928,22 @@ type internal CommandUtil
                 else
                     textViewLine
 
+            // Get the point in the line under the mouse cursor or the
+            // start/end of the line.
             if textViewLine <> null then
-                textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
-                |> NullableUtil.ToOption
+                match xCoordinate >= textViewLine.Left, xCoordinate <= textViewLine.Right with
+                | true, true ->
+                    textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
+                    |> NullableUtil.ToOption
+                | false, true ->
+                    Some textViewLine.Start
+                | true, false ->
+                    Some textViewLine.End
+                | false, false ->
+                    None
             else
                 None
+
         | _ ->
             None
 
