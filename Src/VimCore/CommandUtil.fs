@@ -2842,7 +2842,7 @@ type internal CommandUtil
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
-        | NormalCommand.SelectTextFromCaretToMouse -> x.SelectTextFromCaretToMouse()
+        | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
@@ -3365,13 +3365,13 @@ type internal CommandUtil
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Select text from the caret to the mouse
-    member x.SelectTextFromCaretToMouse () =
+    /// Select text for a mouse click
+    member x.SelectTextForMouseClick () =
         let startPoint = x.CaretPoint
         x.MoveCaretToMouse() |> ignore
         x.SelectTextCore startPoint
 
-    /// Select text for a mouse drag event
+    /// Select text for a mouse drag
     member x.SelectTextForMouseDrag () =
 
         // A click with the mouse to position the caret may be followed by a
