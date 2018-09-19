@@ -103,7 +103,7 @@ type internal CommandUtil
     let mutable _inRepeatLastChange = false
 
     /// The last mouse down position before it was adjusted for virtual edit
-    let mutable _leftMouseDownPoint: SnapshotPoint option = None
+    let mutable _leftMouseDownPoint: VirtualSnapshotPoint option = None
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -1883,8 +1883,8 @@ type internal CommandUtil
     member x.MoveCaretToMouse () =
         match x.MousePoint with
         | Some point ->
-            _commonOperations.MoveCaretToPoint point ViewFlags.Standard
-            _leftMouseDownPoint <- Some x.CaretPoint
+            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
+            _leftMouseDownPoint <- Some x.CaretVirtualPoint
             true
         | None ->
             false
@@ -1935,10 +1935,19 @@ type internal CommandUtil
                 | true, true ->
                     textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
                     |> NullableUtil.ToOption
+                    |> OptionUtil.map2 (VirtualSnapshotPointUtil.OfPoint >> Some)
                 | false, true ->
-                    Some textViewLine.Start
+                    textViewLine.Start
+                    |> VirtualSnapshotPointUtil.OfPoint
+                    |> Some
                 | true, false ->
-                    Some textViewLine.End
+                    if _vimTextBuffer.UseVirtualSpace then
+                        textViewLine.GetVirtualBufferPositionFromXCoordinate(xCoordinate)
+                        |> Some
+                    else
+                        textViewLine.End
+                        |> VirtualSnapshotPointUtil.OfPoint
+                        |> Some
                 | false, false ->
                     None
             else
@@ -1949,7 +1958,7 @@ type internal CommandUtil
 
     member x.LeftMouseDownPoint =
         match _leftMouseDownPoint with
-        | Some startPoint when startPoint.Snapshot = _textView.TextSnapshot ->
+        | Some startPoint when startPoint.Position.Snapshot = _textView.TextSnapshot ->
             Some startPoint
         | _ ->
             None
@@ -3396,7 +3405,7 @@ type internal CommandUtil
         match x.LeftMouseDownPoint with
         | Some startPoint ->
             if x.MoveCaretToMouseIfChanged() then
-                x.SelectTextCore startPoint
+                x.SelectTextCore startPoint.Position
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
         | None ->
