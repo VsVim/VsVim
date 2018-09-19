@@ -1147,6 +1147,9 @@ type Motion =
     /// If a number is specified, go to {count} percentage in the file
     | MatchingTokenOrDocumentPercent 
 
+    /// Move the caret to the position of the mouse
+    | MoveCaretToMouse
+
     /// Get the motion to the nearest lowercase mark in the specified direction
     | NextMark of SearchPath: SearchPath
 

@@ -1904,57 +1904,7 @@ type internal CommandUtil
 
     /// The snapshot point in the buffer under the mouse cursor
     member x.MousePoint =
-        match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
-        | Some textViewLines, Some position ->
-            let xCoordinate = position.X + _textView.ViewportLeft
-            let yCoordinate = position.Y + _textView.ViewportTop
-            let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
-
-            // Avoid the phantom line.
-            let textViewLine =
-                if textViewLine <> null then
-                    let isPhantomLine =
-                        textViewLine.Start
-                        |> SnapshotPointUtil.GetContainingLine
-                        |> SnapshotLineUtil.IsPhantomLine
-                    if isPhantomLine then
-                        let index = textViewLines.GetIndexOfTextLine textViewLine
-                        if index > 0 then
-                            textViewLines.[index - 1]
-                        else
-                            textViewLine
-                    else
-                        textViewLine
-                else
-                    textViewLine
-
-            // Get the point in the line under the mouse cursor or the
-            // start/end of the line.
-            if textViewLine <> null then
-                match xCoordinate >= textViewLine.Left, xCoordinate <= textViewLine.Right with
-                | true, true ->
-                    textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
-                    |> NullableUtil.ToOption
-                    |> OptionUtil.map2 (VirtualSnapshotPointUtil.OfPoint >> Some)
-                | false, true ->
-                    textViewLine.Start
-                    |> VirtualSnapshotPointUtil.OfPoint
-                    |> Some
-                | true, false ->
-                    if _vimTextBuffer.UseVirtualSpace then
-                        textViewLine.GetVirtualBufferPositionFromXCoordinate(xCoordinate)
-                        |> Some
-                    else
-                        textViewLine.End
-                        |> VirtualSnapshotPointUtil.OfPoint
-                        |> Some
-                | false, false ->
-                    None
-            else
-                None
-
-        | _ ->
-            None
+        _commonOperations.MousePoint
 
     member x.LeftMouseDownPoint =
         match _leftMouseDownPoint with

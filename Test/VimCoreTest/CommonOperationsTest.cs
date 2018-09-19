@@ -94,7 +94,8 @@ namespace Vim.UnitTest
             _operationsRaw = new CommonOperations(
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
-                FSharpOption.Create(_outlining.Object));
+                FSharpOption.Create(_outlining.Object),
+                MouseDevice);
             _operations = _operationsRaw;
         }
 

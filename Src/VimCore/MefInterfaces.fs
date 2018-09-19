@@ -324,6 +324,9 @@ type ICommonOperations =
     /// buffer
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
+    /// The snapshot point in the buffer under the mouse cursor
+    abstract MousePoint: VirtualSnapshotPoint option
+
     /// Associated ITextView
     abstract TextView: ITextView 
 
