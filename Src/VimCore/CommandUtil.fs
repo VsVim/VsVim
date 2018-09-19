@@ -1087,9 +1087,20 @@ type internal CommandUtil
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
-    /// Extend the selection to the mouse
-    member x.ExtendSelectionToMouse (visualSpan: VisualSpan) =
+    /// Extend the selection for a mouse click
+    member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
+
+        // Double-clicking creates a problem because the caret is moved to the
+        // end of what was selected rather than directly under the mouse
+        // pointer.  Prevent accidentally dragging after a double-click by
+        // moving the caret only if the mouse position is over a different
+        // snapshot point than it was when the mouse was previously clicked.
         x.MoveCaretToMouseIfChanged() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Extend the selection for a mouse drag
+    member x.ExtendSelectionForMouseClick (visualSpan: VisualSpan) =
+        x.MoveCaretToMouse() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get a line range specifier
@@ -1885,7 +1896,9 @@ type internal CommandUtil
         | Some startPoint, Some endPoint ->
             if startPoint <> endPoint then
                 x.MoveCaretToMouse() |> ignore
-            true
+                true
+            else
+                false
         | _ ->
             false
 
@@ -2875,7 +2888,8 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
-        | VisualCommand.ExtendSelectionToMouse -> x.ExtendSelectionToMouse visualSpan
+        | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick visualSpan
+        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag visualSpan
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
@@ -3359,6 +3373,15 @@ type internal CommandUtil
 
     /// Select text for a mouse drag event
     member x.SelectTextForMouseDrag () =
+
+        // A click with the mouse to position the caret may be followed by a
+        // slight jiggle of the mouse position, which will cause a drag event.
+        // Prevent accidentally switching to select mode by requiring the caret
+        // to move to a new snapshot point.  In addition, the current caret
+        // position may not agree with the mouse pointer if the mouse was
+        // clicked past the end of the line and the caret was moved back due to
+        // virtual edit settings.  In both cases we refer to the where the
+        // mouse was clicked, not where the caret ends up.
         match x.LeftMouseDownPoint with
         | Some startPoint ->
             if x.MoveCaretToMouseIfChanged() then
@@ -3366,7 +3389,7 @@ type internal CommandUtil
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
         | None ->
-            CommandResult.Completed ModeSwitch.NoSwitch
+            CommandResult.Error
 
     member x.SelectTextCore startPoint =
         let endPoint = x.CaretPoint
