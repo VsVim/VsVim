@@ -336,6 +336,9 @@ type internal InsertMode
                 ("<LeftDrag>", RawInsertCommand.CustomCommand this.LeftMouseDrag)
                 ("<LeftRelease>", RawInsertCommand.CustomCommand this.LeftMouseUp)
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand this.ShiftLeftMouseDown)
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
+                ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -1034,7 +1037,16 @@ type internal InsertMode
         | CommandResult.Completed _ ->
             let endPoint = x.CaretVirtualPoint
             x.SelectText startPoint endPoint
-        | _ ->
+        | CommandResult.Error ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Forward the specified command to normal mode
+    member x.ForwardToNormal (normalCommand: NormalCommand) keyInput =
+        let startPoint = x.CaretVirtualPoint
+        match _commandUtil.RunNormalCommand normalCommand CommandData.Default with
+        | CommandResult.Completed modeSwitch ->
+            ProcessResult.Handled modeSwitch
+        | CommandResult.Error ->
             ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Select the text between start point and end point
