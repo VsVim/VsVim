@@ -92,11 +92,17 @@ type TagBlockParser (snapshot: ITextSnapshot) =
         x.TestPosition position (fun c -> c = target)
 
     member x.SkipBlanks position = 
+        x.SkipWhile position CharUtil.IsBlank
+    
+    member x.SkipWhiteSpace position = 
+        x.SkipWhile position CharUtil.IsWhiteSpace
+
+    member x.SkipWhile position predicate = 
         let mutable position = position
-        while x.TestPosition position CharUtil.IsBlank && position < _snapshot.Length do
+        while x.TestPosition position predicate && position < _snapshot.Length do
             position <- position + 1
         position
-
+    
     member x.ParseName startPosition = 
         let mutable position = startPosition
         while x.TestPosition position (fun c -> CharUtil.IsTagNameChar c) do
@@ -144,12 +150,12 @@ type TagBlockParser (snapshot: ITextSnapshot) =
 
     /// Parse out a single attribute name value pair 
     member x.ParseAttribute startPosition: Span option = 
-        let position = x.SkipBlanks startPosition
+        let position = x.SkipWhiteSpace startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
-            let position = x.SkipBlanks nameSpan.End
+            let position = x.SkipWhiteSpace nameSpan.End
             if x.TestPositionChar position '=' then
-                let quotePosition = position + 1
+                let quotePosition = x.SkipWhiteSpace (position + 1)
                 let! quoteChar = x.ParseQuoteChar quotePosition
                 let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
                 let! valueEnd = x.ParseChar valueSpan.End quoteChar
@@ -163,7 +169,7 @@ type TagBlockParser (snapshot: ITextSnapshot) =
     /// tag name.  It should return the position immediately following all of the attribute
     /// values or None if there is an error in the attributes
     member x.ParseAttributes startPosition = 
-        let mutable position = x.SkipBlanks startPosition
+        let mutable position = x.SkipWhiteSpace startPosition
         let mutable isError = false
         let mutable isDone = false
 
@@ -179,7 +185,7 @@ type TagBlockParser (snapshot: ITextSnapshot) =
                     isError <- true
                     isDone <- true
                 | Some span -> 
-                    position <- x.SkipBlanks span.End
+                    position <- x.SkipWhiteSpace span.End
 
         if isError then
             None
