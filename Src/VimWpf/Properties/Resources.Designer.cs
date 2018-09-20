@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -106,6 +106,15 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to -- ({0}) SELECT BLOCK --.
+        /// </summary>
+        internal static string SelectBlockOneTimeCommandBanner {
+            get {
+                return ResourceManager.GetString("SelectBlockOneTimeCommandBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- SELECT --.
         /// </summary>
         internal static string SelectCharacterBanner {
@@ -115,11 +124,29 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to -- ({0}) SELECT --.
+        /// </summary>
+        internal static string SelectCharacterOneTimeCommandBanner {
+            get {
+                return ResourceManager.GetString("SelectCharacterOneTimeCommandBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- SELECT LINE --.
         /// </summary>
         internal static string SelectLineBanner {
             get {
                 return ResourceManager.GetString("SelectLineBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to -- ({0}) SELECT LINE --.
+        /// </summary>
+        internal static string SelectLineOneTimeCommandBanner {
+            get {
+                return ResourceManager.GetString("SelectLineOneTimeCommandBanner", resourceCulture);
             }
         }
         

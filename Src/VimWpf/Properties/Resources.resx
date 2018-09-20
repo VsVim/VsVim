@@ -132,11 +132,20 @@
   <data name="SelectBlockBanner" xml:space="preserve">
     <value>-- SELECT BLOCK --</value>
   </data>
+  <data name="SelectBlockOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) SELECT BLOCK --</value>
+  </data>
   <data name="SelectCharacterBanner" xml:space="preserve">
     <value>-- SELECT --</value>
   </data>
+  <data name="SelectCharacterOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) SELECT --</value>
+  </data>
   <data name="SelectLineBanner" xml:space="preserve">
     <value>-- SELECT LINE --</value>
+  </data>
+  <data name="SelectLineOneTimeCommandBanner" xml:space="preserve">
+    <value>-- ({0}) SELECT LINE --</value>
   </data>
   <data name="SubstituteConfirmBannerFormat" xml:space="preserve">
     <value>replace with {0} (y/n/a/q/l/^E/^Y)?</value>

@@ -83,15 +83,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case ModeKind.SubstituteConfirm:
                     status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
                     break;
-                case ModeKind.VisualBlock:
-                    status = GetStatusWithRegister(Resources.VisualBlockBanner, vimBuffer.VisualBlockMode.CommandRunner);
-                    break;
-                case ModeKind.VisualCharacter:
-                    status = GetStatusWithRegister(Resources.VisualCharacterBanner, vimBuffer.VisualCharacterMode.CommandRunner);
-                    break;
-                case ModeKind.VisualLine:
-                    status = GetStatusWithRegister(Resources.VisualLineBanner, vimBuffer.VisualLineMode.CommandRunner);
-                    break;
                 default:
                     status = GetStatusCommon(vimBuffer, currentMode);
                     break;
@@ -117,7 +108,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             // Check if we can enable the command line to accept user input
-            var search = vimBuffer.IncrementalSearch;
             string status;
             switch (currentMode.ModeKind)
             {
@@ -151,13 +141,19 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         : string.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.SelectBlock:
-                    status = Resources.SelectBlockBanner;
+                    status = string.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.SelectBlockBanner
+                        : string.Format(Resources.SelectBlockOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.SelectCharacter:
-                    status = Resources.SelectCharacterBanner;
+                    status = string.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.SelectCharacterBanner
+                        : string.Format(Resources.SelectCharacterOneTimeCommandBanner, oneTimeArgument); 
                     break;
                 case ModeKind.SelectLine:
-                    status = Resources.SelectLineBanner;
+                    status = string.IsNullOrEmpty(oneTimeArgument)
+                        ? Resources.SelectLineBanner
+                        : string.Format(Resources.SelectLineOneTimeCommandBanner, oneTimeArgument); 
                     break;
                 case ModeKind.ExternalEdit:
                     status = Resources.ExternalEditBanner;
@@ -180,16 +176,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var replace = mode.CurrentSubstitute.SomeOrDefault("");
             return string.Format(Resources.SubstituteConfirmBannerFormat, replace);
-        }
-
-        private static string GetStatusWithRegister(string commandLine, ICommandRunner commandRunner)
-        {
-            if (commandRunner.HasRegisterName && commandRunner.RegisterName.Char.IsSome())
-            {
-                commandLine = $"{commandLine} \"{commandRunner.RegisterName.Char.Value}";
-            }
-
-            return commandLine;
         }
 
         #region ICommandMarginUtil

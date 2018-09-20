@@ -4937,6 +4937,10 @@ and IVimTextBuffer =
     /// If we are in the middle of processing a "one time command" (<c-o>) then this will
     /// hold the ModeKind which will be switched back to after it's completed
     abstract InOneTimeCommand: ModeKind option with get, set
+    
+    /// True if we are processing a "one time command" initiated from a select mode,
+    /// or from a select mode initiated from within another "one time command", e.g. "(insert) SELECT".
+    abstract InSelectModeOneTimeCommand: bool with get, set
 
     /// The set of active local marks in the ITextBuffer
     abstract LocalMarks: (LocalMark * VirtualSnapshotPoint) seq
