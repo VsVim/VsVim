@@ -17,11 +17,11 @@ open StringBuilderExtensions
 [<NoComparison>]
 [<StructuralEquality>]
 type internal NumberValue =
-    | Decimal of int64
-    | Octal of uint64
-    | Hex of uint64
-    | Binary of uint64
-    | Alpha of char
+    | Decimal of Decimal: int64
+    | Octal of Octal: uint64
+    | Hex of Hex: uint64
+    | Binary of Binary: uint64
+    | Alpha of Alpha: char
 
     with
 

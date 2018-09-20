@@ -15,14 +15,14 @@ type UndoRedoData =
     /// The stack contains 'count' normal undo / redo transactions which line up
     /// with Vim behavior.  The count is kept here instead of having a stack of 'count'
     /// depth in order to keep memory allocations minimal.
-    | Normal of int
+    | Normal of Count: int
 
     /// The stack contains 'count' normal undo / redo transactions which line up 
     /// with a single Vim undo / redo transaction.  
     ///
     /// The bool is true when this is a closed linked transaction.  It has been fully completed
     /// and is no longer being built by closing transactions
-    | Linked of int * bool
+    | Linked of Count: int * IsCompleted: bool
 
 [<RequireQualifiedAccess>]
 type TransactionCloseResult =

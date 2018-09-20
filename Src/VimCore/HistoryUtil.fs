@@ -7,7 +7,7 @@ namespace Vim
 [<NoEquality>]
 type HistoryState =
     | Empty 
-    | Index of (string list) * int
+    | Index of HistoryList: (string list) * Index: int
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -19,7 +19,7 @@ type HistoryCommand =
     | Cancel
     | Back
     | Paste
-    | PasteSpecial of WordKind
+    | PasteSpecial of WordKind: WordKind
     | Clear
 
 type internal HistorySession<'TData, 'TResult>
