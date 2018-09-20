@@ -1805,6 +1805,17 @@ namespace Vim.UnitTest
                     _vimBuffer.Process("vitat");
                     Assert.Equal(_textBuffer.GetLineRange(1, 3).Extent, _textView.GetSelectionSpan());
                 }
+                
+                [WpfFact]
+                public void SelectMultiLineTag()
+                {
+                    Create("<parent>", "<child", "attr1=\"value1\"", "attr2", "=", "\"value2\"", ">", "content", "</child>", "</parent>");
+
+                    var initialPosition = _textBuffer.GetLineFromLineNumber(7).Start;
+                    _textView.MoveCaretTo(initialPosition);
+                    _vimBuffer.Process("vat");
+                    Assert.Equal(_textBuffer.GetLineRange(1, 8).Extent, _textView.GetSelectionSpan());
+                }
 
                 [WpfTheory]
                 [InlineData("inclusive", 1)]
