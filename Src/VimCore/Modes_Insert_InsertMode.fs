@@ -186,9 +186,6 @@ type ActiveEditItem =
     /// In the middle of a digraph operation. Wait for the second digraph key
     | Digraph2 of KeyInput
 
-    /// The left mouse button is down and might be dragged
-    | LeftMouseDown of VirtualSnapshotPoint
-
     /// No active items
     | None
 
@@ -332,10 +329,9 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
-                ("<LeftMouse>", RawInsertCommand.CustomCommand this.LeftMouseDown)
-                ("<LeftDrag>", RawInsertCommand.CustomCommand this.LeftMouseDrag)
-                ("<LeftRelease>", RawInsertCommand.CustomCommand this.LeftMouseUp)
-                ("<S-LeftMouse>", RawInsertCommand.CustomCommand this.ShiftLeftMouseDown)
+                ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
+                ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
+                ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
                 ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
                 ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
                 ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
@@ -980,90 +976,16 @@ type internal InsertMode
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Left mouse down
-    member x.LeftMouseDown keyInput =
-        x.CancelWordCompletionSession()
-
-        // Because we are in a command, this won't invoke our caret position
-        // changed handler. As a result, we can tell the difference between
-        // a user using the mouse and a component programmatically changing
-        // the caret position.
-        match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
-        | CommandResult.Completed _ ->
-            x.BreakUndoSequence "Set cursor position"
-            let position = x.CaretVirtualPoint
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.LeftMouseDown position }
-        | _ ->
-            ()
-
-        ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Left mouse drag
-    member x.LeftMouseDrag keyInput =
-
-        match _sessionData.ActiveEditItem with
-        | ActiveEditItem.LeftMouseDown startPoint ->
-            match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
-            | CommandResult.Completed _ ->
-                let endPoint = x.CaretVirtualPoint
-                if startPoint <> endPoint then
-                    _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-
-                    // The drag moved far enough to encompass at least one
-                    // character, so switch to select or visual mode.
-                    x.SelectText startPoint endPoint
-                else
-                    ProcessResult.Handled ModeSwitch.NoSwitch
-            | _ ->
-                ProcessResult.Handled ModeSwitch.NoSwitch
-        | _ ->
-            ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Left mouse up
-    member x.LeftMouseUp keyInput =
-
-        match _sessionData.ActiveEditItem with
-        | ActiveEditItem.LeftMouseDown _ ->
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-        | _ ->
-            ()
-
-        ProcessResult.Handled ModeSwitch.NoSwitch
-
-    /// Shift left mouse down
-    member x.ShiftLeftMouseDown keyInput =
-        let startPoint = x.CaretVirtualPoint
-        match _commandUtil.RunNormalCommand NormalCommand.MoveCaretToMouse CommandData.Default with
-        | CommandResult.Completed _ ->
-            let endPoint = x.CaretVirtualPoint
-            x.SelectText startPoint endPoint
-        | CommandResult.Error ->
-            ProcessResult.Handled ModeSwitch.NoSwitch
-
     /// Forward the specified command to normal mode
     member x.ForwardToNormal (normalCommand: NormalCommand) keyInput =
-        let startPoint = x.CaretVirtualPoint
+        x.CancelWordCompletionSession()
+        x.BreakUndoSequence "Mouse"
         match _commandUtil.RunNormalCommand normalCommand CommandData.Default with
         | CommandResult.Completed modeSwitch ->
             ProcessResult.Handled modeSwitch
         | CommandResult.Error ->
             ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// Select the text between start point and end point
-    member x.SelectText startPoint endPoint =
-        let visualKind = VisualKind.Character
-        let tabStop = _vimBuffer.LocalSettings.TabStop
-        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint.Position endPoint.Position tabStop
-        let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-        let modeKind =
-            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                ModeKind.SelectCharacter
-            else
-                ModeKind.VisualCharacter
-        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint.Position)
-        ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
-
-    /// Return the 
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 
@@ -1185,9 +1107,7 @@ type internal InsertMode
             x.Paste keyInput pasteFlags
         | ActiveEditItem.OverwriteReplace ->
             x.Paste keyInput PasteFlags.None
-        | ActiveEditItem.None
-        | ActiveEditItem.LeftMouseDown _
-            ->
+        | ActiveEditItem.None ->
 
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
