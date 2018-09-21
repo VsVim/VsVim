@@ -75,7 +75,6 @@ type internal CommandUtil
         _foldManager: IFoldManager,
         _insertUtil: IInsertUtil,
         _bulkOperations: IBulkOperations,
-        _mouseDevice: IMouseDevice,
         _lineChangeTracker: ILineChangeTracker
     ) =
 
