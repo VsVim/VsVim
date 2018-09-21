@@ -1099,7 +1099,7 @@ type internal CommandUtil
 
     /// Extend the selection for a mouse drag
     member x.ExtendSelectionForMouseClick (visualSpan: VisualSpan) =
-        x.MoveCaretToMouse() |> ignore
+        x.MoveCaretToMouseUnconditionally() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get a line range specifier
@@ -1879,11 +1879,11 @@ type internal CommandUtil
         | _ -> moveNormal ()
 
     /// Move the caret to position of the mouse cursor
-    member x.MoveCaretToMouse () =
+    member x.MoveCaretToMouseUnconditionally () =
         match x.MousePoint with
         | Some point ->
             _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
-            _leftMouseDownPoint <- Some x.CaretVirtualPoint
+            _leftMouseDownPoint <- Some point
             true
         | None ->
             false
@@ -1894,8 +1894,7 @@ type internal CommandUtil
         match x.LeftMouseDownPoint, x.MousePoint with
         | Some startPoint, Some endPoint ->
             if startPoint <> endPoint then
-                x.MoveCaretToMouse() |> ignore
-                true
+                x.MoveCaretToMouseUnconditionally()
             else
                 false
         | _ ->
@@ -1912,16 +1911,14 @@ type internal CommandUtil
         | _ ->
             None
 
-    member x.NormalMoveCaretToMouse () =
-        if x.MoveCaretToMouse() then
+    member x.MoveCaretToMouse () =
+        if x.MoveCaretToMouseUnconditionally() then
             _commonOperations.AdjustCaretForVirtualEdit()
-            CommandResult.Completed ModeSwitch.NoSwitch
-        else
-            CommandResult.Error
-
-    member x.VisualMoveCaretToMouse () =
-        if x.MoveCaretToMouse() then
-            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+            if VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind then
+                ModeSwitch.SwitchPreviousMode
+            else
+                ModeSwitch.NoSwitch
+            |> CommandResult.Completed
         else
             CommandResult.Error
 
@@ -2030,7 +2027,7 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        if x.MoveCaretToMouse() then
+        if x.MoveCaretToMouseUnconditionally() then
 
             // Run the put after command.
             let register = x.GetRegister (Some RegisterName.Unnamed)
@@ -2782,7 +2779,7 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
-        | NormalCommand.MoveCaretToMouse -> x.NormalMoveCaretToMouse()
+        | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
@@ -2868,7 +2865,7 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
-        | VisualCommand.MoveCaretToMouse -> x.VisualMoveCaretToMouse()
+        | VisualCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
@@ -3282,7 +3279,7 @@ type internal CommandUtil
 
     /// Select the current block
     member x.SelectBlock () =
-        x.MoveCaretToMouse() |> ignore
+        x.MoveCaretToMouseUnconditionally() |> ignore
         let modeKind =
             if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
                 ModeKind.SelectBlock
@@ -3298,7 +3295,7 @@ type internal CommandUtil
 
     /// Select the current line
     member x.SelectLine () =
-        x.MoveCaretToMouse() |> ignore
+        x.MoveCaretToMouseUnconditionally() |> ignore
         let modeKind =
             if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
                 ModeKind.SelectLine
@@ -3337,7 +3334,7 @@ type internal CommandUtil
     /// Select text for a mouse click
     member x.SelectTextForMouseClick () =
         let startPoint = x.CaretPoint
-        x.MoveCaretToMouse() |> ignore
+        x.MoveCaretToMouseUnconditionally() |> ignore
         x.SelectTextCore startPoint
 
     /// Select text for a mouse drag
