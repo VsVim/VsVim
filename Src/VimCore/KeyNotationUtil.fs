@@ -97,13 +97,13 @@ module KeyNotationUtil =
     /// (see ':help double-click' for 2/3/4)
     let ModifierNotationTable =
         [|
-            VimKeyModifiers.Control, "C";
-            VimKeyModifiers.Alt, "A";
-            VimKeyModifiers.Shift, "S";
-            VimKeyModifiers.Command, "D";
-            VimKeyModifiers.Double, "2";
-            VimKeyModifiers.Triple, "3";
-            VimKeyModifiers.Quadruple, "4";
+            (VimKeyModifiers.Control, "C")
+            (VimKeyModifiers.Alt, "A")
+            (VimKeyModifiers.Shift, "S")
+            (VimKeyModifiers.Command, "D")
+            (VimKeyModifiers.Double, "2")
+            (VimKeyModifiers.Triple, "3")
+            (VimKeyModifiers.Quadruple, "4")
         |]
 
     /// Convert the given special key name + modifier into a KeyInput value 
