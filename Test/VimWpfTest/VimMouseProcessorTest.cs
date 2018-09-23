@@ -39,7 +39,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 _vimBuffer.ProcessNotation("v");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimMouseProcessor.TryProcess(VimKey.LeftRelease));
+                Assert.False(_vimMouseProcessor.TryProcess(VimKey.RightMouse));
                 Assert.Equal(0, VimHost.BeepCount);
             }
         }
