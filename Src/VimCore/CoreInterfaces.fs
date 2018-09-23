@@ -3024,6 +3024,9 @@ type NormalCommand =
     /// Select text for a mouse drag
     | SelectTextForMouseDrag
 
+    /// Select text for a mouse release
+    | SelectTextForMouseRelease
+
     /// Select the current word or matching token
     | SelectWordOrMatchingToken
 
@@ -3171,6 +3174,7 @@ type NormalCommand =
         | NormalCommand.SelectNextMatch _ -> None
         | NormalCommand.SelectTextForMouseClick -> None
         | NormalCommand.SelectTextForMouseDrag -> None
+        | NormalCommand.SelectTextForMouseRelease -> None
         | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
@@ -3233,6 +3237,9 @@ type VisualCommand =
 
     /// Extend the selection for a mouse drag
     | ExtendSelectionForMouseDrag
+
+    /// Extend the selection for a mouse release
+    | ExtendSelectionForMouseRelease
 
     /// Extend the selection to the next match for the last pattern searched for
     | ExtendSelectionToNextMatch of SearchPath: SearchPath

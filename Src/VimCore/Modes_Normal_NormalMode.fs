@@ -183,6 +183,7 @@ type internal NormalMode
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)
                 yield ("<LeftMouse>", CommandFlags.Special, NormalCommand.MoveCaretToMouse)
                 yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
+                yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
                 yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)

@@ -1097,6 +1097,12 @@ type internal CommandUtil
         x.MoveCaretToMouseIfChanged() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Extend the selection for a mouse release
+    member x.ExtendSelectionForMouseRelease () =
+        let result = x.ExtendSelectionForMouseDrag()
+        _leftMouseDownPoint <- None
+        result
+
     /// Extend the selection for a mouse drag
     member x.ExtendSelectionForMouseClick () =
         x.MoveCaretToMouseUnconditionally() |> ignore
@@ -2810,6 +2816,7 @@ type internal CommandUtil
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
+        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
@@ -2856,6 +2863,7 @@ type internal CommandUtil
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
         | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick()
         | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag()
+        | VisualCommand.ExtendSelectionForMouseRelease -> x.ExtendSelectionForMouseRelease()
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
@@ -3356,6 +3364,12 @@ type internal CommandUtil
                 CommandResult.Completed ModeSwitch.NoSwitch
         | None ->
             CommandResult.Error
+
+    /// Select text for a mouse release
+    member x.SelectTextForMouseRelease () =
+        let result = x.SelectTextForMouseDrag()
+        _leftMouseDownPoint <- None
+        result
 
     member x.SelectTextCore startPoint =
         let endPoint = x.CaretPoint
