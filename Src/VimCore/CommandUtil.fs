@@ -1087,7 +1087,7 @@ type internal CommandUtil
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
     /// Extend the selection for a mouse click
-    member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
+    member x.ExtendSelectionForMouseDrag () =
 
         // Double-clicking creates a problem because the caret is moved to the
         // end of what was selected rather than directly under the mouse
@@ -1098,7 +1098,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Extend the selection for a mouse drag
-    member x.ExtendSelectionForMouseClick (visualSpan: VisualSpan) =
+    member x.ExtendSelectionForMouseClick () =
         x.MoveCaretToMouseUnconditionally() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2854,8 +2854,8 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
-        | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick visualSpan
-        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag visualSpan
+        | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick()
+        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag()
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
