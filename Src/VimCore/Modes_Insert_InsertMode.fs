@@ -138,9 +138,9 @@ type InsertKind =
 
     /// This Insert is a repeat operation this holds the count and 
     /// whether or not a newline should be inserted after the text
-    | Repeat of int * bool * TextChange
+    | Repeat of Count: int * AddNewLine: bool * TextChange: TextChange
 
-    | Block of bool * BlockSpan
+    | Block of AtEndOfLine: bool * BlockSpan: BlockSpan
 
 /// The CTRL-R command comes in a number of varieties which really come down to just the 
 /// following options.  Detailed information is available on ':help i_CTRL-R_CTRL-R'
@@ -165,14 +165,14 @@ type PasteFlags =
 type ActiveEditItem = 
 
     /// In the middle of a word completion session
-    | WordCompletion of IWordCompletionSession 
+    | WordCompletion of WordCompletionSession: IWordCompletionSession 
 
     /// In the middle of a paste operation.  Waiting for the register to paste from
     | Paste 
 
     /// In the middle of one of the special paste operations.  The provided flags should 
     /// be passed along to the final Paste operation
-    | PasteSpecial of PasteFlags
+    | PasteSpecial of PasteFlag: PasteFlags
 
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
@@ -184,7 +184,7 @@ type ActiveEditItem =
     | Digraph1
 
     /// In the middle of a digraph operation. Wait for the second digraph key
-    | Digraph2 of KeyInput
+    | Digraph2 of KeyInput: KeyInput
 
     /// No active items
     | None
@@ -211,8 +211,8 @@ type InsertSessionData = {
 
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
-    | InsertCommand of KeyInputSet * InsertCommand * CommandFlags
-    | CustomCommand of (KeyInput -> ProcessResult)
+    | InsertCommand of KeyInputSet: KeyInputSet * InsertCommand: InsertCommand * CommandFlags: CommandFlags
+    | CustomCommand of CustomFunc: (KeyInput -> ProcessResult)
 
 type internal InsertMode
     ( 

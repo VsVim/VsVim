@@ -113,7 +113,7 @@ namespace Vim.UnitTest
                 {
                     any = true;
                     var anyItem = false;
-                    foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                    foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
                     {
                         if (prop.Name.StartsWith("Item"))
                         {
@@ -124,7 +124,7 @@ namespace Vim.UnitTest
 
                     if (anyItem)
                     {
-                        list.Add($"{type.BaseType.Name}.{type.Name} values do not have an expliict name");
+                        list.Add($"{type.BaseType.Name}.{type.Name} values do not have an explicit name");
                     }
                 }
 

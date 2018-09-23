@@ -958,7 +958,7 @@ type QuotedStringData =  {
 type VisualMotionResult =
 
     /// The mapping succeeded
-    | Succeeded of MotionResult
+    | Succeeded of MotionResult: MotionResult
 
     /// The motion simply produced no data
     | FailedNoMotionResult
