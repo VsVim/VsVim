@@ -41,7 +41,8 @@ type internal CommonOperations
     (
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
-        _outliningManager: IOutliningManager option
+        _outliningManager: IOutliningManager option,
+        _mouseDevice: IMouseDevice
     ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -82,6 +83,60 @@ type internal CommonOperations
     member x.CaretVirtualColumn = VirtualSnapshotColumn(x.CaretVirtualPoint)
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    /// The snapshot point in the buffer under the mouse cursor
+    member x.MousePoint =
+        match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
+        | Some textViewLines, Some position ->
+            let xCoordinate = position.X + _textView.ViewportLeft
+            let yCoordinate = position.Y + _textView.ViewportTop
+            let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
+
+            // Avoid the phantom line.
+            let textViewLine =
+                if textViewLine <> null then
+                    let isPhantomLine =
+                        textViewLine.Start
+                        |> SnapshotPointUtil.GetContainingLine
+                        |> SnapshotLineUtil.IsPhantomLine
+                    if isPhantomLine then
+                        let index = textViewLines.GetIndexOfTextLine textViewLine
+                        if index > 0 then
+                            textViewLines.[index - 1]
+                        else
+                            textViewLine
+                    else
+                        textViewLine
+                else
+                    textViewLine
+
+            // Get the point in the line under the mouse cursor or the
+            // start/end of the line.
+            if textViewLine <> null then
+                match xCoordinate >= textViewLine.Left, xCoordinate <= textViewLine.Right with
+                | true, true ->
+                    textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
+                    |> NullableUtil.ToOption
+                    |> OptionUtil.map2 (VirtualSnapshotPointUtil.OfPoint >> Some)
+                | false, true ->
+                    textViewLine.Start
+                    |> VirtualSnapshotPointUtil.OfPoint
+                    |> Some
+                | true, false ->
+                    if _vimTextBuffer.UseVirtualSpace then
+                        textViewLine.GetVirtualBufferPositionFromXCoordinate(xCoordinate)
+                        |> Some
+                    else
+                        textViewLine.End
+                        |> VirtualSnapshotPointUtil.OfPoint
+                        |> Some
+                | false, false ->
+                    None
+            else
+                None
+
+        | _ ->
+            None
 
     member x.MaintainCaretColumn 
         with get() = _maintainCaretColumn
@@ -2068,9 +2123,11 @@ type internal CommonOperations
             and set value = x.MaintainCaretColumn <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
+        member x.MousePoint = x.MousePoint
 
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
+        member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()
         member x.Beep() = x.Beep()
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
@@ -2132,7 +2189,8 @@ type CommonOperationsFactory
     (
         _editorOperationsFactoryService: IEditorOperationsFactoryService,
         _outliningManagerService: IOutliningManagerService,
-        _undoManagerProvider: ITextBufferUndoManagerProvider
+        _undoManagerProvider: ITextBufferUndoManagerProvider,
+        _mouseDevice: IMouseDevice
     ) = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -2150,7 +2208,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining) :> ICommonOperations
+        CommonOperations(vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData: IVimBufferData) = 

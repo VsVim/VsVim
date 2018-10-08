@@ -1488,6 +1488,19 @@ type internal MotionUtil
 
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
+    member x.MoveCaretToMouse () =
+        match _commonOperations.MousePoint with
+        | Some point ->
+            let mousePoint = point.Position
+            let span, isForward = 
+                if x.CaretPoint.Position < mousePoint.Position then
+                    SnapshotSpan(x.CaretPoint, mousePoint), true
+                else
+                    SnapshotSpan(mousePoint, x.CaretPoint), false
+
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
+        | None -> None
+
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
         match x.GetBlockWithCount blockKind contextPoint count with
@@ -3202,6 +3215,7 @@ type internal MotionUtil
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
             | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.Count
+            | Motion.MoveCaretToMouse -> x.MoveCaretToMouse()
             | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
             | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault

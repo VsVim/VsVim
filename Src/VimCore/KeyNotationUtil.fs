@@ -93,6 +93,19 @@ module KeyNotationUtil =
             (key, value))
         |> Map.ofSeq
 
+    /// Table of key modifier notation prefixes
+    /// (see ':help double-click' for 2/3/4)
+    let ModifierNotationTable =
+        [|
+            (VimKeyModifiers.Control, "C")
+            (VimKeyModifiers.Alt, "A")
+            (VimKeyModifiers.Shift, "S")
+            (VimKeyModifiers.Command, "D")
+            (VimKeyModifiers.Double, "2")
+            (VimKeyModifiers.Triple, "3")
+            (VimKeyModifiers.Quadruple, "4")
+        |]
+
     /// Convert the given special key name + modifier into a KeyInput value 
     let ConvertSpecialKeyName (dataCharSpan: CharSpan) modifier = 
 
@@ -183,6 +196,9 @@ module KeyNotationUtil =
                         | 'a' -> VimKeyModifiers.Alt ||| modifier |> Some
                         | 'm' -> VimKeyModifiers.Alt ||| modifier |> Some
                         | 'd' -> VimKeyModifiers.Command ||| modifier |> Some
+                        | '2' -> VimKeyModifiers.Double ||| modifier |> Some
+                        | '3' -> VimKeyModifiers.Triple ||| modifier |> Some
+                        | '4' -> VimKeyModifiers.Quadruple ||| modifier |> Some
                         | '-' -> Some modifier
                         | _ -> None
                     match modifier with
@@ -272,27 +288,13 @@ module KeyNotationUtil =
     let GetDisplayName (keyInput: KeyInput) = 
 
         let inner name keyModifiers forceBookend = 
-            let rec getPrefix current keyModifiers = 
-                if Util.IsFlagSet keyModifiers VimKeyModifiers.Control then
-                    let current = current + "C-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Control
-                    getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Alt then
-                    let current = current + "A-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Alt
-                    getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Shift then
-                    let current = current + "S-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Shift
-                    getPrefix current keyModifiers
-                elif Util.IsFlagSet keyModifiers VimKeyModifiers.Command then
-                    let current = current + "D-"
-                    let keyModifiers = Util.UnsetFlag keyModifiers VimKeyModifiers.Command
-                    getPrefix current keyModifiers
-                else 
-                    current
+            let getPrefix keyModifiers = 
+                ModifierNotationTable
+                |> Seq.map (fun (modifier, label) ->
+                    if Util.IsFlagSet keyModifiers modifier then label + "-" else "")
+                |> String.concat ""
 
-            let prefix = getPrefix "" keyModifiers
+            let prefix = getPrefix keyModifiers
             if StringUtil.IsNullOrEmpty prefix then
                 if forceBookend then
                     sprintf "<%s>" name

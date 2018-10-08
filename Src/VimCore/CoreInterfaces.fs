@@ -1147,6 +1147,9 @@ type Motion =
     /// If a number is specified, go to {count} percentage in the file
     | MatchingTokenOrDocumentPercent 
 
+    /// Move the caret to the position of the mouse
+    | MoveCaretToMouse
+
     /// Get the motion to the nearest lowercase mark in the specified direction
     | NextMark of SearchPath: SearchPath
 
@@ -2903,6 +2906,9 @@ type NormalCommand =
     /// Move the caret to the result of the given Motion.
     | MoveCaretToMotion of Motion: Motion
 
+    /// Move the caret to position of the mouse cursor
+    | MoveCaretToMouse
+
     /// Undo count operations in the ITextBuffer
     | Undo
 
@@ -3003,8 +3009,26 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
+    /// Select the current block
+    | SelectBlock
+
+    /// Select the current line
+    | SelectLine
+
     /// Select the next match for the last pattern searched for
     | SelectNextMatch of SearchPath: SearchPath
+
+    /// Select text for a mouse click
+    | SelectTextForMouseClick
+
+    /// Select text for a mouse drag
+    | SelectTextForMouseDrag
+
+    /// Select text for a mouse release
+    | SelectTextForMouseRelease
+
+    /// Select the current word or matching token
+    | SelectWordOrMatchingToken
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3115,6 +3139,7 @@ type NormalCommand =
         | NormalCommand.JumpToOlderPosition -> None
         | NormalCommand.JumpToNewerPosition -> None
         | NormalCommand.MoveCaretToMotion _ -> None
+        | NormalCommand.MoveCaretToMouse -> None
         | NormalCommand.Undo -> None
         | NormalCommand.UndoLine -> None
         | NormalCommand.OpenAllFolds -> None
@@ -3144,7 +3169,13 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.SelectBlock -> None
+        | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
+        | NormalCommand.SelectTextForMouseClick -> None
+        | NormalCommand.SelectTextForMouseDrag -> None
+        | NormalCommand.SelectTextForMouseRelease -> None
+        | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3201,6 +3232,15 @@ type VisualCommand =
     /// Delete the selected text and put it into a register
     | DeleteSelection
 
+    /// Extend the selection for a mouse click
+    | ExtendSelectionForMouseClick
+
+    /// Extend the selection for a mouse drag
+    | ExtendSelectionForMouseDrag
+
+    /// Extend the selection for a mouse release
+    | ExtendSelectionForMouseRelease
+
     /// Extend the selection to the next match for the last pattern searched for
     | ExtendSelectionToNextMatch of SearchPath: SearchPath
 
@@ -3229,6 +3269,9 @@ type VisualCommand =
     /// be special cased to invert the column only 
     | InvertSelection of ColumnOnlyInBlock: bool
 
+    /// Move the caret to the mouse position
+    | MoveCaretToMouse
+
     /// Move the caret to the result of the given Motion.  This movement is from a 
     /// text-object selection.  Certain motions 
     | MoveCaretToTextObject of Motion: Motion * TextObjectKind: TextObjectKind
@@ -3245,6 +3288,15 @@ type VisualCommand =
 
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput: KeyInput
+
+    /// Select current block
+    | SelectBlock
+
+    /// Select current line
+    | SelectLine
+
+    /// Select current word or matching token
+    | SelectWordOrMatchingToken
 
     /// Shift the selected lines left
     | ShiftLinesLeft
@@ -3858,6 +3910,9 @@ type ICommandRunner =
     /// List of processed KeyInputs in the order in which they were typed
     abstract Inputs: KeyInput list
     
+    /// Whether a command starts with the specified key input
+    abstract DoesCommandStartWith: KeyInput -> bool
+
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
     abstract Add: CommandBinding -> unit

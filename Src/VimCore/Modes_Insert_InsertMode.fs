@@ -329,6 +329,13 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
+                ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
+                ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
+                ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
+                ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
+                ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -417,6 +424,9 @@ type internal InsertMode
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
@@ -967,6 +977,16 @@ type internal InsertMode
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Forward the specified command to normal mode
+    member x.ForwardToNormal (normalCommand: NormalCommand) keyInput =
+        x.CancelWordCompletionSession()
+        x.BreakUndoSequence "Mouse"
+        match _commandUtil.RunNormalCommand normalCommand CommandData.Default with
+        | CommandResult.Completed modeSwitch ->
+            ProcessResult.Handled modeSwitch
+        | CommandResult.Error ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 
@@ -1088,7 +1108,7 @@ type internal InsertMode
             x.Paste keyInput pasteFlags
         | ActiveEditItem.OverwriteReplace ->
             x.Paste keyInput PasteFlags.None
-        | ActiveEditItem.None -> 
+        | ActiveEditItem.None ->
 
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
@@ -1116,12 +1136,12 @@ type internal InsertMode
         _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
-    /// This is raised when caret changes.  If this is the result of a user click then 
-    /// we need to complete the change.
-    ///
-    /// Need to be careful to not end the edit due to the caret moving as a result of 
-    /// normal typing
+    /// Raised when the caret position changes
     member x.OnCaretPositionChanged args = 
+
+        // Because this is invoked only when are active but not processing a command, it means
+        // that some other component (e.g. a language service, ReSharper or Visual Assist)
+        // changed the caret position programmatically.
         _textChangeTracker.CompleteChange()
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
@@ -1161,12 +1181,10 @@ type internal InsertMode
             // Don't break the undo sequence if the caret was moved within the
             // active insertion region of the effective change. This allows code
             // assistants to perform a variety of edits without breaking the undo
-            // sequence. This is not strictly vim-compatible, but it is a minor
-            // point and until we can tell the difference between the user using
-            // the mouse and the caret being moved programmatically, we can bend
-            // the rules a little. In any case, we still break the undo sequence
-            // if the mouse is moved before or after the active insertion region,
-            // which is the main intent of the policy.
+            // sequence. With a little more work we could allow edits completely
+            // outside the active insertion region without breaking the undo
+            // sequence, and this would allow code assistants to e.g. automatically
+            // add usings and have the command still be repeatable.
             let breakUndoSequence =
                 match _textChangeTracker.EffectiveChange with
                 | Some span ->

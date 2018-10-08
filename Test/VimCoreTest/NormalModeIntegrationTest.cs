@@ -32,6 +32,7 @@ namespace Vim.UnitTest
         protected INormalMode _normalMode;
         protected MockVimHost _vimHost;
         protected TestableClipboardDevice _clipboardDevice;
+        protected TestableMouseDevice _testableMouseDevice;
         protected bool _assertOnErrorMessage = true;
         protected bool _assertOnWarningMessage = true;
 
@@ -70,12 +71,94 @@ namespace Vim.UnitTest
             _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
             // for the Visual portion so we can root out any bad mixing of instances between
             // the two
             Assert.True(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            base.Dispose();
+        }
+
+        public sealed class LeftMouseTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void MiddleOfLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 1); // 'a' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position); // 'a' in 'cat'
+            }
+
+            [WpfFact]
+            public void AfterEndOfLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
+            }
+
+            [WpfFact]
+            public void AfterEndOfLineOneMore()
+            {
+                Create("cat", "");
+                _globalSettings.VirtualEdit = "onemore";
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position); // after 't' in 'cat'
+            }
+
+            [WpfFact]
+            public void EmptyLine()
+            {
+                Create("cat", "", "dog", "");
+                var point = _textView.GetPointInLine(1, 0); // empty line
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void PhantomLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(1, 0); // phantom line
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
+            }
+
+            [WpfFact]
+            public void NonPhantomLine()
+            {
+                Create("cat", "dog");
+                var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse>");
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DeleteToMouse()
+            {
+                Create("cat dog mouse", "");
+                _textView.MoveCaretTo(4); // 'd' in 'dog'
+                var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("d<LeftMouse>");
+                Assert.Equal(new[] { "cat mouse", "", }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class MoveTest : NormalModeIntegrationTest

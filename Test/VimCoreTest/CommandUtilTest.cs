@@ -68,7 +68,6 @@ namespace Vim.UnitTest
                 foldManager,
                 new InsertUtil(vimBufferData, _motionUtil, operations),
                 _bulkOperations,
-                MouseDevice,
                 lineChangeTracker);
 
             var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();

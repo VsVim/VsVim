@@ -637,6 +637,8 @@ type internal VimBuffer
     /// Actually process the input key.  Raise the change event on an actual change
     member x.Process (keyInput: KeyInput) =
 
+        VimTrace.TraceInfo("VimBuffer.Process: {0}", keyInput)
+
         // Raise the event that we received the key
         let args = KeyInputStartEventArgs(keyInput)
         _keyInputStartEvent.Trigger x args

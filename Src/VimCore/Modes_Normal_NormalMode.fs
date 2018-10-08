@@ -181,6 +181,13 @@ type internal NormalMode
                 yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)
+                yield ("<LeftMouse>", CommandFlags.Special, NormalCommand.MoveCaretToMouse)
+                yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
+                yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
+                yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
@@ -352,15 +359,9 @@ type internal NormalMode
         _data <- EmptyData
 
     member x.CanProcess (keyInput: KeyInput) =
-        let doesCommandStartWith (keyInput: KeyInput) =
-            let name = KeyInputSet(keyInput)
-            _runner.Commands 
-            |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
-            |> SeqUtil.isNotEmpty
-
         if _runner.IsWaitingForMoreInput then 
             true
-        elif doesCommandStartWith keyInput then 
+        elif _runner.DoesCommandStartWith keyInput then
             true
         elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
 
