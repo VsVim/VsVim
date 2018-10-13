@@ -2845,8 +2845,11 @@ type NormalCommand =
     /// Format the text in the specified motion
     | FormatTextMotion of PreserveCaretPosition: bool * MotionData: MotionData
 
-    /// Go to the definition of hte word under the caret.
+    /// Go to the definition of the word under the caret
     | GoToDefinition
+
+    /// Go to the definition of the word under the mouse
+    | GoToDefinitionUnderMouse
 
     /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
     /// a different window
@@ -3120,6 +3123,7 @@ type NormalCommand =
         | NormalCommand.FormatCodeLines -> None
         | NormalCommand.FormatTextLines _ -> None
         | NormalCommand.GoToDefinition -> None
+        | NormalCommand.GoToDefinitionUnderMouse -> None
         | NormalCommand.GoToFileUnderCaret _ -> None
         | NormalCommand.GoToGlobalDeclaration -> None
         | NormalCommand.GoToLocalDeclaration -> None

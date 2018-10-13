@@ -1321,6 +1321,13 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Go to the definition of the word under the mouse
+    member x.GoToDefinitionUnderMouse () =
+        if x.MoveCaretToMouseUnconditionally() then
+            x.GoToDefinition()
+        else
+            CommandResult.Error
+
     /// GoTo the file name under the cursor and possibly use a new window
     member x.GoToFileUnderCaret useNewWindow =
         if useNewWindow then _commonOperations.GoToFileInNewWindow()
@@ -2766,6 +2773,7 @@ type internal CommandUtil
         | NormalCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLines count preserveCaretPosition
         | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> x.RunWithMotion motion (fun motion -> x.FormatTextMotion motion preserveCaretPosition)
         | NormalCommand.GoToDefinition -> x.GoToDefinition()
+        | NormalCommand.GoToDefinitionUnderMouse -> x.GoToDefinitionUnderMouse()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
