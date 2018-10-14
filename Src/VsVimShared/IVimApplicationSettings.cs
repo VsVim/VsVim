@@ -8,7 +8,7 @@ namespace Vim.VisualStudio
     /// <summary>
     /// Arguments passed to application settings changed event handlers
     /// </summary>
-    public class ApplicationSettingsEventArgs : EventArgs
+    public sealed class ApplicationSettingsEventArgs : EventArgs
     {
     }
 

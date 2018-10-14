@@ -223,6 +223,7 @@ namespace Vim.VisualStudio
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
+            _vimApplicationSettings.SettingsChanged += OnApplicationSettingsChanged;
 
             InitOutputPane();
         }
@@ -257,6 +258,11 @@ namespace Vim.VisualStudio
                     }
                 };
             } 
+        }
+
+        private void OnApplicationSettingsChanged()
+        {
+            _display
         }
 
         public override void EnsurePackageLoaded()

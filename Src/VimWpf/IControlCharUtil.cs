@@ -8,7 +8,7 @@ namespace Vim.UI.Wpf
     /// <summary>
     /// VsVim like gVim alters the display of control characters in the the editor.  Due to some 
     /// constraints of the editor it doesn't change the display of all control characters, just a 
-    /// well defined subset.  This interface abstracts set out
+    /// well defined subset.  This interface abstracts out this behavior.
     /// </summary>
     public interface IControlCharUtil
     {

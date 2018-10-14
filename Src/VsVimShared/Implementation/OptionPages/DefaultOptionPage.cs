@@ -298,6 +298,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             get { return GetColor(s_controlCharacterColorKey); }
             set { SetColor(s_controlCharacterColorKey, value); }
         }
+
         [DisplayName("Command Margin Foreground Color")]
         [Category(CategoryColors)]
         public Color CommandMarginForegroundColor

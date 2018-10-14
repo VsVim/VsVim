@@ -17,7 +17,6 @@ module GlobalSettingNames =
     let ClipboardName = "clipboard"
     let DigraphName = "digraph"
     let GlobalDefaultName = "gdefault"
-    let HideMarksName = "vsvim_hidemarks"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
@@ -337,9 +336,6 @@ and IVimGlobalSettings =
 
     /// Whether or not 'gdefault' is set
     abstract GlobalDefault: bool with get, set
-
-    /// Which marks to hide from the indicator margin
-    abstract HideMarks: string with get, set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch: bool with get, set
