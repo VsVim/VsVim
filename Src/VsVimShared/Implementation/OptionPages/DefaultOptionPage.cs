@@ -217,11 +217,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
-        [DisplayName("Telemetry")]
-        [Description("Whether or not to collect telemetry data for this instance.")]
-        [Category(CategoryGeneral)]
-        public bool EnableTelemetry { get; set; }
-
         [DisplayName("Output Window")]
         [Description("Whether or not to use output window to display trace data.")]
         [Category(CategoryGeneral)]
@@ -335,7 +330,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
-                EnableTelemetry = vimApplicationSettings.EnableTelemetry;
                 EnableOutputWindow = vimApplicationSettings.EnableOutputWindow;
                 UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
@@ -360,7 +354,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
-                vimApplicationSettings.EnableTelemetry = EnableTelemetry;
                 vimApplicationSettings.EnableOutputWindow = EnableOutputWindow;
                 vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;

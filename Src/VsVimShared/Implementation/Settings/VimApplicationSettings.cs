@@ -17,7 +17,6 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string DefaultSettingsName = "DefaultSettings";
         internal const string DisplayControlCharsName = "DisplayControlChars";
         internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
-        internal const string EnableTelemetryName = "EnableTelemetry";
         internal const string EnableOutputWindowName = "EnableOutputWindow";
         internal const string VimRcLoadSettingName = "VimRcLoadSetting";
         internal const string HaveUpdatedKeyBindingsName = "HaveUpdatedKeyBindings";
@@ -206,12 +205,6 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
             get { return GetBoolean(EnableExternalEditMonitoringName, defaultValue: true); }
             set { SetBoolean(EnableExternalEditMonitoringName, value); }
-        }
-
-        bool IVimApplicationSettings.EnableTelemetry
-        {
-            get { return GetBoolean(EnableTelemetryName, defaultValue: true); }
-            set { SetBoolean(EnableTelemetryName, value); }
         }
 
         bool IVimApplicationSettings.EnableOutputWindow

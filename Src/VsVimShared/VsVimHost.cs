@@ -201,8 +201,7 @@ namespace Vim.VisualStudio
             ISharedServiceFactory sharedServiceFactory,
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
-            SVsServiceProvider serviceProvider,
-            ITelemetryProvider telemetryProvider)
+            SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -221,7 +220,6 @@ namespace Vim.VisualStudio
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
-            InitTelemetry(telemetryProvider.GetOrCreate(vimApplicationSettings, _dte), vimApplicationSettings);
             InitOutputPane(vimApplicationSettings);
         }
 
@@ -245,23 +243,6 @@ namespace Vim.VisualStudio
                     outputPane.OutputString(e.Message + Environment.NewLine);
                 }
             };
-        }
-
-        private static void InitTelemetry(ITelemetry telemetry, IVimApplicationSettings vimApplicationSettings)
-        {
-            telemetry.WriteEvent("VsVim Started");
-
-            var version = vimApplicationSettings.LastVersionUsed;
-            if (string.IsNullOrEmpty(version))
-            {
-                telemetry.WriteEvent("VsVim Installed");
-            }
-
-            if (version != VimConstants.VersionNumber)
-            {
-                telemetry.WriteEvent($"VsVim Installed {VimConstants.VersionNumber}");
-                vimApplicationSettings.LastVersionUsed = VimConstants.VersionNumber;
-            }
         }
 
         public override void EnsurePackageLoaded()

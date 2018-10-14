@@ -49,11 +49,6 @@ namespace Vim.VisualStudio
         bool EnableExternalEditMonitoring { get; set; }
 
         /// <summary>
-        /// Do we track telemetry for this instance?
-        /// </summary>
-        bool EnableTelemetry { get; set; }
-
-        /// <summary>
         /// Enable debug logging via the OutputWindow
         /// </summary>
         bool EnableOutputWindow { get; set; }
