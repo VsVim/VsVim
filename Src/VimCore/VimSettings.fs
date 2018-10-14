@@ -156,6 +156,7 @@ type internal GlobalSettings() =
             (CurrentDirectoryPathName, "cd", SettingValue.String ",,", SettingOptions.FileName)
             (DigraphName, "dg", SettingValue.Toggle false, SettingOptions.None)
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
+            (HideMarksName, HideMarksName, SettingValue.String "", SettingOptions.None)
             (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
             (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
@@ -346,6 +347,9 @@ type internal GlobalSettings() =
         member x.GlobalDefault
             with get() = _map.GetBoolValue GlobalDefaultName
             and set value = _map.TrySetValue GlobalDefaultName (SettingValue.Toggle value) |> ignore
+        member x.HideMarks
+            with get() = _map.GetStringValue HideMarksName
+            and set value = _map.TrySetValue HideMarksName (SettingValue.String value) |> ignore
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore
@@ -518,7 +522,6 @@ type internal LocalSettings
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
             (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
-            (HideMarksName, "vsvim_hidemarks", SettingValue.String "", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -611,9 +614,6 @@ type internal LocalSettings
         member x.Comments
             with get() = _map.GetStringValue CommentsName
             and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
-        member x.HideMarks
-            with get() = _map.GetStringValue HideMarksName
-            and set value = _map.TrySetValue HideMarksName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

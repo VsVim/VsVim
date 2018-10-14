@@ -17,6 +17,7 @@ module GlobalSettingNames =
     let ClipboardName = "clipboard"
     let DigraphName = "digraph"
     let GlobalDefaultName = "gdefault"
+    let HideMarksName = "vsvim_hidemarks"
     let HighlightSearchName = "hlsearch"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
@@ -70,7 +71,6 @@ module LocalSettingNames =
     let FixEndOfLineName = "fixendofline"
     let TextWidthName = "textwidth"
     let CommentsName = "comments"
-    let HideMarksName = "vsvim_hidemarks"
 
 module WindowSettingNames =
 
@@ -338,6 +338,9 @@ and IVimGlobalSettings =
     /// Whether or not 'gdefault' is set
     abstract GlobalDefault: bool with get, set
 
+    /// Which marks to hide from the indicator margin
+    abstract HideMarks: string with get, set
+
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch: bool with get, set
 
@@ -583,9 +586,6 @@ and IVimLocalSettings =
 
     /// Comma separated list of strings that can start a comment line
     abstract Comments: string with get, set
-
-    /// Which marks to hide from the indicator margin
-    abstract HideMarks: string with get, set
 
     /// Is the provided NumberFormat supported by the current options
     abstract IsNumberFormatSupported: NumberFormat -> bool

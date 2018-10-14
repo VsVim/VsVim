@@ -32,7 +32,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _glyphPairs = new List<Tuple<string, int>>();
             _isVisible = true;
             _activeMarks = 0;
-            _hideMarks = _vimBufferData.LocalSettings.HideMarks;
+            _hideMarks = _vimBufferData.Vim.GlobalSettings.HideMarks;
 
             LoadNewBufferMarks();
             CachePairs();
@@ -42,7 +42,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vimBufferData.VimTextBuffer.MarkSet += OnBufferMarkSet;
             _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
-            _vimBufferData.LocalSettings.SettingChanged += OnLocalSettingsChanged;
+            _vimBufferData.Vim.GlobalSettings.SettingChanged += OnGlobalSettingsChanged;
             _vimBufferData.Vim.VimHost.IsVisibleChanged += OnIsVisibleChanged;
         }
 
@@ -53,7 +53,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _vimBufferData.VimTextBuffer.MarkSet -= OnBufferMarkSet;
             _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
-            _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
+            _vimBufferData.Vim.GlobalSettings.SettingChanged -= OnGlobalSettingsChanged;
         }
 
         private bool IsMarkHidden(Mark mark)
@@ -115,11 +115,11 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             UpdateAllMarks();
         }
 
-        private void OnLocalSettingsChanged(object sender, SettingEventArgs e)
+        private void OnGlobalSettingsChanged(object sender, SettingEventArgs e)
         {
-            if (e.Setting.Name == LocalSettingNames.HideMarksName)
+            if (e.Setting.Name == GlobalSettingNames.HideMarksName)
             {
-                _hideMarks = _vimBufferData.LocalSettings.HideMarks;
+                _hideMarks = _vimBufferData.Vim.GlobalSettings.HideMarks;
                 UpdateAllMarks();
             }
         }
