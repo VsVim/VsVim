@@ -159,6 +159,17 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("d<LeftMouse>");
                 Assert.Equal(new[] { "cat mouse", "", }, _textBuffer.GetLines());
             }
+
+            [WpfFact]
+            public void ControlClick()
+            {
+                Create("cat dog bear", "");
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal(5, _textView.GetCaretPoint().Position); // 'o' in 'dog'
+                Assert.Equal(1, _vimHost.GoToDefinitionCount);
+            }
         }
 
         public sealed class MoveTest : NormalModeIntegrationTest
