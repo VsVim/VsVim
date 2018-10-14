@@ -183,6 +183,7 @@ namespace Vim.VisualStudio
 
                 MarkDisplayUtil.HideMarksChanged += SyncToApplicationSettings;
                 ControlCharUtil.DisplayControlCharsChanged += SyncToApplicationSettings;
+                VimApplicationSettings.SettingsChanged += SyncFromApplicationSettings;
             }
 
             /// <summary>
