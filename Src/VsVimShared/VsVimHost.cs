@@ -134,6 +134,68 @@ namespace Vim.VisualStudio
 
         #endregion
 
+        #region SettingsSync
+
+        [Export(typeof(SettingsSync))]
+        internal sealed class SettingsSync
+        {
+            private bool _isSyncing;
+
+            public IVimApplicationSettings VimApplicationSettings { get; }
+            public IMarkDisplayUtil MarkDisplayUtil { get; }
+            public IControlCharUtil ControlCharUtil { get; }
+
+            [ImportingConstructor]
+            public SettingsSync(IVimApplicationSettings vimApplicationSettings, IMarkDisplayUtil markDisplayUtil, IControlCharUtil controlCharUtil)
+            {
+                VimApplicationSettings = vimApplicationSettings;
+                MarkDisplayUtil = markDisplayUtil;
+                ControlCharUtil = controlCharUtil;
+
+                MarkDisplayUtil.HideMarksChanged += SyncToApplicationSettings;
+                ControlCharUtil.DisplayControlCharsChanged += SyncToApplicationSettings;
+            }
+
+            /// <summary>
+            /// Sync from our external sources to application settings
+            /// </summary>
+            internal void SyncToApplicationSettings(object sender = null, EventArgs e = null)
+            {
+                SyncAction(() =>
+                {
+                    VimApplicationSettings.HideMarks = MarkDisplayUtil.HideMarks;
+                    VimApplicationSettings.DisplayControlChars = ControlCharUtil.DisplayControlChars;
+                });
+            }
+
+            internal void SyncFromApplicationSettings(object sender = null, EventArgs e = null)
+            {
+                SyncAction(() =>
+                {
+                    MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
+                    ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
+                });
+           }
+
+            private void SyncAction(Action action)
+            {
+                if (!_isSyncing)
+                {
+                    try
+                    {
+                        _isSyncing = true;
+                        action();
+                    }
+                    finally
+                    {
+                        _isSyncing = false;
+                    }
+                }
+            }
+        }
+
+        #endregion
+
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
         private readonly IVsAdapter _vsAdapter;
@@ -204,7 +266,8 @@ namespace Vim.VisualStudio
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             IProtectedOperations protectedOperations,
-            SVsServiceProvider serviceProvider)
+            SVsServiceProvider serviceProvider,
+            SettingsSync settingSync)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -223,9 +286,9 @@ namespace Vim.VisualStudio
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
-            _vimApplicationSettings.SettingsChanged += OnApplicationSettingsChanged;
 
             InitOutputPane();
+            settingSync.SyncFromApplicationSettings();
         }
 
         /// <summary>
@@ -258,11 +321,6 @@ namespace Vim.VisualStudio
                     }
                 };
             } 
-        }
-
-        private void OnApplicationSettingsChanged()
-        {
-            _display
         }
 
         public override void EnsurePackageLoaded()
@@ -301,7 +359,7 @@ namespace Vim.VisualStudio
             }
         }
 
-        /// <summary>
+        /// <summary>  
         /// Get the C++ identifier which exists under the caret 
         /// </summary>
         private static string GetCPlusPlusIdentifier(ITextView textView)

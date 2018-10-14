@@ -54,6 +54,11 @@ namespace Vim.VisualStudio
         bool EnableOutputWindow { get; set; }
 
         /// <summary>
+        /// Controls which marks should be hidden from display in the margin.
+        /// </summary>
+        string HideMarks { get; set; }
+
+        /// <summary>
         /// Do we want to enable vim style processing of tab and backspace
         /// </summary>
         bool UseEditorTabAndBackspace { get; set; }
