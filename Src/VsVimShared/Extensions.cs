@@ -770,8 +770,7 @@ namespace Vim.VisualStudio
             return
                 displayWindowBroker.IsCompletionActive ||
                 displayWindowBroker.IsQuickInfoActive ||
-                displayWindowBroker.IsSignatureHelpActive ||
-                displayWindowBroker.IsSmartTagSessionActive;
+                displayWindowBroker.IsSignatureHelpActive;
         }
 
         #endregion

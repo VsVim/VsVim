@@ -319,7 +319,6 @@ namespace Vim.VisualStudio.UnitTest.Utils
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
-            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
 
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
             _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
