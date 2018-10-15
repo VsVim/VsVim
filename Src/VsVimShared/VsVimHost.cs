@@ -21,6 +21,7 @@ using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
+using System.Windows.Threading;
 
 namespace Vim.VisualStudio
 {
@@ -147,6 +148,7 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
+        private readonly IProtectedOperations _protectedOperations;
         private IVim _vim;
 
         internal _DTE DTE
@@ -201,6 +203,7 @@ namespace Vim.VisualStudio
             ISharedServiceFactory sharedServiceFactory,
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
+            IProtectedOperations protectedOperations,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -216,33 +219,44 @@ namespace Vim.VisualStudio
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
+            _protectedOperations = protectedOperations;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
-            InitOutputPane(vimApplicationSettings);
+            InitOutputPane();
         }
 
         /// <summary>
         /// Hookup the output window to the vim trace data when it's requested by the developer
         /// </summary>
-        private void InitOutputPane(IVimApplicationSettings vimApplicationSettings)
+        private void InitOutputPane()
         {
-            if (!(_dte is DTE2 dte2))
-            {
-                return;
-            }
+            // The output window is not guaraneed to be accessible on startup. On certain configurations of VS2015
+            // it can throw an exception. Delaying the creation of the Window until after startup has likely 
+            // completed. Additionally using IProtectedOperations to guard against exeptions 
+            // https://github.com/jaredpar/VsVim/issues/2249
 
-            var outputWindow = dte2.ToolWindows.OutputWindow;
-            var outputPane = outputWindow.OutputWindowPanes.Add("VsVim");
+            _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
 
-            VimTrace.Trace += (_, e) =>
+            void initOutputPaneCore()
             {
-                if (vimApplicationSettings.EnableOutputWindow)
+                if (!(_dte is DTE2 dte2))
                 {
-                    outputPane.OutputString(e.Message + Environment.NewLine);
+                    return;
                 }
-            };
+
+                var outputWindow = dte2.ToolWindows.OutputWindow;
+                var outputPane = outputWindow.OutputWindowPanes.Add("VsVim");
+
+                VimTrace.Trace += (_, e) =>
+                {
+                    if (_vimApplicationSettings.EnableOutputWindow)
+                    {
+                        outputPane.OutputString(e.Message + Environment.NewLine);
+                    }
+                };
+            } 
         }
 
         public override void EnsurePackageLoaded()
