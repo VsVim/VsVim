@@ -82,6 +82,7 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
                 _extensionAdapterBroker.Object,
+                ProtectedOperations,
                 sp.Object);
             _host = _hostRaw;
         }
