@@ -23,9 +23,6 @@ type IDisplayWindowBroker =
     // Is Quick Info active
     abstract IsQuickInfoActive: bool 
 
-    /// Is there a smart tip window active
-    abstract IsSmartTagSessionActive: bool
-
     /// Dismiss any completion windows on the given ITextView
     abstract DismissDisplayWindows: unit -> unit
 
