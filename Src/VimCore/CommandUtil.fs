@@ -1094,6 +1094,11 @@ type internal CommandUtil
 
         /// Whether the specified point is at a word boundary
         let isWordBoundary (point: SnapshotPoint) =
+
+            // Note that this function is safe to use in the presence of
+            // surrogate pairs because all surrogate pairs (and the code point
+            // they represent when combined) are non-word non-whitespace
+            // characters.
             let isStart = SnapshotPointUtil.IsStartPoint point
             let isEnd = SnapshotPointUtil.IsEndPoint point
             if isStart || isEnd then
@@ -1117,6 +1122,15 @@ type internal CommandUtil
                     |> (fun length -> length = 0)
                 isWhite <> wasWhite || isWord <> wasWord || isEmptyLine
 
+        /// Whether the next character span is at a word boundary
+        let isNextCharacterSpanWordBoundary (point: SnapshotPoint) =
+            if SnapshotPointUtil.IsEndPoint point then
+                true
+            else
+                point
+                |> SnapshotPointUtil.GetNextCharacterSpanWithWrap
+                |> isWordBoundary
+
         // Record the anchor point before moving the caret.
         let anchorPoint =
             if x.CaretPoint = visualSpan.Start then
@@ -1133,14 +1147,16 @@ type internal CommandUtil
 
             // Handle selecting by word.
             if _doSelectByWord then
-                let searchPath =
+                let searchPath, wordFunction =
                     if x.CaretPoint.Position < anchorPoint.Position then
-                        SearchPath.Backward
+                        SearchPath.Backward, isWordBoundary
+                    elif _globalSettings.IsSelectionInclusive then
+                        SearchPath.Forward, isNextCharacterSpanWordBoundary
                     else
-                        SearchPath.Forward
+                        SearchPath.Forward, isWordBoundary
                 x.CaretPoint
                 |> SnapshotPointUtil.GetPointsIncludingLineBreak searchPath
-                |> Seq.filter isWordBoundary
+                |> Seq.filter wordFunction
                 |> Seq.head
                 |> TextViewUtil.MoveCaretToPoint _textView
 
