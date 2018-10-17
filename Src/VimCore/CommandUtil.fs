@@ -1158,15 +1158,15 @@ type internal CommandUtil
                 |> SnapshotPointUtil.GetPointsIncludingLineBreak searchPath
                 |> Seq.filter wordFunction
                 |> Seq.head
-                |> TextViewUtil.MoveCaretToPoint _textView
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> x.MoveCaretToVirtualPointForMouse
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Extend the selection for a mouse release
     member x.ExtendSelectionForMouseRelease visualSpan =
         let result = x.ExtendSelectionForMouseDrag visualSpan
-        _leftMouseDownPoint <- None
-        _doSelectByWord <- false
+        x.HandleMouseRelease()
         result
 
     /// Extend the selection for a mouse drag
@@ -1957,11 +1957,23 @@ type internal CommandUtil
         | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal ()
 
+    /// Move the caret to the specified virtual point for the mouse, i.e.
+    /// without adjusting for scroll offset
+    member x.MoveCaretToVirtualPointForMouse (point: VirtualSnapshotPoint) =
+        let viewFlags = ViewFlags.Standard &&& ~~~ViewFlags.ScrollOffset
+        _commonOperations.MoveCaretToVirtualPoint point viewFlags
+
+    /// Handle a mouse release, i.e. apply any delayed scroll offset adjustment
+    member x.HandleMouseRelease() =
+        _commonOperations.AdjustTextViewForScrollOffset()
+        _leftMouseDownPoint <- None
+        _doSelectByWord <- false
+
     /// Move the caret to position of the mouse cursor
     member x.MoveCaretToMouseUnconditionally () =
         match x.MousePoint with
         | Some point ->
-            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
+            x.MoveCaretToVirtualPointForMouse point
             _leftMouseDownPoint <- Some point
             true
         | None ->
@@ -3442,8 +3454,7 @@ type internal CommandUtil
     /// Select text for a mouse release
     member x.SelectTextForMouseRelease () =
         let result = x.SelectTextForMouseDrag()
-        _leftMouseDownPoint <- None
-        _doSelectByWord <- false
+        x.HandleMouseRelease()
         result
 
     member x.SelectTextCore startPoint =
