@@ -165,7 +165,6 @@ namespace Vim.VisualStudio
 
         #region SettingsSync
 
-        [Export(typeof(SettingsSync))]
         internal sealed class SettingsSync
         {
             private bool _isSyncing;
