@@ -241,6 +241,7 @@ namespace Vim.VisualStudio
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly SettingsSync _settingsSync;
         private IVim _vim;
 
         internal _DTE DTE
@@ -296,8 +297,9 @@ namespace Vim.VisualStudio
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             IProtectedOperations protectedOperations,
-            SVsServiceProvider serviceProvider,
-            SettingsSync settingSync)
+            IMarkDisplayUtil markDisplayUtil,
+            IControlCharUtil controlCharUtil,
+            SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -318,7 +320,9 @@ namespace Vim.VisualStudio
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitOutputPane();
-            settingSync.SyncFromApplicationSettings();
+
+            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil);
+            _settingsSync.SyncFromApplicationSettings();
         }
 
         /// <summary>
