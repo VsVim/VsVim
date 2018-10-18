@@ -8642,6 +8642,39 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure repeating a forward till search always moves
+            /// </summary>
+            [WpfFact]
+            public void RepeatLastCharSearchMoves_Forward()
+            {
+                // Reported in issue #2389.
+                Create("a b c a b c");
+                _vimBuffer.Process("tb");
+                Assert.Equal(_textView.GetPoint(1), _textView.GetCaretPoint());
+                _vimBuffer.Process("tb");
+                Assert.Equal(_textView.GetPoint(1), _textView.GetCaretPoint());
+                _vimBuffer.Process(";");
+                Assert.Equal(_textView.GetPoint(7), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure repeating a backward till search always moves
+            /// </summary>
+            [WpfFact]
+            public void RepeatLastCharSearchMoves_Backward()
+            {
+                // Reported in issue #2389.
+                Create("a b c a b c");
+                _textView.MoveCaretTo(10);
+                _vimBuffer.Process("Tb");
+                Assert.Equal(_textView.GetPoint(9), _textView.GetCaretPoint());
+                _vimBuffer.Process("Tb");
+                Assert.Equal(_textView.GetPoint(9), _textView.GetCaretPoint());
+                _vimBuffer.Process(";");
+                Assert.Equal(_textView.GetPoint(3), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// Enter should not go through normal mode mapping during an incremental search
             /// </summary>
             [WpfFact]
