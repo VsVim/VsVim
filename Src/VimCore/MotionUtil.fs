@@ -1809,7 +1809,7 @@ type internal MotionUtil
     /// Do the actual char search motion but don't update the 'LastCharSearch' value
     member x.CharSearchCore c count charSearch direction isRepeated =
 
-        /// See vim ':help cpo-;'.
+        // See vim ':help cpo-;'.
         let repeatTillAlwaysMoves = true
 
         let forward () = 
