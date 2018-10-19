@@ -22,6 +22,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
 using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace Vim.VisualStudio
 {
@@ -48,7 +49,8 @@ namespace Vim.VisualStudio
             private const string UseEditorDefaultsName = "vsvim_useeditordefaults";
             private const string UseEditorTabAndBackspaceName = "vsvim_useeditortab";
             private const string UseEditorCommandMarginName = "vsvim_useeditorcommandmargin";
-            private const string CleanMacros = "vsvim_cleanmacros";
+            private const string CleanMacrosName = "vsvim_cleanmacros";
+            private const string HideMarksName = "vsvim_hidemarks";
 
             private readonly IVimApplicationSettings _vimApplicationSettings;
 
@@ -64,70 +66,159 @@ namespace Vim.VisualStudio
                 globalSettings.AddCustomSetting(UseEditorDefaultsName, UseEditorDefaultsName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorTabAndBackspaceName, UseEditorTabAndBackspaceName, settingsSource);
                 globalSettings.AddCustomSetting(UseEditorCommandMarginName, UseEditorCommandMarginName, settingsSource);
-                globalSettings.AddCustomSetting(CleanMacros, CleanMacros, settingsSource);
+                globalSettings.AddCustomSetting(CleanMacrosName, CleanMacrosName, settingsSource);
+                globalSettings.AddCustomSetting(HideMarksName, HideMarksName, settingsSource);
             }
 
             SettingValue IVimCustomSettingSource.GetDefaultSettingValue(string name)
             {
-                return SettingValue.NewToggle(true);
+                switch (name)
+                {
+                    case UseEditorIndentName:
+                    case UseEditorDefaultsName:
+                    case UseEditorTabAndBackspaceName:
+                    case UseEditorCommandMarginName:
+                    case CleanMacrosName:
+                        return SettingValue.NewToggle(false);
+                    case HideMarksName:
+                        return SettingValue.NewString("");
+                    default:
+                        Debug.Assert(false);
+                        return SettingValue.NewToggle(false);
+               }
             }
 
             SettingValue IVimCustomSettingSource.GetSettingValue(string name)
             {
-                bool value;
                 switch (name)
                 {
                     case UseEditorIndentName:
-                        value = _vimApplicationSettings.UseEditorIndent;
-                        break;
+                        return SettingValue.NewToggle(_vimApplicationSettings.UseEditorIndent);
                     case UseEditorDefaultsName:
-                        value = _vimApplicationSettings.UseEditorDefaults;
-                        break;
+                        return SettingValue.NewToggle(_vimApplicationSettings.UseEditorDefaults);
                     case UseEditorTabAndBackspaceName:
-                        value = _vimApplicationSettings.UseEditorTabAndBackspace;
-                        break;
+                        return SettingValue.NewToggle(_vimApplicationSettings.UseEditorTabAndBackspace);
                     case UseEditorCommandMarginName:
-                        value = _vimApplicationSettings.UseEditorCommandMargin;
-                        break;
-                    case CleanMacros:
-                        value = _vimApplicationSettings.CleanMacros;
-                        break;
+                        return SettingValue.NewToggle(_vimApplicationSettings.UseEditorCommandMargin);
+                    case CleanMacrosName:
+                        return SettingValue.NewToggle(_vimApplicationSettings.CleanMacros);
+                    case HideMarksName:
+                        return SettingValue.NewString(_vimApplicationSettings.HideMarks);
                     default:
-                        value = false;
-                        break;
+                        Debug.Assert(false);
+                        return SettingValue.NewToggle(false);
                 }
-
-                return SettingValue.NewToggle(value);
             }
 
             void IVimCustomSettingSource.SetSettingValue(string name, SettingValue settingValue)
             {
-                if (!settingValue.IsToggle)
+                void setBool(Action<bool> action)
                 {
-                    return;
+                    if (!settingValue.IsToggle)
+                    {
+                        return;
+                    }
+
+                    var value = ((SettingValue.Toggle)settingValue).Toggle;
+                    action(value);
                 }
 
-                var value = ((SettingValue.Toggle)settingValue).Toggle;
+                void setString(Action<string> action)
+                {
+                    if (!settingValue.IsString)
+                    {
+                        return;
+                    }
+
+                    var value = ((SettingValue.String)settingValue).String;
+                    action(value);
+                }
+
                 switch (name)
                 {
                     case UseEditorIndentName:
-                        _vimApplicationSettings.UseEditorIndent = value;
+                        setBool(v => _vimApplicationSettings.UseEditorIndent = v);
                         break;
                     case UseEditorDefaultsName:
-                        _vimApplicationSettings.UseEditorDefaults = value;
+                        setBool(v => _vimApplicationSettings.UseEditorDefaults = v);
                         break;
                     case UseEditorTabAndBackspaceName:
-                        _vimApplicationSettings.UseEditorTabAndBackspace = value;
+                        setBool(v => _vimApplicationSettings.UseEditorTabAndBackspace = v);
                         break;
                     case UseEditorCommandMarginName:
-                        _vimApplicationSettings.UseEditorCommandMargin = value;
+                        setBool(v => _vimApplicationSettings.UseEditorCommandMargin = v);
                         break;
-                    case CleanMacros:
-                        _vimApplicationSettings.CleanMacros = value;
+                    case CleanMacrosName:
+                        setBool(v => _vimApplicationSettings.CleanMacros = v);
+                        break;
+                    case HideMarksName:
+                        setString(v => _vimApplicationSettings.HideMarks = v);
                         break;
                     default:
-                        value = false;
+                        Debug.Assert(false);
                         break;
+                }
+            }
+        }
+
+        #endregion
+
+        #region SettingsSync
+
+        internal sealed class SettingsSync
+        {
+            private bool _isSyncing;
+
+            public IVimApplicationSettings VimApplicationSettings { get; }
+            public IMarkDisplayUtil MarkDisplayUtil { get; }
+            public IControlCharUtil ControlCharUtil { get; }
+
+            [ImportingConstructor]
+            public SettingsSync(IVimApplicationSettings vimApplicationSettings, IMarkDisplayUtil markDisplayUtil, IControlCharUtil controlCharUtil)
+            {
+                VimApplicationSettings = vimApplicationSettings;
+                MarkDisplayUtil = markDisplayUtil;
+                ControlCharUtil = controlCharUtil;
+
+                MarkDisplayUtil.HideMarksChanged += SyncToApplicationSettings;
+                ControlCharUtil.DisplayControlCharsChanged += SyncToApplicationSettings;
+                VimApplicationSettings.SettingsChanged += SyncFromApplicationSettings;
+            }
+
+            /// <summary>
+            /// Sync from our external sources to application settings
+            /// </summary>
+            internal void SyncToApplicationSettings(object sender = null, EventArgs e = null)
+            {
+                SyncAction(() =>
+                {
+                    VimApplicationSettings.HideMarks = MarkDisplayUtil.HideMarks;
+                    VimApplicationSettings.DisplayControlChars = ControlCharUtil.DisplayControlChars;
+                });
+            }
+
+            internal void SyncFromApplicationSettings(object sender = null, EventArgs e = null)
+            {
+                SyncAction(() =>
+                {
+                    MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
+                    ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
+                });
+           }
+
+            private void SyncAction(Action action)
+            {
+                if (!_isSyncing)
+                {
+                    try
+                    {
+                        _isSyncing = true;
+                        action();
+                    }
+                    finally
+                    {
+                        _isSyncing = false;
+                    }
                 }
             }
         }
@@ -149,6 +240,7 @@ namespace Vim.VisualStudio
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly SettingsSync _settingsSync;
         private IVim _vim;
 
         internal _DTE DTE
@@ -204,6 +296,8 @@ namespace Vim.VisualStudio
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             IProtectedOperations protectedOperations,
+            IMarkDisplayUtil markDisplayUtil,
+            IControlCharUtil controlCharUtil,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -225,6 +319,9 @@ namespace Vim.VisualStudio
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitOutputPane();
+
+            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil);
+            _settingsSync.SyncFromApplicationSettings();
         }
 
         /// <summary>
@@ -295,7 +392,7 @@ namespace Vim.VisualStudio
             }
         }
 
-        /// <summary>
+        /// <summary>  
         /// Get the C++ identifier which exists under the caret 
         /// </summary>
         private static string GetCPlusPlusIdentifier(ITextView textView)

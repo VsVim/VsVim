@@ -15,6 +15,7 @@ using Vim;
 using Vim.UnitTest;
 using System.Collections.Generic;
 using Microsoft.VisualStudio;
+using Vim.UI.Wpf;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -83,6 +84,8 @@ namespace Vim.VisualStudio.UnitTest
                 _vimApplicationSettings.Object,
                 _extensionAdapterBroker.Object,
                 ProtectedOperations,
+                _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
+                _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
                 sp.Object);
             _host = _hostRaw;
         }
