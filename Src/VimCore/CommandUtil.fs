@@ -2953,7 +2953,7 @@ type internal CommandUtil
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
-        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseDrag()
+        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
