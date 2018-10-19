@@ -1092,6 +1092,22 @@ type internal CommandUtil
     /// Extend the selection for a mouse click
     member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
 
+        /// Reset the anchor point by switching to the appropriate visual mode
+        /// with a modified visual selection
+        let resetAnchorPoint (anchorPoint: SnapshotPoint) =
+            let visualKind = VisualKind.Character
+            let caretPoint = x.CaretPoint
+            let tabStop = _localSettings.TabStop
+            let visualSelection =
+                VisualSelection.CreateForPoints visualKind anchorPoint caretPoint tabStop
+            let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            x.SwitchMode modeKind argument
+
         /// Whether the specified point is at a word boundary
         let isWordBoundary (point: SnapshotPoint) =
 
@@ -1132,11 +1148,11 @@ type internal CommandUtil
                 |> isWordBoundary
 
         // Record the anchor point before moving the caret.
-        let anchorPoint =
-            if x.CaretPoint = visualSpan.Start then
-                visualSpan.End
+        let anchorPoint, isForward =
+            if x.CaretPoint <> visualSpan.Start then
+                visualSpan.Start, true
             else
-                visualSpan.Start
+                visualSpan.End, false
 
         // Double-clicking creates a problem because the caret is moved to the
         // end of what was selected rather than directly under the mouse
@@ -1161,7 +1177,44 @@ type internal CommandUtil
                 |> VirtualSnapshotPointUtil.OfPoint
                 |> x.MoveCaretToVirtualPointForMouse
 
-        CommandResult.Completed ModeSwitch.NoSwitch
+                // For an inclusive selection that flips, we may need to adjust
+                // the other end of the visual span to align to a word
+                // boundary.  In effect, the initial word that was selected is
+                // always included as part of the selection.
+                if
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position < anchorPoint.Position &&
+                    isForward
+                then
+
+                    // Flip the selection and extend the current word forwards.
+                    let anchorPoint =
+                        anchorPoint
+                        |> SnapshotPointUtil.AddOneOrCurrent
+                        |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                        |> Seq.filter isNextCharacterSpanWordBoundary
+                        |> Seq.head
+                    resetAnchorPoint anchorPoint
+                elif
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position >= anchorPoint.Position &&
+                    not isForward
+                then
+
+                    // Flip the selection and extend the current word backwards.
+                    let anchorPoint =
+                        anchorPoint
+                        |> SnapshotPointUtil.SubtractOneOrCurrent
+                        |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+                        |> Seq.filter isWordBoundary
+                        |> Seq.head
+                    resetAnchorPoint anchorPoint
+                else
+                    CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Extend the selection for a mouse release
     member x.ExtendSelectionForMouseRelease visualSpan =
