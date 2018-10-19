@@ -1188,13 +1188,12 @@ type internal CommandUtil
                 then
 
                     // Flip the selection and extend the current word forwards.
-                    let anchorPoint =
-                        anchorPoint
-                        |> SnapshotPointUtil.AddOneOrCurrent
-                        |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
-                        |> Seq.filter isNextCharacterSpanWordBoundary
-                        |> Seq.head
-                    resetAnchorPoint anchorPoint
+                    anchorPoint
+                    |> SnapshotPointUtil.AddOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                    |> Seq.filter isNextCharacterSpanWordBoundary
+                    |> Seq.head
+                    |> resetAnchorPoint
                 elif
                     _globalSettings.IsSelectionInclusive &&
                     x.CaretPoint.Position >= anchorPoint.Position &&
@@ -1202,13 +1201,12 @@ type internal CommandUtil
                 then
 
                     // Flip the selection and extend the current word backwards.
-                    let anchorPoint =
-                        anchorPoint
-                        |> SnapshotPointUtil.SubtractOneOrCurrent
-                        |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
-                        |> Seq.filter isWordBoundary
-                        |> Seq.head
-                    resetAnchorPoint anchorPoint
+                    anchorPoint
+                    |> SnapshotPointUtil.SubtractOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+                    |> Seq.filter isWordBoundary
+                    |> Seq.head
+                    |> resetAnchorPoint
                 else
                     CommandResult.Completed ModeSwitch.NoSwitch
             else
