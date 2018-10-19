@@ -1092,9 +1092,9 @@ type internal CommandUtil
     /// Extend the selection for a mouse click
     member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
 
-        /// Reset the anchor point by switching to the appropriate visual mode
+        /// Change the anchor point by switching to the appropriate visual mode
         /// with a modified visual selection
-        let resetAnchorPoint (anchorPoint: SnapshotPoint) =
+        let changeAnchorPoint (anchorPoint: SnapshotPoint) =
             let visualKind = VisualKind.Character
             let caretPoint = x.CaretPoint
             let tabStop = _localSettings.TabStop
@@ -1125,7 +1125,7 @@ type internal CommandUtil
                     |> SnapshotPointUtil.GetChar
                 let previousPointChar =
                     point
-                    |> SnapshotPointUtil.GetPreviousPointWithWrap
+                    |> SnapshotPointUtil.SubtractOne
                     |> SnapshotPointUtil.GetChar
                 let isWhite = CharUtil.IsWhiteSpace pointChar
                 let wasWhite = CharUtil.IsWhiteSpace previousPointChar
@@ -1193,7 +1193,7 @@ type internal CommandUtil
                     |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
                     |> Seq.filter isNextCharacterSpanWordBoundary
                     |> Seq.head
-                    |> resetAnchorPoint
+                    |> changeAnchorPoint
                 elif
                     _globalSettings.IsSelectionInclusive &&
                     x.CaretPoint.Position >= anchorPoint.Position &&
@@ -1206,7 +1206,7 @@ type internal CommandUtil
                     |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
                     |> Seq.filter isWordBoundary
                     |> Seq.head
-                    |> resetAnchorPoint
+                    |> changeAnchorPoint
                 else
                     CommandResult.Completed ModeSwitch.NoSwitch
             else
