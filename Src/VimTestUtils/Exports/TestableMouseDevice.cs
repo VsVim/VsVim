@@ -11,12 +11,18 @@ namespace Vim.UnitTest.Exports
     public sealed class TestableMouseDevice : IMouseDevice
     {
         public bool IsLeftButtonPressed { get; set; }
+        public bool IsRightButtonPressed { get; set; }
         public bool InDragOperationImpl { get; set; }
         public SnapshotPoint? Point { get; set; }
 
         bool IMouseDevice.IsLeftButtonPressed
         {
             get { return IsLeftButtonPressed; }
+        }
+
+        bool IMouseDevice.IsRightButtonPressed
+        {
+            get { return IsRightButtonPressed; }
         }
 
         public FSharpOption<VimPoint> GetPosition(ITextView textView)

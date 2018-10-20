@@ -111,6 +111,7 @@ type internal SelectionChangeTracker
             _vimBuffer.GlobalSettings.ScrollOffset > 0
             && not _textView.InLayout
             && not _vimBuffer.IsProcessingInput
+            && not _mouseDevice.IsRightButtonPressed
         then
 
             // Do the update being cautious that anything could have
