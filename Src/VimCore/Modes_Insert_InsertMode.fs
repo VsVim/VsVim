@@ -640,7 +640,7 @@ type internal InsertMode
 
         x.ApplyAfterEdits()
 
-        if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive || _broker.IsSmartTagSessionActive then
+        if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
 
         // Save the last edit point before moving the column to the left

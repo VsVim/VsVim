@@ -15,6 +15,7 @@ using Vim;
 using Vim.UnitTest;
 using System.Collections.Generic;
 using Microsoft.VisualStudio;
+using Vim.UI.Wpf;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -62,9 +63,6 @@ namespace Vim.VisualStudio.UnitTest
             uint runningDocumentTableCookie = 86;
             vsRunningDocumentTable.Setup(x => x.AdviseRunningDocTableEvents(It.IsAny<IVsRunningDocTableEvents3>(), out runningDocumentTableCookie)).Returns(VSConstants.S_OK);
 
-            var telemetryProvider = _factory.Create<ITelemetryProvider>(MockBehavior.Loose);
-            telemetryProvider.Setup(x => x.GetOrCreate(_vimApplicationSettings.Object, _dte.Object)).Returns(_factory.Create<ITelemetry>(MockBehavior.Loose).Object);
-
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_uiVSShell.Object);
@@ -85,8 +83,10 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
                 _extensionAdapterBroker.Object,
-                sp.Object,
-                telemetryProvider.Object);
+                ProtectedOperations,
+                _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
+                _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
+                sp.Object);
             _host = _hostRaw;
         }
 

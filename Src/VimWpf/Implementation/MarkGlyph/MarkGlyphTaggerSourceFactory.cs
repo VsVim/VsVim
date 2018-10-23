@@ -16,16 +16,18 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     {
         private readonly object _key = new object();
         private readonly IVim _vim;
+        private readonly IMarkDisplayUtil _markDisplayUtil;
 
         [ImportingConstructor]
-        internal MarkGlyphTaggerSourceFactory(IVim vim)
+        internal MarkGlyphTaggerSourceFactory(IVim vim, IMarkDisplayUtil markDisplayUtil)
         {
             _vim = vim;
+            _markDisplayUtil = markDisplayUtil;
         }
 
         private MarkGlyphTaggerSource CreateMarkGlyphTaggerSource(IVimBufferData vimBufferData)
         {
-            return new MarkGlyphTaggerSource(vimBufferData);
+            return new MarkGlyphTaggerSource(vimBufferData, _markDisplayUtil);
         }
 
         #region IViewTaggerProvider

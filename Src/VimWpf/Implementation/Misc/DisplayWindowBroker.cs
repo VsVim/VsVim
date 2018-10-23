@@ -13,20 +13,17 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly ITextView _textView;
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
-        private readonly ISmartTagBroker _smartTagBroker;
         private readonly IQuickInfoBroker _quickInfoBroker;
 
         internal DisplayWindowBroker(
             ITextView textView,
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            ISmartTagBroker smartTagBroker,
             IQuickInfoBroker quickInfoBroker)
         {
             _textView = textView;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
-            _smartTagBroker = smartTagBroker;
             _quickInfoBroker = quickInfoBroker;
         }
 
@@ -45,24 +42,6 @@ namespace Vim.UI.Wpf.Implementation.Misc
         bool IDisplayWindowBroker.IsSignatureHelpActive
         {
             get { return _signatureHelpBroker.IsSignatureHelpActive(_textView); }
-        }
-
-        bool IDisplayWindowBroker.IsSmartTagSessionActive
-        {
-            get
-            {
-                if (_smartTagBroker.IsSmartTagActive(_textView))
-                {
-                    foreach (var session in _smartTagBroker.GetSessions(_textView))
-                    {
-                        if (session.State == SmartTagState.Expanded)
-                        {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
         }
 
         ITextView IDisplayWindowBroker.TextView
@@ -101,19 +80,16 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
-        private readonly ISmartTagBroker _smartTagBroker;
         private readonly IQuickInfoBroker _quickInfoBroker;
 
         [ImportingConstructor]
         internal DisplayWindowBrokerFactoryService(
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            ISmartTagBroker smartTagBroker,
             IQuickInfoBroker quickInfoBroker)
         {
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
-            _smartTagBroker = smartTagBroker;
             _quickInfoBroker = quickInfoBroker;
         }
 
@@ -125,7 +101,6 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         textView,
                         _completionBroker,
                         _signatureHelpBroker,
-                        _smartTagBroker,
                         _quickInfoBroker));
         }
     }

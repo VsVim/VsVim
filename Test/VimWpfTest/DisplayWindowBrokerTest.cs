@@ -11,7 +11,6 @@ namespace Vim.UI.Wpf.UnitTest
 {
     public class DisplayWindowBrokerTest
     {
-        private readonly Mock<ISmartTagBroker> _smartTagBroker;
         private readonly Mock<ICompletionBroker> _completionBroker;
         private readonly Mock<ISignatureHelpBroker> _signatureBroker;
         private readonly Mock<IQuickInfoBroker> _quickInfoBroker;
@@ -21,7 +20,6 @@ namespace Vim.UI.Wpf.UnitTest
 
         public DisplayWindowBrokerTest()
         {
-            _smartTagBroker = new Mock<ISmartTagBroker>();
             _completionBroker = new Mock<ICompletionBroker>();
             _signatureBroker = new Mock<ISignatureHelpBroker>();
             _quickInfoBroker = new Mock<IQuickInfoBroker>();
@@ -30,59 +28,8 @@ namespace Vim.UI.Wpf.UnitTest
                 _textView.Object,
                 _completionBroker.Object,
                 _signatureBroker.Object,
-                _smartTagBroker.Object,
                 _quickInfoBroker.Object);
             _broker = _brokerRaw;
-        }
-
-        [Fact]
-        public void IsSmartTagSessionActive1()
-        {
-            _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(false).Verifiable();
-            Assert.False(_broker.IsSmartTagSessionActive);
-            _smartTagBroker.Verify();
-        }
-
-        [Fact]
-        public void IsSmartTagSessionActive2()
-        {
-            _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
-            _smartTagBroker
-                .Setup(x => x.GetSessions(_textView.Object))
-                .Returns((new List<ISmartTagSession>()).AsReadOnly())
-                .Verifiable();
-            Assert.False(_broker.IsSmartTagSessionActive);
-            _smartTagBroker.Verify();
-        }
-
-        [Fact]
-        public void IsSmartTagSessionActive3()
-        {
-            var session = new Mock<ISmartTagSession>();
-            session.SetupGet(x => x.State).Returns(SmartTagState.Collapsed);
-            var list = Enumerable.Repeat(session.Object, 1).ToList().AsReadOnly();
-            _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
-            _smartTagBroker
-                .Setup(x => x.GetSessions(_textView.Object))
-                .Returns(list)
-                .Verifiable();
-            Assert.False(_broker.IsSmartTagSessionActive);
-            _smartTagBroker.Verify();
-        }
-
-        [Fact]
-        public void IsSmartTagSessionActive4()
-        {
-            var session = new Mock<ISmartTagSession>();
-            session.SetupGet(x => x.State).Returns(SmartTagState.Expanded);
-            var list = Enumerable.Repeat(session.Object, 1).ToList().AsReadOnly();
-            _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
-            _smartTagBroker
-                .Setup(x => x.GetSessions(_textView.Object))
-                .Returns(list)
-                .Verifiable();
-            Assert.True(_broker.IsSmartTagSessionActive);
-            _smartTagBroker.Verify();
         }
 
         [Fact]

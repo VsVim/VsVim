@@ -89,13 +89,6 @@ namespace Vim.VisualStudio.Implementation.Misc
                     keyInput.Key == VimKey.Back;
             }
 
-            if (_broker.IsSmartTagSessionActive)
-            {
-                return
-                    keyInput.IsArrowKey ||
-                    keyInput == KeyInputUtil.EnterKey;
-            }
-
             if (_broker.IsSignatureHelpActive)
             {
                 return keyInput.IsArrowKey;

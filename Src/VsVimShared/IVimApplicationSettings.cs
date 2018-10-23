@@ -8,7 +8,7 @@ namespace Vim.VisualStudio
     /// <summary>
     /// Arguments passed to application settings changed event handlers
     /// </summary>
-    public class ApplicationSettingsEventArgs : EventArgs
+    public sealed class ApplicationSettingsEventArgs : EventArgs
     {
     }
 
@@ -49,14 +49,14 @@ namespace Vim.VisualStudio
         bool EnableExternalEditMonitoring { get; set; }
 
         /// <summary>
-        /// Do we track telemetry for this instance?
-        /// </summary>
-        bool EnableTelemetry { get; set; }
-
-        /// <summary>
         /// Enable debug logging via the OutputWindow
         /// </summary>
         bool EnableOutputWindow { get; set; }
+
+        /// <summary>
+        /// Controls which marks should be hidden from display in the margin.
+        /// </summary>
+        string HideMarks { get; set; }
 
         /// <summary>
         /// Do we want to enable vim style processing of tab and backspace
