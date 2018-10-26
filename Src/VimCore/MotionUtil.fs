@@ -1804,15 +1804,30 @@ type internal MotionUtil
         // Save the last search value
         _vimData.LastCharSearch <- Some (charSearch, direction, c)
 
-        x.CharSearchCore c count charSearch direction
+        x.CharSearchCore c count charSearch direction false
 
     /// Do the actual char search motion but don't update the 'LastCharSearch' value
-    member x.CharSearchCore c count charSearch direction = 
+    member x.CharSearchCore c count charSearch direction isRepeated =
+
+        // See vim ':help cpo-;'.
+        let repeatTillAlwaysMoves = true
 
         let forward () = 
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let start = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-                SnapshotSpan(start, x.CaretLine.End)
+            let startPoint = x.CaretPoint
+            let endPoint = x.CaretLine.End
+            if startPoint.Position < endPoint.Position then
+                let startPoint = SnapshotPointUtil.AddOne startPoint
+                let startPoint =
+                    if
+                        repeatTillAlwaysMoves &&
+                        charSearch = CharSearchKind.TillChar &&
+                        isRepeated &&
+                        startPoint.Position < endPoint.Position
+                    then
+                        SnapshotPointUtil.AddOne startPoint
+                    else
+                        startPoint
+                SnapshotSpan(startPoint, endPoint)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.filter (SnapshotPointUtil.IsChar c)
                 |> SeqUtil.skipMax (count - 1)
@@ -1821,7 +1836,19 @@ type internal MotionUtil
                 None
 
         let backward () = 
-            SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
+            let startPoint = x.CaretLine.Start
+            let endPoint = x.CaretPoint
+            let endPoint =
+                if
+                    repeatTillAlwaysMoves &&
+                    charSearch = CharSearchKind.TillChar &&
+                    isRepeated &&
+                    endPoint.Position > startPoint.Position
+                then
+                    SnapshotPointUtil.SubtractOne endPoint
+                else
+                    endPoint
+            SnapshotSpan(startPoint, endPoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> Seq.filter (SnapshotPointUtil.IsChar c)
             |> SeqUtil.skipMax (count - 1)
@@ -1858,7 +1885,7 @@ type internal MotionUtil
     member x.RepeatLastCharSearch count =
         match _vimData.LastCharSearch with 
         | None -> None
-        | Some (kind, direction, c) -> x.CharSearchCore c count kind direction
+        | Some (kind, direction, c) -> x.CharSearchCore c count kind direction true
 
     /// Repeat the last f, F, t or T search pattern in the opposite direction
     member x.RepeatLastCharSearchOpposite count =
@@ -1869,7 +1896,7 @@ type internal MotionUtil
                 match direction with
                 | SearchPath.Forward -> SearchPath.Backward
                 | SearchPath.Backward -> SearchPath.Forward
-            x.CharSearchCore c count kind direction
+            x.CharSearchCore c count kind direction true
 
     member x.WordForward kind count motionContext =
 
