@@ -1131,11 +1131,7 @@ type internal CommandUtil
                 let wasWhite = CharUtil.IsWhiteSpace previousPointChar
                 let isWord = TextUtil.IsWordChar WordKind.NormalWord pointChar
                 let wasWord = TextUtil.IsWordChar WordKind.NormalWord previousPointChar
-                let isEmptyLine =
-                    point
-                    |> SnapshotPointUtil.GetContainingLine
-                    |> SnapshotLineUtil.GetLength
-                    |> (fun length -> length = 0)
+                let isEmptyLine = SnapshotPointUtil.IsEmptyLine point
                 isWhite <> wasWhite || isWord <> wasWord || isEmptyLine
 
         /// Whether the next character span is at a word boundary
