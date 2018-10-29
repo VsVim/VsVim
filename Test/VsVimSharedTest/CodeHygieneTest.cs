@@ -15,6 +15,18 @@ namespace Vim.VisualStudio.UnitTest
     {
         private readonly Assembly _assembly = typeof(CodeHygieneTest).Assembly;
 
+        private static Assembly[] GetCoreAssemblyList()
+        {
+            return new[]
+            {
+                typeof(IVimHost).Assembly,
+                typeof(VimHost).Assembly,
+                typeof(VsVimHost).Assembly,
+                typeof(VsVimPackage).Assembly,
+                typeof(ISharedService).Assembly,
+            };
+        }
+
         [Fact]
         public void TestNamespace()
         {
@@ -58,14 +70,7 @@ namespace Vim.VisualStudio.UnitTest
         [Fact]
         public void FSharpCoreReferences()
         {
-            var assemblyList = new[]
-            {
-                typeof(IVimHost).Assembly,
-                typeof(VimHost).Assembly,
-                typeof(VsVimHost).Assembly
-            };
-
-            Assert.Equal(assemblyList.Length, assemblyList.Distinct().Count());
+            var assemblyList = GetCoreAssemblyList();
 
             foreach (var assembly in assemblyList)
             {
@@ -73,6 +78,22 @@ namespace Vim.VisualStudio.UnitTest
                 {
                     Assert.NotEqual("FSharp.Core", assemblyRef.Name, StringComparer.OrdinalIgnoreCase);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Make sure the core assemblies all have the same version and that it matches the release 
+        /// version.
+        /// </summary>
+        [Fact]
+        public void AssemblyVersion()
+        {
+            var assemblyList = GetCoreAssemblyList();
+            var version = Version.Parse(VimConstants.VersionNumber);
+            foreach (var assembly in assemblyList)
+            {
+                var assemblyVersion = assembly.GetName().Version;
+                Assert.Equal(version, assemblyVersion);
             }
         }
     }
