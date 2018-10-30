@@ -36,12 +36,7 @@ module VimConstants =
     [<Literal>]
     let MainKeyProcessorName = "VsVim";
 
-#if DEBUG
-    [<Literal>]
-    let VersionNumber = "2.6.99.99 Debug"
-#else
     [<Literal>]
     let VersionNumber = "2.6.0.0"
-#endif
 
 

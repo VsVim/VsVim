@@ -12,6 +12,10 @@
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
+    <AssemblyVersion>2.6.0.0</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <InformationalVersion>$(AssemblyVersion)</InformationalVersion>
+
     <!-- The version of VS that should be targetted for testing. Prefer the
          current VS version but allow it to be changed via environment 
          variable for testing other versions --> 

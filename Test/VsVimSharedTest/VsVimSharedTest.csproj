@@ -43,6 +43,7 @@
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
+    <ProjectReference Include="..\..\Src\VsVim\VsVim.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\VsCommands.txt" />

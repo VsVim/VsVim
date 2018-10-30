@@ -124,6 +124,12 @@ function Test-Version() {
     if ($manifestVersion -ne $version) { 
         throw "The version $version doesn't match up with the manifest version of $manifestVersion" 
     }
+
+    $data = [xml](Get-Content "Directory.Build.props")
+    $assemblyVersion = $data.Project.PropertyGroup[0].AssemblyVersion
+    if ($assemblyVersion -ne $version) { 
+        throw "The version $version doesn't match up with the assembly version of $assemblyVersion" 
+    }
 }
 
 
