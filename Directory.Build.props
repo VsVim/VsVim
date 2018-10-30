@@ -12,7 +12,7 @@
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
-    <AssemblyVersion>2.6.0.0</AssemblyVersion>
+    <AssemblyVersion>2.6.1.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <InformationalVersion>$(AssemblyVersion)</InformationalVersion>
 
