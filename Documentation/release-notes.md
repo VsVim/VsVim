@@ -5,7 +5,7 @@
 Primary Issues Addressed
 * Visual Studio 2019 support
 * Mark display in the editor margin
-* Significantl improved surrogate pair support
+* Significantly improved surrogate pair support
 * In total nearly 150 issues were addressed in this release leading to improvements across the board
 
 
