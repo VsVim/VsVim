@@ -104,6 +104,9 @@ type internal CommandUtil
     /// The last mouse down position before it was adjusted for virtual edit
     let mutable _leftMouseDownPoint: VirtualSnapshotPoint option = None
 
+    /// Whether to select by word when dragging the mouse
+    let mutable _doSelectByWord = false
+
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
@@ -1087,20 +1090,130 @@ type internal CommandUtil
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
     /// Extend the selection for a mouse click
-    member x.ExtendSelectionForMouseDrag () =
+    member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
+
+        /// Change the anchor point by switching to the appropriate visual mode
+        /// with a modified visual selection
+        let changeAnchorPoint (anchorPoint: SnapshotPoint) =
+            let visualKind = VisualKind.Character
+            let caretPoint = x.CaretPoint
+            let tabStop = _localSettings.TabStop
+            let visualSelection =
+                VisualSelection.CreateForPoints visualKind anchorPoint caretPoint tabStop
+            let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            x.SwitchMode modeKind argument
+
+        /// Whether the specified point is at a word boundary
+        let isWordBoundary (point: SnapshotPoint) =
+
+            // Note that this function is safe to use in the presence of
+            // surrogate pairs because all surrogate pairs (and the code point
+            // they represent when combined) are non-word non-whitespace
+            // characters.
+            let isStart = SnapshotPointUtil.IsStartPoint point
+            let isEnd = SnapshotPointUtil.IsEndPoint point
+            if isStart || isEnd then
+                true
+            else
+                let pointChar =
+                    point
+                    |> SnapshotPointUtil.GetChar
+                let previousPointChar =
+                    point
+                    |> SnapshotPointUtil.SubtractOne
+                    |> SnapshotPointUtil.GetChar
+                let isWhite = CharUtil.IsWhiteSpace pointChar
+                let wasWhite = CharUtil.IsWhiteSpace previousPointChar
+                let isWord = TextUtil.IsWordChar WordKind.NormalWord pointChar
+                let wasWord = TextUtil.IsWordChar WordKind.NormalWord previousPointChar
+                let isEmptyLine = SnapshotPointUtil.IsEmptyLine point
+                isWhite <> wasWhite || isWord <> wasWord || isEmptyLine
+
+        /// Whether the next character span is at a word boundary
+        let isNextCharacterSpanWordBoundary (point: SnapshotPoint) =
+            if SnapshotPointUtil.IsEndPoint point then
+                true
+            else
+                point
+                |> SnapshotPointUtil.GetNextCharacterSpanWithWrap
+                |> isWordBoundary
+
+        // Record the anchor point before moving the caret.
+        let anchorPoint, isForward =
+            if x.CaretPoint <> visualSpan.Start then
+                visualSpan.Start, true
+            else
+                visualSpan.End, false
 
         // Double-clicking creates a problem because the caret is moved to the
         // end of what was selected rather than directly under the mouse
         // pointer.  Prevent accidentally dragging after a double-click by
         // moving the caret only if the mouse position is over a different
         // snapshot point than it was when the mouse was previously clicked.
-        x.MoveCaretToMouseIfChanged() |> ignore
-        CommandResult.Completed ModeSwitch.NoSwitch
+        if x.MoveCaretToMouseIfChanged() then
+
+            // Handle selecting by word.
+            if _doSelectByWord then
+                let searchPath, wordFunction =
+                    if x.CaretPoint.Position < anchorPoint.Position then
+                        SearchPath.Backward, isWordBoundary
+                    elif _globalSettings.IsSelectionInclusive then
+                        SearchPath.Forward, isNextCharacterSpanWordBoundary
+                    else
+                        SearchPath.Forward, isWordBoundary
+                x.CaretPoint
+                |> SnapshotPointUtil.GetPointsIncludingLineBreak searchPath
+                |> Seq.filter wordFunction
+                |> Seq.head
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> x.MoveCaretToVirtualPointForMouse
+
+                // For an inclusive selection that flips, we may need to adjust
+                // the other end of the visual span to align to a word
+                // boundary.  In effect, the initial word that was selected is
+                // always included as part of the selection.
+                if
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position < anchorPoint.Position &&
+                    isForward
+                then
+
+                    // Flip the selection and extend the current word forwards.
+                    anchorPoint
+                    |> SnapshotPointUtil.AddOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                    |> Seq.filter isNextCharacterSpanWordBoundary
+                    |> Seq.head
+                    |> changeAnchorPoint
+                elif
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position >= anchorPoint.Position &&
+                    not isForward
+                then
+
+                    // Flip the selection and extend the current word backwards.
+                    anchorPoint
+                    |> SnapshotPointUtil.SubtractOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+                    |> Seq.filter isWordBoundary
+                    |> Seq.head
+                    |> changeAnchorPoint
+                else
+                    CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Extend the selection for a mouse release
-    member x.ExtendSelectionForMouseRelease () =
-        let result = x.ExtendSelectionForMouseDrag()
-        _leftMouseDownPoint <- None
+    member x.ExtendSelectionForMouseRelease visualSpan =
+        let result = x.ExtendSelectionForMouseDrag visualSpan
+        x.HandleMouseRelease()
         result
 
     /// Extend the selection for a mouse drag
@@ -1891,11 +2004,41 @@ type internal CommandUtil
         | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal ()
 
+    /// Move the caret to the specified virtual point for the mouse, i.e.
+    /// without adjusting for scroll offset
+    member x.MoveCaretToVirtualPointForMouse (point: VirtualSnapshotPoint) =
+        let viewFlags = ViewFlags.Standard &&& ~~~ViewFlags.ScrollOffset
+        _commonOperations.MoveCaretToVirtualPoint point viewFlags
+
+    /// Handle a mouse release, i.e. apply any delayed scroll offset adjustment
+    member x.HandleMouseRelease() =
+
+        // Here we would like to call:
+        //
+        // _commonOperations.AdjustTextViewForScrollOffset()
+        //
+        // but because we get a mouse release event inbetween a mouse click and
+        // mouse double-click, that could scroll the window right in the middle
+        // of a mouse operation.
+        //
+        // The only robust approaches to handle this are either: 1) delay the
+        // adjustment until we are sure a double-click won't happen, or 2)
+        // suppress the mouse release event before a double-click. Neither
+        // solution is ideal because it involves timer infrastructure we don't
+        // currently have and it introduces a lag in scroll offset adjustment.
+        //
+        // It's not really any consolation, but gvim doesn't handle this well
+        // either. For now, our solution is simply not to obey 'scrolloff'
+        // during mouse operations.
+
+        _leftMouseDownPoint <- None
+        _doSelectByWord <- false
+
     /// Move the caret to position of the mouse cursor
     member x.MoveCaretToMouseUnconditionally () =
         match x.MousePoint with
         | Some point ->
-            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
+            x.MoveCaretToVirtualPointForMouse point
             _leftMouseDownPoint <- Some point
             true
         | None ->
@@ -2824,7 +2967,7 @@ type internal CommandUtil
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
         | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
-        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseDrag()
+        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
@@ -2870,8 +3013,8 @@ type internal CommandUtil
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
         | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick()
-        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag()
-        | VisualCommand.ExtendSelectionForMouseRelease -> x.ExtendSelectionForMouseRelease()
+        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag visualSpan
+        | VisualCommand.ExtendSelectionForMouseRelease -> x.ExtendSelectionForMouseRelease visualSpan
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
@@ -3376,7 +3519,7 @@ type internal CommandUtil
     /// Select text for a mouse release
     member x.SelectTextForMouseRelease () =
         let result = x.SelectTextForMouseDrag()
-        _leftMouseDownPoint <- None
+        x.HandleMouseRelease()
         result
 
     member x.SelectTextCore startPoint =
@@ -3395,6 +3538,7 @@ type internal CommandUtil
 
     /// Select the current word or matching token
     member x.SelectWordOrMatchingToken () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
         let text =
             x.CaretPoint
             |> SnapshotPointUtil.GetCharacterSpan
@@ -3410,6 +3554,7 @@ type internal CommandUtil
                 let motion = Motion.InnerWord WordKind.NormalWord
                 match _motionUtil.GetMotion motion argument with
                 | Some motionResult ->
+                    _doSelectByWord <- true
                     Some motionResult, false
                 | None ->
                     None, false

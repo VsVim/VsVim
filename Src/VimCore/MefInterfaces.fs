@@ -210,6 +210,9 @@ type IMouseDevice =
     /// Is the left button pressed
     abstract IsLeftButtonPressed: bool
 
+    /// Is the right button pressed
+    abstract IsRightButtonPressed: bool
+
     /// Get the position of the mouse position within the ITextView
     abstract GetPosition: textView: ITextView -> VimPoint option
 

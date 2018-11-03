@@ -97,7 +97,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "");
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 1); // 'a' in 'cat'
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(1, _textView.GetCaretPoint().Position); // 'a' in 'cat'
             }
 
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "");
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
             }
 
@@ -116,7 +116,7 @@ namespace Vim.UnitTest
                 Create("cat", "");
                 _globalSettings.VirtualEdit = "onemore";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(3, _textView.GetCaretPoint().Position); // after 't' in 'cat'
             }
 
@@ -126,7 +126,7 @@ namespace Vim.UnitTest
                 Create("cat", "", "dog", "");
                 var point = _textView.GetPointInLine(1, 0); // empty line
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
             }
 
@@ -135,7 +135,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "");
                 _testableMouseDevice.Point = _textView.GetPointInLine(1, 0); // phantom line
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
             }
 
@@ -145,7 +145,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
             }
 
@@ -156,7 +156,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(4); // 'd' in 'dog'
                 var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("d<LeftMouse>");
+                _vimBuffer.ProcessNotation("d<LeftMouse><LeftRelease>");
                 Assert.Equal(new[] { "cat mouse", "", }, _textBuffer.GetLines());
             }
 
