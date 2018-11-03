@@ -2012,7 +2012,25 @@ type internal CommandUtil
 
     /// Handle a mouse release, i.e. apply any delayed scroll offset adjustment
     member x.HandleMouseRelease() =
-        _commonOperations.AdjustTextViewForScrollOffset()
+
+        // Here we would like to call:
+        //
+        // _commonOperations.AdjustTextViewForScrollOffset()
+        //
+        // but because we get a mouse release event inbetween a mouse click and
+        // mouse double-click, that could scroll the window right in the middle
+        // of a mouse operation.
+        //
+        // The only robust approaches to handle this are either: 1) delay the
+        // adjustment until we are sure a double-click won't happen, or 2)
+        // suppress the mouse release event before a double-click. Neither
+        // solution is ideal because it involves timer infrastructure we don't
+        // currently have and it introduces a lag in scroll offset adjustment.
+        //
+        // It's not really any consolation, but gvim doesn't handle this well
+        // either. For now, our solution is simply not to obey 'scrolloff'
+        // during mouse operations.
+
         _leftMouseDownPoint <- None
         _doSelectByWord <- false
 
@@ -3520,6 +3538,7 @@ type internal CommandUtil
 
     /// Select the current word or matching token
     member x.SelectWordOrMatchingToken () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
         let text =
             x.CaretPoint
             |> SnapshotPointUtil.GetCharacterSpan
