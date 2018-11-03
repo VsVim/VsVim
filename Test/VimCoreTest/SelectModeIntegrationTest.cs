@@ -117,7 +117,7 @@ namespace Vim.UnitTest
                 Assert.Equal(midPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 7); // ' ' after 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<LeftDrag>");
+                _vimBuffer.ProcessNotation("<LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
@@ -141,7 +141,7 @@ namespace Vim.UnitTest
                 Assert.Equal(midPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<LeftDrag>");
+                _vimBuffer.ProcessNotation("<LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
@@ -165,12 +165,12 @@ namespace Vim.UnitTest
                 Assert.Equal(midPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<LeftDrag>");
+                _vimBuffer.ProcessNotation("<LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
                 _testableMouseDevice.Point = startPoint;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind); // back to insert
             }
@@ -182,11 +182,11 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 7); // ' ' after 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                _vimBuffer.ProcessNotation("<S-LeftMouse><S-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
@@ -199,11 +199,11 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                _vimBuffer.ProcessNotation("<S-LeftMouse><S-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
@@ -216,16 +216,16 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
                 var endPoint = _textView.GetPointInLine(0, 6); // 'g' in 'dog'
                 _testableMouseDevice.Point = endPoint;
-                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                _vimBuffer.ProcessNotation("<S-LeftMouse><S-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(endPoint.Position, _textView.GetCaretPoint().Position);
                 _testableMouseDevice.Point = startPoint;
-                _vimBuffer.ProcessNotation("<LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(startPoint.Position, _textView.GetCaretPoint().Position);
                 Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind); // back to insert
             }
@@ -241,7 +241,7 @@ namespace Vim.UnitTest
                     _textView.GetSelectionSpan());
                 var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<S-LeftMouse>");
+                _vimBuffer.ProcessNotation("<S-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
                 Assert.Equal(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                     _textView.GetSelectionSpan());
@@ -255,7 +255,7 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "exclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(7, _textView.GetCaretPoint().Position); // ' ' after 'dog'
@@ -268,7 +268,7 @@ namespace Vim.UnitTest
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(6, _textView.GetCaretPoint().Position); // 'g' in 'dog'
@@ -280,7 +280,7 @@ namespace Vim.UnitTest
                 Create("cat dog bear bat", "");
                 _globalSettings.Selection = "exclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(7, _textView.GetCaretPoint().Position); // ' ' after 'dog'
@@ -295,7 +295,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat ", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 9); // 'e' in 'bear'
-                _vimBuffer.ProcessNotation("<LeftDrag>");
+                _vimBuffer.ProcessNotation("<LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog bear", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(12, _textView.GetCaretPoint().Position); // ' ' after 'bear'
@@ -307,7 +307,7 @@ namespace Vim.UnitTest
                 Create("cat dog bear bat", "");
                 _globalSettings.Selection = "inclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(6, _textView.GetCaretPoint().Position); // 'g' in 'dog'
@@ -322,7 +322,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 9); // 'e' in 'bear'
-                _vimBuffer.ProcessNotation("<LeftDrag>");
+                _vimBuffer.ProcessNotation("<LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 Assert.Equal("dog bear", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(11, _textView.GetCaretPoint().Position); // 'r' in 'bear'
@@ -334,7 +334,7 @@ namespace Vim.UnitTest
                 Create("cat dog bear", "pig horse bat", "");
                 var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse><3-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
                 Assert.Equal(_textBuffer.GetLineRange(1).ExtentIncludingLineBreak,
                     _textView.GetSelectionSpan());
@@ -347,7 +347,7 @@ namespace Vim.UnitTest
                 Create("cat dog bear", "");
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
-                _vimBuffer.ProcessNotation("<LeftMouse><2-LeftMouse><3-LeftMouse><4-LeftMouse>");
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease><4-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectBlock, _vimBuffer.ModeKind);
                 Assert.Equal("o", _textView.GetSelectionSpan().GetText());
                 Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
