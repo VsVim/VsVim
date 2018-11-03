@@ -3108,6 +3108,20 @@ type internal CommandUtil
         let viewportHeight = _textView.ViewportHeight
         int (floor (viewportHeight / lineHeight))
 
+    /// Scroll viewport of the current text view vertically by lines
+    member x.ScrollViewportVerticallyByLines (scrollDirection: ScrollDirection) (count: int) =
+        if count = 1 then
+            _textView.ViewScroller.ScrollViewportVerticallyByLine(scrollDirection)
+        else
+
+            // Avoid using 'ScrollViewportVerticallyByLines' because it forces
+            // a layout for every line scrolled. Normally this is not a serious
+            // problem but on some displays the layout costs are so high that
+            // the operation becomes pathologically slow. See issue #1633.
+            let sign = if scrollDirection = ScrollDirection.Up then 1 else -1
+            let pixels = float(sign * count) * _textView.LineHeight
+            _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
+
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
@@ -3181,7 +3195,7 @@ type internal CommandUtil
                         let line = textViewLines.[index]
                         TextViewUtil.MoveCaretToPoint _textView line.Start
                 else
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    x.ScrollViewportVerticallyByLines scrollDirection count
                     updateCaretToOffset lineOffset
             | ScrollDirection.Down ->
                 let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
@@ -3198,7 +3212,7 @@ type internal CommandUtil
                         let caretPoint, _ = SnapshotPointUtil.OrderAscending visualEndPoint line.End
                         TextViewUtil.MoveCaretToPoint _textView caretPoint
                 else
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    x.ScrollViewportVerticallyByLines scrollDirection count
                     updateCaretToOffset lineOffset
             | _ -> ()
 
@@ -3229,7 +3243,7 @@ type internal CommandUtil
                 _editorOperations.PageUp(false)
             | Some textViewLines ->
                 let scrollAmount = getScrollAmount textViewLines
-                _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Up, scrollAmount)
+                x.ScrollViewportVerticallyByLines ScrollDirection.Up scrollAmount
 
         // Scroll down by one full page or as much as possible.
         let doScrollDown () =
@@ -3252,7 +3266,7 @@ type internal CommandUtil
                     _editorOperations.ScrollLineTop()
                 else
                     let scrollAmount = getScrollAmount textViewLines
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, scrollAmount)
+                    x.ScrollViewportVerticallyByLines ScrollDirection.Down scrollAmount
 
         // Get the last (and if possible, fully visible) line in the text view.
         let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
@@ -3394,7 +3408,7 @@ type internal CommandUtil
 
         let spacesToCaret = x.GetSpacesToCaret()
 
-        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
+        x.ScrollViewportVerticallyByLines direction rowCount
 
         match TextViewUtil.GetVisibleSnapshotLineRange _textView with
         | None -> ()
