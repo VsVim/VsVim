@@ -37,6 +37,6 @@ module VimConstants =
     let MainKeyProcessorName = "VsVim";
 
     [<Literal>]
-    let VersionNumber = "2.6.0.0"
+    let VersionNumber = "2.6.1.0"
 
 
