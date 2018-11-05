@@ -34,6 +34,9 @@ type internal SelectionChangeTracker
     /// key input and not in Visual Mode 
     let mutable _selectionDirty = false
 
+    /// Whether the text view has multiple carets
+    let mutable _hasMultipleCarets = false
+
     do
         _textView.Selection.SelectionChanged 
         |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
@@ -81,9 +84,13 @@ type internal SelectionChangeTracker
             // If one of the IVisualModeSelectionOverride instances wants us to ignore the
             // event then we will
             ()
-        elif _vimBuffer.ModeKind = ModeKind.Disabled || _vimBuffer.ModeKind = ModeKind.ExternalEdit then
+        elif _vimBuffer.ModeKind = ModeKind.Disabled then
             // If the selection changes while Vim is disabled then don't update
             () 
+        elif _vimBuffer.ModeKind = ModeKind.ExternalEdit then
+            if _hasMultipleCarets && not (_vimHost.HasMultipleCarets _vimBuffer.TextView) then
+                _hasMultipleCarets <- false
+                _vimBuffer.SwitchPreviousMode |> ignore
         elif _vimBuffer.IsProcessingInput then
             if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                 // Do nothing.  Selection changes that occur while processing input during
@@ -95,6 +102,9 @@ type internal SelectionChangeTracker
             // Selection is frequently updated while switching between modes.  It's the responsibility
             // of the mode switching logic to properly update the mode here. 
             ()
+        elif _vimHost.HasMultipleCarets _vimBuffer.TextView then
+            _hasMultipleCarets <- true
+            _vimBuffer.SwitchMode ModeKind.ExternalEdit ModeArgument.None |> ignore
         else
             x.SetModeForSelection()
 
