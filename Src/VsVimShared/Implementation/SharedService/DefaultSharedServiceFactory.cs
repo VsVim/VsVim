@@ -30,6 +30,11 @@ namespace Vim.VisualStudio.Implementation.SharedService
             {
                 return false;
             }
+
+            bool ISharedService.HasMultipleCarets(ITextView peekView)
+            {
+                return false;
+            }
         }
 
         VisualStudioVersion ISharedServiceVersionFactory.Version

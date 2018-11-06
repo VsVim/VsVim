@@ -56,6 +56,11 @@ namespace Vim.VisualStudio
         /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
         /// </summary>
         bool ClosePeekView(ITextView peekView);
+
+        /// <summary>
+        /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
+        /// </summary>
+        bool HasMultipleCarets(ITextView peekView);
     }
 
     /// <summary>

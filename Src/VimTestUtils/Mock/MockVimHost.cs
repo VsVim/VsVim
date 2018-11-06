@@ -387,5 +387,10 @@ namespace Vim.UnitTest.Mock
         {
             return false;
         }
+
+        bool IVimHost.HasMultipleCarets(ITextView textView)
+        {
+            return false;
+        }
     }
 }

@@ -403,6 +403,11 @@ namespace Vim.UI.Wpf
         {
         }
 
+        public virtual bool HasMultipleCarets(ITextView textView)
+        {
+            return false;
+        }
+
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
         /// no custom processing is done
@@ -787,6 +792,11 @@ namespace Vim.UI.Wpf
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcLoaded(vimRcState, localSettings, windowSettings);
+        }
+
+        bool IVimHost.HasMultipleCarets(ITextView textView)
+        {
+            return HasMultipleCarets(textView);
         }
 
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged

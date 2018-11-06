@@ -102,6 +102,11 @@ namespace Vim.VisualStudio.Specific
             return ClosePeekView(peekView);
         }
 
+        bool ISharedService.HasMultipleCarets(ITextView textView)
+        {
+            return HasMultipleCarets(textView);
+        }
+
         #endregion
     }
 }

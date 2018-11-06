@@ -4693,6 +4693,9 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
+    /// Whether the specified text view has multiple carets
+    abstract HasMultipleCarets: textView: ITextView -> bool
+
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged: IDelegateEvent<System.EventHandler<TextViewEventArgs>>

@@ -1225,6 +1225,11 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
+        public override bool HasMultipleCarets(ITextView textView)
+        {
+            return _sharedService.HasMultipleCarets(textView);
+        }
+
         #endregion
     }
 }
