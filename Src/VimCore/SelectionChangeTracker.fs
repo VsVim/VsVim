@@ -106,6 +106,7 @@ type internal SelectionChangeTracker
             _hasMultipleCarets <- true
             _vimBuffer.SwitchMode ModeKind.ExternalEdit ModeArgument.None |> ignore
         else
+            _hasMultipleCarets <- false
             x.SetModeForSelection()
 
     /// If the caret changes position and it wasn't initiated by VsVim then we should be 
