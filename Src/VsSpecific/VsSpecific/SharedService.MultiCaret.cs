@@ -58,7 +58,7 @@ namespace Vim.VisualStudio.Specific
                         .GetValue(textView);
                     var brokerType = broker
                         .GetType()
-                        .GetInterface("Microsoft.VisualStudio.Text.Editor.IMultiSelectionBroker");
+                        .GetInterface("Microsoft.VisualStudio.Text.IMultiSelectionBroker");
                     if (brokerType != null)
                     {
                         var property = brokerType
