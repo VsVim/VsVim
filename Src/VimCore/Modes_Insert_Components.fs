@@ -48,8 +48,8 @@ type internal ITextChangeTracker =
 /// Data relating to an effective change
 type EffectiveChangeData = {
 
-    // The current caret position
-    CaretPosition: CaretPosition
+    // The current snapshot
+    Snapshot: ITextSnapshot
 
     /// The left edge of the active insert region
     LeftEdge: int
@@ -96,11 +96,6 @@ type internal TextChangeTracker
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
-        // Listen to caret position changed events.
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun args -> this.OnPositionChanged args)
-        |> _bag.Add
-
         // Dispose handlers when the text view is closed.
         _textView.Closed 
         |> Event.add (fun _ -> _bag.DisposeAll())
@@ -138,11 +133,11 @@ type internal TextChangeTracker
         let position = caretPosition.BufferPosition.Position
         _effectiveChangeData <-
             Some {
-                CaretPosition = caretPosition;
-                LeftEdge = position;
-                RightEdge = position;
-                LeftDeletions = 0;
-                RightDeletions = 0;
+                Snapshot = _textView.TextSnapshot
+                LeftEdge = position
+                RightEdge = position
+                LeftDeletions = 0
+                RightDeletions = 0
             }
 
     /// Whether the effective change is a simple insert
@@ -156,10 +151,11 @@ type internal TextChangeTracker
     /// A span representing the active insert region of the effective change
     member x.EffectiveChange =
         match _effectiveChangeData with
-        | Some data when data.CaretPosition.BufferPosition.Snapshot = _textView.TextSnapshot ->
+        | Some data ->
+            Contract.Assert(data.Snapshot = _textView.TextSnapshot)
             SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
             |> Some
-        | _ ->
+        | None ->
             None
 
     /// Stop tracking the effective change
@@ -219,14 +215,6 @@ type internal TextChangeTracker
             x.UpdateEffectiveChange args
 
         x.UpdateMarks args
-
-    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) =
-        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
-        match _effectiveChangeData with
-        | Some data ->
-            _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }
-        | None ->
-            ()
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -311,7 +299,11 @@ type internal TextChangeTracker
 
         match _effectiveChangeData with
         | Some data ->
-            let virtualSpaces = data.CaretPosition.VirtualSpaces
+
+            Contract.Assert(args.Before = data.Snapshot)
+
+            let caretPosition = _textView.Caret.Position
+            let virtualSpaces = caretPosition.VirtualSpaces
             let mutable leftEdge = data.LeftEdge
             let mutable rightEdge = data.RightEdge
             let mutable leftDeletions = data.LeftDeletions
@@ -324,15 +316,18 @@ type internal TextChangeTracker
 
                 // Adjust the active region based on the change.
                 if
-                    virtualSpaces > 0
+                    args.Before = caretPosition.BufferPosition.Snapshot
+                    && virtualSpaces > 0
                     && change.OldSpan.Start = leftEdge
-                    && change.OldSpan.End = rightEdge
-                    && change.NewSpan.Start = leftEdge
+                    && change.OldSpan.End = leftEdge
                     && change.NewText.Length >= virtualSpaces
                     && change.NewText.Substring(0, virtualSpaces) |> StringUtil.IsBlanks
                 then
 
-                    // Caret was moved from virtual space to non-virtual space.
+                    // An insertion moved the caret from virtual space to
+                    // non-virtual space. Exclude the virtual spaces from the
+                    // active region so that if the effective change is
+                    // repeated the virtual spaces don't get double inserted.
                     leftEdge <- leftEdge + virtualSpaces
                     rightEdge <- rightEdge + change.Delta
 
@@ -375,16 +370,17 @@ type internal TextChangeTracker
                         rightEdge <- rightEdge + change.Delta
 
             // Update the effective change data.
-            if leftEdge >= 0 && rightEdge <= _textView.TextBuffer.CurrentSnapshot.Length then
+            if leftEdge >= 0 && rightEdge <= args.After.Length then
                 _effectiveChangeData <-
                     Some {
-                        CaretPosition = _textView.Caret.Position;
-                        LeftEdge = leftEdge;
-                        RightEdge = rightEdge;
-                        LeftDeletions = leftDeletions;
-                        RightDeletions = rightDeletions;
+                        Snapshot = args.After
+                        LeftEdge = leftEdge
+                        RightEdge = rightEdge
+                        LeftDeletions = leftDeletions
+                        RightDeletions = rightDeletions
                     }
             else
+
                 // Something went wrong.
                 VimTrace.TraceError("OnTextChange: active area inconsistent with buffer")
                 _effectiveChangeData <- None
