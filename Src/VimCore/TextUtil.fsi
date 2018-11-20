@@ -3,7 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 
-module internal TextUtil = 
+module TextUtil = 
 
     /// Is this a word character for the specified WordKind
     val IsWordChar: WordKind -> char -> bool

@@ -219,6 +219,18 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal("/foo r", _marginControl.CommandLineTextBox.Text);
                 Assert.Equal("foo r", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
+            
+            [WpfFact]
+            public void NonWhitespaceDelimiters()
+            {
+                Create();
+                ProcessNotation("/");
+                _marginControl.CommandLineTextBox.Text += "foo::bar";
+                _marginControl.CommandLineTextBox.Select(_marginControl.CommandLineTextBox.Text.Length, 0);
+                ProcessNotation("<c-w>");
+                Assert.Equal("/foo::", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo::", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
         }
 
         public sealed class CommandModeTest : CommandLineEditIntegrationTest
