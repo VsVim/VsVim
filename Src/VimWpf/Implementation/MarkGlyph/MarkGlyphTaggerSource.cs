@@ -158,8 +158,8 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                         --_activeMarks;
                         result = true;
                     }
-                    _lineNumberMap.Remove(mark);
                 }
+                _lineNumberMap[mark] = -1;
                 return result;
             }
 
