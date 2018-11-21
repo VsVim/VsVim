@@ -11,7 +11,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [TagType(typeof(MarkGlyphTag))]
     [Name("MarkGlyph")]
-    [Order(After = "VsTextMarker")]
+    [Order(Before = "VsTextMarker")]
     internal sealed class MarkGlyphFactoryProvider : IGlyphFactoryProvider
     {
         private readonly IVim _vim;
