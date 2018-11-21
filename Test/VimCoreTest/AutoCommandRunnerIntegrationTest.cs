@@ -26,6 +26,25 @@ namespace Vim.UnitTest
                 var vimBuffer = CreateVimBufferWithName("foo.html");
                 Assert.Equal(14, vimBuffer.LocalSettings.TabStop);
             }
+
+            /// <summary>
+            /// Verify that 'stopinsert' works as an auto-command
+            /// </summary>
+            [WpfFact]
+            public void StopInsert()
+            {
+                var autoCommandRunner = new AutoCommandRunner(Vim);
+                VimData.AddAutoCommand(EventKind.BufEnter, "*", "stopinsert");
+                var vimBuffer1 = CreateVimBuffer("abc", "def", "");
+                var vimBuffer2 = CreateVimBuffer("ghi", "jkl", "");
+                Assert.Equal(ModeKind.Normal, vimBuffer2.ModeKind);
+                vimBuffer2.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                Assert.Equal(ModeKind.Insert, vimBuffer2.ModeKind);
+                autoCommandRunner.RunAutoCommands(vimBuffer1, EventKind.BufEnter);
+                Assert.Equal(ModeKind.Insert, vimBuffer2.ModeKind);
+                autoCommandRunner.RunAutoCommands(vimBuffer2, EventKind.BufEnter);
+                Assert.Equal(ModeKind.Normal, vimBuffer2.ModeKind);
+            }
         }
 
         public sealed class FileTypeTest : AutoCommandRunnerIntegrationTest

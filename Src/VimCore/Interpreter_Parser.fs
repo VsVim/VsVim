@@ -175,6 +175,7 @@ type Parser
         ("sort", "sor")
         ("source","so")
         ("split", "sp")
+        ("stopinsert", "stopi")
         ("substitute", "s")
         ("smagic", "sm")
         ("snomagic", "sno")
@@ -853,6 +854,7 @@ type Parser
             | LineCommand.ShiftRight (_, count) -> LineCommand.ShiftRight (lineRange, count)
             | LineCommand.Sort (_, hasBang, flags, pattern) -> LineCommand.Sort (lineRange, hasBang, flags, pattern)
             | LineCommand.Source _ -> noRangeCommand
+            | LineCommand.StopInsert -> noRangeCommand
             | LineCommand.Substitute (_, pattern, replace, flags) -> LineCommand.Substitute (lineRange, pattern, replace, flags)
             | LineCommand.SubstituteRepeat (_, substituteFlags) -> LineCommand.SubstituteRepeat (lineRange, substituteFlags)
             | LineCommand.TabNew _ -> noRangeCommand
@@ -2219,6 +2221,9 @@ type Parser
 
         splitType (lineRange, fileOptionList, commandOption)
 
+    member x.ParseStopInsert () =
+        LineCommand.StopInsert
+
     /// Parse out the :qal and :quitall commands
     member x.ParseQuitAll () =
         let hasBang = x.ParseBang()
@@ -2436,6 +2441,7 @@ type Parser
                 | "sort" -> x.ParseSort lineRange
                 | "source" -> noRange x.ParseSource
                 | "split" -> x.ParseSplit LineCommand.HorizontalSplit lineRange
+                | "stopinsert" -> x.ParseStopInsert()
                 | "substitute" -> x.ParseSubstitute lineRange (fun x -> x)
                 | "smagic" -> x.ParseSubstituteMagic lineRange
                 | "smap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Select])
