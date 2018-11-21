@@ -10,7 +10,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
     [Export(typeof(IMarkDisplayUtil))]
     internal sealed class MarkDisplayUtil : IMarkDisplayUtil
     {
-        private string _hideMarks;
+        private string _hideMarks = "";
 
         public string HideMarks => _hideMarks;
         public event EventHandler HideMarksChanged;
