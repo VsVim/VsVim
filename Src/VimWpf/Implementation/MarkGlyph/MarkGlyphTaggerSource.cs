@@ -149,18 +149,18 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             // Check first whether this mark is hidden.
             if (IsMarkHidden(mark))
             {
-                if (_lineNumberMap.TryGetValue(mark, out int lineNumber) && lineNumber != -1)
+                var result = false;
+                if (_lineNumberMap.TryGetValue(mark, out int lineNumber))
                 {
-                    // Transition from active to inactive.
-                    --_activeMarks;
-                    return true;
+                    if (lineNumber != -1)
+                    {
+                        // Transition from active to inactive.
+                        --_activeMarks;
+                        result = true;
+                    }
+                    _lineNumberMap.Remove(mark);
                 }
-                else
-                {
-                    // It might become unhidden.
-                    _lineNumberMap[mark] = -1;
-                }
-                return false;
+                return result;
             }
 
             // Get old line number.
