@@ -129,11 +129,12 @@ type internal TextChangeTracker
 
     /// Start tracking the effective change
     member x.StartTrackingEffectiveChange() =
+        let snapshot = _textView.TextBuffer.CurrentSnapshot
         let caretPosition = _textView.Caret.Position
         let position = caretPosition.BufferPosition.Position
         _effectiveChangeData <-
             Some {
-                Snapshot = _textView.TextSnapshot
+                Snapshot = snapshot
                 LeftEdge = position
                 RightEdge = position
                 LeftDeletions = 0
@@ -150,12 +151,12 @@ type internal TextChangeTracker
 
     /// A span representing the active insert region of the effective change
     member x.EffectiveChange =
+        let snapshot = _textView.TextBuffer.CurrentSnapshot
         match _effectiveChangeData with
-        | Some data ->
-            Contract.Assert(data.Snapshot = _textView.TextSnapshot)
-            SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
+        | Some data when data.Snapshot = snapshot ->
+            SnapshotSpan(snapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
             |> Some
-        | None ->
+        | _ ->
             None
 
     /// Stop tracking the effective change
@@ -298,9 +299,7 @@ type internal TextChangeTracker
             VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
 
         match _effectiveChangeData with
-        | Some data ->
-
-            Contract.Assert(args.Before = data.Snapshot)
+        | Some data when data.Snapshot = args.Before ->
 
             let caretPosition = _textView.Caret.Position
             let virtualSpaces = caretPosition.VirtualSpaces
@@ -385,7 +384,7 @@ type internal TextChangeTracker
                 VimTrace.TraceError("OnTextChange: active area inconsistent with buffer")
                 _effectiveChangeData <- None
 
-        | None ->
+        | _ ->
             ()
 
     static member GetTextChangeTracker (bufferData: IVimBufferData) (commonOperationsFactory: ICommonOperationsFactory) =
