@@ -1048,17 +1048,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void DeleteWordBeforeCursor()
         {
             var textBox = _margin.CommandLineTextBox;
-            var end = textBox.SelectionStart;
-            if (end < 2)
+            var caretIndex = textBox.SelectionStart;
+            if (caretIndex < 2)
                 return;
-            var begin = end;
-            while (begin > 1 && char.IsWhiteSpace(textBox.Text, begin - 1))
-                begin--;
-            while (begin > 1 && !char.IsWhiteSpace(textBox.Text, begin - 1))
-                begin--;
-            var text = textBox.Text.Substring(0, begin) + textBox.Text.Substring(end);
+            var wordSpan = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, textBox.Text, caretIndex - 1);
+            if (wordSpan == null)
+                return;
+            var text = textBox.Text[0] +
+                          textBox.Text.Substring(1, Math.Max(0, wordSpan.Value.Start - 1)) +
+                          textBox.Text.Substring(caretIndex);
             textBox.Text = text;
-            textBox.Select(begin, 0);
+            textBox.Select(Math.Max(1, wordSpan.Value.Start), 0);
         }
 
         private void HandleKeyEventInPasteWait(KeyEventArgs e)
