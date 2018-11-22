@@ -554,6 +554,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 var textChar = e.ControlText[0];
                 switch (textChar)
                 {
+                    case (char)0x1B: // <C-[>
+                        _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                        ChangeEditKind(EditKind.None);
+                        e.Handled = true;
+                        break;
                     case (char)0x1E: // <C-^>
                         ToggleLanguage();
                         e.Handled = true;

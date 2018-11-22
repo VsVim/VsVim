@@ -87,6 +87,18 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             [WpfFact]
+            public void ControlOpenBracketExits()
+            {
+                // Report in issue #2417.
+                Create("cat");
+                ProcessNotation(@":ab<Left>");
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
+                ProcessNotation(@"<C-[>");
+                Assert.Equal(EditKind.None, _controller.CommandLineEditKind);
+                Assert.True(_marginControl.IsEditReadOnly);
+            }
+
+            [WpfFact]
             public void ControlCExits()
             {
                 // Reported in issue #2292.
