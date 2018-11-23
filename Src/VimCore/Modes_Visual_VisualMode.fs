@@ -208,7 +208,8 @@ type internal VisualMode
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
 
-    member x.Process (ki: KeyInput) =  
+    member x.Process (kid: KeyInputData) =  
+        let ki = kid.KeyInput
 
         // Save the last visual selection at the global level for use with [count]V|v except
         // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
@@ -320,7 +321,7 @@ type internal VisualMode
         member x.CommandNames = x.CommandNames
         member x.ModeKind = _modeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInput =  x.Process keyInput
+        member x.Process keyInputData =  x.Process keyInputData
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
         member x.OnClose() = x.OnClose()

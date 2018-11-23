@@ -81,6 +81,17 @@ type KeyInput
     interface System.IComparable<KeyInput> with
         member x.CompareTo other = x.CompareTo other
 
+[<Sealed>]
+type KeyInputData
+    (
+        _keyInput: KeyInput,
+        _wasMapped: bool
+    ) =
+
+    member x.KeyInput = _keyInput
+    member x.WasMapped = _wasMapped
+    static member Create keyInput wasMapped = KeyInputData(keyInput, wasMapped)
+
 module KeyInputUtil = 
 
     [<Literal>]

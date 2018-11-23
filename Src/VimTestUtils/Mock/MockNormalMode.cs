@@ -50,7 +50,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public ProcessResult Process(KeyInput value)
+        public ProcessResult Process(KeyInputData value)
         {
             throw new NotImplementedException();
         }

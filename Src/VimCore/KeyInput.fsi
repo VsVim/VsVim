@@ -51,6 +51,12 @@ type KeyInput =
     interface System.IComparable<KeyInput>
     interface System.IEquatable<KeyInput>
 
+[<Sealed>]
+type KeyInputData =
+    member KeyInput: KeyInput
+    member WasMapped: bool
+    static member Create: keyInput: KeyInput -> wasMapped: bool -> KeyInputData
+
 module KeyInputUtil = 
 
     /// The Null Key: VimKey.Null

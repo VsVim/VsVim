@@ -75,7 +75,8 @@ type internal CommandMode
             else 
                 selection.Clear()
 
-    member x.Process (keyInput: KeyInput) =
+    member x.Process (keyInputData: KeyInputData) =
+        let keyInput = keyInputData.KeyInput
 
         match _bindData.BindFunction keyInput with
         | BindResult.Complete _ ->
@@ -174,7 +175,7 @@ type internal CommandMode
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
         member x.CanProcess keyInput = KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = ()

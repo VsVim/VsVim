@@ -5369,7 +5369,7 @@ and IMode =
     abstract CanProcess: KeyInput -> bool
 
     /// Process the given KeyInput
-    abstract Process: KeyInput -> ProcessResult
+    abstract Process: KeyInputData -> ProcessResult
 
     /// Called when the mode is entered
     abstract OnEnter: ModeArgument -> unit

@@ -747,6 +747,11 @@ namespace Vim.UnitTest
             return mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(key));
         }
 
+        public static ProcessResult Process(this IMode mode, KeyInput keyInput)
+        {
+            return mode.Process(KeyInputData.Create(keyInput, false));
+        }
+
         public static ProcessResult Process(this IMode mode, VimKey key)
         {
             return mode.Process(KeyInputUtil.VimKeyToKeyInput(key));

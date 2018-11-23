@@ -1209,7 +1209,8 @@ type internal InsertMode
             None
 
     /// Process the KeyInput value
-    member x.Process keyInput = 
+    member x.Process (keyInputData: KeyInputData) = 
+        let keyInput = keyInputData.KeyInput
         _isInProcess <- true
         try
             let result = x.ProcessCore keyInput
@@ -1522,7 +1523,7 @@ type internal InsertMode
         member x.ModeKind = x.ModeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.IsDirectInsert keyInput = x.IsDirectInsert keyInput
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = x.OnClose ()

@@ -192,7 +192,8 @@ type internal SubstituteConfirmMode
         member x.ModeKind = ModeKind.SubstituteConfirm
         member x.VimTextBuffer = _vimTextBuffer
 
-        member x.Process ki = 
+        member x.Process kid = 
+            let ki = kid.KeyInput
 
             // Guard against the case where confirm mode is incorrectly entered
             match _confirmData with
