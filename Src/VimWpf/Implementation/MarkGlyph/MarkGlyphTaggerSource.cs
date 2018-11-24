@@ -123,7 +123,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             UpdateAllMarks();
         }
 
-        HashSet<char> ExpandHideMarksSetting(string setting)
+        private static HashSet<char> ExpandHideMarksSetting(string setting)
         {
             var result = new HashSet<char>();
             if (setting == "-")
@@ -136,8 +136,14 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                 var c1 = setting[i];
                 if (i + 2 < setting.Length && setting[i + 1] == '-')
                 {
-                    // Expand range, e.g. 'a-z'.
+                    // Expand range, e.g. 'a-z' or 'z-a'.
                     var c2 = setting[i + 2];
+                    if (c2 < c1)
+                    {
+                        var tmp = c1;
+                        c1 = c2;
+                        c2 = tmp;
+                    }
                     for (var c = c1; c <= c2; c++)
                     {
                         result.Add(c);
