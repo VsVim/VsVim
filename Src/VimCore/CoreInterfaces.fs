@@ -4540,6 +4540,9 @@ type IVimHost =
     /// then -1 should be returned
     abstract TabCount: int
 
+    /// Whether to use the Visual Studio caret or the VsVim caret in insert mode
+    abstract UseDefaultCaret: bool
+
     /// Ensure that the VsVim package is loaded
     abstract EnsurePackageLoaded: unit -> unit
 

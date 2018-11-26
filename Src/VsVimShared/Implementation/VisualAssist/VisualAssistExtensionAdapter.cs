@@ -50,6 +50,20 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             return null;
         }
 
+        bool? IExtensionAdapter.UseDefaultCaret
+        {
+            get
+            {
+                if (!_visualAssistUtil.IsInstalled)
+                {
+                    return null;
+                }
+
+                // Visual Assist Intellisense is predicated on the insertion cursor being visible.
+                return true;
+            }
+        }
+
         #endregion
     }
 }

@@ -71,6 +71,11 @@ namespace Vim.UI.Wpf
             get { return DefaultSettings.GVim74; }
         }
 
+        public virtual bool UseDefaultCaret
+        {
+            get { return false; }
+        }
+
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
@@ -560,6 +565,11 @@ namespace Vim.UI.Wpf
         DefaultSettings IVimHost.DefaultSettings
         {
             get { return DefaultSettings; }
+        }
+
+        bool IVimHost.UseDefaultCaret
+        {
+            get { return UseDefaultCaret; }
         }
 
         void IVimHost.EnsurePackageLoaded()

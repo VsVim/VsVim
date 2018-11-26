@@ -58,6 +58,7 @@ namespace Vim.UnitTest.Mock
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
         public WordWrapStyles WordWrapStyle { get; set; }
+        public bool UseDefaultCaret { get; set; }
 
         public MockVimHost()
         {
@@ -111,6 +112,7 @@ namespace Vim.UnitTest.Mock
             ShouldCreateVimBufferImpl = false;
             ShouldIncludeRcFile = true;
             WordWrapStyle = WordWrapStyles.WordWrap;
+            UseDefaultCaret = false;
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -386,6 +388,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
         {
             return false;
+        }
+
+        bool IVimHost.UseDefaultCaret
+        {
+            get { return UseDefaultCaret; }
         }
     }
 }

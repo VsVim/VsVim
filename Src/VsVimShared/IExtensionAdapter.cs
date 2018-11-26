@@ -21,6 +21,8 @@ namespace Vim.VisualStudio
         bool? ShouldCreateVimBuffer(ITextView textView);
 
         bool? IsIncrementalSearchActive(ITextView textView);
+
+        bool? UseDefaultCaret { get; }
     }
 
     /// <summary>
