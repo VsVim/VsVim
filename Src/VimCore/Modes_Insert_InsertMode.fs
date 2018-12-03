@@ -692,7 +692,7 @@ type internal InsertMode
         // empty completion list as there is nothing to display.  The lack of anything to display 
         // doesn't make the command an error though
         if not (List.isEmpty wordList) then
-            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
+            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward
 
             if not wordCompletionSession.IsDismissed then
                 // When the completion session is dismissed we want to clean out the session 
@@ -701,7 +701,7 @@ type internal InsertMode
                 |> Event.add (fun _ -> x.CancelWordCompletionSession())
 
                 let activeEditItem = ActiveEditItem.WordCompletion
-                _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.WordCompletion wordCompletionSession }
+                _sessionData <- { _sessionData with ActiveEditItem = activeEditItem wordCompletionSession }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
