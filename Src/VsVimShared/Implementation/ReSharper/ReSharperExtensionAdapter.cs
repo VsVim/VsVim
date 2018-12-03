@@ -88,6 +88,11 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return null;
         }
 
+        bool? IExtensionAdapter.UseDefaultCaret
+        {
+            get { return null; }
+        }
+
         #endregion
     }
 }

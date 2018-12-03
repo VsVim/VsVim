@@ -58,5 +58,10 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             return RunOnAll(e => e.IsIncrementalSearchActive(textView));
         }
+
+        bool? IExtensionAdapter.UseDefaultCaret
+        {
+            get { return RunOnAll(e => e.UseDefaultCaret); }
+        }
     }
 }

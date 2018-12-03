@@ -281,6 +281,11 @@ namespace Vim.VisualStudio
             get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
         }
 
+        public override bool UseDefaultCaret
+        {
+            get { return _extensionAdapterBroker.UseDefaultCaret ?? base.UseDefaultCaret; }
+        }
+
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,
