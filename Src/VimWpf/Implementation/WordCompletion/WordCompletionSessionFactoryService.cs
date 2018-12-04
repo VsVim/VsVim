@@ -247,6 +247,10 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 var command = isForward ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine;
                 wordCompletionSession.SendCommand(command);
 
+                // For reasons I don't understand, if the command is 'bottom
+                // line', it doesn't seem to take effect on the first try.
+                wordCompletionSession.SendCommand(command);
+
                 RaiseCompleted(wordCompletionSession);
 
                 return wordCompletionSession;

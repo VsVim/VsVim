@@ -11,7 +11,7 @@ type internal TextDirection =
     | Left 
     | Right
 
-module internal TextUtil =
+module TextUtil =
 
     let IsBigWordChar c = not (Char.IsWhiteSpace(c))
     let IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'

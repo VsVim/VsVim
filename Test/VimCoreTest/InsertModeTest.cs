@@ -556,7 +556,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Ensure that CTRL-N is mapped to MovePrevious in the IWordCompletionSession
+            /// Ensure that CTRL-P is mapped to MovePrevious in the IWordCompletionSession
             /// </summary>
             [WpfFact]
             public void Process_WordCompletion_CtrlP()

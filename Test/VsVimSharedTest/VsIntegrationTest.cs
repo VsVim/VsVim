@@ -482,6 +482,53 @@ namespace Vim.VisualStudio.UnitTest
                     Assert.Equal(1, _escapeKeyCount);
                     Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
                 }
+
+                [WpfFact]
+                public void InsertPlusVisualWithIntellisenseInactive()
+                {
+                    Create("blah");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _vimBuffer.Process(KeyInputUtil.ApplyKeyModifiersToKey(VimKey.Right, VimKeyModifiers.Shift));
+                    _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                    _reSharperCommandTarget.IntellisenseDisplayed = false;
+                    _vsSimulation.Run(VimKey.Escape);
+                    Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                    Assert.Equal(0, _reSharperCommandTarget.ExecEscapeCount);
+                    Assert.Equal(1, _escapeKeyCount);
+                    Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
+                }
+
+                [WpfFact]
+                public void InsertPlushOneTimeCommandWithIntellisenseInactive()
+                {
+                    Create("blah");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _reSharperCommandTarget.IntellisenseDisplayed = false;
+                    _vsSimulation.Run(VimKey.Escape);
+                    Assert.Equal(ModeKind.Insert, _vimBuffer.ModeKind);
+                    Assert.Equal(0, _reSharperCommandTarget.ExecEscapeCount);
+                    Assert.Equal(1, _escapeKeyCount);
+                    Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
+                }
+                
+                [WpfFact]
+                public void InsertAfterOneTimeCommandWithIntellisenseActive()
+                {
+                    Create("blah");
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('o'));
+                    _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                    _vsSimulation.Run(KeyInputUtil.CharToKeyInput('w'));
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _reSharperCommandTarget.IntellisenseDisplayed = true;
+                    _vsSimulation.Run(VimKey.Escape);
+                    Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                    Assert.Equal(1, _reSharperCommandTarget.ExecEscapeCount);
+                    Assert.Equal(1, _escapeKeyCount);
+                    Assert.False(_reSharperCommandTarget.IntellisenseDisplayed);
+                }
             }
 
             private ReSharperCommandTargetSimulation _reSharperCommandTarget;

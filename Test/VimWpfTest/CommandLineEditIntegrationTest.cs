@@ -87,6 +87,18 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             [WpfFact]
+            public void ControlOpenBracketExits()
+            {
+                // Report in issue #2417.
+                Create("cat");
+                ProcessNotation(@":ab<Left>");
+                Assert.Equal(EditKind.Command, _controller.CommandLineEditKind);
+                ProcessNotation(@"<C-[>");
+                Assert.Equal(EditKind.None, _controller.CommandLineEditKind);
+                Assert.True(_marginControl.IsEditReadOnly);
+            }
+
+            [WpfFact]
             public void ControlCExits()
             {
                 // Reported in issue #2292.
@@ -218,6 +230,18 @@ namespace Vim.UI.Wpf.UnitTest
                 ProcessNotation(@"/foo bar<Left><c-w>");
                 Assert.Equal("/foo r", _marginControl.CommandLineTextBox.Text);
                 Assert.Equal("foo r", _vimBuffer.IncrementalSearch.CurrentSearchText);
+            }
+            
+            [WpfFact]
+            public void NonWhitespaceDelimiters()
+            {
+                Create();
+                ProcessNotation("/");
+                _marginControl.CommandLineTextBox.Text += "foo::bar";
+                _marginControl.CommandLineTextBox.Select(_marginControl.CommandLineTextBox.Text.Length, 0);
+                ProcessNotation("<c-w>");
+                Assert.Equal("/foo::", _marginControl.CommandLineTextBox.Text);
+                Assert.Equal("foo::", _vimBuffer.IncrementalSearch.CurrentSearchText);
             }
         }
 

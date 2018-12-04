@@ -48,8 +48,8 @@ type internal ITextChangeTracker =
 /// Data relating to an effective change
 type EffectiveChangeData = {
 
-    // The current caret position
-    CaretPosition: CaretPosition
+    // The current snapshot
+    Snapshot: ITextSnapshot
 
     /// The left edge of the active insert region
     LeftEdge: int
@@ -96,11 +96,6 @@ type internal TextChangeTracker
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add
 
-        // Listen to caret position changed events.
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun args -> this.OnPositionChanged args)
-        |> _bag.Add
-
         // Dispose handlers when the text view is closed.
         _textView.Closed 
         |> Event.add (fun _ -> _bag.DisposeAll())
@@ -134,15 +129,16 @@ type internal TextChangeTracker
 
     /// Start tracking the effective change
     member x.StartTrackingEffectiveChange() =
+        let snapshot = _textView.TextBuffer.CurrentSnapshot
         let caretPosition = _textView.Caret.Position
         let position = caretPosition.BufferPosition.Position
         _effectiveChangeData <-
             Some {
-                CaretPosition = caretPosition;
-                LeftEdge = position;
-                RightEdge = position;
-                LeftDeletions = 0;
-                RightDeletions = 0;
+                Snapshot = snapshot
+                LeftEdge = position
+                RightEdge = position
+                LeftDeletions = 0
+                RightDeletions = 0
             }
 
     /// Whether the effective change is a simple insert
@@ -155,11 +151,12 @@ type internal TextChangeTracker
 
     /// A span representing the active insert region of the effective change
     member x.EffectiveChange =
+        let snapshot = _textView.TextBuffer.CurrentSnapshot
         match _effectiveChangeData with
-        | Some data ->
-            SnapshotSpan(_textView.TextSnapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
+        | Some data when data.Snapshot = snapshot ->
+            SnapshotSpan(snapshot, data.LeftEdge, data.RightEdge - data.LeftEdge)
             |> Some
-        | None ->
+        | _ ->
             None
 
     /// Stop tracking the effective change
@@ -219,14 +216,6 @@ type internal TextChangeTracker
             x.UpdateEffectiveChange args
 
         x.UpdateMarks args
-
-    member x.OnPositionChanged (args: CaretPositionChangedEventArgs) =
-        VimTrace.TraceInfo("OnCaretPositionChanged: old = {0}, new = {1}", args.OldPosition, args.NewPosition)
-        match _effectiveChangeData with
-        | Some data ->
-            _effectiveChangeData <- Some { data with CaretPosition = args.NewPosition }
-        | None ->
-            ()
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 
@@ -309,71 +298,91 @@ type internal TextChangeTracker
             VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
             VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
 
-        match args.Changes.Count, _effectiveChangeData with
-        | 1, Some data ->
+        match _effectiveChangeData with
+        | Some data when data.Snapshot = args.Before ->
+
+            let caretPosition = _textView.Caret.Position
+            let virtualSpaces = caretPosition.VirtualSpaces
             let mutable leftEdge = data.LeftEdge
             let mutable rightEdge = data.RightEdge
             let mutable leftDeletions = data.LeftDeletions
             let mutable rightDeletions = data.RightDeletions
 
-            let change = args.Changes.[0]
-            let virtualSpaces = data.CaretPosition.VirtualSpaces
-            if
-                virtualSpaces > 0
-                && change.OldSpan.Start = leftEdge
-                && change.OldSpan.End = rightEdge
-                && change.NewSpan.Start = leftEdge
-                && change.NewText.Length >= virtualSpaces
-                && change.NewText.Substring(0, virtualSpaces) |> StringUtil.IsBlanks
-            then
+            // Process the changes in reverse order so that offsets relative to
+            // the previous snapshot are valid for each change.
+            for i = args.Changes.Count - 1 downto 0 do
+                let change = args.Changes.[i]
 
-                // Caret was moved from virtual space to non-virtual space.
-                leftEdge <- leftEdge + virtualSpaces
-                rightEdge <- change.NewSpan.End
+                // Adjust the active region based on the change.
+                if
+                    args.Before = caretPosition.BufferPosition.Snapshot
+                    && virtualSpaces > 0
+                    && change.OldSpan.Start = leftEdge
+                    && change.OldSpan.End = leftEdge
+                    && change.NewText.Length >= virtualSpaces
+                    && change.NewText.Substring(0, virtualSpaces) |> StringUtil.IsBlanks
+                then
 
-            elif change.OldSpan.End < leftEdge then
-
-                // Change entirely precedes the active region so shift the edges by the delta.
-                leftEdge <- leftEdge + change.Delta
-                rightEdge <- rightEdge + change.Delta
-
-            elif change.OldSpan.Start > rightEdge then
-
-                // Change entirely follows the active region, so we can ignore it.
-                ()
-
-            elif change.OldSpan.Start >= leftEdge && change.OldSpan.End <= rightEdge then
-
-                // Change falls completely within the active region so shift the right edge.
-                rightEdge <- rightEdge + change.Delta
-
-            else
-
-                // Change is neither a subsest nor disjoint with
-                // the active region. Handle overlap.
-
-                // Check for deletions to the left.
-                if change.OldSpan.Start < leftEdge then
-                    let deleted = leftEdge - change.OldSpan.Start
-                    leftEdge <- change.NewSpan.Start
-                    leftDeletions <- leftDeletions + deleted
-
-                // Check for deletions to the right.
-                if change.OldSpan.End > rightEdge then
-                    let deleted = change.OldSpan.End - rightEdge
-                    rightEdge <- change.NewSpan.End
-                    rightDeletions <- rightDeletions + deleted
-                else
+                    // An insertion moved the caret from virtual space to
+                    // non-virtual space. Exclude the virtual spaces from the
+                    // active region so that if the effective change is
+                    // repeated the virtual spaces don't get double inserted.
+                    leftEdge <- leftEdge + virtualSpaces
                     rightEdge <- rightEdge + change.Delta
 
-            _effectiveChangeData <-
-                Some {
-                    CaretPosition = _textView.Caret.Position;
-                    LeftEdge = leftEdge;
-                    RightEdge = rightEdge;
-                    LeftDeletions = leftDeletions;
-                    RightDeletions = rightDeletions;
-                }
+                elif change.OldSpan.End < leftEdge then
+
+                    // Change entirely precedes the active region so shift the
+                    // edges by the delta.
+                    leftEdge <- leftEdge + change.Delta
+                    rightEdge <- rightEdge + change.Delta
+
+                elif change.OldSpan.Start > rightEdge then
+
+                    // Change entirely follows the active region, so we can
+                    // ignore it.
+                    ()
+
+                elif change.OldSpan.Start >= leftEdge && change.OldSpan.End <= rightEdge then
+
+                    // Change falls completely within the active region so
+                    // shift the right edge.
+                    rightEdge <- rightEdge + change.Delta
+
+                else
+
+                    // Change is neither a subsest nor disjoint with the active
+                    // region. Handle overlap.
+
+                    // Check for deletions to the left.
+                    if change.OldSpan.Start < leftEdge then
+                        let deleted = leftEdge - change.OldSpan.Start
+                        leftEdge <- change.OldSpan.Start
+                        leftDeletions <- leftDeletions + deleted
+
+                    // Check for deletions to the right.
+                    if change.OldSpan.End > rightEdge then
+                        let deleted = change.OldSpan.End - rightEdge
+                        rightEdge <- change.OldSpan.End + change.Delta
+                        rightDeletions <- rightDeletions + deleted
+                    else
+                        rightEdge <- rightEdge + change.Delta
+
+            // Update the effective change data.
+            if leftEdge >= 0 && rightEdge <= args.After.Length then
+                _effectiveChangeData <-
+                    Some {
+                        Snapshot = args.After
+                        LeftEdge = leftEdge
+                        RightEdge = rightEdge
+                        LeftDeletions = leftDeletions
+                        RightDeletions = rightDeletions
+                    }
+            else
+
+                // Something went wrong.
+                VimTrace.TraceError("OnTextChange: active area inconsistent with buffer")
+                _effectiveChangeData <- None
 
         | _ ->
             ()
