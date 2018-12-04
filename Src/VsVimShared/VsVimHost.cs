@@ -659,6 +659,35 @@ namespace Vim.VisualStudio
             return _vsAdapter.IsReadOnly(textBuffer);
         }
 
+        public override bool IsVisible(ITextView textView)
+        {
+            if (textView is IWpfTextView wpfTextView)
+            {
+                if (!wpfTextView.VisualElement.IsVisible)
+                {
+                    return false;
+                }
+
+                // Certain types of windows (e.g. aspx documents) always report
+                // that they are visible. Use the "is on screen" predicate of
+                // the window's frame to rule them out. Reported in issue
+                // #2435.
+                var frameResult = _vsAdapter.GetContainingWindowFrame(wpfTextView);
+                if (frameResult.TryGetValue(out IVsWindowFrame frame))
+                {
+                    if (frame.IsOnScreen(out int isOnScreen) == VSConstants.S_OK)
+                    {
+                        if (isOnScreen == 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Custom process the insert command if possible.  This is handled by VsCommandTarget
         /// </summary>
@@ -819,7 +848,7 @@ namespace Vim.VisualStudio
             return _vim.VimBuffers
                 .Select(vimBuffer => vimBuffer.TextView as IWpfTextView)
                 .Where(textView => textView != null)
-                .Where(textView => textView.VisualElement.IsVisible)
+                .Where(textView => IsVisible(textView))
                 .Where(textView => textView.ViewportWidth != 0)
                 .Select(textView =>
                     Tuple.Create(textView, GetScreenRect(textView)));
