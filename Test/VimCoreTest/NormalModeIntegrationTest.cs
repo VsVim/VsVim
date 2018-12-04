@@ -2792,6 +2792,19 @@ namespace Vim.UnitTest
                     Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
                 }
+
+                /// <summary>
+                /// Key modifiers in the right hand side of mappings are normalized
+                /// </summary>
+                [WpfFact]
+                public void NormalizedRightHandSide()
+                {
+                    // Reported in issue #2313.
+                    Create("cat", "dog", "");
+                    _vimBuffer.Process(":map nn <S-$>", enter: true);
+                    _vimBuffer.Process("nn");
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
             }
         }
 

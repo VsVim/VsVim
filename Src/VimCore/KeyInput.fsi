@@ -88,6 +88,9 @@ module KeyInputUtil =
     /// Apply a click count to the given key input
     val ApplyClickCount: keyInput: KeyInput -> clickCount: int -> KeyInput
 
+    /// Normalize key modifiers, e.g. removing an irrelevant shift
+    val NormalizeKeyModifiers: keyInput: KeyInput -> KeyInput
+
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput: c: char -> KeyInput
 
