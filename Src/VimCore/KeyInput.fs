@@ -424,6 +424,13 @@ module KeyInputUtil =
             | _ -> VimKeyModifiers.None
         ApplyKeyModifiers keyInput modifiers
 
+    let NormalizeKeyModifiers (keyInput: KeyInput) =
+        match keyInput.RawChar with
+        | Some c ->
+            ApplyKeyModifiersToChar c keyInput.KeyModifiers
+        | None ->
+            ApplyKeyModifiersToKey keyInput.Key keyInput.KeyModifiers
+
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  
         ApplyKeyModifiers keyInput VimKeyModifiers.Control
