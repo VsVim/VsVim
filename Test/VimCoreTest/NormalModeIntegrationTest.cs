@@ -5877,6 +5877,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Repeating an insert with a new count applies the count to the
+            /// insertion
+            /// </summary>
+            [WpfFact]
+            public void RepeatInsertWithNewCount()
+            {
+                // Reported in issue #2259.
+                Create("cat", "");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("dog ");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                Assert.Equal("dog cat", _textView.GetLine(0).GetText());
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("2.");
+                Assert.Equal("dog dog dog cat", _textView.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
             /// Test the repeating of a command that changes white space to tabs
             /// </summary>
             [WpfFact]
