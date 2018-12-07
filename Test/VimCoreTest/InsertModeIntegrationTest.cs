@@ -779,6 +779,27 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure external multi-part edits don't clear the last edit point
+            /// </summary>
+            [WpfFact]
+            public void InsertNonVim_MultiPart()
+            {
+                // Reported in issue #2440.
+                Create("big", "bad", "");
+                _textBuffer.Insert(3, " cat");
+                Assert.Equal(new[] { "big cat", "bad", "", }, _textBuffer.GetLines());
+                Assert.Equal(6, LastEditPoint.Value);
+                using (var edit = _textBuffer.CreateEdit())
+                {
+                    edit.Insert(_textBuffer.GetPointInLine(0, 0), "foo ");
+                    edit.Insert(_textBuffer.GetPointInLine(1, 0), "bar ");
+                    edit.Apply();
+                }
+                Assert.Equal(new[] { "foo big cat", "bar bad", "", }, _textBuffer.GetLines());
+                Assert.Equal(6, LastEditPoint.Value);
+            }
+
+            /// <summary>
             /// When there is a deletion of text then the LastEditPoint should point to the start
             /// of the deleted text
             /// </summary>
