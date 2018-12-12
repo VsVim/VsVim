@@ -38,6 +38,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private readonly WritableSettingsStore _settingsStore;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly ISettingsCache _settingsCache;
 
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
@@ -49,28 +50,43 @@ namespace Vim.VisualStudio.Implementation.Settings
         [ImportingConstructor]
         internal VimApplicationSettings(
             SVsServiceProvider vsServiceProvider,
-            IProtectedOperations protectedOperations)
-            : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
+            IProtectedOperations protectedOperations,
+            ISettingsCache settingsCache)
+            : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations, settingsCache)
         {
         }
 
-        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
+        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations, ISettingsCache settingsCache)
         {
             _settingsStore = settingsStore;
             _protectedOperations = protectedOperations;
+            _settingsCache = settingsCache;
         }
 
         internal bool GetBoolean(string propertyName, bool defaultValue)
         {
+            if (_settingsCache.CheckBoolean(propertyName, out var value))
+            {
+                return value;
+            }
+
             EnsureCollectionExists();
             try
             {
+                bool resultSettingValue;
+
                 if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
                 {
-                    return defaultValue;
+                    resultSettingValue = defaultValue;
+                }
+                else
+                {
+                    resultSettingValue = _settingsStore.GetBoolean(CollectionPath, propertyName);
                 }
 
-                return _settingsStore.GetBoolean(CollectionPath, propertyName);
+                _settingsCache.UpdateCache(propertyName, resultSettingValue);
+
+                return resultSettingValue;
             }
             catch (Exception e)
             {
@@ -85,6 +101,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             try
             {
                 _settingsStore.SetBoolean(CollectionPath, propertyName, value);
+                _settingsCache.UpdateCache(propertyName, value);
                 OnSettingsChanged();
             }
             catch (Exception e)
@@ -95,15 +112,28 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         internal string GetString(string propertyName, string defaultValue)
         {
+            if (_settingsCache.CheckString(propertyName, out var value))
+            {
+                return value;
+            }
+
             EnsureCollectionExists();
             try
             {
+                string resultSettingValue;
+
                 if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
                 {
-                    return defaultValue;
+                    resultSettingValue = defaultValue;
+                }
+                else
+                {
+                    resultSettingValue = _settingsStore.GetString(CollectionPath, propertyName);
                 }
 
-                return _settingsStore.GetString(CollectionPath, propertyName);
+                _settingsCache.UpdateCache(propertyName, resultSettingValue);
+
+                return resultSettingValue;
             }
             catch (Exception e)
             {
@@ -118,6 +148,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             try
             {
                 _settingsStore.SetString(CollectionPath, propertyName, value);
+                _settingsCache.UpdateCache(propertyName, value);
                 OnSettingsChanged();
             }
             catch (Exception e)

@@ -216,20 +216,52 @@ namespace Vim.VisualStudio.UnitTest
 
         #endregion
 
+        #region DummySettingsCache
+
+        private sealed class DummySettingsCache : ISettingsCache
+        {
+            public void UpdateCache(string propertyName, string value)
+            {
+            }
+
+            public void UpdateCache(string propertyName, bool value)
+            {
+            }
+
+            public bool CheckBoolean(string propertyName, out bool result)
+            {
+                result = default;
+
+                return false;
+            }
+
+            public bool CheckString(string propertyName, out string result)
+            {
+                result = default;
+
+                return false;
+            }
+       }
+
+        #endregion
+
         private readonly MockRepository _factory;
         private readonly Mock<IProtectedOperations> _protectedOperations;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly VimApplicationSettings _vimApplicationSettingsRaw;
         private readonly WritableSettingsStore _writableSettingsStore;
+        private readonly ISettingsCache _settingsCache;
 
-        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2012, WritableSettingsStore settingsStore = null)
+        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2012, WritableSettingsStore settingsStore = null, ISettingsCache settingsCache = null)
         {
             settingsStore = settingsStore ?? new SimpleWritableSettingsStore();
+            settingsCache = settingsCache ?? new DummySettingsCache();
             _factory = new MockRepository(MockBehavior.Strict);
             _protectedOperations = _factory.Create<IProtectedOperations>();
-            _vimApplicationSettingsRaw = new VimApplicationSettings(visualStudioVersion, settingsStore, _protectedOperations.Object);
+            _vimApplicationSettingsRaw = new VimApplicationSettings(visualStudioVersion, settingsStore, _protectedOperations.Object, settingsCache);
             _vimApplicationSettings = _vimApplicationSettingsRaw;
             _writableSettingsStore = settingsStore;
+            _settingsCache = settingsCache;
         }
 
         public abstract class CollectionPathTest : VimApplicationSettingsTest
