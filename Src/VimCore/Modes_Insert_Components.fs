@@ -252,9 +252,14 @@ type internal TextChangeTracker
                 let newSpan = SnapshotSpan(args.After, change.NewSpan)
                 _operations.RecordLastChange oldSpan newSpan
         else
-            // When there are multiple changes it is usually the result of a projection 
-            // buffer edit coming from a web page edit.  For now that's unsupported
-            _vimTextBuffer.LastEditPoint <- None
+            // When there are multiple changes it is usually the result of a
+            // projection  buffer edit coming from a web page edit.  For now
+            // that's unsupported. Another possible cause is an extension that
+            // mass-edits line endings, e.g. see issue #2440.
+            //
+            // If we do nothing, the automatic tracking will correctly update
+            // the previous last edit point in its own text change handler.
+            ()
 
     /// Attempt to merge the change operations together
     member x.MergeChange oldTextChange (oldChange: ITextChange) newTextChange (newChange: ITextChange) =
