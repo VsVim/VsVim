@@ -6,7 +6,7 @@ namespace Vim.VisualStudio.Implementation.Settings
     /// <summary>
     /// Settings cache decorator to reduce number of times we need to query internal VS mounted registry hive
     /// </summary>
-    [Export(typeof(ISettingsStore))]
+    [Export(SettingStoreType.CachingStore, typeof(ISettingsStore))]
     internal class CachedSettingsStore : ISettingsStore
     {
         /// <summary>
@@ -22,7 +22,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         [ImportingConstructor]
         internal CachedSettingsStore(
             ISpecializedCacheProvider cacheProvider,
-            IPhysicalSettingsStore underlyingStore)
+            [Import(SettingStoreType.PhysicalStore)]ISettingsStore underlyingStore)
         {
             _cacheProvider = cacheProvider;
             _underlyingStore = underlyingStore;

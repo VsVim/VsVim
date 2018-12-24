@@ -6,16 +6,12 @@ using Microsoft.VisualStudio.Shell;
 
 namespace Vim.VisualStudio.Implementation.Settings
 {
-    public interface IPhysicalSettingsStore : ISettingsStore
-    {
-        
-    }
     /// <summary>
     /// Fail-safe implementation of settings store
     /// based on standard visual studio WritableSettingsStore class
     /// </summary>
-    [Export(typeof(IPhysicalSettingsStore))]
-    public class VsSettingsStore : IPhysicalSettingsStore
+    [Export(SettingStoreType.PhysicalStore, typeof(ISettingsStore))]
+    public class VsSettingsStore : ISettingsStore
     {
         private const string ErrorGetFormat = "Cannot get setting {0}";
         private const string ErrorSetFormat = "Cannot set setting {0}";

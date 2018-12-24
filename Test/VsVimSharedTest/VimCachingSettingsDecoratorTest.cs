@@ -11,7 +11,7 @@ namespace Vim.VisualStudio.UnitTest
     public class VimCachingSettingsDecoratorTest
     {
         private readonly Mock<ISpecializedCacheProvider> _cacheProviderMock;
-        private readonly Mock<IPhysicalSettingsStore> _underlyingStoreMock;
+        private readonly Mock<ISettingsStore> _underlyingStoreMock;
 
         private readonly string _key;
 
@@ -32,7 +32,7 @@ namespace Vim.VisualStudio.UnitTest
             var mockRepository = new MockRepository(MockBehavior.Strict);
 
             _cacheProviderMock = mockRepository.Create<ISpecializedCacheProvider>();
-            _underlyingStoreMock = mockRepository.Create<IPhysicalSettingsStore>();
+            _underlyingStoreMock = mockRepository.Create<ISettingsStore>();
 
             _cachedSettingsStore = new CachedSettingsStore(
                 _cacheProviderMock.Object,

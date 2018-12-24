@@ -36,7 +36,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
         [ImportingConstructor]
-        internal VimApplicationSettings(ISettingsStore settingsStore)
+        internal VimApplicationSettings([Import(SettingStoreType.CurrentStoreType)]ISettingsStore settingsStore)
         {
             _settingsStore = settingsStore;
 
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         }
 
         WordWrapDisplay IVimApplicationSettings.WordWrapDisplay
-        {                                 
+        {
             get { return Get(WordWrapDisplayName, defaultValue: WordWrapDisplay.Glyph); }
             set { Set(WordWrapDisplayName, value); }
         }
