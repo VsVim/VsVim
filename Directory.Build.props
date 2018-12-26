@@ -47,13 +47,20 @@
     <DefineConstants>$(DefineConstants);VS2017</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '16.0' ">
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2019\App.config</VsVimAppConfig>
+    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2019\Runnable.props</VsRunnablePropsFilePath>
+    <DefineConstants>$(DefineConstants);VS2019</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup> 
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Common</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2010</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2012</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2013</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2017</ReferencePath>
+    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2019</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
 
     <!-- This controls the places MSBuild will consult to resolve assembly references.  This is 
