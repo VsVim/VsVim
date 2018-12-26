@@ -10,6 +10,12 @@ namespace Vim.VisualStudio
     /// </summary>
     public sealed class ApplicationSettingsEventArgs : EventArgs
     {
+        public string ChangedSettingName { get; }
+
+        public ApplicationSettingsEventArgs(string changedSettingName)
+        {
+            ChangedSettingName = changedSettingName;
+        }
     }
 
     public enum VimRcLoadSetting

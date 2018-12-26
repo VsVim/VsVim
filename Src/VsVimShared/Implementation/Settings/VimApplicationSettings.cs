@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Settings;
-using Microsoft.VisualStudio.Shell;
-using Vim.UI.Wpf;
-using Vim;
+
 using Vim.Extensions;
 
 namespace Vim.VisualStudio.Implementation.Settings
@@ -13,7 +9,6 @@ namespace Vim.VisualStudio.Implementation.Settings
     [Export(typeof(IVimApplicationSettings))]
     internal sealed class VimApplicationSettings : IVimApplicationSettings
     {
-        internal const string CollectionPath = "VsVim";
         internal const string DefaultSettingsName = "DefaultSettings";
         internal const string DisplayControlCharsName = "DisplayControlChars";
         internal const string EnableExternalEditMonitoringName = "EnableExternalEditMonitoring";
@@ -33,300 +28,152 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string CleanMacrosName = "CleanMacros";
         internal const string LastVersionUsedName = "LastVersionUsed";
         internal const string WordWrapDisplayName = "WordWrapDisplay";
-        internal const string ErrorGetFormat = "Cannot get setting {0}";
-        internal const string ErrorSetFormat = "Cannot set setting {0}";
 
-        private readonly WritableSettingsStore _settingsStore;
-        private readonly IProtectedOperations _protectedOperations;
-        private readonly ISettingsCache _settingsCache;
+        private readonly ISettingsStore _settingsStore;
+
+        private readonly ReadOnlyCollection<CommandKeyBinding> _emptyBindingsList;
 
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
-        internal void OnSettingsChanged()
-        {
-            SettingsChanged?.Invoke(this, new ApplicationSettingsEventArgs());
-        }
-
         [ImportingConstructor]
-        internal VimApplicationSettings(
-            SVsServiceProvider vsServiceProvider,
-            IProtectedOperations protectedOperations,
-            ISettingsCache settingsCache)
-            : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations, settingsCache)
-        {
-        }
-
-        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations, ISettingsCache settingsCache)
+        internal VimApplicationSettings(ISettingsStore settingsStore)
         {
             _settingsStore = settingsStore;
-            _protectedOperations = protectedOperations;
-            _settingsCache = settingsCache;
+
+            _emptyBindingsList = new CommandKeyBinding[0].ToReadOnlyCollection();
         }
 
-        internal bool GetBoolean(string propertyName, bool defaultValue)
+        private void OnSettingsChanged(string changedSettingName)
         {
-            if (_settingsCache.CheckBoolean(propertyName, out var value))
-            {
-                return value;
-            }
-
-            EnsureCollectionExists();
-            try
-            {
-                bool resultSettingValue;
-
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    resultSettingValue = defaultValue;
-                }
-                else
-                {
-                    resultSettingValue = _settingsStore.GetBoolean(CollectionPath, propertyName);
-                }
-
-                _settingsCache.UpdateCache(propertyName, resultSettingValue);
-
-                return resultSettingValue;
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
+            var eventArgs = new ApplicationSettingsEventArgs(changedSettingName);
+            SettingsChanged?.Invoke(this, eventArgs);
         }
 
-        internal void SetBoolean(string propertyName, bool value)
+        internal void Set<T>(string key, T value)
         {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetBoolean(CollectionPath, propertyName, value);
-                _settingsCache.UpdateCache(propertyName, value);
-                OnSettingsChanged();
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorSetFormat, propertyName), e);
-            }
+            _settingsStore.Set(key, value);
+            OnSettingsChanged(key);
         }
 
-        internal string GetString(string propertyName, string defaultValue)
+        internal T Get<T>(string key, T defaultValue)
         {
-            if (_settingsCache.CheckString(propertyName, out var value))
-            {
-                return value;
-            }
-
-            EnsureCollectionExists();
-            try
-            {
-                string resultSettingValue;
-
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    resultSettingValue = defaultValue;
-                }
-                else
-                {
-                    resultSettingValue = _settingsStore.GetString(CollectionPath, propertyName);
-                }
-
-                _settingsCache.UpdateCache(propertyName, resultSettingValue);
-
-                return resultSettingValue;
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
-        }
-
-        internal void SetString(string propertyName, string value)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetString(CollectionPath, propertyName, value);
-                _settingsCache.UpdateCache(propertyName, value);
-                OnSettingsChanged();
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorSetFormat, propertyName), e);
-            }
-        }
-
-        internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct, Enum
-        {
-            var value = GetString(propertyName, null);
-            if (value == null)
-            {
-                return defaultValue;
-            }
-
-            if (Enum.TryParse(value, out T enumValue))
-            {
-                return enumValue;
-            }
-
-            return defaultValue;
-        }
-
-        internal void SetEnum<T>(string propertyName, T value) where T : struct, Enum
-        {
-            SetString(propertyName, value.ToString());
-        }
-
-        private void EnsureCollectionExists()
-        {
-            try
-            {
-                if (!_settingsStore.CollectionExists(CollectionPath))
-                {
-                    _settingsStore.CreateCollection(CollectionPath);
-                }
-            }
-            catch (Exception e)
-            {
-                Report("Unable to create the settings collection", e);
-            }
-        }
-
-        private void Report(string message, Exception e)
-        {
-            message = message + ": " + e.Message;
-            var exception = new Exception(message, e);
-            _protectedOperations.Report(exception);
-        }
-
-        private ReadOnlyCollection<CommandKeyBinding> GetRemovedBindings()
-        {
-            var text = GetString(RemovedBindingsName, string.Empty);
-            var list = SettingSerializer.ConvertToCommandKeyBindings(text);
-            return list.ToReadOnlyCollectionShallow();
-        }
-
-        private void SetRemovedBindings(IEnumerable<CommandKeyBinding> bindings)
-        {
-            var text = SettingSerializer.ConvertToString(bindings);
-            SetString(RemovedBindingsName, text);
+            return _settingsStore.Get(key, defaultValue);
         }
 
         #region IVimApplicationSettings
 
         DefaultSettings IVimApplicationSettings.DefaultSettings
         {
-            get { return GetEnum(DefaultSettingsName, defaultValue: DefaultSettings.GVim73); }
-            set { SetEnum(DefaultSettingsName, value); }
+            get { return Get(DefaultSettingsName, defaultValue: DefaultSettings.GVim73); }
+            set { Set(DefaultSettingsName, value); }
         }
 
         VimRcLoadSetting IVimApplicationSettings.VimRcLoadSetting
         {
-            get { return GetEnum(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.Both); }
-            set { SetEnum(VimRcLoadSettingName, value); }
+            get { return Get(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.Both); }
+            set { Set(VimRcLoadSettingName, value); }
         }
 
         bool IVimApplicationSettings.DisplayControlChars
         {
-            get { return GetBoolean(DisplayControlCharsName, defaultValue: true); }
-            set { SetBoolean(DisplayControlCharsName, value); }
+            get { return Get(DisplayControlCharsName, defaultValue: true); }
+            set { Set(DisplayControlCharsName, value); }
         }
 
         bool IVimApplicationSettings.EnableExternalEditMonitoring
         {
-            get { return GetBoolean(EnableExternalEditMonitoringName, defaultValue: true); }
-            set { SetBoolean(EnableExternalEditMonitoringName, value); }
+            get { return Get(EnableExternalEditMonitoringName, defaultValue: true); }
+            set { Set(EnableExternalEditMonitoringName, value); }
         }
 
         bool IVimApplicationSettings.EnableOutputWindow
         {
-            get { return GetBoolean(EnableOutputWindowName, defaultValue: false); }
-            set { SetBoolean(EnableOutputWindowName, value); }
+            get { return Get(EnableOutputWindowName, defaultValue: false); }
+            set { Set(EnableOutputWindowName, value); }
         }
 
         string IVimApplicationSettings.HideMarks
         {
-            get { return GetString(HideMarksName, defaultValue: ""); }
-            set { SetString(HideMarksName, value); }
+            get { return Get(HideMarksName, defaultValue: ""); }
+            set { Set(HideMarksName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorDefaults
         {
-            get { return GetBoolean(UseEditorDefaultsName, defaultValue: true); }
-            set { SetBoolean(UseEditorDefaultsName, value); }
+            get { return Get(UseEditorDefaultsName, defaultValue: true); }
+            set { Set(UseEditorDefaultsName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorIndent
         {
-            get { return GetBoolean(UseEditorIndentName, defaultValue: true); }
-            set { SetBoolean(UseEditorIndentName, value); }
+            get { return Get(UseEditorIndentName, defaultValue: true); }
+            set { Set(UseEditorIndentName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorTabAndBackspace
         {
-            get { return GetBoolean(UseEditorTabAndBackspaceName, defaultValue: true); }
-            set { SetBoolean(UseEditorTabAndBackspaceName, value); }
+            get { return Get(UseEditorTabAndBackspaceName, defaultValue: true); }
+            set { Set(UseEditorTabAndBackspaceName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorCommandMargin
         {
-            get { return GetBoolean(UseEditorCommandMarginName, defaultValue: true); }
-            set { SetBoolean(UseEditorCommandMarginName, value); }
+            get { return Get(UseEditorCommandMarginName, defaultValue: true); }
+            set { Set(UseEditorCommandMarginName, value); }
         }
 
         bool IVimApplicationSettings.CleanMacros
         {
-            get { return GetBoolean(CleanMacrosName, defaultValue: false); }
-            set { SetBoolean(CleanMacrosName, value); }
+            get { return Get(CleanMacrosName, defaultValue: false); }
+            set { Set(CleanMacrosName, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
         {
-            get { return GetBoolean(HaveUpdatedKeyBindingsName, defaultValue: false); }
-            set { SetBoolean(HaveUpdatedKeyBindingsName, value); }
+            get { return Get(HaveUpdatedKeyBindingsName, defaultValue: false); }
+            set { Set(HaveUpdatedKeyBindingsName, value); }
         }
 
         bool IVimApplicationSettings.HaveNotifiedVimRcLoad
         {
-            get { return GetBoolean(HaveNotifiedVimRcLoadName, defaultValue: false); }
-            set { SetBoolean(HaveNotifiedVimRcLoadName, value); }
+            get { return Get(HaveNotifiedVimRcLoadName, defaultValue: false); }
+            set { Set(HaveNotifiedVimRcLoadName, value); }
         }
 
         bool IVimApplicationSettings.HaveNotifiedVimRcErrors
         {
-            get { return GetBoolean(HaveNotifiedVimRcErrorsName, defaultValue: true); }
-            set { SetBoolean(HaveNotifiedVimRcErrorsName, value); }
+            get { return Get(HaveNotifiedVimRcErrorsName, defaultValue: true); }
+            set { Set(HaveNotifiedVimRcErrorsName, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding
         {
-            get { return GetBoolean(IgnoredConflictingKeyBindingName, defaultValue: false); }
-            set { SetBoolean(IgnoredConflictingKeyBindingName, value); }
+            get { return Get(IgnoredConflictingKeyBindingName, defaultValue: false); }
+            set { Set(IgnoredConflictingKeyBindingName, value); }
         }
 
         bool IVimApplicationSettings.KeyMappingIssueFixed
         {
-            get { return GetBoolean(KeyMappingIssueFixedName, defaultValue: false); }
-            set { SetBoolean(KeyMappingIssueFixedName, value); }
+            get { return Get(KeyMappingIssueFixedName, defaultValue: false); }
+            set { Set(KeyMappingIssueFixedName, value); }
         }
 
         WordWrapDisplay IVimApplicationSettings.WordWrapDisplay
-        {
-            get { return GetEnum<WordWrapDisplay>(WordWrapDisplayName, WordWrapDisplay.Glyph); }
-            set { SetEnum(WordWrapDisplayName, value); }
+        {                                 
+            get { return Get(WordWrapDisplayName, defaultValue: WordWrapDisplay.Glyph); }
+            set { Set(WordWrapDisplayName, value); }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings
         {
-            get { return GetRemovedBindings(); }
-            set { SetRemovedBindings(value); }
+            get { return Get(RemovedBindingsName, defaultValue: _emptyBindingsList); }
+            set { Set(RemovedBindingsName, value); }
         }
 
         string IVimApplicationSettings.LastVersionUsed
         {
-            get { return GetString(LastVersionUsedName, null); }
-            set { SetString(LastVersionUsedName, value); }
+            get { return Get<string>(LastVersionUsedName, defaultValue: null); }
+            set { Set(LastVersionUsedName, value); }
         }
 
         event EventHandler<ApplicationSettingsEventArgs> IVimApplicationSettings.SettingsChanged

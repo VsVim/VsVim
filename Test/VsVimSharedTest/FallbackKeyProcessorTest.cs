@@ -12,6 +12,8 @@ using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Vim.VisualStudio.Implementation.Misc;
+using Vim.VisualStudio.Implementation.Settings;
+
 using Xunit;
 
 namespace Vim.VisualStudio.UnitTest
@@ -60,7 +62,7 @@ namespace Vim.VisualStudio.UnitTest
             var commandId = new CommandId(Guid.NewGuid(), 0);
             _removedBindingList.Add(new CommandKeyBinding(commandId, name, keyBinding));
             _vimApplicationSettings
-                .Raise(x => x.SettingsChanged += null, new ApplicationSettingsEventArgs());
+                .Raise(x => x.SettingsChanged += null, new ApplicationSettingsEventArgs(VimApplicationSettings.RemovedBindingsName));
             return commandId;
         }
 

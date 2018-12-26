@@ -216,52 +216,25 @@ namespace Vim.VisualStudio.UnitTest
 
         #endregion
 
-        #region DummySettingsCache
-
-        private sealed class DummySettingsCache : ISettingsCache
-        {
-            public void UpdateCache(string propertyName, string value)
-            {
-            }
-
-            public void UpdateCache(string propertyName, bool value)
-            {
-            }
-
-            public bool CheckBoolean(string propertyName, out bool result)
-            {
-                result = default;
-
-                return false;
-            }
-
-            public bool CheckString(string propertyName, out string result)
-            {
-                result = default;
-
-                return false;
-            }
-       }
-
-        #endregion
-
         private readonly MockRepository _factory;
         private readonly Mock<IProtectedOperations> _protectedOperations;
+        private readonly Mock<IVsStoreSpecializationProvider> _vsStoreSpecialization;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly VimApplicationSettings _vimApplicationSettingsRaw;
         private readonly WritableSettingsStore _writableSettingsStore;
-        private readonly ISettingsCache _settingsCache;
+        private readonly string _collectionPath;
 
-        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2012, WritableSettingsStore settingsStore = null, ISettingsCache settingsCache = null)
+        protected VimApplicationSettingsTest(VisualStudioVersion visualStudioVersion = VisualStudioVersion.Vs2012, WritableSettingsStore settingsStore = null)
         {
             settingsStore = settingsStore ?? new SimpleWritableSettingsStore();
-            settingsCache = settingsCache ?? new DummySettingsCache();
             _factory = new MockRepository(MockBehavior.Strict);
             _protectedOperations = _factory.Create<IProtectedOperations>();
-            _vimApplicationSettingsRaw = new VimApplicationSettings(visualStudioVersion, settingsStore, _protectedOperations.Object, settingsCache);
+            _collectionPath = VsVimConstantCollectionPathProvider.CollectionPath;
+            _vsStoreSpecialization = _factory.Create<IVsStoreSpecializationProvider>();
+            var wrappedSettingsStore = new VsSettingsStore(settingsStore, _collectionPath, _vsStoreSpecialization.Object, _protectedOperations.Object);
+            _vimApplicationSettingsRaw = new VimApplicationSettings(wrappedSettingsStore);
             _vimApplicationSettings = _vimApplicationSettingsRaw;
             _writableSettingsStore = settingsStore;
-            _settingsCache = settingsCache;
         }
 
         public abstract class CollectionPathTest : VimApplicationSettingsTest
@@ -271,7 +244,7 @@ namespace Vim.VisualStudio.UnitTest
                 protected override void DoOperation()
                 {
                     SetupBoolGet("myProp", true);
-                    Assert.True(_vimApplicationSettingsRaw.GetBoolean("myProp", false));
+                    Assert.True(_vimApplicationSettingsRaw.Get("myProp", false));
                 }
             }
 
@@ -280,7 +253,7 @@ namespace Vim.VisualStudio.UnitTest
                 protected override void DoOperation()
                 {
                     SetupBoolSet("myProp", true);
-                    _vimApplicationSettingsRaw.SetBoolean("myProp", true);
+                    _vimApplicationSettingsRaw.Set("myProp", true);
                 }
             }
 
@@ -289,7 +262,7 @@ namespace Vim.VisualStudio.UnitTest
                 protected override void DoOperation()
                 {
                     SetupStringGet("myProp", "cat");
-                    Assert.Equal("cat", _vimApplicationSettingsRaw.GetString("myProp", ""));
+                    Assert.Equal("cat", _vimApplicationSettingsRaw.Get("myProp", ""));
                 }
             }
 
@@ -298,7 +271,7 @@ namespace Vim.VisualStudio.UnitTest
                 protected override void DoOperation()
                 {
                     SetupStringSet("myProp", "cat");
-                    _vimApplicationSettingsRaw.SetString("myProp", "cat");
+                    _vimApplicationSettingsRaw.Set("myProp", "cat");
                 }
             }
 
@@ -313,30 +286,42 @@ namespace Vim.VisualStudio.UnitTest
 
             private void SetupBoolGet(string propName, bool value)
             {
-                _settingsStore.Setup(x => x.PropertyExists(VimApplicationSettings.CollectionPath, propName)).Returns(true);
-                _settingsStore.Setup(x => x.GetBoolean(VimApplicationSettings.CollectionPath, propName)).Returns(value);
+                _vsStoreSpecialization.Setup(x => x.GetGetter<bool>(_writableSettingsStore))
+                    .Returns((collectionPath, propertyName) => _writableSettingsStore.GetBoolean(collectionPath, propertyName));
+
+                _settingsStore.Setup(x => x.PropertyExists(_collectionPath, propName)).Returns(true);
+                _settingsStore.Setup(x => x.GetBoolean(_collectionPath, propName)).Returns(value);
             }
 
             private void SetupBoolSet(string propName, bool value)
             {
-                _settingsStore.Setup(x => x.SetBoolean(VimApplicationSettings.CollectionPath, propName, value)).Verifiable();
+                _vsStoreSpecialization.Setup(x => x.GetSetter<bool>(_writableSettingsStore))
+                    .Returns((collectionPath, propertyName, val) => _writableSettingsStore.SetBoolean(collectionPath, propertyName, val));
+
+                _settingsStore.Setup(x => x.SetBoolean(_collectionPath, propName, value)).Verifiable();
             }
 
             private void SetupStringGet(string propName, string value)
             {
-                _settingsStore.Setup(x => x.PropertyExists(VimApplicationSettings.CollectionPath, propName)).Returns(true);
-                _settingsStore.Setup(x => x.GetString(VimApplicationSettings.CollectionPath, propName)).Returns(value);
+                _vsStoreSpecialization.Setup(x => x.GetGetter<string>(_writableSettingsStore))
+                    .Returns((collectionPath, propertyName) => _writableSettingsStore.GetString(collectionPath, propertyName)); ;
+
+                _settingsStore.Setup(x => x.PropertyExists(_collectionPath, propName)).Returns(true);
+                _settingsStore.Setup(x => x.GetString(_collectionPath, propName)).Returns(value);
             }
 
             private void SetupStringSet(string propName, string value)
             {
-                _settingsStore.Setup(x => x.SetString(VimApplicationSettings.CollectionPath, propName, value)).Verifiable();
+                _vsStoreSpecialization.Setup(x => x.GetSetter<string>(_writableSettingsStore))
+                    .Returns((collectionPath, propertyName, val) => _writableSettingsStore.SetString(collectionPath, propertyName, val));
+
+                _settingsStore.Setup(x => x.SetString(_collectionPath, propName, value)).Verifiable();
             }
 
             [Fact]
             public void CheckBeforeOperation()
             {
-                _settingsStore.Setup(x => x.CollectionExists(VimApplicationSettings.CollectionPath)).Returns(true).Verifiable();
+                _settingsStore.Setup(x => x.CollectionExists(_collectionPath)).Returns(true).Verifiable();
                 DoOperation();
                 _settingsStore.Verify();
             }
@@ -344,8 +329,8 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void CreateBeforeOperation()
             {
-                _settingsStore.Setup(x => x.CollectionExists(VimApplicationSettings.CollectionPath)).Returns(false).Verifiable();
-                _settingsStore.Setup(x => x.CreateCollection(VimApplicationSettings.CollectionPath)).Verifiable();
+                _settingsStore.Setup(x => x.CollectionExists(_collectionPath)).Returns(false).Verifiable();
+                _settingsStore.Setup(x => x.CreateCollection(_collectionPath)).Verifiable();
                 DoOperation();
                 _settingsStore.Verify();
             }
@@ -356,6 +341,9 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void Defaults()
             {
+                _vsStoreSpecialization.Setup(x => x.GetGetter<bool>(_writableSettingsStore))
+                    .Returns((collectionPath, propertyName) => _writableSettingsStore.GetBoolean(collectionPath, propertyName));
+
                 Assert.True(_vimApplicationSettings.UseEditorDefaults);
                 Assert.True(_vimApplicationSettings.UseEditorIndent);
                 Assert.True(_vimApplicationSettings.UseEditorTabAndBackspace);
