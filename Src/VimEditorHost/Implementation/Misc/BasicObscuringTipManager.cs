@@ -1,4 +1,4 @@
-﻿#if VS2017
+﻿#if VS2017 || VS2019
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;

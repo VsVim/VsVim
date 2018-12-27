@@ -19,6 +19,8 @@ namespace Vim.EditorHost
             EditorVersion.Vs2015;
 #elif VS2017
             EditorVersion.Vs2017;
+#elif VS2019
+            EditorVersion.Vs2019;
 #else
 #error Bad version
 #endif
@@ -73,7 +75,7 @@ namespace Vim.EditorHost
             var editorAssemblyVersion = new Version(vsVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
 
-#if VS2017
+#if VS2017 || VS2019
             if (vsVersion.Major >= 15)
             {
                 AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));

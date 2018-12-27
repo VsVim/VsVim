@@ -28,6 +28,8 @@ namespace Vim.VisualStudio
                     return VisualStudioVersion.Vs2015;
                 case "15":
                     return VisualStudioVersion.Vs2017;
+                case "16":
+                    return VisualStudioVersion.Vs2019;
                 default:
                     return VisualStudioVersion.Unknown;
             }

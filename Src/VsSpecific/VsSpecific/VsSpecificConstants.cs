@@ -17,6 +17,8 @@ namespace Vim.VisualStudio.Specific
     VisualStudioVersion.Vs2015;
 #elif VS_SPECIFIC_2017
     VisualStudioVersion.Vs2017;
+#elif VS_SPECIFIC_2019
+    VisualStudioVersion.Vs2019;
 #else
 #error "Bad VsSpecific project"
 #endif

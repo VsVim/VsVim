@@ -20,6 +20,7 @@ namespace Vim.EditorHost
                 case 12: return EditorVersion.Vs2013;
                 case 14: return EditorVersion.Vs2015;
                 case 15: return EditorVersion.Vs2017;
+                case 16: return EditorVersion.Vs2019;
                 default: throw new Exception($"Unexpected major version value {majorVersion}");
             }
         }
@@ -32,6 +33,7 @@ namespace Vim.EditorHost
                 case EditorVersion.Vs2013: return 12;
                 case EditorVersion.Vs2015: return 14;
                 case EditorVersion.Vs2017: return 15;
+                case EditorVersion.Vs2019: return 16;
                 default: throw new Exception($"Unexpected enum value {version}");
             }
         }
