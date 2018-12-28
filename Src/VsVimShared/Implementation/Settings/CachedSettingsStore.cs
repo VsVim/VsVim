@@ -59,7 +59,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             return EqualityComparer<T>.Default.Equals(left, right);
         }
 
-        bool ISettingsStore.Check<T>(string key, out T value, T defaultValue)
+        bool ISettingsStore.GetOrDefault<T>(string key, out T value, T defaultValue)
         {
             if (_notFoundKeys.Contains(key))
             {
@@ -75,7 +75,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private bool TryUpdateFromUnderlyingStore<T>(string key, out T value, T defaultValue)
         {
-            var foundInUnderlyingStore = _underlyingStore.Check(key, out value, defaultValue);
+            var foundInUnderlyingStore = _underlyingStore.GetOrDefault(key, out value, defaultValue);
 
             if (foundInUnderlyingStore)
             {

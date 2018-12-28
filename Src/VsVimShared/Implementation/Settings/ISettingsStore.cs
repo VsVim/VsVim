@@ -7,6 +7,6 @@
     {
         void Set<T>(string key, T value);
 
-        bool Check<T>(string key, out T value, T defaultValue);
+        bool GetOrDefault<T>(string key, out T value, T defaultValue);
     }
 }

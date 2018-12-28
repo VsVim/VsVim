@@ -6,10 +6,13 @@ namespace Vim.VisualStudio.Implementation.Settings
     internal sealed class VsVimConstantCollectionPathProvider : ISettingsCollectionPathProvider
     {
         internal const string CollectionPath = "VsVim";
-        
-        public string GetCollectionName()
+
+        public string CollectionName
         {
-            return CollectionPath;
+            get
+            {
+                return CollectionPath;
+            }
         }
     }
 }

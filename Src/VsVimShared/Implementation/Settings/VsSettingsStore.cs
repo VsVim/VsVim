@@ -31,7 +31,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             IVsStoreSpecializationProvider specializationProvider,
             IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetWritableSettingsStore(),
-                collectionPathProvider.GetCollectionName(),
+                collectionPathProvider.CollectionName,
                 specializationProvider,
                 protectedOperations)
         {
@@ -65,7 +65,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
         }
 
-        public bool Check<T>(string key, out T value, T defaultValue)
+        public bool GetOrDefault<T>(string key, out T value, T defaultValue)
         {
             EnsureCollectionExists();
 

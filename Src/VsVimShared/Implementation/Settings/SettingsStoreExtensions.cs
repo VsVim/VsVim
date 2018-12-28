@@ -6,7 +6,7 @@ namespace Vim.VisualStudio.Implementation.Settings
     {
         public static T Get<T>(this ISettingsStore settingsStore, string key, T defaultValue)
         {
-            settingsStore.Check(key, out var result, defaultValue);
+            settingsStore.GetOrDefault(key, out var result, defaultValue);
 
             return result;
         }

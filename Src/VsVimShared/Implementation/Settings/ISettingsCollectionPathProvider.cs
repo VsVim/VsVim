@@ -2,6 +2,6 @@
 {
     public interface ISettingsCollectionPathProvider
     {
-        string GetCollectionName();
+        string CollectionName { get; }
     }
 }
