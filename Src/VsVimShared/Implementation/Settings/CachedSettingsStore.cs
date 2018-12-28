@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 
 namespace Vim.VisualStudio.Implementation.Settings
 {
@@ -75,6 +76,12 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private bool TryUpdateFromUnderlyingStore<T>(string key, out T value, T defaultValue)
         {
+            // If we know that the key wasn't found before
+            // And we didn't update the key
+            // There is no reason to re-query underlying store
+            // As store ownership is assumed to be exclusive
+            Debug.Assert(!_notFoundKeys.Contains(key));
+
             var foundInUnderlyingStore = _underlyingStore.GetOrDefault(key, out value, defaultValue);
 
             if (foundInUnderlyingStore)
