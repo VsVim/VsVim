@@ -4,6 +4,6 @@ namespace Vim.VisualStudio
 {
     public interface ICSharpScriptExecutor
     {
-        void Execute(CallInfo callInfo, bool createEachTime);
+        void Execute(IVim vim, CallInfo callInfo, bool createEachTime);
     }
 }

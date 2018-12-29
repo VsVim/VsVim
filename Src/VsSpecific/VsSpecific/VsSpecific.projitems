@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SharedService.CSharpScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.Peek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />

@@ -86,7 +86,7 @@ namespace Vim.VisualStudio
                     default:
                         Debug.Assert(false);
                         return SettingValue.NewToggle(false);
-               }
+                }
             }
 
             SettingValue IVimCustomSettingSource.GetSettingValue(string name)
@@ -205,7 +205,7 @@ namespace Vim.VisualStudio
                     MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
                     ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
                 });
-           }
+            }
 
             private void SyncAction(Action action)
             {
@@ -242,7 +242,6 @@ namespace Vim.VisualStudio
         private readonly IVsShell _vsShell;
         private readonly IProtectedOperations _protectedOperations;
         private readonly SettingsSync _settingsSync;
-        private readonly ICSharpScriptExecutor _cSharpScriptExecutor;
         private IVim _vim;
 
         internal _DTE DTE
@@ -305,8 +304,7 @@ namespace Vim.VisualStudio
             IProtectedOperations protectedOperations,
             IMarkDisplayUtil markDisplayUtil,
             IControlCharUtil controlCharUtil,
-            SVsServiceProvider serviceProvider,
-            [Import(AllowDefault = true)]ICSharpScriptExecutor cSharpScriptExecutor)
+            SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -322,7 +320,6 @@ namespace Vim.VisualStudio
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
             _protectedOperations = protectedOperations;
-            _cSharpScriptExecutor = cSharpScriptExecutor;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
@@ -362,7 +359,7 @@ namespace Vim.VisualStudio
                         outputPane.OutputString(e.Message + Environment.NewLine);
                     }
                 };
-            } 
+            }
         }
 
         public override void EnsurePackageLoaded()
@@ -780,13 +777,7 @@ namespace Vim.VisualStudio
 
         public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
         {
-            if (_cSharpScriptExecutor == null)
-            {
-                _vim.ActiveStatusUtil.OnError(global::Vim.VisualStudio.Properties.Resource.CsxNotSupported);
-                return;
-            }
-
-            _cSharpScriptExecutor.Execute(callInfo, createEachTime);
+            _sharedService.RunCSharpScript(_vim, callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)

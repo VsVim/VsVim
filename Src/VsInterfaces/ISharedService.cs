@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -56,6 +57,12 @@ namespace Vim.VisualStudio
         /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
         /// </summary>
         bool ClosePeekView(ITextView peekView);
+
+        /// <summary>
+        /// Run C# Script.
+        /// </summary>
+        /// <returns></returns>
+        void RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime);
     }
 
     /// <summary>

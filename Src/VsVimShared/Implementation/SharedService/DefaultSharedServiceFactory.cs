@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Implementation.SharedService
 {
@@ -29,6 +30,11 @@ namespace Vim.VisualStudio.Implementation.SharedService
             bool ISharedService.ClosePeekView(ITextView peekView)
             {
                 return false;
+            }
+
+            void ISharedService.RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
+            {
+                vim.ActiveStatusUtil.OnError("csx not supported");
             }
         }
 

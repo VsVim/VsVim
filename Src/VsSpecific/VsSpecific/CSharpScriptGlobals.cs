@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2017
+﻿#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
 
 using Vim.Interpreter;
 

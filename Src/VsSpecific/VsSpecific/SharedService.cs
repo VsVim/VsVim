@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -100,6 +101,11 @@ namespace Vim.VisualStudio.Specific
         bool ISharedService.ClosePeekView(ITextView peekView)
         {
             return ClosePeekView(peekView);
+        }
+
+        void ISharedService.RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScript(vim, callInfo, createEachTime);
         }
 
         #endregion

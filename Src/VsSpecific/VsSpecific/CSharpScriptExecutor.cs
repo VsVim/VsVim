@@ -1,94 +1,137 @@
-﻿#if VS_SPECIFIC_2017
+﻿#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
 
 using System;
-using System.ComponentModel.Composition;
 using Vim.Interpreter;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Linq;
 
 namespace Vim.VisualStudio.Specific
 {
-    [Export(typeof(ICSharpScriptExecutor))]
-    internal sealed class CSharpScriptExecutor : ICSharpScriptExecutor, IDisposable
+    internal sealed class CSharpScriptExecutor : ICSharpScriptExecutor
     {
-        [Import(typeof(IVim))]
-        private Lazy<IVim> Vim { get; set; }
-
         private const string ScriptFolder = "vsvimscripts";
-        private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
-        private ScriptOptions _scriptOptions = null;
+        private Dictionary<string, object> _scripts = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        private void Dispose()
-        {
-        }
+        private MethodInfo _cSharpScriptCreate = null;
+        private dynamic _scriptOptions = null;
+        private dynamic _defaultScriptSourceResolver = null;
+        private dynamic _defaultScriptMetadataResolver = null;
+        private dynamic _defaultScriptOptions = null;
 
-        private void Execute(CallInfo callInfo, bool createEachTime)
+        private void Execute(IVim vim, CallInfo callInfo, bool createEachTime)
         {
-            IVim vim = Vim.Value;
             try
             {
-                Script<object> script;
+                string assemblyPath;
+                string baseDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"CommonExtensions\Microsoft\ManagedLanguages\VBCSharp\InteractiveComponents");
+
+                string assemblyName;
+                if (_cSharpScriptCreate == null)
+                {
+                    assemblyName = "Microsoft.CodeAnalysis.CSharp.Scripting.dll";
+                    assemblyPath = Path.Combine(baseDirectory, assemblyName);
+                    if (!File.Exists(assemblyPath))
+                    {
+                        vim.ActiveStatusUtil.OnError($"{assemblyName} not found.");
+                        return;
+                    }
+                    var asm = Assembly.LoadFile(assemblyPath);
+                    var t = asm.GetType("Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript");
+                    foreach (MethodInfo mi in t.GetMethods())
+                    {
+
+                        if (!mi.IsGenericMethod && mi.Name == "Create")
+                        {
+                            if (mi.GetParameters()[0].ParameterType == typeof(string))
+                            {
+                                _cSharpScriptCreate = mi;
+                                break;
+                            }
+                        }
+                    }
+                    if(_cSharpScriptCreate == null)
+                    {
+                        vim.ActiveStatusUtil.OnError($"method 'CSharpScript.Create' not found.");
+                        return;
+                    }
+                }
+                if (_defaultScriptSourceResolver == null)
+                {
+                    assemblyName = "Microsoft.CodeAnalysis.Scripting.dll";
+                    assemblyPath = Path.Combine(baseDirectory, assemblyName);
+                    if (!File.Exists(assemblyPath))
+                    {
+                        vim.ActiveStatusUtil.OnError($"{assemblyName} not found.");
+                        return;
+                    }
+                    var asm = Assembly.LoadFile(assemblyPath);
+                    var t = asm.GetType("Microsoft.CodeAnalysis.Scripting.ScriptSourceResolver");
+                    _defaultScriptSourceResolver = t.GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null, null);
+
+                    t = asm.GetType("Microsoft.CodeAnalysis.Scripting.ScriptMetadataResolver");
+                    _defaultScriptMetadataResolver = t.GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null, null);
+
+                    t = asm.GetType("Microsoft.CodeAnalysis.Scripting.ScriptOptions");
+                    _defaultScriptOptions = t.GetProperty("Default", BindingFlags.Static | BindingFlags.Public).GetValue(null, null);
+                }
+
+                object script;
                 if (!TryGetScript(vim, callInfo.Name, createEachTime, out script))
                     return;
 
                 var globals = new CSharpScriptGlobals(callInfo, vim);
-                script.RunAsync(globals).Wait();
-            }
-            catch (CompilationErrorException ex)
-            {
-                if (_scripts.ContainsKey(callInfo.Name))
-                    _scripts.Remove(callInfo.Name);
-
-                vim.ActiveStatusUtil.OnError(string.Join(Environment.NewLine, ex.Diagnostics));
+                dynamic sc = script;
+                dynamic runner = sc.RunAsync(globals);
+                runner.Wait();
             }
             catch (Exception ex)
             {
-                vim.ActiveStatusUtil.OnError(ex.Message);
+                if (ex.GetType().Name == "CompilationErrorException")
+                {
+                    if (_scripts.ContainsKey(callInfo.Name))
+                        _scripts.Remove(callInfo.Name);
+
+                    vim.ActiveStatusUtil.OnError(string.Join(Environment.NewLine, ((dynamic)ex).Diagnostics));
+                }
+                else
+                {
+                    vim.ActiveStatusUtil.OnError(ex.Message);
+                }
             }
         }
-        private ScriptOptions GetScriptOptions(string scriptPath)
+        private dynamic GetScriptOptions(string scriptPath)
         {
-            var ssr = ScriptSourceResolver.Default
+            var ssr = _defaultScriptSourceResolver
                 .WithBaseDirectory(scriptPath);
 
-            var searchPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            List<string> searchPaths = new List<string>();
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            var smr = ScriptMetadataResolver.Default
+            searchPaths.Add(Path.Combine(baseDirectory, "PublicAssemblies"));
+            searchPaths.Add(Path.Combine(baseDirectory, "PrivateAssemblies"));
+            searchPaths.Add(Path.Combine(baseDirectory, @"CommonExtensions\Microsoft\Editor"));
+            searchPaths.Add(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+
+            var smr = _defaultScriptMetadataResolver
                 .WithBaseDirectory(scriptPath)
-                .WithSearchPaths(searchPath);
+                .WithSearchPaths(searchPaths.ToArray());
 
             var asm = new List<Assembly>();
 
-            asm.Add(typeof(EnvDTE.AddIn).Assembly); //EnvDTE.dll
-            asm.Add(typeof(EnvDTE80.Breakpoint2).Assembly); //EnvDTE80.dll
-            asm.Add(typeof(EnvDTE90.Module).Assembly); //EnvDTE90.dll
-            asm.Add(typeof(EnvDTE100.Solution4).Assembly); //EnvDTE100.dll
-
-            //asm.Add(typeof(Microsoft.VisualStudio.Shell.Package).Assembly); //Microsoft.VisualStudil.Shell.15.0 is imported. 
-            //CS0433 error occurs when multiple versions of Microsoft.VisualStudil.Shell are imported.
-            //So commented out.
-
-            asm.Add(typeof(Microsoft.VisualStudio.Text.ITextSnapshot).Assembly); //Microsoft.VisualStudio.Text.Data.dll
-            asm.Add(typeof(Microsoft.VisualStudio.Text.Document.ChangeTag).Assembly); //Microsoft.VisualStudio.Text.Logic.dll
-            asm.Add(typeof(Microsoft.VisualStudio.Text.Editor.IWpfTextView).Assembly); //Microsoft.VisualStudio.Text.UI.Wpf.dll
-
             asm.Add(typeof(Vim.IVim).Assembly); //VimCore.dll
             asm.Add(typeof(Vim.UI.Wpf.IBlockCaret).Assembly); //VimWpf.dll
-            asm.Add(typeof(Vim.VisualStudio.ISharedService).Assembly); //Vim.VisualStudio.VsInterfaces.dll,Microsoft.VisualStudil.Shell.11.0 is imported.
-            asm.Add(typeof(Vim.VisualStudio.Extensions).Assembly); //Vim.VisualStudio.Shared.dll,Microsoft.VisualStudil.Shell.11.0 is imported.
+            asm.Add(typeof(Vim.VisualStudio.ISharedService).Assembly); //Vim.VisualStudio.VsInterfaces.dll
+            asm.Add(typeof(Vim.VisualStudio.Extensions).Assembly); //Vim.VisualStudio.Shared.dll
 
-            var so = ScriptOptions.Default
+            var so = _defaultScriptOptions
                   .WithSourceResolver(ssr)
                   .WithMetadataResolver(smr)
                   .WithReferences(asm);
 
             return so;
         }
-        private bool TryGetScript(IVim vim, string scriptName, bool createEachTime, out Script<object> script)
+        private bool TryGetScript(IVim vim, string scriptName, bool createEachTime, out object script)
         {
             if (!createEachTime && _scripts.ContainsKey(scriptName))
             {
@@ -110,28 +153,20 @@ namespace Vim.VisualStudio.Specific
             if (_scriptOptions == null)
                 _scriptOptions = GetScriptOptions(scriptPath);
 
-            script = CSharpScript.Create(File.ReadAllText(scriptFilePath), _scriptOptions, typeof(CSharpScriptGlobals));
+            script = _cSharpScriptCreate.Invoke(null, new object[] { File.ReadAllText(scriptFilePath), _scriptOptions, typeof(CSharpScriptGlobals), null });
             _scripts[scriptName] = script;
             return true;
         }
 
-        #region ICSharpScriptExecutor
+#region ICSharpScriptExecutor
 
-        void ICSharpScriptExecutor.Execute(CallInfo callInfo, bool createEachTime)
+        void ICSharpScriptExecutor.Execute(IVim vim, CallInfo callInfo, bool createEachTime)
         {
-            Execute(callInfo, createEachTime);
+            Execute(vim, callInfo, createEachTime);
             VimTrace.TraceInfo("CSharptScript:Execute {0}", callInfo.Name);
         }
-        #endregion
+#endregion
 
-        #region IDispose
-
-        void IDisposable.Dispose()
-        {
-            Dispose();
-        }
-
-        #endregion
     }
 }
 #endif

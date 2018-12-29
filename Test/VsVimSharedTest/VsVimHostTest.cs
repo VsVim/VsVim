@@ -35,7 +35,6 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<IVsShell> _vsShell;
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
-        private Mock<ICSharpScriptExecutor> _cSharpScriptExecutor;
 
         private void Create()
         {
@@ -55,7 +54,6 @@ namespace Vim.VisualStudio.UnitTest
             _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
             _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
-            _cSharpScriptExecutor = _factory.Create<ICSharpScriptExecutor>();
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint selectionCookie = 42;
@@ -88,8 +86,7 @@ namespace Vim.VisualStudio.UnitTest
                 ProtectedOperations,
                 _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
                 _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
-                sp.Object,
-                _cSharpScriptExecutor.Object);
+                sp.Object);
             _host = _hostRaw;
         }
 
