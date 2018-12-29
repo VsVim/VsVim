@@ -17,14 +17,15 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         private readonly IMarkMap _markMap;
         private readonly Dictionary<Mark, int> _lineNumberMap;
         private readonly List<Tuple<string, int>> _glyphPairs;
+        private readonly IMarkDisplayUtil _markDisplayUtil;
 
         private bool _isVisible;
         private int _activeMarks;
-        private string _hideMarks;
+        private HashSet<char> _hideMarks;
 
         private EventHandler _changedEvent;
 
-        internal MarkGlyphTaggerSource(IVimBufferData vimBufferData)
+        internal MarkGlyphTaggerSource(IVimBufferData vimBufferData, IMarkDisplayUtil markDisplayUtil)
         {
             _vimBufferData = vimBufferData;
             _markMap = _vimBufferData.Vim.MarkMap;
@@ -32,17 +33,18 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             _glyphPairs = new List<Tuple<string, int>>();
             _isVisible = true;
             _activeMarks = 0;
-            _hideMarks = _vimBufferData.LocalSettings.HideMarks;
+            _markDisplayUtil = markDisplayUtil;
+            _hideMarks = ExpandHideMarksSetting(_markDisplayUtil.HideMarks);
 
             LoadNewBufferMarks();
             CachePairs();
 
             _markMap.MarkSet += OnBufferMarkSet;
             _markMap.MarkDeleted += OnMarkDeleted;
+            _markDisplayUtil.HideMarksChanged += OnHideMarksChanged;
             _vimBufferData.VimTextBuffer.MarkSet += OnBufferMarkSet;
             _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed += OnTextBufferChanged;
-            _vimBufferData.LocalSettings.SettingChanged += OnLocalSettingsChanged;
             _vimBufferData.Vim.VimHost.IsVisibleChanged += OnIsVisibleChanged;
         }
 
@@ -50,10 +52,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
         {
             _markMap.MarkSet -= OnBufferMarkSet;
             _markMap.MarkDeleted -= OnMarkDeleted;
+            _markDisplayUtil.HideMarksChanged -= OnHideMarksChanged;
             _vimBufferData.VimTextBuffer.MarkSet -= OnBufferMarkSet;
             _vimBufferData.JumpList.MarkSet += OnWindowMarkSet;
             _vimBufferData.TextBuffer.Changed -= OnTextBufferChanged;
-            _vimBufferData.LocalSettings.SettingChanged -= OnLocalSettingsChanged;
         }
 
         private bool IsMarkHidden(Mark mark)
@@ -115,13 +117,46 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             UpdateAllMarks();
         }
 
-        private void OnLocalSettingsChanged(object sender, SettingEventArgs e)
+        private void OnHideMarksChanged(object sender, EventArgs e)
         {
-            if (e.Setting.Name == LocalSettingNames.HideMarksName)
+            _hideMarks = ExpandHideMarksSetting(_markDisplayUtil.HideMarks);
+            UpdateAllMarks();
+        }
+
+        private static HashSet<char> ExpandHideMarksSetting(string setting)
+        {
+            var result = new HashSet<char>();
+            if (setting == "-")
             {
-                _hideMarks = _vimBufferData.LocalSettings.HideMarks;
-                UpdateAllMarks();
+                setting = "!-~";
             }
+            var i = 0;
+            while (i < setting.Length)
+            {
+                var c1 = setting[i];
+                if (i + 2 < setting.Length && setting[i + 1] == '-')
+                {
+                    // Expand range, e.g. 'a-z' or 'z-a'.
+                    var c2 = setting[i + 2];
+                    if (c2 < c1)
+                    {
+                        var tmp = c1;
+                        c1 = c2;
+                        c2 = tmp;
+                    }
+                    for (var c = c1; c <= c2; c++)
+                    {
+                        result.Add(c);
+                    }
+                    i += 3;
+                }
+                else
+                {
+                    result.Add(c1);
+                    i += 1;
+                }
+            }
+            return result;
         }
 
         private void OnIsVisibleChanged(object sender, TextViewEventArgs e)
@@ -150,18 +185,18 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
             // Check first whether this mark is hidden.
             if (IsMarkHidden(mark))
             {
-                if (_lineNumberMap.TryGetValue(mark, out int lineNumber) && lineNumber != -1)
+                var result = false;
+                if (_lineNumberMap.TryGetValue(mark, out int lineNumber))
                 {
-                    // Transition from active to inactive.
-                    --_activeMarks;
-                    return true;
+                    if (lineNumber != -1)
+                    {
+                        // Transition from active to inactive.
+                        --_activeMarks;
+                        result = true;
+                    }
                 }
-                else
-                {
-                    // It might become unhidden.
-                    _lineNumberMap[mark] = -1;
-                }
-                return false;
+                _lineNumberMap[mark] = -1;
+                return result;
             }
 
             // Get old line number.

@@ -518,7 +518,6 @@ type internal LocalSettings
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
             (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
-            (HideMarksName, "vsvim_hidemarks", SettingValue.String "", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -611,9 +610,6 @@ type internal LocalSettings
         member x.Comments
             with get() = _map.GetStringValue CommentsName
             and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
-        member x.HideMarks
-            with get() = _map.GetStringValue HideMarksName
-            and set value = _map.TrySetValue HideMarksName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

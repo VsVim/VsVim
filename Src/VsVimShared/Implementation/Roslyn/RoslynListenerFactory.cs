@@ -133,6 +133,11 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             return null;
         }
 
+        bool? IExtensionAdapter.UseDefaultCaret
+        {
+            get { return null; }
+        }
+
         #endregion
     }
 }

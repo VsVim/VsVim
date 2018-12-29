@@ -4,6 +4,7 @@ configuration: Debug
 branches:
   only:
     - master
+    - staging
 
 image:
   - Visual Studio 2017

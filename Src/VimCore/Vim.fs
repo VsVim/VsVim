@@ -261,7 +261,7 @@ type internal VimBufferFactory
         let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, motionUtil, commonOperations) :> IInsertUtil
-        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, _mouseDevice, lineChangeTracker) :> ICommandUtil
+        let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, lineChangeTracker) :> ICommandUtil
 
         let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings, commandUtil)
         let buffer = bufferRaw :> IVimBuffer

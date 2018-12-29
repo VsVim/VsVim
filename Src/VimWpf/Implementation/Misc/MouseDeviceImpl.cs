@@ -63,6 +63,11 @@ namespace Vim.UI.Wpf.Implementation.Misc
             get { return _mouseDevice.LeftButton == MouseButtonState.Pressed; }
         }
 
+        public bool IsRightButtonPressed
+        {
+            get { return _mouseDevice.RightButton == MouseButtonState.Pressed; }
+        }
+
         public bool InDragOperation(ITextView textView)
         {
             if (TryGetHandler(textView, out Handler handler))

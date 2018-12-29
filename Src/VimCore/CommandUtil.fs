@@ -17,11 +17,11 @@ open StringBuilderExtensions
 [<NoComparison>]
 [<StructuralEquality>]
 type internal NumberValue =
-    | Decimal of int64
-    | Octal of uint64
-    | Hex of uint64
-    | Binary of uint64
-    | Alpha of char
+    | Decimal of Decimal: int64
+    | Octal of Octal: uint64
+    | Hex of Hex: uint64
+    | Binary of Binary: uint64
+    | Alpha of Alpha: char
 
     with
 
@@ -75,7 +75,6 @@ type internal CommandUtil
         _foldManager: IFoldManager,
         _insertUtil: IInsertUtil,
         _bulkOperations: IBulkOperations,
-        _mouseDevice: IMouseDevice,
         _lineChangeTracker: ILineChangeTracker
     ) =
 
@@ -101,6 +100,12 @@ type internal CommandUtil
     let _options = _commonOperations.EditorOptions
 
     let mutable _inRepeatLastChange = false
+
+    /// The last mouse down position before it was adjusted for virtual edit
+    let mutable _leftMouseDownPoint: VirtualSnapshotPoint option = None
+
+    /// Whether to select by word when dragging the mouse
+    let mutable _doSelectByWord = false
 
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
@@ -1084,6 +1089,138 @@ type internal CommandUtil
         let span = action snapshotData
         BufferGraphUtil.MapSpanDownToSingle _bufferGraph span x.CurrentSnapshot
 
+    /// Extend the selection for a mouse click
+    member x.ExtendSelectionForMouseDrag (visualSpan: VisualSpan) =
+
+        /// Change the anchor point by switching to the appropriate visual mode
+        /// with a modified visual selection
+        let changeAnchorPoint (anchorPoint: SnapshotPoint) =
+            let visualKind = VisualKind.Character
+            let caretPoint = x.CaretPoint
+            let tabStop = _localSettings.TabStop
+            let visualSelection =
+                VisualSelection.CreateForPoints visualKind anchorPoint caretPoint tabStop
+            let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    ModeKind.SelectCharacter
+                else
+                    ModeKind.VisualCharacter
+            x.SwitchMode modeKind argument
+
+        /// Whether the specified point is at a word boundary
+        let isWordBoundary (point: SnapshotPoint) =
+
+            // Note that this function is safe to use in the presence of
+            // surrogate pairs because all surrogate pairs (and the code point
+            // they represent when combined) are non-word non-whitespace
+            // characters.
+            let isStart = SnapshotPointUtil.IsStartPoint point
+            let isEnd = SnapshotPointUtil.IsEndPoint point
+            if isStart || isEnd then
+                true
+            else
+                let pointChar =
+                    point
+                    |> SnapshotPointUtil.GetChar
+                let previousPointChar =
+                    point
+                    |> SnapshotPointUtil.SubtractOne
+                    |> SnapshotPointUtil.GetChar
+                let isWhite = CharUtil.IsWhiteSpace pointChar
+                let wasWhite = CharUtil.IsWhiteSpace previousPointChar
+                let isWord = TextUtil.IsWordChar WordKind.NormalWord pointChar
+                let wasWord = TextUtil.IsWordChar WordKind.NormalWord previousPointChar
+                let isEmptyLine = SnapshotPointUtil.IsEmptyLine point
+                isWhite <> wasWhite || isWord <> wasWord || isEmptyLine
+
+        /// Whether the next character span is at a word boundary
+        let isNextCharacterSpanWordBoundary (point: SnapshotPoint) =
+            if SnapshotPointUtil.IsEndPoint point then
+                true
+            else
+                point
+                |> SnapshotPointUtil.GetNextCharacterSpanWithWrap
+                |> isWordBoundary
+
+        // Record the anchor point before moving the caret.
+        let anchorPoint, isForward =
+            if x.CaretPoint <> visualSpan.Start then
+                visualSpan.Start, true
+            else
+                visualSpan.End, false
+
+        // Double-clicking creates a problem because the caret is moved to the
+        // end of what was selected rather than directly under the mouse
+        // pointer.  Prevent accidentally dragging after a double-click by
+        // moving the caret only if the mouse position is over a different
+        // snapshot point than it was when the mouse was previously clicked.
+        if x.MoveCaretToMouseIfChanged() then
+
+            // Handle selecting by word.
+            if _doSelectByWord then
+                let searchPath, wordFunction =
+                    if x.CaretPoint.Position < anchorPoint.Position then
+                        SearchPath.Backward, isWordBoundary
+                    elif _globalSettings.IsSelectionInclusive then
+                        SearchPath.Forward, isNextCharacterSpanWordBoundary
+                    else
+                        SearchPath.Forward, isWordBoundary
+                x.CaretPoint
+                |> SnapshotPointUtil.GetPointsIncludingLineBreak searchPath
+                |> Seq.filter wordFunction
+                |> Seq.head
+                |> VirtualSnapshotPointUtil.OfPoint
+                |> x.MoveCaretToVirtualPointForMouse
+
+                // For an inclusive selection that flips, we may need to adjust
+                // the other end of the visual span to align to a word
+                // boundary.  In effect, the initial word that was selected is
+                // always included as part of the selection.
+                if
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position < anchorPoint.Position &&
+                    isForward
+                then
+
+                    // Flip the selection and extend the current word forwards.
+                    anchorPoint
+                    |> SnapshotPointUtil.AddOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Forward
+                    |> Seq.filter isNextCharacterSpanWordBoundary
+                    |> Seq.head
+                    |> changeAnchorPoint
+                elif
+                    _globalSettings.IsSelectionInclusive &&
+                    x.CaretPoint.Position >= anchorPoint.Position &&
+                    not isForward
+                then
+
+                    // Flip the selection and extend the current word backwards.
+                    anchorPoint
+                    |> SnapshotPointUtil.SubtractOneOrCurrent
+                    |> SnapshotPointUtil.GetPointsIncludingLineBreak SearchPath.Backward
+                    |> Seq.filter isWordBoundary
+                    |> Seq.head
+                    |> changeAnchorPoint
+                else
+                    CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Extend the selection for a mouse release
+    member x.ExtendSelectionForMouseRelease visualSpan =
+        let result = x.ExtendSelectionForMouseDrag visualSpan
+        x.HandleMouseRelease()
+        result
+
+    /// Extend the selection for a mouse drag
+    member x.ExtendSelectionForMouseClick () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Get a line range specifier
     member x.GetLineRangeSpecifier (lineRange: SnapshotLineRange) =
         let caretLine = TextViewUtil.GetCaretLine _textView
@@ -1296,6 +1433,13 @@ type internal CommandUtil
         | Result.Failed(msg) -> _statusUtil.OnError msg
 
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Go to the definition of the word under the mouse
+    member x.GoToDefinitionUnderMouse () =
+        if x.MoveCaretToMouseUnconditionally() then
+            x.GoToDefinition()
+        else
+            CommandResult.Error
 
     /// GoTo the file name under the cursor and possibly use a new window
     member x.GoToFileUnderCaret useNewWindow =
@@ -1860,6 +2004,80 @@ type internal CommandUtil
         | Motion.QuotedStringContents quote -> moveBlock quote motion
         | _ -> moveNormal ()
 
+    /// Move the caret to the specified virtual point for the mouse, i.e.
+    /// without adjusting for scroll offset
+    member x.MoveCaretToVirtualPointForMouse (point: VirtualSnapshotPoint) =
+        let viewFlags = ViewFlags.Standard &&& ~~~ViewFlags.ScrollOffset
+        _commonOperations.MoveCaretToVirtualPoint point viewFlags
+
+    /// Handle a mouse release, i.e. apply any delayed scroll offset adjustment
+    member x.HandleMouseRelease() =
+
+        // Here we would like to call:
+        //
+        // _commonOperations.AdjustTextViewForScrollOffset()
+        //
+        // but because we get a mouse release event inbetween a mouse click and
+        // mouse double-click, that could scroll the window right in the middle
+        // of a mouse operation.
+        //
+        // The only robust approaches to handle this are either: 1) delay the
+        // adjustment until we are sure a double-click won't happen, or 2)
+        // suppress the mouse release event before a double-click. Neither
+        // solution is ideal because it involves timer infrastructure we don't
+        // currently have and it introduces a lag in scroll offset adjustment.
+        //
+        // It's not really any consolation, but gvim doesn't handle this well
+        // either. For now, our solution is simply not to obey 'scrolloff'
+        // during mouse operations.
+
+        _leftMouseDownPoint <- None
+        _doSelectByWord <- false
+
+    /// Move the caret to position of the mouse cursor
+    member x.MoveCaretToMouseUnconditionally () =
+        match x.MousePoint with
+        | Some point ->
+            x.MoveCaretToVirtualPointForMouse point
+            _leftMouseDownPoint <- Some point
+            true
+        | None ->
+            false
+
+    /// Move the caret to the position of the mouse cursor if
+    /// the position is different than the previous one
+    member x.MoveCaretToMouseIfChanged () =
+        match x.LeftMouseDownPoint, x.MousePoint with
+        | Some startPoint, Some endPoint ->
+            if startPoint <> endPoint then
+                x.MoveCaretToMouseUnconditionally()
+            else
+                false
+        | _ ->
+            false
+
+    /// The snapshot point in the buffer under the mouse cursor
+    member x.MousePoint =
+        _commonOperations.MousePoint
+
+    member x.LeftMouseDownPoint =
+        match _leftMouseDownPoint with
+        | Some startPoint when startPoint.Position.Snapshot = _textView.TextSnapshot ->
+            Some startPoint
+        | _ ->
+            None
+
+    member x.MoveCaretToMouse () =
+        if x.MoveCaretToMouseUnconditionally() then
+            _commonOperations.AdjustCaretForVirtualEdit()
+            if VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind then
+                ModeSwitch.SwitchPreviousMode
+            else
+                ModeSwitch.NoSwitch
+            |> CommandResult.Completed
+        else
+            CommandResult.Error
+
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
     member x.OpenFoldInSelection (visualSpan: VisualSpan) =
@@ -1965,23 +2183,15 @@ type internal CommandUtil
     /// Happens when the middle mouse button is clicked.  Need to paste the contents of the default
     /// register at the current position
     member x.PutAfterCaretMouse() =
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
-            match _mouseDevice.GetPosition _textView with
-            | None -> ()
-            | Some position ->
+        if x.MoveCaretToMouseUnconditionally() then
 
-                // First move the caret to the current mouse position
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(position.Y + _textView.ViewportTop)
-                _textView.Caret.MoveTo(textViewLine, position.X + _textView.ViewportLeft) |> ignore
-
-                // Now run the put after command
-                let register = x.GetRegister (Some RegisterName.Unnamed)
-                x.EditWithUndoTransaction "Put after mouse" (fun () ->
-                    x.PutAfterCaretCore register.RegisterValue 1 false)
-
-        CommandResult.Completed ModeSwitch.NoSwitch
+            // Run the put after command.
+            let register = x.GetRegister (Some RegisterName.Unnamed)
+            x.EditWithUndoTransaction "Put after mouse" (fun () ->
+                x.PutAfterCaretCore register.RegisterValue 1 false)
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else
+            CommandResult.Error
 
     /// Put the contents of the specified register before the cursor.  Used for the
     /// 'P' and 'gP' commands in normal mode
@@ -2706,6 +2916,7 @@ type internal CommandUtil
         | NormalCommand.FormatTextLines preserveCaretPosition -> x.FormatTextLines count preserveCaretPosition
         | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> x.RunWithMotion motion (fun motion -> x.FormatTextMotion motion preserveCaretPosition)
         | NormalCommand.GoToDefinition -> x.GoToDefinition()
+        | NormalCommand.GoToDefinitionUnderMouse -> x.GoToDefinitionUnderMouse()
         | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
         | NormalCommand.GoToGlobalDeclaration -> x.GoToGlobalDeclaration()
         | NormalCommand.GoToLocalDeclaration -> x.GoToLocalDeclaration()
@@ -2725,6 +2936,7 @@ type internal CommandUtil
         | NormalCommand.JumpToOlderPosition -> x.JumpToOlderPosition count
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
+        | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
@@ -2750,7 +2962,13 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.SelectBlock -> x.SelectBlock()
+        | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
+        | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
+        | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
+        | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
+        | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -2794,6 +3012,9 @@ type internal CommandUtil
         | VisualCommand.DeleteAllFoldsInSelection -> x.DeleteAllFoldInSelection visualSpan
         | VisualCommand.DeleteSelection -> x.DeleteSelection registerName visualSpan
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection registerName visualSpan
+        | VisualCommand.ExtendSelectionForMouseClick -> x.ExtendSelectionForMouseClick()
+        | VisualCommand.ExtendSelectionForMouseDrag -> x.ExtendSelectionForMouseDrag visualSpan
+        | VisualCommand.ExtendSelectionForMouseRelease -> x.ExtendSelectionForMouseRelease visualSpan
         | VisualCommand.ExtendSelectionToNextMatch searchPath -> x.ExtendSelectionToNextMatch searchPath data.Count
         | VisualCommand.FilterLines -> x.FilterLinesVisual visualSpan
         | VisualCommand.FormatCodeLines -> x.FormatCodeLinesVisual visualSpan
@@ -2803,11 +3024,15 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
+        | VisualCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
+        | VisualCommand.SelectBlock -> x.SelectBlock()
+        | VisualCommand.SelectLine -> x.SelectLine()
+        | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
@@ -2883,6 +3108,20 @@ type internal CommandUtil
         let viewportHeight = _textView.ViewportHeight
         int (floor (viewportHeight / lineHeight))
 
+    /// Scroll viewport of the current text view vertically by lines
+    member x.ScrollViewportVerticallyByLines (scrollDirection: ScrollDirection) (count: int) =
+        if count = 1 then
+            _textView.ViewScroller.ScrollViewportVerticallyByLine(scrollDirection)
+        else
+
+            // Avoid using 'ScrollViewportVerticallyByLines' because it forces
+            // a layout for every line scrolled. Normally this is not a serious
+            // problem but on some displays the layout costs are so high that
+            // the operation becomes pathologically slow. See issue #1633.
+            let sign = if scrollDirection = ScrollDirection.Up then 1 else -1
+            let pixels = float(sign * count) * _textView.LineHeight
+            _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
+
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
@@ -2956,7 +3195,7 @@ type internal CommandUtil
                         let line = textViewLines.[index]
                         TextViewUtil.MoveCaretToPoint _textView line.Start
                 else
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    x.ScrollViewportVerticallyByLines scrollDirection count
                     updateCaretToOffset lineOffset
             | ScrollDirection.Down ->
                 let lastLine = SnapshotUtil.GetLastNormalizedLine _textView.TextSnapshot
@@ -2973,7 +3212,7 @@ type internal CommandUtil
                         let caretPoint, _ = SnapshotPointUtil.OrderAscending visualEndPoint line.End
                         TextViewUtil.MoveCaretToPoint _textView caretPoint
                 else
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(scrollDirection, count)
+                    x.ScrollViewportVerticallyByLines scrollDirection count
                     updateCaretToOffset lineOffset
             | _ -> ()
 
@@ -3004,7 +3243,7 @@ type internal CommandUtil
                 _editorOperations.PageUp(false)
             | Some textViewLines ->
                 let scrollAmount = getScrollAmount textViewLines
-                _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Up, scrollAmount)
+                x.ScrollViewportVerticallyByLines ScrollDirection.Up scrollAmount
 
         // Scroll down by one full page or as much as possible.
         let doScrollDown () =
@@ -3027,7 +3266,7 @@ type internal CommandUtil
                     _editorOperations.ScrollLineTop()
                 else
                     let scrollAmount = getScrollAmount textViewLines
-                    _textView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Down, scrollAmount)
+                    x.ScrollViewportVerticallyByLines ScrollDirection.Down scrollAmount
 
         // Get the last (and if possible, fully visible) line in the text view.
         let getLastFullyVisibleLine (textViewLines: ITextViewLineCollection) =
@@ -3169,7 +3408,7 @@ type internal CommandUtil
 
         let spacesToCaret = x.GetSpacesToCaret()
 
-        _textView.ViewScroller.ScrollViewportVerticallyByLines(direction, rowCount)
+        x.ScrollViewportVerticallyByLines direction rowCount
 
         match TextViewUtil.GetVisibleSnapshotLineRange _textView with
         | None -> ()
@@ -3211,6 +3450,38 @@ type internal CommandUtil
         _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Select the current block
+    member x.SelectBlock () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectBlock
+            else
+                ModeKind.VisualBlock
+        let visualKind = VisualKind.Block
+        let startPoint = x.CaretPoint
+        let endPoint = x.CaretPoint
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
+
+    /// Select the current line
+    member x.SelectLine () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectLine
+            else
+                ModeKind.VisualLine
+        let visualKind = VisualKind.Line
+        let startPoint = x.CaretPoint
+        let endPoint = x.CaretPoint
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
+
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =
         let motion = Motion.NextMatch searchPath
@@ -3229,6 +3500,101 @@ type internal CommandUtil
             let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
             let modeKind = ModeKind.VisualCharacter
             let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode modeKind modeArgument
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Select text for a mouse click
+    member x.SelectTextForMouseClick () =
+        let startPoint = x.CaretPoint
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        x.SelectTextCore startPoint
+
+    /// Select text for a mouse drag
+    member x.SelectTextForMouseDrag () =
+
+        // A click with the mouse to position the caret may be followed by a
+        // slight jiggle of the mouse position, which will cause a drag event.
+        // Prevent accidentally switching to select mode by requiring the caret
+        // to move to a new snapshot point.  In addition, the current caret
+        // position may not agree with the mouse pointer if the mouse was
+        // clicked past the end of the line and the caret was moved back due to
+        // virtual edit settings.  In both cases we refer to the where the
+        // mouse was clicked, not where the caret ends up.
+        match x.LeftMouseDownPoint with
+        | Some startPoint ->
+            if x.MoveCaretToMouseIfChanged() then
+                x.SelectTextCore startPoint.Position
+            else
+                CommandResult.Completed ModeSwitch.NoSwitch
+        | None ->
+            CommandResult.Error
+
+    /// Select text for a mouse release
+    member x.SelectTextForMouseRelease () =
+        let result = x.SelectTextForMouseDrag()
+        x.HandleMouseRelease()
+        result
+
+    member x.SelectTextCore startPoint =
+        let endPoint = x.CaretPoint
+        let visualKind = VisualKind.Character
+        let tabStop = _localSettings.TabStop
+        let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+        let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+        let modeKind =
+            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                ModeKind.SelectCharacter
+            else
+                ModeKind.VisualCharacter
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
+        x.SwitchMode modeKind modeArgument
+
+    /// Select the current word or matching token
+    member x.SelectWordOrMatchingToken () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        let text =
+            x.CaretPoint
+            |> SnapshotPointUtil.GetCharacterSpan
+            |> SnapshotSpanUtil.GetText
+        let result, isToken =
+            let isWord = text.Length = 1 && TextUtil.IsWordChar WordKind.NormalWord text.[0]
+            let argument = MotionArgument(MotionContext.Movement)
+            let motion = Motion.MatchingTokenOrDocumentPercent
+            match isWord, _motionUtil.GetMotion motion argument with
+            | false, Some motionResult -> 
+                Some motionResult, true
+            | _ ->
+                let motion = Motion.InnerWord WordKind.NormalWord
+                match _motionUtil.GetMotion motion argument with
+                | Some motionResult ->
+                    _doSelectByWord <- true
+                    Some motionResult, false
+                | None ->
+                    None, false
+        match result with
+        | Some motionResult ->
+            let startPoint = motionResult.Span.Start
+            let endPoint =
+                if motionResult.Span.Length > 0 then
+                    motionResult.Span.End
+                    |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                else
+                    motionResult.Span.End
+            let visualKind =
+                match isToken, text with
+                | true, "#" ->
+                    VisualKind.Line
+                | _ ->
+                    VisualKind.Character
+            let tabStop = _localSettings.TabStop
+            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    visualKind.SelectModeKind
+                else
+                    visualKind.VisualModeKind
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some endPoint)
             x.SwitchMode modeKind modeArgument
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
@@ -3410,7 +3776,7 @@ type internal CommandUtil
                     visualKind.SelectModeKind
                 else
                     visualKind.VisualModeKind
-            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, ModeArgument.None))
+            CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
 
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () =

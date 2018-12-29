@@ -138,9 +138,9 @@ type InsertKind =
 
     /// This Insert is a repeat operation this holds the count and 
     /// whether or not a newline should be inserted after the text
-    | Repeat of int * bool * TextChange
+    | Repeat of Count: int * AddNewLine: bool * TextChange: TextChange
 
-    | Block of bool * BlockSpan
+    | Block of AtEndOfLine: bool * BlockSpan: BlockSpan
 
 /// The CTRL-R command comes in a number of varieties which really come down to just the 
 /// following options.  Detailed information is available on ':help i_CTRL-R_CTRL-R'
@@ -165,14 +165,14 @@ type PasteFlags =
 type ActiveEditItem = 
 
     /// In the middle of a word completion session
-    | WordCompletion of IWordCompletionSession 
+    | WordCompletion of WordCompletionSession: IWordCompletionSession 
 
     /// In the middle of a paste operation.  Waiting for the register to paste from
     | Paste 
 
     /// In the middle of one of the special paste operations.  The provided flags should 
     /// be passed along to the final Paste operation
-    | PasteSpecial of PasteFlags
+    | PasteSpecial of PasteFlag: PasteFlags
 
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
@@ -184,7 +184,7 @@ type ActiveEditItem =
     | Digraph1
 
     /// In the middle of a digraph operation. Wait for the second digraph key
-    | Digraph2 of KeyInput
+    | Digraph2 of KeyInput: KeyInput
 
     /// No active items
     | None
@@ -211,8 +211,8 @@ type InsertSessionData = {
 
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
-    | InsertCommand of KeyInputSet * InsertCommand * CommandFlags
-    | CustomCommand of (KeyInput -> ProcessResult)
+    | InsertCommand of KeyInputSet: KeyInputSet * InsertCommand: InsertCommand * CommandFlags: CommandFlags
+    | CustomCommand of CustomFunc: (KeyInput -> ProcessResult)
 
 type internal InsertMode
     ( 
@@ -329,6 +329,13 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
+                ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
+                ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
+                ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
+                ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
+                ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
@@ -417,6 +424,9 @@ type internal InsertMode
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    /// The VirtualSnapshotPoint for the caret
+    member x.CaretVirtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
@@ -630,7 +640,7 @@ type internal InsertMode
 
         x.ApplyAfterEdits()
 
-        if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive || _broker.IsSmartTagSessionActive then
+        if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
 
         // Save the last edit point before moving the column to the left
@@ -682,7 +692,7 @@ type internal InsertMode
         // empty completion list as there is nothing to display.  The lack of anything to display 
         // doesn't make the command an error though
         if not (List.isEmpty wordList) then
-            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList true
+            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward
 
             if not wordCompletionSession.IsDismissed then
                 // When the completion session is dismissed we want to clean out the session 
@@ -691,7 +701,7 @@ type internal InsertMode
                 |> Event.add (fun _ -> x.CancelWordCompletionSession())
 
                 let activeEditItem = ActiveEditItem.WordCompletion
-                _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.WordCompletion wordCompletionSession }
+                _sessionData <- { _sessionData with ActiveEditItem = activeEditItem wordCompletionSession }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
@@ -967,6 +977,16 @@ type internal InsertMode
         _operations.ToggleLanguage true
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Forward the specified command to normal mode
+    member x.ForwardToNormal (normalCommand: NormalCommand) keyInput =
+        x.CancelWordCompletionSession()
+        x.BreakUndoSequence "Mouse"
+        match _commandUtil.RunNormalCommand normalCommand CommandData.Default with
+        | CommandResult.Completed modeSwitch ->
+            ProcessResult.Handled modeSwitch
+        | CommandResult.Error ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Process the second key of a paste operation.  
     member x.ProcessPaste keyInput = 
 
@@ -1088,7 +1108,7 @@ type internal InsertMode
             x.Paste keyInput pasteFlags
         | ActiveEditItem.OverwriteReplace ->
             x.Paste keyInput PasteFlags.None
-        | ActiveEditItem.None -> 
+        | ActiveEditItem.None ->
 
             // Next try and process by examining the current change
             match x.ProcessWithCurrentChange keyInput with
@@ -1116,12 +1136,12 @@ type internal InsertMode
         _vimBuffer.VimTextBuffer.LastChangeOrYankEnd <- insertPoint
         _vimBuffer.VimTextBuffer.IsSoftTabStopValidForBackspace <- true
 
-    /// This is raised when caret changes.  If this is the result of a user click then 
-    /// we need to complete the change.
-    ///
-    /// Need to be careful to not end the edit due to the caret moving as a result of 
-    /// normal typing
+    /// Raised when the caret position changes
     member x.OnCaretPositionChanged args = 
+
+        // Because this is invoked only when are active but not processing a command, it means
+        // that some other component (e.g. a language service, ReSharper or Visual Assist)
+        // changed the caret position programmatically.
         _textChangeTracker.CompleteChange()
         if _globalSettings.AtomicInsert then
             // Create a combined movement command that goes from the old position to the new position
@@ -1161,12 +1181,10 @@ type internal InsertMode
             // Don't break the undo sequence if the caret was moved within the
             // active insertion region of the effective change. This allows code
             // assistants to perform a variety of edits without breaking the undo
-            // sequence. This is not strictly vim-compatible, but it is a minor
-            // point and until we can tell the difference between the user using
-            // the mouse and the caret being moved programmatically, we can bend
-            // the rules a little. In any case, we still break the undo sequence
-            // if the mouse is moved before or after the active insertion region,
-            // which is the main intent of the policy.
+            // sequence. With a little more work we could allow edits completely
+            // outside the active insertion region without breaking the undo
+            // sequence, and this would allow code assistants to e.g. automatically
+            // add usings and have the command still be repeatable.
             let breakUndoSequence =
                 match _textChangeTracker.EffectiveChange with
                 | Some span ->

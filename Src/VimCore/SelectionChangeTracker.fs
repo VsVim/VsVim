@@ -111,6 +111,7 @@ type internal SelectionChangeTracker
             _vimBuffer.GlobalSettings.ScrollOffset > 0
             && not _textView.InLayout
             && not _vimBuffer.IsProcessingInput
+            && not _mouseDevice.IsRightButtonPressed
         then
 
             // Do the update being cautious that anything could have
@@ -213,7 +214,11 @@ type internal SelectionChangeTracker
             elif not _vimBuffer.IsClosed && not _selectionDirty then 
                 match getDesiredNewMode() with
                 | None -> ()
-                | Some modeKind -> _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
+                | Some modeKind -> 
+                    // Switching from an insert mode to a visual/select mode automatically initiates one command mode
+                    if VisualKind.IsAnyVisualOrSelect modeKind && VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
+                        _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
+                    _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match getDesiredNewMode() with
         | None ->

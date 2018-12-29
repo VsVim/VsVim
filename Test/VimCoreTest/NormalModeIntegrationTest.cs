@@ -32,6 +32,7 @@ namespace Vim.UnitTest
         protected INormalMode _normalMode;
         protected MockVimHost _vimHost;
         protected TestableClipboardDevice _clipboardDevice;
+        protected TestableMouseDevice _testableMouseDevice;
         protected bool _assertOnErrorMessage = true;
         protected bool _assertOnWarningMessage = true;
 
@@ -70,12 +71,105 @@ namespace Vim.UnitTest
             _foldManager = FoldManagerFactory.GetFoldManager(_textView);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
             // for the Visual portion so we can root out any bad mixing of instances between
             // the two
             Assert.True(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            base.Dispose();
+        }
+
+        public sealed class LeftMouseTest : NormalModeIntegrationTest
+        {
+            [WpfFact]
+            public void MiddleOfLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 1); // 'a' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(1, _textView.GetCaretPoint().Position); // 'a' in 'cat'
+            }
+
+            [WpfFact]
+            public void AfterEndOfLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
+            }
+
+            [WpfFact]
+            public void AfterEndOfLineOneMore()
+            {
+                Create("cat", "");
+                _globalSettings.VirtualEdit = "onemore";
+                _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(3, _textView.GetCaretPoint().Position); // after 't' in 'cat'
+            }
+
+            [WpfFact]
+            public void EmptyLine()
+            {
+                Create("cat", "", "dog", "");
+                var point = _textView.GetPointInLine(1, 0); // empty line
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void PhantomLine()
+            {
+                Create("cat", "");
+                _testableMouseDevice.Point = _textView.GetPointInLine(1, 0); // phantom line
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
+            }
+
+            [WpfFact]
+            public void NonPhantomLine()
+            {
+                Create("cat", "dog");
+                var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void DeleteToMouse()
+            {
+                Create("cat dog mouse", "");
+                _textView.MoveCaretTo(4); // 'd' in 'dog'
+                var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("d<LeftMouse><LeftRelease>");
+                Assert.Equal(new[] { "cat mouse", "", }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void ControlClick()
+            {
+                Create("cat dog bear", "");
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal(5, _textView.GetCaretPoint().Position); // 'o' in 'dog'
+                Assert.Equal(1, _vimHost.GoToDefinitionCount);
+            }
         }
 
         public sealed class MoveTest : NormalModeIntegrationTest
@@ -2697,6 +2791,19 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(">");
                     Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
+                }
+
+                /// <summary>
+                /// Key modifiers in the right hand side of mappings are normalized
+                /// </summary>
+                [WpfFact]
+                public void NormalizedRightHandSide()
+                {
+                    // Reported in issue #2313.
+                    Create("cat", "dog", "");
+                    _vimBuffer.Process(":map nn <S-$>", enter: true);
+                    _vimBuffer.Process("nn");
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
                 }
             }
         }
@@ -8545,6 +8652,39 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(',');
                 Assert.Equal(SearchPath.Forward, _vimBuffer.VimData.LastCharSearch.Value.Item2);
                 Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Make sure repeating a forward till search always moves
+            /// </summary>
+            [WpfFact]
+            public void RepeatLastCharSearchMoves_Forward()
+            {
+                // Reported in issue #2389.
+                Create("a b c a b c");
+                _vimBuffer.Process("tb");
+                Assert.Equal(_textView.GetPoint(1), _textView.GetCaretPoint());
+                _vimBuffer.Process("tb");
+                Assert.Equal(_textView.GetPoint(1), _textView.GetCaretPoint());
+                _vimBuffer.Process(";");
+                Assert.Equal(_textView.GetPoint(7), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Make sure repeating a backward till search always moves
+            /// </summary>
+            [WpfFact]
+            public void RepeatLastCharSearchMoves_Backward()
+            {
+                // Reported in issue #2389.
+                Create("a b c a b c");
+                _textView.MoveCaretTo(10);
+                _vimBuffer.Process("Tb");
+                Assert.Equal(_textView.GetPoint(9), _textView.GetCaretPoint());
+                _vimBuffer.Process("Tb");
+                Assert.Equal(_textView.GetPoint(9), _textView.GetCaretPoint());
+                _vimBuffer.Process(";");
+                Assert.Equal(_textView.GetPoint(3), _textView.GetCaretPoint());
             }
 
             /// <summary>

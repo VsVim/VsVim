@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Publisher="Jared Parsons" Version="2.6.0.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
+    <Identity Publisher="Jared Parsons" Version="2.7.0.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
     <DisplayName>VsVim</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
     <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
@@ -29,6 +29,7 @@
     <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
     <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="Colors.pkgdef" />
     <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Vs2017" Path="|Vs2017|" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Vs2019" Path="|Vs2019|" />
   </Assets>
   <Prerequisites>
     <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[11.0,17.0)" DisplayName="Visual Studio core editor" />

@@ -408,9 +408,9 @@ namespace Vim.UnitTest
                 _undoRedoOperationsRaw.Undo(1);
                 Assert.Equal(1, _undoCount);
                 Assert.Equal(1, _undoRedoOperationsRaw.UndoStack.Length);
-                Assert.Equal(9, _undoRedoOperationsRaw.UndoStack.Head.AsNormal().Item);
+                Assert.Equal(9, _undoRedoOperationsRaw.UndoStack.Head.AsNormal().Count);
                 Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Length);
-                Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Item);
+                Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Count);
             }
 
             /// <summary>
@@ -510,7 +510,7 @@ namespace Vim.UnitTest
                 _undoRedoOperations.Redo(1);
                 Assert.Equal(1, _redoCount);
                 Assert.Equal(1, _undoRedoOperationsRaw.RedoStack.Length);
-                Assert.Equal(9, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Item);
+                Assert.Equal(9, _undoRedoOperationsRaw.RedoStack.Head.AsNormal().Count);
             }
         }
 

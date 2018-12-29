@@ -78,7 +78,7 @@ type internal NormalMode
                 yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g&", CommandFlags.Special, NormalCommand.RepeatLastSubstitute (true, true))
-                yield ("g<LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
+                yield ("g<LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
                 yield ("g8", CommandFlags.Special, NormalCommand.DisplayCharacterBytes)
                 yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("I", CommandFlags.LinkedWithNextCommand ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
@@ -163,7 +163,7 @@ type internal NormalMode
                 yield ("<C-x>", CommandFlags.Repeatable, NormalCommand.SubtractFromWord)
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
-                yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinition)
+                yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
                 yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
@@ -181,6 +181,13 @@ type internal NormalMode
                 yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)
+                yield ("<LeftMouse>", CommandFlags.Special, NormalCommand.MoveCaretToMouse)
+                yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
+                yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
+                yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
@@ -352,15 +359,9 @@ type internal NormalMode
         _data <- EmptyData
 
     member x.CanProcess (keyInput: KeyInput) =
-        let doesCommandStartWith (keyInput: KeyInput) =
-            let name = KeyInputSet(keyInput)
-            _runner.Commands 
-            |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
-            |> SeqUtil.isNotEmpty
-
         if _runner.IsWaitingForMoreInput then 
             true
-        elif doesCommandStartWith keyInput then 
+        elif _runner.DoesCommandStartWith keyInput then
             true
         elif Option.isSome keyInput.RawChar && VimKeyModifiers.None = keyInput.KeyModifiers then
 

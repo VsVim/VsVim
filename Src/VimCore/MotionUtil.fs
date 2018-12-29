@@ -92,11 +92,17 @@ type TagBlockParser (snapshot: ITextSnapshot) =
         x.TestPosition position (fun c -> c = target)
 
     member x.SkipBlanks position = 
+        x.SkipWhile position CharUtil.IsBlank
+    
+    member x.SkipWhiteSpace position = 
+        x.SkipWhile position CharUtil.IsWhiteSpace
+
+    member x.SkipWhile position predicate = 
         let mutable position = position
-        while x.TestPosition position CharUtil.IsBlank && position < _snapshot.Length do
+        while x.TestPosition position predicate && position < _snapshot.Length do
             position <- position + 1
         position
-
+    
     member x.ParseName startPosition = 
         let mutable position = startPosition
         while x.TestPosition position (fun c -> CharUtil.IsTagNameChar c) do
@@ -144,12 +150,12 @@ type TagBlockParser (snapshot: ITextSnapshot) =
 
     /// Parse out a single attribute name value pair 
     member x.ParseAttribute startPosition: Span option = 
-        let position = x.SkipBlanks startPosition
+        let position = x.SkipWhiteSpace startPosition
         _builder { 
             let! nameSpan = x.ParseAttributeName position
-            let position = x.SkipBlanks nameSpan.End
+            let position = x.SkipWhiteSpace nameSpan.End
             if x.TestPositionChar position '=' then
-                let quotePosition = position + 1
+                let quotePosition = x.SkipWhiteSpace (position + 1)
                 let! quoteChar = x.ParseQuoteChar quotePosition
                 let! valueSpan = x.ParseAttributeValue (quotePosition + 1) quoteChar
                 let! valueEnd = x.ParseChar valueSpan.End quoteChar
@@ -163,7 +169,7 @@ type TagBlockParser (snapshot: ITextSnapshot) =
     /// tag name.  It should return the position immediately following all of the attribute
     /// values or None if there is an error in the attributes
     member x.ParseAttributes startPosition = 
-        let mutable position = x.SkipBlanks startPosition
+        let mutable position = x.SkipWhiteSpace startPosition
         let mutable isError = false
         let mutable isDone = false
 
@@ -179,7 +185,7 @@ type TagBlockParser (snapshot: ITextSnapshot) =
                     isError <- true
                     isDone <- true
                 | Some span -> 
-                    position <- x.SkipBlanks span.End
+                    position <- x.SkipWhiteSpace span.End
 
         if isError then
             None
@@ -952,7 +958,7 @@ type QuotedStringData =  {
 type VisualMotionResult =
 
     /// The mapping succeeded
-    | Succeeded of MotionResult
+    | Succeeded of MotionResult: MotionResult
 
     /// The motion simply produced no data
     | FailedNoMotionResult
@@ -1482,6 +1488,19 @@ type internal MotionUtil
 
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
+    member x.MoveCaretToMouse () =
+        match _commonOperations.MousePoint with
+        | Some point ->
+            let mousePoint = point.Position
+            let span, isForward = 
+                if x.CaretPoint.Position < mousePoint.Position then
+                    SnapshotSpan(x.CaretPoint, mousePoint), true
+                else
+                    SnapshotSpan(mousePoint, x.CaretPoint), false
+
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
+        | None -> None
+
     /// Implement the all block motion
     member x.AllBlock contextPoint blockKind count =
         match x.GetBlockWithCount blockKind contextPoint count with
@@ -1785,15 +1804,30 @@ type internal MotionUtil
         // Save the last search value
         _vimData.LastCharSearch <- Some (charSearch, direction, c)
 
-        x.CharSearchCore c count charSearch direction
+        x.CharSearchCore c count charSearch direction false
 
     /// Do the actual char search motion but don't update the 'LastCharSearch' value
-    member x.CharSearchCore c count charSearch direction = 
+    member x.CharSearchCore c count charSearch direction isRepeated =
+
+        // See vim ':help cpo-;'.
+        let repeatTillAlwaysMoves = true
 
         let forward () = 
-            if x.CaretPoint.Position < x.CaretLine.End.Position then
-                let start = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-                SnapshotSpan(start, x.CaretLine.End)
+            let startPoint = x.CaretPoint
+            let endPoint = x.CaretLine.End
+            if startPoint.Position < endPoint.Position then
+                let startPoint = SnapshotPointUtil.AddOne startPoint
+                let startPoint =
+                    if
+                        repeatTillAlwaysMoves &&
+                        charSearch = CharSearchKind.TillChar &&
+                        isRepeated &&
+                        startPoint.Position < endPoint.Position
+                    then
+                        SnapshotPointUtil.AddOne startPoint
+                    else
+                        startPoint
+                SnapshotSpan(startPoint, endPoint)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.filter (SnapshotPointUtil.IsChar c)
                 |> SeqUtil.skipMax (count - 1)
@@ -1802,7 +1836,19 @@ type internal MotionUtil
                 None
 
         let backward () = 
-            SnapshotSpan(x.CaretLine.Start, x.CaretPoint)
+            let startPoint = x.CaretLine.Start
+            let endPoint = x.CaretPoint
+            let endPoint =
+                if
+                    repeatTillAlwaysMoves &&
+                    charSearch = CharSearchKind.TillChar &&
+                    isRepeated &&
+                    endPoint.Position > startPoint.Position
+                then
+                    SnapshotPointUtil.SubtractOne endPoint
+                else
+                    endPoint
+            SnapshotSpan(startPoint, endPoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> Seq.filter (SnapshotPointUtil.IsChar c)
             |> SeqUtil.skipMax (count - 1)
@@ -1839,7 +1885,7 @@ type internal MotionUtil
     member x.RepeatLastCharSearch count =
         match _vimData.LastCharSearch with 
         | None -> None
-        | Some (kind, direction, c) -> x.CharSearchCore c count kind direction
+        | Some (kind, direction, c) -> x.CharSearchCore c count kind direction true
 
     /// Repeat the last f, F, t or T search pattern in the opposite direction
     member x.RepeatLastCharSearchOpposite count =
@@ -1850,7 +1896,7 @@ type internal MotionUtil
                 match direction with
                 | SearchPath.Forward -> SearchPath.Backward
                 | SearchPath.Backward -> SearchPath.Forward
-            x.CharSearchCore c count kind direction
+            x.CharSearchCore c count kind direction true
 
     member x.WordForward kind count motionContext =
 
@@ -3196,6 +3242,7 @@ type internal MotionUtil
             | Motion.Mark localMark -> x.Mark localMark
             | Motion.MarkLine localMark -> x.MarkLine localMark
             | Motion.MatchingTokenOrDocumentPercent -> x.MatchingTokenOrDocumentPercent motionArgument.Count
+            | Motion.MoveCaretToMouse -> x.MoveCaretToMouse()
             | Motion.NextMark path -> x.NextMark path motionArgument.CountOrDefault
             | Motion.NextMarkLine path -> x.NextMarkLine path motionArgument.CountOrDefault
             | Motion.NextPartialWord path -> x.NextPartialWord path motionArgument.CountOrDefault

@@ -336,6 +336,12 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
+        public void MoveCaretToMouse()
+        {
+            AssertMotion(VimKey.LeftMouse, Motion.MoveCaretToMouse);
+        }
+
+        [WpfFact]
         public void QuotedString()
         {
             AssertMotion(@"a""", Motion.NewQuotedString('"'));

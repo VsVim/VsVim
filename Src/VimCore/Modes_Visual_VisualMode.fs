@@ -102,6 +102,13 @@ type internal VisualMode
                 yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
                 yield ("g<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection true)
                 yield ("g<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection true)
+                yield ("<LeftMouse>", CommandFlags.Special, VisualCommand.MoveCaretToMouse)
+                yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
+                yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
+                yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -148,9 +155,8 @@ type internal VisualMode
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
-    /// Visual Mode doesn't actually process any mouse keys.  Actual mouse events for
-    /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) =
+        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()

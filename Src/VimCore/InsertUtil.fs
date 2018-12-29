@@ -17,10 +17,10 @@ type internal BackspaceCommand =
     | None
 
     /// Backspace over the set number of characters
-    | Characters of int
+    | Characters of Count: int
 
     /// Replace the number of characters with the specified string
-    | Replace of int * string
+    | Replace of Count: int * ReplaceText: string
 
 /// This type houses the functionality for many of the insert mode commands
 type internal InsertUtil

@@ -59,7 +59,12 @@ type KeyInput
         | :? KeyInput as other -> 0 = x.CompareTo other
         | _ -> false
 
-    override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
+    override x.ToString() =
+        let displayChar =
+            match _literal with
+            | Some c -> StringUtil.GetDisplayString (string(c))
+            | None -> "none"
+        System.String.Format("{0}:{1}:{2}", displayChar, x.Key, x.KeyModifiers);
 
     static member DefaultValue = KeyInput(VimKey.None, VimKeyModifiers.None, None)
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
@@ -409,6 +414,22 @@ module KeyInputUtil =
     let ApplyKeyModifiersToChar c modifiers = 
         let keyInput = CharToKeyInput c
         ApplyKeyModifiers keyInput modifiers
+
+    let ApplyClickCount keyInput clickCount =
+        let modifiers =
+            match clickCount with
+            | 2 -> VimKeyModifiers.Double
+            | 3 -> VimKeyModifiers.Triple
+            | 4 -> VimKeyModifiers.Quadruple
+            | _ -> VimKeyModifiers.None
+        ApplyKeyModifiers keyInput modifiers
+
+    let NormalizeKeyModifiers (keyInput: KeyInput) =
+        match keyInput.RawChar with
+        | Some c ->
+            ApplyKeyModifiersToChar c keyInput.KeyModifiers
+        | None ->
+            ApplyKeyModifiersToKey keyInput.Key keyInput.KeyModifiers
 
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  

@@ -70,7 +70,6 @@ module LocalSettingNames =
     let FixEndOfLineName = "fixendofline"
     let TextWidthName = "textwidth"
     let CommentsName = "comments"
-    let HideMarksName = "vsvim_hidemarks"
 
 module WindowSettingNames =
 
@@ -583,9 +582,6 @@ and IVimLocalSettings =
 
     /// Comma separated list of strings that can start a comment line
     abstract Comments: string with get, set
-
-    /// Which marks to hide from the indicator margin
-    abstract HideMarks: string with get, set
 
     /// Is the provided NumberFormat supported by the current options
     abstract IsNumberFormatSupported: NumberFormat -> bool

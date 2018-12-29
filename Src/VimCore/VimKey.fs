@@ -162,3 +162,11 @@ type VimKeyModifiers =
     /// for the command key notation <D-...> which is only valid on Mac's
     | Command = 0x8
 
+    /// Double-click
+    | Double = 0x10
+
+    /// Triple-click
+    | Triple = 0x20
+
+    /// Quadruple-click
+    | Quadruple = 0x40

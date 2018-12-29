@@ -217,15 +217,15 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryGeneral)]
         public bool EnableExternalEditMonitoring { get; set; }
 
-        [DisplayName("Telemetry")]
-        [Description("Whether or not to collect telemetry data for this instance.")]
-        [Category(CategoryGeneral)]
-        public bool EnableTelemetry { get; set; }
-
         [DisplayName("Output Window")]
         [Description("Whether or not to use output window to display trace data.")]
         [Category(CategoryGeneral)]
         public bool EnableOutputWindow { get; set; }
+
+        [DisplayName("Hide Marks")]
+        [Description("Marks which should be hidden in the margin")]
+        [Category(CategoryGeneral)]
+        public string HideMarks { get; set; }
 
         [DisplayName("Use Visual Studio Tab / Backspace")]
         [Description("Let Visual Studio control tab and backspace in insert mode.  This will cause VsVim to ignore settings like 'softtabstop', 'tabstop', 'backspace', etc ...")]
@@ -303,6 +303,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             get { return GetColor(s_controlCharacterColorKey); }
             set { SetColor(s_controlCharacterColorKey, value); }
         }
+
         [DisplayName("Command Margin Foreground Color")]
         [Category(CategoryColors)]
         public Color CommandMarginForegroundColor
@@ -335,8 +336,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 DefaultSettings = vimApplicationSettings.DefaultSettings;
                 EnableExternalEditMonitoring = vimApplicationSettings.EnableExternalEditMonitoring;
-                EnableTelemetry = vimApplicationSettings.EnableTelemetry;
                 EnableOutputWindow = vimApplicationSettings.EnableOutputWindow;
+                HideMarks = vimApplicationSettings.HideMarks;
                 UseEditorDefaults = vimApplicationSettings.UseEditorDefaults;
                 UseEditorIndent = vimApplicationSettings.UseEditorIndent;
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
@@ -360,8 +361,8 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             {
                 vimApplicationSettings.DefaultSettings = DefaultSettings;
                 vimApplicationSettings.EnableExternalEditMonitoring = EnableExternalEditMonitoring;
-                vimApplicationSettings.EnableTelemetry = EnableTelemetry;
                 vimApplicationSettings.EnableOutputWindow = EnableOutputWindow;
+                vimApplicationSettings.HideMarks = HideMarks;
                 vimApplicationSettings.UseEditorDefaults = UseEditorDefaults;
                 vimApplicationSettings.UseEditorIndent = UseEditorIndent;
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
@@ -374,7 +375,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             }
 
             SaveColors();
-            SaveDisplayControlChars();
         }
 
         private IVimApplicationSettings GetVimApplicationSettings()
@@ -386,18 +386,6 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
             var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
             return componentModel.DefaultExportProvider.GetExportedValue<IVimApplicationSettings>();
-        }
-
-        private void SaveDisplayControlChars()
-        {
-            if (Site == null)
-            {
-                return;
-            }
-
-            var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
-            var controlCharUtil = componentModel.DefaultExportProvider.GetExportedValue<IControlCharUtil>();
-            controlCharUtil.DisplayControlChars = DisplayControlCharacters;
         }
 
         private Color GetColor(ColorKey colorKey)

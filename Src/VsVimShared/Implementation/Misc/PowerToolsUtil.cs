@@ -122,6 +122,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             return IsQuickFindActive();
         }
 
+        bool? IExtensionAdapter.UseDefaultCaret
+        {
+            get { return null; }
+        }
+
         #endregion
     }
 }

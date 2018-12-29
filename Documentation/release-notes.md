@@ -1,5 +1,14 @@
 # Release Notes
 
+### Version 2.6.0
+[Issues closed in milestone 2.6.0](https://github.com/jaredpar/VsVim/milestone/45?closed=1)
+Primary Issues Addressed
+* Visual Studio 2019 support
+* Mark display in the editor margin
+* Significantly improved surrogate pair support
+* In total nearly 150 issues were addressed in this release leading to improvements across the board
+
+
 ### Version 2.5.0
 [Issues closed in milestone 2.5.0](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
 

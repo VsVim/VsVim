@@ -722,6 +722,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Process the 'source' command.  
     | Source of HasBang: bool * FilePath: string
 
+    /// Stop insert mode as soon as possible
+    | StopInsert
+
     // Close all tabs but this one
     | TabOnly
 

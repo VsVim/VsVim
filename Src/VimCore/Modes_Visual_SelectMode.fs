@@ -36,6 +36,13 @@ type internal SelectMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CopySelection)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.CutSelectionAndPaste)
                 yield ("<C-a>", CommandFlags.Special, VisualCommand.SelectAll)
+                yield ("<LeftMouse>", CommandFlags.Special, VisualCommand.MoveCaretToMouse)
+                yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
+                yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
+                yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
+                yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -170,9 +177,8 @@ type internal SelectMode
             replaceSelection span text
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
-    /// Select Mode doesn't actually process any mouse keys.  Actual mouse events for
-    /// selection are handled by the selection tracker 
-    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) =
+        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
 
     member x.Process keyInput = 
 
@@ -200,6 +206,16 @@ type internal SelectMode
                         | BindResult.NeedMoreInput _ ->
                             ProcessResult.HandledNeedMoreInput
                         | BindResult.Complete commandRanData ->
+                            match commandRanData.CommandResult with
+                            | CommandResult.Error ->
+                                _selectionTracker.UpdateSelection()
+                            | CommandResult.Completed modeSwitch ->
+                                match modeSwitch with
+                                | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                                | ModeSwitch.SwitchMode _ -> ()
+                                | ModeSwitch.SwitchModeWithArgument _ -> ()
+                                | ModeSwitch.SwitchPreviousMode -> ()
+                                | ModeSwitch.SwitchModeOneTimeCommand _ -> ()
                             ProcessResult.OfCommandResult commandRanData.CommandResult
                         | BindResult.Error ->
                             _commonOperations.Beep()

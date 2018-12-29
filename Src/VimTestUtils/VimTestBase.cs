@@ -540,7 +540,6 @@ namespace Vim.UnitTest
                 foldManager,
                 insertUtil,
                 _vimEditorHost.BulkOperations,
-                MouseDevice,
                 lineChangeTracker);
         }
 

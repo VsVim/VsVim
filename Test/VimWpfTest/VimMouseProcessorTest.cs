@@ -1,10 +1,12 @@
-﻿using Moq;
+﻿using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Vim.UI.Wpf.Implementation.Mouse;
 using Vim.UnitTest;
+using Vim.UnitTest.Exports;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest
@@ -14,38 +16,36 @@ namespace Vim.UI.Wpf.UnitTest
         private readonly IVimBuffer _vimBuffer;
         private readonly Mock<IKeyboardDevice> _keyboardDevice;
         private readonly VimMouseProcessor _vimMouseProcessor;
+        private readonly ITextView _textView;
+        private readonly TestableMouseDevice _testableMouseDevice;
 
         protected VimMouseProcessorTest()
         {
-            _vimBuffer = CreateVimBuffer("");
+            _vimBuffer = CreateVimBuffer("cat", "");
             _keyboardDevice = new Mock<IKeyboardDevice>(MockBehavior.Loose);
             _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.None);
             _vimMouseProcessor = new VimMouseProcessor(_vimBuffer, _keyboardDevice.Object);
+            _textView = _vimBuffer.TextView;
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            base.Dispose();
         }
 
         public sealed class TryProcessTest : VimMouseProcessorTest
         {
-            /// <summary>
-            /// Visual Mode doesn't actually process any mouse commands.  All of the selection tracking
-            /// is handled elsewhere.  If the mouse commands end up making it to Visual Mode it will
-            /// result in a beep event.  Verify that doesn't happen
-            /// </summary>
-            [WpfFact]
-            public void VisualMode()
-            {
-                _vimBuffer.ProcessNotation("v");
-                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                foreach (var keyInput in KeyInputUtil.VimKeyInputList.Where(x => x.IsMouseKey))
-                {
-                    Assert.False(_vimMouseProcessor.TryProcess(keyInput.Key));
-                    Assert.Equal(0, VimHost.BeepCount);
-                }
-            }
-
             [WpfFact]
             public void GoToDefinition()
             {
                 _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
+                var point = _textView.GetPointInLine(0, 0);
+                _testableMouseDevice.Point = point;
                 VimHost.GoToDefinitionReturn = false;
                 _vimMouseProcessor.TryProcess(VimKey.LeftMouse);
                 Assert.Equal(1, VimHost.GoToDefinitionCount);
@@ -56,7 +56,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 _vimBuffer.ProcessNotation("v");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimMouseProcessor.TryProcess(VimKey.LeftDrag));
+                Assert.False(_vimMouseProcessor.TryProcess(VimKey.RightMouse));
                 Assert.Equal(0, VimHost.BeepCount);
             }
         }

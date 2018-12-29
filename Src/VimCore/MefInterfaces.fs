@@ -23,9 +23,6 @@ type IDisplayWindowBroker =
     // Is Quick Info active
     abstract IsQuickInfoActive: bool 
 
-    /// Is there a smart tip window active
-    abstract IsSmartTagSessionActive: bool
-
     /// Dismiss any completion windows on the given ITextView
     abstract DismissDisplayWindows: unit -> unit
 
@@ -213,6 +210,9 @@ type IMouseDevice =
     /// Is the left button pressed
     abstract IsLeftButtonPressed: bool
 
+    /// Is the right button pressed
+    abstract IsRightButtonPressed: bool
+
     /// Get the position of the mouse position within the ITextView
     abstract GetPosition: textView: ITextView -> VimPoint option
 
@@ -324,6 +324,9 @@ type ICommonOperations =
     /// buffer
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
+    /// The snapshot point in the buffer under the mouse cursor
+    abstract MousePoint: VirtualSnapshotPoint option
+
     /// Associated ITextView
     abstract TextView: ITextView 
 
@@ -337,6 +340,9 @@ type ICommonOperations =
     /// This is the same function as AdjustTextViewForScrollOffsetAtPoint except that it moves the caret 
     /// not the view port.  Make the caret consistent with the setting not the display 
     abstract AdjustCaretForScrollOffset: unit -> unit
+
+    /// Adjust the caret if it is past the end of line and 'virtualedit=onemore' is not set
+    abstract AdjustCaretForVirtualEdit: unit -> unit
 
     abstract member CloseWindowUnlessDirty: unit -> unit
 

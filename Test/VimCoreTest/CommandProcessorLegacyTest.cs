@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.FSharp.Core;
 using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -57,6 +58,7 @@ namespace Vim.UnitTest
                 vim: _vim.Object,
                 localSettings: localSettings,
                 factory: _factory);
+            vimTextBuffer.Setup(x => x.InOneTimeCommand).Returns(FSharpOption<ModeKind>.None);
             var vimBufferData = CreateVimBufferData(
                 vimTextBuffer.Object,
                 _textView,

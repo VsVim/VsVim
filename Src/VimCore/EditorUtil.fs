@@ -2139,7 +2139,12 @@ module SnapshotPointUtil =
         let line = GetContainingLine point
         line.End.Position = point.Position
 
-    /// Is this the start of th eSnapshot
+    /// Whether the specified point is the start/end of an empty line
+    let IsEmptyLine point =
+        let line = GetContainingLine point
+        line.Start.Position = point.Position && line.End.Position = point.Position
+
+    /// Is this the start of the Snapshot
     let IsStartPoint point = 0 = GetPosition point
 
     /// Is this the end of the Snapshot

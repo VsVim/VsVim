@@ -1,6 +1,5 @@
 param (
     [switch]$fast = $false, 
-    [switch]$skipTelemetry = $true,
     [string]$vsDir = "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise")
 
 Set-StrictMode -version 2.0
@@ -25,7 +24,6 @@ function Test-VsixContents() {
         "Colors.pkgdef",
         "extension.vsixmanifest",
         "License.txt",
-        "Microsoft.ApplicationInsights.dll",
         "Vim.Core.dll",
         "Vim.UI.Wpf.dll",
         "Vim.VisualStudio.Interfaces.dll",
@@ -41,10 +39,6 @@ function Test-VsixContents() {
         "catalog.json",
         "manifest.json",
         "[Content_Types].xml")
-
-    if (-not $skipTelemetry) {
-        $expectedFiles += "telemetry"
-    }
 
     # Make a folder to hold the foundFiles
     $target = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
@@ -79,19 +73,6 @@ function Test-VsixContents() {
         $itemPath = Join-Path $target $item
         if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
             throw "Small file detected $item in the zip file ($target)"
-        }
-
-        # Make sure the telemetry key was properly deployed.
-        $name = Split-Path -leaf $item
-        if ($name -eq "telemetry.txt") {
-            
-            $hash = Get-FileHash -Path $itemPath -Algorithm SHA256
-            $expectedHash = "73367820A78BF339FA7A5D3D819B1C907A81F4D593BB4D2E153718928DE487DD"
-            if ($hash.Hash -ne $expectedHash) {
-                Write-Host "Found hash of $($hash.Hash)"
-                Write-Host "Expected hash of $expectedHash"
-                throw "Content of telemetry.txt is incorrect"
-            }
         }
     }
 }

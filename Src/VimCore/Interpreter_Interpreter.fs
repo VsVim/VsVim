@@ -1757,6 +1757,11 @@ type VimInterpreter
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
 
+    /// Run the :stopinsert command
+    member x.RunStopInsert () =
+        if _vimBuffer.ModeKind = ModeKind.Insert then
+            _vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
+
     /// Split the window
     member x.RunSplit behavior fileOptions commandOption = 
         let SplitArgumentsAreValid fileOptions commandOption =
@@ -2026,6 +2031,7 @@ type VimInterpreter
         | LineCommand.ShiftRight (lineRange, count) -> x.RunShiftRight lineRange count
         | LineCommand.Sort (lineRange, hasBang, flags, pattern) -> x.RunSort lineRange hasBang flags pattern
         | LineCommand.Source (hasBang, filePath) -> x.RunSource hasBang filePath
+        | LineCommand.StopInsert -> x.RunStopInsert()
         | LineCommand.Substitute (lineRange, pattern, replace, flags) -> x.RunSubstitute lineRange pattern replace flags
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.TabNew filePath -> x.RunTabNew filePath
