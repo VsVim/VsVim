@@ -29,12 +29,15 @@ namespace Vim.VisualStudio.UnitTest
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
             _table = _factory.Create<IVsRunningDocumentTable>();
+            _table
+                .As<IVsRunningDocumentTable4>()
+                .Setup(x => x.GetDocumentFlags(It.IsAny<uint>()))
+                .Returns(0);
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider
                 .Setup(x => x.GetService(typeof(SVsRunningDocumentTable)))
                 .Returns(_table.Object);
             _sharedService = _factory.Create<ISharedService>();
-            _sharedService.Setup(x => x.IsLazyLoaded(It.IsAny<uint>())).Returns(false);
             _peekBroker = _factory.Create<IPeekBroker>();
             _managerRaw = new TextManager(
                 _adapter.Object,

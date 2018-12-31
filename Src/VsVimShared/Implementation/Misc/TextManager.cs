@@ -26,6 +26,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ITextBufferFactoryService _textBufferFactoryService;
         private readonly ISharedService _sharedService;
         private readonly IPeekBroker _peekBroker;
+        private IVsRunningDocumentTable4 _runningDocumentTable4;
 
         internal ITextView ActiveTextViewOptional
         {
@@ -81,7 +82,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             var list = new List<ITextBuffer>();
             foreach (var docCookie in _runningDocumentTable.GetRunningDocumentCookies())
             {
-                if (documentLoad == DocumentLoad.RespectLazy && _sharedService.IsLazyLoaded(docCookie))
+                if (documentLoad == DocumentLoad.RespectLazy && isLazyLoaded(docCookie))
                 {
                     continue;
                 }
@@ -93,6 +94,24 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             return list;
+
+            bool isLazyLoaded(uint documentCookie)
+            {
+                try
+                {
+                    if (_runningDocumentTable4 is null)
+                    {
+                        _runningDocumentTable4 = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable4>();
+                    }
+
+                    var flags = (_VSRDTFLAGS4)_runningDocumentTable4.GetDocumentFlags(documentCookie);
+                    return 0 != (flags & _VSRDTFLAGS4.RDT_PendingInitialization);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
         }
 
         private IEnumerable<ITextView> GetDocumentTextViews(DocumentLoad documentLoad)
