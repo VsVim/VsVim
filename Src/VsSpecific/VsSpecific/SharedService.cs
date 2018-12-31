@@ -97,11 +97,6 @@ namespace Vim.VisualStudio.Specific
             return IsLazyLoaded(documentCookie);
         }
 
-        bool ISharedService.ClosePeekView(ITextView peekView)
-        {
-            return ClosePeekView(peekView);
-        }
-
         #endregion
     }
 }

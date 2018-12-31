@@ -25,11 +25,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
             {
                 return false;
             }
-
-            bool ISharedService.ClosePeekView(ITextView peekView)
-            {
-                return false;
-            }
         }
 
         VisualStudioVersion ISharedServiceVersionFactory.Version

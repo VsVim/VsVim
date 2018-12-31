@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -24,6 +25,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
         private readonly ISharedService _sharedService;
+        private readonly IPeekBroker _peekBroker;
 
         internal ITextView ActiveTextViewOptional
         {
@@ -51,7 +53,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             ITextDocumentFactoryService textDocumentFactoryService,
             ITextBufferFactoryService textBufferFactoryService,
             ISharedServiceFactory sharedServiceFactory,
-            SVsServiceProvider serviceProvider) : this(adapter, textDocumentFactoryService, textBufferFactoryService, sharedServiceFactory.Create(), serviceProvider)
+            IPeekBroker peekBroker,
+            SVsServiceProvider serviceProvider) : this(adapter, textDocumentFactoryService, textBufferFactoryService, sharedServiceFactory.Create(), peekBroker, serviceProvider)
         {
         }
 
@@ -60,6 +63,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             ITextDocumentFactoryService textDocumentFactoryService,
             ITextBufferFactoryService textBufferFactoryService,
             ISharedService sharedService,
+            IPeekBroker peekBroker,
             SVsServiceProvider serviceProvider)
         {
             _vsAdapter = adapter;
@@ -69,6 +73,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _textBufferFactoryService = textBufferFactoryService;
             _runningDocumentTable = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _sharedService = sharedService;
+            _peekBroker = peekBroker;
         }
 
         private IEnumerable<ITextBuffer> GetDocumentTextBuffers(DocumentLoad documentLoad)
@@ -172,7 +177,13 @@ namespace Vim.VisualStudio.Implementation.Misc
         {
             if (textView.IsPeekView())
             {
-                return _sharedService.ClosePeekView(textView);
+                if (textView.TryGetPeekViewHostView(out var hostView))
+                {
+                    _peekBroker.DismissPeekSession(hostView);
+                    return true;
+                }
+
+                return false;
             }
 
             if (!_vsAdapter.GetContainingWindowFrame(textView).TryGetValue(out IVsWindowFrame vsWindowFrame))

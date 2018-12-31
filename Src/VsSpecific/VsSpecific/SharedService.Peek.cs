@@ -23,12 +23,6 @@ namespace Vim.VisualStudio.Specific
 
         private bool ClosePeekView(ITextView peekView)
         {
-            if (peekView.TryGetPeekViewHostView(out var hostView))
-            {
-                _peekBroker.DismissPeekSession(hostView);
-                return true;
-            }
-
             return false;
         }
     }
