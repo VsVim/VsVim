@@ -11,7 +11,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ReferenceTest
     {
-        internal static Version VisualStudioMajor = new Version(major: 11, minor: 0, build: 0, revision: 0);
+        internal static Version VisualStudioMajor = new Version(major: 14, minor: 0, build: 0, revision: 0);
 
         private static IEnumerable<Assembly> GetAssemblies()
         {
