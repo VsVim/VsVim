@@ -11,16 +11,6 @@ using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace Vim.VisualStudio.Specific
 {
-#if VS_SPECIFIC_2012
-
-    internal partial class SharedService 
-    {
-        private void InitLazy() { } 
-        private bool IsLazyLoaded(uint documentCookie) => false;
-    }
-
-#else
-
     internal partial class SharedService 
     {
         private IVsRunningDocumentTable4 _runningDocumentTable;
@@ -43,7 +33,5 @@ namespace Vim.VisualStudio.Specific
             }
         }
     }
-
-#endif
 }
 

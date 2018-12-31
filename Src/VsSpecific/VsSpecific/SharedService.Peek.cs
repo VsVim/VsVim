@@ -12,16 +12,6 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.VisualStudio.Specific
 {
-#if VS_SPECIFIC_2012 || VS_SPECIFIC_2013
-
-    internal partial class SharedService
-    {
-        private void InitPeek() { }
-        private bool ClosePeekView(ITextView textView) => false;
-    }
-
-#else
-
     internal partial class SharedService
     {
         private IPeekBroker _peekBroker;
@@ -42,7 +32,5 @@ namespace Vim.VisualStudio.Specific
             return false;
         }
     }
-
-#endif
 }
 
