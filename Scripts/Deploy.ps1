@@ -28,8 +28,6 @@ function Test-VsixContents() {
         "Vim.UI.Wpf.dll",
         "Vim.VisualStudio.Interfaces.dll",
         "Vim.VisualStudio.Shared.dll",
-        "Vim.VisualStudio.Vs2012.dll",
-        "Vim.VisualStudio.Vs2013.dll",
         "Vim.VisualStudio.Vs2015.dll",
         "Vim.VisualStudio.Vs2017.dll",
         "VsVim.dll",
