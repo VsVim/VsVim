@@ -30,6 +30,7 @@ function Test-VsixContents() {
         "Vim.VisualStudio.Shared.dll",
         "Vim.VisualStudio.Vs2015.dll",
         "Vim.VisualStudio.Vs2017.dll",
+        "Vim.VisualStudio.Vs2019.dll",
         "VsVim.dll",
         "VsVim.pkgdef",
         "VsVim_large.png",
