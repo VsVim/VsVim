@@ -78,7 +78,7 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
-        internal static class Assemblies
+        internal static class AssemblyData
         {
             internal static readonly Assembly VimCore = typeof(IVim).Assembly;
             internal static readonly Assembly VimWpf = typeof(VimHost).Assembly;
@@ -88,115 +88,133 @@ namespace Vim.VisualStudio.UnitTest
             internal static readonly Assembly VsVim2015 = typeof(VsVim2015::Vim.VisualStudio.Specific.SharedService).Assembly;
             internal static readonly Assembly VsVim2017 = typeof(VsVim2017::Vim.VisualStudio.Specific.SharedService).Assembly;
             internal static readonly Assembly VsVim2019 = typeof(VsVim2019::Vim.VisualStudio.Specific.SharedService).Assembly;
-        }
 
-        private static IEnumerable<Assembly> GetAssemblies()
-        {
-            yield return typeof(IVim).Assembly;
-            yield return typeof(VimHost).Assembly;
-            yield return typeof(VsVimHost).Assembly;
-            yield return typeof(ISharedService).Assembly;
-        }
-
-        private static List<ReferenceData> GetTransitiveReferenceData(Assembly assembly)
-        {
-            var references = assembly.GetReferencedAssemblies();
-            var list = new List<ReferenceData>(references.Length);
-            foreach (var reference in references)
+            internal static IEnumerable<Assembly> GetCoreAssemblies()
             {
-                var data = GetReferenceData(reference);
-                list.Add(data);
+                yield return VimCore;
+                yield return VimWpf;
+                yield return VsVimShared;
+                yield return VsInterfaces;
+                yield return VsVim;
             }
 
-            return list;
-        }
-
-        private static ReferenceData GetReferenceData(AssemblyName assemblyName)
-        {
-            var name = assemblyName.Name;
-            if (name.StartsWith("System."))
+            internal static IEnumerable<Assembly> GetAllAssemblies()
             {
-                return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
-            }
-
-            switch (name)
-            {
-                case "System":
-                case "mscorlib":
-                case "PresentationCore":
-                case "PresentationFramework":
-                case "WindowsBase":
-                case "WindowsFormsIntegration":
-                    return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
-
-                case "Microsoft.VisualStudio.CoreUtility":
-                case "Microsoft.VisualStudio.Text.Data":
-                case "Microsoft.VisualStudio.Text.Logic":
-                case "Microsoft.VisualStudio.Text.UI":
-                case "Microsoft.VisualStudio.Text.UI.Wpf":
-                case "Microsoft.VisualStudio.Language.Intellisense":
-                case "Microsoft.VisualStudio.Language.NavigateTo.Interfaces":
-                    return new ReferenceData(assemblyName, ReferenceKind.Editor, getVersionFromVersionNumber());
-
-                case "Vim.Core":
-                case "Vim.UI.Wpf":
-                case "Vim.VisualStudio.Shared":
-                case "Vim.VisualStudio.Interfaces":
-                    return new ReferenceData(assemblyName, ReferenceKind.VsVim, VsVersion.VsCurrent);
-
-                case "EnvDTE":
-                case "EnvDTE80":
-                case "EnvDTE90":
-                case "EnvDTE100":
-                case "Microsoft.VisualStudio.OLE.Interop":
-                case "Microsoft.VisualStudio.Shell.Interop":
-                case "Microsoft.VisualStudio.Shell.Interop.8.0":
-                case "Microsoft.VisualStudio.Shell.Interop.9.0":
-                case "Microsoft.VisualStudio.Shell.Interop.10.0":
-                case "Microsoft.VisualStudio.Shell.Interop.11.0":
-                case "Microsoft.VisualStudio.Shell.Interop.12.0":
-                case "Microsoft.VisualStudio.TextManager.Interop":
-                case "Microsoft.VisualStudio.TextManager.Interop.8.0":
-                case "Microsoft.VisualStudio.TextManager.Interop.10.0":
-                    return new ReferenceData(assemblyName, ReferenceKind.ShellPia, VsVersion.VsCurrent);
-
-                case "Microsoft.VisualStudio.ComponentModelHost":
-                case "Microsoft.VisualStudio.Editor":
-                case "Microsoft.VisualStudio.Shell.10.0":
-                case "Microsoft.VisualStudio.Shell.11.0":
-                case "Microsoft.VisualStudio.Shell.12.0":
-                case "Microsoft.VisualStudio.Shell.Immutable.10.0":
-                    return new ReferenceData(assemblyName, ReferenceKind.ShellVersioned, getVersionFromVersionNumber());
-
-                default:
-                    throw new Exception($"Unrecognized reference {name}");
-            }
-
-            VsVersion getVersionFromVersionNumber()
-            {
-                switch (assemblyName.Version.Major)
+                foreach (var assembly in GetCoreAssemblies())
                 {
-                    case 10:
-                    case 11:
-                    case 12:
-                    case 14:
-                        return VsVersion.VsCurrent;
-                    case 15: return VsVersion.Vs2017;
-                    case 16: return VsVersion.Vs2019;
-                    default: throw new Exception();
+                    yield return assembly;
+                }
+
+                yield return VsVim2015;
+                yield return VsVim2017;
+                yield return VsVim2019;
+            }
+
+            internal static List<ReferenceData> GetTransitiveReferenceData(Assembly assembly)
+            {
+                var references = assembly.GetReferencedAssemblies();
+                var list = new List<ReferenceData>(references.Length);
+                foreach (var reference in references)
+                {
+                    var data = GetReferenceData(reference);
+                    list.Add(data);
+                }
+
+                return list;
+            }
+
+            internal static ReferenceData GetReferenceData(AssemblyName assemblyName)
+            {
+                var name = assemblyName.Name;
+                if (name.StartsWith("System."))
+                {
+                    return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
+                }
+
+                switch (name)
+                {
+                    case "System":
+                    case "mscorlib":
+                    case "PresentationCore":
+                    case "PresentationFramework":
+                    case "WindowsBase":
+                    case "WindowsFormsIntegration":
+                        return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
+
+                    case "Microsoft.VisualStudio.CoreUtility":
+                    case "Microsoft.VisualStudio.Text.Data":
+                    case "Microsoft.VisualStudio.Text.Logic":
+                    case "Microsoft.VisualStudio.Text.UI":
+                    case "Microsoft.VisualStudio.Text.UI.Wpf":
+                    case "Microsoft.VisualStudio.Language.Intellisense":
+                    case "Microsoft.VisualStudio.Language.NavigateTo.Interfaces":
+                        return new ReferenceData(assemblyName, ReferenceKind.Editor, getVersionFromVersionNumber());
+
+                    case "Vim.Core":
+                    case "Vim.UI.Wpf":
+                    case "Vim.VisualStudio.Shared":
+                    case "Vim.VisualStudio.Interfaces":
+                        return new ReferenceData(assemblyName, ReferenceKind.VsVim, VsVersion.VsCurrent);
+
+                    case "EnvDTE":
+                    case "EnvDTE80":
+                    case "EnvDTE90":
+                    case "EnvDTE100":
+                    case "Microsoft.VisualStudio.OLE.Interop":
+                    case "Microsoft.VisualStudio.Shell.Interop":
+                    case "Microsoft.VisualStudio.Shell.Interop.8.0":
+                    case "Microsoft.VisualStudio.Shell.Interop.9.0":
+                    case "Microsoft.VisualStudio.Shell.Interop.10.0":
+                    case "Microsoft.VisualStudio.Shell.Interop.11.0":
+                    case "Microsoft.VisualStudio.Shell.Interop.12.0":
+                    case "Microsoft.VisualStudio.TextManager.Interop":
+                    case "Microsoft.VisualStudio.TextManager.Interop.8.0":
+                    case "Microsoft.VisualStudio.TextManager.Interop.10.0":
+                        return new ReferenceData(assemblyName, ReferenceKind.ShellPia, VsVersion.VsCurrent);
+
+                    case "Microsoft.VisualStudio.ComponentModelHost":
+                    case "Microsoft.VisualStudio.Editor":
+                    case "Microsoft.VisualStudio.Shell.10.0":
+                    case "Microsoft.VisualStudio.Shell.11.0":
+                    case "Microsoft.VisualStudio.Shell.12.0":
+                    case "Microsoft.VisualStudio.Shell.Immutable.10.0":
+                    case "Microsoft.VisualStudio.Shell.ViewManager":
+                        return new ReferenceData(assemblyName, ReferenceKind.ShellVersioned, getVersionFromVersionNumber());
+
+                    case "Microsoft.VisualStudio.Platform.WindowManagement":
+                        return new ReferenceData(assemblyName, ReferenceKind.ShellNonVersioned, getVersionFromVersionNumber());
+
+                    default:
+                        throw new Exception($"Unrecognized reference {name}");
+                }
+
+                VsVersion getVersionFromVersionNumber()
+                {
+                    switch (assemblyName.Version.Major)
+                    {
+                        case 10:
+                        case 11:
+                        case 12:
+                        case 14:
+                            return VsVersion.VsCurrent;
+                        case 15: return VsVersion.Vs2017;
+                        case 16: return VsVersion.Vs2019;
+                        default: throw new Exception();
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Make sure the correct VS SDK binaries are referenced.
+        /// Make sure the correct VS SDK binaries are referenced in the core binaries.
         /// </summary>
         [Fact]
         public void EnsureCorrectVisualStudioVersion()
         {
             var count = 0;
-            foreach (var refData in GetAssemblies().SelectMany(a => GetTransitiveReferenceData(a)))
+            foreach (var refData in AssemblyData.GetCoreAssemblies().SelectMany(a => AssemblyData.GetTransitiveReferenceData(a)))
             {
+                Assert.NotEqual(ReferenceKind.ShellNonVersioned, refData.Kind);
                 Assert.Equal(VsVersion.VsCurrent, refData.VsVersion);
                 count++;
             }
@@ -204,15 +222,31 @@ namespace Vim.VisualStudio.UnitTest
             Assert.True(count >= 60);
         }
 
-        /// <summary>
-        /// Make sure that in the future types don't move around that cause us to stop
-        /// tracking an assembly.
-        /// </summary>
         [Fact]
-        public void EnsureCount()
+        public void Ensure2015()
         {
-            var set = new HashSet<string>(GetAssemblies().Select(x => x.FullName));
-            Assert.Equal(4, set.Count);
+            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2015))
+            {
+                Assert.Equal(VsVersion.VsCurrent, refData.VsVersion);
+            }
+        }
+
+        [Fact]
+        public void Ensure2017()
+        {
+            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2017))
+            {
+                Assert.True(refData.VsVersion == VsVersion.Vs2017 || refData.VsVersion == VsVersion.VsCurrent);
+            }
+        }
+
+        [Fact]
+        public void Ensure2019()
+        {
+            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2019))
+            {
+                Assert.True(refData.VsVersion == VsVersion.Vs2019 || refData.VsVersion == VsVersion.VsCurrent);
+            }
         }
     }
 }
