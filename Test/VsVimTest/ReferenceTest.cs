@@ -75,6 +75,15 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
+        internal static class Assemblies
+        {
+            internal static readonly Assembly VimCore = typeof(IVim).Assembly;
+            internal static readonly Assembly VimWpf = typeof(VimHost).Assembly;
+            internal static readonly Assembly VsVimShared = typeof(VsVimHost).Assembly;
+            internal static readonly Assembly VsInterfaces = typeof(ISharedService).Assembly;
+            internal static readonly Assembly VsVim = typeof(ISharedService).Assembly;
+        }
+
         private static IEnumerable<Assembly> GetAssemblies()
         {
             yield return typeof(IVim).Assembly;
