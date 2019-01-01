@@ -1,4 +1,7 @@
-﻿using System;
+﻿extern alias VsVim2015;
+extern alias VsVim2017;
+extern alias VsVim2019;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -82,6 +85,9 @@ namespace Vim.VisualStudio.UnitTest
             internal static readonly Assembly VsVimShared = typeof(VsVimHost).Assembly;
             internal static readonly Assembly VsInterfaces = typeof(ISharedService).Assembly;
             internal static readonly Assembly VsVim = typeof(ISharedService).Assembly;
+            internal static readonly Assembly VsVim2015 = typeof(VsVim2015::Vim.VisualStudio.Specific.SharedService).Assembly;
+            internal static readonly Assembly VsVim2017 = typeof(VsVim2017::Vim.VisualStudio.Specific.SharedService).Assembly;
+            internal static readonly Assembly VsVim2019 = typeof(VsVim2019::Vim.VisualStudio.Specific.SharedService).Assembly;
         }
 
         private static IEnumerable<Assembly> GetAssemblies()
