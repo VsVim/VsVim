@@ -2494,7 +2494,7 @@ type internal CommandUtil
     member x.RepeatLastCommand (repeatData: CommandData) =
 
         // Chain the running of the next command on the basis of the success of
-        // the previous command
+        // the previous command.
         let chainCommand commandResult runNextCommand =
             match commandResult with
             | CommandResult.Error ->
@@ -2506,43 +2506,25 @@ type internal CommandUtil
                 | _ -> ()
                 runNextCommand ()
 
-        // Repeating an insert command is a bit different than repeating a normal command because
-        // of the way the caret position is handled.  Every insert command ends with a move left
-        // on the caret.  When repeating this move left is only done once though.
-        let repeatInsert command count =
-            let command, doMoveLeft =
-                match command with
-                | InsertCommand.Combined (leftCommand, rightCommand) ->
-                    match leftCommand with
-                    | InsertCommand.MoveCaret Direction.Left -> rightCommand, true
-                    | _ -> command, false
-                | _ -> command, false
-
-            // Run the commands in sequence.  Only continue onto the second if the first
-            // command succeeds.  We do want any actions performed in the linked commands
-            // to remain linked so do this inside of an edit transaction
-            let rec func count commandResult =
-                if count = 0 then
-                    commandResult
-                else
-                    chainCommand commandResult (fun () -> func (count - 1) (_insertUtil.RunInsertCommand command))
-
-            let commandResult = func (count - 1) (_insertUtil.RunInsertCommand command)
-
-            if doMoveLeft then
-                chainCommand commandResult (fun () -> _insertUtil.RunInsertCommand (InsertCommand.MoveCaret Direction.Left))
+        // Repeat an insertion sub-command the specified number of times.
+        let rec repeatInsert command count =
+            let commandResult = _insertUtil.RunInsertCommand command
+            if count >= 2 then
+                chainCommand commandResult (fun () -> repeatInsert command (count - 1))
             else
                 commandResult
 
-        // Function to actually repeat the last change
+        // Actually repeat the last change.
         let rec repeat (storedCommand: StoredCommand) (repeatData: CommandData option) =
 
-            // Before repeating a command it needs to be updated in the context of the repeat operation. This
-            // includes recalculating the visual span and considering explicit counts that are passed into
-            // the repeat operation.
+            // Before repeating a command it needs to be updated in the context
+            // of the repeat operation. This includes recalculating the visual
+            // span and considering explicit counts that are passed into the
+            // repeat operation.
             //
-            // When a count is passed to repeat then it acts as if it was the only count passed to the original
-            // command. This overrides the original count or counts passed to motion operators.
+            // When a count is passed to repeat then it acts as if it was the
+            // only count passed to the original command. This overrides the
+            // original count or counts passed to motion operators.
             let repeatCount =
                 match repeatData with
                 | None -> None
@@ -2567,8 +2549,9 @@ type internal CommandUtil
                     | NormalCommand.PutBeforeCaretWithIndent
                         ->
 
-                        // Special case when redoing positive numbered register puts:
-                        // increment the register number (see vim ':help redo-register').
+                        // Special case when redoing positive numbered register
+                        // puts: increment the register number (see vim ':help
+                        // redo-register').
                         match data.RegisterName with
                         | Some (RegisterName.Numbered numberedRegister) ->
                             match numberedRegister.NextPositive with
@@ -2585,6 +2568,7 @@ type internal CommandUtil
                     | _ ->
                         data
                 x.RunNormalCommand command data
+
             | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) ->
                 let data =
                     match repeatCount with
@@ -2592,21 +2576,35 @@ type internal CommandUtil
                     | None -> data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
-            | StoredCommand.InsertCommand (command, _) ->
 
+            | StoredCommand.InsertCommand (command, _) ->
                 let count =
                     match repeatData with
                     | Some repeatData -> repeatData.CountOrDefault
                     | None -> 1
-
                 repeatInsert command count
+
             | StoredCommand.LinkedCommand (command1, command2) ->
 
-                // Run the commands in sequence.  Only continue onto the second if the first
-                // command succeeds.  We do want any actions performed in the linked commands
-                // to remain linked so do this inside of an edit transaction
+                // Run the first command using the supplied repeat data. This
+                // might be for example, 'change word', and with a repeat count
+                // of two, we will change two words.
                 let commandResult = repeat command1 repeatData
-                chainCommand commandResult (fun () -> repeat command2 None)
+
+                // Check whether the command completed with a switch to insert
+                // mode with a count. If so (as with 'insert before'), then
+                // apply that count toward the next command. Otherwise (as with
+                // 'change word'), execute the next without any repeat data.
+                let repeatData =
+                    match commandResult with
+                    | CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)) ->
+                        Some { CommandData.Default with Count = Some count }
+                    | _ ->
+                        None
+
+                // Run the next command in sequence.  Only continue onto the
+                // second if the first command succeeded.
+                chainCommand commandResult (fun () -> repeat command2 repeatData)
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
