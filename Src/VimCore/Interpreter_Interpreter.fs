@@ -195,6 +195,10 @@ type ExpressionInterpreter
             _statusUtil.OnError "Binary operation not supported at this time"
             VariableValue.Error
 
+        let divByZero() =
+            _statusUtil.OnError "Attempt to divide by zero"
+            VariableValue.Error
+
         let runConcat (leftValue: VariableValue) (rightValue: VariableValue) =
             let leftString = _getValue.ConvertToString leftValue
             let rightString = _getValue.ConvertToString rightValue
@@ -212,7 +216,9 @@ type ExpressionInterpreter
                 | Some left, Some right, BinaryKind.Add -> left + right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.Subtract -> left - right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.Multiply -> left * right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Divide when right = 0 -> divByZero() 
                 | Some left, Some right, BinaryKind.Divide -> left / right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Modulo when right = 0 -> divByZero() 
                 | Some left, Some right, BinaryKind.Modulo -> left % right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.GreaterThan -> left > right |> System.Convert.ToInt32 |> VariableValue.Number
                 | Some left, Some right, BinaryKind.LessThan -> left < right |> System.Convert.ToInt32 |> VariableValue.Number

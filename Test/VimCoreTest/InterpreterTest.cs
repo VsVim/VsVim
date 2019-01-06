@@ -1357,6 +1357,24 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void RHSCanBeBinaryDivideExpressionAndHandleDivByZero()
+            {
+                Create("");
+                _variableMap["x"] = VariableValue.NewNumber(7);
+                ParseAndRun("let x=24/0");
+                AssertValue("x", 7);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryModuloExpressionAndHandleDivByZero()
+            {
+                Create("");
+                _variableMap["x"] = VariableValue.NewNumber(7);
+                ParseAndRun("let x=20%0");
+                AssertValue("x", 7);
+            }
+
+            [WpfFact]
             public void RHSCanBeBinaryGreaterExpression()
             {
                 Create("");
