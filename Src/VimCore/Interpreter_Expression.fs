@@ -320,6 +320,10 @@ type BinaryKind =
     | Multiply
     | Modulo
     | Subtract
+    | GreaterThan
+    | LessThan
+    | Equal
+    | NotEqual
 
 /// Data for the :call command
 type CallInfo = {

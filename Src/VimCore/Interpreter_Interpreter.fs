@@ -195,17 +195,6 @@ type ExpressionInterpreter
             _statusUtil.OnError "Binary operation not supported at this time"
             VariableValue.Error
 
-        let runAdd (leftValue: VariableValue) (rightValue: VariableValue) = 
-            if leftValue.VariableType = VariableType.List && rightValue.VariableType = VariableType.List then
-                // it's a list concatenation
-                notSupported()
-            else
-                let leftNumber = _getValue.ConvertToNumber leftValue
-                let rightNumber = _getValue.ConvertToNumber rightValue
-                match leftNumber, rightNumber with
-                | Some left, Some right -> left + right |> VariableValue.Number
-                | _ -> VariableValue.Error
-
         let runConcat (leftValue: VariableValue) (rightValue: VariableValue) =
             let leftString = _getValue.ConvertToString leftValue
             let rightString = _getValue.ConvertToString rightValue
@@ -213,16 +202,37 @@ type ExpressionInterpreter
             | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
             
+        let runNumericBinary (leftValue: VariableValue) (rightValue: VariableValue) (binaryKind: BinaryKind) = 
+            if leftValue.VariableType = VariableType.List || rightValue.VariableType = VariableType.List then
+                notSupported()
+            else
+                let leftNumber = _getValue.ConvertToNumber leftValue
+                let rightNumber = _getValue.ConvertToNumber rightValue
+                match leftNumber, rightNumber, binaryKind with
+                | Some left, Some right, BinaryKind.Add -> left + right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Subtract -> left - right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Multiply -> left * right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Divide -> left / right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Modulo -> left % right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.GreaterThan -> left > right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.LessThan -> left < right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Equal -> left = right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.NotEqual -> left <> right |> System.Convert.ToInt32 |> VariableValue.Number
+                | _ -> VariableValue.Error
 
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr
         match binaryKind with
-        | BinaryKind.Add -> runAdd leftValue rightValue
         | BinaryKind.Concatenate -> runConcat leftValue rightValue
-        | BinaryKind.Divide -> notSupported()
-        | BinaryKind.Modulo -> notSupported()
-        | BinaryKind.Multiply -> notSupported()
-        | BinaryKind.Subtract -> notSupported()
+        | BinaryKind.Add
+        | BinaryKind.Divide
+        | BinaryKind.Modulo
+        | BinaryKind.Multiply
+        | BinaryKind.Subtract
+        | BinaryKind.GreaterThan
+        | BinaryKind.LessThan
+        | BinaryKind.Equal
+        | BinaryKind.NotEqual -> runNumericBinary leftValue rightValue binaryKind
 
 [<Sealed>]
 [<Class>]

@@ -17,6 +17,9 @@ type TokenKind =
     /// A contiguous set of letters in the text
     | Word of Word: string
 
+    /// A multi-character operator
+    | ComplexOperator of Operator: string
+
     /// A single non-letter character
     | Character of Character: char
 
@@ -30,6 +33,7 @@ type TokenKind =
         | TokenKind.Blank -> "Blank"
         | TokenKind.Number number -> sprintf "Number %d" number
         | TokenKind.Word word -> sprintf "Word %s" word
+        | TokenKind.ComplexOperator operator -> sprintf "operator %s" operator
         | TokenKind.Character c -> sprintf "Character %c" c
         | TokenKind.EndOfLine -> "EndOfLine"
 

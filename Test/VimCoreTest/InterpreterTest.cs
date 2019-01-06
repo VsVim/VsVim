@@ -1317,11 +1317,75 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void RHSCanBeBinaryExpression()
+            public void RHSCanBeBinaryAddExpression()
             {
                 Create("");
                 ParseAndRun("let x=1+2");
                 AssertValue("x", 3);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinarySubtractExpression()
+            {
+                Create("");
+                ParseAndRun("let x=1-2");
+                AssertValue("x", -1);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryMultiplyExpression()
+            {
+                Create("");
+                ParseAndRun("let x=4*2");
+                AssertValue("x", 8);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryDivideExpression()
+            {
+                Create("");
+                ParseAndRun("let x=24/3");
+                AssertValue("x", 8);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryModuloExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20%7");
+                AssertValue("x", 6);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryGreaterExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20>7");
+                AssertValue("x", 1);
+            }
+            
+            [WpfFact]
+            public void RHSCanBeBinaryLessExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20<7");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20==7");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryNotEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20!=7");
+                AssertValue("x", 1);
             }
 
             [WpfFact]
@@ -1776,6 +1840,14 @@ namespace Vim.UnitTest
                 _localSettings.TabStop = 42;
                 ParseAndRun("if 0", "set ts=13", "elseif 0", "set ts=12", "endif");
                 Assert.Equal(42, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void IfElseIfBinaryExpression()
+            {
+                Create();
+                ParseAndRun("if 1!=0", "set ts=13", "elseif 2>2", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
             }
         }
 

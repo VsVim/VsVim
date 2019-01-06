@@ -2647,6 +2647,10 @@ type Parser
             | TokenKind.Character '.' -> return! parseBinary BinaryKind.Concatenate
             | TokenKind.Character '-' -> return! parseBinary BinaryKind.Subtract
             | TokenKind.Character '%' -> return! parseBinary BinaryKind.Modulo
+            | TokenKind.Character '>' -> return! parseBinary BinaryKind.GreaterThan
+            | TokenKind.Character '<' -> return! parseBinary BinaryKind.LessThan
+            | TokenKind.ComplexOperator "==" -> return! parseBinary BinaryKind.Equal
+            | TokenKind.ComplexOperator "!=" -> return! parseBinary BinaryKind.NotEqual
             | _ -> return expr
         }
 
