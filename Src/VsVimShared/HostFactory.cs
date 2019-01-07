@@ -97,8 +97,12 @@ namespace Vim.VisualStudio
                 return;
             }
 
+            var textViewOptions = vimBuffer.TextView.Options;
+
+            EnableVimLineNumbersMargin(textViewOptions);
+
             // Vim doesn't consider folding an undo operation, and neither does VsVim (issue #2184).
-            vimBuffer.TextView.Options.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false);
+            textViewOptions.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false);
 
             // We have to make a decision on whether Visual Studio or Vim settings win during the startup
             // process.  If there was a Vimrc file then the vim settings win, else the Visual Studio ones
@@ -112,6 +116,50 @@ namespace Vim.VisualStudio
 
             // Synchronize any further changes between the buffers
             _editorToSettingSynchronizer.StartSynchronizing(vimBuffer, settingSyncSource);
+        }
+
+        private void EnableVimLineNumbersMargin(IEditorOptions textViewOptions)
+        {
+            textViewOptions.SetOptionValue(DefaultTextViewHostOptions.LineNumberMarginId, false);
+            textViewOptions.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, true);
+
+            textViewOptions.OptionChanged += OnLineNumberOptionChangedSync;
+        }
+
+        private void DisableVimLineNumbersMargin(IEditorOptions textViewOptions)
+        {
+            textViewOptions.ClearOptionValue(DefaultTextViewHostOptions.LineNumberMarginId);
+            textViewOptions.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, false);
+
+            textViewOptions.OptionChanged -= OnLineNumberOptionChangedSync;
+        }
+        
+        private void OnLineNumberOptionChangedSync(object sender, EditorOptionChangedEventArgs e)
+        {
+            bool targetOptionChanged =
+                e.OptionId == LineNumbersMarginOptions.NumberOptionName ||
+                e.OptionId == LineNumbersMarginOptions.RelativeNumberOptionName;
+
+            if (!targetOptionChanged || !(sender is IEditorOptions options))
+            {
+                return;
+            }
+            
+            UpdateLineNumbersMarginType(options);
+        }
+
+        private static void UpdateLineNumbersMarginType(IEditorOptions options)
+        {
+            bool relativeNumbers = options.GetOptionValue(LineNumbersMarginOptions.RelativeNumberOptionId);
+            bool numbers = options.GetOptionValue(LineNumbersMarginOptions.NumberOptionId);
+
+            bool currentVisibility = options.GetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId);
+            var newVisibility = relativeNumbers || numbers;
+
+            if (currentVisibility != newVisibility)
+            {
+                options.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, newVisibility);
+            }
         }
 
         private void ConnectToOleCommandTarget(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)

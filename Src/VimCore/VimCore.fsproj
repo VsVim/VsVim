@@ -25,6 +25,7 @@
     <Compile Include="EditorUtil.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="VimSettingsInterface.fs" />
+    <Compile Include="LineNumbersMarginOptions.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="TaggingInterfaces.fs" />
     <Compile Include="CoreInterfaces.fs" />
