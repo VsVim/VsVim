@@ -1360,18 +1360,34 @@ namespace Vim.UnitTest
             public void RHSCanBeBinaryDivideExpressionAndHandleDivByZero()
             {
                 Create("");
+
+                bool gotExpectedError = false;
+
+                _statusUtil.ErrorRaised +=
+                    (s, e) => gotExpectedError |=
+                        e.Message == Resources.Interpreter_DivByZero;
+
                 _variableMap["x"] = VariableValue.NewNumber(7);
                 ParseAndRun("let x=24/0");
                 AssertValue("x", 7);
+                Assert.True(gotExpectedError);
             }
 
             [WpfFact]
-            public void RHSCanBeBinaryModuloExpressionAndHandleDivByZero()
+            public void RHSCanBeBinaryModuloExpressionAndHandleModuloByZero()
             {
                 Create("");
+
+                bool gotExpectedError = false;
+
+                _statusUtil.ErrorRaised +=
+                    (s, e) => gotExpectedError |=
+                        e.Message == Resources.Interpreter_ModByZero;
+
                 _variableMap["x"] = VariableValue.NewNumber(7);
                 ParseAndRun("let x=20%0");
                 AssertValue("x", 7);
+                Assert.True(gotExpectedError);
             }
 
             [WpfFact]
@@ -1381,7 +1397,7 @@ namespace Vim.UnitTest
                 ParseAndRun("let x=20>7");
                 AssertValue("x", 1);
             }
-            
+
             [WpfFact]
             public void RHSCanBeBinaryLessExpression()
             {
@@ -2978,7 +2994,7 @@ namespace Vim.UnitTest
                 TestInterpretation("src/version", "%:r:r");
                 TestInterpretation("src/version", "%:r:r:r");
             }
-            
+
             [WpfFact]
             public void InvalidModifiers()
             {
@@ -2999,7 +3015,7 @@ namespace Vim.UnitTest
             public void ExtensionOnlyFilename()
             {
                 Create();
-                
+
                 _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns(".vimrc");
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\.vimrc");
 
@@ -3041,7 +3057,7 @@ namespace Vim.UnitTest
             {
                 AssertPathEquivalent(expected, _interpreter.InterpretSymbolicPath(_parser.ParseDirectoryPath(symbolicPath)));
             }
-            
+
             private void Create()
             {
                 _factory = new MockRepository(MockBehavior.Default)
@@ -3070,7 +3086,7 @@ namespace Vim.UnitTest
             {
                 var aParts = expected.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
                 var bParts = actual.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
-                if(aParts.Length == bParts.Length)
+                if (aParts.Length == bParts.Length)
                     if (Enumerable.Range(0, aParts.Length).All(i => StringComparer.OrdinalIgnoreCase.Equals(aParts[i], bParts[i])))
                         return;
                 throw new XunitException($"Paths are not equivalent: Expected '{expected}', Actual '{actual}'");
