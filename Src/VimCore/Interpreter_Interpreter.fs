@@ -190,7 +190,10 @@ type ExpressionInterpreter
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr: Expression) (rightExpr: Expression) = 
-
+        
+        // Actually it seems that the user doesn't see these messages
+        // and see a generic expression interpreting error instead
+        // as the error status is updated later...
         let notSupported() =
             _statusUtil.OnError "Binary operation not supported at this time"
             VariableValue.Error
