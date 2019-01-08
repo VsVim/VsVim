@@ -196,7 +196,11 @@ type ExpressionInterpreter
             VariableValue.Error
 
         let divByZero() =
-            _statusUtil.OnError "Attempt to divide by zero"
+            _statusUtil.OnError Resources.Interpreter_DivByZero
+            VariableValue.Error
+
+        let modByZero() =
+            _statusUtil.OnError Resources.Interpreter_ModByZero
             VariableValue.Error
 
         let runConcat (leftValue: VariableValue) (rightValue: VariableValue) =
@@ -218,7 +222,7 @@ type ExpressionInterpreter
                 | Some left, Some right, BinaryKind.Multiply -> left * right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.Divide when right = 0 -> divByZero() 
                 | Some left, Some right, BinaryKind.Divide -> left / right |> VariableValue.Number
-                | Some left, Some right, BinaryKind.Modulo when right = 0 -> divByZero() 
+                | Some left, Some right, BinaryKind.Modulo when right = 0 -> modByZero() 
                 | Some left, Some right, BinaryKind.Modulo -> left % right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.GreaterThan -> left > right |> System.Convert.ToInt32 |> VariableValue.Number
                 | Some left, Some right, BinaryKind.LessThan -> left < right |> System.Convert.ToInt32 |> VariableValue.Number
