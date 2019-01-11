@@ -11,7 +11,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ReferenceTest
     {
-        internal static Version VisualStudioMajor = new Version(major: 11, minor: 0, build: 0, revision: 0);
+        internal static Version VisualStudioMajor = new Version(major: 14, minor: 0, build: 0, revision: 0);
 
         private static IEnumerable<Assembly> GetAssemblies()
         {
@@ -21,29 +21,6 @@ namespace Vim.VisualStudio.UnitTest
             yield return typeof(ISharedService).Assembly;
         }
 
-        private static Version GetVersion(AssemblyName assemblyName)
-        {
-            var name = assemblyName.Name;
-            if (!name.StartsWith("Microsoft.VisualStudio"))
-            {
-                return null;
-            }
-
-            // Interop DLLS don't version hence there is only one possible version.
-            if (name.Contains("Interop"))
-            {
-                return null;
-            }
-
-            // Immutable DLLS don't version hence there is only one possible version.
-            if (name.Contains("Immutable"))
-            {
-                return null;
-            }
-
-            return VisualStudioMajor;
-        }
-
         /// <summary>
         /// Make sure the correct VS SDK binaries are referenced.
         /// </summary>
@@ -51,20 +28,54 @@ namespace Vim.VisualStudio.UnitTest
         public void EnsureCorrectVisualStudioVersion()
         {
             var count = 0;
+            var skipped = new HashSet<AssemblyName>();
             foreach (var assembly in GetAssemblies())
             {
                 foreach (var n in assembly.GetReferencedAssemblies())
                 {
-                    var version = GetVersion(n);
+                    var version = getVersion(n);
                     if (version != null)
                     {
                         Assert.Equal(version, n.Version);
                         count++;
                     }
+                    else
+                    {
+                        skipped.Add(n);
+                    }
                 }
             }
 
-            Assert.True(count > 20);
+            Assert.True(count >= 19);
+
+            Version getVersion(AssemblyName assemblyName)
+            {
+                var name = assemblyName.Name;
+                if (!name.StartsWith("Microsoft.VisualStudio"))
+                {
+                    return null;
+                }
+
+                // Interop DLLS don't version hence there is only one possible version.
+                if (name.Contains("Interop"))
+                {
+                    return null;
+                }
+
+                // Immutable DLLS don't version hence there is only one possible version.
+                if (name.Contains("Immutable"))
+                {
+                    return null;
+                }
+
+                // Shell DLLS don't version hence there is only one possible version.
+                if (name.Contains("Microsoft.VisualStudio.Shell."))
+                {
+                    return null;
+                }
+
+                return VisualStudioMajor;
+            }
         }
 
         /// <summary>

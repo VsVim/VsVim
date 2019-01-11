@@ -49,16 +49,6 @@ namespace Vim.VisualStudio
         void GoToTab(int index);
 
         /// <summary>
-        /// Is the document represented by the cookie being lazily loaded by the IDE?
-        /// </summary>
-        bool IsLazyLoaded(uint documentCookie);
-
-        /// <summary>
-        /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
-        /// </summary>
-        bool ClosePeekView(ITextView peekView);
-
-        /// <summary>
         /// Run C# Script.
         /// </summary>
         /// <returns></returns>

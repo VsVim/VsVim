@@ -22,9 +22,6 @@ namespace Vim.VisualStudio.Specific
             VsServiceProvider = vsServiceProvider;
             ComponentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
             ExportProvider = ComponentModel.DefaultExportProvider;
-
-            InitLazy();
-            InitPeek();
         }
 
         internal void GoToTab(int index)
@@ -91,16 +88,6 @@ namespace Vim.VisualStudio.Specific
         bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
         {
             return IsActiveWindowFrame(vsWindowFrame);
-        }
-
-        bool ISharedService.IsLazyLoaded(uint documentCookie)
-        {
-            return IsLazyLoaded(documentCookie);
-        }
-
-        bool ISharedService.ClosePeekView(ITextView peekView)
-        {
-            return ClosePeekView(peekView);
         }
 
         void ISharedService.RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)

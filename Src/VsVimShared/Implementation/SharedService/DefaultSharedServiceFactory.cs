@@ -22,16 +22,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 return false;
             }
 
-            bool ISharedService.IsLazyLoaded(uint documentCookie)
-            {
-                return false;
-            }
-
-            bool ISharedService.ClosePeekView(ITextView peekView)
-            {
-                return false;
-            }
-
             void ISharedService.RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
             {
                 vim.ActiveStatusUtil.OnError("csx not supported");
