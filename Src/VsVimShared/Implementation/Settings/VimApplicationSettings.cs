@@ -33,155 +33,135 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private readonly ReadOnlyCollection<CommandKeyBinding> _emptyBindingsList;
 
-        internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
-
         [ImportingConstructor]
         internal VimApplicationSettings([Import(SettingStoreType.CurrentStoreType)]ISettingsStore settingsStore)
         {
             _settingsStore = settingsStore;
-
             _emptyBindingsList = new CommandKeyBinding[0].ToReadOnlyCollection();
-        }
-
-        private void OnSettingsChanged(string changedSettingName)
-        {
-            var eventArgs = new ApplicationSettingsEventArgs(changedSettingName);
-            SettingsChanged?.Invoke(this, eventArgs);
-        }
-
-        internal void Set<T>(string key, T value)
-        {
-            _settingsStore.Set(key, value);
-            OnSettingsChanged(key);
-        }
-
-        internal T Get<T>(string key, T defaultValue)
-        {
-            return _settingsStore.Get(key, defaultValue);
         }
 
         #region IVimApplicationSettings
 
         DefaultSettings IVimApplicationSettings.DefaultSettings
         {
-            get { return Get(DefaultSettingsName, defaultValue: DefaultSettings.GVim73); }
-            set { Set(DefaultSettingsName, value); }
+            get { return _settingsStore.GetEnumOrDefault(DefaultSettingsName, defaultValue: DefaultSettings.GVim73); }
+            set { _settingsStore.SetEnum(DefaultSettingsName, value); }
         }
 
         VimRcLoadSetting IVimApplicationSettings.VimRcLoadSetting
         {
-            get { return Get(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.Both); }
-            set { Set(VimRcLoadSettingName, value); }
+            get { return _settingsStore.GetEnumOrDefault(VimRcLoadSettingName, defaultValue: VimRcLoadSetting.Both); }
+            set { _settingsStore.SetEnum(VimRcLoadSettingName, value); }
         }
 
         bool IVimApplicationSettings.DisplayControlChars
         {
-            get { return Get(DisplayControlCharsName, defaultValue: true); }
-            set { Set(DisplayControlCharsName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(DisplayControlCharsName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(DisplayControlCharsName, value); }
         }
 
         bool IVimApplicationSettings.EnableExternalEditMonitoring
         {
-            get { return Get(EnableExternalEditMonitoringName, defaultValue: true); }
-            set { Set(EnableExternalEditMonitoringName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(EnableExternalEditMonitoringName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(EnableExternalEditMonitoringName, value); }
         }
 
         bool IVimApplicationSettings.EnableOutputWindow
         {
-            get { return Get(EnableOutputWindowName, defaultValue: false); }
-            set { Set(EnableOutputWindowName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(EnableOutputWindowName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(EnableOutputWindowName, value); }
         }
 
         string IVimApplicationSettings.HideMarks
         {
-            get { return Get(HideMarksName, defaultValue: ""); }
-            set { Set(HideMarksName, value); }
+            get { return _settingsStore.GetStringOrDefault(HideMarksName, defaultValue: ""); }
+            set { _settingsStore.SetString(HideMarksName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorDefaults
         {
-            get { return Get(UseEditorDefaultsName, defaultValue: true); }
-            set { Set(UseEditorDefaultsName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(UseEditorDefaultsName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(UseEditorDefaultsName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorIndent
         {
-            get { return Get(UseEditorIndentName, defaultValue: true); }
-            set { Set(UseEditorIndentName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(UseEditorIndentName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(UseEditorIndentName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorTabAndBackspace
         {
-            get { return Get(UseEditorTabAndBackspaceName, defaultValue: true); }
-            set { Set(UseEditorTabAndBackspaceName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(UseEditorTabAndBackspaceName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(UseEditorTabAndBackspaceName, value); }
         }
 
         bool IVimApplicationSettings.UseEditorCommandMargin
         {
-            get { return Get(UseEditorCommandMarginName, defaultValue: true); }
-            set { Set(UseEditorCommandMarginName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(UseEditorCommandMarginName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(UseEditorCommandMarginName, value); }
         }
 
         bool IVimApplicationSettings.CleanMacros
         {
-            get { return Get(CleanMacrosName, defaultValue: false); }
-            set { Set(CleanMacrosName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(CleanMacrosName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(CleanMacrosName, value); }
         }
 
         bool IVimApplicationSettings.HaveUpdatedKeyBindings
         {
-            get { return Get(HaveUpdatedKeyBindingsName, defaultValue: false); }
-            set { Set(HaveUpdatedKeyBindingsName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(HaveUpdatedKeyBindingsName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(HaveUpdatedKeyBindingsName, value); }
         }
 
         bool IVimApplicationSettings.HaveNotifiedVimRcLoad
         {
-            get { return Get(HaveNotifiedVimRcLoadName, defaultValue: false); }
-            set { Set(HaveNotifiedVimRcLoadName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(HaveNotifiedVimRcLoadName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(HaveNotifiedVimRcLoadName, value); }
         }
 
         bool IVimApplicationSettings.HaveNotifiedVimRcErrors
         {
-            get { return Get(HaveNotifiedVimRcErrorsName, defaultValue: true); }
-            set { Set(HaveNotifiedVimRcErrorsName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(HaveNotifiedVimRcErrorsName, defaultValue: true); }
+            set { _settingsStore.SetBoolean(HaveNotifiedVimRcErrorsName, value); }
         }
 
         bool IVimApplicationSettings.IgnoredConflictingKeyBinding
         {
-            get { return Get(IgnoredConflictingKeyBindingName, defaultValue: false); }
-            set { Set(IgnoredConflictingKeyBindingName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(IgnoredConflictingKeyBindingName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(IgnoredConflictingKeyBindingName, value); }
         }
 
         bool IVimApplicationSettings.KeyMappingIssueFixed
         {
-            get { return Get(KeyMappingIssueFixedName, defaultValue: false); }
-            set { Set(KeyMappingIssueFixedName, value); }
+            get { return _settingsStore.GetBooleanOrDefault(KeyMappingIssueFixedName, defaultValue: false); }
+            set { _settingsStore.SetBoolean(KeyMappingIssueFixedName, value); }
         }
 
         WordWrapDisplay IVimApplicationSettings.WordWrapDisplay
         {
-            get { return Get(WordWrapDisplayName, defaultValue: WordWrapDisplay.Glyph); }
-            set { Set(WordWrapDisplayName, value); }
+            get { return _settingsStore.GetEnumOrDefault(WordWrapDisplayName, defaultValue: WordWrapDisplay.Glyph); }
+            set { _settingsStore.SetEnum(WordWrapDisplayName, value); }
         }
 
         ReadOnlyCollection<CommandKeyBinding> IVimApplicationSettings.RemovedBindings
         {
-            get { return Get(RemovedBindingsName, defaultValue: _emptyBindingsList); }
-            set { Set(RemovedBindingsName, value); }
+            get { return _settingsStore.GetBindingsOrDefault(RemovedBindingsName, defaultValue: _emptyBindingsList); }
+            set { _settingsStore.SetBindings(RemovedBindingsName, value); }
         }
 
         string IVimApplicationSettings.LastVersionUsed
         {
-            get { return Get<string>(LastVersionUsedName, defaultValue: null); }
-            set { Set(LastVersionUsedName, value); }
+            get { return _settingsStore.GetStringOrDefault(LastVersionUsedName, defaultValue: null); }
+            set { _settingsStore.SetString(LastVersionUsedName, value); }
         }
+    
+        #endregion
 
         event EventHandler<ApplicationSettingsEventArgs> IVimApplicationSettings.SettingsChanged
         {
-            add { SettingsChanged += value; }
-            remove { SettingsChanged -= value; }
+            add { _settingsStore.SettingsChanged += value; }
+            remove { _settingsStore.SettingsChanged -= value; }
         }
-
-        #endregion
     }
 }

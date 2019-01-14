@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 
 using Microsoft.VisualStudio.Settings;
@@ -16,23 +17,19 @@ namespace Vim.VisualStudio.Implementation.Settings
         private const string ErrorGetFormat = "Cannot get setting {0}";
         private const string ErrorSetFormat = "Cannot set setting {0}";
 
-        /// <summary>
-        /// Getters/Setters specialization provider
-        /// </summary>
-        private readonly IVsStoreSpecializationProvider _specializationProvider;
         private readonly IProtectedOperations _protectedOperations;
         private readonly WritableSettingsStore _settingsStore;
         private readonly string _collectionPath;
+
+        public event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
         [ImportingConstructor]
         public VsSettingsStore(
             SVsServiceProvider vsServiceProvider,
             ISettingsCollectionPathProvider collectionPathProvider,
-            IVsStoreSpecializationProvider specializationProvider,
             IProtectedOperations protectedOperations)
             : this(vsServiceProvider.GetWritableSettingsStore(),
                 collectionPathProvider.CollectionName,
-                specializationProvider,
                 protectedOperations)
         {
         }
@@ -40,24 +37,69 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal VsSettingsStore(
             WritableSettingsStore writableSettingsStore,
             string collectionPath,
-            IVsStoreSpecializationProvider specializationProvider,
             IProtectedOperations protectedOperations)
         {
-            _specializationProvider = specializationProvider;
             _protectedOperations = protectedOperations;
 
             _settingsStore = writableSettingsStore;
             _collectionPath = collectionPath;
         }
 
-        public void Set<T>(string key, T value)
+        public void SetBoolean(string key, bool value)
+        {
+            Set(key, value, x => x.SetBoolean);
+        }
+
+        public void SetString(string key, string value)
+        {
+            Set(key, value, x => x.SetString);
+        }
+
+        public void SetEnum<T>(string key, T value)
+            where T : struct, Enum
+        {
+            Set(key, value, x => x.SetEnum);
+        }
+
+        public void SetBindings(string key, ReadOnlyCollection<CommandKeyBinding> value)
+        {
+            Set(key, value, x => x.SetRemovedBindings);
+        }
+
+        public bool GetBooleanOrDefault(string key, out bool result,bool defaultValue)
+        {
+            return GetOrDefault(key, defaultValue, out result, x => x.GetBoolean);
+        }
+
+        public bool GetStringOrDefault(string key, out string result, string defaultValue)
+        {
+            return GetOrDefault(key, defaultValue, out result, x => x.GetString);
+        }
+
+        public bool GetEnumOrDefault<T>(string key, out T result, T defaultValue)
+            where T : struct, Enum
+        {
+            return GetOrDefault(key, defaultValue, out result, x => x.GetEnum<T>);
+        }
+
+        public bool GetBindingsOrDefault(
+            string key,
+            out ReadOnlyCollection<CommandKeyBinding> result,
+            ReadOnlyCollection<CommandKeyBinding> defaultValue)
+        {
+            return GetOrDefault(key, defaultValue, out result, x => x.GetRemovedBindings);
+        }
+
+        private void Set<T>(string key, T value, VsStoreSetProxy<T> setProxy)
         {
             EnsureCollectionExists();
 
             try
             {
-                var setter = _specializationProvider.GetSetter<T>(_settingsStore);
+                var setter = setProxy(_settingsStore);
                 setter(_collectionPath, key, value);
+
+                OnSettingsChanged(key);
             }
             catch (Exception e)
             {
@@ -65,16 +107,16 @@ namespace Vim.VisualStudio.Implementation.Settings
             }
         }
 
-        public bool GetOrDefault<T>(string key, out T value, T defaultValue)
+        private bool GetOrDefault<T>(string key, T defaultValue, out T result, VsStoreGetOrDefaultProxy<T> getProxy)
         {
             EnsureCollectionExists();
 
             try
             {
-                var getter = _specializationProvider.GetGetter<T>(_settingsStore);
+                var getter = getProxy(_settingsStore);
                 var settingExists = _settingsStore.PropertyExists(_collectionPath, key);
 
-                value = settingExists
+                result = settingExists
                     ? getter(_collectionPath, key)
                     : defaultValue;
 
@@ -84,7 +126,7 @@ namespace Vim.VisualStudio.Implementation.Settings
             {
                 Report(string.Format(ErrorGetFormat, key), e);
 
-                value = defaultValue;
+                result = defaultValue;
                 return false;
             }
         }
@@ -110,6 +152,12 @@ namespace Vim.VisualStudio.Implementation.Settings
             var exception = new Exception(fullMessage, innerException);
 
             _protectedOperations.Report(exception);
+        }
+
+        private void OnSettingsChanged(string changedSettingName)
+        {
+            var eventArgs = new ApplicationSettingsEventArgs(changedSettingName);
+            SettingsChanged?.Invoke(this, eventArgs);
         }
     }
 }

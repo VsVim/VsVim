@@ -11,6 +11,6 @@ namespace Vim.VisualStudio.Implementation.Settings
     /// </summary>
     public interface ISpecializedCacheProvider
     {
-        IDictionary<string, T> Get<T>();
+        Dictionary<string, T> Get<T>();
     }
 }

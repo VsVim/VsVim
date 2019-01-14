@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 
@@ -20,6 +22,8 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private readonly HashSet<string> _notFoundKeys;
 
+        public event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
+
         [ImportingConstructor]
         internal CachedSettingsStore(
             ISpecializedCacheProvider cacheProvider,
@@ -31,14 +35,57 @@ namespace Vim.VisualStudio.Implementation.Settings
             _notFoundKeys = new HashSet<string>();
         }
 
-        void ISettingsStore.Set<T>(string key, T value)
+        public void SetBoolean(string key, bool value)
+        {
+            Set(key, value, x => x.SetBoolean);
+        }
+
+        public void SetString(string key, string value)
+        {
+            Set(key, value, x => x.SetString);
+        }
+
+        public void SetEnum<T>(string key, T value)
+            where T : struct, Enum
+        {
+            Set(key, value, x => x.SetEnum);
+        }
+
+        public void SetBindings(string key, ReadOnlyCollection<CommandKeyBinding> value)
+        {
+            Set(key, value, x => x.SetBindings);
+        }
+
+        public bool GetBooleanOrDefault(string key, out bool result, bool defaultValue)
+        {
+            return GetOrDefault(key, out result, defaultValue, x => x.GetBooleanOrDefault);
+        }
+
+        public bool GetStringOrDefault(string key, out string result, string defaultValue)
+        {
+            return GetOrDefault(key, out result, defaultValue, x => x.GetStringOrDefault);
+        }
+
+        public bool GetEnumOrDefault<T>(string key, out T result, T defaultValue)
+            where T : struct, Enum
+        {
+            return GetOrDefault(key, out result, defaultValue, x => x.GetEnumOrDefault);
+        }
+
+        public bool GetBindingsOrDefault(string key, out ReadOnlyCollection<CommandKeyBinding> result, ReadOnlyCollection<CommandKeyBinding> defaultValue)
+        {
+            return GetOrDefault(key, out result, defaultValue, x => x.GetBindingsOrDefault);
+        }
+
+        private void Set<T>(string key, T value, SettingsStoreSetProxy<T> setProxy)
         {
             var cache = _cacheProvider.Get<T>();
 
             if (!cache.TryGetValue(key, out var oldValue)
                 || !AreEqual(oldValue, value))
             {
-                _underlyingStore.Set(key, value);
+                var setter = setProxy(_underlyingStore);
+                setter(key, value);
             }
 
             cache[key] = value;
@@ -60,7 +107,11 @@ namespace Vim.VisualStudio.Implementation.Settings
             return EqualityComparer<T>.Default.Equals(left, right);
         }
 
-        bool ISettingsStore.GetOrDefault<T>(string key, out T value, T defaultValue)
+        private bool GetOrDefault<T>(
+            string key,
+            out T value,
+            T defaultValue,
+            SettingsStoreGetOrDefaultProxy<T> getProxy)
         {
             if (_notFoundKeys.Contains(key))
             {
@@ -70,11 +121,15 @@ namespace Vim.VisualStudio.Implementation.Settings
 
             var cache = _cacheProvider.Get<T>();
 
-            return cache.TryGetValue(key, out value) ||
-                   TryUpdateFromUnderlyingStore(key, out value, defaultValue);
+            return cache.TryGetValue(key, out value)
+                   || TryUpdateFromUnderlyingStore(key, out value, defaultValue, getProxy);
         }
 
-        private bool TryUpdateFromUnderlyingStore<T>(string key, out T value, T defaultValue)
+        private bool TryUpdateFromUnderlyingStore<T>(
+            string key,
+            out T value,
+            T defaultValue,
+            SettingsStoreGetOrDefaultProxy<T> getProxy)
         {
             // If we know that the key wasn't found before
             // And we didn't update the key
@@ -82,7 +137,8 @@ namespace Vim.VisualStudio.Implementation.Settings
             // As store ownership is assumed to be exclusive
             Debug.Assert(!_notFoundKeys.Contains(key));
 
-            var foundInUnderlyingStore = _underlyingStore.GetOrDefault(key, out value, defaultValue);
+            var getter = getProxy(_underlyingStore);
+            var foundInUnderlyingStore = getter(key, out value, defaultValue);
 
             if (foundInUnderlyingStore)
             {

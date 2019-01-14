@@ -16,7 +16,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
         }
 
-        public IDictionary<string, T> Get<T>()
+        public Dictionary<string, T> Get<T>()
         {
             return TypeBoundPropertyMap<T>.Cache;
         }
@@ -26,7 +26,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         /// </summary>
         private static class TypeBoundPropertyMap<T>
         {
-            internal static IDictionary<string, T> Cache { get; }
+            internal static Dictionary<string, T> Cache { get; }
 
             static TypeBoundPropertyMap()
             {

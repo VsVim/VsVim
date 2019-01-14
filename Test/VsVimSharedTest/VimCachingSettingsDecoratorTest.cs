@@ -45,12 +45,12 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
 
-            var foundInStore = _cachedSettingsStore.GetOrDefault(_key, out string actualValue, _defaultValue);
+            var foundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string actualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
 
             Assert.True(foundInStore);
             Assert.Equal(_sampleValue, actualValue);
@@ -62,13 +62,13 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
 
-            var firstFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string firstActualValue, _defaultValue);
-            var secondFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string secondActualValue, _defaultValue);
+            var firstFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string firstActualValue, _defaultValue);
+            var secondFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string secondActualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
 
             Assert.True(firstFoundInStore);
             Assert.True(secondFoundInStore);
@@ -83,17 +83,17 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
 
-            var firstFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string firstActualValue, _defaultValue);
+            var firstFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string firstActualValue, _defaultValue);
 
-            _cachedSettingsStore.Set(_key, _sampleValue);
+            _cachedSettingsStore.SetString(_key, _sampleValue);
 
-            var secondFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string secondActualValue, _defaultValue);
+            var secondFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string secondActualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
-            _underlyingStoreMock.Verify(x => x.Set(_key, _sampleValue), Times.Never);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.SetString(_key, _sampleValue), Times.Never);
 
             Assert.True(firstFoundInStore);
             Assert.True(secondFoundInStore);
@@ -109,18 +109,18 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
-            _underlyingStoreMock.Setup(x => x.Set(_key, anotherSampleValue));
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _sampleValue, _defaultValue)).Returns(true);
+            _underlyingStoreMock.Setup(x => x.SetString(_key, anotherSampleValue));
 
-            var firstFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string firstActualValue, _defaultValue);
+            var firstFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string firstActualValue, _defaultValue);
 
-            _cachedSettingsStore.Set(_key, anotherSampleValue);
+            _cachedSettingsStore.SetString(_key, anotherSampleValue);
 
-            var secondFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string secondActualValue, _defaultValue);
+            var secondFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string secondActualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
-            _underlyingStoreMock.Verify(x => x.Set(_key, anotherSampleValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.SetString(_key, anotherSampleValue), Times.Once);
 
             Assert.True(firstFoundInStore);
             Assert.True(secondFoundInStore);
@@ -134,12 +134,12 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
 
-            var foundInStore = _cachedSettingsStore.GetOrDefault(_key, out string actualValue, _defaultValue);
+            var foundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string actualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
 
             Assert.False(foundInStore);
             Assert.Equal(_defaultValue, actualValue);
@@ -151,13 +151,13 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
 
-            var firstFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string firstActualValue, _defaultValue);
-            var secondFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string secondActualValue, _defaultValue);
+            var firstFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string firstActualValue, _defaultValue);
+            var secondFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string secondActualValue, _defaultValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
 
             Assert.False(firstFoundInStore);
             Assert.False(secondFoundInStore);
@@ -171,13 +171,13 @@ namespace Vim.VisualStudio.UnitTest
             var dictionary = new Dictionary<string, string>();
 
             _cacheProviderMock.Setup(x => x.Get<string>()).Returns(dictionary);
-            _underlyingStoreMock.Setup(x => x.GetOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
+            _underlyingStoreMock.Setup(x => x.GetStringOrDefault(_key, out _defaultValue, _defaultValue)).Returns(false);
 
-            var firstFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string firstActualValue, _defaultValue);
-            var secondFoundInStore = _cachedSettingsStore.GetOrDefault(_key, out string secondActualValue, _sampleValue);
+            var firstFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string firstActualValue, _defaultValue);
+            var secondFoundInStore = _cachedSettingsStore.GetStringOrDefault(_key, out string secondActualValue, _sampleValue);
 
             _cacheProviderMock.Verify(x => x.Get<string>(), Times.AtLeastOnce);
-            _underlyingStoreMock.Verify(x => x.GetOrDefault(_key, out _discard, _defaultValue), Times.Once);
+            _underlyingStoreMock.Verify(x => x.GetStringOrDefault(_key, out _discard, _defaultValue), Times.Once);
 
             Assert.False(firstFoundInStore);
             Assert.False(secondFoundInStore);
