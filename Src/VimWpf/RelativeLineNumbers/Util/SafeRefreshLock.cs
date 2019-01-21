@@ -7,7 +7,6 @@ namespace Vim.UI.Wpf.RelativeLineNumbers.Util
     public class SafeRefreshLock
     {
         private int _inProgress;
-
         private int _refreshRequested;
 
         public async Task ExecuteInLockAsync(Func<Task> operation)

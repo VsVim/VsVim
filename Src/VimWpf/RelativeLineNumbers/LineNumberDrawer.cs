@@ -9,7 +9,6 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
     public class LineNumberDrawer
     {
         private readonly Canvas _canvas;
-
         private readonly ILineFormatTracker _formatTracker;
         private readonly LineNumberVisualStore _store;
 

@@ -11,15 +11,10 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
     internal sealed class RelativeLineNumbersMargin : VerticalCanvasMargin
     {
         private readonly IWpfTextView _textView;
-
         private readonly ILineFormatTracker _formatTracker;
-
         private readonly LineNumbersTracker _linesTracker;
-
         private readonly LineNumberDrawer _lineNumberDrawer;
-
         private readonly SafeRefreshLock _refreshLock;
-
         private readonly LineNumbersCalculator _lineNumbersCalculator;
 
         public override bool Enabled =>

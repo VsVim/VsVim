@@ -8,6 +8,8 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 
+using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
+
 namespace Vim.UI.Wpf.RelativeLineNumbers
 {
     internal class LineNumberFormatTracker : ILineFormatTracker
@@ -16,15 +18,10 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
         private readonly IFormattedLineSource _formattedLineSource;
         private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IClassificationTypeRegistryService _classificationTypeRegistry;
-
         private TextFormattingRunProperties _formatting;
-
         private TextFormatter _textFormatter;
-
         private bool _formatChanged;
-
         private bool _numbers;
-
         private bool _relativeNumbers;
 
         public Brush Background { get; private set; }
@@ -109,7 +106,7 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
 
         public event EventHandler<EventArgs> VimNumbersFormatChanged;
 
-        public System.Windows.Media.TextFormatting.TextLine MakeTextLine(int lineNumber)
+        public WpfTextLine MakeTextLine(int lineNumber)
         {
             string text = lineNumber.ToString(CultureInfo.CurrentUICulture.NumberFormat);
 

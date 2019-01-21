@@ -13,7 +13,6 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
     public class LineNumbersCalculator
     {
         private readonly IWpfTextView _textView;
-
         private readonly ILineFormatTracker _formatTracker;
 
         public LineNumbersCalculator(IWpfTextView textView, ILineFormatTracker formatTracker)
@@ -47,8 +46,8 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             var firstVisibleLine =
                 _textView.TextViewLines.First(x => x.IsFirstTextViewLineForSnapshotLine);
 
-            if (GetVisualLineNumber(caretLine, out int caretVisualLineNumber) &&
-                GetVisualLineNumber(firstVisibleLine, out int referenceVisualLineNumber))
+            if (TryGetVisualLineNumber(caretLine, out int caretVisualLineNumber) &&
+                TryGetVisualLineNumber(firstVisibleLine, out int referenceVisualLineNumber))
             {
                 return caretVisualLineNumber - referenceVisualLineNumber;
             }
@@ -56,7 +55,7 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             return -1;
         }
 
-        private bool GetVisualLineNumber(ITextViewLine line, out int visualLineNumber)
+        private bool TryGetVisualLineNumber(ITextViewLine line, out int visualLineNumber)
         {
             var visualSnapshot = _textView.VisualSnapshot;
 

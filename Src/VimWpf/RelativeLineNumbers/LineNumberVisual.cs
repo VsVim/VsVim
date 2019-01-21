@@ -4,15 +4,18 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.TextFormatting;
 
+// Disambiguate WPF TextLine with Vim.TextLine
+using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
+
 namespace Vim.UI.Wpf.RelativeLineNumbers
 {
     public class LineNumberVisual : UIElement
     {
-        private readonly System.Windows.Media.TextFormatting.TextLine _textLine;
+        private readonly WpfTextLine _textLine;
 
         private readonly List<Point> _renderTargets;
 
-        public LineNumberVisual(System.Windows.Media.TextFormatting.TextLine textLine)
+        public LineNumberVisual(WpfTextLine textLine)
         {
             _textLine = textLine
                 ?? throw new ArgumentNullException(nameof(textLine));
