@@ -47,11 +47,6 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
 
         private void AddRenderTarget(Line line, double width)
         {
-            if (line == null)
-            {
-                throw new ArgumentNullException(nameof(line));
-            }
-
             var verticalOffset = line.Baseline - _textLine.TextBaseline;
 
             var horizontalOffset = line.IsCaretLine

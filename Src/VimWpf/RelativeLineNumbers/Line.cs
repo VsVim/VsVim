@@ -3,7 +3,7 @@
 namespace Vim.UI.Wpf.RelativeLineNumbers
 {
     [DebuggerDisplay("{Number} {Baseline}")]
-    public sealed class Line
+    public struct Line
     {
         public int Number { get; }
 
