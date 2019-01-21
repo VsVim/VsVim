@@ -26,10 +26,14 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
 
         public ICollection<Line> CalculateLineNumbers()
         {
-            int caretIndex = GetCaretIndex();
+            bool hasValidCaret = TryGetCaretIndex(out int caretIndex);
 
             var result = GetLinesWithNumbers()
-                .Select((line, idx) => MakeLine(line, idx, caretIndex))
+                .Select((line, idx) =>
+                        {
+                            var distanceToCaret = Math.Abs(idx - caretIndex);
+                            return MakeLine(line, distanceToCaret, hasValidCaret);
+                        })
                 .ToList();
 
             return result;
@@ -42,7 +46,7 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             return allLines.Where(x => x.IsFirstTextViewLineForSnapshotLine);
         }
 
-        private int GetCaretIndex()
+        private bool TryGetCaretIndex(out int caretIndex)
         {
             var caretLine = _textView.Caret.ContainingTextViewLine;
 
@@ -52,10 +56,12 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             if (TryGetVisualLineNumber(caretLine, out int caretVisualLineNumber) &&
                 TryGetVisualLineNumber(firstVisibleLine, out int referenceVisualLineNumber))
             {
-                return caretVisualLineNumber - referenceVisualLineNumber;
+                caretIndex = caretVisualLineNumber - referenceVisualLineNumber;
+                return true;
             }
 
-            return -1;
+            caretIndex = -1;
+            return false;
         }
 
         private bool TryGetVisualLineNumber(ITextViewLine line, out int visualLineNumber)
@@ -75,34 +81,32 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             return position.HasValue;
         }
 
-        private Line MakeLine(ITextViewLine wpfLine, int lineIndex, int caretIndex)
+        private Line MakeLine(ITextViewLine wpfLine, int distanceToCaret, bool hasValidCaret)
         {
-            int numberToDisplay = GetNumberToDisplay(wpfLine, lineIndex, caretIndex);
+            int numberToDisplay = GetNumberToDisplay(wpfLine, distanceToCaret, hasValidCaret);
 
             double verticalBaseline = wpfLine.TextTop - _textView.ViewportTop + wpfLine.Baseline;
 
-            bool isCaretLine = caretIndex == lineIndex;
+            bool isCaretLine = hasValidCaret && distanceToCaret == 0;
 
-            bool caretLineStyle = isCaretLine && _formatTracker.RelativeNumbers;
+            bool caretLineStyle = isCaretLine && _localSettings.RelativeNumber;
             return new Line(numberToDisplay, verticalBaseline, caretLineStyle);
         }
 
-        private int GetNumberToDisplay(ITextViewLine wpfLine, int lineIndex, int caretIndex)
+        private int GetNumberToDisplay(ITextViewLine wpfLine, int distanceToCaret, bool hasValidCaret)
         {
-            var isCaretLine = lineIndex == caretIndex;
-
             var absoluteCaretLineNumber =
-                _formatTracker.Numbers && isCaretLine;
+                _localSettings.Number && hasValidCaret && distanceToCaret == 0;
 
             var absoluteLineNumbers =
-                !_formatTracker.RelativeNumbers;
+                !hasValidCaret || !_localSettings.RelativeNumber;
 
             if (absoluteCaretLineNumber || absoluteLineNumbers)
             {
                 return wpfLine.GetLineNumber();
             }
 
-            return Math.Abs(caretIndex - lineIndex);
+            return distanceToCaret;
         }
     }
 }
