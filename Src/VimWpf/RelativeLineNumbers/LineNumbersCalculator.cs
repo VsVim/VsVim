@@ -17,8 +17,11 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
 
         public LineNumbersCalculator(IWpfTextView textView, ILineFormatTracker formatTracker)
         {
-            _textView = textView;
-            _formatTracker = formatTracker;
+            _textView = textView
+                ?? throw new ArgumentNullException(nameof(textView));
+            
+            _formatTracker = formatTracker
+                ?? throw new ArgumentNullException(nameof(formatTracker));
         }
 
         public ICollection<Line> CalculateLineNumbers()
