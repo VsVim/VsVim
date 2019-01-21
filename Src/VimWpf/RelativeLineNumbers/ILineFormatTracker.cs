@@ -1,4 +1,3 @@
-﻿using System;
 using System.Windows.Media;
 
 // Disambiguate WPF TextLine with Vim.TextLine
@@ -14,12 +13,6 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
 
         double NumberWidth { get; }
 
-        bool Numbers { get; }
-
-        bool RelativeNumbers { get; }
-
         bool TryClearReformatRequest();
-
-        event EventHandler<EventArgs> VimNumbersFormatChanged;
     }
 }

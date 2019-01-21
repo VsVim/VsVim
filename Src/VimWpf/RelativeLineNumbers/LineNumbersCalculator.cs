@@ -13,15 +13,15 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
     public class LineNumbersCalculator
     {
         private readonly IWpfTextView _textView;
-        private readonly ILineFormatTracker _formatTracker;
+        private readonly IVimLocalSettings _localSettings;
 
-        public LineNumbersCalculator(IWpfTextView textView, ILineFormatTracker formatTracker)
+        public LineNumbersCalculator(IWpfTextView textView, IVimLocalSettings localSettings)
         {
             _textView = textView
                 ?? throw new ArgumentNullException(nameof(textView));
             
-            _formatTracker = formatTracker
-                ?? throw new ArgumentNullException(nameof(formatTracker));
+            _localSettings = localSettings
+                ?? throw new ArgumentNullException(nameof(localSettings));
         }
 
         public ICollection<Line> CalculateLineNumbers()

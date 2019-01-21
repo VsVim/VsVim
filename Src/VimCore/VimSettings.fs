@@ -732,17 +732,36 @@ type internal EditorToSettingSynchronizer
 
         _settingList.Add(
             {
-                EditorOptionKey = LineNumbersMarginOptions.NumberOptionName
-                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.NumberOptionId
-                VimSettingName = LocalSettingNames.NumberName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
+                EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
+                GetEditorValue = fun _ -> false |> SettingValue.Toggle |> Some
+                VimSettingName = LocalSettingNames.RelativeNumberName
+                GetVimSettingValue = (fun vimBuffer ->
+                  let number = vimBuffer.LocalSettings.Number
+                  let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
+                  let nativeMarginVisible = number && not relativeNumber
+                  box nativeMarginVisible)
                 IsLocal = true
             })
 
         _settingList.Add(
             {
-                EditorOptionKey = LineNumbersMarginOptions.RelativeNumberOptionName
-                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.RelativeNumberOptionId
+                EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
+                GetEditorValue = fun editor ->
+                  editor.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, false)
+                  editor |> SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
+                VimSettingName = LocalSettingNames.NumberName
+                GetVimSettingValue = (fun vimBuffer ->
+                  let number = vimBuffer.LocalSettings.Number
+                  let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
+                  let nativeMarginVisible = number && not relativeNumber
+                  box nativeMarginVisible)
+                IsLocal = true
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = LineNumbersMarginOptions.LineNumbersMarginOptionName 
+                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.LineNumbersMarginOptionId
                 VimSettingName = LocalSettingNames.RelativeNumberName
                 GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.RelativeNumberName true
                 IsLocal = true

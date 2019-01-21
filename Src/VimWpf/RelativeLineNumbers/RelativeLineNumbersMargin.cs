@@ -20,7 +20,10 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
         public override bool Enabled =>
             _textView.Properties.GetProperty<bool>(LineNumbersMarginOptions.LineNumbersMarginOptionName);
 
-        public RelativeLineNumbersMargin(IWpfTextView textView, ILineFormatTracker formatTracker)
+        public RelativeLineNumbersMargin(
+            IWpfTextView textView,
+            ILineFormatTracker formatTracker,
+            IVimLocalSettings localSettings)
             : base(LineNumbersMarginOptions.LineNumbersMarginOptionName)
         {
             _textView = textView
@@ -29,7 +32,10 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             _formatTracker = formatTracker
                 ?? throw new ArgumentNullException(nameof(formatTracker));
 
-            _lineNumbersCalculator = new LineNumbersCalculator(_textView, formatTracker);
+            localSettings = localSettings
+                ?? throw new ArgumentNullException(nameof(localSettings));
+
+            _lineNumbersCalculator = new LineNumbersCalculator(_textView, localSettings);
 
             _refreshLock = new SafeRefreshLock();
 
@@ -38,7 +44,24 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             _linesTracker = new LineNumbersTracker(_textView);
 
             _linesTracker.LineNumbersChanged += async (x, y) => await RedrawLinesAsync().ConfigureAwait(true);
-            _formatTracker.VimNumbersFormatChanged += async (x, y) => await RedrawLinesAsync().ConfigureAwait(true);
+            localSettings.SettingChanged += async (s, e) => await UpdateVimNumberSettings(e).ConfigureAwait(true);
+        }
+
+        private async Task UpdateVimNumberSettings(SettingEventArgs eventArgs)
+        {
+            if (!eventArgs.IsValueChanged)
+            {
+                return;
+            }
+
+            var settingName = eventArgs.Setting.Name;
+            var isNumberSetting = settingName == LocalSettingNames.NumberName;
+            var isRelativeNumberSetting = settingName == LocalSettingNames.RelativeNumberName;
+            
+            if (isNumberSetting || isRelativeNumberSetting)
+            {
+                await RedrawLinesAsync().ConfigureAwait(true);
+            }
         }
 
         private async Task RedrawLinesAsync()

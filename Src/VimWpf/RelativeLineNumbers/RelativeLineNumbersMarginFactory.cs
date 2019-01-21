@@ -19,17 +19,22 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
     {
         private readonly IClassificationFormatMapService _formatMapService;
         private readonly IClassificationTypeRegistryService _typeRegistryService;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
         public RelativeLineNumbersMarginFactory(
             IClassificationFormatMapService formatMapService,
-            IClassificationTypeRegistryService typeRegistryService)
+            IClassificationTypeRegistryService typeRegistryService,
+            IVim vim)
         {
             _formatMapService = formatMapService
                 ?? throw new ArgumentNullException(nameof(formatMapService));
 
             _typeRegistryService = typeRegistryService
                 ?? throw new ArgumentNullException(nameof(typeRegistryService));
+
+            _vim = vim
+                ?? throw new ArgumentNullException(nameof(vim));
         }
 
         public IWpfTextViewMargin CreateMargin(
@@ -39,6 +44,8 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
             var textView = wpfTextViewHost?.TextView
                 ?? throw new ArgumentNullException(nameof(wpfTextViewHost));
 
+            var vimBuffer = _vim.GetOrCreateVimBuffer(textView);
+                        
             var formatMap = _formatMapService.GetClassificationFormatMap(textView);
 
             var formatProvider = new LineNumberFormatTracker(
@@ -46,7 +53,10 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
                 formatMap,
                 _typeRegistryService);
 
-            return new RelativeLineNumbersMargin(textView, formatProvider);
+            return new RelativeLineNumbersMargin(
+                textView,
+                formatProvider,
+                vimBuffer.LocalSettings);
         }
     }
 }
