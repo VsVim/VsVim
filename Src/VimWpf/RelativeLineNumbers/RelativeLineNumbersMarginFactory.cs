@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.RelativeLineNumbers
                 ?? throw new ArgumentNullException(nameof(formatMapService));
 
             _typeRegistryService = typeRegistryService
-                ?? throw new ArgumentNullException(nameof(formatMapService));
+                ?? throw new ArgumentNullException(nameof(typeRegistryService));
         }
 
         public IWpfTextViewMargin CreateMargin(
