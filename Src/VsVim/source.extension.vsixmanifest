@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Publisher="Jared Parsons" Version="2.6.0.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
-    <DisplayName>VsVim</DisplayName>
+    <Identity Publisher="JaredPar" Version="2.6.0.0" Id="VsVim.Microsoft.9a21abc2-6b88-4a39-a12f-f5d6819e6bb4" Language="en-US" />
+    <DisplayName>VsVim 2012-2013</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
     <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
     <License>License.txt</License>
@@ -11,10 +11,10 @@
     <Tags>vsvim</Tags>
   </Metadata>
   <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[11.0,17.0)" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[11.0,12.0]" />
+    <InstallationTarget Version="[11.0,12.0]" Id="Microsoft.VisualStudio.IntegratedShell" />
+    <InstallationTarget Version="[11.0,12.0]" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[11.0,12.0]" Id="Microsoft.VisualStudio.Enterprise" />
     <InstallationTarget Id="AtmelStudio" Version="7.0" />
   </Installation>
   <Assets>
@@ -31,6 +31,6 @@
     <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="Vs2017" Path="|Vs2017|" />
   </Assets>
   <Prerequisites>
-    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[11.0,17.0)" DisplayName="Visual Studio core editor" />
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[11.0,12.0]" DisplayName="Visual Studio core editor" />
   </Prerequisites>
 </PackageManifest>
