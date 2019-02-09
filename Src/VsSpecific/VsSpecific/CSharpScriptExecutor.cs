@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
@@ -16,7 +17,7 @@ namespace Vim.VisualStudio.Specific
         private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
         private ScriptOptions _scriptOptions = null;
 
-        private void Execute(IVim vim, CallInfo callInfo, bool createEachTime)
+        private async Task ExecuteAsync(IVim vim, CallInfo callInfo, bool createEachTime)
         {
             try
             {
@@ -25,7 +26,7 @@ namespace Vim.VisualStudio.Specific
                     return;
 
                 var globals = new CSharpScriptGlobals(callInfo, vim);
-                script.RunAsync(globals).Wait();
+                var scriptState = await script.RunAsync(globals);
             }
             catch (CompilationErrorException ex)
             {
@@ -104,7 +105,7 @@ namespace Vim.VisualStudio.Specific
 
         void ICSharpScriptExecutor.Execute(IVim vim, CallInfo callInfo, bool createEachTime)
         {
-            Execute(vim, callInfo, createEachTime);
+            var task = ExecuteAsync(vim, callInfo, createEachTime);
             VimTrace.TraceInfo("CSharptScript:Execute {0}", callInfo.Name);
         }
 
