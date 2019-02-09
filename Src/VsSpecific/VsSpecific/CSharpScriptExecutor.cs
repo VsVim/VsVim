@@ -40,7 +40,7 @@ namespace Vim.VisualStudio.Specific
             }
         }
 
-        private ScriptOptions GetScriptOptions(string scriptPath)
+        private static ScriptOptions GetScriptOptions(string scriptPath)
         {
             var ssr = ScriptSourceResolver.Default.WithBaseDirectory(scriptPath);
             var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
