@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsSpecificConstants.cs" />
   </ItemGroup>
 </Project>

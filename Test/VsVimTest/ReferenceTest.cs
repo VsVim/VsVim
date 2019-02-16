@@ -16,12 +16,14 @@ namespace Vim.VisualStudio.UnitTest
     {
         internal enum VsVersion
         {
-            /// <summary>
-            /// Current targeted version of Visual Studio
-            /// </summary>
-            VsCurrent,
-            Vs2017,
-            Vs2019
+            Vs2010 = 10,
+            Vs2012 = 11,
+            Vs2013 = 12,
+            Vs2015 = 14,
+            Vs2017 = 15,
+            Vs2019 = 16,
+
+            MinimumSupported = Vs2015,
         }
 
         internal enum ReferenceKind
@@ -68,14 +70,16 @@ namespace Vim.VisualStudio.UnitTest
             /// <summary>
             /// What version of VS is this reference supported on.
             /// </summary>
-            internal VsVersion VsVersion { get; }
+            internal VsVersion? VsVersion { get; }
 
-            internal ReferenceData(AssemblyName name, ReferenceKind kind, VsVersion vsVersion)
+            internal ReferenceData(AssemblyName name, ReferenceKind kind, VsVersion? vsVersion)
             {
                 Name = name;
                 Kind = kind;
                 VsVersion = vsVersion;
             }
+
+            public override string ToString() => $"{Name} {VsVersion}";
         }
 
         internal static class AssemblyData
@@ -89,6 +93,9 @@ namespace Vim.VisualStudio.UnitTest
             internal static readonly Assembly VsVim2017 = typeof(VsVim2017::Vim.VisualStudio.Specific.SharedService).Assembly;
             internal static readonly Assembly VsVim2019 = typeof(VsVim2019::Vim.VisualStudio.Specific.SharedService).Assembly;
 
+            /// <summary>
+            /// These are the core VsVim assemblies that load in every version of Visual Studio.
+            /// </summary>
             internal static IEnumerable<Assembly> GetCoreAssemblies()
             {
                 yield return VimCore;
@@ -128,7 +135,7 @@ namespace Vim.VisualStudio.UnitTest
                 var name = assemblyName.Name;
                 if (name.StartsWith("System."))
                 {
-                    return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
+                    return new ReferenceData(assemblyName, ReferenceKind.Framework, vsVersion: null);
                 }
 
                 switch (name)
@@ -139,7 +146,7 @@ namespace Vim.VisualStudio.UnitTest
                     case "PresentationFramework":
                     case "WindowsBase":
                     case "WindowsFormsIntegration":
-                        return new ReferenceData(assemblyName, ReferenceKind.Framework, VsVersion.VsCurrent);
+                        return new ReferenceData(assemblyName, ReferenceKind.Framework, vsVersion: null);
 
                     case "Microsoft.VisualStudio.CoreUtility":
                     case "Microsoft.VisualStudio.Text.Data":
@@ -154,7 +161,7 @@ namespace Vim.VisualStudio.UnitTest
                     case "Vim.UI.Wpf":
                     case "Vim.VisualStudio.Shared":
                     case "Vim.VisualStudio.Interfaces":
-                        return new ReferenceData(assemblyName, ReferenceKind.VsVim, VsVersion.VsCurrent);
+                        return new ReferenceData(assemblyName, ReferenceKind.VsVim, VsVersion.MinimumSupported);
 
                     case "EnvDTE":
                     case "EnvDTE80":
@@ -170,7 +177,7 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.TextManager.Interop":
                     case "Microsoft.VisualStudio.TextManager.Interop.8.0":
                     case "Microsoft.VisualStudio.TextManager.Interop.10.0":
-                        return new ReferenceData(assemblyName, ReferenceKind.ShellPia, VsVersion.VsCurrent);
+                        return new ReferenceData(assemblyName, ReferenceKind.ShellPia, VsVersion.MinimumSupported);
 
                     case "Microsoft.VisualStudio.ComponentModelHost":
                     case "Microsoft.VisualStudio.Editor":
@@ -179,6 +186,7 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.Shell.12.0":
                     case "Microsoft.VisualStudio.Shell.Immutable.10.0":
                     case "Microsoft.VisualStudio.Shell.ViewManager":
+                    case "Microsoft.VisualStudio.Utilities":
                         return new ReferenceData(assemblyName, ReferenceKind.ShellVersioned, getVersionFromVersionNumber());
 
                     case "Microsoft.VisualStudio.Platform.WindowManagement":
@@ -190,17 +198,13 @@ namespace Vim.VisualStudio.UnitTest
 
                 VsVersion getVersionFromVersionNumber()
                 {
-                    switch (assemblyName.Version.Major)
+                    var value = assemblyName.Version.Major;
+                    if (Enum.IsDefined(typeof(VsVersion), value))
                     {
-                        case 10:
-                        case 11:
-                        case 12:
-                        case 14:
-                            return VsVersion.VsCurrent;
-                        case 15: return VsVersion.Vs2017;
-                        case 16: return VsVersion.Vs2019;
-                        default: throw new Exception();
+                        return (VsVersion)value;
                     }
+
+                    throw new InvalidOperationException($"Invalid enum value {value}");
                 }
             }
         }
@@ -214,39 +218,88 @@ namespace Vim.VisualStudio.UnitTest
             var count = 0;
             foreach (var refData in AssemblyData.GetCoreAssemblies().SelectMany(a => AssemblyData.GetTransitiveReferenceData(a)))
             {
-                Assert.NotEqual(ReferenceKind.ShellNonVersioned, refData.Kind);
-                Assert.Equal(VsVersion.VsCurrent, refData.VsVersion);
+                switch (refData.Kind)
+                {
+                    case ReferenceKind.Editor:
+                        Assert.Equal(VsVersion.MinimumSupported, refData.VsVersion);
+                        break;
+                    case ReferenceKind.ShellVersioned:
+                        Assert.True(refData.VsVersion <= VsVersion.MinimumSupported);
+                        break;
+                    case ReferenceKind.Framework:
+                    case ReferenceKind.VsVim:
+                        // Nothing to validate for these.
+                        break;
+                    case ReferenceKind.ShellNonVersioned:
+                        Assert.True(false, "A non-versioned assembly should never be referenced in the core assembly set");
+                        break;
+                    case ReferenceKind.ShellPia:
+                        Assert.NotNull(refData.VsVersion);
+                        Assert.True(refData.VsVersion.Value <= VsVersion.MinimumSupported);
+                        break;
+                    default:
+                        throw Contract.GetInvalidEnumException(refData.Kind);
+                }
+
                 count++;
             }
 
             Assert.True(count >= 60);
         }
 
+        private void ValidateSpecific(VsVersion vsVersion, IEnumerable<ReferenceData> referenceDataCollection)
+        {
+            var badList = new List<ReferenceData>();
+            var count = 0;
+            foreach (var refData in referenceDataCollection)
+            {
+                switch (refData.Kind)
+                {
+                    case ReferenceKind.ShellVersioned:
+                    case ReferenceKind.ShellPia:
+                        if (vsVersion < refData.VsVersion)
+                        {
+                            badList.Add(refData);
+                        }
+                        break;
+                    case ReferenceKind.Framework:
+                    case ReferenceKind.VsVim:
+                        // Nothing to validate for these.
+                        break;
+                    case ReferenceKind.Editor:
+                    case ReferenceKind.ShellNonVersioned:
+                        if (refData.VsVersion != vsVersion)
+                        {
+                            badList.Add(refData);
+                        }
+                        break;
+                    default:
+                        throw Contract.GetInvalidEnumException(refData.Kind);
+                }
+
+                count++;
+            }
+
+            Assert.True(count >= 8);
+            Assert.Empty(badList);
+        }
+
         [Fact]
         public void Ensure2015()
         {
-            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2015))
-            {
-                Assert.Equal(VsVersion.VsCurrent, refData.VsVersion);
-            }
+            ValidateSpecific(VsVersion.Vs2015, AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2015));
         }
 
         [Fact]
         public void Ensure2017()
         {
-            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2017))
-            {
-                Assert.True(refData.VsVersion == VsVersion.Vs2017 || refData.VsVersion == VsVersion.VsCurrent);
-            }
+            ValidateSpecific(VsVersion.Vs2017, AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2017));
         }
 
         [Fact]
         public void Ensure2019()
         {
-            foreach (var refData in AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2019))
-            {
-                Assert.True(refData.VsVersion == VsVersion.Vs2019 || refData.VsVersion == VsVersion.VsCurrent);
-            }
+            ValidateSpecific(VsVersion.Vs2019, AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2019));
         }
     }
 }
