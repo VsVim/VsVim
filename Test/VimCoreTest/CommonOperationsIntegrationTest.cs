@@ -250,7 +250,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-#if !VS2019
+#if VSVIM_DEV_2017
             // https://github.com/jaredpar/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave
@@ -272,6 +272,10 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
+#elif VSVIM_DEV_2019
+            // https://github.com/jaredpar/VsVim/issues/2463
+#else
+#error Unsupported configuration
 #endif
 
             /// <summary>

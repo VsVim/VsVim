@@ -9,11 +9,10 @@ using System.Threading.Tasks;
 
 namespace Vim.EditorHost.Implementation.Misc
 {
-#if VS2017 || VS2019
     [Export(typeof(ILoggingServiceInternal))]
     internal sealed class BasicLoggingServiceInternal : ILoggingServiceInternal
     {
-#if VS2017
+#if VSVIM_DEV_2017
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {
@@ -43,7 +42,7 @@ namespace Vim.EditorHost.Implementation.Misc
         {
         }
 
-#else
+#elif VSVIM_DEV_2019
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {
@@ -86,12 +85,8 @@ namespace Vim.EditorHost.Implementation.Misc
         void ILoggingServiceInternal.PostFault(string eventName, string description, Exception exceptionObject, string additionalErrorInfo, bool? isIncludedInWatsonSample, object[] correlations)
         {
         }
-#endif
-    }
-
-#elif VS2015
-// This type isn't needed there.
 #else
 #error Unsupported configuration
 #endif
+    }
 }
