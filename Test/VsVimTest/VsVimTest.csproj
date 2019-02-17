@@ -5,7 +5,6 @@
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>VsVim.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VsVimIsRunnable>true</VsVimIsRunnable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Resources\**" />
@@ -28,8 +27,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj" />
-    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
     <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj" />
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
@@ -45,9 +42,15 @@
       <Aliases>VsVim2019</Aliases>
     </ProjectReference>
   </ItemGroup>
+
+  <!-- 
+     This project must always target the latest, no matter if it's loaded in VS2017 or VS2019.
+  --> 
   <ItemGroup>
-    <None Include="$(VsVimAppConfig)">
+    <None Include="$(RepoPath)\References\VS2019\App.config">
       <Link>app.config</Link>
     </None>
   </ItemGroup>
+
+  <Import Project="$(RepoPath)\References\VS2019\Runnable.props" />
 </Project>
