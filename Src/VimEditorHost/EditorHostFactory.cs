@@ -33,6 +33,9 @@ namespace Vim.EditorHost
                 "Microsoft.VisualStudio.Text.Logic.dll",
                 "Microsoft.VisualStudio.Text.UI.dll",
                 "Microsoft.VisualStudio.Text.UI.Wpf.dll",
+#if VS2019
+                "Microsoft.VisualStudio.Language.dll",
+#endif
             };
 
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
@@ -75,12 +78,14 @@ namespace Vim.EditorHost
             var editorAssemblyVersion = new Version(vsVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
 
-#if VS2017 || VS2019
-            if (vsVersion.Major >= 15)
-            {
-                AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
-                _exportProviderList.Add(new JoinableTaskContextExportProvider());
-            }
+#if VS2015
+            // No threading DLL to worry about here.
+#elif VS2017
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
+            _exportProviderList.Add(new JoinableTaskContextExportProvider());
+#elif VS2019
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(16, 0));
+            _exportProviderList.Add(new JoinableTaskContextExportProvider());
 #endif
 
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));

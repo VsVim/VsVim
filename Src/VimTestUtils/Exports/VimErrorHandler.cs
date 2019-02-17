@@ -120,12 +120,23 @@ namespace Vim.UnitTest.Exports
 
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
+#if VS2019
+            // This is a bug in the CodeCleanUpFixerRegistrationService implementation. Nothing to do about it but
+            // ignore it here. Will check again at RTM if this is fixed.
+            if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService"))
+            {
+                return;
+            }
+#elif VS2017 || VS2015
+#else
+#error Unsupported configuration
+#endif
             _errorList.Add(exception);
         }
 
-        #endregion
+#endregion
 
-        #region IVimErrorDetector
+#region IVimErrorDetector
 
         bool IVimErrorDetector.HasErrors()
         {
@@ -146,9 +157,9 @@ namespace Vim.UnitTest.Exports
             _activeVimBufferList.Clear();
         }
 
-        #endregion
+#endregion
 
-        #region IWpfTextViewCreationListener
+#region IWpfTextViewCreationListener
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
@@ -172,6 +183,6 @@ namespace Vim.UnitTest.Exports
                 };
         }
 
-        #endregion
+#endregion
     }
 }
