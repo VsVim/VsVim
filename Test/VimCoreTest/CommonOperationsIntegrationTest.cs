@@ -250,6 +250,8 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
+#if !VS2019
+            // https://github.com/jaredpar/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave
             /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
@@ -270,6 +272,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
+#endif
 
             /// <summary>
             /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor

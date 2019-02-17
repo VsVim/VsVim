@@ -121,12 +121,16 @@ namespace Vim.UnitTest.Exports
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
 #if VS2019
-            // This is a bug in the CodeCleanUpFixerRegistrationService implementation. Nothing to do about it but
-            // ignore it here. Will check again at RTM if this is fixed.
-            if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService"))
+            // https://github.com/jaredpar/VsVim/issues/2463
+            // Working around several bugs thrown during core MEF composition
+            if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService") ||
+                exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.mefRegisteredCodeCleanupProviders") ||
+                exception.StackTrace.Contains("Microsoft.VisualStudio.UI.Text.Wpf.FileHealthIndicator.Implementation.FileHealthIndicatorButton..ctor"))
             {
                 return;
             }
+
+
 #elif VS2017 || VS2015
 #else
 #error Unsupported configuration
