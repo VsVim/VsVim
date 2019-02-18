@@ -14,7 +14,6 @@ open Vim.VimCoreExtensions
 /// cancelled.
 type internal IncrementalSearchSession
     (
-        _key: obj,
         _vimBuffer: IVimBuffer,
         _operations: ICommonOperations,
         _searchPath: SearchPath,
@@ -23,7 +22,9 @@ type internal IncrementalSearchSession
 
     let mutable _searchData = SearchData("", _searchPath, _isWrap)
     let mutable _searchResult : SearchResult option = None
+    let mutable _historySession : IHistorySession<ITrackingPoint, SearchResult> option = None
     let mutable _isActive = true
+    let _key = obj()
     let _globalSettings = _vimBuffer.GlobalSettings
     let _searchStart = StandardEvent<SearchDataEventArgs>()
     let _searchEnd = StandardEvent<SearchResultEventArgs>()
@@ -31,11 +32,17 @@ type internal IncrementalSearchSession
 
     member x.Key = _key
     member x.IsWrap = _isWrap
+    member x.IsStarted = Option.isSome _historySession
     member x.IsActive = _isActive
     member x.SearchPath = _searchPath
     member x.SearchData = _searchData
     member x.SearchResult = _searchResult
     member x.IsSearchCompleted = Option.isSome _searchResult
+    member x.HistorySession = _historySession
+    member x.InPasteWait =
+        match _historySession with
+        | Some session -> session.InPasteWait
+        | None -> false
 
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
@@ -47,9 +54,25 @@ type internal IncrementalSearchSession
     // Reset the view to it's original state.  We should only be doing this if the
     // 'incsearch' option is set.  Otherwise the view shouldn't change during an 
     // incremental search
-    member x.ResetView () =
+    member private x.ResetView () =
         if _globalSettings.IncrementalSearch then
              _operations.EnsureAtCaret ViewFlags.Standard
+
+    member x.ResetSearch pattern = 
+        match _historySession with 
+        | Some historySession -> historySession.ResetCommand pattern
+        | None -> ()
+
+    /// Begin the incremental search along the specified path
+    member x.Start() = 
+        if x.IsStarted then
+            raise (InvalidOperationException())
+
+        let start = TextViewUtil.GetCaretPoint _vimBuffer.TextView
+        let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
+        let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty (Some _vimBuffer)
+        _historySession <- Some historySession
+        historySession.CreateBindDataStorage().CreateBindData()
 
     member private x.RunActive defaultValue func =
         if x.IsActive then func ()
@@ -97,15 +120,16 @@ type internal IncrementalSearchSession
         // TODO: in the async case this should wait for the completion 
         _isActive <- false
         _sessionComplete.Trigger x (EventArgs.Empty)
-        0
+        Option.get _searchResult
 
-    member private x.RunCancelled() =
+    member x.Cancel() =
         // TODO: in the async case this should set the SearchResult to Cancelled if it hasn't finished 
         // yet.
-        _isActive <- false
-        _sessionComplete.Trigger x (EventArgs.Empty)
+        if x.IsActive then
+            _isActive <- false
+            _sessionComplete.Trigger x (EventArgs.Empty)
 
-    interface IHistoryClient<ITrackingPoint, int> with
+    interface IHistoryClient<ITrackingPoint, SearchResult> with
         member x.HistoryList = _vimBuffer.VimData.SearchHistory
         member x.RegisterMap = _vimBuffer.Vim.RegisterMap
         member x.RemapMode = x.RemapMode
@@ -113,14 +137,14 @@ type internal IncrementalSearchSession
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
             x.RunSearch searchPoint searchText
             searchPoint)
-        member x.Completed _ _ = x.RunActive 0 (fun () -> x.RunCompleted())
-        member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancelled())
+        member x.Completed _ _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted())
+        member x.Cancelled _ = x.RunActive () (fun () -> x.Cancel())
 
     interface IIncrementalSearchSession with
         member x.InSearch = Option.isNone _searchResult
         member x.SearchData = _searchData
         member x.SearchResult = _searchResult
-        member x.Cancel() = x.RunCancelled()
+        member x.Cancel() = x.Cancel()
         [<CLIEvent>]
         member x.SearchStart = _searchStart.Publish
         [<CLIEvent>]
@@ -134,6 +158,7 @@ type internal IncrementalSearch
         _operations: ICommonOperations
     ) =
 
+    // TODO: most of these aren't needed anymore.
     let _vimData = _vimBufferData.Vim.VimData
     let _statusUtil = _vimBufferData.StatusUtil
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -142,95 +167,43 @@ type internal IncrementalSearch
     let _globalSettings = _localSettings.GlobalSettings
     let _textView = _operations.TextView
     let _searchService = _vimBufferData.Vim.SearchService
-    let mutable _incrementalSearchSession: IncrementalSearchSession option = None
+
+    let mutable _session: IncrementalSearchSession option = None
+    let _sessionCreated = StandardEvent<IncrementalSearchSessionEventArgs>()
 
     static member EmptySearchData = SearchData("", SearchPath.Forward, isWrap= false)
-    static member EmptySearchText = ""
 
     member x.CurrentSearchData = 
-        match _incrementalSearchSession with
+        match _session with
         | Some session -> session.SearchData
         | None -> IncrementalSearch.EmptySearchData
 
-    member x.CurrentSearchText =
-        match _incrementalSearchSession with
-        | Some session -> session.SearchText
-        | None -> IncrementalSearch.EmptySearchText
+    member x.CurrentSearchText = x.CurrentSearchData.Pattern
 
-    member x.InSearch = Option.isSome _incrementalSearchSession
+    member x.InSearch = Option.isSome _session
 
     member x.InPasteWait = 
-        match _incrementalSearchSession with
-        | Some session -> session.HistorySession.InPasteWait
+        match _session with
+        | Some session -> session.InPasteWait 
         | None -> false
 
     member x.IsCurrentSession key = 
-        match _incrementalSearchSession with
+        match _session with
         | None -> false
-        | Some incrementalSearchSession -> incrementalSearchSession.Key = key
+        | Some session -> session.Key = key
 
-    /// Begin the incremental search along the specified path
-    member x.Start path = 
+    member x.CreateSession searchPath = 
+        match _session with
+        | Some session -> session.Cancel()
+        | None -> ()
 
-        // If there is an existing session going on then we need to cancel it 
-        x.Cancel()
-        Debug.Assert(Option.isNone _incrementalSearchSession)
+        Debug.Assert(Option.isNone _session)
 
-        let key = obj()
-
-        // This local will only run the 'func' with the created session is still active.  If it is 
-        // not active then nothing will happen and 'defaultValue' will be returned. 
-        let runActive func defaultValue = 
-            match _incrementalSearchSession with
-            | None -> defaultValue
-            | Some incrementalSearchSession ->
-                if incrementalSearchSession.Key = key then
-                    func incrementalSearchSession 
-                else   
-                    defaultValue
-
-        let runCancelled (session: IncrementalSearchSession) =
-            x.ResetView()
-            if not session.IsSearchCompleted then 
-                let searchResult = SearchResult.Cancelled session.SearchData
-                _searchEnd.Trigger x (SearchResultEventArgs(searchResult))
-            _incrementalSearchSession <- None
-            
-        let historyClient = { 
-            new IHistoryClient<ITrackingPoint, SearchResult> with
-                member this.HistoryList = _vimData.SearchHistory
-                member this.RegisterMap = _vimBufferData.Vim.RegisterMap
-                member this.RemapMode = x.RemapMode
-                member this.Beep() = _operations.Beep()
-                member this.ProcessCommand data command = runActive (fun session -> x.RunSearch session data command) data
-                member this.Completed (data: ITrackingPoint) _ = runActive (fun session -> x.RunCompleted session data) IncrementalSearchData.Default.SearchResult
-                member this.Cancelled _ = runActive runCancelled ()
-            }
-
-        let start = TextViewUtil.GetCaretPoint _textView
-        let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
-        let historySession = HistoryUtil.CreateHistorySession historyClient startPoint StringUtil.Empty vimBuffer
-        let incrementalSearchSession = IncrementalSearchSession(key, historySession, path, _globalSettings.WrapScan)
-        _incrementalSearchSession <- Some incrementalSearchSession
-
-        // Raise the event pair
-        _searchStart.Trigger x (SearchDataEventArgs(incrementalSearchSession.SearchData))
-        _searchEnd.Trigger x (SearchResultEventArgs(Option.get incrementalSearchSession.SearchResult))
-
-        historySession.CreateBindDataStorage().CreateBindData()
-
-
-    member x.Cancel() =
-        match _incrementalSearchSession with 
-        | None -> ()
-        | Some incrementalSearchSession -> incrementalSearchSession.HistorySession.Cancel()
-        Debug.Assert(Option.isNone _incrementalSearchSession)
-
-    member x.ResetSearch pattern = 
-        match _incrementalSearchSession with 
-        | None -> ()
-        | Some incrementalSearchSession -> incrementalSearchSession.HistorySession.ResetCommand pattern
+        let session = IncrementalSearchSession(vimBuffer, _operations, searchPath, _globalSettings.WrapScan)
+        _session <- Some session
+        _sessionCreated.Trigger x (IIncrementalSearchSessionEventArgs(session))
+        session
 
     interface IIncrementalSearch with
         member x.InSearch = x.InSearch
@@ -238,7 +211,7 @@ type internal IncrementalSearch
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchText = x.CurrentSearchText
-        member x.Begin kind = x.Begin kind
+        member x. kind = x.Begin kind
         member x.Cancel () = x.Cancel()
         member x.ResetSearch pattern = x.ResetSearch pattern
         [<CLIEvent>]

@@ -4077,6 +4077,9 @@ type IJumpList =
 
 type IIncrementalSearchSession = 
 
+    /// Key that uniquely identifies this session
+    abstract Key: obj
+
     /// True when a search is occurring
     abstract InSearch: bool
 
@@ -4086,6 +4089,12 @@ type IIncrementalSearchSession =
 
     /// When a search is complete within the session this will hold the result
     abstract SearchResult: SearchResult option
+
+    /// Start an incremental search in the ITextView
+    abstract Start: unit -> BindData<SearchResult>
+
+    /// Reset the search to the specified text
+    abstract ResetSearch: searchText: string -> unit
 
     /// Cancel an incremental search which is currently in progress
     abstract Cancel: unit -> unit
@@ -4099,10 +4108,12 @@ type IIncrementalSearchSession =
     [<CLIEvent>]
     abstract SessionComplete: IDelegateEvent<System.EventHandler<EventArgs>>
 
-type IIncrementalSearch = 
+type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) = 
+    inherit System.EventArgs()
 
-    /// Key that uniquely identifies this session
-    abstract Key: obj
+    member x.Session = _session
+
+type IIncrementalSearch = 
 
     /// True when a search is occurring
     abstract InSearch: bool
@@ -4113,10 +4124,14 @@ type IIncrementalSearch =
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
 
-    /// Begin an incremental search in the ITextView
-    abstract Start: path: SearchPath -> BindData<SearchResult>
+    abstract CurrentSearchData: SearchData
 
+    abstract CurrentSearchText: string
 
+    abstract CreateSession: searchPath: SearchPath -> IIncrementalSearchSession
+
+    [<CLIEvent>]
+    abstract SessionCreated: IDelegateEvent<System.EventHandler<IncrementalSearchSessionEventArgs>>
 
 type RecordRegisterEventArgs(_register: Register, _isAppend: bool) =
     inherit System.EventArgs()
