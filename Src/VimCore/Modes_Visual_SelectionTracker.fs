@@ -34,14 +34,8 @@ type internal SelectionTracker
     do 
         _textChangedHandler <- ToggleHandler.Create (_textView.TextBuffer.Changed) (fun (args:TextContentChangedEventArgs) -> this.OnTextChanged(args))
 
-        _incrementalSearch.CurrentSearchUpdated
-        |> Observable.add (fun args -> _lastIncrementalSearchResult <- Some args.SearchResult)
-        
-        _incrementalSearch.CurrentSearchCancelled
-        |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
-
-        _incrementalSearch.CurrentSearchCompleted 
-        |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
+        _incrementalSearch.SessionCreated
+        |> Observable.add (fun args -> this.OnIncrementalSearchSessionCreated(args.Session))
 
     member x.AnchorPoint = Option.get _anchorPoint
 
@@ -93,6 +87,23 @@ type internal SelectionTracker
         _textChangedHandler.Remove()
         _anchorPoint <- None
 
+    member x.OnIncrementalSearchSessionCreated (session: IIncrementalSearchSession) =
+        _lastIncrementalSearchResult <- None
+
+        // Whenever a search completes we want to track the result in the selection. The one exception
+        // is when the search is cancelled. That happens when the developer:
+        // - types ctrl-c: the session complete event will clear the data
+        // - types a new letter: just let the last result stay until a new result shows up
+        session.SearchEnd 
+        |> Observable.add (fun args -> 
+            _lastIncrementalSearchResult <- 
+                match args.SearchResult with
+                | SearchResult.Cancelled _ -> _lastIncrementalSearchResult
+                | _ -> Some args.SearchResult)
+
+        session.SessionComplete
+        |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
+
     /// Update the selection based on the current state of the ITextView
     member x.UpdateSelection() = 
 
@@ -101,17 +112,15 @@ type internal SelectionTracker
         | Some anchorPoint ->
             let simulatedCaretPoint = 
                 let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView 
-                if _incrementalSearch.InSearch then
-                    match _lastIncrementalSearchResult with
-                    | None -> caretPoint
-                    | Some searchResult ->
-                        match searchResult with
-                        | SearchResult.NotFound _ -> caretPoint
-                        | SearchResult.Error _ -> caretPoint
-                        | SearchResult.Found (_, span, _, _) ->
-                            VirtualSnapshotPointUtil.OfPoint span.Start
-                else
-                    caretPoint
+                match _lastIncrementalSearchResult with
+                | None -> caretPoint
+                | Some searchResult ->
+                    match searchResult with
+                    | SearchResult.NotFound _ -> caretPoint
+                    | SearchResult.Error _ -> caretPoint
+                    | SearchResult.Cancelled _ -> caretPoint
+                    | SearchResult.Found (_, span, _, _) ->
+                        VirtualSnapshotPointUtil.OfPoint span.Start
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search

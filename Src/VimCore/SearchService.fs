@@ -261,6 +261,7 @@ type internal SearchService
         match x.FindNextCore serviceSearchData point 1 with
         | SearchResult.Found (_, span, _, _) -> Some span
         | SearchResult.NotFound _ -> None
+        | SearchResult.Cancelled _ -> None
         | SearchResult.Error _ -> None
 
     member x.ApplySearchOffsetData (serviceSearchData: ServiceSearchData) (span: SnapshotSpan): SnapshotSpan option =

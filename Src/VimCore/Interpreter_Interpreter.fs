@@ -1546,6 +1546,7 @@ type VimInterpreter
                 _commonOperations.MoveCaretToPoint point ViewFlags.Standard
                 _vimData.LastSearchData <- searchData
             | SearchResult.NotFound _ -> ()
+            | SearchResult.Cancelled _ -> ()
             | SearchResult.Error _ -> ())
 
     /// Run the :set command.  Process each of the arguments 

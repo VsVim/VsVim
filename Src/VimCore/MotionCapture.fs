@@ -161,12 +161,13 @@ type internal MotionCapture
 
             // Store the caret point before the search begins
             let before = TextViewUtil.GetCaretPoint _textView
-            let result = _incrementalSearch.Begin path
+            let result = _incrementalSearch.CreateSession(path).Start()
 
             result.Convert (fun searchResult ->
                 match searchResult with
                 | SearchResult.Found (searchData, _, _, _) -> Motion.Search searchData
                 | SearchResult.NotFound (searchData, _) -> Motion.Search searchData 
+                | SearchResult.Cancelled searchData -> Motion.Search searchData
                 | SearchResult.Error (searchData, _) -> Motion.Search searchData)
 
         BindDataStorage.Complex activateFunc

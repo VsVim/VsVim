@@ -14,7 +14,7 @@ open Vim.VimCoreExtensions
 /// cancelled.
 type internal IncrementalSearchSession
     (
-        _vimBuffer: IVimBuffer,
+        _vimBufferData: IVimBufferData,
         _operations: ICommonOperations,
         _searchPath: SearchPath,
         _isWrap: bool
@@ -25,7 +25,8 @@ type internal IncrementalSearchSession
     let mutable _historySession : IHistorySession<ITrackingPoint, SearchResult> option = None
     let mutable _isActive = true
     let _key = obj()
-    let _globalSettings = _vimBuffer.GlobalSettings
+    let _globalSettings = _vimBufferData.Vim.GlobalSettings
+    let _textView = _operations.TextView
     let _searchStart = StandardEvent<SearchDataEventArgs>()
     let _searchEnd = StandardEvent<SearchResultEventArgs>()
     let _sessionComplete = StandardEvent<EventArgs>()
@@ -68,9 +69,10 @@ type internal IncrementalSearchSession
         if x.IsStarted then
             raise (InvalidOperationException())
 
-        let start = TextViewUtil.GetCaretPoint _vimBuffer.TextView
+        let start = TextViewUtil.GetCaretPoint _textView
+        let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-        let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty (Some _vimBuffer)
+        let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
         _historySession <- Some historySession
         historySession.CreateBindDataStorage().CreateBindData()
 
@@ -95,9 +97,9 @@ type internal IncrementalSearchSession
             if StringUtil.IsNullOrEmpty searchText then
                 SearchResult.NotFound (_searchData, CanFindWithWrap=false)
             else
-                match TrackingPointUtil.GetPoint _vimBuffer.TextView.TextSnapshot startPoint with
+                match TrackingPointUtil.GetPoint _textView.TextSnapshot startPoint with
                 | None -> SearchResult.NotFound (_searchData, false)
-                | Some point -> _vimBuffer.Vim.SearchService.FindNextPattern point _searchData _vimBuffer.VimTextBuffer.WordNavigator 1
+                | Some point -> _vimBufferData.Vim.SearchService.FindNextPattern point _searchData _vimBufferData.VimTextBuffer.WordNavigator 1
 
         // Search is completed now update the results
 
@@ -130,8 +132,8 @@ type internal IncrementalSearchSession
             _sessionComplete.Trigger x (EventArgs.Empty)
 
     interface IHistoryClient<ITrackingPoint, SearchResult> with
-        member x.HistoryList = _vimBuffer.VimData.SearchHistory
-        member x.RegisterMap = _vimBuffer.Vim.RegisterMap
+        member x.HistoryList = _vimBufferData.Vim.VimData.SearchHistory
+        member x.RegisterMap = _vimBufferData.Vim.RegisterMap
         member x.RemapMode = x.RemapMode
         member x.Beep() = _operations.Beep()
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
@@ -142,8 +144,11 @@ type internal IncrementalSearchSession
 
     interface IIncrementalSearchSession with
         member x.InSearch = Option.isNone _searchResult
+        member x.Key = _key
         member x.SearchData = _searchData
         member x.SearchResult = _searchResult
+        member x.ResetSearch pattern = x.ResetSearch pattern
+        member x.Start() = x.Start()
         member x.Cancel() = x.Cancel()
         [<CLIEvent>]
         member x.SearchStart = _searchStart.Publish
@@ -180,8 +185,6 @@ type internal IncrementalSearch
 
     member x.CurrentSearchText = x.CurrentSearchData.Pattern
 
-    member x.InSearch = Option.isSome _session
-
     member x.InPasteWait = 
         match _session with
         | Some session -> session.InPasteWait 
@@ -199,24 +202,21 @@ type internal IncrementalSearch
 
         Debug.Assert(Option.isNone _session)
 
-        let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
-        let session = IncrementalSearchSession(vimBuffer, _operations, searchPath, _globalSettings.WrapScan)
+        let session = IncrementalSearchSession(_vimBufferData, _operations, searchPath, _globalSettings.WrapScan)
         _session <- Some session
-        _sessionCreated.Trigger x (IIncrementalSearchSessionEventArgs(session))
+        _sessionCreated.Trigger x (IncrementalSearchSessionEventArgs(session))
         session
 
     interface IIncrementalSearch with
-        member x.InSearch = x.InSearch
+        member x.ActiveSession = Option.map (fun s -> s :> IIncrementalSearchSession) _session
+        member x.HasActiveSession = Option.isSome _session
         member x.InPasteWait = x.InPasteWait
         member x.WordNavigator = _wordNavigator
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchText = x.CurrentSearchText
-        member x. kind = x.Begin kind
-        member x.Cancel () = x.Cancel()
-        member x.ResetSearch pattern = x.ResetSearch pattern
+        member x.CreateSession searchPath = x.CreateSession searchPath :> IIncrementalSearchSession
+        member x.CancelSession() = match _session with | Some session -> session.Cancel() | None -> () 
         [<CLIEvent>]
-        member x.SearchStart = _searchStart.Publish
-        [<CLIEvent>]
-        member x.SearchEnd = _searchEnd.Publish 
+        member x.SessionCreated = _sessionCreated.Publish
 
 

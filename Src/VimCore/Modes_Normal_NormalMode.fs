@@ -388,7 +388,7 @@ type internal NormalMode
             x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
-            _incrementalSearch.Cancel()
+            _incrementalSearch.CancelSession()
             x.Reset()
             ProcessResult.Handled ModeSwitch.NoSwitch
 

@@ -30,6 +30,7 @@ module internal Resources =
     let Common_SelectionInvalid = "An invalid selection was detected"
     let Common_SearchForwardWrapped = "search hit BOTTOM, continuing at TOP"
     let Common_SearchBackwardWrapped = "search hit TOP, continuing at BOTTOM"
+    let Common_SearchCancelled = "Search was cancelled"
     let Common_SearchHitBottomWithout name = sprintf "search hit BOTTOM without match for: %s" name
     let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines

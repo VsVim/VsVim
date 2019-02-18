@@ -4115,8 +4115,11 @@ type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) =
 
 type IIncrementalSearch = 
 
-    /// True when a search is occurring
-    abstract InSearch: bool
+    /// The active IIncrementalSearchSession
+    abstract ActiveSession: IIncrementalSearchSession option
+
+    /// True when there is an IIncrementalSearchSession in progress
+    abstract HasActiveSession: bool
 
     /// True when the search is in a paste wait state
     abstract InPasteWait: bool
@@ -4129,6 +4132,9 @@ type IIncrementalSearch =
     abstract CurrentSearchText: string
 
     abstract CreateSession: searchPath: SearchPath -> IIncrementalSearchSession
+
+    /// Cancel the active session if there is one.
+    abstract CancelSession: unit -> unit
 
     [<CLIEvent>]
     abstract SessionCreated: IDelegateEvent<System.EventHandler<IncrementalSearchSessionEventArgs>>

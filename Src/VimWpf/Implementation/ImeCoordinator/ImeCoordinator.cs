@@ -334,7 +334,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
                     return InputMode.Insert;
 
                 case ModeKind.Normal:
-                    if (vimBuffer.IncrementalSearch.InSearch)
+                    if (vimBuffer.IncrementalSearch.HasActiveSession)
                     {
                         // User is in the middle of a '/' or '?' search.
                         return InputMode.Search;

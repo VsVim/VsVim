@@ -27,35 +27,34 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
     do 
         let raiseChanged () = _changed.Trigger this 
 
-        let updateCurrentWithResult result = 
-            _searchSpan <-
-                match result with
-                | SearchResult.Found (_, _, patternSpan, _) -> patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive) |> Some
-                | SearchResult.NotFound _ -> None
-                | SearchResult.Error _ -> None
-
-        // When the search is updated we need to update the result.  Make sure to do so before raising 
-        // the event.  The editor can and will call back into us synchronously and access a stale value
-        // if we don't
-        _search.CurrentSearchUpdated 
+        _search.SessionCreated
         |> Observable.subscribe (fun args ->
+            let session = args.Session
+            let bag = DisposableBag()
 
-            updateCurrentWithResult args.SearchResult
-            raiseChanged())
-        |> _eventHandlers.Add
+            session.SearchEnd
+            |> Observable.subscribe (fun args ->
+                // When the search is updated we need to update the result.  Make sure to do so before raising 
+                // the event.  The editor can and will call back into us synchronously and access a stale value
+                // if we don't
+                _searchSpan <-
+                    match args.SearchResult with
+                    | SearchResult.Found (_, _, patternSpan, _) -> patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                    | SearchResult.NotFound _ -> None
+                    | SearchResult.Cancelled _ -> _searchSpan
+                    | SearchResult.Error _ -> None
 
-        // When the search is completed there is nothing left for us to tag.
-        _search.CurrentSearchCompleted 
-        |> Observable.subscribe (fun result ->
-            _searchSpan <- None
-            raiseChanged())
-        |> _eventHandlers.Add
+                raiseChanged())
+            |> bag.Add
 
-        // When the search is cancelled there is nothing left for us to tag.
-        _search.CurrentSearchCancelled
-        |> Observable.subscribe (fun result ->
-            _searchSpan <- None
-            raiseChanged())
+            // When the search is completed there is nothing left for us to tag.
+            session.SessionComplete
+            |> Observable.subscribe (fun _ -> 
+                _searchSpan <- None    
+                bag.DisposeAll()
+                raiseChanged())
+            |> bag.Add)
+
         |> _eventHandlers.Add
 
         // We need to pay attention to the current IVimBuffer mode.  If it's any visual mode then we don't want
