@@ -457,6 +457,7 @@ and UndoRedoOperations
                 _statusUtil.OnError Resources.Undo_RedoUnexpected
 
     interface IUndoRedoOperations with
+        member x.TextUndoHistory = _textUndoHistory
         member x.InLinkedUndoTransaction = x.InLinkedUndoTransaction
         member x.StatusUtil = _statusUtil
         member x.Close() = x.Close()

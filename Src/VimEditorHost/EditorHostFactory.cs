@@ -15,14 +15,12 @@ namespace Vim.EditorHost
     public sealed partial class EditorHostFactory
     {
         internal static EditorVersion DefaultEditorVersion =>
-#if VS2015
-            EditorVersion.Vs2015;
-#elif VS2017
+#if VSVIM_DEV_2017
             EditorVersion.Vs2017;
-#elif VS2019
+#elif VSVIM_DEV_2019
             EditorVersion.Vs2019;
 #else
-#error Bad version
+#error Unsupported configuration
 #endif
 
         internal static string[] CoreEditorComponents =
@@ -33,6 +31,9 @@ namespace Vim.EditorHost
                 "Microsoft.VisualStudio.Text.Logic.dll",
                 "Microsoft.VisualStudio.Text.UI.dll",
                 "Microsoft.VisualStudio.Text.UI.Wpf.dll",
+#if VSVIM_DEV_2019
+                "Microsoft.VisualStudio.Language.dll",
+#endif
             };
 
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
@@ -75,14 +76,15 @@ namespace Vim.EditorHost
             var editorAssemblyVersion = new Version(vsVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
 
-#if VS2017 || VS2019
-            if (vsVersion.Major >= 15)
-            {
-                AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
-                _exportProviderList.Add(new JoinableTaskContextExportProvider());
-            }
+#if VSVIM_DEV_2017
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
+#elif VSVIM_DEV_2019
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(16, 0));
+#else
+#error Unsupported configuration
 #endif
 
+            _exportProviderList.Add(new JoinableTaskContextExportProvider());
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
         }
 

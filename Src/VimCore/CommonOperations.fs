@@ -222,6 +222,20 @@ type internal CommonOperations
             else
                 _editorOptions.GetNewLineCharacter()
 
+    /// In order for Undo / Redo to function properly there needs to be an ITextView for the ITextBuffer
+    /// accessible in the property bag of the ITextUndoHistory object. In 2017 and before this was added
+    /// during AfterTextBufferChangeUndoPrimitive.Create. In 2019 this stopped happening and hence undo /
+    /// redo is broken. Forcing it to be present here. 
+    /// https://github.com/jaredpar/VsVim/issues/2463
+    member x.EnsureUndoHasView() =
+        match _undoRedoOperations.TextUndoHistory with
+        | None -> ()
+        | Some textUndoHistory -> 
+            let key = typeof<ITextView>
+            let properties = textUndoHistory.Properties
+            if not (PropertyCollectionUtil.ContainsKey key properties) then
+                properties.AddProperty(key, _textView)
+
     // Convert any virtual spaces to real normalized spaces
     member x.FillInVirtualSpace () =
         if x.CaretVirtualPoint.IsInVirtualSpace then
@@ -1982,6 +1996,7 @@ type internal CommonOperations
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
     member x.Undo count = 
+        x.EnsureUndoHasView()
         _undoRedoOperations.Undo count
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
@@ -1989,6 +2004,7 @@ type internal CommonOperations
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the redo completes
     member x.Redo count = 
+        x.EnsureUndoHasView()
         _undoRedoOperations.Redo count
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
