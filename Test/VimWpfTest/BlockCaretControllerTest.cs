@@ -26,7 +26,7 @@ namespace Vim.UI.Wpf.UnitTest
             _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
             _localSettings = MockObjectFactory.CreateLocalSettings(global: _settings.Object, factory: _factory);
             _incrementalSearch = _factory.Create<IIncrementalSearch>();
-            _incrementalSearch.SetupGet(x => x.InSearch).Returns(false);
+            _incrementalSearch.SetupGet(x => x.HasActiveSession).Returns(false);
             _buffer = _factory.Create<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
             _buffer.SetupGet(x => x.TextView).Returns(_textView.Object);
@@ -115,7 +115,7 @@ namespace Vim.UI.Wpf.UnitTest
             var mode = new Mock<INormalMode>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _incrementalSearch.SetupGet(x => x.InSearch).Returns(true);
+            _incrementalSearch.SetupGet(x => x.HasActiveSession).Returns(true);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
             _controller.Update();
@@ -171,7 +171,7 @@ namespace Vim.UI.Wpf.UnitTest
         [Fact]
         public void VisualMode_InIncrementalSearch()
         {
-            _incrementalSearch.SetupGet(x => x.InSearch).Returns(true);
+            _incrementalSearch.SetupGet(x => x.HasActiveSession).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();

@@ -1426,11 +1426,29 @@ namespace Vim.UnitTest
         public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchPath path = null, bool enter = true)
         {
             path = path ?? SearchPath.Forward;
-            var result = search.Begin(path).Run(text);
+            var result = search.CreateSession(path).Start().Run(text);
             return enter
                 ? result.Run(VimKey.Enter)
                 : result;
         }
+
+        public static void OnSearchStart(this IIncrementalSearch search, Action<SearchData> action)
+        {
+            search.SessionCreated += (_, args) =>
+            {
+                args.Session.SearchStart += (_2, args2) => action(args2.SearchData);
+            };
+        }
+
+        public static void OnSearchEnd(this IIncrementalSearch search, Action<SearchResult> action)
+        {
+            search.SessionCreated += (_, args) =>
+            {
+                args.Session.SearchEnd += (_2, args2) => action(args2.SearchResult);
+            };
+        }
+
+        public static BindData<SearchResult> Begin(this IIncrementalSearch search, SearchPath searchPath) => search.CreateSession(searchPath).Start();
 
         #endregion
 

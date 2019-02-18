@@ -45,6 +45,9 @@ type internal IncrementalSearchSession
         | Some session -> session.InPasteWait
         | None -> false
 
+    [<CLIEvent>]
+    member x.SessionComplete = _sessionComplete.Publish
+
     /// There is a big gap between the behavior and documentation of key mapping for an 
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
@@ -118,7 +121,15 @@ type internal IncrementalSearchSession
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
-    member private x.RunCompleted() =
+    member private x.RunCompleted startPoint =
+        let vimData = _vimBufferData.Vim.VimData
+        if StringUtil.IsNullOrEmpty _searchData.Pattern then
+            // When the user simply hits Enter on an empty incremental search then
+            // we should be re-using the 'LastSearch' value.
+            x.RunSearch startPoint vimData.LastSearchData.Pattern
+
+        vimData.LastSearchData <- _searchData
+
         // TODO: in the async case this should wait for the completion 
         _isActive <- false
         _sessionComplete.Trigger x (EventArgs.Empty)
@@ -139,7 +150,7 @@ type internal IncrementalSearchSession
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
             x.RunSearch searchPoint searchText
             searchPoint)
-        member x.Completed _ _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted())
+        member x.Completed searchPoint _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted searchPoint)
         member x.Cancelled _ = x.RunActive () (fun () -> x.Cancel())
 
     interface IIncrementalSearchSession with
@@ -203,6 +214,15 @@ type internal IncrementalSearch
         Debug.Assert(Option.isNone _session)
 
         let session = IncrementalSearchSession(_vimBufferData, _operations, searchPath, _globalSettings.WrapScan)
+
+        // When the session completes need to clear out the active info if this is still 
+        // the active session.
+        session.SessionComplete
+        |> Observable.add (fun _ -> 
+            match _session with
+            | Some activeSession when activeSession.Key = session.Key -> _session <- None
+            | _ -> ())
+
         _session <- Some session
         _sessionCreated.Trigger x (IncrementalSearchSessionEventArgs(session))
         session

@@ -136,21 +136,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// When in a need more state, process everything
-        /// </summary>
-        [WpfFact]
-        public void CanProcess4()
-        {
-            Create(s_defaultLines);
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Forward))
-                .Returns(VimUtil.CreateBindData<SearchResult>());
-            _mode.Process(KeyInputUtil.CharToKeyInput('/'));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
-        }
-
-        /// <summary>
         /// Ensure that all of the core characters are valid Normal Mode commands.  They all should
         /// be 
         /// </summary>
@@ -934,53 +919,6 @@ namespace Vim.UnitTest
 
         #region Incremental Search
 
-        /// <summary>
-        /// Make sure the incremental search begins when the '/' is typed
-        /// </summary>
-        [WpfFact]
-        public void IncrementalSearch_BeginOnForwardSearchChar()
-        {
-            Create("foo bar");
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Forward))
-                .Returns(VimUtil.CreateBindData<SearchResult>())
-                .Verifiable();
-            _mode.Process('/');
-            _incrementalSearch.Verify();
-        }
-
-        /// <summary>
-        /// Make sure the incremental search beigns when the '?' is typed
-        /// </summary>
-        [WpfFact]
-        public void IncrementalSearch_BeginOnBackwardSearchChar()
-        {
-            Create("foo bar");
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Backward))
-                .Returns(VimUtil.CreateBindData<SearchResult>())
-                .Verifiable();
-            _mode.Process('?');
-            _incrementalSearch.Verify();
-        }
-
-        /// <summary>
-        /// Once incremental search begins, make sure it handles any keystroke
-        /// </summary>
-        [WpfFact]
-        public void IncrementalSearch_HandlesAnyKey()
-        {
-            Create("foo bar");
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Forward))
-                .Returns(VimUtil.CreateBindData<SearchResult>())
-                .Verifiable();
-            _mode.Process('/');
-            var ki = KeyInputUtil.CharToKeyInput((char)7);
-            _mode.Process(ki);
-            _incrementalSearch.Verify();
-        }
-
         #endregion
 
         #region Next / Previous Word
@@ -1249,17 +1187,6 @@ namespace Vim.UnitTest
         }
 
         [WpfFact]
-        public void KeyRemapMode_CommandInIncrementalSearch()
-        {
-            Create("foobar");
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Forward))
-                .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
-            _mode.Process('/');
-            Assert.Equal(KeyRemapMode.Command, _mode.KeyRemapMode);
-        }
-
-        [WpfFact]
         public void KeyRemapMode_OperatorPendingAfterY()
         {
             Create("");
@@ -1302,17 +1229,6 @@ namespace Vim.UnitTest
         {
             Create("foobar");
             Assert.False(_mode.CommandRunner.IsWaitingForMoreInput);
-        }
-
-        [WpfFact]
-        public void IsWaitingForInput2()
-        {
-            Create("foobar");
-            _incrementalSearch
-                .Setup(x => x.Begin(SearchPath.Forward))
-                .Returns(VimUtil.CreateBindData<SearchResult>());
-            _mode.Process('/');
-            Assert.True(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [WpfFact]

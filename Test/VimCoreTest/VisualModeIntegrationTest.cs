@@ -2883,7 +2883,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Esc>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
             }
 
@@ -2896,7 +2896,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Enter>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 

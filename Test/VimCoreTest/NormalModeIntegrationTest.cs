@@ -1830,7 +1830,7 @@ namespace Vim.UnitTest
                 Create("cat", "");
                 _vimBuffer.ProcessNotation("y/<Esc>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
             }
         }
 
@@ -4153,7 +4153,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat dog bear");
                     _vimBuffer.Process("/DOG");
-                    Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.IsNotFound);
+                    Assert.True(_vimBuffer.IncrementalSearch.ActiveSession.Value.SearchResult.Value.IsNotFound);
                     _vimBuffer.Process(@"\c", enter: true);
                     Assert.Equal(4, _textView.GetCaretPoint().Position);
                 }
@@ -4645,6 +4645,37 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("/big/;/dog", enter: true);
                     Assert.Equal(8, _textView.GetCaretPoint().Position);
                     Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                }
+            }
+
+            public sealed class MiscTest : IncrementalSearchTest
+            {
+                [WpfFact]
+                public void KeyRemapMode_CommandInIncrementalSearch()
+                {
+                    Create("foobar");
+                    _vimBuffer.Process('/');
+                    Assert.Equal(KeyRemapMode.Command, _normalMode.KeyRemapMode);
+                }
+
+                [WpfFact]
+                public void IsWaitingForInput2()
+                {
+                    Create("foobar");
+                    _vimBuffer.Process('/');
+                    Assert.True(_normalMode.CommandRunner.IsWaitingForMoreInput);
+                }
+
+                /// <summary>
+                /// When in a need more state, process everything
+                /// </summary>
+                [WpfFact]
+                public void CanProcess4()
+                {
+                    Create("cat dog");
+                    _vimBuffer.Process(KeyInputUtil.CharToKeyInput('/'));
+                    Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
+                    Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
                 }
             }
         }
