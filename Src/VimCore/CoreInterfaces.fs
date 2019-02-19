@@ -4080,9 +4080,6 @@ type IIncrementalSearchSession =
     /// Key that uniquely identifies this session
     abstract Key: obj
 
-    /// True when a search is occurring
-    abstract InSearch: bool
-
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract SearchData: SearchData 

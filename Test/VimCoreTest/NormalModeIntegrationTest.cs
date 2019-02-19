@@ -4648,7 +4648,7 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class MiscTest : IncrementalSearchTest
+            public sealed class IncrementalMiscTest : IncrementalSearchTest
             {
                 [WpfFact]
                 public void KeyRemapMode_CommandInIncrementalSearch()
