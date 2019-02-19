@@ -141,6 +141,11 @@ namespace Vim.VisualStudio.UnitTest
                 switch (name)
                 {
                     case "System":
+                    case "System.Collections.Immutable":
+                    case "Microsoft.CodeAnalysis":
+                    case "Microsoft.CodeAnalysis.CSharp":
+                    case "Microsoft.CodeAnalysis.CSharp.Scripting":
+                    case "Microsoft.CodeAnalysis.Scripting":
                     case "mscorlib":
                     case "PresentationCore":
                     case "PresentationFramework":
