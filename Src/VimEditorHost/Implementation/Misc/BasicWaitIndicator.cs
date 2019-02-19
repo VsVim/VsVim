@@ -1,5 +1,4 @@
-﻿#if VS2017 || VS2019
-using System;
+﻿using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Language.Intellisense.Utilities;
@@ -73,4 +72,3 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
-#endif

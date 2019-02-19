@@ -5,7 +5,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.UnitTest.Utils</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
   </PropertyGroup>
   <ItemGroup>

@@ -55,6 +55,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\Supported Features.md = Documentation\Supported Features.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest", "Test\VsVimTest\VsVimTest.csproj", "{1B6583BD-A59E-44EE-98DA-29B18E99443B}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{003af6b2-eb30-4494-b89f-15e1390fe47d}*SharedItemsImports = 13
@@ -232,6 +234,18 @@ Global
 		{6819AD26-901E-4261-95AA-9913D435296A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{6819AD26-901E-4261-95AA-9913D435296A}.Release|x86.ActiveCfg = Release|Any CPU
 		{6819AD26-901E-4261-95AA-9913D435296A}.Release|x86.Build.0 = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

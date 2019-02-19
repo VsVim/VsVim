@@ -227,6 +227,8 @@ type ILinkedUndoTransaction =
 /// Wraps all of the undo and redo operations
 type IUndoRedoOperations = 
 
+    abstract TextUndoHistory: ITextUndoHistory option
+
     /// Is there an open linked undo transaction
     abstract InLinkedUndoTransaction: bool
 
