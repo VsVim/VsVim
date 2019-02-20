@@ -46,6 +46,8 @@ namespace Vim.UnitTest
         /// </summary>
         private static readonly Dictionary<int, VimEditorHost> s_cachedVimEditorHostMap = new Dictionary<int, VimEditorHost>();
 
+        public VimSynchronizationContext VimSynchronizationContext { get; }
+
         public CompositionContainer CompositionContainer
         {
             get { return _vimEditorHost.CompositionContainer; }
@@ -212,9 +214,7 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.VimErrorDetector; }
         }
 
-        public TestableSynchronizationContext TestableSynchronizationContext {get; private set;}
-
-        protected VimTestBase()
+        protected VimTestBase(bool isDispatchEnabled = false)
         {
             // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
             // they will throw a NullReferenceException.  Create one here to ensure the unit tests successfully
@@ -256,7 +256,7 @@ namespace Vim.UnitTest
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
 
-            TestableSynchronizationContext = new TestableSynchronizationContext();
+            VimSynchronizationContext = new VimSynchronizationContext(isDispatchEnabled);
         }
 
         public virtual void Dispose()
@@ -332,8 +332,7 @@ namespace Vim.UnitTest
 
             VariableMap.Clear();
             VimErrorDetector.Clear();
-            TestableSynchronizationContext?.Dispose();
-            TestableSynchronizationContext = null;
+            VimSynchronizationContext.Dispose();
         }
 
         private void CheckForErrors()
@@ -344,12 +343,7 @@ namespace Vim.UnitTest
                 throw new Exception(message);
             }
 
-            if (TestableSynchronizationContext.PostedCallbackCount != 0)
-            {
-                throw new Exception("Posted items that did not finish");
-            }
-
-            if (SynchronizationContext.Current?.GetType() != typeof(TestableSynchronizationContext))
+            if (SynchronizationContext.Current?.GetType() != typeof(VimSynchronizationContext))
             {
                 throw new Exception("Invalid SynchronizationContext on test dispose");
             }

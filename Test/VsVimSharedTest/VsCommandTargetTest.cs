@@ -115,6 +115,7 @@ namespace Vim.VisualStudio.UnitTest
 
         internal void RunExec(EditCommand editCommand)
         {
+            VimSynchronizationContext.IsDispatchEnabled = true;
             var oleCommandData = OleCommandData.Empty;
             try
             {
@@ -126,7 +127,7 @@ namespace Vim.VisualStudio.UnitTest
                 oleCommandData.Dispose();
             }
 
-            TestableSynchronizationContext.RunAll();
+            VimSynchronizationContext.DoEvents();
         }
 
         /// <summary>

@@ -104,6 +104,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void EndOfLineSelection()
             {
+                VimSynchronizationContext.IsDispatchEnabled = true;
                 var vimBuffer = CreateVimBuffer("cat", "dog", "tree");
                 vimBuffer.GlobalSettings.VirtualEdit = "";
                 var textBuffer = vimBuffer.TextBuffer;
@@ -111,7 +112,7 @@ namespace Vim.UnitTest
                 var selection = vimBuffer.TextView.Selection;
                 var span = textBuffer.GetLineRange(0);
                 selection.Select(span.ExtentIncludingLineBreak);
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(span.ExtentIncludingLineBreak, selection.StreamSelectionSpan.SnapshotSpan);
                 Assert.Equal(textSnapshot.Version.VersionNumber, textBuffer.CurrentSnapshot.Version.VersionNumber);
             }

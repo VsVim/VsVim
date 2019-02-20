@@ -83,6 +83,7 @@ namespace Vim.VisualStudio.UnitTest
 
             public SettingsTest()
             {
+                VimSynchronizationContext.IsDispatchEnabled = true;
                 _vimBuffer = CreateVimBuffer("hello world");
                 _textView = _vimBuffer.TextView;
                 _vimApplicationSettings.SetupGet(x => x.UseEditorDefaults).Returns(true);
@@ -106,7 +107,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -119,7 +120,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -132,7 +133,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Dispatcher.CurrentDispatcher.DoEvents();
                 _synchronizer.Verify();
             }
@@ -147,7 +148,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
                 _textView.Close();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
             }
 
             /// <summary>
@@ -166,7 +167,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
             }
 
             [WpfFact]
@@ -182,7 +183,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
             }
 
             [WpfFact]
@@ -198,7 +199,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
             }
         }
     }

@@ -23,6 +23,11 @@ namespace Vim.UnitTest
 
         public sealed class CreateVimBufferTest : VimBufferFactoryIntegrationTest
         {
+            public CreateVimBufferTest()
+            {
+                VimSynchronizationContext.IsDispatchEnabled = true;
+            }
+
             /// <summary>
             /// Ensure that CreateVimBuffer actually creates an IVimBuffer instance
             /// </summary>
@@ -74,6 +79,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TextViewDelayInitialize()
             {
+                VimSynchronizationContext.IsDispatchEnabled = true;
                 var textBuffer = CreateTextBuffer("");
                 var textView = MockObjectFactory.CreateTextView(textBuffer, factory: _factory);
                 textView.SetupGet(x => x.TextViewLines).Returns((ITextViewLineCollection)null);
@@ -88,8 +94,7 @@ namespace Vim.UnitTest
                 lines.SetupGet(x => x.IsValid).Returns(true);
                 textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                VimSynchronizationContext.DoEvents();
 
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
@@ -103,6 +108,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void TextViewInLayoutInsideLayoutEvent()
             {
+                VimSynchronizationContext.IsDispatchEnabled = true;
                 var textBuffer = CreateTextBuffer("");
                 var vimTextBuffer = _vimBufferFactory.CreateVimTextBuffer(textBuffer, _vim);
 
@@ -127,8 +133,7 @@ namespace Vim.UnitTest
                 textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.SetupGet(x => x.InLayout).Returns(false);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
 
@@ -151,7 +156,7 @@ namespace Vim.UnitTest
                 textView.SetupGet(x => x.IsClosed).Returns(true);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
             }
 
             /// <summary>
@@ -190,10 +195,9 @@ namespace Vim.UnitTest
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
 
-                Assert.Equal(1, TestableSynchronizationContext.PostedCallbackCount);
                 textView.SetupGet(x => x.IsClosed).Returns(true);
                 textView.SetupGet(x => x.TextViewLines).Throws(new Exception());
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
             }
         }

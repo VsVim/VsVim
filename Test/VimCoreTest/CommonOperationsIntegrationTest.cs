@@ -36,6 +36,7 @@ namespace Vim.UnitTest
 
             protected ScrollOffsetTest()
             {
+                VimSynchronizationContext.IsDispatchEnabled = true;
                 Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
@@ -44,14 +45,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }

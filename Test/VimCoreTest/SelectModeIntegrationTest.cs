@@ -38,20 +38,25 @@ namespace Vim.UnitTest
 
         protected void EnterSelect(int start, int length)
         {
+            VimSynchronizationContext.IsDispatchEnabled = true;
             var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, start, length);
             _textView.SelectAndMoveCaret(span);
-            TestableSynchronizationContext.RunAll();
+            VimSynchronizationContext.DoEvents();
             Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
         }
 
         public sealed class Enter : SelectModeIntegrationTest
         {
+            public Enter()
+            {
+                VimSynchronizationContext.IsDispatchEnabled = true;
+            }
             [WpfFact]
             public void SelectOfText()
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
@@ -63,11 +68,10 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 _textSelection.Select(0, 5);
-                Assert.False(TestableSynchronizationContext.IsEmpty);
-                TestableSynchronizationContext.RunAll();
+                VimSynchronizationContext.DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
