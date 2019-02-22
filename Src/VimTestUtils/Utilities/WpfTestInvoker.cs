@@ -35,7 +35,6 @@ namespace Vim.UnitTest.Utilities
 
         protected override object CallTestMethod(object testClassInstance)
         {
-            SharedData.MonitorActiveAsyncTestSyncContext();
             return base.CallTestMethod(testClassInstance);
         }
     }

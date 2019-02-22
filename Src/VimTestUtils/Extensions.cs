@@ -17,6 +17,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using System.Threading;
 using System.Threading.Tasks;
 using Vim.UnitTest.Utilities;
+using Xunit.Sdk;
 
 namespace Vim.UnitTest
 {
@@ -1607,6 +1608,30 @@ namespace Vim.UnitTest
             public void Dispose()
             {
                 _semaphore.Release();
+            }
+        }
+
+        #endregion
+
+        #region SynchronizationContext
+
+        public static SynchronizationContext GetEffectiveSynchronizationContext(this SynchronizationContext context)
+        {
+            if (context is AsyncTestSyncContext asyncTestSyncContext)
+            {
+                SynchronizationContext innerSynchronizationContext = null;
+                asyncTestSyncContext.Send(
+                    _ =>
+                    {
+                        innerSynchronizationContext = SynchronizationContext.Current;
+                    },
+                    null);
+
+                return innerSynchronizationContext;
+            }
+            else
+            {
+                return context;
             }
         }
 

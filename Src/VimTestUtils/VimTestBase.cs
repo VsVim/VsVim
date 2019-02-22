@@ -224,7 +224,7 @@ namespace Vim.UnitTest
                 new Application();
             }
 
-            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            if (!StaContext.Default.IsRunningInScheduler)
             {
                 throw new Exception($"Need to apply {nameof(WpfFactAttribute)} to this test case");
             }
