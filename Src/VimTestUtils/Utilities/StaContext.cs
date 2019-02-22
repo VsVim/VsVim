@@ -60,6 +60,9 @@ namespace Vim.UnitTest.Utilities
                 Dispatcher = dispatcher;
                 DispatcherSynchronizationContext = syncContext;
             }
+
+            // Work around the WeakEventTable Shutdown race conditions
+            AppContext.SetSwitch("Switch.MS.Internal.DoNotInvokeInWeakEventTableShutdownListener", isEnabled: true);
         }
 
         /// <summary>
