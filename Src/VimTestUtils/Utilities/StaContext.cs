@@ -25,7 +25,7 @@ namespace Vim.UnitTest.Utilities
         public Thread StaThread { get; }
         public Dispatcher Dispatcher { get; }
         public DispatcherSynchronizationContext DispatcherSynchronizationContext { get; }
-        public bool IsRunningInScheduler => StaThread.ManagedThreadId == Thread.CurrentThread.ManagedThreadId;
+        public bool IsRunningInThread => StaThread.ManagedThreadId == Thread.CurrentThread.ManagedThreadId;
 
         public StaContext()
         {

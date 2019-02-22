@@ -128,9 +128,8 @@ namespace Vim.UnitTest
         [WpfFact]
         public void Start_LineShouldSelectWholeLine()
         {
-            VimSynchronizationContext.IsDispatchEnabled = true;
             Create(VisualKind.Line, "foo", "bar");
-            VimSynchronizationContext.DoEvents();
+            Dispatcher.DoEvents();
             Assert.Equal(_textView.TextBuffer.GetLineFromLineNumber(0).Start, _textView.Selection.Start.Position);
             Assert.Equal(_textView.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _textView.Selection.End.Position);
         }

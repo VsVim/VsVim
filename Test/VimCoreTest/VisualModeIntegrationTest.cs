@@ -66,11 +66,10 @@ namespace Vim.UnitTest
 
         protected void EnterMode(SnapshotSpan span)
         {
-            VimSynchronizationContext.IsDispatchEnabled = true;
             var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
-            VimSynchronizationContext.DoEvents();
+            Dispatcher.DoEvents();
         }
 
         protected void EnterMode(ModeKind kind, SnapshotSpan span)
@@ -86,22 +85,20 @@ namespace Vim.UnitTest
         /// <param name="span"></param>
         protected void SwitchEnterMode(ModeKind kind, SnapshotSpan span)
         {
-            VimSynchronizationContext.IsDispatchEnabled = true;
             _vimBuffer.SwitchMode(kind, ModeArgument.None);
             var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
             // skipping check: context.IsEmpty == false
-            VimSynchronizationContext.DoEvents();
+            Dispatcher.DoEvents();
         }
 
         protected void EnterBlock(BlockSpan blockSpan)
         {
-            VimSynchronizationContext.IsDispatchEnabled = true;
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
             visualSelection.SelectAndMoveCaret(_textView);
-            VimSynchronizationContext.DoEvents();
+            Dispatcher.DoEvents();
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
@@ -2564,11 +2561,6 @@ namespace Vim.UnitTest
 
         public sealed class MiscAllTest : VisualModeIntegrationTest
         {
-            public MiscAllTest()
-            {
-                VimSynchronizationContext.IsDispatchEnabled = true;
-            }
-
             /// <summary>
             /// When changing a line wise selection one blank line should be left remaining in the ITextBuffer
             /// </summary>
@@ -2713,7 +2705,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 0),
                     false);
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
@@ -2729,7 +2721,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 1),
                     false);
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 
@@ -2744,7 +2736,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(_textView.GetLine(1).Extent, false);
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('y'));
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
@@ -2758,7 +2750,7 @@ namespace Vim.UnitTest
                 EnterMode(_textView.GetLine(0).Extent);
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 _vimBuffer.Process("ly");
                 Assert.Equal("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
@@ -2919,7 +2911,7 @@ namespace Vim.UnitTest
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
                 var visualSelection = VisualSelection.CreateForward(visualSpan);
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -2934,7 +2926,7 @@ namespace Vim.UnitTest
                 var lineRange = _textView.GetLineRange(0, 1);
                 var visualSelection = VisualSelection.NewLine(lineRange, SearchPath.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -2949,7 +2941,7 @@ namespace Vim.UnitTest
                 var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
                 var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
                 _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4));
             }
 

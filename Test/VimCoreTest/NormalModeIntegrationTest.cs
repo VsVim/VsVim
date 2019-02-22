@@ -6338,10 +6338,9 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void UpMovesCaret()
                 {
-                    VimSynchronizationContext.IsDispatchEnabled = true;
                     _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(1).Start, 0.0, ViewRelativePosition.Top);
                     _textView.MoveCaretToLine(2);
-                    VimSynchronizationContext.DoEvents();
+                    Dispatcher.DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                     Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
@@ -6353,9 +6352,8 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void UpMovesCaretWithoutScroll()
                 {
-                    VimSynchronizationContext.IsDispatchEnabled = true;
                     _textView.MoveCaretToLine(2);
-                    VimSynchronizationContext.DoEvents();
+                    Dispatcher.DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                 }
@@ -6483,11 +6481,10 @@ namespace Vim.UnitTest
                 [WpfFact]
                 public void MoveToHomeScrollOffsetAtTop()
                 {
-                    VimSynchronizationContext.IsDispatchEnabled = true;
                     _globalSettings.ScrollOffset = 2;
                     var caretLine = 4;
                     _textView.MoveCaretToLine(caretLine);
-                    VimSynchronizationContext.DoEvents();
+                    Dispatcher.DoEvents();
                     var topLine = 0;
                     PutLineAtTop(topLine);
                     _vimBuffer.ProcessNotation("H");
@@ -6577,7 +6574,6 @@ namespace Vim.UnitTest
 
             public ScrollOffsetTest()
             {
-                VimSynchronizationContext.IsDispatchEnabled = true;
                 Create(s_lines);
                 _lastLineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.SetVisibleLineCount(5);
@@ -6586,14 +6582,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
@@ -6677,7 +6673,7 @@ namespace Vim.UnitTest
             {
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(4);
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 AssertFirstLine(2);
             }
 
@@ -6689,7 +6685,7 @@ namespace Vim.UnitTest
                 var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
                 _textView.MoveCaretToLine(lineNumber);
-                VimSynchronizationContext.DoEvents();
+                Dispatcher.DoEvents();
                 _vimBuffer.ProcessNotation("<c-d>");
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }
