@@ -13,6 +13,7 @@ open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Collections.Generic
+open System.Threading.Tasks
 open Vim.Interpreter
 open System
 
@@ -3570,6 +3571,8 @@ and BindData<'T> = {
 
 } with
 
+    member x.CreateBindResult() = BindResult.NeedMoreInput x
+
     /// Used for BindData where there can only be a complete result for a given 
     /// KeyInput.
     static member CreateForKeyInput keyRemapMode valueFunc =
@@ -4080,6 +4083,13 @@ type IIncrementalSearchSession =
     /// Key that uniquely identifies this session
     abstract Key: obj
 
+    /// Whether or not the search has started
+    abstract IsStarted: bool
+
+    /// Whether or not the session is complete. True when the session has finished the search
+    /// or was cancelled.
+    abstract IsCompleted: bool
+
     /// When in the middle of a search this will return the SearchData for 
     /// the search
     abstract SearchData: SearchData 
@@ -4093,8 +4103,12 @@ type IIncrementalSearchSession =
     /// Reset the search to the specified text
     abstract ResetSearch: searchText: string -> unit
 
-    /// Cancel an incremental search which is currently in progress
+    /// Cancel the session without completing
     abstract Cancel: unit -> unit
+
+    /// This will resolve to SearchResult for the current value of SearchData once the
+    /// search is complete
+    abstract GetSearchResultAsync: unit -> Task<SearchResult>
 
     [<CLIEvent>]
     abstract SearchStart: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>

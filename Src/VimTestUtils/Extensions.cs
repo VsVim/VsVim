@@ -18,6 +18,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Vim.UnitTest.Utilities;
 using Xunit.Sdk;
+using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace Vim.UnitTest
 {
@@ -1175,7 +1177,7 @@ namespace Vim.UnitTest
                 var size = new Size(oldSize.Width, height);
                 wpfTextView.VisualElement.RenderSize = size;
                 ForceLayout(wpfTextView);
-                
+
                 var startLine = wpfTextView.TextViewLines.FirstVisibleLine.Start.GetContainingLine();
                 var lastLine = wpfTextView.TextViewLines.LastVisibleLine.Start.GetContainingLine();
                 var visibleCount = (lastLine.LineNumber - startLine.LineNumber) + 1;
@@ -1350,44 +1352,56 @@ namespace Vim.UnitTest
 
         #region BindResult<T>
 
-        public static BindResult<T> Run<T>(this BindResult<T> result, string text)
+        public static BindResult<T> Run<T>(this BindResult<T> result, KeyInput keyInput)
         {
-            for (var i = 0; i < text.Length; i++)
+            Assert.True(result.IsNeedMoreInput);
+            return result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
+        }
+
+        public static BindResult<T> Run<T>(this BindResult<T> result, VimKey vimKey) =>
+            Run(result, KeyInputUtil.VimKeyToKeyInput(vimKey));
+
+        public static BindResult<T> Run<T>(this BindResult<T> result, params KeyInput[] keyInputs)
+        {
+            foreach (var keyInput in keyInputs)
             {
-                var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
-                Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
+                result = result.Run(keyInput);
             }
 
             return result;
         }
 
-        public static BindResult<T> Run<T>(this BindResult<T> result, params VimKey[] keys)
-        {
-            foreach (var cur in keys)
-            {
-                var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
-                Assert.True(result.IsNeedMoreInput);
-                result = result.AsNeedMoreInput().BindData.BindFunction.Invoke(keyInput);
-            }
-            return result;
-        }
+        public static BindResult<T> Run<T>(this BindResult<T> result, params VimKey[] vimKeys) =>
+            Run(result, VimUtil.ConvertVimKeysToKeyInput(vimKeys));
+
+        public static BindResult<T> Run<T>(this BindResult<T> result, string text, bool enter = false) =>
+            Run(result, VimUtil.ConvertTextToKeyInput(text, enter));
 
         #endregion
 
         #region BindData<T>
+        public static BindResult<T> Run<T>(this BindData<T> data, KeyInput keyInput) =>
+            data.BindFunction.Invoke(keyInput);
 
-        public static BindResult<T> Run<T>(this BindData<T> data, string text)
+        public static BindResult<T> Run<T>(this BindData<T> data, VimKey vimKey) =>
+            Run(data, KeyInputUtil.VimKeyToKeyInput(vimKey));
+
+        public static BindResult<T> Run<T>(this BindData<T> data, params KeyInput[] keyInputs)
         {
-            var keyInput = KeyInputUtil.CharToKeyInput(text[0]);
-            return data.BindFunction.Invoke(keyInput).Run(text.Substring(1));
+            BindResult<T> result = null;
+            foreach (var keyInput in keyInputs)
+            {
+                result = result.Run(keyInput);
+            }
+
+            return result;
         }
 
-        public static BindResult<T> Run<T>(this BindData<T> data, params VimKey[] keys)
-        {
-            var result = data.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(keys[0]));
-            return result.Run(keys.Skip(1).ToArray());
-        }
+        public static BindResult<T> Run<T>(this BindData<T> data, params VimKey[] vimKeys) =>
+            Run(data, VimUtil.ConvertVimKeysToKeyInput(vimKeys));
+
+        public static BindResult<T> Run<T>(this BindData<T> data, string text, bool enter = false) =>
+            Run(data, VimUtil.ConvertTextToKeyInput(text, enter));
 
         #endregion
 
@@ -1421,16 +1435,51 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region IIncrementalSearchSession
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearchSession session, params KeyInput[] keyInputs)
+        {
+            // Even though the Enter key will force the completion of the search on one branch there
+            // will still be messages that need to be pumped.
+            var result = session.Start().CreateBindResult();
+            foreach (var keyInput in keyInputs)
+            {
+                result = result.Run(keyInput);
+                await session.GetSearchResultAsync();
+            }
+
+            return result;
+        }
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearchSession session, params VimKey[] vimKeys) =>
+            await DoSearchAsync(session, VimUtil.ConvertVimKeysToKeyInput(vimKeys));
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearchSession session, string text, bool enter = true) =>
+            await DoSearchAsync(session, VimUtil.ConvertTextToKeyInput(text, enter));
+
+        #endregion
+
         #region IIncrementalSearch
 
-        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchPath path = null, bool enter = true)
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, SearchPath searchPath, params KeyInput[] keyInputs)
         {
-            path = path ?? SearchPath.Forward;
-            var result = search.CreateSession(path).Start().Run(text);
-            return enter
-                ? result.Run(VimKey.Enter)
-                : result;
+            var session = search.CreateSession(searchPath);
+            return await session.DoSearchAsync(keyInputs);
         }
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, params KeyInput[] keyInputs) =>
+            await DoSearchAsync(search, SearchPath.Forward, keyInputs);
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, string text, bool enter = true) =>
+            await DoSearchAsync(search, SearchPath.Forward, VimUtil.ConvertTextToKeyInput(text, enter));
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, SearchPath searchPath, string text, bool enter = true) =>
+            await DoSearchAsync(search, searchPath, VimUtil.ConvertTextToKeyInput(text, enter));
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, params VimKey[] vimKeys) =>
+            await DoSearchAsync(search, SearchPath.Forward, VimUtil.ConvertVimKeysToKeyInput(vimKeys));
+
+        public static async Task<BindResult<SearchResult>> DoSearchAsync(this IIncrementalSearch search, SearchPath searchPath, params VimKey[] vimKeys) =>
+            await DoSearchAsync(search, searchPath, VimUtil.ConvertVimKeysToKeyInput(vimKeys));
 
         public static void OnSearchStart(this IIncrementalSearch search, Action<SearchData> action)
         {
@@ -1447,8 +1496,6 @@ namespace Vim.UnitTest
                 args.Session.SearchEnd += (_2, args2) => action(args2.SearchResult);
             };
         }
-
-        public static BindData<SearchResult> Begin(this IIncrementalSearch search, SearchPath searchPath) => search.CreateSession(searchPath).Start();
 
         #endregion
 

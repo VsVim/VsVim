@@ -54,7 +54,7 @@ namespace Vim.UnitTest
         public void GetTags_AfterSearchCompleted()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog");
+            _search.DoSearchAsync("dog");
             Assert.Empty(GetTags());
         }
 
@@ -65,7 +65,7 @@ namespace Vim.UnitTest
         public void GetTags_InSearchWithMatch()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog", enter: false);
+            _search.DoSearchAsync("dog", enter: false);
             Assert.Equal("dog", GetTags().Single().Span.GetText());
         }
 
@@ -78,7 +78,7 @@ namespace Vim.UnitTest
         {
             Create("dog cat bar");
             _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-            _search.DoSearch("dog", enter: false);
+            _search.DoSearchAsync("dog", enter: false);
             Assert.Empty(GetTags());
         }
 
@@ -89,7 +89,7 @@ namespace Vim.UnitTest
         public void GetTags_NoneIfDisabled()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog", enter: false);
+            _search.DoSearchAsync("dog", enter: false);
             _globalSettings.IncrementalSearch = false;
             Assert.Empty(GetTags());
         }

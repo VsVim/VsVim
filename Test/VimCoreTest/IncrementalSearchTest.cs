@@ -5,6 +5,8 @@ using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Microsoft.VisualStudio.Text;
+using System.Windows.Threading;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -22,6 +24,8 @@ namespace Vim.UnitTest
 
         private void Create(params string[] lines)
         {
+            VimSynchronizationContext.IsDispatchEnabled = true;
+
             _vimHost = (MockVimHost)Vim.VimHost;
             _textView = CreateTextView(lines);
             _globalSettings = Vim.GlobalSettings;
@@ -42,36 +46,42 @@ namespace Vim.UnitTest
             _search = _searchRaw;
         }
 
-        private void ProcessWithEnter(string value)
+        private async Task ProcessWithEnter(string value)
         {
-            var beginData = _search.CreateSession(SearchPath.Forward).Start();
-            var result = string.IsNullOrEmpty(value)
-                ? beginData.Run(VimKey.Enter)
-                : beginData.Run(value).Run(VimKey.Enter);
-            Assert.True(result.IsComplete);
+            var keyInputs = string.IsNullOrEmpty(value)
+                ? new[] { KeyInputUtil.EnterKey }
+                : VimUtil.ConvertTextToKeyInput(value, enter: true);
+            await _search.DoSearchAsync(keyInputs);
         }
 
         public sealed class RunSearchTest : IncrementalSearchTest
         {
+            public RunSearchTest()
+            {
+                VimSynchronizationContext.IsDispatchEnabled = true;
+            }
+
             /// <summary>
             /// Should continue to need more until Enter or Escape is processed
             /// </summary>
             [WpfFact]
-            public void NeedMoreUntilEndKey()
+            public async Task NeedMoreUntilEndKey()
             {
                 Create("foo bar");
                 var data = new SearchData("b", SearchOffsetData.None, SearchKind.ForwardWithWrap, s_options);
-                Assert.True(_search.CreateSession(SearchPath.Forward).Start().Run("b").IsNeedMoreInput);
+                var bindData = await _search.DoSearchAsync(SearchPath.Forward, "b", enter: false);
+                Assert.True(bindData.IsNeedMoreInput);
             }
 
             /// <summary>
             /// Enter should terminate the search
             /// </summary>
             [WpfFact]
-            public void EnterShouldComplete()
+            public async Task EnterShouldComplete()
             {
                 Create("foo bar");
-                Assert.True(_search.CreateSession(SearchPath.Forward).Start().Run("f").Run(VimKey.Enter).IsComplete);
+                var bindData = await _search.DoSearchAsync(SearchPath.Forward, "f");
+                Assert.True(bindData.IsComplete);
                 _factory.Verify();
                 Assert.Equal("f", _vimData.LastSearchData.Pattern);
             }
@@ -80,31 +90,32 @@ namespace Vim.UnitTest
             /// Escape should cancel the search
             /// </summary>
             [WpfFact]
-            public void EscapeShouldCancel()
+            public async Task EscapeShouldCancel()
             {
                 Create("foo bar");
-                Assert.True(_search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Escape).IsCancelled);
+                var bindData = await _search.DoSearchAsync(SearchPath.Forward, VimKey.Escape);
+                Assert.True(bindData.IsCancelled);
             }
 
             /// <summary>
             /// Completing a search should update the LastSearch value
             /// </summary>
             [WpfFact]
-            public void LastSearch1()
+            public async Task LastSearch1()
             {
                 Create(" foo bar");
-                ProcessWithEnter("foo");
+                await ProcessWithEnter("foo");
                 Assert.Equal("foo", _vimData.LastSearchData.Pattern);
                 Assert.True(_vimData.LastSearchData.Kind.IsAnyForward);
                 _factory.Verify();
             }
 
             [WpfFact]
-            public void EmptyShouldUseLast()
+            public async Task EmptyShouldUseLast()
             {
                 Create("foo bar");
                 _vimData.LastSearchData = VimUtil.CreateSearchData("foo");
-                ProcessWithEnter("");
+                await ProcessWithEnter("");
                 Assert.Equal("foo", _vimData.LastSearchData.Pattern);
             }
         }
@@ -112,16 +123,16 @@ namespace Vim.UnitTest
         public sealed class MiscTest : IncrementalSearchTest
         {
             [WpfFact]
-            public void LastSearch2()
+            public async Task LastSearch2()
             {
                 Create(" foo bar");
 
-                ProcessWithEnter("foo bar");
+                await ProcessWithEnter("foo bar");
                 Assert.Equal("foo bar", _vimData.LastSearchData.Pattern);
                 _factory.Verify();
 
                 _textView.MoveCaretTo(0);
-                ProcessWithEnter("bar");
+                await ProcessWithEnter("bar");
                 Assert.Equal("bar", _vimData.LastSearchData.Pattern);
                 _factory.Verify();
             }
@@ -145,7 +156,7 @@ namespace Vim.UnitTest
             /// not found
             /// </summary>
             [WpfFact]
-            public void CurrentSearchUpdated_FireOnSearhCharNotFound()
+            public async Task CurrentSearchUpdated_FireOnSearhCharNotFound()
             {
                 Create("foo bar");
                 var session = _search.CreateSession(SearchPath.Forward);
@@ -161,23 +172,23 @@ namespace Vim.UnitTest
                         Assert.True(args.SearchResult.IsNotFound);
                         runCount++;
                     };
-                session.Start().Run("z");
+                await session.DoSearchAsync("z");
                 Assert.Equal(2, runCount);
             }
 
             [WpfFact]
-            public void CurrentSearch1()
+            public async Task CurrentSearch1()
             {
                 Create("foo bar");
-                _search.CreateSession(SearchPath.Forward).Start().Run("B");
+                await _search.DoSearchAsync(SearchPath.Forward, "B", enter: false);
                 Assert.Equal("B", _search.CurrentSearchData.Pattern);
             }
 
             [WpfFact]
-            public void CurrentSearch3()
+            public async Task CurrentSearch3()
             {
                 Create("foo bar");
-                _search.CreateSession(SearchPath.Forward).Start().Run("ab");
+                await _search.DoSearchAsync(SearchPath.Forward, "ab", enter: false);
                 Assert.Equal("ab", _search.CurrentSearchData.Pattern);
             }
 
@@ -190,10 +201,10 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void InSearch2()
+            public async Task InSearch2()
             {
                 Create("foo bar");
-                _search.DoSearch("foo");
+                await _search.DoSearchAsync("foo");
                 Assert.False(_search.HasActiveSession);
                 Assert.Equal("foo", _vimData.LastSearchData.Pattern);
             }
@@ -202,10 +213,10 @@ namespace Vim.UnitTest
             /// Cancelling should remove the CurrentSearch value
             /// </summary>
             [WpfFact]
-            public void InSearch3()
+            public async Task InSearch3()
             {
                 Create("foo bar");
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Escape);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Escape);
                 Assert.False(_search.HasActiveSession);
             }
 
@@ -213,10 +224,10 @@ namespace Vim.UnitTest
             /// Backspace on a blank search should cancel
             /// </summary>
             [WpfFact]
-            public void Backspace_NoText()
+            public async Task Backspace_NoText()
             {
                 Create("foo bar");
-                var result = _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Back);
+                var result = await _search.DoSearchAsync(SearchPath.Forward, VimKey.Back);
                 Assert.True(result.IsCancelled);
             }
 
@@ -224,10 +235,11 @@ namespace Vim.UnitTest
             /// Don't crash when backspacing with a textual value
             /// </summary>
             [WpfFact]
-            public void Backspace_WithText()
+            public async Task Backspace_WithText()
             {
                 Create("foo bar");
-                var result = _search.CreateSession(SearchPath.Forward).Start().Run("b").Run(VimKey.Back);
+                var result = await _search.DoSearchAsync("b");
+                result = result.Run(VimKey.Back);
                 Assert.True(result.IsNeedMoreInput);
             }
 
@@ -236,11 +248,13 @@ namespace Vim.UnitTest
             /// after the caret
             /// </summary>
             [WpfFact]
-            public void Search_ShouldStartAfterCaretWhenForward()
+            public async Task Search_ShouldStartAfterCaretWhenForward()
             {
                 Create("foo bar");
                 _globalSettings.WrapScan = false;
-                var result = _search.CreateSession(SearchPath.Forward).Start().Run("f").Run(VimKey.Enter).AsComplete().Result;
+                var bindResult = await _search.DoSearchAsync("f");
+                bindResult = bindResult.Run(VimKey.Enter);
+                var result = bindResult.AsComplete().Result;
                 Assert.True(result.IsNotFound);
                 Assert.True(result.AsNotFound().CanFindWithWrap);
             }
@@ -250,12 +264,12 @@ namespace Vim.UnitTest
             /// before the caret
             /// </summary>
             [WpfFact]
-            public void Search_ShouldStartBeforeCaretWhenBackward()
+            public async Task Search_ShouldStartBeforeCaretWhenBackward()
             {
                 Create("cat bar");
                 _globalSettings.WrapScan = false;
                 _textView.MoveCaretTo(2);
-                var result = _search.CreateSession(SearchPath.Backward).Start().Run("t").Run(VimKey.Enter).AsComplete().Result;
+                var result = (await _search.DoSearchAsync("t", enter: true)).AsComplete().Result;
                 Assert.True(result.IsNotFound);
             }
         }
@@ -266,11 +280,11 @@ namespace Vim.UnitTest
             /// Make sure we update the search history on every search found or not
             /// </summary>
             [WpfFact]
-            public void UpdateOnComplete()
+            public async Task UpdateOnComplete()
             {
                 Create("cat bear");
-                _search.DoSearch("a");
-                _search.DoSearch("b");
+                await _search.DoSearchAsync("a");
+                await _search.DoSearchAsync("b");
                 Assert.Equal(
                     new[] { "b", "a" },
                     _vimData.SearchHistory);
@@ -280,11 +294,12 @@ namespace Vim.UnitTest
             /// Cancelled searches should go into the history list oddly enough
             /// </summary>
             [WpfFact]
-            public void UpdateOnCancel()
+            public async Task UpdateOnCancel()
             {
                 Create("cat bear");
-                _search.DoSearch("a");
-                _search.DoSearch("b", enter: false).Run(VimKey.Escape);
+                await _search.DoSearchAsync("a");
+                var result = await _search.DoSearchAsync("b", enter: false);
+                result.Run(VimKey.Escape);
                 Assert.Equal(
                     new[] { "b", "a" },
                     _vimData.SearchHistory);
@@ -294,12 +309,12 @@ namespace Vim.UnitTest
             /// A completed search should not create a duplicate entry in the history list. 
             /// </summary>
             [WpfFact]
-            public void UpdateShouldNotDuplicate()
+            public async Task UpdateShouldNotDuplicate()
             {
                 Create("cat bear");
-                _search.DoSearch("a");
-                _search.DoSearch("b");
-                _search.DoSearch("a");
+                await _search.DoSearchAsync("a");
+                await _search.DoSearchAsync("b");
+                await _search.DoSearchAsync("a");
                 Assert.Equal(
                     new[] { "a", "b" },
                     _vimData.SearchHistory);
@@ -309,11 +324,11 @@ namespace Vim.UnitTest
             /// The up key should scroll the history list
             /// </summary>
             [WpfFact]
-            public void UpShouldScroll()
+            public async Task UpShouldScroll()
             {
                 Create("cat bear");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Up);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Up);
                 Assert.Equal("a", _search.CurrentSearchData.Pattern);
             }
 
@@ -321,11 +336,11 @@ namespace Vim.UnitTest
             /// The up key should scroll the history list repeatedly
             /// </summary>
             [WpfFact]
-            public void UpShouldScrollAgain()
+            public async Task UpShouldScrollAgain()
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Up).Run(VimKey.Up);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Up, VimKey.Up);
                 Assert.Equal("b", _search.CurrentSearchData.Pattern);
             }
 
@@ -334,11 +349,11 @@ namespace Vim.UnitTest
             /// reaches the end it should go back to a blank
             /// </summary>
             [WpfFact]
-            public void DownShouldScrollBack()
+            public async Task DownShouldScrollBack()
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Up).Run(VimKey.Down);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Up, VimKey.Down);
                 Assert.Equal("", _search.CurrentSearchData.Pattern);
             }
 
@@ -346,11 +361,11 @@ namespace Vim.UnitTest
             /// The down key should scroll the history list in the opposite order
             /// </summary>
             [WpfFact]
-            public void DownShouldScrollBackAfterUp()
+            public async Task DownShouldScrollBackAfterUp()
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Up, VimKey.Up, VimKey.Down);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Up, VimKey.Up, VimKey.Down);
                 Assert.Equal("a", _search.CurrentSearchData.Pattern);
             }
 
@@ -358,11 +373,11 @@ namespace Vim.UnitTest
             /// Beep if the down key goes off the end of the list
             /// </summary>
             [WpfFact]
-            public void DownOffEndOfList()
+            public async Task DownOffEndOfList()
             {
                 Create("dog cat");
                 _vimData.SearchHistory = (new[] { "a", "b" }).ToHistoryList();
-                _search.CreateSession(SearchPath.Forward).Start().Run(VimKey.Down);
+                await _search.DoSearchAsync(SearchPath.Forward, VimKey.Down);
                 Assert.Equal(1, _vimHost.BeepCount);
             }
 
@@ -370,11 +385,12 @@ namespace Vim.UnitTest
             /// Search through the history for a single item
             /// </summary>
             [WpfFact]
-            public void OneMatch()
+            public async Task OneMatch()
             {
                 Create("");
                 _vimData.SearchHistory = (new[] { "dog", "cat" }).ToHistoryList();
-                _search.DoSearch("d", enter: false).Run(VimKey.Up);
+                var result = await _search.DoSearchAsync("d", enter: false);
+                result.Run(VimKey.Up);
                 Assert.Equal("dog", _search.CurrentSearchData.Pattern);
             }
 
@@ -382,11 +398,12 @@ namespace Vim.UnitTest
             /// Search through the history for an item which has several matches
             /// </summary>
             [WpfFact]
-            public void TwoMatches()
+            public async Task TwoMatches()
             {
                 Create("");
                 _vimData.SearchHistory = (new[] { "dog", "cat", "dip" }).ToHistoryList();
-                _search.DoSearch("d", enter: false).Run(VimKey.Up).Run(VimKey.Up);
+                var result = await _search.DoSearchAsync("d", enter: false);
+                result.Run(VimKey.Up, VimKey.Up);
                 Assert.Equal("dip", _search.CurrentSearchData.Pattern);
             }
         }
@@ -394,10 +411,10 @@ namespace Vim.UnitTest
         public sealed class CancelTest : IncrementalSearchTest
         {
             [WpfFact]
-            public void InSearchProperty()
+            public async Task InSearchProperty()
             {
                 Create("hello world");
-                _search.DoSearch("wo", enter: false);
+                await _search.DoSearchAsync("wo", enter: false);
                 Assert.True(_search.HasActiveSession);
                 _search.CancelSession();
                 Assert.False(_search.HasActiveSession);
@@ -407,17 +424,18 @@ namespace Vim.UnitTest
             /// Make sure we can repeat the cancel many times and get the same result
             /// </summary>
             [WpfFact]
-            public void ManyTimes()
+            public async Task ManyTimes()
             {
                 Create("hello world");
                 for (var i = 0; i < 5; i++)
                 {
                     _textView.MoveCaretTo(0);
-                    var searchResult = _search.DoSearch("el", enter: true).AsComplete().Result;
+                    var bindResult = await _search.DoSearchAsync("el", enter: true);
+                    var searchResult = bindResult.AsComplete().Result;
                     Assert.True(searchResult.IsFound);
                     var span = searchResult.AsFound().SpanWithOffset;
                     Assert.Equal(new Span(1, 2), span.Span);
-                    _search.DoSearch("wo", enter: false);
+                    await _search.DoSearchAsync("wo", enter: false);
                     Assert.True(_search.HasActiveSession);
                     _search.CancelSession();
                     Assert.False(_search.HasActiveSession);
