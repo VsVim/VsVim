@@ -6340,7 +6340,7 @@ namespace Vim.UnitTest
                 {
                     _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(1).Start, 0.0, ViewRelativePosition.Top);
                     _textView.MoveCaretToLine(2);
-                    Dispatcher.DoEvents();
+                    DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                     Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
@@ -6353,7 +6353,7 @@ namespace Vim.UnitTest
                 public void UpMovesCaretWithoutScroll()
                 {
                     _textView.MoveCaretToLine(2);
-                    Dispatcher.DoEvents();
+                    DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                 }
@@ -6484,7 +6484,7 @@ namespace Vim.UnitTest
                     _globalSettings.ScrollOffset = 2;
                     var caretLine = 4;
                     _textView.MoveCaretToLine(caretLine);
-                    Dispatcher.DoEvents();
+                    DoEvents();
                     var topLine = 0;
                     PutLineAtTop(topLine);
                     _vimBuffer.ProcessNotation("H");
@@ -6582,14 +6582,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                Dispatcher.DoEvents();
+                DoEvents();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                Dispatcher.DoEvents();
+                DoEvents();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
@@ -6673,7 +6673,7 @@ namespace Vim.UnitTest
             {
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(4);
-                Dispatcher.DoEvents();
+                DoEvents();
                 AssertFirstLine(2);
             }
 
@@ -6685,7 +6685,7 @@ namespace Vim.UnitTest
                 var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
                 _textView.MoveCaretToLine(lineNumber);
-                Dispatcher.DoEvents();
+                DoEvents();
                 _vimBuffer.ProcessNotation("<c-d>");
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }

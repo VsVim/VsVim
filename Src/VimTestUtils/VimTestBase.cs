@@ -335,6 +335,12 @@ namespace Vim.UnitTest
             VimErrorDetector.Clear();
         }
 
+        public void DoEvents()
+        {
+            Debug.Assert(SynchronizationContext.Current.GetEffectiveSynchronizationContext() is DispatcherSynchronizationContext);
+            Dispatcher.DoEvents();
+        }
+
         private void CheckForErrors()
         {
             if (VimErrorDetector.HasErrors())

@@ -40,7 +40,7 @@ namespace Vim.UnitTest
         {
             var span = new SnapshotSpan(_textBuffer.CurrentSnapshot, start, length);
             _textView.SelectAndMoveCaret(span);
-            Dispatcher.DoEvents();
+            DoEvents();
             Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
         }
 
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                Dispatcher.DoEvents();
+                DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 
@@ -63,10 +63,10 @@ namespace Vim.UnitTest
             {
                 Create("cat dog");
                 _textSelection.Select(0, 3);
-                Dispatcher.DoEvents();
+                DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 _textSelection.Select(0, 5);
-                Dispatcher.DoEvents();
+                DoEvents();
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
             }
 

@@ -111,7 +111,7 @@ namespace Vim.UnitTest
                 var selection = vimBuffer.TextView.Selection;
                 var span = textBuffer.GetLineRange(0);
                 selection.Select(span.ExtentIncludingLineBreak);
-                Dispatcher.DoEvents();
+                DoEvents();
                 Assert.Equal(span.ExtentIncludingLineBreak, selection.StreamSelectionSpan.SnapshotSpan);
                 Assert.Equal(textSnapshot.Version.VersionNumber, textBuffer.CurrentSnapshot.Version.VersionNumber);
             }
