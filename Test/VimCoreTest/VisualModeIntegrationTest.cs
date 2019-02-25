@@ -2856,11 +2856,12 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void IncrementalSearch_CharModeShouldExtendToSearchResult()
+            public async Task IncrementalSearch_CharModeShouldExtendToSearchResult()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
                 _vimBuffer.Process("/o");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
             }
 

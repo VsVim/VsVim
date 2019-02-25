@@ -225,8 +225,6 @@ type internal VisualMode
             else
                 match _runner.Run ki with
                 | BindResult.NeedMoreInput _ -> 
-                    // Commands like incremental search can move the caret and be incomplete.  Need to 
-                    // update the selection while waiting for the next key
                     _selectionTracker.UpdateSelection()
                     ProcessResult.HandledNeedMoreInput
 

@@ -325,6 +325,11 @@ namespace Vim.UnitTest
 
                 var bindResult = session.Start().Run("dog ", enter: false);
                 Assert.Equal(3, count);
+
+                // There is a pending search for the ' '. It can't complete yet because this test doesn't
+                // pump any messages. But another test could pump messages that would cause this to complete
+                // and trigger the SearchEnd handler. Cancel here so that doesn't happen
+                session.Cancel();
             }
 
             [WpfFact]

@@ -99,7 +99,12 @@ type internal SelectionTracker
             _lastIncrementalSearchResult <- 
                 match args.SearchResult with
                 | SearchResult.Cancelled _ -> _lastIncrementalSearchResult
-                | _ -> Some args.SearchResult)
+                | _ -> Some args.SearchResult
+
+            // Incremental search completes asynchronously in the majority case. Hence we need to update
+            // the selection immediately vs. waiting for another component to call UpdateSelection as that
+            // call isn't necessarily coming.
+            x.UpdateSelection())
 
         session.SessionComplete
         |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
@@ -119,8 +124,7 @@ type internal SelectionTracker
                     | SearchResult.NotFound _ -> caretPoint
                     | SearchResult.Error _ -> caretPoint
                     | SearchResult.Cancelled _ -> caretPoint
-                    | SearchResult.Found (_, span, _, _) ->
-                        VirtualSnapshotPointUtil.OfPoint span.Start
+                    | SearchResult.Found (_, span, _, _) -> VirtualSnapshotPointUtil.OfPoint span.Start
 
             // Update the selection only.  Don't move the caret here.  It's either properly positioned
             // or we're simulating the selection based on incremental search
