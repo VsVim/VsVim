@@ -88,8 +88,7 @@ namespace Vim.UnitTest
                 lines.SetupGet(x => x.IsValid).Returns(true);
                 textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                DoEvents();
 
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
@@ -127,8 +126,7 @@ namespace Vim.UnitTest
                 textView.SetupGet(x => x.TextViewLines).Returns(lines.Object);
                 textView.SetupGet(x => x.InLayout).Returns(false);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                DoEvents();
                 Assert.Equal(ModeKind.Normal, vimBuffer.ModeKind);
             }
 
@@ -151,7 +149,7 @@ namespace Vim.UnitTest
                 textView.SetupGet(x => x.IsClosed).Returns(true);
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
             }
 
             /// <summary>
@@ -190,10 +188,9 @@ namespace Vim.UnitTest
                 textView.Raise(x => x.LayoutChanged += null, (TextViewLayoutChangedEventArgs)null);
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
 
-                Assert.Equal(1, TestableSynchronizationContext.PostedCallbackCount);
                 textView.SetupGet(x => x.IsClosed).Returns(true);
                 textView.SetupGet(x => x.TextViewLines).Throws(new Exception());
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(ModeKind.Uninitialized, vimBuffer.ModeKind);
             }
         }

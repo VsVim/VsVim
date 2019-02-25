@@ -126,7 +126,7 @@ namespace Vim.VisualStudio.UnitTest
                 oleCommandData.Dispose();
             }
 
-            TestableSynchronizationContext.RunAll();
+            DoEvents();
         }
 
         /// <summary>

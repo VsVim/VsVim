@@ -82,7 +82,7 @@ namespace Vim.VisualStudio.UnitTest
         public override void Dispose()
         {
             base.Dispose();
-            Dispatcher.CurrentDispatcher.DoEvents();
+            DoEvents();
         }
 
         private Mock<IExternalEditAdapter> CreateAdapter()

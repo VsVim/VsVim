@@ -106,8 +106,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                DoEvents();
                 _synchronizer.Verify();
             }
 
@@ -119,8 +118,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Vim)).Verifiable();
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                DoEvents();
                 _synchronizer.Verify();
             }
 
@@ -132,8 +130,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
 
                 _synchronizer.Setup(x => x.StartSynchronizing(_vimBuffer, SettingSyncSource.Editor)).Verifiable();
-                TestableSynchronizationContext.RunAll();
-                Dispatcher.CurrentDispatcher.DoEvents();
+                DoEvents();
                 _synchronizer.Verify();
             }
 
@@ -147,7 +144,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseTextViewCreated(_textView);
                 RaiseVimBufferCreated(_vimBuffer);
                 _textView.Close();
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
             }
 
             /// <summary>
@@ -166,7 +163,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
             }
 
             [WpfFact]
@@ -182,7 +179,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
             }
 
             [WpfFact]
@@ -198,7 +195,7 @@ namespace Vim.VisualStudio.UnitTest
                 RaiseVsTextViewCreated(_vsTextView.Object);
                 _synchronizer.Verify();
                 InvalidateSynchronizer();
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
             }
         }
     }
