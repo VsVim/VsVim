@@ -9,6 +9,7 @@ using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -4149,10 +4150,11 @@ namespace Vim.UnitTest
                 /// at the end of the string
                 /// </summary>
                 [WpfFact]
-                public void CaseInsensitiveAtEndOfSearhString()
+                public async Task CaseInsensitiveAtEndOfSearhString()
                 {
                     Create("cat dog bear");
                     _vimBuffer.Process("/DOG");
+                    await _vimBuffer.IncrementalSearch.GetSearchCompleteAsync();
                     Assert.True(_vimBuffer.IncrementalSearch.ActiveSession.Value.SearchResult.Value.IsNotFound);
                     _vimBuffer.Process(@"\c", enter: true);
                     Assert.Equal(4, _textView.GetCaretPoint().Position);

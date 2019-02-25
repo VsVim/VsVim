@@ -201,7 +201,7 @@ type internal IncrementalSearchSession
 
     /// Called when the processing is completed.  Raise the completed event and return
     /// the final SearchResult
-    member private x.RunCompleted startPoint =
+    member private x.RunCompleted(startPoint, searchText) =
         let vimData = _vimBufferData.Vim.VimData
         let searchResult = 
 
@@ -220,7 +220,7 @@ type internal IncrementalSearchSession
                 // If the search is still in progress then we need to force it to be complete here. Need
                 // to avoid the tempatation to use methods like Task.Wait as that can cause deadlocks. Instead
                 // just synchronously run the search here. 
-                x.RunSearchSyncWithResult(startPoint, _searchData.Pattern)
+                x.RunSearchSyncWithResult(startPoint, searchText)
 
         vimData.LastSearchData <- _searchData
         x.RunCompleteSession()
@@ -254,7 +254,7 @@ type internal IncrementalSearchSession
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
             x.RunSearchAsync searchPoint searchText
             searchPoint)
-        member x.Completed searchPoint _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted searchPoint)
+        member x.Completed searchPoint searchText = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with

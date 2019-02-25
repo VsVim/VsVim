@@ -901,6 +901,8 @@ namespace Vim.UnitTest
             return GetBlockSpan(vimBuffer.TextBuffer, column, length, startLine, lineCount, vimBuffer.LocalSettings.TabStop);
         }
 
+        public static async Task GetSearchCompleteAsync(this IVimBuffer vimBuffer) => await vimBuffer.IncrementalSearch.GetSearchCompleteAsync();
+
         #endregion
 
         #region ITextSnapshot
@@ -1388,7 +1390,7 @@ namespace Vim.UnitTest
 
         public static BindResult<T> Run<T>(this BindData<T> data, params KeyInput[] keyInputs)
         {
-            BindResult<T> result = null;
+            BindResult<T> result = data.CreateBindResult();
             foreach (var keyInput in keyInputs)
             {
                 result = result.Run(keyInput);
@@ -1495,6 +1497,15 @@ namespace Vim.UnitTest
             {
                 args.Session.SearchEnd += (_2, args2) => action(args2.SearchResult);
             };
+        }
+
+        public static async Task GetSearchCompleteAsync(this IIncrementalSearch search)
+        {
+            if (search.HasActiveSession)
+            {
+                var session = search.ActiveSession.Value;
+                await session.GetSearchResultAsync();
+            }
         }
 
         #endregion

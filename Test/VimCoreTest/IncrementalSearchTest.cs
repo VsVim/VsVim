@@ -12,7 +12,6 @@ namespace Vim.UnitTest
 {
     public abstract class IncrementalSearchTest : VimTestBase
     {
-        private static readonly SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
         private IVimData _vimData;
         private IVimGlobalSettings _globalSettings;
@@ -24,8 +23,6 @@ namespace Vim.UnitTest
 
         private void Create(params string[] lines)
         {
-            VimSynchronizationContext.IsDispatchEnabled = true;
-
             _vimHost = (MockVimHost)Vim.VimHost;
             _textView = CreateTextView(lines);
             _globalSettings = Vim.GlobalSettings;
@@ -56,11 +53,6 @@ namespace Vim.UnitTest
 
         public sealed class RunSearchTest : IncrementalSearchTest
         {
-            public RunSearchTest()
-            {
-                VimSynchronizationContext.IsDispatchEnabled = true;
-            }
-
             /// <summary>
             /// Should continue to need more until Enter or Escape is processed
             /// </summary>
@@ -68,7 +60,6 @@ namespace Vim.UnitTest
             public async Task NeedMoreUntilEndKey()
             {
                 Create("foo bar");
-                var data = new SearchData("b", SearchOffsetData.None, SearchKind.ForwardWithWrap, s_options);
                 var bindData = await _search.DoSearchAsync(SearchPath.Forward, "b", enter: false);
                 Assert.True(bindData.IsNeedMoreInput);
             }
@@ -238,7 +229,7 @@ namespace Vim.UnitTest
             public async Task Backspace_WithText()
             {
                 Create("foo bar");
-                var result = await _search.DoSearchAsync("b");
+                var result = await _search.DoSearchAsync("b", enter: false);
                 result = result.Run(VimKey.Back);
                 Assert.True(result.IsNeedMoreInput);
             }
@@ -252,8 +243,7 @@ namespace Vim.UnitTest
             {
                 Create("foo bar");
                 _globalSettings.WrapScan = false;
-                var bindResult = await _search.DoSearchAsync("f");
-                bindResult = bindResult.Run(VimKey.Enter);
+                var bindResult = await _search.DoSearchAsync("f", enter: true);
                 var result = bindResult.AsComplete().Result;
                 Assert.True(result.IsNotFound);
                 Assert.True(result.AsNotFound().CanFindWithWrap);
@@ -271,6 +261,88 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(2);
                 var result = (await _search.DoSearchAsync("t", enter: true)).AsComplete().Result;
                 Assert.True(result.IsNotFound);
+            }
+
+            [WpfFact]
+            public async Task WithOffsetLineBelowImplicitCount()
+            {
+                Create("cat", "dog", "fish");
+                var bindResult = await _search.DoSearchAsync("dog/+1", enter: true);
+                var searchResult = bindResult.AsComplete().Result;
+                var searchData = new SearchData("dog", SearchOffsetData.NewLine(1), SearchKind.ForwardWithWrap, SearchOptions.Default);
+                Assert.Equal(searchData, searchResult.SearchData);
+            }
+
+            [WpfFact]
+            public async Task EventMatchesResult()
+            {
+                Create("cat", "dog", "fish");
+                SearchData lastSearchData = null;
+                var session = _search.CreateSession(SearchPath.Forward);
+                session.SearchStart += (_, args) =>
+                {
+                    lastSearchData = args.SearchData;
+                };
+
+                var bindResult = await session.DoSearchAsync("dog/+1", enter: true);
+                var searchResult = bindResult.AsComplete().Result;
+                var searchData = new SearchData("dog", SearchOffsetData.NewLine(1), SearchKind.ForwardWithWrap, SearchOptions.Default);
+                Assert.NotNull(lastSearchData);
+                Assert.Equal(searchData, searchResult.SearchData);
+                Assert.Equal(searchData, lastSearchData);
+            }
+
+            [WpfFact]
+            public void EventMatchesResultNonAsync()
+            {
+                Create("cat", "dog", "fish");
+                SearchData lastSearchData = null;
+                var session = _search.CreateSession(SearchPath.Forward);
+                session.SearchStart += (_, args) =>
+                {
+                    lastSearchData = args.SearchData;
+                };
+
+                var bindResult = session.Start().Run("dog/+1", enter: true); 
+                var searchResult = bindResult.AsComplete().Result;
+                var searchData = new SearchData("dog", SearchOffsetData.NewLine(1), SearchKind.ForwardWithWrap, SearchOptions.Default);
+                Assert.NotNull(lastSearchData);
+                Assert.Equal(searchData, searchResult.SearchData);
+                Assert.Equal(searchData, lastSearchData);
+            }
+
+            [WpfFact]
+            public void SearchCancelledWithNextKeystroke()
+            {
+                Create("cat", "dog", "fish");
+                var count = 0;
+                var session = _search.CreateSession(SearchPath.Forward);
+                session.SearchEnd += (_, args) =>
+                {
+                    Assert.True(args.SearchResult.IsCancelled);
+                    count++;
+                };
+
+                var bindResult = session.Start().Run("dog ", enter: false);
+                Assert.Equal(3, count);
+            }
+
+            [WpfFact]
+            public async Task SearchCantCompleteUntilMessagePump()
+            {
+                Create("cat", "dog", "fish");
+                var session = _search.CreateSession(SearchPath.Forward);
+                var bindResult = session.Start().CreateBindResult();
+                foreach (var keyInput in VimUtil.ConvertTextToKeyInput("dog"))
+                {
+                    bindResult = bindResult.Run(keyInput);
+                    var task = session.GetSearchResultAsync();
+                    Assert.False(task.IsCompleted);
+                    Assert.True(session.SearchResult.IsNone());
+                    await task;
+                    Assert.True(session.SearchResult.IsSome());
+                    Assert.True(session.SearchResult.Value.IsFound);
+                }
             }
         }
 

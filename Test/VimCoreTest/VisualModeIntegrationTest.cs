@@ -11,6 +11,7 @@ using Xunit;
 using Xunit.Extensions;
 using System.Collections.Generic;
 using Vim.UnitTest.Exports;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -2834,21 +2835,23 @@ namespace Vim.UnitTest
 
             [WpfTheory]
             [MemberData(nameof(VirtualEditOptions))]
-            public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
+            public async Task IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
                 _globalSettings.VirtualEdit = virtualEdit;
                 SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/c");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             [WpfFact]
-            public void IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
+            public async Task IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
             {
                 Create("dog", "", "cat", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/ca");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
