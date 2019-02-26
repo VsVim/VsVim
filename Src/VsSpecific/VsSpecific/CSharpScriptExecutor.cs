@@ -76,11 +76,9 @@ namespace Vim.VisualStudio.Specific
 
         private bool TryGetScript(IVim vim, string scriptName, bool createEachTime, out Script<object> script)
         {
-            if (!createEachTime && _scripts.ContainsKey(scriptName))
-            {
-                script = _scripts[scriptName];
+            if (!createEachTime && _scripts.TryGetValue(scriptName, out script))
                 return true;
-            }
+
             string scriptPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             scriptPath = Path.Combine(scriptPath, ScriptFolder);
 
