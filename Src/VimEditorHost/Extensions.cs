@@ -11,7 +11,6 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Vim.EditorHost
 {
