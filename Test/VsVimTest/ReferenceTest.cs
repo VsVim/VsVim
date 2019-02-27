@@ -14,12 +14,6 @@ namespace Vim.VisualStudio.UnitTest
 {
     public sealed class ReferenceTest
     {
-        internal const string MicrosoftCodeAnalysis = "Microsoft.CodeAnalysis";
-        internal const string MicrosoftCodeAnalysisCSharp = "Microsoft.CodeAnalysis.CSharp";
-        internal const string MicrosoftCodeAnalysisCSharpScripting = "Microsoft.CodeAnalysis.CSharp.Scripting";
-        internal const string MicrosoftCodeAnalysisScripting = "Microsoft.CodeAnalysis.Scripting";
-        internal const string SystemCollectionsImmutable = "System.Collections.Immutable";
-
         internal enum VsVersion
         {
             Vs2010 = 10,
@@ -199,13 +193,30 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.Platform.WindowManagement":
                         return new ReferenceData(assemblyName, ReferenceKind.ShellNonVersioned, getVersionFromVersionNumber());
 
-                    case MicrosoftCodeAnalysis:
-                    case MicrosoftCodeAnalysisCSharp:
-                    case MicrosoftCodeAnalysisCSharpScripting:
-                    case MicrosoftCodeAnalysisScripting:
-                    case SystemCollectionsImmutable:
+                    case "Microsoft.CodeAnalysis":
+                    case "Microsoft.CodeAnalysis.CSharp":
+                    case "Microsoft.CodeAnalysis.CSharp.Scripting":
+                    case "Microsoft.CodeAnalysis.Scripting":
+                        VsVersion? vsVersion;
+                        switch (assemblyName.Version.Major)
+                        {
+                            case 1:
+                                vsVersion = VsVersion.Vs2015;
+                                break;
+                            case 2:
+                                vsVersion = VsVersion.Vs2017;
+                                break;
+                            case 3:
+                                vsVersion = VsVersion.Vs2019;
+                                break;
+                            default:
+                                vsVersion = null;
+                                break;
+                        }
+                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion);
 
-                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion: null);
+                    case "System.Collections.Immutable":
+                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, VsVersion.MinimumSupported);
 
                     default:
                         if (name.StartsWith("System."))
@@ -239,12 +250,10 @@ namespace Vim.VisualStudio.UnitTest
             {
                 switch (refData.Kind)
                 {
-                    case ReferenceKind.ComponentVersioned:
-                        Assert.True(false, "Individual assembly checks are required.");
-                        break;
                     case ReferenceKind.Editor:
                         Assert.Equal(VsVersion.MinimumSupported, refData.VsVersion);
                         break;
+                    case ReferenceKind.ComponentVersioned:
                     case ReferenceKind.ShellVersioned:
                         Assert.True(refData.VsVersion <= VsVersion.MinimumSupported);
                         break;
@@ -273,59 +282,11 @@ namespace Vim.VisualStudio.UnitTest
         {
             var badList = new List<ReferenceData>();
             var count = 0;
-            var cSharpApiVersions = new List<Version>();
             foreach (var refData in referenceDataCollection)
             {
                 switch (refData.Kind)
                 {
                     case ReferenceKind.ComponentVersioned:
-                        switch (refData.Name.Name)
-                        {
-                            case MicrosoftCodeAnalysis:
-                            case MicrosoftCodeAnalysisCSharp:
-                            case MicrosoftCodeAnalysisCSharpScripting:
-                            case MicrosoftCodeAnalysisScripting:
-                                switch (vsVersion)
-                                {
-                                    case VsVersion.Vs2017:
-                                        if (refData.Name.Version.Major != 2)
-                                        {
-                                            badList.Add(refData);
-                                        }
-                                        break;
-                                    case VsVersion.Vs2019:
-                                        if (refData.Name.Version.Major != 3)
-                                        {
-                                            badList.Add(refData);
-                                        }
-                                        break;
-                                    default:
-                                        badList.Add(refData);
-                                        break;
-                                }
-                                cSharpApiVersions.Add(refData.Name.Version);
-                                break;
-                            case SystemCollectionsImmutable:
-                                switch (vsVersion)
-                                {
-                                    case VsVersion.Vs2017:
-                                    case VsVersion.Vs2019:
-                                        //It needs to match what the C# API references
-                                        if (refData.Name.Version != new Version("1.2.3.0"))
-                                        {
-                                            badList.Add(refData);
-                                        }
-                                        break;
-                                    default:
-                                        badList.Add(refData);
-                                        break;
-                                }
-                                break;
-                            default:
-                                Assert.True(false, "Individual assembly checks are required.");
-                                break;
-                        }
-                        break;
                     case ReferenceKind.ShellVersioned:
                     case ReferenceKind.ShellPia:
                         if (vsVersion < refData.VsVersion)
@@ -353,9 +314,6 @@ namespace Vim.VisualStudio.UnitTest
 
             Assert.True(count >= 8);
             Assert.Empty(badList);
-
-            //All C# API versions need to be the same
-            Assert.False(1 < cSharpApiVersions.GroupBy(v => v).Count());
         }
 
         [Fact]
