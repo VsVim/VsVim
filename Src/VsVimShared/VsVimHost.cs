@@ -1149,11 +1149,10 @@ namespace Vim.VisualStudio
                 return true;
             }
 
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            if (comparer.Equals(command, "Edit.SurroundWith"))
+            if (command.StartsWith("Edit.", StringComparison.OrdinalIgnoreCase))
             {
-                // Need to keep the selection here so the surround with command knows the selection
-                // to surround.
+                // The Edit commands often change the selection as a part of their implementation. Need
+                // to just keep their results to match user expectations.
                 return true;
             }
 
