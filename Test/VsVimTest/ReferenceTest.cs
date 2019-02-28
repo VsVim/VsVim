@@ -62,7 +62,10 @@ namespace Vim.VisualStudio.UnitTest
             ShellPia,
 
             /// <summary>
-            /// Special reference check required.
+            /// Part of a component that is versioned.
+            /// it's possible to load older versions in newer ones.
+            /// Component version is not related to Visual Studio's version.
+            /// Mapping with the version of Visual Studio should be done individually.
             /// </summary>
             ComponentVersioned,
         }
@@ -137,6 +140,7 @@ namespace Vim.VisualStudio.UnitTest
 
             internal static ReferenceData GetReferenceData(AssemblyName assemblyName)
             {
+                VsVersion vsVersion;
                 var name = assemblyName.Name;
 
                 switch (name)
@@ -197,26 +201,30 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.CodeAnalysis.CSharp":
                     case "Microsoft.CodeAnalysis.CSharp.Scripting":
                     case "Microsoft.CodeAnalysis.Scripting":
-                        VsVersion? vsVersion;
-                        switch (assemblyName.Version.Major)
+                        if (new Version("3.0.0.0") <= assemblyName.Version)
                         {
-                            case 1:
-                                vsVersion = VsVersion.Vs2015;
-                                break;
-                            case 2:
-                                vsVersion = VsVersion.Vs2017;
-                                break;
-                            case 3:
-                                vsVersion = VsVersion.Vs2019;
-                                break;
-                            default:
-                                vsVersion = null;
-                                break;
+                            vsVersion = VsVersion.Vs2019;
+                        }
+                        else if (new Version("2.10.0.0") <= assemblyName.Version)
+                        {
+                            vsVersion = VsVersion.Vs2017;
+                        }
+                        else
+                        {
+                            vsVersion = VsVersion.Vs2015;
                         }
                         return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion);
 
                     case "System.Collections.Immutable":
-                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, VsVersion.MinimumSupported);
+                        if (new Version("1.2.0.0") <= assemblyName.Version)
+                        {
+                            vsVersion = VsVersion.Vs2017;
+                        }
+                        else
+                        {
+                            vsVersion = VsVersion.Vs2015;
+                        }
+                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion);
 
                     default:
                         if (name.StartsWith("System."))
