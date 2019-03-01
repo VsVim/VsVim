@@ -8,6 +8,10 @@
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <!-- 
+         The dll for the C# script uses the one of VS2017 update 9.
+         For users of old Visual Studio we will need to replace them.
+    -->
     <Reference Include="Microsoft.CodeAnalysis.Scripting, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" />
     <Reference Include="Microsoft.CodeAnalysis, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" />
     <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting, Version=2.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" />
