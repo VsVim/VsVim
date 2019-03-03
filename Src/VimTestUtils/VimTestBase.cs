@@ -554,7 +554,7 @@ namespace Vim.UnitTest
                     typeof(global::Vim.UnitTest.Exports.VimHost),
                     typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
-                    typeof(WordCompletionSessionFactoryService),
+                    // typeof(WordCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
                     typeof(OutlinerTaggerProvider)));
 

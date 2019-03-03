@@ -1,17 +1,21 @@
-﻿using System;
+﻿#if VS_SPECIFIC_2019
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using Vim;
 using Vim.Extensions;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace VsSpecific.Implementation.WordCompletion
 {
-    /*
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView
     /// instance and given set of words.
@@ -22,10 +26,8 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     /// starting a word completion session
     /// </summary>
     [Name("Vim Word Completion Session Factory Service")]
-    [ContentType(VimConstants.AnyContentType)]
-    // [Export(typeof(IWordCompletionSessionFactoryService))]
-    // [Export(typeof(ICompletionSourceProvider))]
-    internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider
+    [Export(typeof(IWordCompletionSessionFactoryService))]
+    internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService
     {
         #region CompletionData
 
@@ -47,126 +49,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
         #endregion
 
-        #region CompletionSource
-
-        private sealed class CompletionSource : ICompletionSource
-        {
-            /// <summary>
-            /// Key in which the completion information is stored
-            /// </summary>
-            private readonly object _completionDataKey;
-
-            /// <summary>
-            /// The associated ITextBuffer 
-            /// </summary>
-            private readonly ITextBuffer _textBuffer;
-
-            internal CompletionSource(ITextBuffer textBuffer, object completionDataKey)
-            {
-                _completionDataKey = completionDataKey;
-                _textBuffer = textBuffer;
-            }
-
-            /// <summary>
-            /// Augment the completion session with the provided set of words if this completion session is 
-            /// being created for a word completion session
-            /// </summary>
-            void ICompletionSource.AugmentCompletionSession(ICompletionSession session, IList<CompletionSet> completionSets)
-            {
-                var textView = session.TextView;
-
-                // Only provide completion information for the ITextBuffer directly associated with the 
-                // ITextView.  In a projcetion secnario there will be several ITextBuffer instances associated
-                // with a given ITextView and we provide ICompletionSource values for all of them.  We want to
-                // avoid creating duplicate completion information
-                if (textView.TextBuffer != _textBuffer)
-                {
-                    return;
-                }
-
-                // Get out the collection of words.  If none is present then there is no information to
-                // augment here
-                if (!textView.Properties.TryGetPropertySafe(_completionDataKey, out CompletionData completionData) || completionData.WordCollection == null)
-                {
-                    return;
-                }
-
-                var trackingSpan = completionData.WordSpan.Snapshot.CreateTrackingSpan(
-                    completionData.WordSpan.Span,
-                    SpanTrackingMode.EdgeInclusive);
-                var completions = completionData.WordCollection.Select(word => new Completion(word));
-                var wordCompletionSet = new WordCompletionSet(trackingSpan, completions);
-                completionSets.Add(wordCompletionSet);
-            }
-
-            void IDisposable.Dispose()
-            {
-                // Nothing to dispose of
-            }
-        }
-
-        #endregion
-
-        #region DismissedWordCompletionSession
-
-        /// <summary>
-        /// An IWordCompletionSession which starts out dismissed.
-        /// </summary>
-        private sealed class DismissedWordCompletionSession : IWordCompletionSession
-        {
-            private readonly ITextView _textView;
-            private readonly PropertyCollection _properties = new PropertyCollection();
-
-            internal DismissedWordCompletionSession(ITextView textView)
-            {
-                _textView = textView;
-            }
-
-            void IWordCompletionSession.Dismiss()
-            {
-            }
-
-            event EventHandler IWordCompletionSession.Dismissed
-            {
-                add { }
-                remove { }
-            }
-
-            bool IWordCompletionSession.IsDismissed
-            {
-                get { return true; }
-            }
-
-            bool IWordCompletionSession.MoveNext()
-            {
-                return false;
-            }
-
-            bool IWordCompletionSession.MovePrevious()
-            {
-                return false;
-            }
-
-            ITextView IWordCompletionSession.TextView
-            {
-                get { return _textView; }
-            }
-
-            PropertyCollection IPropertyOwner.Properties
-            {
-                get { return _properties; }
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Key used to hide the CompletionData in the ITextView
         /// </summary>
         private readonly object _completionDataKey = new object();
-
-        private readonly ICompletionBroker _completionBroker;
-        private readonly IIntellisenseSessionStackMapService _intellisenseSessionStackMapService;
+        private readonly IAsyncCompletionBroker _asyncCompletionBroker;
 
         private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
 
@@ -178,10 +65,9 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         internal static object WordCompletionSessionKey = new object();
 
         [ImportingConstructor]
-        internal WordCompletionSessionFactoryService(ICompletionBroker completionBroker, IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
+        internal WordCompletionSessionFactoryService(IAsyncCompletionBroker asyncCompletionBroker)
         {
-            _completionBroker = completionBroker;
-            _intellisenseSessionStackMapService = intellisenseSessionStackMapService;
+            _asyncCompletionBroker = asyncCompletionBroker;
         }
 
         private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
@@ -203,29 +89,32 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 // Dismiss any active ICompletionSession instances.  It's possible and possibly common for 
                 // normal intellisense to be active when the user invokes word completion.  We want only word
                 // completion displayed at this point 
-                foreach (var existingCompletionSession in _completionBroker.GetSessions(textView))
-                {
-                    existingCompletionSession.Dismiss();
-                }
+                _asyncCompletionBroker.GetSession(textView)?.Dismiss();
 
                 // Create a completion session at the start of the word.  The actual session information will 
                 // take care of mapping it to a specific span
-                var trackingPoint = textView.TextSnapshot.CreateTrackingPoint(wordSpan.Start, PointTrackingMode.Positive);
-                var completionSession = _completionBroker.CreateCompletionSession(textView, trackingPoint, true);
-                completionSession.Properties[WordCompletionSessionKey] = WordCompletionSessionKey;
-
-                // Start the completion.  This will cause it to get populated at which point we can go about 
-                // filtering the data
-                completionSession.Start();
+                var completionTrigger = new CompletionTrigger(CompletionTriggerReason.Insertion, wordSpan.Snapshot);
+                var asyncCompletionSession = _asyncCompletionBroker.TriggerCompletion(
+                    textView,
+                    completionTrigger,
+                    wordSpan.Start,
+                    CancellationToken.None);
+                    
+                asyncCompletionSession.Properties[WordCompletionSessionKey] = WordCompletionSessionKey;
 
                 // It's possible for the Start method to dismiss the ICompletionSession.  This happens when there
                 // is an initialization error such as being unable to find a CompletionSet.  If this occurs we
                 // just return the equivalent IWordCompletionSession (one which is dismissed)
-                if (completionSession.IsDismissed)
+                if (asyncCompletionSession.IsDismissed)
                 {
                     return new DismissedWordCompletionSession(textView);
                 }
 
+                asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);
+                return new WordAsyncCompletionSession(asyncCompletionSession);
+                /*
+
+                var wordCompletionSession = new WordAsyncompletionSession();
                 // Now move the word completion set to the fron
                 var wordCompletionSet = completionSession.CompletionSets.OfType<WordCompletionSet>().FirstOrDefault();
                 if (wordCompletionSet == null)
@@ -255,6 +144,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 RaiseCompleted(wordCompletionSession);
 
                 return wordCompletionSession;
+                */
             }
             finally
             {
@@ -269,15 +159,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         }
 
         #endregion
-
-        #region ICompletionSourceProvider
-
-        ICompletionSource ICompletionSourceProvider.TryCreateCompletionSource(ITextBuffer textBuffer)
-        {
-            return new CompletionSource(textBuffer, _completionDataKey);
-        }
-
-        #endregion
     }
-    */
 }
+
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+// Nothing to do
+#else
+#error Unsupported configuration
+#endif

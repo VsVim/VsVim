@@ -14,6 +14,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.CSharpScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\DismissedWordCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\WordAsyncCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\WordAsyncCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\WordAsyncCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\WordCompletionSessionFactoryService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
