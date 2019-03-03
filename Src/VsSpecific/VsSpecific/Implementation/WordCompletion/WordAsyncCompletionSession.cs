@@ -37,7 +37,7 @@ namespace VsSpecific.Implementation.WordCompletion
         private void OnDismissed()
         {
             _isDismissed = true;
-
+            _asyncCompletionSession.Properties.RemoveProperty(WordAsyncCompletionSource.WordCompletionDataSessionKey);
             _dismissed?.Invoke(this, EventArgs.Empty);
         }
 

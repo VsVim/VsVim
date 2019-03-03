@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,13 @@ namespace VsSpecific.Implementation.WordCompletion
 {
     internal sealed class WordAsyncCompletionSource : IAsyncCompletionSource
     {
+        /// <summary>
+        /// This is inserted into every <see cref="IAsyncCompletionSession"/> property bag which is created for
+        /// a word completion.  It's used to pass the <see cref="WordCompletionData"/> instance to the 
+        /// <see cref="WordAsyncCompletionSession"/>
+        /// </summary>
+        internal static object WordCompletionDataSessionKey = new object();
+
         internal ITextView TextView { get; } 
 
         internal WordAsyncCompletionSource(ITextView textView)
@@ -22,20 +30,26 @@ namespace VsSpecific.Implementation.WordCompletion
 
         Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
         {
-            var items = ImmutableArray.Create(new CompletionItem("test", this));
-            var context = new CompletionContext(items);
+            CompletionContext context;
+            if (session.Properties[WordCompletionDataSessionKey] is WordCompletionData wordCompletionData)
+            {
+                var itemsRaw = wordCompletionData.WordCollection.Select(x => new CompletionItem(x, this)).ToArray();
+                var items = ImmutableArray.Create<CompletionItem>(itemsRaw);
+                context = new CompletionContext(items);
+            }
+            else
+            {
+                context = CompletionContext.Empty;
+            }
+
             return Task.FromResult(context);
         }
 
-        Task<object> IAsyncCompletionSource.GetDescriptionAsync(IAsyncCompletionSession session, CompletionItem item, CancellationToken token)
-        {
-            return Task.FromResult<object>("here");
-        }
+        Task<object> IAsyncCompletionSource.GetDescriptionAsync(IAsyncCompletionSession session, CompletionItem item, CancellationToken token) =>
+            Task.FromResult<object>(item.DisplayText);
 
-        CompletionStartData IAsyncCompletionSource.InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
-        {
-            return CompletionStartData.ParticipatesInCompletionIfAny;
-        }
+        CompletionStartData IAsyncCompletionSource.InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token) =>
+            CompletionStartData.ParticipatesInCompletionIfAny;
     }
 }
 
