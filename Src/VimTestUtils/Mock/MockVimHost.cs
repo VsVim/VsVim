@@ -5,6 +5,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest.Mock
 {
@@ -44,6 +45,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
+        public Action<CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
@@ -100,6 +102,7 @@ namespace Vim.UnitTest.Mock
             GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
+            RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
@@ -252,6 +255,11 @@ namespace Vim.UnitTest.Mock
         RunCommandResults IVimHost.RunCommand(string workingDirectory, string command, string arguments, string input)
         {
             return RunCommandFunc(workingDirectory, command, arguments, input);
+        }
+
+        void IVimHost.RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScriptFunc(callInfo, createEachTime);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

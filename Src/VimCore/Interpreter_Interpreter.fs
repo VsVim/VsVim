@@ -547,6 +547,9 @@ type VimInterpreter
             _globalSettings.Selection <- "inclusive"
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
 
+    member x.RunCSharpScript (callInfo :CallInfo, createEachTime :bool) = 
+        _vimHost.RunCSharpScript callInfo createEachTime
+
     member x.RunCall (callInfo: CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
 
@@ -1980,10 +1983,12 @@ type VimInterpreter
         | LineCommand.Call callInfo -> x.RunCall callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
-        | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2
-        | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
+        | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2
+        | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
+        | LineCommand.CSharpScript callInfo -> x.RunCSharpScript(callInfo, createEachTime = false)
+        | LineCommand.CSharpScriptCreateEachTime callInfo -> x.RunCSharpScript(callInfo, createEachTime = true)
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange registerName
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()

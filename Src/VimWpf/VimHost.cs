@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UI.Wpf
 {
@@ -316,6 +317,8 @@ namespace Vim.UI.Wpf
                 return new RunCommandResults(-1, "", ex.Message);
             }
         }
+
+        public abstract void RunCSharpScript(CallInfo callInfo, bool createEachTime);
 
         public abstract void RunHostCommand(ITextView textView, string command, string argument);
 
@@ -717,6 +720,11 @@ namespace Vim.UI.Wpf
         RunCommandResults IVimHost.RunCommand(string workingDirectory, string command, string arguments, string input)
         {
             return RunCommand(workingDirectory, command, arguments, input);
+        }
+
+        void IVimHost.RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScript(callInfo, createEachTime);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

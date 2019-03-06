@@ -488,6 +488,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// which can be specified
     | CopyTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
 
+    ///  The :csx command to run C# script.
+    | CSharpScript of CallInfo: CallInfo
+
+    ///  The :csxe command to run C# script and create each time.
+    | CSharpScriptCreateEachTime of CallInfo: CallInfo
+
     /// Delete the specified marks
     | DeleteMarks of Marks: Mark list
 

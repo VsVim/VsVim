@@ -126,9 +126,11 @@ type Parser
         ("chdir", "chd")
         ("close", "clo")
         ("cnext", "cn")
-        ("cprevious", "cp")
-        ("cwindow", "cw")
         ("copy", "co")
+        ("cprevious", "cp")
+        ("csx", "cs")
+        ("csxe", "csxe")
+        ("cwindow", "cw")
         ("delete","d")
         ("delmarks", "delm")
         ("digraphs", "dig")
@@ -789,6 +791,8 @@ type Parser
             | LineCommand.Close _ -> noRangeCommand
             | LineCommand.Compose _ -> noRangeCommand
             | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
+            | LineCommand.CSharpScript _ -> noRangeCommand
+            | LineCommand.CSharpScriptCreateEachTime _ -> noRangeCommand
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
             | LineCommand.DeleteMarks _ -> noRangeCommand
@@ -1067,6 +1071,26 @@ type Parser
         match destinationLineRange with
         | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
+
+    member x.ParseCSharpScript(lineRange:LineRangeSpecifier, createEachTime:bool) = 
+        x.SkipBlanks()
+
+        let isScriptLocal = x.ParseScriptLocalPrefix()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            _tokenizer.MoveNextToken()
+            let arguments = x.ParseRestOfLine()
+            let callInfo = {
+                LineRange = lineRange
+                Name = name
+                Arguments = arguments
+                IsScriptLocal = isScriptLocal
+            }
+            if createEachTime then
+               LineCommand.CSharpScriptCreateEachTime callInfo 
+            else
+               LineCommand.CSharpScript callInfo 
+        | _ -> LineCommand.ParseError Resources.Parser_Error
 
     /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
@@ -2374,6 +2398,8 @@ type Parser
                 | "cnext" -> handleCount x.ParseQuickFixNext
                 | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
+                | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
+                | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
                 | "cwindow" -> noRange x.ParseQuickFixWindow
                 | "delete" -> x.ParseDelete lineRange

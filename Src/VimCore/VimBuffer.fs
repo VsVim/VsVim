@@ -702,7 +702,7 @@ type internal VimBuffer
  
             if _isClosed && not x.IsProcessingInput then
                 _postClosedEvent.Trigger x   
-    
+
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
         _errorMessageEvent.Trigger x args

@@ -60,6 +60,14 @@ namespace Vim.VisualStudio.UnitTest
             /// be loaded in newer versions.
             /// </summary>
             ShellPia,
+
+            /// <summary>
+            /// Part of a component that is versioned.
+            /// it's possible to load older versions in newer ones.
+            /// Component version is not related to Visual Studio's version.
+            /// Mapping with the version of Visual Studio should be done individually.
+            /// </summary>
+            ComponentVersioned,
         }
 
         internal readonly struct ReferenceData
@@ -132,11 +140,8 @@ namespace Vim.VisualStudio.UnitTest
 
             internal static ReferenceData GetReferenceData(AssemblyName assemblyName)
             {
+                VsVersion vsVersion;
                 var name = assemblyName.Name;
-                if (name.StartsWith("System."))
-                {
-                    return new ReferenceData(assemblyName, ReferenceKind.Framework, vsVersion: null);
-                }
 
                 switch (name)
                 {
@@ -192,7 +197,40 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.Platform.WindowManagement":
                         return new ReferenceData(assemblyName, ReferenceKind.ShellNonVersioned, getVersionFromVersionNumber());
 
+                    case "Microsoft.CodeAnalysis":
+                    case "Microsoft.CodeAnalysis.CSharp":
+                    case "Microsoft.CodeAnalysis.CSharp.Scripting":
+                    case "Microsoft.CodeAnalysis.Scripting":
+                        if (new Version("3.0.0.0") <= assemblyName.Version)
+                        {
+                            vsVersion = VsVersion.Vs2019;
+                        }
+                        else if (new Version("2.10.0.0") <= assemblyName.Version)
+                        {
+                            vsVersion = VsVersion.Vs2017;
+                        }
+                        else
+                        {
+                            vsVersion = VsVersion.Vs2015;
+                        }
+                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion);
+
+                    case "System.Collections.Immutable":
+                        if (new Version("1.2.0.0") <= assemblyName.Version)
+                        {
+                            vsVersion = VsVersion.Vs2017;
+                        }
+                        else
+                        {
+                            vsVersion = VsVersion.Vs2015;
+                        }
+                        return new ReferenceData(assemblyName, ReferenceKind.ComponentVersioned, vsVersion);
+
                     default:
+                        if (name.StartsWith("System."))
+                        {
+                            return new ReferenceData(assemblyName, ReferenceKind.Framework, vsVersion: null);
+                        }
                         throw new Exception($"Unrecognized reference {name}");
                 }
 
@@ -223,6 +261,7 @@ namespace Vim.VisualStudio.UnitTest
                     case ReferenceKind.Editor:
                         Assert.Equal(VsVersion.MinimumSupported, refData.VsVersion);
                         break;
+                    case ReferenceKind.ComponentVersioned:
                     case ReferenceKind.ShellVersioned:
                         Assert.True(refData.VsVersion <= VsVersion.MinimumSupported);
                         break;
@@ -255,6 +294,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 switch (refData.Kind)
                 {
+                    case ReferenceKind.ComponentVersioned:
                     case ReferenceKind.ShellVersioned:
                     case ReferenceKind.ShellPia:
                         if (vsVersion < refData.VsVersion)

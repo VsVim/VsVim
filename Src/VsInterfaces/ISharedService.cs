@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -46,6 +47,12 @@ namespace Vim.VisualStudio
         /// Go to the tab with the specified index
         /// </summary>
         void GoToTab(int index);
+
+        /// <summary>
+        /// Run C# Script.
+        /// </summary>
+        /// <returns></returns>
+        void RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime);
     }
 
     /// <summary>

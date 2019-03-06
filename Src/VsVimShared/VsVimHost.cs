@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
 using System.Windows.Threading;
 using System.Diagnostics;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -85,7 +86,7 @@ namespace Vim.VisualStudio
                     default:
                         Debug.Assert(false);
                         return SettingValue.NewToggle(false);
-               }
+                }
             }
 
             SettingValue IVimCustomSettingSource.GetSettingValue(string name)
@@ -204,7 +205,7 @@ namespace Vim.VisualStudio
                     MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
                     ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
                 });
-           }
+            }
 
             private void SyncAction(Action action)
             {
@@ -358,7 +359,7 @@ namespace Vim.VisualStudio
                         outputPane.OutputString(e.Message + Environment.NewLine);
                     }
                 };
-            } 
+            }
         }
 
         public override void EnsurePackageLoaded()
@@ -772,6 +773,11 @@ namespace Vim.VisualStudio
         public override void Quit()
         {
             _dte.Quit();
+        }
+
+        public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        {
+            _sharedService.RunCSharpScript(_vim, callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
