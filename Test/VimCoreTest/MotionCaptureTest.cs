@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using System;
 
 namespace Vim.UnitTest
 {
@@ -385,11 +386,11 @@ namespace Vim.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.OnSearchEnd(searchResult =>
             {
-                Assert.True(SearchKind.ForwardWithWrap == args.SearchResult.SearchData.Kind);
+                Assert.True(SearchKind.ForwardWithWrap == searchResult.SearchData.Kind);
                 didRun = true;
-            };
+            });
             Process("/cat");
             Assert.True(didRun);
         }
@@ -400,11 +401,11 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.OnSearchEnd(searchResult =>
             {
-                Assert.True(SearchKind.Forward == args.SearchResult.SearchData.Kind);
+                Assert.True(SearchKind.Forward == searchResult.SearchData.Kind);
                 didRun = true;
-            };
+            });
             Process("/cat");
             Assert.True(didRun);
         }
@@ -414,11 +415,11 @@ namespace Vim.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.OnSearchEnd(searchResult =>
             {
-                Assert.True(SearchKind.BackwardWithWrap == args.SearchResult.SearchData.Kind);
+                Assert.True(SearchKind.BackwardWithWrap == searchResult.SearchData.Kind);
                 didRun = true;
-            };
+            });
             Process("?cat");
             Assert.True(didRun);
         }
@@ -429,11 +430,11 @@ namespace Vim.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.OnSearchEnd(searchResult =>
             {
-                Assert.True(SearchKind.Backward == args.SearchResult.SearchData.Kind);
+                Assert.True(SearchKind.Backward == searchResult.SearchData.Kind);
                 didRun = true;
-            };
+            });
             Process("?cat");
             Assert.True(didRun);
         }
@@ -509,7 +510,7 @@ namespace Vim.UnitTest
         [WpfFact]
         public void Search_EnsureIncrementalSearchNotStarted()
         {
-            Assert.False(_incrementalSearch.InSearch);
+            Assert.False(_incrementalSearch.HasActiveSession);
         }
 
         /// <summary>
@@ -519,7 +520,7 @@ namespace Vim.UnitTest
         public void Search_EnsureStartedOnSlash()
         {
             _capture.GetMotionAndCount('/');
-            Assert.True(_incrementalSearch.InSearch);
+            Assert.True(_incrementalSearch.HasActiveSession);
         }
 
         /// <summary>
@@ -531,7 +532,7 @@ namespace Vim.UnitTest
             var result = _capture.GetMotionAndCount('/');
             Assert.True(result.IsNeedMoreInput);
             result.AsNeedMoreInput().BindData.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
-            Assert.False(_incrementalSearch.InSearch);
+            Assert.False(_incrementalSearch.HasActiveSession);
         }
 
         [WpfFact]

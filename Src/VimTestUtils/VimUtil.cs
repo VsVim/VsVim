@@ -177,7 +177,6 @@ namespace Vim.UnitTest
                 bindDataStorage);
         }
 
-
         internal static Command CreateNormalCommand(
             NormalCommand command = null,
             CommandData commandData = null)
@@ -321,5 +320,19 @@ namespace Vim.UnitTest
             var parser = CreateParser();
             return parser.ParseExpression(expr);
         }
+
+        internal static KeyInput[] ConvertTextToKeyInput(string text) => text.Select(KeyInputUtil.CharToKeyInput).ToArray();
+
+        internal static KeyInput[] ConvertTextToKeyInput(string text, bool enter)
+        {
+            var keyInputs = text.Select(KeyInputUtil.CharToKeyInput);
+            if (enter)
+            {
+                keyInputs = keyInputs.Concat(new[] { KeyInputUtil.EnterKey });
+            }
+            return keyInputs.ToArray();
+        }
+
+        internal static KeyInput[] ConvertVimKeysToKeyInput(params VimKey[] vimKeys) => vimKeys.Select(KeyInputUtil.VimKeyToKeyInput).ToArray();
     }
 }

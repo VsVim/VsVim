@@ -4,6 +4,7 @@ using Vim.EditorHost;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -51,10 +52,10 @@ namespace Vim.UnitTest
         /// After the search is completed we shouldn't be returning any results
         /// </summary>
         [WpfFact]
-        public void GetTags_AfterSearchCompleted()
+        public async Task GetTags_AfterSearchCompleted()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog");
+            await _search.DoSearchAsync("dog");
             Assert.Empty(GetTags());
         }
 
@@ -62,10 +63,10 @@ namespace Vim.UnitTest
         /// Get tags should return the current match while searching
         /// </summary>
         [WpfFact]
-        public void GetTags_InSearchWithMatch()
+        public async Task GetTags_InSearchWithMatch()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog", enter: false);
+            await _search.DoSearchAsync("dog", enter: false);
             Assert.Equal("dog", GetTags().Single().Span.GetText());
         }
 
@@ -74,11 +75,11 @@ namespace Vim.UnitTest
         /// visual mode values.  
         /// </summary>
         [WpfFact]
-        public void GetTags_NoneInVisualMode()
+        public async Task GetTags_NoneInVisualMode()
         {
             Create("dog cat bar");
             _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-            _search.DoSearch("dog", enter: false);
+            await _search.DoSearchAsync("dog", enter: false);
             Assert.Empty(GetTags());
         }
 
@@ -86,10 +87,10 @@ namespace Vim.UnitTest
         /// Don't return any tags if we're currently disabled
         /// </summary>
         [WpfFact]
-        public void GetTags_NoneIfDisabled()
+        public async Task GetTags_NoneIfDisabled()
         {
             Create("dog cat bar");
-            _search.DoSearch("dog", enter: false);
+            await _search.DoSearchAsync("dog", enter: false);
             _globalSettings.IncrementalSearch = false;
             Assert.Empty(GetTags());
         }

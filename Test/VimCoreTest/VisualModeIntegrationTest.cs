@@ -11,6 +11,7 @@ using Xunit;
 using Xunit.Extensions;
 using System.Collections.Generic;
 using Vim.UnitTest.Exports;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -2834,30 +2835,33 @@ namespace Vim.UnitTest
 
             [WpfTheory]
             [MemberData(nameof(VirtualEditOptions))]
-            public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
+            public async Task IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
                 _globalSettings.VirtualEdit = virtualEdit;
                 SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/c");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             [WpfFact]
-            public void IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
+            public async Task IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
             {
                 Create("dog", "", "cat", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/ca");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             [WpfFact]
-            public void IncrementalSearch_CharModeShouldExtendToSearchResult()
+            public async Task IncrementalSearch_CharModeShouldExtendToSearchResult()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
                 _vimBuffer.Process("/o");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
             }
 
@@ -2883,7 +2887,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Esc>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
             }
 
@@ -2896,7 +2900,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Enter>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 

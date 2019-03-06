@@ -42,7 +42,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var search = vimBuffer.IncrementalSearch;
-            if (search.InSearch && search.InPasteWait)
+            if (search.HasActiveSession && search.InPasteWait)
             {
                 return true;
             }
@@ -63,7 +63,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private static string GetStatusOther(IVimBuffer vimBuffer, IMode currentMode)
         {
             var search = vimBuffer.IncrementalSearch;
-            if (search.InSearch)
+            if (search.HasActiveSession)
             {
                 var searchText = search.CurrentSearchText;
                 var prefix = search.CurrentSearchData.Path.IsForward ? "/" : "?";
@@ -194,7 +194,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         public static string GetShowCommandText(IVimBuffer vimBuffer)
         {
-            if (vimBuffer.IncrementalSearch.InSearch)
+            if (vimBuffer.IncrementalSearch.HasActiveSession)
             {
                 return string.Empty;
             }

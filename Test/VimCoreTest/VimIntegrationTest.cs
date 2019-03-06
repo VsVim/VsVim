@@ -59,9 +59,9 @@ namespace Vim.UnitTest
             {
                 var vimBuffer = CreateVimBuffer("hello world");
                 vimBuffer.ProcessNotation("/wo");
-                Assert.True(vimBuffer.IncrementalSearch.InSearch);
+                Assert.True(vimBuffer.IncrementalSearch.HasActiveSession);
                 vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-                Assert.False(vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(vimBuffer.IncrementalSearch.HasActiveSession);
             }
 
             /// <summary>

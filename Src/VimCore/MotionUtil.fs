@@ -2853,6 +2853,7 @@ type internal MotionUtil
             match searchResult with
             | SearchResult.Error _ -> None
             | SearchResult.NotFound _ -> None
+            | SearchResult.Cancelled _ -> None
             | SearchResult.Found (_, span, _, _) ->
                 // Create the MotionResult for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because
@@ -3010,6 +3011,7 @@ type internal MotionUtil
                 match searchResult with
                 | SearchResult.Error _ -> None
                 | SearchResult.NotFound _ -> None
+                | SearchResult.Cancelled _ -> None
                 | SearchResult.Found (_, span, _, _) ->
 
                     let motionKind = MotionKind.CharacterWiseExclusive

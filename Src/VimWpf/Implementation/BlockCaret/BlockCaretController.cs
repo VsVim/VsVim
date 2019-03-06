@@ -76,7 +76,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             // The caret should be invisible during incremental search no matter what mode we are
             // in
-            if (_vimBuffer.IncrementalSearch.InSearch)
+            if (_vimBuffer.IncrementalSearch.HasActiveSession)
             {
                 _blockCaret.CaretDisplay = CaretDisplay.Invisible;
                 return;

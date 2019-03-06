@@ -5,7 +5,6 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
 using Vim.EditorHost;
-using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -21,6 +20,9 @@ using Vim.UnitTest;
 using Vim.UnitTest.Exports;
 using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
+using System.Threading;
+using EnvDTE;
+using Thread = System.Threading.Thread;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -409,6 +411,21 @@ namespace Vim.VisualStudio.UnitTest
             var vimBuffer = CreateVimBuffer();
             vimBuffer.TextBuffer.SetText("hello world");
             vimBuffer.Process("/world", enter: true);
+
+            // This will kick off five search items on the thread pool, each of which
+            // has a strong reference. Need to wait until they have all completed.
+            var count = 0;
+            while (count < 5)
+            {
+                while (_synchronizationContext.PostedCallbackCount > 0)
+                {
+                    _synchronizationContext.RunOne();
+                    count++;
+                }
+
+                Thread.Yield();
+            }
+
             var weakTextBuffer = new WeakReference(vimBuffer.TextBuffer);
 
             // Clean up 

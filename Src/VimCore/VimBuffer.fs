@@ -132,8 +132,8 @@ type internal ModeMap
             oldMode.OnLeave()
 
             // Incremental search should not persist between mode changes.  
-            if _incrementalSearch.InSearch then
-                _incrementalSearch.Cancel()
+            if _incrementalSearch.HasActiveSession then
+                _incrementalSearch.CancelSession()
 
             _vimTextBuffer.SwitchMode kind arg
 

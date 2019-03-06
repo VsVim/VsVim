@@ -13,6 +13,7 @@ open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Collections.Generic
+open System.Threading.Tasks
 open Vim.Interpreter
 open System
 
@@ -662,6 +663,9 @@ type SearchResult =
     /// but wasn't found do to the lack of a wrap in the SearchData value
     | NotFound of SeachData: SearchData * CanFindWithWrap: bool
 
+    /// The search was cancelled
+    | Cancelled of SearchData: SearchData
+
     /// There was an error converting the pattern to a searchable value.  The string value is the
     /// error message
     | Error of SearchData: SearchData * Error: string
@@ -673,6 +677,7 @@ type SearchResult =
         match x with 
         | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
+        | SearchResult.Cancelled (searchData) -> searchData
         | SearchResult.Error (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult: SearchResult) = 
@@ -3566,6 +3571,8 @@ and BindData<'T> = {
 
 } with
 
+    member x.CreateBindResult() = BindResult.NeedMoreInput x
+
     /// Used for BindData where there can only be a complete result for a given 
     /// KeyInput.
     static member CreateForKeyInput keyRemapMode valueFunc =
@@ -4071,46 +4078,77 @@ type IJumpList =
     [<CLIEvent>]
     abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
+type IIncrementalSearchSession = 
+
+    /// Key that uniquely identifies this session
+    abstract Key: obj
+
+    /// Whether or not the search has started
+    abstract IsStarted: bool
+
+    /// Whether or not the session is complete. True when the session has finished the search
+    /// or was cancelled.
+    abstract IsCompleted: bool
+
+    /// When in the middle of a search this will return the SearchData for 
+    /// the search
+    abstract SearchData: SearchData 
+
+    /// When a search is complete within the session this will hold the result
+    abstract SearchResult: SearchResult option
+
+    /// Start an incremental search in the ITextView
+    abstract Start: unit -> BindData<SearchResult>
+
+    /// Reset the search to the specified text
+    abstract ResetSearch: searchText: string -> unit
+
+    /// Cancel the session without completing
+    abstract Cancel: unit -> unit
+
+    /// This will resolve to SearchResult for the current value of SearchData once the
+    /// search is complete
+    abstract GetSearchResultAsync: unit -> Task<SearchResult>
+
+    [<CLIEvent>]
+    abstract SearchStart: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+
+    [<CLIEvent>]
+    abstract SearchEnd: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+
+    [<CLIEvent>]
+    abstract SessionComplete: IDelegateEvent<System.EventHandler<EventArgs>>
+
+type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) = 
+    inherit System.EventArgs()
+
+    member x.Session = _session
+
 type IIncrementalSearch = 
 
-    /// True when a search is occurring
-    abstract InSearch: bool
+    /// The active IIncrementalSearchSession
+    abstract ActiveSession: IIncrementalSearchSession option
+
+    /// True when there is an IIncrementalSearchSession in progress
+    abstract HasActiveSession: bool
 
     /// True when the search is in a paste wait state
     abstract InPasteWait: bool
 
-    /// When in the middle of a search this will return the SearchData for 
-    /// the search
-    abstract CurrentSearchData: SearchData 
-
-    /// When in the middle of a search this will return the SearchResult for the 
-    /// search
-    abstract CurrentSearchResult: SearchResult 
-
-    /// When in the middle of a search this will return the actual text which
-    /// is being searched for
-    abstract CurrentSearchText: string
-
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
 
-    /// Begin an incremental search in the ITextView
-    abstract Begin: path: SearchPath -> BindData<SearchResult>
+    abstract CurrentSearchData: SearchData
 
-    /// Cancel an incremental search which is currently in progress
-    abstract Cancel: unit -> unit
+    abstract CurrentSearchText: string
 
-    /// Reset the current search to be the given value 
-    abstract ResetSearch: pattern: string -> unit
+    abstract CreateSession: searchPath: SearchPath -> IIncrementalSearchSession
 
-    [<CLIEvent>]
-    abstract CurrentSearchUpdated: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+    /// Cancel the active session if there is one.
+    abstract CancelSession: unit -> unit
 
     [<CLIEvent>]
-    abstract CurrentSearchCompleted: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
-
-    [<CLIEvent>]
-    abstract CurrentSearchCancelled: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+    abstract SessionCreated: IDelegateEvent<System.EventHandler<IncrementalSearchSessionEventArgs>>
 
 type RecordRegisterEventArgs(_register: Register, _isAppend: bool) =
     inherit System.EventArgs()
