@@ -8,7 +8,7 @@ using System.ComponentModel.Composition;
 using System.Text;
 using Vim;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace VsSpecific.Implementation.WordCompletion.Async
 {
     [Name("Vim Async Word Completion Session Factory Service")]
     [ContentType(VimConstants.AnyContentType)]

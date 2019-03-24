@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace VsSpecific.Implementation.WordCompletion.Async
 {
     internal sealed class WordAsyncCompletionSource : IAsyncCompletionSource
     {
@@ -31,7 +31,7 @@ namespace VsSpecific.Implementation.WordCompletion
         Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
         {
             CompletionContext context;
-            if (session.Properties[WordCompletionDataSessionKey] is WordCompletionData wordCompletionData)
+            if (session.Properties.TryGetProperty(WordCompletionDataSessionKey, out WordCompletionData wordCompletionData))
             {
                 var itemsRaw = wordCompletionData.WordCollection.Select(x => new CompletionItem(x, this)).ToArray();
                 var items = ImmutableArray.Create<CompletionItem>(itemsRaw);

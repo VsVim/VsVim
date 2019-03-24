@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace VsSpecific.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView

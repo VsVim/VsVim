@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace VsSpecific.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  
