@@ -58,6 +58,14 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             // completion displayed at this point 
             _asyncCompletionBroker.GetSession(textView)?.Dismiss();
 
+            // Store the WordCompletionData inside the ITextView. The IAsyncCompletionSource implementation will 
+            // asked to provide data for the creation of the IAsyncCompletionSession. Hence we must share through
+            // ITextView
+            var wordCompletionData = new WordCompletionData(
+                wordSpan,
+                new ReadOnlyCollection<string>(wordCollection.ToList()));
+            textView.SetWordCompletionData(wordCompletionData);
+
             // Create a completion session at the start of the word.  The actual session information will 
             // take care of mapping it to a specific span
             var completionTrigger = new CompletionTrigger(CompletionTriggerReason.Insertion, wordSpan.Snapshot);
@@ -66,11 +74,6 @@ namespace VsSpecific.Implementation.WordCompletion.Async
                 completionTrigger,
                 wordSpan.Start,
                 CancellationToken.None);
-                
-            var wordCompletionData = new WordCompletionData(
-                wordSpan,
-                new ReadOnlyCollection<string>(wordCollection.ToList()));
-            asyncCompletionSession.Properties[WordAsyncCompletionSource.WordCompletionDataSessionKey] = wordCompletionData;
 
             // It's possible for the Start method to dismiss the ICompletionSession.  This happens when there
             // is an initialization error such as being unable to find a CompletionSet.  If this occurs we

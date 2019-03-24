@@ -19,7 +19,6 @@ namespace VsSpecific.Implementation.WordCompletion.Async
     {
         private readonly ITextView _textView;
         private readonly IAsyncCompletionSession _asyncCompletionSession;
-        private readonly ITrackingSpan _wordTrackingSpan;
         private bool _isDismissed;
         private event EventHandler _dismissed;
 
@@ -37,7 +36,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
         private void OnDismissed()
         {
             _isDismissed = true;
-            _asyncCompletionSession.Properties.RemoveProperty(WordAsyncCompletionSource.WordCompletionDataSessionKey);
+            _textView.ClearWordCompletionData();
             _dismissed?.Invoke(this, EventArgs.Empty);
         }
 

@@ -14,24 +14,17 @@ namespace VsSpecific.Implementation.WordCompletion.Async
 {
     internal sealed class WordAsyncCompletionSource : IAsyncCompletionSource
     {
-        /// <summary>
-        /// This is inserted into every <see cref="IAsyncCompletionSession"/> property bag which is created for
-        /// a word completion.  It's used to pass the <see cref="WordCompletionData"/> instance to the 
-        /// <see cref="WordAsyncCompletionSession"/>
-        /// </summary>
-        internal static object WordCompletionDataSessionKey = new object();
-
-        internal ITextView TextView { get; } 
+        internal ITextView TextView { get; }
 
         internal WordAsyncCompletionSource(ITextView textView)
         {
             TextView = textView;
         }
 
-        Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
+        internal Task<CompletionContext> GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
         {
             CompletionContext context;
-            if (session.Properties.TryGetProperty(WordCompletionDataSessionKey, out WordCompletionData wordCompletionData))
+            if (TextView.TryGetWordCompletionData(out var wordCompletionData))
             {
                 var itemsRaw = wordCompletionData.WordCollection.Select(x => new CompletionItem(x, this)).ToArray();
                 var items = ImmutableArray.Create<CompletionItem>(itemsRaw);
@@ -45,12 +38,28 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             return Task.FromResult(context);
         }
 
+        internal CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+        {
+            if (TextView.TryGetWordCompletionData(out var wordCompletionData))
+            {
+                return new CompletionStartData(CompletionParticipation.ExclusivelyProvidesItems, wordCompletionData.WordSpan);
+            }
+
+            return CompletionStartData.DoesNotParticipateInCompletion;
+        }
+
+        #region IAsyncCompletionSource
+
+        Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token) =>
+            GetCompletionContextAsync(session, trigger, triggerLocation, applicableToSpan, token);
+
         Task<object> IAsyncCompletionSource.GetDescriptionAsync(IAsyncCompletionSession session, CompletionItem item, CancellationToken token) =>
             Task.FromResult<object>(item.DisplayText);
 
-        CompletionStartData IAsyncCompletionSource.InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token) =>
-            CompletionStartData.ParticipatesInCompletionIfAny;
-    }
+        CompletionStartData IAsyncCompletionSource.InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token) => InitializeCompletion(trigger, triggerLocation, token);
+
+        #endregion
+}
 }
 
 #elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
