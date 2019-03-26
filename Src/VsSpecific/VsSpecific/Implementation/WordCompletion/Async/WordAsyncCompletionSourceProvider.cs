@@ -13,6 +13,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
     [Name("Vim Async Word Completion Session Factory Service")]
     [ContentType(VimConstants.AnyContentType)]
     [Export(typeof(IAsyncCompletionSourceProvider))]
+    [Order(Before = "Roslyn Completion Source Provider")]
     internal sealed class WordAsyncCompletionSourceProvider : IAsyncCompletionSourceProvider
     {
         IAsyncCompletionSource IAsyncCompletionSourceProvider.GetOrCreate(ITextView textView) => new WordAsyncCompletionSource(textView);

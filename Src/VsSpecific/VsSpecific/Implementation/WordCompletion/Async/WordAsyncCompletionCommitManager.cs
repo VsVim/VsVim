@@ -34,7 +34,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
 
         #region IAsyncCompletionCommitManager
 
-        IEnumerable<char> IAsyncCompletionCommitManager.PotentialCommitCharacters => Array.Empty<char>();
+        IEnumerable<char> IAsyncCompletionCommitManager.PotentialCommitCharacters => new[] { ' ' };
 
         bool IAsyncCompletionCommitManager.ShouldCommitCompletion(IAsyncCompletionSession session, SnapshotPoint location, char typedChar, CancellationToken token) =>
             ShouldCommitCompletion(session, location, typedChar, token);
