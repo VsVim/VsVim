@@ -41,71 +41,20 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             _dismissed?.Invoke(this, EventArgs.Empty);
         }
 
-        /// <summary>
-        /// Send the command to the current session head
-        /// </summary>
-        internal bool SendCommand(IntellisenseKeyboardCommand command)
+        private bool WithOperations(Action<IAsyncCompletionSessionOperations> action)
         {
+            if (_asyncCompletionSession is IAsyncCompletionSessionOperations operations)
+            {
+                action(operations);
+                return true;
+            }
+
             return false;
-            /*
-            // Don't send the command if the active completion set is not the word completion
-            // set
-            if (_wordCompletionSet != _completionSession.SelectedCompletionSet)
-            {
-                return false;
-            }
-
-            var commandTarget = _intellisenseSessionStack as IIntellisenseCommandTarget;
-            if (commandTarget == null)
-            {
-                return false;
-            }
-
-            // Send the command
-            if (!commandTarget.ExecuteKeyboardCommand(command))
-            {
-                return false;
-            }
-
-            // Command succeeded so there is a new selection.  Put the new selection into the
-            // ITextView to replace the current selection
-            var wordSpan = TrackingSpanUtil.GetSpan(_textView.TextSnapshot, _wordTrackingSpan);
-            if (wordSpan.IsSome() &&
-                _wordCompletionSet.SelectionStatus != null &&
-                _wordCompletionSet.SelectionStatus.Completion != null)
-            {
-                _textView.TextBuffer.Replace(wordSpan.Value, _wordCompletionSet.SelectionStatus.Completion.InsertionText);
-            }
-
-            return true;
-            */
         }
 
-        /// <summary>
-        /// Move the selection up or down.  If we're at the end of the selection then wrap around to
-        /// the other side of the list
-        /// </summary>
-        private bool MoveWithWrap(bool moveNext)
-        {
-            return false;
-            /*
-            var originalCompletion = _wordCompletionSet.SelectionStatus?.Completion;
-            var ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.Down : IntellisenseKeyboardCommand.Up);
-            var currentCompletion = _wordCompletionSet.SelectionStatus?.Completion;
-            if (originalCompletion != null && currentCompletion == originalCompletion)
-            {
-                ret = SendCommand(moveNext ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine);
-            }
-
-            return ret;
-            */
-        }
-
-        private void Commit()
-        {
-            var enter = (char)13;
-            var ret = _asyncCompletionSession.Commit(enter, CancellationToken.None);
-        }
+        private bool MoveDown() => WithOperations(operations => operations.SelectDown());
+        private bool MoveUp() => WithOperations(operations => operations.SelectUp());
+        private void Commit() => _asyncCompletionSession.Commit(KeyInputUtil.EnterKey.Char, CancellationToken.None);
 
         #region IWordCompletionSession
 
@@ -123,8 +72,8 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             _asyncCompletionSession.Dismiss();
         }
 
-        bool IWordCompletionSession.MoveNext() => MoveWithWrap(moveNext: true);
-        bool IWordCompletionSession.MovePrevious() => MoveWithWrap(moveNext: false);
+        bool IWordCompletionSession.MoveNext() => MoveDown();
+        bool IWordCompletionSession.MovePrevious() => MoveUp();
         void IWordCompletionSession.Commit() => Commit();
 
         #endregion
