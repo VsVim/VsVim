@@ -131,6 +131,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             return MoveWithWrap(moveNext: false);
         }
 
+        void IWordCompletionSession.Commit()
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region IPropertyOwner 

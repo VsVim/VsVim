@@ -161,6 +161,9 @@ type IWordCompletionSession =
     /// Select the previous word in the session.
     abstract MovePrevious: unit -> bool
 
+    /// Commit the current session
+    abstract Commit: unit -> unit
+
     /// Dismiss the completion session 
     abstract Dismiss: unit -> unit
 

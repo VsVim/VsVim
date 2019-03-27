@@ -15,8 +15,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.CSharpScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\Extensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionCommitManagerProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionCommitManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\WordCompletionData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\DismissedWordCompletionSession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSourceProvider.cs" />

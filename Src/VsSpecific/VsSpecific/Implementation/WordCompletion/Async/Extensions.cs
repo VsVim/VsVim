@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿#if VS_SPECIFIC_2019
+
+using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -29,3 +31,9 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             : null;
     }
 }
+
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+// Nothing to do
+#else
+#error Unsupported configuration
+#endif

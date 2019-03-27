@@ -43,6 +43,10 @@ namespace VsSpecific.Implementation.WordCompletion
             return false;
         }
 
+        void IWordCompletionSession.Commit()
+        {
+        }
+
         ITextView IWordCompletionSession.TextView
         {
             get { return _textView; }

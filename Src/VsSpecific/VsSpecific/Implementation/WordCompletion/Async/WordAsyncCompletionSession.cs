@@ -8,6 +8,7 @@ using Vim.Extensions;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
+using System.Threading;
 
 namespace VsSpecific.Implementation.WordCompletion.Async
 {
@@ -100,6 +101,12 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             */
         }
 
+        private void Commit()
+        {
+            var enter = (char)13;
+            var ret = _asyncCompletionSession.Commit(enter, CancellationToken.None);
+        }
+
         #region IWordCompletionSession
 
         ITextView IWordCompletionSession.TextView => _textView;
@@ -118,6 +125,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
 
         bool IWordCompletionSession.MoveNext() => MoveWithWrap(moveNext: true);
         bool IWordCompletionSession.MovePrevious() => MoveWithWrap(moveNext: false);
+        void IWordCompletionSession.Commit() => Commit();
 
         #endregion
 
