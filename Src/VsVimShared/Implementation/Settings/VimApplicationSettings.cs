@@ -36,8 +36,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string ErrorGetFormat = "Cannot get setting {0}";
         internal const string ErrorSetFormat = "Cannot set setting {0}";
 
-        private readonly WritableSettingsStore _settingsStore;
-        private readonly IProtectedOperations _protectedOperations;
+        private readonly VimCollectionSettingsStore _settingsStore;
 
         internal event EventHandler<ApplicationSettingsEventArgs> SettingsChanged;
 
@@ -56,75 +55,13 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
         {
-            _settingsStore = settingsStore;
-            _protectedOperations = protectedOperations;
+            _settingsStore = new VimCollectionSettingsStore(CollectionPath, settingsStore, protectedOperations);
         }
 
-        internal bool GetBoolean(string propertyName, bool defaultValue)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    return defaultValue;
-                }
-
-                return _settingsStore.GetBoolean(CollectionPath, propertyName);
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
-        }
-
-        internal void SetBoolean(string propertyName, bool value)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetBoolean(CollectionPath, propertyName, value);
-                OnSettingsChanged();
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorSetFormat, propertyName), e);
-            }
-        }
-
-        internal string GetString(string propertyName, string defaultValue)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                if (!_settingsStore.PropertyExists(CollectionPath, propertyName))
-                {
-                    return defaultValue;
-                }
-
-                return _settingsStore.GetString(CollectionPath, propertyName);
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorGetFormat, propertyName), e);
-                return defaultValue;
-            }
-        }
-
-        internal void SetString(string propertyName, string value)
-        {
-            EnsureCollectionExists();
-            try
-            {
-                _settingsStore.SetString(CollectionPath, propertyName, value);
-                OnSettingsChanged();
-            }
-            catch (Exception e)
-            {
-                Report(string.Format(ErrorSetFormat, propertyName), e);
-            }
-        }
+        internal bool GetBoolean(string propertyName, bool defaultValue) => _settingsStore.GetBoolean(propertyName, defaultValue);
+        internal void SetBoolean(string propertyName, bool value) => _settingsStore.SetBoolean(propertyName, value);
+        internal string GetString(string propertyName, string defaultValue) => _settingsStore.GetString(propertyName, defaultValue);
+        internal void SetString(string propertyName, string value) => _settingsStore.SetString(propertyName, value);
 
         internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct, Enum
         {
@@ -145,28 +82,6 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal void SetEnum<T>(string propertyName, T value) where T : struct, Enum
         {
             SetString(propertyName, value.ToString());
-        }
-
-        private void EnsureCollectionExists()
-        {
-            try
-            {
-                if (!_settingsStore.CollectionExists(CollectionPath))
-                {
-                    _settingsStore.CreateCollection(CollectionPath);
-                }
-            }
-            catch (Exception e)
-            {
-                Report("Unable to create the settings collection", e);
-            }
-        }
-
-        private void Report(string message, Exception e)
-        {
-            message = message + ": " + e.Message;
-            var exception = new Exception(message, e);
-            _protectedOperations.Report(exception);
         }
 
         private ReadOnlyCollection<CommandKeyBinding> GetRemovedBindings()
