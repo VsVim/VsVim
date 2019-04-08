@@ -59,9 +59,20 @@ namespace Vim.VisualStudio.Implementation.Settings
         }
 
         internal bool GetBoolean(string propertyName, bool defaultValue) => _settingsStore.GetBoolean(propertyName, defaultValue);
-        internal void SetBoolean(string propertyName, bool value) => _settingsStore.SetBoolean(propertyName, value);
+
+        internal void SetBoolean(string propertyName, bool value)
+        {
+            _settingsStore.SetBoolean(propertyName, value);
+            OnSettingsChanged();
+        }
+
         internal string GetString(string propertyName, string defaultValue) => _settingsStore.GetString(propertyName, defaultValue);
-        internal void SetString(string propertyName, string value) => _settingsStore.SetString(propertyName, value);
+
+        internal void SetString(string propertyName, string value)
+        {
+            _settingsStore.SetString(propertyName, value);
+            OnSettingsChanged();
+        }
 
         internal T GetEnum<T>(string propertyName, T defaultValue) where T : struct, Enum
         {
