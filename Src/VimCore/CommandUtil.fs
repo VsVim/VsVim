@@ -1361,12 +1361,12 @@ type internal CommandUtil
 
         // Get the point for a decimal number.
         let getDecimal () =
-            getNumber NumberValue.Decimal @"-?\d+\b" (fun text ->
+            getNumber NumberValue.Decimal @"(?<!\d)-?\d+" (fun text ->
                 System.Int64.TryParse(text))
 
         // Get the point for a hex number.
         let getHex () =
-            getNumber NumberValue.Hex @"\b0[xX][0-9a-fA-F]+\b" (fun text ->
+            getNumber NumberValue.Hex @"(?<!\d)0[xX][0-9a-fA-F]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text.Substring(2), 16)
                 with
@@ -1375,7 +1375,7 @@ type internal CommandUtil
 
         // Get the point for an octal number.
         let getOctal () =
-            getNumber NumberValue.Octal @"\b0[0-7]+\b" (fun text ->
+            getNumber NumberValue.Octal @"(?<!\d)0[0-7]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text, 8)
                 with
@@ -1384,7 +1384,7 @@ type internal CommandUtil
 
         // Get the point for an binary number.
         let getBinary () =
-            getNumber NumberValue.Binary @"\b0[bB][0-1]+\b" (fun text ->
+            getNumber NumberValue.Binary @"(?<!\d)0[bB][0-1]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text.Substring(2), 2)
                 with
