@@ -1750,6 +1750,26 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// When using a named register, the unnamed register has the same
+            /// value, even when appending
+            /// </summary>
+            [WpfFact]
+            public void UnnamedRegisterActsLikeLastRegister()
+            {
+                // Reported in issue #2480.
+                Create("cat", "dog", "");
+                _vimBuffer.Process("\"cyw");
+                Assert.Equal("cat", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
+                Assert.Equal("cat", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
+                Assert.Equal("cat", UnnamedRegister.StringValue);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("\"Cyw");
+                Assert.Equal("catdog", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
+                Assert.Equal("catdog", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
+                Assert.Equal("catdog", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
             /// An empty last line is treated the same as one which contains text
             /// </summary>
             [WpfFact]
