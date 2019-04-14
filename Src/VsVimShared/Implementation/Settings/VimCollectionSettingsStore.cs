@@ -123,7 +123,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private void Report(string message, Exception e)
         {
-            message = message + ": " + e.Message;
+            message = $"{message}: {e.Message}";
             var exception = new Exception(message, e);
             _protectedOperations.Report(exception);
         }
