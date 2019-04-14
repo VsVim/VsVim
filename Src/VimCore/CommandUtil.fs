@@ -956,15 +956,23 @@ type internal CommandUtil
             else
                 span, result.OperationKind
 
-        // Caret should be placed at the start of the motion for both undo / redo so place it
-        // before starting the transaction
-        TextViewUtil.MoveCaretToPoint _textView span.Start
-        x.EditWithUndoTransaction "Delete" (fun () ->
-            _textBuffer.Delete(span.Span) |> ignore
+        match operationKind with
+        | OperationKind.CharacterWise ->
 
-            // Translate the point to the current snapshot.
-            let point = span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
-            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            x.EditWithUndoTransaction "Delete" (fun () ->
+                _textBuffer.Delete(span.Span) |> ignore
+
+                // Translate the point to the current snapshot.
+                let point = span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+
+        | OperationKind.LineWise ->
+
+            // Perform the deletion operation using common operations in order
+            // to handle the various cases.
+            let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count None
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
