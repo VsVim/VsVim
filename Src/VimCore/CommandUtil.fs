@@ -3071,35 +3071,6 @@ type internal CommandUtil
                 _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Get the current number of spaces to caret we are maintaining
-    member x.GetSpacesToCaret () =
-        let spacesToCaret = _commonOperations.GetSpacesToVirtualColumn x.CaretVirtualColumn
-        match _commonOperations.MaintainCaretColumn with
-        | MaintainCaretColumn.None -> spacesToCaret
-        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
-        | MaintainCaretColumn.EndOfLine -> spacesToCaret
-
-    /// Restore spaces to caret, or move to start of line if 'startofline' is set
-    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
-
-        // First apply scroll offset.
-        _commonOperations.AdjustCaretForScrollOffset()
-
-        // At this point the view has been scolled and the caret is on the proper line.  Need to
-        // adjust the caret within the line to the appropriate column
-        if useStartOfLine && _globalSettings.StartOfLine then
-            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-            TextViewUtil.MoveCaretToPoint _textView point
-        else
-            let virtualColumn = 
-                if _vimTextBuffer.UseVirtualSpace then
-                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
-                else
-                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
-                    VirtualSnapshotColumn(column)
-            TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
-            _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
-
     /// Get the number lines in the current window
     member x.GetWindowLineCount (textViewLines: ITextViewLineCollection) =
         let lineHeight = _textView.LineHeight
@@ -3151,7 +3122,7 @@ type internal CommandUtil
         let minCount = 1
         let count = max count minCount
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         // Update the caret to the specified offset from the first visible line if possible
         let updateCaretToOffset lineOffset =
@@ -3214,7 +3185,13 @@ type internal CommandUtil
                     updateCaretToOffset lineOffset
             | _ -> ()
 
-            x.RestoreSpacesToCaret spacesToCaret true
+            // First apply scroll offset.
+            _commonOperations.AdjustCaretForScrollOffset()
+
+            // At this point the view has been scolled and the caret is on the
+            // proper line.  Need to adjust the caret within the line to the
+            // appropriate column
+            _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3287,7 +3264,7 @@ type internal CommandUtil
                 else
                     lastLine
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         match getIsUp direction with
         | None ->
@@ -3331,7 +3308,13 @@ type internal CommandUtil
                 // Move the caret to the beginning of that line.
                 _textView.Caret.MoveTo(line.Start) |> ignore
 
-                x.RestoreSpacesToCaret spacesToCaret true
+                // First apply scroll offset.
+                _commonOperations.AdjustCaretForScrollOffset()
+
+                // At this point the view has been scolled and the caret is on
+                // the proper line.  Need to adjust the caret within the line
+                // to the appropriate column
+                _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3404,7 +3387,7 @@ type internal CommandUtil
         // it should always be at least at big as count.
         let rowCount = max rowCount count
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         x.ScrollViewportVerticallyByLines direction rowCount
 
@@ -3420,7 +3403,13 @@ type internal CommandUtil
                     TextViewUtil.MoveCaretToPoint _textView lineRange.Start
             | _ -> ()
 
-            x.RestoreSpacesToCaret spacesToCaret false
+            // First apply scroll offset.
+            _commonOperations.AdjustCaretForScrollOffset()
+
+            // At this point the view has been scolled and the caret is on the
+            // proper line.  Need to adjust the caret within the line to the
+            // appropriate column
+            _commonOperations.RestoreSpacesToCaret spacesToCaret false
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

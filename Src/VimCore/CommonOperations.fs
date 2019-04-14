@@ -167,6 +167,14 @@ type internal CommonOperations
 
         RegisterValue(stringData, operationKind)
 
+    /// Get the current number of spaces to caret we are maintaining
+    member x.GetSpacesToCaret () =
+        let spacesToCaret = x.GetSpacesToVirtualColumn x.CaretVirtualColumn
+        match x.MaintainCaretColumn with
+        | MaintainCaretColumn.None -> spacesToCaret
+        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
+        | MaintainCaretColumn.EndOfLine -> spacesToCaret
+
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
     member x.GetSpacesToColumnNumber line columnNumber = 
@@ -2010,6 +2018,21 @@ type internal CommonOperations
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
+        if useStartOfLine && _globalSettings.StartOfLine then
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            TextViewUtil.MoveCaretToPoint _textView point
+        else
+            let virtualColumn = 
+                if _vimTextBuffer.UseVirtualSpace then
+                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                else
+                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                    VirtualSnapshotColumn(column)
+            TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
+            x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
+
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
@@ -2162,6 +2185,7 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
+        member x.GetSpacesToCaret() = x.GetSpacesToCaret()
         member x.GetSpacesToColumn column = x.GetSpacesToColumn column
         member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
@@ -2192,6 +2216,7 @@ type internal CommonOperations
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
         member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
+        member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier

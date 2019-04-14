@@ -394,6 +394,9 @@ type ICommonOperations =
     /// Get the standard ReplaceData for the given SnapshotPoint
     abstract GetReplaceData: point: SnapshotPoint -> VimRegexReplaceData
 
+    /// Get the current number of spaces to caret we are maintaining
+    abstract GetSpacesToCaret: unit -> int
+
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
     abstract GetSpacesToColumn: column: SnapshotColumn -> int
@@ -497,6 +500,9 @@ type ICommonOperations =
 
     /// Redo the buffer changes "count" times
     abstract Redo: count:int -> unit
+
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
