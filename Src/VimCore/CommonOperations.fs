@@ -2064,10 +2064,13 @@ type internal CommonOperations
 
             _registerMap.SetRegisterValue name value
 
-            // If this is not the unnamed register then the unnamed register needs to 
-            // be updated 
+            // If this is not the unnamed register then the unnamed register
+            // needs to  be updated to the value of the register we just set
+            // (or appended to).
             if name <> RegisterName.Unnamed then
-                _registerMap.SetRegisterValue RegisterName.Unnamed value
+                _registerMap.GetRegister name
+                |> (fun register -> register.RegisterValue)
+                |> _registerMap.SetRegisterValue RegisterName.Unnamed
 
             let hasNewLine = 
                 match value.StringData with 
