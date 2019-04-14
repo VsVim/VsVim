@@ -532,6 +532,13 @@ type VimInterpreter
         let autoCommands = List.append _vimData.AutoCommands newList
         _vimData.AutoCommands <- autoCommands
 
+    /// Move in a linewise fashion to point, preserving spaces or obeying
+    /// 'startofline'
+    member x.MoveLinewiseToPoint point =
+        let spaces = _commonOperations.GetSpacesToCaret()
+        _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
+        _commonOperations.RestoreSpacesToCaret spaces true
+
     /// Run the behave command
     member x.RunBehave model = 
         match model with 
@@ -661,16 +668,19 @@ type VimInterpreter
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPoint text ->
-
+            let spaces = _commonOperations.GetSpacesToCaret()
             let destTextBuffer = destPoint.Snapshot.TextBuffer
             destTextBuffer.Insert(destPoint.Position, text) |> ignore
-            x.MoveCaretToPositionOrStartOfLine destPoint.Position)
+            new SnapshotPoint(_textBuffer.CurrentSnapshot, destPoint.Position)
+            |> (fun point -> _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+            _commonOperations.RestoreSpacesToCaret spaces true)
 
     /// Move the text from the source address to the destination address
     member x.RunMoveTo sourceLineRange destLineRange count =
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPoint text ->
 
             // Perform the move.
+            let spaces = _commonOperations.GetSpacesToCaret()
             let destTextBuffer = destPoint.Snapshot.TextBuffer
             let sourceTextBuffer = sourceLineRange.Start.Snapshot.TextBuffer
             use edit = destTextBuffer.CreateEdit()
@@ -691,7 +701,9 @@ type VimInterpreter
                 match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
                 | Some destPoint -> destPoint.Position
                 | None -> destPoint.Position
-                |> x.MoveCaretToPositionOrStartOfLine)
+                |> (fun position -> new SnapshotPoint(_textBuffer.CurrentSnapshot, position))
+                |> (fun point -> _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+                _commonOperations.RestoreSpacesToCaret spaces true)
 
     /// Compose two line commands
     member x.RunCompose lineCommand1 lineCommand2 =
@@ -699,17 +711,6 @@ type VimInterpreter
         x.RunLineCommand lineCommand1
         x.RunLineCommand lineCommand2
         transaction.Complete()
-
-    /// Move caret to position or the first non-blank on line if 'startofline' is set
-    member x.MoveCaretToPositionOrStartOfLine position =
-        if _globalSettings.StartOfLine then
-            SnapshotPoint(_textBuffer.CurrentSnapshot, position)
-            |> SnapshotPointUtil.GetContainingLine
-            |> SnapshotLineUtil.GetFirstNonBlankOrStart
-            |> SnapshotPointUtil.GetPosition
-        else
-            position
-        |> TextViewUtil.MoveCaretToPosition _textView
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
@@ -1220,13 +1221,7 @@ type VimInterpreter
     /// Jump to the last line of the specified line range
     member x.RunJumpToLastLine lineRange = 
         x.RunWithLooseLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-
-            // Make sure we jump to the first non-blank on this line
-            let point = 
-                lineRange.LastLine
-                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
-
-            _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded)))
+            x.MoveLinewiseToPoint lineRange.LastLine.Start)
 
     /// Run the let command
     member x.RunLet (name: VariableName) expr =
@@ -1541,12 +1536,7 @@ type VimInterpreter
     
             match result with
             | SearchResult.Found (searchData, span, _, _) ->
-                // Move it to the start of the line containing the match 
-                let point = 
-                    span.Start 
-                    |> SnapshotPointUtil.GetContainingLine 
-                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+                x.MoveLinewiseToPoint span.Start
                 _vimData.LastSearchData <- searchData
             | SearchResult.NotFound _ -> ()
             | SearchResult.Cancelled _ -> ()
