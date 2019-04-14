@@ -643,31 +643,34 @@ type internal CommonOperations
                 let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
                 span.Start.GetContainingLine()
 
-    /// Delete count lines from the cursor.  The caret should be positioned at the start
-    /// of the first line for both undo / redo
+    /// Delete count lines from the the specified line.  The caret should be
+    /// positioned on the first line for both undo / redo
     member x.DeleteLines (startLine: ITextSnapshotLine) count registerName =
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
 
-            // Make sure to map the SnapshotSpan back into the text / edit buffer
+            // Make sure to map the SnapshotSpan back into the text / edit
+            // buffer.
             let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph spanOnVisualSnapshot x.CurrentSnapshot
             let point = BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph caretPointOnVisualSnapshot x.CurrentSnapshot
             match span, point with
             | Some span, Some caretPoint ->
-                // Use a transaction to properly position the caret for undo / redo.  We want it in the same
-                // place for undo / redo so move it before the transaction
-                TextViewUtil.MoveCaretToPoint _textView caretPoint
+
+                // Use a transaction to properly position the caret for undo /
+                // redo.  We want it in the same place for undo / redo so move
+                // it before the transaction.
+                let spaces = x.GetSpacesToCaret()
+                x.RestoreSpacesToCaret spaces true
                 _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
-                    let snapshot = _textBuffer.Delete(span.Span)
+                    _textBuffer.Delete(span.Span) |> ignore
 
-                    // After delete the span should move to the start of the line of the same number 
-                    let caretPoint = 
-                        let lineNumber = SnapshotPointUtil.GetLineNumber caretPoint
-                        SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
-                        |> SnapshotLineUtil.GetStart
-
-                    TextViewUtil.MoveCaretToPoint _textView caretPoint)
+                    // After delete the caret should move to the line of the
+                    // same number.
+                    SnapshotPointUtil.GetLineNumber caretPoint
+                    |> SnapshotUtil.GetLineOrLast x.CurrentSnapshot
+                    |> (fun line -> TextViewUtil.MoveCaretToPoint _textView line.Start)
+                    x.RestoreSpacesToCaret spaces true)
 
                 // Need to manipulate the StringData so that it includes the expected trailing newline
                 let stringData = 
@@ -2030,7 +2033,7 @@ type internal CommonOperations
                 else
                     let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
                     VirtualSnapshotColumn(column)
-            TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
+            x.MoveCaretToVirtualPoint virtualColumn.VirtualStartPoint ViewFlags.VirtualEdit
             x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Ensure the given view properties are met at the given point
