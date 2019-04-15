@@ -661,8 +661,9 @@ type internal CommonOperations
                 // redo.  We want it in the same place for undo / redo so move
                 // it before the transaction.
                 let spaces = x.GetSpacesToCaret()
+                TextViewUtil.MoveCaretToPoint _textView span.Start
                 x.RestoreSpacesToCaret spaces true
-                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun () ->
                     _textBuffer.Delete(span.Span) |> ignore
 
                     // After delete the caret should move to the line of the
@@ -690,7 +691,7 @@ type internal CommonOperations
 
         // First we need to remap the 'startLine' value.  To do the delete we need to know the 
         // correct start line in the edit buffer.  What we are provided is a value in the edit
-        // buffer but it may be a line further down in the buffer do to folding.  
+        // buffer but it may be a line further down in the buffer due to folding.
         let startLine = x.AdjustEditLineForVisualSnapshotLine startLine
 
         // The span should be calculated using the visual snapshot if available.  Binding 
