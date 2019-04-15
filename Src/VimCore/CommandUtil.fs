@@ -781,8 +781,21 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the selected text from the buffer and put it into the specified
-    /// register.
-    member x.DeleteLineSelection registerName (visualSpan: VisualSpan) =
+    /// register
+    member x.DeleteLineSelection registerName visualSpan =
+        match visualSpan with
+        | VisualSpan.Line range ->
+
+            // Hand off linewise deletion to common operations to handle
+            // caret positioning uniformly.
+            _commonOperations.DeleteLines range.StartLine range.Count registerName
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        | _ ->
+            x.DeleteLineSelectionNonLinewise registerName visualSpan
+
+    /// Delete the non-linewise selected text from the buffer and put it into
+    /// the specified register
+    member x.DeleteLineSelectionNonLinewise registerName (visualSpan: VisualSpan) =
 
         // For each of the 3 cases the caret should begin at the start of the
         // VisualSpan during undo so move the caret now.
@@ -831,10 +844,23 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Delete the highlighted text from the buffer and put it into the specified
-    /// register.  The caret should be positioned at the beginning of the text for
-    /// undo / redo
-    member x.DeleteSelection registerName (visualSpan: VisualSpan) =
+    /// Delete the highlighted text from the buffer and put it into the
+    /// specified register
+    member x.DeleteSelection registerName visualSpan =
+        match visualSpan with
+        | VisualSpan.Line range ->
+
+            // Hand off linewise deletion to common operations to handle
+            // caret positioning uniformly.
+            _commonOperations.DeleteLines range.StartLine range.Count registerName
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        | _ ->
+            x.DeleteSelectionNonLinewise registerName visualSpan
+
+    /// Delete the non-linewise highlighted text from the buffer and put it
+    /// into the specified register.  The caret should be positioned at the
+    /// beginning of the text for undo / redo
+    member x.DeleteSelectionNonLinewise registerName (visualSpan: VisualSpan) =
         let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
