@@ -6673,12 +6673,13 @@ namespace Vim.UnitTest
             /// the scroll as if the caret was at the found search point 
             /// </summary>
             [WpfFact]
-            public void IncrementalSearchForward()
+            public async void IncrementalSearchForward()
             {
                 _globalSettings.IncrementalSearch = true;
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(0);
                 _vimBuffer.ProcessNotation("/g");
+                await _vimBuffer.GetSearchCompleteAsync();
                 AssertLastLine(8);
             }
 
