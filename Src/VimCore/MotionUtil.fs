@@ -1031,10 +1031,7 @@ type internal MotionUtil
             motionData 
         else
             let lastLine = motionData.DirectionLastLine
-
-            // TODO: Is GetFirstNonBlankOrStart correct here?  Should it be using the
-            // End version?
-            let point = SnapshotLineUtil.GetFirstNonBlankOrStart lastLine
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd lastLine
             let column = SnapshotPointUtil.GetLineOffset point |> CaretColumn.InLastLine
             { motionData with 
                 MotionKind = MotionKind.LineWise 
@@ -2308,7 +2305,7 @@ type internal MotionUtil
             let snapshot = SnapshotSpan(startPoint, endPoint)
             MotionResult.Create(snapshot, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
 
-    /// Implements the '+', '<CR>', 'CTRL-M' motions. 
+    /// Get the '+', '<CR>', 'CTRL-M' motions
     ///
     /// This is a line wise motion which uses counts hence we must use the visual snapshot
     /// when calculating the value
@@ -2316,26 +2313,31 @@ type internal MotionUtil
         x.MotionWithVisualSnapshot (fun x ->
             let number = x.CaretLine.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetLineOffset |> CaretColumn.InLastLine
             let span = SnapshotSpan(x.CaretLine.Start, endLine.EndIncludingLineBreak)
+            let column =
+                endLine
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
+                |> SnapshotPointUtil.GetLineOffset
+                |> CaretColumn.InLastLine
             MotionResult.CreateLineWise(span, isForward = true, caretColumn = column))
 
-    /// Implements the '-'
+    /// Get the '-' motion
     ///
     /// This is a line wise motion which uses counts hence we must use the visual snapshot
     /// when calculating the value
     member x.LineUpToFirstNonBlank count =
         x.MotionWithVisualSnapshot (fun x ->
-            let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot (x.CaretLine.LineNumber - count)
+            let number = x.CaretLine.LineNumber - count
+            let startLine = SnapshotUtil.GetLineOrFirst x.CurrentSnapshot number
             let span = SnapshotSpan(startLine.Start, x.CaretLine.EndIncludingLineBreak)
             let column = 
                 startLine 
-                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
                 |> SnapshotPointUtil.GetLineOffset
                 |> CaretColumn.InLastLine
             MotionResult.CreateLineWise(span, isForward = false, caretColumn = column))
 
-    /// Implements the '|'
+    /// Get the '|' motion
     ///
     /// Get the motion which is to the 'count'-th column on the current line.
     member x.LineToColumn count =

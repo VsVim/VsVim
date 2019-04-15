@@ -2723,6 +2723,19 @@ more";
                 Assert.Equal(1, data.CaretColumn.AsInLastLine().ColumnNumber);
             }
 
+            /// <summary>
+            /// Line down to a completely blank line should go to the end of
+            /// the line
+            /// </summary>
+            [WpfFact]
+            public void LineDownToCompletelyBlankLine()
+            {
+                Create("cat", "        ", "bird");
+                var data = _motionUtil.LineDownToFirstNonBlank(1);
+                Assert.True(data.CaretColumn.IsInLastLine);
+                Assert.Equal(8, data.CaretColumn.AsInLastLine().ColumnNumber);
+            }
+
             [WpfFact]
             public void LineDown1()
             {
