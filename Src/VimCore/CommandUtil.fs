@@ -3222,9 +3222,9 @@ type internal CommandUtil
             // First apply scroll offset.
             _commonOperations.AdjustCaretForScrollOffset()
 
-            // At this point the view has been scolled and the caret is on the
+            // At this point the view has been scrolled and the caret is on the
             // proper line.  Need to adjust the caret within the line to the
-            // appropriate column
+            // appropriate column.
             _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3345,9 +3345,9 @@ type internal CommandUtil
                 // First apply scroll offset.
                 _commonOperations.AdjustCaretForScrollOffset()
 
-                // At this point the view has been scolled and the caret is on
+                // At this point the view has been scrolled and the caret is on
                 // the proper line.  Need to adjust the caret within the line
-                // to the appropriate column
+                // to the appropriate column.
                 _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3440,9 +3440,9 @@ type internal CommandUtil
             // First apply scroll offset.
             _commonOperations.AdjustCaretForScrollOffset()
 
-            // At this point the view has been scolled and the caret is on the
+            // At this point the view has been scrolled and the caret is on the
             // proper line.  Need to adjust the caret within the line to the
-            // appropriate column
+            // appropriate column.
             _commonOperations.RestoreSpacesToCaret spacesToCaret false
 
         CommandResult.Completed ModeSwitch.NoSwitch
