@@ -1220,7 +1220,7 @@ type internal MotionUtil
     member x.GetCaretColumnOfLine (line: ITextSnapshotLine) =
         let offset = 
             if _globalSettings.StartOfLine then 
-                line |> SnapshotLineUtil.GetFirstNonBlankOrStart |> SnapshotPointUtil.GetLineOffset
+                line |> SnapshotLineUtil.GetFirstNonBlankOrEnd |> SnapshotPointUtil.GetLineOffset
             else
                 _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetLineOffset
         CaretColumn.InLastLine offset
@@ -1425,7 +1425,7 @@ type internal MotionUtil
             let column =
                 virtualPoint.Position
                 |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
                 |> SnapshotPointUtil.GetLineOffset
                 |> CaretColumn.InLastLine
             MotionResult.Create(range.ExtentIncludingLineBreak, MotionKind.LineWise, isForward, MotionResultFlags.None, column) |> Some
@@ -1921,7 +1921,7 @@ type internal MotionUtil
                 // of a different line, then the motion is moved back to the last line containing
                 // a word
                 let endLine = SnapshotPointUtil.GetContainingLine endPoint
-                let isFirstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart endLine = endPoint
+                let isFirstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrEnd endLine = endPoint
 
                 if isFirstNonBlank && endLine.LineNumber > x.CaretLine.LineNumber then
                     let previousLine = 
@@ -2038,7 +2038,11 @@ type internal MotionUtil
             let endLine = 
                 let number = startLine.LineNumber + (count - 1)
                 SnapshotUtil.GetLineOrLast x.CurrentSnapshot number
-            let column = SnapshotLineUtil.GetFirstNonBlankOrStart endLine |> SnapshotPointUtil.GetLineOffset |> CaretColumn.InLastLine
+            let column =
+                endLine
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
+                |> SnapshotPointUtil.GetLineOffset
+                |> CaretColumn.InLastLine
             let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
             MotionResult.CreateLineWise(range.ExtentIncludingLineBreak, isForward = true, caretColumn = column))
 
@@ -3160,7 +3164,7 @@ type internal MotionUtil
             let startLine = SnapshotSpanUtil.GetStartLine originalSpan
             let endLine = SnapshotPointUtil.GetContainingLine originalSpan.End
             let snapshot = startLine.Snapshot
-            let firstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrStart startLine
+            let firstNonBlank = SnapshotLineUtil.GetFirstNonBlankOrEnd startLine
             let endsInColumnZero = SnapshotPointUtil.IsStartOfLine originalSpan.End
 
             if Util.IsFlagSet motionResult.MotionResultFlags MotionResultFlags.SuppressAdjustment then
