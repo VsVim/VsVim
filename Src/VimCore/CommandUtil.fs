@@ -1788,13 +1788,13 @@ type internal CommandUtil
             else
                 point
                 |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
                 |> VirtualSnapshotPointUtil.OfPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
             let point = adjustPointForExact point
-            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
+            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.All
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 

@@ -3168,6 +3168,19 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Jumping to a mark on a completely blank line with ' should jump
+            /// to the end of the line
+            /// </summary>
+            [WpfFact]
+            public void JumpToCompletelyBlankLine()
+            {
+                Create("cat", "        ");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("'a");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 7), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// Jumping to the next mark with ` should jump to the literal mark wherever it occurs
             /// in the line
             /// </summary>
