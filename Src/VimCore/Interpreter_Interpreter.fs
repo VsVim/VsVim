@@ -184,6 +184,10 @@ type ExpressionInterpreter
             | None -> VariableValue.Error
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
+        | Expression.EnvironmentVariableName name ->
+            match SystemUtil.TryGetEnvironmentVariable name with
+            | None -> VariableValue.Error
+            | Some value -> VariableValue.String value
         | Expression.RegisterName name -> x.GetValueOfRegister name
         | Expression.FunctionCall(name, args) -> runExpression args |> _functionCaller.Call name
         | Expression.List expressions -> runExpression expressions |> VariableValue.List 

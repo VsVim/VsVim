@@ -1839,6 +1839,16 @@ type Parser
                 ParseResult.Succeeded name
         | _ -> ParseResult.Failed Resources.Parser_Error
 
+    member x.ParseEnvironmentVariableName() =
+        _tokenizer.MoveNextToken()
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDigitsInWord
+        let tokenKind = _tokenizer.CurrentTokenKind
+        _tokenizer.MoveNextToken()
+        match tokenKind with
+        | TokenKind.Word word ->
+            Expression.EnvironmentVariableName word |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed "Environment variable name missing"
+
     /// Parse out a visual studio command.  The format is "commandName argument".  The command
     /// name can use letters, numbers and a period.  The rest of the line after will be taken
     /// as the argument
@@ -2606,6 +2616,8 @@ type Parser
             x.ParseList()
         | TokenKind.Character '{' ->
             x.ParseDictionary()
+        | TokenKind.Character '$' ->
+            x.ParseEnvironmentVariableName()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with

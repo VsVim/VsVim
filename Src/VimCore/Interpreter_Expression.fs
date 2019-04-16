@@ -450,6 +450,9 @@ and [<RequireQualifiedAccess>] Expression =
     /// The name of a variable
     | VariableName of VariableName: VariableName
 
+    /// The name of an environment variable
+    | EnvironmentVariableName of EnvironmentVariableName: string
+
     /// Invocation of a function
     | FunctionCall of VariableName: VariableName * Arguments: Expression list
 
