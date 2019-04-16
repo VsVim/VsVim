@@ -1317,6 +1317,17 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void RHSCanBeEnvironmentVariable()
+            {
+                Create("");
+                var variable = "magic";
+                var value = "xyzzy";
+                Environment.SetEnvironmentVariable(variable, value);
+                ParseAndRun($"let x = ${variable}");
+                AssertValue("x", value);
+            }
+
+            [WpfFact]
             public void RHSCanBeBinaryAddExpression()
             {
                 Create("");
@@ -1419,6 +1430,22 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun("let x=20!=7");
+                AssertValue("x", 1);
+            }
+
+            [WpfFact]
+            public void RHSCanBeStringEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x='foo'=='bar'");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeStringNotEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x='foo'!='bar'");
                 AssertValue("x", 1);
             }
 
