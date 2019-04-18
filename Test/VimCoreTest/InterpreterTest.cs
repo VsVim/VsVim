@@ -1322,9 +1322,16 @@ namespace Vim.UnitTest
                 Create("");
                 var variable = "magic";
                 var value = "xyzzy";
-                Environment.SetEnvironmentVariable(variable, value);
-                ParseAndRun($"let x = ${variable}");
-                AssertValue("x", value);
+                try
+                {
+                    Environment.SetEnvironmentVariable(variable, value);
+                    ParseAndRun($"let x = ${variable}");
+                    AssertValue("x", value);
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(variable, null);
+                }
             }
 
             [WpfFact]
