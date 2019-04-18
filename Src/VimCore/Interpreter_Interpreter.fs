@@ -184,6 +184,10 @@ type ExpressionInterpreter
             | None -> VariableValue.Error
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
+        | Expression.EnvironmentVariableName name ->
+            match SystemUtil.TryGetEnvironmentVariable name with
+            | None -> VariableValue.Error
+            | Some value -> VariableValue.String value
         | Expression.RegisterName name -> x.GetValueOfRegister name
         | Expression.FunctionCall(name, args) -> runExpression args |> _functionCaller.Call name
         | Expression.List expressions -> runExpression expressions |> VariableValue.List 
@@ -229,23 +233,37 @@ type ExpressionInterpreter
                 | Some left, Some right, BinaryKind.Modulo -> left % right |> VariableValue.Number
                 | Some left, Some right, BinaryKind.GreaterThan -> left > right |> System.Convert.ToInt32 |> VariableValue.Number
                 | Some left, Some right, BinaryKind.LessThan -> left < right |> System.Convert.ToInt32 |> VariableValue.Number
-                | Some left, Some right, BinaryKind.Equal -> left = right |> System.Convert.ToInt32 |> VariableValue.Number
-                | Some left, Some right, BinaryKind.NotEqual -> left <> right |> System.Convert.ToInt32 |> VariableValue.Number
+                | _ -> VariableValue.Error
+
+        let runStringEquality (leftValue: VariableValue) (rightValue: VariableValue) (binaryKind: BinaryKind) = 
+            if leftValue.VariableType = VariableType.List || rightValue.VariableType = VariableType.List then
+                notSupported()
+            else
+                let leftString = _getValue.ConvertToString leftValue
+                let rightString = _getValue.ConvertToString rightValue
+                match leftString, rightString, binaryKind with
+                | Some left, Some right, BinaryKind.Equal ->
+                    left = right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.NotEqual ->
+                    left <> right |> System.Convert.ToInt32 |> VariableValue.Number
                 | _ -> VariableValue.Error
 
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr
         match binaryKind with
-        | BinaryKind.Concatenate -> runConcat leftValue rightValue
+        | BinaryKind.Concatenate ->
+            runConcat leftValue rightValue
         | BinaryKind.Add
         | BinaryKind.Divide
         | BinaryKind.Modulo
         | BinaryKind.Multiply
         | BinaryKind.Subtract
         | BinaryKind.GreaterThan
-        | BinaryKind.LessThan
+        | BinaryKind.LessThan ->
+            runNumericBinary leftValue rightValue binaryKind
         | BinaryKind.Equal
-        | BinaryKind.NotEqual -> runNumericBinary leftValue rightValue binaryKind
+        | BinaryKind.NotEqual ->
+            runStringEquality leftValue rightValue binaryKind
 
 [<Sealed>]
 [<Class>]
