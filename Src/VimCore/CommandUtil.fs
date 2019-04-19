@@ -266,7 +266,7 @@ type internal CommandUtil
         let indent =
             x.CaretLine
             |> SnapshotLineUtil.GetIndentText
-            |> _commonOperations.NormalizeBlanks
+            |> (fun text -> _commonOperations.NormalizeBlanks text 0)
 
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated

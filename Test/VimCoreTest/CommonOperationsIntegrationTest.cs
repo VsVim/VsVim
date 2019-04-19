@@ -385,13 +385,13 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class GetSpacesToColumnTest : CommonOperationsIntegrationTest
+        public sealed class GetSpacesToPointTest : CommonOperationsIntegrationTest
         {
             [WpfFact]
             public void Simple()
             {
                 Create("cat");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
             }
 
             /// <summary>
@@ -402,7 +402,7 @@ namespace Vim.UnitTest
             {
                 Create("\tcat");
                 _vimBuffer.LocalSettings.TabStop = 20;
-                Assert.Equal(20, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(1)));
+                Assert.Equal(20, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(1)));
             }
 
             /// <summary>
@@ -414,7 +414,7 @@ namespace Vim.UnitTest
             {
                 Create("a\tcat");
                 _vimBuffer.LocalSettings.TabStop = 4;
-                Assert.Equal(4, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
+                Assert.Equal(4, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
             }
 
             [WpfFact]
@@ -422,15 +422,15 @@ namespace Vim.UnitTest
             {
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}o{alien}");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
-                Assert.Equal(3, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(3)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
+                Assert.Equal(3, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(3)));
             }
 
             [WpfFact]
             public void WideCharacter()
             {
                 Create($"\u115fot");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(1)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(1)));
             }
         }
 

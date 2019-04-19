@@ -1502,7 +1502,8 @@ type VimInterpreter
                     else
                         point |> SnapshotPointUtil.AddOne |> nextPoint 
     
-                Seq.unfold (fun point ->
+                lineRange.Start
+                |> Seq.unfold (fun point ->
                     match nextPoint point with
                     | None ->
                         None
@@ -1514,7 +1515,7 @@ type VimInterpreter
                             |> Seq.skipWhile SnapshotPointUtil.IsBlank
                             |> SeqUtil.headOrDefault lineRange.End
                         let span = SnapshotSpan(startPoint, endPoint)
-                        Some (span, endPoint)) lineRange.Start
+                        Some (span, endPoint))
                 |> Seq.filter (fun span -> 
     
                     // Filter down to the SnapshotSpan values which contain tabs or spaces
@@ -1532,7 +1533,8 @@ type VimInterpreter
             use edit = _textBuffer.CreateEdit()
             for span in spans do
                 let oldText = span.GetText()
-                let newText = _commonOperations.NormalizeBlanks oldText
+                let spacesToColumn = _commonOperations.GetSpacesToPoint span.Start
+                let newText = _commonOperations.NormalizeBlanks oldText spacesToColumn
                 edit.Replace(span.Span, newText) |> ignore
     
             edit.Apply() |> ignore)
