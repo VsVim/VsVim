@@ -90,9 +90,9 @@ namespace Vim.VisualStudio.Specific
             return IsActiveWindowFrame(vsWindowFrame);
         }
 
-        void ISharedService.RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
+        void ISharedService.RunCSharpScript(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            RunCSharpScript(vim, callInfo, createEachTime);
+            RunCSharpScript(vim, vimBuffer, callInfo, createEachTime);
         }
 
         #endregion

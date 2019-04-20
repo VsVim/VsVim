@@ -45,7 +45,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
-        public Action<CallInfo, bool> RunCSharpScriptFunc { get; set; }
+        public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
@@ -257,9 +257,9 @@ namespace Vim.UnitTest.Mock
             return RunCommandFunc(workingDirectory, command, arguments, input);
         }
 
-        void IVimHost.RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        void IVimHost.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            RunCSharpScriptFunc(callInfo, createEachTime);
+            RunCSharpScriptFunc(vimBuffer, callInfo, createEachTime);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

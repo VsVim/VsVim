@@ -318,7 +318,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract void RunCSharpScript(CallInfo callInfo, bool createEachTime);
+        public abstract void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
 
         public abstract void RunHostCommand(ITextView textView, string command, string argument);
 
@@ -722,9 +722,9 @@ namespace Vim.UI.Wpf
             return RunCommand(workingDirectory, command, arguments, input);
         }
 
-        void IVimHost.RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        void IVimHost.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            RunCSharpScript(callInfo, createEachTime);
+            RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)

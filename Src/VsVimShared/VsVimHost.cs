@@ -775,9 +775,9 @@ namespace Vim.VisualStudio
             _dte.Quit();
         }
 
-        public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            _sharedService.RunCSharpScript(_vim, callInfo, createEachTime);
+            _sharedService.RunCSharpScript(_vim, vimBuffer, callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
