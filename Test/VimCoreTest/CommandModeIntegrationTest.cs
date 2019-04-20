@@ -1421,7 +1421,7 @@ namespace Vim.UnitTest
         public sealed class RetabCommandTest : CommandModeIntegrationTest
         {
             [WpfFact]
-            public void SimpleCommand()
+            public void Untabify()
             {
                 // Reported in issue #2493.
                 Create("\tfoo\tbar", "");
@@ -1429,6 +1429,30 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ExpandTab = true;
                 RunCommand("retab");
                 Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Tabify()
+            {
+                Create("    foo bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfoo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TabifyNonLeading()
+            {
+                Create("    fo  bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    fo  bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfo\tbar", "" }, _textBuffer.GetLines());
             }
         }
 

@@ -1218,7 +1218,7 @@ type internal CommonOperations
     /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
     member x.NormalizeSpaces (text: string) spacesToColumn =
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
-        if _localSettings.ExpandTab then
+        if _localSettings.ExpandTab || text.Length <= 1 then
             text
         else
             let tabSize = _localSettings.TabStop
