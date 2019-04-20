@@ -346,6 +346,7 @@ type internal InsertUtil
         x.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor
 
     member x.Insert text =
+        _operations.FillInVirtualSpace()
         if _editorOperations.InsertText(text) then
             if _localSettings.EndOfLine then
 

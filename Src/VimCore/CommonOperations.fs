@@ -239,11 +239,23 @@ type internal CommonOperations
 
     // Convert any virtual spaces to real normalized spaces
     member x.FillInVirtualSpace () =
+
+        // This is an awkward situation if 'expandtab' is in effect because
+        // Visual Studio uses tabs when filling in virtual space, but vim
+        // doesn't. VsVim needs to insert tabs when filling in leading virtual
+        // space to emulate the way vim copies leading tabs from surrounding
+        // lines, but shouldn't insert tabs when filling in non-leading virtual
+        // space because vim never inserts tabs in that situation.
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks: string = 
-                let spacesToColumn = x.GetSpacesToPoint x.CaretPoint
                 let blanks = StringUtil.RepeatChar x.CaretVirtualColumn.VirtualSpaces ' '
-                x.NormalizeBlanks blanks spacesToColumn
+                if x.CaretPoint = x.CaretLine.Start then
+
+                    // The line is completely empty so use tabs if appropriate.
+                    let spacesToColumn = x.GetSpacesToPoint x.CaretPoint
+                    x.NormalizeBlanks blanks spacesToColumn
+                else
+                    blanks
 
             // Make sure to position the caret to the end of the newly inserted spaces
             let position = x.CaretColumn.StartPosition + blanks.Length
