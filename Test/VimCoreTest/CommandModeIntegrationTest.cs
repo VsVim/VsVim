@@ -1418,6 +1418,20 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RetabCommandTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void SimpleCommand()
+            {
+                // Reported in issue #2493.
+                Create("\tfoo\tbar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class RunHostCommandTest : CommandModeIntegrationTest
         {
             [WpfFact]
