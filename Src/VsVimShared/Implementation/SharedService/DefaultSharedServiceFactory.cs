@@ -22,7 +22,7 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 return false;
             }
 
-            void ISharedService.RunCSharpScript(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+            void ISharedService.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
                 vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
             }

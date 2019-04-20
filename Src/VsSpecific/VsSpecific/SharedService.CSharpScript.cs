@@ -8,9 +8,9 @@ namespace Vim.VisualStudio.Specific
     {
         private ICSharpScriptExecutor _cSharpScriptExecutor = new CSharpScriptExecutor();
 
-        private void RunCSharpScript(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            _cSharpScriptExecutor.Execute(vim, vimBuffer, callInfo, createEachTime);
+            _cSharpScriptExecutor.Execute(vimBuffer, callInfo, createEachTime);
         }
     }
 
@@ -18,7 +18,7 @@ namespace Vim.VisualStudio.Specific
 
     internal partial class SharedService
     {
-        private void RunCSharpScript(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
             vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
         }

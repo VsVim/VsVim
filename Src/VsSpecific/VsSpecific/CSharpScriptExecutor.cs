@@ -17,15 +17,15 @@ namespace Vim.VisualStudio.Specific
         private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
         private ScriptOptions _scriptOptions = null;
 
-        private async Task ExecuteAsync(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        private async Task ExecuteAsync(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
             try
             {
                 Script<object> script;
-                if (!TryGetScript(vim, vimBuffer, callInfo.Name, createEachTime, out script))
+                if (!TryGetScript(vimBuffer, callInfo.Name, createEachTime, out script))
                     return;
 
-                var globals = new CSharpScriptGlobals(callInfo, vim, vimBuffer);
+                var globals = new CSharpScriptGlobals(callInfo, vimBuffer);
                 var scriptState = await script.RunAsync(globals);
             }
             catch (CompilationErrorException ex)
@@ -74,7 +74,7 @@ namespace Vim.VisualStudio.Specific
             return so;
         }
 
-        private bool TryGetScript(IVim vim, IVimBuffer vimBuffer, string scriptName, bool createEachTime, out Script<object> script)
+        private bool TryGetScript(IVimBuffer vimBuffer, string scriptName, bool createEachTime, out Script<object> script)
         {
             if (!createEachTime && _scripts.TryGetValue(scriptName, out script))
                 return true;
@@ -99,15 +99,15 @@ namespace Vim.VisualStudio.Specific
             return true;
         }
 
-        #region ICSharpScriptExecutor
+#region ICSharpScriptExecutor
 
-        void ICSharpScriptExecutor.Execute(IVim vim, IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            var task = ExecuteAsync(vim, vimBuffer, callInfo, createEachTime);
+            var task = ExecuteAsync(vimBuffer, callInfo, createEachTime);
             VimTrace.TraceInfo("CSharptScript:Execute {0}", callInfo.Name);
         }
 
-        #endregion
+#endregion
 
     }
 }

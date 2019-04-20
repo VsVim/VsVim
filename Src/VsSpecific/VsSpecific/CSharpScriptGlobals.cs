@@ -13,13 +13,13 @@ namespace Vim.VisualStudio.Specific
         public IVim Vim { get; } = null;
         public IVimBuffer VimBuffer { get; } = null;
 
-        public CSharpScriptGlobals(CallInfo callInfo, IVim vim, IVimBuffer vimBuffer)
+        public CSharpScriptGlobals(CallInfo callInfo, IVimBuffer vimBuffer)
         {
             Name = callInfo.Name;
             Arguments = callInfo.Arguments;
             LineRange = callInfo.LineRange;
             IsScriptLocal = callInfo.IsScriptLocal;
-            Vim = vim;
+            Vim = vimBuffer.Vim;
             VimBuffer = vimBuffer;
         }
     }
