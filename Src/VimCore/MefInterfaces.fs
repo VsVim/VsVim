@@ -480,7 +480,10 @@ type ICommonOperations =
     /// Normalize the spaces and tabs in the string at the given column in the buffer
     abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
-    /// Normalize the set of blanks into spaces
+    /// Normalize the spaces and tabs in the string for a new tabstop
+    abstract NormalizeBlanksForNewTabStop: text: string -> spacesToColumn: int -> tabStop: int -> string
+
+    /// Normalize the set of spaces and tabs into spaces
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
     /// Put the specified StringData at the given point.

@@ -1215,31 +1215,41 @@ type internal CommonOperations
     member x.NormalizeBlanksToSpaces (text: string) spacesToColumn =
         StringUtil.ExpandTabsForColumn text spacesToColumn _localSettings.TabStop
 
-    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
-    member x.NormalizeSpaces (text: string) spacesToColumn =
+    /// Normalize spaces into tabs / spaces based on the ExpandTab and TabSize
+    /// settings
+    member x.NormalizeSpaces text spacesToColumn =
+        x.NormalizeSpacesForTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Normalize spaces into tabs / spaces based on the ExpandTab setting
+    /// and the specified TabStop setting
+    member x.NormalizeSpacesForTabStop (text: string) spacesToColumn tabStop =
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
         if _localSettings.ExpandTab || text.Length <= 1 then
             text
         else
-            let tabSize = _localSettings.TabStop
             let endSpaces = spacesToColumn + text.Length
             let startSpaces, tabsCount =
-                let endTabs = endSpaces - endSpaces % tabSize
+                let endTabs = endSpaces - endSpaces % tabStop
                 if endTabs > spacesToColumn
-                then endTabs, (endTabs - spacesToColumn + tabSize - 1) / tabSize
+                then endTabs, (endTabs - spacesToColumn + tabStop - 1) / tabStop
                 else spacesToColumn, 0
             let spacesCount = endSpaces - startSpaces
             let prefix = StringUtil.RepeatChar tabsCount '\t'
             let suffix = StringUtil.RepeatChar spacesCount ' '
             prefix + suffix
 
-    /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
-    /// settings
+    /// Fully normalize white space into tabs / spaces based on the ExpandTab
+    /// and TabSize settings
     member x.NormalizeBlanks text spacesToColumn =
+        x.NormalizeBlanksForNewTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Fully normalize white space into tabs / spaces based on the current
+    /// ExpandTab and TabStop settings to a new TabStop setting
+    member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop =
         Contract.Assert(StringUtil.IsBlanks text)
         text
         |> (fun text -> x.NormalizeBlanksToSpaces text spacesToColumn)
-        |> (fun text -> x.NormalizeSpaces text spacesToColumn)
+        |> (fun text -> x.NormalizeSpacesForTabStop text spacesToColumn tabStop)
 
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
@@ -2190,6 +2200,7 @@ type internal CommonOperations
         member x.NavigateToPoint point = x.NavigateToPoint point
         member x.NormalizeBlanks text spacesToColumn = x.NormalizeBlanks text spacesToColumn
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
+        member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult

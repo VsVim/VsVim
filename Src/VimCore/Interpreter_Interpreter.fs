@@ -1481,12 +1481,12 @@ type VimInterpreter
     member x.RunRetab lineRange includeSpaces tabStop =
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
-            // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
-            // we re-tab the line so the new value will be used
-            match tabStop with
-            | None -> ()
-            | Some tabStop -> _localSettings.TabStop <- tabStop
-    
+
+            let newTabStop =
+                match tabStop with
+                | None -> _localSettings.TabStop
+                | Some tabStop -> tabStop
+
             let snapshot = lineRange.Snapshot
     
             // First break into a sequence of SnapshotSpan values which contain only space and tab
@@ -1534,10 +1534,16 @@ type VimInterpreter
             for span in spans do
                 let oldText = span.GetText()
                 let spacesToColumn = _commonOperations.GetSpacesToPoint span.Start
-                let newText = _commonOperations.NormalizeBlanks oldText spacesToColumn
+                let newText = _commonOperations.NormalizeBlanksForNewTabStop oldText spacesToColumn newTabStop
                 edit.Replace(span.Span, newText) |> ignore
     
-            edit.Apply() |> ignore)
+            edit.Apply() |> ignore
+
+            // If the user explicitly specified a 'tabstop' it becomes the new value.
+            match tabStop with
+            | None -> ()
+            | Some tabStop -> _localSettings.TabStop <- tabStop)
+    
 
     /// Run the search command in the given direction
     member x.RunSearch lineRange path pattern = 

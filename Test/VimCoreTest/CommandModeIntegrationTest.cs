@@ -1421,6 +1421,17 @@ namespace Vim.UnitTest
         public sealed class RetabCommandTest : CommandModeIntegrationTest
         {
             [WpfFact]
+            public void NewTabStop()
+            {
+                Create("\t\tfoo", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab 8");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(8, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [WpfFact]
             public void Untabify()
             {
                 // Reported in issue #2493.
