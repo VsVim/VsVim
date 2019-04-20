@@ -100,8 +100,7 @@ The following methods are defined in `IVimBuffer`.
 
 Let's operate VsVim using these two methods.
 
-The following script gets `IVimBuffer` from the active editor,
-And it write "Hello, World!" 10 times.  
+The following script write "Hello, World!" 10 times.  
 
 ```csharp
 //VsVim.csx
