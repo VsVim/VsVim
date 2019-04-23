@@ -103,7 +103,7 @@ type internal LineChangeTracker
             x.UndoRedoOperations.EditWithUndoTransaction "Undo Line" x.TextView <| fun () ->
                 x.TextBuffer.Replace(line.Extent.Span, savedLine) |> ignore
                 let line = x.GetLine lineNumber
-                let point = SnapshotLineUtil.GetFirstNonBlankOrStart line
+                let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 x.MoveCaretToPoint point
             x.ChangedData <- {
                 LineNumber = lineNumber
