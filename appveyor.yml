@@ -10,7 +10,7 @@ image:
   - Visual Studio 2017
 
 install: 
-  - ps: (new-object Net.WebClient).DownloadString("https://raw.github.com/madskristensen/ExtensionScripts/master/AppVeyor/vsix.ps1") | iex
+  - ps: (new-object Net.WebClient).DownloadString("https://github.com/madskristensen/ExtensionScripts/raw/master/AppVeyor/vsix.ps1") | iex
 
 before_build: 
   # Updates the version number in the .vsixmanifest and updates the AppVeyor build number to match
