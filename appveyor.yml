@@ -28,7 +28,7 @@ on_failure:
   appveyor PushArtifact msbuild.binlog
 
 after_build:
-  - Binaries\Debug\CleanVsix\net472\CleanVsix.exe Binaries\Debug\VsVim\VsVim.vsix
+  - Binaries\Debug\CleanVsix\net472\CleanVsix.exe Binaries\Debug\VsVim\net45\VsVim.vsix
 
 test_script:
   - cmd: '%xunit20%\xunit.console.x86.exe Binaries\Debug\VimCoreTest\net472\Vim.Core.UnitTest.dll -appveyor -noshadow'
