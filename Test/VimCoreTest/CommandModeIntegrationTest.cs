@@ -1710,6 +1710,68 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class JumpTest : CommandModeIntegrationTest
+        {
+            /// <summary>
+            /// Ensure the '$' / move to last line command is implemented properly
+            /// </summary>
+            [WpfFact]
+            public void LastLine()
+            {
+                Create("foo", "bar", "baz", "");
+                RunCommand("$");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
+            /// and ITextBuffer line numbers differ as Vim begins at 1
+            /// </summary>
+            [WpfFact]
+            public void Jump_UseVimLineNumber()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("2");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
+            /// in Vim
+            /// </summary>
+            [WpfFact]
+            public void Jump_FirstLineSpecial()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("0");
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
+            /// last line number
+            /// </summary>
+            [WpfFact]
+            public void Jump_LineNumberTooBig()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("300");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
+            /// that line
+            /// </summary>
+            [WpfFact]
+            public void Jump_Indent()
+            {
+                Create("cat", "  dog", "tree", "");
+                RunCommand("2");
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+        }
+
         public sealed class MiscTest : CommandModeIntegrationTest
         {
             [WpfFact]

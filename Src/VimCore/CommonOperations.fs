@@ -167,6 +167,14 @@ type internal CommonOperations
 
         RegisterValue(stringData, operationKind)
 
+    /// Get the current number of spaces to caret we are maintaining
+    member x.GetSpacesToCaret () =
+        let spacesToCaret = x.GetSpacesToVirtualColumn x.CaretVirtualColumn
+        match x.MaintainCaretColumn with
+        | MaintainCaretColumn.None -> spacesToCaret
+        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
+        | MaintainCaretColumn.EndOfLine -> spacesToCaret
+
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
     member x.GetSpacesToColumnNumber line columnNumber = 
@@ -648,31 +656,35 @@ type internal CommonOperations
                 let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
                 span.Start.GetContainingLine()
 
-    /// Delete count lines from the cursor.  The caret should be positioned at the start
-    /// of the first line for both undo / redo
+    /// Delete count lines from the the specified line.  The caret should be
+    /// positioned on the first line for both undo / redo
     member x.DeleteLines (startLine: ITextSnapshotLine) count registerName =
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
 
-            // Make sure to map the SnapshotSpan back into the text / edit buffer
+            // Make sure to map the SnapshotSpan back into the text / edit
+            // buffer.
             let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph spanOnVisualSnapshot x.CurrentSnapshot
             let point = BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph caretPointOnVisualSnapshot x.CurrentSnapshot
             match span, point with
             | Some span, Some caretPoint ->
-                // Use a transaction to properly position the caret for undo / redo.  We want it in the same
-                // place for undo / redo so move it before the transaction
-                TextViewUtil.MoveCaretToPoint _textView caretPoint
-                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
-                    let snapshot = _textBuffer.Delete(span.Span)
 
-                    // After delete the span should move to the start of the line of the same number 
-                    let caretPoint = 
-                        let lineNumber = SnapshotPointUtil.GetLineNumber caretPoint
-                        SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
-                        |> SnapshotLineUtil.GetStart
+                // Use a transaction to properly position the caret for undo /
+                // redo.  We want it in the same place for undo / redo so move
+                // it before the transaction.
+                let spaces = x.GetSpacesToCaret()
+                TextViewUtil.MoveCaretToPoint _textView span.Start
+                x.RestoreSpacesToCaret spaces true
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun () ->
+                    _textBuffer.Delete(span.Span) |> ignore
 
-                    TextViewUtil.MoveCaretToPoint _textView caretPoint)
+                    // After delete the caret should move to the line of the
+                    // same number.
+                    SnapshotPointUtil.GetLineNumber caretPoint
+                    |> SnapshotUtil.GetLineOrLast x.CurrentSnapshot
+                    |> (fun line -> TextViewUtil.MoveCaretToPoint _textView line.Start)
+                    x.RestoreSpacesToCaret spaces true)
 
                 // Need to manipulate the StringData so that it includes the expected trailing newline
                 let stringData = 
@@ -692,7 +704,7 @@ type internal CommonOperations
 
         // First we need to remap the 'startLine' value.  To do the delete we need to know the 
         // correct start line in the edit buffer.  What we are provided is a value in the edit
-        // buffer but it may be a line further down in the buffer do to folding.  
+        // buffer but it may be a line further down in the buffer due to folding.
         let startLine = x.AdjustEditLineForVisualSnapshotLine startLine
 
         // The span should be calculated using the visual snapshot if available.  Binding 
@@ -2024,6 +2036,21 @@ type internal CommonOperations
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
 
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
+        if useStartOfLine && _globalSettings.StartOfLine then
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            TextViewUtil.MoveCaretToPoint _textView point
+        else
+            let virtualColumn = 
+                if _vimTextBuffer.UseVirtualSpace then
+                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                else
+                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                    VirtualSnapshotColumn(column)
+            x.MoveCaretToVirtualPoint virtualColumn.VirtualStartPoint ViewFlags.VirtualEdit
+            x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
+
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
@@ -2176,6 +2203,7 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
+        member x.GetSpacesToCaret() = x.GetSpacesToCaret()
         member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
@@ -2207,6 +2235,7 @@ type internal CommonOperations
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
         member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
+        member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
