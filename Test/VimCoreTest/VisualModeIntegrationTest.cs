@@ -896,6 +896,72 @@ namespace Vim.UnitTest
                 }
             }
 
+            public sealed class LineTest : DeleteSelectionTest
+            {
+                /// <summary>
+                /// Deleting to the end of the file should move the caret up
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_ToEndOfFile()
+                {
+                    // Reported in issue #2477.
+                    Create("cat", "dog", "fish", "");
+                    _textView.MoveCaretToLine(1, 0);
+                    _vimBuffer.Process("VGd");
+                    Assert.Equal(new[] { "cat", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Deleting lines should obey the 'startofline' setting
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_StartOfLine()
+                {
+                    // Reported in issue #2477.
+                    Create(" cat", "  dog", " fish", "");
+                    _textView.MoveCaretToLine(1, 2);
+                    _vimBuffer.Process("Vd");
+                    Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Deleting lines should preserve spaces to caret when
+                /// 'nostartofline' is in effect
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_NoStartOfLine()
+                {
+                    // Reported in issue #2477.
+                    Create(" cat", "  dog", " fish", "");
+                    _globalSettings.StartOfLine = false;
+                    _textView.MoveCaretToLine(1, 2);
+                    _vimBuffer.Process("Vd");
+                    Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Undoing a visual line delete should return the caret to the first line
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_Undo()
+                {
+                    // Reported in issue #2477.
+                    Create("cat", "dog", "fish", "bear", "");
+                    _textView.MoveCaretToLine(1, 0);
+                    _vimBuffer.Process("Vj");
+                    Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                    _vimBuffer.Process("d");
+                    Assert.Equal(new[] { "cat", "bear", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                    _vimBuffer.Process("u");
+                    Assert.Equal(new[] { "cat", "dog", "fish", "bear", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                }
+            }
+
             public sealed class BlockTest : DeleteSelectionTest
             {
                 [WpfFact]

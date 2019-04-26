@@ -3168,6 +3168,19 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Jumping to a mark on a completely blank line with ' should jump
+            /// to the end of the line
+            /// </summary>
+            [WpfFact]
+            public void JumpToCompletelyBlankLine()
+            {
+                Create("cat", "        ");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("'a");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 7), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// Jumping to the next mark with ` should jump to the literal mark wherever it occurs
             /// in the line
             /// </summary>
@@ -6673,12 +6686,13 @@ namespace Vim.UnitTest
             /// the scroll as if the caret was at the found search point 
             /// </summary>
             [WpfFact]
-            public void IncrementalSearchForward()
+            public async void IncrementalSearchForward()
             {
                 _globalSettings.IncrementalSearch = true;
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(0);
                 _vimBuffer.ProcessNotation("/g");
+                await _vimBuffer.GetSearchCompleteAsync();
                 AssertLastLine(8);
             }
 
@@ -9054,6 +9068,50 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("ddu");
                 Assert.Equal(new[] { "cat", "dog", "fish" }, _textBuffer.GetLines());
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting to the end of the file should move the caret up
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_ToEndOfFile()
+            {
+                // Reported in issue #2477.
+                Create("cat", "dog", "fish", "");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.Process("dG");
+                Assert.Equal(new[] { "cat", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting lines should obey the 'startofline' setting
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_StartOfLine()
+            {
+                // Reported in issue #2477.
+                Create(" cat", "  dog", " fish", "");
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting lines should preserve spaces to caret when
+            /// 'nostartofline' is in effect
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_NoStartOfLine()
+            {
+                // Reported in issue #2477.
+                Create(" cat", "  dog", " fish", "");
+                _globalSettings.StartOfLine = false;
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
 
             /// <summary>

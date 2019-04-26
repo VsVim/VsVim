@@ -11,7 +11,7 @@ using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
 {
-    internal sealed class CSharpScriptExecutor : ICSharpScriptExecutor
+    internal sealed partial class CSharpScriptExecutor : ICSharpScriptExecutor
     {
         private const string ScriptFolder = "vsvimscripts";
         private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
