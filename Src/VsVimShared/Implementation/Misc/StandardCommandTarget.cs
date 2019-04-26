@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
@@ -134,6 +135,18 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
+            // If we are in a peek defintion window and in command mode, the
+            // command margin text box won't receive certain keys like
+            // backspace as it normally would. Work around this problem by
+            // generating WPF key events for keys that we know should go to the
+            // command margin text box. Reported in issue #2492.
+            if (_vimBuffer.ModeKind == ModeKind.Command &&
+                _textView.IsPeekView() &&
+                TryProcessWithWpf(keyInput))
+            {
+                return true;
+            }
+
             // The only time we actively intercept keys and route them through IOleCommandTarget
             // is when one of the IDisplayWindowBroker windows is active
             //
@@ -179,6 +192,55 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             return handled;
+        }
+
+        /// <summary>
+        /// Try to process the key input with WPF
+        /// </summary>
+        /// <param name="keyInput"></param>
+        /// <returns></returns>
+        private bool TryProcessWithWpf(KeyInput keyInput)
+        {
+            var keyMap = new Dictionary<VimKey, Key>
+            {
+                { VimKey.Back, Key.Back },
+                { VimKey.Left, Key.Left },
+                { VimKey.Right, Key.Right },
+                { VimKey.Home, Key.Home },
+                { VimKey.End, Key.End },
+            };
+            foreach (var pair in keyMap)
+            {
+                var vimKey = pair.Key;
+                var wpfKey = pair.Value;
+                if (keyInput == KeyInputUtil.VimKeyToKeyInput(vimKey))
+                {
+                    var previewDownHandled = InputManager.Current.ProcessInput(
+                        new KeyEventArgs(Keyboard.PrimaryDevice,
+                            Keyboard.PrimaryDevice.ActiveSource,
+                            0,
+                            wpfKey)
+                        {
+                           RoutedEvent = Keyboard.PreviewKeyDownEvent
+                        }
+                    );
+                    if (previewDownHandled)
+                    {
+                        return true;
+                    }
+                    var downHandled = InputManager.Current.ProcessInput(
+                        new KeyEventArgs(Keyboard.PrimaryDevice,
+                            Keyboard.PrimaryDevice.ActiveSource,
+                            0,
+                            wpfKey)
+                        {
+                           RoutedEvent = Keyboard.KeyDownEvent
+                        }
+                    );
+                    return downHandled;
+                }
+            }
+            return false;
         }
 
         /// <summary>
