@@ -6,9 +6,9 @@ namespace Vim.VisualStudio.Specific
     {
         internal static readonly ICSharpScriptExecutor Instance = new NotSupportedCSharpScriptExecutor();
 
-        void ICSharpScriptExecutor.Execute(IVim vim, CallInfo callInfo, bool createEachTime)
+        void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            vim.ActiveStatusUtil.OnError("csx not supported");
+            vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
         }
     }
 }

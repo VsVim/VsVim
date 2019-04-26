@@ -12,7 +12,7 @@ namespace Vim.VisualStudio.Specific
 
         private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            _lazyExecutor.Value.Execute(vim, callInfo, createEachTime);
+            _lazyExecutor.Value.Execute(vimBuffer, callInfo, createEachTime);
         }
 
         private static ICSharpScriptExecutor CreateExecutor()
@@ -49,7 +49,7 @@ namespace Vim.VisualStudio.Specific
     {
         private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            NotSupportedCSharpScriptExecutor.Instance.Execute(vim, callInfo, createEachTime);
+            NotSupportedCSharpScriptExecutor.Instance.Execute(vimBuffer, callInfo, createEachTime);
         }
     }
 
