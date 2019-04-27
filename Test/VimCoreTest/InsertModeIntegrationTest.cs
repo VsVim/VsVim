@@ -1495,6 +1495,54 @@ namespace Vim.UnitTest
                 _globalSettings.VirtualEdit = "insert";
             }
 
+            /// <summary>
+            /// Fill in leading virtual space with tabs when 'noexpandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithTabs()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = false;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 4), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Fill in leading virtual space with spaces when 'expandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithSpaces()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "    foo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 7), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Always fill in non-leading virtual space with spaces
+            /// </summary>
+            /// <param name="expandTab"></param>
+            [WpfTheory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void FillInNonLeadingVirtualSpaceWithSpaces(bool expandTab)
+            {
+                Create("f", "");
+                _localSettings.ExpandTab = expandTab;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(1, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("oo");
+                Assert.Equal(new[] { "f   oo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 6), _textView.GetCaretVirtualPoint());
+            }
+
             [WpfFact]
             public void CharRightRealToVirtual()
             {

@@ -1418,6 +1418,55 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RetabCommandTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void NewTabStop()
+            {
+                Create("\t\tfoo", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab 8");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(8, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void Untabify()
+            {
+                // Reported in issue #2493.
+                Create("\tfoo\tbar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Tabify()
+            {
+                Create("    foo bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfoo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TabifyNonLeading()
+            {
+                Create("    fo  bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    fo  bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfo\tbar", "" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class RunHostCommandTest : CommandModeIntegrationTest
         {
             [WpfFact]

@@ -1476,12 +1476,12 @@ type VimInterpreter
     member x.RunRetab lineRange includeSpaces tabStop =
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
-            // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
-            // we re-tab the line so the new value will be used
-            match tabStop with
-            | None -> ()
-            | Some tabStop -> _localSettings.TabStop <- tabStop
-    
+
+            let newTabStop =
+                match tabStop with
+                | None -> _localSettings.TabStop
+                | Some tabStop -> tabStop
+
             let snapshot = lineRange.Snapshot
     
             // First break into a sequence of SnapshotSpan values which contain only space and tab
@@ -1497,7 +1497,8 @@ type VimInterpreter
                     else
                         point |> SnapshotPointUtil.AddOne |> nextPoint 
     
-                Seq.unfold (fun point ->
+                lineRange.Start
+                |> Seq.unfold (fun point ->
                     match nextPoint point with
                     | None ->
                         None
@@ -1509,7 +1510,7 @@ type VimInterpreter
                             |> Seq.skipWhile SnapshotPointUtil.IsBlank
                             |> SeqUtil.headOrDefault lineRange.End
                         let span = SnapshotSpan(startPoint, endPoint)
-                        Some (span, endPoint)) lineRange.Start
+                        Some (span, endPoint))
                 |> Seq.filter (fun span -> 
     
                     // Filter down to the SnapshotSpan values which contain tabs or spaces
@@ -1527,10 +1528,17 @@ type VimInterpreter
             use edit = _textBuffer.CreateEdit()
             for span in spans do
                 let oldText = span.GetText()
-                let newText = _commonOperations.NormalizeBlanks oldText
+                let spacesToColumn = _commonOperations.GetSpacesToPoint span.Start
+                let newText = _commonOperations.NormalizeBlanksForNewTabStop oldText spacesToColumn newTabStop
                 edit.Replace(span.Span, newText) |> ignore
     
-            edit.Apply() |> ignore)
+            edit.Apply() |> ignore
+
+            // If the user explicitly specified a 'tabstop' it becomes the new value.
+            match tabStop with
+            | None -> ()
+            | Some tabStop -> _localSettings.TabStop <- tabStop)
+    
 
     /// Run the search command in the given direction
     member x.RunSearch lineRange path pattern = 

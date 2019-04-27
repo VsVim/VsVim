@@ -399,7 +399,7 @@ type ICommonOperations =
 
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
-    abstract GetSpacesToColumn: column: SnapshotColumn -> int
+    abstract GetSpacesToPoint: point: SnapshotPoint -> int
 
     /// Get the point that visually corresponds to the specified column on its line
     abstract GetColumnForSpacesOrEnd: contextLine: ITextSnapshotLine -> spaces: int -> SnapshotColumn
@@ -478,13 +478,16 @@ type ICommonOperations =
     abstract NavigateToPoint: VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks: text: string -> string
+    abstract NormalizeBlanks: text: string -> spacesToColumn: int -> string
 
     /// Normalize the spaces and tabs in the string at the given column in the buffer
     abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
-    /// Normalize the set of blanks into spaces
-    abstract NormalizeBlanksToSpaces: string -> string
+    /// Normalize the spaces and tabs in the string for a new tabstop
+    abstract NormalizeBlanksForNewTabStop: text: string -> spacesToColumn: int -> tabStop: int -> string
+
+    /// Normalize the set of spaces and tabs into spaces
+    abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
     /// Put the specified StringData at the given point.
     abstract Put: SnapshotPoint -> StringData -> OperationKind -> unit

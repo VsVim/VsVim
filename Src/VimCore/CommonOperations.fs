@@ -186,8 +186,8 @@ type internal CommonOperations
         VirtualSnapshotColumn.GetSpacesToColumnNumber(line, columnNumber, _localSettings.TabStop)
 
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
-    member x.GetSpacesToColumn (column: SnapshotColumn) =
-        column.GetSpacesToColumn _localSettings.TabStop
+    member x.GetSpacesToPoint (point: SnapshotPoint) =
+        SnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
 
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
@@ -247,10 +247,23 @@ type internal CommonOperations
 
     // Convert any virtual spaces to real normalized spaces
     member x.FillInVirtualSpace () =
+
+        // This is an awkward situation if 'expandtab' is in effect because
+        // Visual Studio uses tabs when filling in virtual space, but vim
+        // doesn't. VsVim needs to insert tabs when filling in leading virtual
+        // space to emulate the way vim copies leading tabs from surrounding
+        // lines, but shouldn't insert tabs when filling in non-leading virtual
+        // space because vim never inserts tabs in that situation.
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks: string = 
                 let blanks = StringUtil.RepeatChar x.CaretVirtualColumn.VirtualSpaces ' '
-                x.NormalizeBlanks blanks
+                if x.CaretPoint = x.CaretLine.Start then
+
+                    // The line is completely empty so use tabs if appropriate.
+                    let spacesToColumn = x.GetSpacesToPoint x.CaretPoint
+                    x.NormalizeBlanks blanks spacesToColumn
+                else
+                    blanks
 
             // Make sure to position the caret to the end of the newly inserted spaces
             let position = x.CaretColumn.StartPosition + blanks.Length
@@ -1207,49 +1220,48 @@ type internal CommonOperations
             |> SnapshotSpanUtil.GetText
             |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.OfCharSeq
-        x.NormalizeBlanksToSpaces text, text.Length
+        x.NormalizeBlanksToSpaces text 0, text.Length
 
     /// Normalize any blanks to the appropriate number of space characters based on the 
     /// Vim settings
-    member x.NormalizeBlanksToSpaces (text: string) =
-        Contract.Assert(StringUtil.IsBlanks text)
-        let builder = System.Text.StringBuilder()
-        let tabSize = _localSettings.TabStop
-        for c in text do
-            match c with 
-            | ' ' -> 
-                builder.AppendChar ' '
-            | '\t' ->
-                // Insert spaces up to the next tab size modulus.  
-                let count = 
-                    let remainder = builder.Length % tabSize
-                    if remainder = 0 then tabSize else remainder
-                for i = 1 to count do
-                    builder.AppendChar ' '
-            | _ -> 
-                builder.AppendChar ' '
-        builder.ToString()
+    member x.NormalizeBlanksToSpaces (text: string) spacesToColumn =
+        StringUtil.ExpandTabsForColumn text spacesToColumn _localSettings.TabStop
 
-    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
-    member x.NormalizeSpaces (text: string) = 
+    /// Normalize spaces into tabs / spaces based on the ExpandTab and TabSize
+    /// settings
+    member x.NormalizeSpaces text spacesToColumn =
+        x.NormalizeSpacesForTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Normalize spaces into tabs / spaces based on the ExpandTab setting
+    /// and the specified TabStop setting
+    member x.NormalizeSpacesForTabStop (text: string) spacesToColumn tabStop =
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
-        if _localSettings.ExpandTab then
+        if _localSettings.ExpandTab || text.Length <= 1 then
             text
         else
-            let tabSize = _localSettings.TabStop
-            let spacesCount = text.Length % tabSize
-            let tabCount = (text.Length - spacesCount) / tabSize 
-            let prefix = StringUtil.RepeatChar tabCount '\t'
+            let endSpaces = spacesToColumn + text.Length
+            let startSpaces, tabsCount =
+                let endTabs = endSpaces - endSpaces % tabStop
+                if endTabs > spacesToColumn
+                then endTabs, (endTabs - spacesToColumn + tabStop - 1) / tabStop
+                else spacesToColumn, 0
+            let spacesCount = endSpaces - startSpaces
+            let prefix = StringUtil.RepeatChar tabsCount '\t'
             let suffix = StringUtil.RepeatChar spacesCount ' '
             prefix + suffix
 
-    /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
-    /// settings
-    member x.NormalizeBlanks text = 
+    /// Fully normalize white space into tabs / spaces based on the ExpandTab
+    /// and TabSize settings
+    member x.NormalizeBlanks text spacesToColumn =
+        x.NormalizeBlanksForNewTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Fully normalize white space into tabs / spaces based on the current
+    /// ExpandTab and TabStop settings to a new TabStop setting
+    member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop =
         Contract.Assert(StringUtil.IsBlanks text)
         text
-        |> x.NormalizeBlanksToSpaces
-        |> x.NormalizeSpaces
+        |> (fun text -> x.NormalizeBlanksToSpaces text spacesToColumn)
+        |> (fun text -> x.NormalizeSpacesForTabStop text spacesToColumn tabStop)
 
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
@@ -1260,7 +1272,7 @@ type internal CommonOperations
             // If the column is on a 'tabstop' boundary then there is no difficulty here
             // with accounting for partial tabs.  Just normalize as we would for any other
             // function 
-            x.NormalizeBlanks text
+            x.NormalizeBlanks text spacesToColumn
         else
             // First step is to trim away the start of the 'text' string which will fill up
             // the gap to the next tab boundary.  
@@ -1290,7 +1302,7 @@ type internal CommonOperations
                         "\t"
 
                 let remainder = text.Substring(index)
-                gapText + x.NormalizeBlanks remainder
+                gapText + x.NormalizeBlanks remainder 0
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -1316,7 +1328,8 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
+                let spaces = StringUtil.RepeatChar length ' '
+                x.NormalizeSpaces spaces 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -1332,7 +1345,7 @@ type internal CommonOperations
         col |> Seq.iter (fun span ->
             // Get the span we are formatting within the line
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
-            let ws = x.NormalizeSpaces (ws + shiftText)
+            let ws = x.NormalizeSpaces (ws + shiftText) 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -1351,7 +1364,8 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
+                let spaces = StringUtil.RepeatChar length ' '
+                x.NormalizeSpaces spaces 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
@@ -1372,7 +1386,7 @@ type internal CommonOperations
                 // Get the span we are formatting within the line
                 let span = line.Extent
                 let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
-                let ws = x.NormalizeSpaces (ws + shiftText)
+                let ws = x.NormalizeSpaces (ws + shiftText) 0
                 edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -2190,7 +2204,7 @@ type internal CommonOperations
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
         member x.GetSpacesToCaret() = x.GetSpacesToCaret()
-        member x.GetSpacesToColumn column = x.GetSpacesToColumn column
+        member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
         member x.GetVirtualColumnForSpaces contextLine spaces = x.GetVirtualColumnForSpaces contextLine spaces
@@ -2212,9 +2226,10 @@ type internal CommonOperations
         member x.MoveCaretToVirtualPoint point viewFlags =  x.MoveCaretToVirtualPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
-        member x.NormalizeBlanks text = x.NormalizeBlanks text
+        member x.NormalizeBlanks text spacesToColumn = x.NormalizeBlanks text spacesToColumn
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
-        member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
+        member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
+        member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan

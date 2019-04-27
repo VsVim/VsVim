@@ -211,8 +211,9 @@ namespace Vim.UnitTest
         public void Special_SpaceToTab()
         {
             Create("    hello");
-            _operations.Setup(x => x.NormalizeBlanks("    ")).Returns("\t");
-            _operations.Setup(x => x.NormalizeBlanks("\t\t")).Returns("\t\t");
+            _operations.Setup(x => x.GetSpacesToPoint(It.IsAny<SnapshotPoint>())).Returns(0);
+            _operations.Setup(x => x.NormalizeBlanks("    ", 0)).Returns("\t");
+            _operations.Setup(x => x.NormalizeBlanks("\t\t", 0)).Returns("\t\t");
             _textBuffer.Replace(new Span(0, 4), "\t\t");
             Assert.Equal(TextChange.NewInsert("\t"), _tracker.CurrentChange.Value);
         }
