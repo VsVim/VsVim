@@ -923,7 +923,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 ChangeEditKind(kind);
             }
-            if (kind == EditKind.Command && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
+            if (GetPrefixChar(kind).HasValue && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
             {
                 textBox.SelectionStart = 1;
             }
