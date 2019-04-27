@@ -283,7 +283,7 @@ namespace VimApp
             return false;
         }
 
-        public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+        public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
             throw new NotImplementedException();
         }
@@ -340,7 +340,7 @@ namespace VimApp
 
         private bool TryLoadPath(string filePath, out IWpfTextView textView)
         {
-            return 
+            return
                 TryLoadPathAsFile(filePath, out textView) ||
                 TryLoadPathAsDirectory(filePath, out textView);
         }

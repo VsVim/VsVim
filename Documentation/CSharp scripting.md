@@ -85,12 +85,14 @@ C# script has the following global objects defined.
 - LineRange - Selection information when command is executed.
 - IsScriptLocal - Presence or absence of `<SID>` prefix.
 - Vim - An object of type `IVim`.
+- VimBuffer - An object of type `IVimBuffer`.
 
-The most important of these is `Vim`.  
-You can use this object to operate VsVim.   
+The most important of these is `Vim` and `VimBuffer`.  
+You can use these objects to operate VsVim.   
 
-First, get the object of type `IVimBuffer` from `Vim`.   
-This is the main interface of the Vim editor.  
+`IVimBuffer` is the main interface of the Vim editor.  
+And it is created each time the editor is opened.  
+The VimBuffer defined here is the Buffer that executed the csx command.  
 The following methods are defined in `IVimBuffer`.  
 
 - SwitchMode - Switch modes.
@@ -98,8 +100,7 @@ The following methods are defined in `IVimBuffer`.
 
 Let's operate VsVim using these two methods.
 
-The following script gets `IVimBuffer` from the active editor,
-And it write "Hello, World!" 10 times.  
+The following script write "Hello, World!" 10 times.  
 
 ```csharp
 //VsVim.csx
@@ -108,20 +109,12 @@ And it write "Hello, World!" 10 times.
 using Vim;
 using Vim.Extensions;
 
-var activeVimBuffer = Vim.ActiveBuffer;
-if (activeVimBuffer.IsNone())
-{
-    Vim.ActiveStatusUtil.OnError("Can not get VimBuffer");
-    return;
-}
-IVimBuffer vimBuffer = activeVimBuffer.Value;
-
 for (var count = 0; count < 10; count++)
 {
-    vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-    vimBuffer.Process("j", enter: false);
-    vimBuffer.Process("I", enter: false);
-    vimBuffer.Process("Hello, World!", enter: true);
+    VimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+    VimBuffer.Process("j", enter: false);
+    VimBuffer.Process("I", enter: false);
+    VimBuffer.Process("Hello, World!", enter: true);
 }
 public static void Process(this IVimBuffer vimBuffer, string input, bool enter = false)
 {
@@ -157,23 +150,15 @@ using System;
 using Vim;
 using Vim.Extensions;
 
-var activeVimBuffer = Vim.ActiveBuffer;
-if (activeVimBuffer.IsNone())
-{
-    Vim.ActiveStatusUtil.OnError("Can not get VimBuffer");
-    return;
-}
-IVimBuffer vimBuffer = activeVimBuffer.Value;
-
-IWpfTextView textView = vimBuffer.TextView as IWpfTextView;
+IWpfTextView textView = VimBuffer.TextView as IWpfTextView;
 if (textView == null)
 {
-    Vim.ActiveStatusUtil.OnError("Can not get WpfTextView");
+    VimBuffer.VimBufferData.StatusUtil.OnError("Can not get WpfTextView");
     return;
 }
 
-vimBuffer.KeyInputStart += OnKeyInputStart;
-vimBuffer.Closed += OnBufferClosed;
+VimBuffer.KeyInputStart += OnKeyInputStart;
+VimBuffer.Closed += OnBufferClosed;
 
 private void OnKeyInputStart(object sender, KeyInputStartEventArgs e)
 {
@@ -208,8 +193,8 @@ private void OnKeyInputStart(object sender, KeyInputStartEventArgs e)
 }
 private void EndIntercept()
 {
-    vimBuffer.KeyInputStart -= OnKeyInputStart;
-    vimBuffer.Closed -= OnBufferClosed;
+    VimBuffer.KeyInputStart -= OnKeyInputStart;
+    VimBuffer.Closed -= OnBufferClosed;
 }
 private void OnBufferClosed(object sender, EventArgs e)
 {
@@ -230,17 +215,17 @@ public void OnKeyInputStart(object sender, KeyInputStartEventArgs e)
     if (e.KeyInput.Char == 'j')
     {
         //Deleted an event temporarily.
-        vimBuffer.KeyInputStart -= OnKeyInputStart;
+        VimBuffer.KeyInputStart -= OnKeyInputStart;
 
         var ki = KeyInputUtil.CharToKeyInput('k');
-        vimBuffer.Process(ki); 
+        VimBuffer.Process(ki); 
 
         //Registered an event again.
-        vimBuffer.KeyInputStart += OnKeyInputStart;
+        VimBuffer.KeyInputStart += OnKeyInputStart;
     }
     else if (e.KeyInput.Key == VimKey.Escape)
     {
-        vimBuffer.KeyInputStart -= OnKeyInputStart;
+        VimBuffer.KeyInputStart -= OnKeyInputStart;
     }
 }
 ```

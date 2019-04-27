@@ -4691,7 +4691,7 @@ type IVimHost =
     abstract RunCommand: workingDirectory: string -> file: string -> arguments: string -> input: string -> RunCommandResults
 
     /// Run C# Script
-    abstract RunCSharpScript: callInfo: CallInfo -> createEachTime: bool -> unit
+    abstract RunCSharpScript: vimBuffer:IVimBuffer -> callInfo: CallInfo -> createEachTime: bool -> unit
 
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit

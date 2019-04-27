@@ -17,15 +17,15 @@ namespace Vim.VisualStudio.Specific
         private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
         private ScriptOptions _scriptOptions = null;
 
-        private async Task ExecuteAsync(IVim vim, CallInfo callInfo, bool createEachTime)
+        private async Task ExecuteAsync(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
             try
             {
                 Script<object> script;
-                if (!TryGetScript(vim, callInfo.Name, createEachTime, out script))
+                if (!TryGetScript(vimBuffer, callInfo.Name, createEachTime, out script))
                     return;
 
-                var globals = new CSharpScriptGlobals(callInfo, vim);
+                var globals = new CSharpScriptGlobals(callInfo, vimBuffer);
                 var scriptState = await script.RunAsync(globals);
             }
             catch (CompilationErrorException ex)
@@ -33,11 +33,11 @@ namespace Vim.VisualStudio.Specific
                 if (_scripts.ContainsKey(callInfo.Name))
                     _scripts.Remove(callInfo.Name);
 
-                vim.ActiveStatusUtil.OnError(string.Join(Environment.NewLine, ex.Diagnostics));
+                vimBuffer.VimBufferData.StatusUtil.OnError(string.Join(Environment.NewLine, ex.Diagnostics));
             }
             catch (Exception ex)
             {
-                vim.ActiveStatusUtil.OnError(ex.Message);
+                vimBuffer.VimBufferData.StatusUtil.OnError(ex.Message);
             }
         }
 
@@ -74,7 +74,7 @@ namespace Vim.VisualStudio.Specific
             return so;
         }
 
-        private bool TryGetScript(IVim vim, string scriptName, bool createEachTime, out Script<object> script)
+        private bool TryGetScript(IVimBuffer vimBuffer, string scriptName, bool createEachTime, out Script<object> script)
         {
             if (!createEachTime && _scripts.TryGetValue(scriptName, out script))
                 return true;
@@ -86,7 +86,7 @@ namespace Vim.VisualStudio.Specific
 
             if (!File.Exists(scriptFilePath))
             {
-                vim.ActiveStatusUtil.OnError("script file not found.");
+                vimBuffer.VimBufferData.StatusUtil.OnError("script file not found.");
                 script = null;
                 return false;
             }
@@ -99,15 +99,15 @@ namespace Vim.VisualStudio.Specific
             return true;
         }
 
-        #region ICSharpScriptExecutor
+#region ICSharpScriptExecutor
 
-        void ICSharpScriptExecutor.Execute(IVim vim, CallInfo callInfo, bool createEachTime)
+        void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            var task = ExecuteAsync(vim, callInfo, createEachTime);
+            var task = ExecuteAsync(vimBuffer, callInfo, createEachTime);
             VimTrace.TraceInfo("CSharptScript:Execute {0}", callInfo.Name);
         }
 
-        #endregion
+#endregion
 
     }
 }

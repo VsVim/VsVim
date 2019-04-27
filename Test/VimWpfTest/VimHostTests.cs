@@ -101,7 +101,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void RunCSharpScript(CallInfo callInfo, bool createEachTime)
+            public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
                 throw new NotImplementedException();
             }

@@ -52,7 +52,7 @@ namespace Vim.VisualStudio
         /// Run C# Script.
         /// </summary>
         /// <returns></returns>
-        void RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime);
+        void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
     }
 
     /// <summary>

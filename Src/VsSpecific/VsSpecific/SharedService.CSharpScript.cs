@@ -10,9 +10,9 @@ namespace Vim.VisualStudio.Specific
     {
         private Lazy<ICSharpScriptExecutor> _lazyExecutor = new Lazy<ICSharpScriptExecutor>(CreateExecutor);
 
-        private void RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
+        private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            _lazyExecutor.Value.Execute(vim, callInfo, createEachTime);
+            _lazyExecutor.Value.Execute(vimBuffer, callInfo, createEachTime);
         }
 
         private static ICSharpScriptExecutor CreateExecutor()
@@ -47,9 +47,9 @@ namespace Vim.VisualStudio.Specific
 
     internal partial class SharedService
     {
-        private void RunCSharpScript(IVim vim, CallInfo callInfo, bool createEachTime)
+        private void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            NotSupportedCSharpScriptExecutor.Instance.Execute(vim, callInfo, createEachTime);
+            NotSupportedCSharpScriptExecutor.Instance.Execute(vimBuffer, callInfo, createEachTime);
         }
     }
 

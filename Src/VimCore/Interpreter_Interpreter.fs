@@ -573,7 +573,7 @@ type VimInterpreter
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
 
     member x.RunCSharpScript (callInfo :CallInfo, createEachTime :bool) = 
-        _vimHost.RunCSharpScript callInfo createEachTime
+        _vimHost.RunCSharpScript _vimBuffer callInfo createEachTime
 
     member x.RunCall (callInfo: CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)

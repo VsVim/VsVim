@@ -48,8 +48,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VsSpecific", "Src\VsSpecifi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{E112A054-F81F-4775-B456-EA82B71C573A}"
 	ProjectSection(SolutionItems) = preProject
-		Documentation\C# scripting.md = Documentation\C# scripting.md
 		Documentation\CodingGuidelines.md = Documentation\CodingGuidelines.md
+		Documentation\CSharp scripting.md = Documentation\CSharp scripting.md
 		Documentation\older-drops.md = Documentation\older-drops.md
 		Documentation\Project Goals.md = Documentation\Project Goals.md
 		Documentation\release-notes.md = Documentation\release-notes.md
