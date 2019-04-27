@@ -704,6 +704,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             else
             {
+                if (args.PreviousMode?.ModeKind == ModeKind.Uninitialized)
+                    return;
+
                 UpdateForSwitchMode(args.CurrentMode);
             }
         }

@@ -14,9 +14,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly CommandMarginController _controller;
         private bool _enabled;
 
-        public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations, IClipboardDevice clipboardDevice)
+        public CommandMargin(FrameworkElement parentVisualElement, IVimBuffer buffer, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations, IClipboardDevice clipboardDevice, bool isFirstCommandMargin)
         {
-            _margin.CommandLineTextBox.Text = "Welcome to Vim";
+            _margin.CommandLineTextBox.Text = isFirstCommandMargin ? $"Welcome to VsVim Version {VimConstants.VersionNumber}" : string.Empty;
             _controller = new CommandMarginController(buffer, parentVisualElement, _margin, editorFormatMap, classificationFormatMap, commonOperations, clipboardDevice);
             _enabled = true;
         }

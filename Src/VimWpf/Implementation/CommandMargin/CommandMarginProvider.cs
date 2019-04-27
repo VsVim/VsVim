@@ -29,6 +29,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly ICommonOperationsFactory _commonOperationsFactory;
         private readonly IClipboardDevice _clipboardDevice;
+        private bool _isFirstCommandMargin = true;
 
         [ImportingConstructor]
         internal CommandMarginProvider(
@@ -58,7 +59,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var editorFormatMap = _editorFormatMapService.GetEditorFormatMap(wpfTextView);
             var classificationFormatMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextView);
             var commonOperations = _commonOperationsFactory.GetCommonOperations(vimBuffer.VimBufferData);
-            var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap, commonOperations, _clipboardDevice);
+            var commandMargin = new CommandMargin(wpfTextView.VisualElement, vimBuffer, editorFormatMap, classificationFormatMap, commonOperations, _clipboardDevice, _isFirstCommandMargin);
+            _isFirstCommandMargin = false;
 
             vimBuffer.Properties.AddProperty(s_key, commandMargin);
             vimBuffer.Closed += delegate { vimBuffer.Properties.RemoveProperty(s_key); };
