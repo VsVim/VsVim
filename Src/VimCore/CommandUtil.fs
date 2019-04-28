@@ -136,7 +136,7 @@ type internal CommandUtil
 
     /// Add count values to the specific word
     member x.AddToWord count =
-        match x.AddToWordAtPoint x.CaretPoint count with
+        match x.AddToWordAtPointInSpan x.CaretPoint x.CaretLine.Extent count with
         | Some (span, text) ->
 
             // Need a transaction here in order to properly position the caret.
@@ -169,7 +169,7 @@ type internal CommandUtil
                         count * (index + 1)
                     else
                         count
-                match x.AddToWordAtPoint span.Start countForIndex with
+                match x.AddToWordAtPointInSpan span.Start span countForIndex with
                 | Some (span, text) ->
                     edit.Replace(span.Span, text) |> ignore
                 | None ->
@@ -181,9 +181,9 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Add count values to the specific word
-    member x.AddToWordAtPoint point count: (SnapshotSpan * string) option =
+    member x.AddToWordAtPointInSpan point span count: (SnapshotSpan * string) option =
 
-        match x.GetNumberValueAtPoint point with
+        match x.GetNumberAtPointInSpan point span with
         | Some (numberValue, span) ->
 
             // Calculate the new value of the number.
@@ -1362,7 +1362,7 @@ type internal CommandUtil
     member x.GetRegister name = _commonOperations.GetRegister name
 
     member x.GetNumberValueAtCaret(): (NumberValue * SnapshotSpan) option =
-        x.GetNumberValueAtPoint x.CaretPoint
+        x.GetNumberAtPointInSpan x.CaretPoint x.CaretLine.Extent
 
     /// Get the number value at the specified point.  This is used for the
     /// CTRL-A and CTRL-X command so it will look forward on the current line
@@ -1370,22 +1370,20 @@ type internal CommandUtil
     ///
     /// TODO: Need to integrate the parsing functions here with that of the
     /// tokenizer which also parses out the same set of numbers
-    member x.GetNumberValueAtPoint point: (NumberValue * SnapshotSpan) option =
-        let line = SnapshotPointUtil.GetContainingLine point
-        let startPosition = line.Start.Position
-        let index = point.Position - startPosition
+    member x.GetNumberAtPointInSpan point span: (NumberValue * SnapshotSpan) option =
 
         // Get the match from the line with the given regex for the first
         // number that contains the point or begins after the point.
         let getNumber numberValue numberPattern parseFunc =
-            line
-            |> SnapshotLineUtil.GetText
+            let index = point.Position - span.Start.Position
+            span
+            |> SnapshotSpanUtil.GetText
             |> (fun text -> RegularExpressions.Regex.Matches(text, numberPattern))
             |> Seq.cast<RegularExpressions.Match>
             |> Seq.tryFind (fun m ->
                 index >= m.Index && index < m.Index + m.Length || index < m.Index)
             |> Option.map (fun m ->
-                let span = SnapshotSpan(point.Snapshot, startPosition + m.Index, m.Length)
+                let span = SnapshotSpan(span.Snapshot, span.Start.Position + m.Index, m.Length)
                 let succeeded, number = parseFunc m.Value
                 if succeeded then
                     Some (numberValue number, span)
@@ -1446,7 +1444,7 @@ type internal CommandUtil
 
                 // Now check for alpha by going forward to the first alpha
                 // character.
-                SnapshotSpan(point, line.EndIncludingLineBreak)
+                SnapshotSpan(point, span.End)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point ->
                     point

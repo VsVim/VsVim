@@ -1896,6 +1896,40 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class BlockAdd : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// The block add should only add to numbers within the selection
+            /// </summary>
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void Simple(string selection)
+            {
+                // Reported in issue #2501.
+                Create(
+                    " 1  This is the first thing. Here's a number: 99.",
+                    "",
+                    " 2 This is the second thing.",
+                    "   Here is another number 123.",
+                    "",
+                    " 3 This is the last thing.",
+                    ""
+                );
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("<C-q>5j2l<C-a>");
+                var expected = new[] {
+                    " 2  This is the first thing. Here's a number: 99.",
+                    "",
+                    " 3 This is the second thing.",
+                    "   Here is another number 123.",
+                    "",
+                    " 4 This is the last thing.",
+                    ""
+                };
+                Assert.Equal(expected, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class Move : VisualModeIntegrationTest
         {
             [WpfFact]
