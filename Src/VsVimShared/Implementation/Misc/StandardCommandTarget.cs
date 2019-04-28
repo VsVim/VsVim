@@ -25,6 +25,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ITextManager _textManager;
         private readonly IDisplayWindowBroker _broker;
         private readonly IOleCommandTarget _nextOleCommandTarget;
+        private static readonly Dictionary<KeyInput, Key> s_wpfKeyMap;
 
         internal StandardCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
@@ -39,6 +40,21 @@ namespace Vim.VisualStudio.Implementation.Misc
             _textManager = textManager;
             _broker = broker;
             _nextOleCommandTarget = nextOleCommandTarget;
+        }
+
+        static StandardCommandTarget()
+        {
+            s_wpfKeyMap = new Dictionary<KeyInput, Key>
+            {
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Back), Key.Back },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Up), Key.Up },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Down), Key.Down },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Left), Key.Left },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Right), Key.Right },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Home), Key.Home },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.End), Key.End },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Delete), Key.Delete },
+            };
         }
 
         /// <summary>
@@ -201,44 +217,31 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// <returns></returns>
         private bool TryProcessWithWpf(KeyInput keyInput)
         {
-            var keyMap = new Dictionary<VimKey, Key>
+            if (s_wpfKeyMap.TryGetValue(keyInput, out Key wpfKey))
             {
-                { VimKey.Back, Key.Back },
-                { VimKey.Left, Key.Left },
-                { VimKey.Right, Key.Right },
-                { VimKey.Home, Key.Home },
-                { VimKey.End, Key.End },
-            };
-            foreach (var pair in keyMap)
-            {
-                var vimKey = pair.Key;
-                var wpfKey = pair.Value;
-                if (keyInput == KeyInputUtil.VimKeyToKeyInput(vimKey))
-                {
-                    var previewDownHandled = InputManager.Current.ProcessInput(
-                        new KeyEventArgs(Keyboard.PrimaryDevice,
-                            Keyboard.PrimaryDevice.ActiveSource,
-                            0,
-                            wpfKey)
-                        {
-                           RoutedEvent = Keyboard.PreviewKeyDownEvent
-                        }
-                    );
-                    if (previewDownHandled)
+                var previewDownHandled = InputManager.Current.ProcessInput(
+                    new KeyEventArgs(Keyboard.PrimaryDevice,
+                        Keyboard.PrimaryDevice.ActiveSource,
+                        0,
+                        wpfKey)
                     {
-                        return true;
+                       RoutedEvent = Keyboard.PreviewKeyDownEvent
                     }
-                    var downHandled = InputManager.Current.ProcessInput(
-                        new KeyEventArgs(Keyboard.PrimaryDevice,
-                            Keyboard.PrimaryDevice.ActiveSource,
-                            0,
-                            wpfKey)
-                        {
-                           RoutedEvent = Keyboard.KeyDownEvent
-                        }
-                    );
-                    return downHandled;
+                );
+                if (previewDownHandled)
+                {
+                    return true;
                 }
+                var downHandled = InputManager.Current.ProcessInput(
+                    new KeyEventArgs(Keyboard.PrimaryDevice,
+                        Keyboard.PrimaryDevice.ActiveSource,
+                        0,
+                        wpfKey)
+                    {
+                       RoutedEvent = Keyboard.KeyDownEvent
+                    }
+                );
+                return downHandled;
             }
             return false;
         }
