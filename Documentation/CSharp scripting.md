@@ -74,7 +74,7 @@ If "Hello, World!" Is written in the first line of the editor, it is successful.
 With the Visual Studio SDK, you can create a something of extensions.  
 If you want to use the Visual Studio SDK, the following sentences will be helpful.  
 
-- [Resources for writing Visual Studio Extensions](https://github.com/jaredpar/VsVim/wiki/Resources-for-writing-Visual-Studio-Extensions)
+- [Resources for writing Visual Studio Extensions](https://github.com/VsVim/VsVim/wiki/Resources-for-writing-Visual-Studio-Extensions)
 
 ## Let's operate VsVim
 

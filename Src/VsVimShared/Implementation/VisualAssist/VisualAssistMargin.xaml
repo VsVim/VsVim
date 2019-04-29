@@ -13,7 +13,7 @@
             <Label>Visual Assist needs a setting change to enable VsVim support.</Label>
             <Hyperlink 
                 Name="_faqHyperlink"
-                NavigateUri="https://github.com/jaredpar/VsVim/wiki/FAQ#wiki-vax"
+                NavigateUri="https://github.com/VsVim/VsVim/wiki/FAQ#wiki-vax"
                 RequestNavigate="OnRequestNavigate"
                 BaselineAlignment="Center">FAQ Entry</Hyperlink>
         </TextBlock>

@@ -338,7 +338,7 @@ namespace Vim.VisualStudio
             // The output window is not guaraneed to be accessible on startup. On certain configurations of VS2015
             // it can throw an exception. Delaying the creation of the Window until after startup has likely 
             // completed. Additionally using IProtectedOperations to guard against exeptions 
-            // https://github.com/jaredpar/VsVim/issues/2249
+            // https://github.com/VsVim/VsVim/issues/2249
 
             _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
 

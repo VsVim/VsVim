@@ -1023,7 +1023,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun(@"help");
-                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Contains("https://github.com/VsVim/VsVim/wiki", _statusUtil.LastStatus);
             }
 
             [WpfFact]
@@ -1031,7 +1031,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 ParseAndRun(@"help :vsc");
-                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Contains("https://github.com/VsVim/VsVim/wiki", _statusUtil.LastStatus);
             }
         }
 

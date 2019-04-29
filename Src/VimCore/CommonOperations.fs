@@ -235,7 +235,7 @@ type internal CommonOperations
     /// accessible in the property bag of the ITextUndoHistory object. In 2017 and before this was added
     /// during AfterTextBufferChangeUndoPrimitive.Create. In 2019 this stopped happening and hence undo /
     /// redo is broken. Forcing it to be present here. 
-    /// https://github.com/jaredpar/VsVim/issues/2463
+    /// https://github.com/VsVim/VsVim/issues/2463
     member x.EnsureUndoHasView() =
         match _undoRedoOperations.TextUndoHistory with
         | None -> ()
