@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.targets = Directory.Build.targets
 		License.txt = License.txt
 		README.md = README.md
+		README.ch.md = README.ch.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVim", "Src\VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
