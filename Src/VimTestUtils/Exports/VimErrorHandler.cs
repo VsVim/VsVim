@@ -121,7 +121,7 @@ namespace Vim.UnitTest.Exports
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
 #if VSVIM_DEV_2019
-            // https://github.com/jaredpar/VsVim/issues/2463
+            // https://github.com/VsVim/VsVim/issues/2463
             // Working around several bugs thrown during core MEF composition
             if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService") ||
                 exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.mefRegisteredCodeCleanupProviders") ||

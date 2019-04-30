@@ -4,7 +4,7 @@
     <Identity Publisher="Jared Parsons" Version="2.7.0.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
     <DisplayName>VsVim</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
-    <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
+    <MoreInfo>https://github.com/VsVim/VsVim</MoreInfo>
     <License>License.txt</License>
     <Icon>VsVim_large.png</Icon>
     <PreviewImage>VsVim_small.png</PreviewImage>

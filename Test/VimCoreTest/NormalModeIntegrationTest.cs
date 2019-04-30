@@ -7849,7 +7849,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// See the full discussion in issue #509
             ///
-            /// https://github.com/jaredpar/VsVim/issues/509
+            /// https://github.com/VsVim/VsVim/issues/509
             ///
             /// Make sure that doing a ""][" from the middle of the line ends on the '}' if it is
             /// preceded by a blank line
