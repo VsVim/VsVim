@@ -1,6 +1,8 @@
 VsVim
 ===
 
+DO NOT MERGE
+
 VsVim is a free vim emulator for Visual Studio 2015 through to 2019.
 
 AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
