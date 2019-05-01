@@ -11,10 +11,10 @@
     <Tags>vsvim</Tags>
   </Metadata>
   <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[11.0,17.0)" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[14.0,17.0)" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
     <InstallationTarget Id="AtmelStudio" Version="7.0" />
   </Installation>
   <Assets>
