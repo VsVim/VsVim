@@ -511,14 +511,26 @@ type internal InsertMode
                     let keyInputSet = KeyInputSet(keyInput)
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
 
-                if keyInput.KeyModifiers <> VimKeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
-                    // Certain keys such as Delete, Esc, etc ... have the same behavior when invoked
-                    // with or without any modifiers.  The modifiers must be considered because they
-                    // do participate in key mapping.  Once we get here though we must discard them
+                if keyInput.KeyModifiers = VimKeyModifiers.Control then
+
+                    // Keys with only control that aren't mapped are never
+                    // direct input.
+                    match Map.tryFind keyInput _commandMap with
+                    | Some rawInsertCommand -> Some rawInsertCommand
+                    | None -> None
+
+                else if keyInput.KeyModifiers <> VimKeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
+
+                    // Certain keys such as Delete, Esc, etc ... have the same
+                    // behavior when invoked with or without any modifiers.
+                    // The modifiers must be considered because they do
+                    // participate in key mapping.  Once we get here though we
+                    // must discard them
                     let alternateKeyInput = KeyInputUtil.ChangeKeyModifiersDangerous keyInput VimKeyModifiers.None
                     match Map.tryFind alternateKeyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> getDirectInsert()
+
                 else
                     getDirectInsert()
 

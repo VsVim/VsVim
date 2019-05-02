@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -63,7 +64,11 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
-            VimTrace.TraceInfo("VimKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}", args.Text, args.ControlText, args.SystemText);
+            VimTrace.TraceInfo("VimKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}",
+                GetDisplayString(args.Text),
+                GetDisplayString(args.ControlText),
+                GetDisplayString(args.SystemText));
+
             var handled = false;
 
             var text = args.Text;
@@ -164,6 +169,30 @@ namespace Vim.UI.Wpf
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0} {1}", args.Key, args.KeyboardDevice.Modifiers);
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp Handled = {0}", args.Handled);
             base.KeyUp(args);
+        }
+
+        /// <summary>
+        /// Convert a string possibly containing control characters to one
+        /// suitable for display in a log message
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        private string GetDisplayString(string s)
+        {
+            var builder = new StringBuilder();
+            foreach (var c in s)
+            {
+                if (char.IsControl(c))
+                {
+                    builder.Append('^');
+                    builder.Append((char)(c + '@'));
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+            return builder.ToString();
         }
     }
 }
