@@ -33,6 +33,9 @@ type internal NormalMode
         InReplace = false
     }
 
+    /// Set of all char's Vim is interested in
+    let _coreCharSet = KeyInputUtil.VimKeyCharList |> Set.ofList
+
     /// Contains the state information for Normal mode
     let mutable _data = EmptyData
 
@@ -356,8 +359,17 @@ type internal NormalMode
         _data <- EmptyData
 
     member x.CanProcess (keyInput: KeyInput) =
-        _runner.IsWaitingForMoreInput
-        || _runner.DoesCommandStartWith keyInput
+        if _runner.IsWaitingForMoreInput then
+            true
+        elif _runner.DoesCommandStartWith keyInput then
+            true
+        elif Option.isSome keyInput.RawChar && keyInput.KeyModifiers = VimKeyModifiers.None then
+
+            // We can process any character which is part of the standard Vim
+            // input set.
+            Set.contains keyInput.Char _coreCharSet
+        else
+            false
     
     member x.Process (keyInput: KeyInput) = 
 
