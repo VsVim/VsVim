@@ -256,6 +256,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
         private readonly Mock<IDisplayWindowBroker> _displayWindowBroker;
         private readonly Mock<IReportDesignerUtil> _reportDesignerUtil;
         private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
+        private readonly Mock<ICommonOperations> _commonOperations;
         private readonly VsCommandTarget _vsCommandTarget;
         private readonly IKeyUtil _keyUtil;
         private readonly ReSharperCommandTargetSimulation _reSharperCommandTarget;
@@ -325,6 +326,8 @@ namespace Vim.VisualStudio.UnitTest.Utils
             _vimApplicationSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
             _vimApplicationSettings.SetupGet(x => x.UseEditorTabAndBackspace).Returns(true);
 
+            _commonOperations = _factory.Create<ICommonOperations>();
+
             _vsSimulationCommandTarget = new SimulationCommandTarget(
                 bufferCoordinator.VimBuffer.TextView,
                 editorOperationsFactoryService.GetEditorOperations(bufferCoordinator.VimBuffer.TextView));
@@ -335,7 +338,12 @@ namespace Vim.VisualStudio.UnitTest.Utils
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(bufferCoordinator, textManager.Object, _displayWindowBroker.Object, _vsSimulationCommandTarget));
+            commandTargets.Add(new StandardCommandTarget(
+                bufferCoordinator,
+                textManager.Object,
+                _commonOperations.Object,
+                _displayWindowBroker.Object,
+                _vsSimulationCommandTarget));
 
             // Create the VsCommandTarget.  It's next is the final and default Visual Studio 
             // command target

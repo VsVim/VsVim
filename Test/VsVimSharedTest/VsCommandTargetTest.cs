@@ -29,6 +29,7 @@ namespace Vim.VisualStudio.UnitTest
         private readonly Mock<IOleCommandTarget> _nextTarget;
         private readonly Mock<IDisplayWindowBroker> _broker;
         private readonly Mock<ITextManager> _textManager;
+        private readonly Mock<ICommonOperations> _commonOperations;
         private readonly Mock<IVimApplicationSettings> _vimApplicationSettings;
         private readonly IOleCommandTarget _target;
         private readonly VsCommandTarget _targetRaw;
@@ -52,6 +53,7 @@ namespace Vim.VisualStudio.UnitTest
 
             _broker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Loose);
             _textManager = _factory.Create<ITextManager>();
+            _commonOperations = _factory.Create<ICommonOperations>();
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
 
             var commandTargets = new List<ICommandTarget>();
@@ -59,7 +61,12 @@ namespace Vim.VisualStudio.UnitTest
             {
                 commandTargets.Add(ReSharperKeyUtil.GetOrCreate(_bufferCoordinator));
             }
-            commandTargets.Add(new StandardCommandTarget(_bufferCoordinator, _textManager.Object, _broker.Object, _nextTarget.Object));
+            commandTargets.Add(new StandardCommandTarget(
+                _bufferCoordinator,
+                _textManager.Object,
+                _commonOperations.Object,
+                _broker.Object,
+                _nextTarget.Object));
 
             var oldCommandFilter = _nextTarget.Object;
             _targetRaw = new VsCommandTarget(
@@ -345,6 +352,15 @@ namespace Vim.VisualStudio.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec(KeyInputUtil.EscapeKey);
                 Assert.Equal(1, count);
+            }
+
+            [WpfFact]
+            public void DiscardUnprocessedInputInNonInputMode()
+            {
+                _commonOperations.Setup(x => x.Beep()).Verifiable();
+                _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
+                RunExec(KeyInputUtil.CharToKeyInput('@'));
+                _commonOperations.Verify();
             }
 
             /// <summary>

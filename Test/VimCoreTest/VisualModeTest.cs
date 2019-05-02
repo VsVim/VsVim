@@ -123,7 +123,7 @@ namespace Vim.UnitTest
             var input = KeyInputUtil.CharToKeyInput('@');
             _operations.Setup(x => x.Beep()).Verifiable();
             Assert.DoesNotContain(_mode.CommandNames, x => x.KeyInputs.First().Char == input.Char);
-            Assert.True(_mode.CanProcess(input));
+            Assert.False(_mode.CanProcess(input));
             var ret = _mode.Process(input);
             Assert.True(ret.IsHandledNoSwitch());
             _operations.Verify();
