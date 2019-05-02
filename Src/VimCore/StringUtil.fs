@@ -4,7 +4,7 @@ namespace Vim
 open System
 open StringBuilderExtensions
 
-module internal StringUtil =
+module StringUtil =
 
     let Empty = System.String.Empty
 

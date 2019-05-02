@@ -364,6 +364,25 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
+            /// Must be able discard non-ASCII characters or they will end up
+            /// as input
+            /// </summary>
+            [WpfTheory]
+            [InlineData('¤')]
+            [InlineData('¨')]
+            [InlineData('£')]
+            [InlineData('§')]
+            [InlineData('´')]
+            public void CanProcessPrintableNonAscii(char c)
+            {
+                // Reported in issue #1793.
+                _commonOperations.Setup(x => x.Beep()).Verifiable();
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                RunExec(KeyInputUtil.CharToKeyInput(c));
+                _commonOperations.Verify();
+            }
+
+            /// <summary>
             /// If there is buffered KeyInput values then the provided KeyInput shouldn't ever be 
             /// directly handled by the VsCommandTarget or the next IOleCommandTarget in the 
             /// chain.  It should be passed directly to the IVimBuffer if it can be handled else 

@@ -375,7 +375,7 @@ module internal GenericListUtil =
     let OfSeq (col: 'T seq) = System.Collections.Generic.List<'T>(col)
 
 [<RequireQualifiedAccess>]
-type internal CharComparer =
+type CharComparer =
     | Exact
     | IgnoreCase
 
@@ -510,7 +510,7 @@ type internal CharSpan
         let length = endIndex - startIndex
         CharSpan(str, startIndex, length, charComparer)
 
-module internal CharUtil =
+module CharUtil =
 
     let PrintableCategories =
         seq {
