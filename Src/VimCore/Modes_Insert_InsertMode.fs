@@ -511,12 +511,12 @@ type internal InsertMode
                     let keyInputSet = KeyInputSet(keyInput)
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
 
-                if keyInput.KeyModifiers = VimKeyModifiers.Control && not (CharUtil.IsLetterOrDigit c) then
+                if keyInput.KeyModifiers = VimKeyModifiers.Control then
 
-                    // A non-letter, non-digit key with only control that isn't
-                    // mapped is never a direct insert. But on some
-                    // international keyboards, it might translate to an ASCII
-                    // control character. See issue #2462.
+                    // A key with only control pressed that isn't mapped is
+                    // never a direct insert. But on some international
+                    // keyboards, it might translate to an ASCII control
+                    // character. See issue #2462.
                     match Map.tryFind keyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> None

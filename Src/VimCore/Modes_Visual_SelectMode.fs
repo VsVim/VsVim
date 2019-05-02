@@ -178,7 +178,9 @@ type internal SelectMode
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
     member x.CanProcess (keyInput: KeyInput) =
-        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
+        keyInput.Key <> VimKey.None
+        || keyInput.KeyModifiers = VimKeyModifiers.None && CharUtil.IsPrintable(keyInput.Char)
+        || _runner.DoesCommandStartWith keyInput
 
     member x.Process keyInput = 
 
