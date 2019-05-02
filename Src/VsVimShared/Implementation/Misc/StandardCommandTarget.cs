@@ -360,6 +360,17 @@ namespace Vim.VisualStudio.Implementation.Misc
                         {
                             return true;
                         }
+
+                        // Discard any other unprocessed input in non-input
+                        // modes. Without this, Visual Studio will see the
+                        // command as unhandled and will try to handle it
+                        // itself by inserting the character into the buffer.
+                        if (editCommand.EditCommandKind == EditCommandKind.UserInput &&
+                            !_vimBuffer.ModeKind.IsAnyInsert() &&
+                            !_vimBuffer.ModeKind.IsAnySelect())
+                        {
+                            return true;
+                        }
                     }
                     return false;
                 default:

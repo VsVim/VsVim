@@ -5490,6 +5490,20 @@ module VimExtensions =
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
 
+    /// Is this ModeKind any type of Visual
+    [<Extension>]
+    let IsAnyVisual modeKind = 
+        modeKind = ModeKind.VisualCharacter ||
+        modeKind = ModeKind.VisualLine ||
+        modeKind = ModeKind.VisualBlock
+
+    /// Is this ModeKind any type of Select
+    [<Extension>]
+    let IsAnySelect modeKind = 
+        modeKind = ModeKind.SelectCharacter ||
+        modeKind = ModeKind.SelectLine ||
+        modeKind = ModeKind.SelectBlock
+
 module internal VimCoreExtensions =
     
     type IVim with
