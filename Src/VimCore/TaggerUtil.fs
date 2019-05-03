@@ -790,7 +790,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             if col.Count = 1 then
                 x.GetTagsForSpan col.[0]
             else
-                VimTrace.TraceInfo("AsyncTagger::GetTags Count {0}", col.Count);
+                VimTrace.TraceDebug("AsyncTagger::GetTags Count {0}", col.Count);
                 let mutable all: ITagSpan<'TTag> seq = Seq.empty
                 for span in col do 
                     let current = x.GetTagsForSpan span
@@ -799,7 +799,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     member x.GetTagsForSpan span =
         let lineRange = SnapshotLineRange.CreateForSpan span
-        VimTrace.TraceInfo("AsyncTagger::GetTags {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
+        VimTrace.TraceDebug("AsyncTagger::GetTags {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
 
         // First try and see if the tagger can provide prompt data.  We want to avoid 
         // creating Task<T> instances if possible.  
@@ -873,7 +873,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
             let createNewRequest () =
                 Contract.Assert(Option.isNone _asyncBackgroundRequest)
-                VimTrace.TraceInfo("AsyncTagger Background New {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
+                VimTrace.TraceDebug("AsyncTagger Background New {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
 
                 // Create the data which is needed by the background request
                 let data = _asyncTaggerSource.GetDataForSnapshot(snapshot)
@@ -938,7 +938,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             | Some asyncBackgroundRequest ->
                 if asyncBackgroundRequest.Snapshot = snapshot then
                     Contract.Requires (asyncBackgroundRequest.Snapshot = snapshot)
-                    VimTrace.TraceInfo("AsyncTagger Background Existing {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
+                    VimTrace.TraceDebug("AsyncTagger Background Existing {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
                     asyncBackgroundRequest.Channel.WriteNormal lineRange
                 else 
                     x.CancelAsyncBackgroundRequest()
@@ -1007,7 +1007,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
                                 // It's important that we register some value here.  If we register nothing then the foreground will
                                 // never see this slot as fulfilled and later requests for this span will eventually queue up another
                                 // background request
-                                VimTrace.TraceInfo("AsyncTagger source exception in background processing {0}", e);
+                                VimTrace.TraceDebug("AsyncTagger source exception in background processing {0}", e);
                                 EmptyTagList
                         visited.Add tagLineRange.LineRange
                         onProgress tagLineRange tagList
@@ -1039,7 +1039,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
             | e ->
                 // Handle cancellation exceptions and everything else.  Don't want an errant 
                 // exception thrown by the IAsyncTaggerSource to crash the process
-                VimTrace.TraceInfo("AsyncTagger Exception in background processing {0}", e);
+                VimTrace.TraceDebug("AsyncTagger Exception in background processing {0}", e);
                 CompleteReason.Error;
 
         onComplete completeReason
@@ -1090,7 +1090,7 @@ type internal AsyncTagger<'TData, 'TTag when 'TTag :> ITag>
 
     member private x.RaiseTagsChanged span =
         let lineRange = SnapshotLineRange.CreateForSpan span
-        VimTrace.TraceInfo("AsyncTagger::RaiseTagsChanged {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
+        VimTrace.TraceDebug("AsyncTagger::RaiseTagsChanged {0} - {1}", lineRange.StartLineNumber, lineRange.LastLineNumber)
 
         _tagsChanged.Trigger x (SnapshotSpanEventArgs(span))
 

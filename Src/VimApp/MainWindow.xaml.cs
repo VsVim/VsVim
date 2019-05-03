@@ -127,7 +127,7 @@ namespace VimApp
             InitializeComponent();
 
 #if DEBUG
-            VimTrace.TraceSwitch.Level = TraceLevel.Info;
+            VimTrace.TraceSwitch.Level = TraceLevel.Verbose;
 #endif
 
             _vimComponentHost = new VimComponentHost();
