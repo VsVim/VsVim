@@ -251,7 +251,7 @@ namespace Vim.UnitTest
             }
 
 #if VSVIM_DEV_2017
-            // https://github.com/jaredpar/VsVim/issues/2463
+            // https://github.com/VsVim/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave
             /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
@@ -273,7 +273,7 @@ namespace Vim.UnitTest
                 }
             }
 #elif VSVIM_DEV_2019
-            // https://github.com/jaredpar/VsVim/issues/2463
+            // https://github.com/VsVim/VsVim/issues/2463
 #else
 #error Unsupported configuration
 #endif

@@ -1201,7 +1201,7 @@ type VimInterpreter
         _commonOperations.GoToNextTab SearchPath.Backward count
 
     member x.RunHelp () = 
-        _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/jaredpar/VsVim/wiki)"
+        _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/VsVim/VsVim/wiki)"
 
     /// Print out the applicable history information
     member x.RunHistory () = 

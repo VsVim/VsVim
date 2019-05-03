@@ -181,8 +181,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         ///
         /// Either way though need to guard against this case to unblock users.
         /// 
-        /// https://github.com/jaredpar/VsVim/issues/631
-        /// https://github.com/jaredpar/VsVim/issues/1860
+        /// https://github.com/VsVim/VsVim/issues/631
+        /// https://github.com/VsVim/VsVim/issues/1860
         /// </summary>
         private static DispatcherTimer CreateBlinkTimer(IProtectedOperations protectedOperations, EventHandler onCaretBlinkTimer)
         {

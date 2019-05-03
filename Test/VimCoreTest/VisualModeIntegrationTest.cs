@@ -1039,7 +1039,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The 'e' motion should select up to and including the end of the word
                 ///
-                /// https://github.com/jaredpar/VsVim/issues/568
+                /// https://github.com/VsVim/VsVim/issues/568
                 /// </summary>
                 [WpfFact]
                 public void EndOfWordMotion()

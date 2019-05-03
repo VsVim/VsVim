@@ -9,7 +9,7 @@ AppVeyor状态： [![Build status](https://ci.appveyor.com/api/projects/status/g
 
 此项目需要Visual Studio 2017编辑。 请确保您已经安装F＃和Visual Studio扩展工作负载。
 
-开发时请遵循[编码指南](https://github.com/jaredpar/VsVim/blob/master/Documentation/CodingGuidelines.md)。
+开发时请遵循[编码指南](https://github.com/VsVim/VsVim/blob/master/Documentation/CodingGuidelines.md)。
 
 ## 授权
 

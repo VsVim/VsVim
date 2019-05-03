@@ -9,7 +9,7 @@ AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf
 
 This project requires Visual Studio 2017 or 2019 to be edited.  Make sure to install the F# and Visual Studio extension work load. 
 
-When developing please follow the [coding guidelines](https://github.com/jaredpar/VsVim/blob/master/Documentation/CodingGuidelines.md)
+When developing please follow the [coding guidelines](https://github.com/VsVim/VsVim/blob/master/Documentation/CodingGuidelines.md)
 
 ## License
 
