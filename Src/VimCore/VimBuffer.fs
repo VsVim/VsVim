@@ -303,6 +303,9 @@ type internal VimBuffer
             match x.Mode.ModeKind with
             | ModeKind.Insert -> x.InsertMode.IsDirectInsert keyInput
             | ModeKind.Replace -> x.ReplaceMode.IsDirectInsert keyInput
+            | ModeKind.SelectCharacter -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectLine -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectBlock -> x.InsertMode.IsDirectInsert keyInput
             | _ -> false
 
         // Can the given KeyInput be processed as a command or potentially a 

@@ -22,6 +22,9 @@ type KeyInput =
     /// The extra modifier keys applied to the VimKey value
     member KeyModifiers: VimKeyModifiers
 
+    /// Whether the key has any key modifiers
+    member HasKeyModifiers: bool
+
     /// Is the character for this KeyInput a digit
     member IsDigit: bool
 
@@ -71,7 +74,10 @@ module KeyInputUtil =
     /// The KeyInput for every VimKey in the system which is considered predefined
     val VimKeyInputList: KeyInput list
 
-    /// The set of core characters as a seq
+    /// The set of core characters
+    val VimKeyCharSet: char Set
+
+    /// The set of core characters as a list
     val VimKeyCharList: char list
 
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
@@ -114,4 +120,7 @@ module KeyInputUtil =
 
     /// Get the alternate key for the given KeyInput if it's a key from the keypad 
     val GetNonKeypadEquivalent: keyInput: KeyInput -> KeyInput option 
+
+    /// Whether this key input could appear in vim's standard bindings
+    val IsCore: keyInput: KeyInput -> bool
 

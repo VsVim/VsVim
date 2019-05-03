@@ -1055,13 +1055,14 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
 
                 // <F4> is not a valid command
-                Assert.False(_vimBuffer.CanProcess(VimKey.F4));
+                var keyInput = KeyInputUtil.CharToKeyInput('¤');
+                Assert.False(_vimBuffer.CanProcess(keyInput));
                 _vimBuffer.Process("l");
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
 
                 // Is is still not a valid command but when mapping is considered it will
                 // expand to l<F4> and l is a valid command
-                Assert.True(_vimBuffer.CanProcess(VimKey.F4));
+                Assert.True(_vimBuffer.CanProcess(keyInput));
             }
 
             /// <summary>

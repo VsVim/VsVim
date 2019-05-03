@@ -359,7 +359,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 _commonOperations.Setup(x => x.Beep()).Verifiable();
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
-                RunExec(KeyInputUtil.CharToKeyInput('@'));
+                RunExec(KeyInputUtil.CharToKeyInput('¤'));
                 _commonOperations.Verify();
             }
 

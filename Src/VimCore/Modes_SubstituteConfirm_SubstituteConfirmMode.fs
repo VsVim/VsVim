@@ -65,7 +65,8 @@ type internal SubstituteConfirmMode
 
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    member x.CanProcess (keyInput: KeyInput) = not keyInput.IsMouseKey
+    member x.CanProcess (keyInput: KeyInput) =
+        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
 
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 

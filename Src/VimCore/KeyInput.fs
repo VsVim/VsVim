@@ -11,11 +11,11 @@ type KeyInput
         _literal: char option 
     ) =
 
-    member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
+    member x.Char = match _literal with | Some c -> c | None -> CharUtil.MinValue
     member x.RawChar = _literal
     member x.Key = _key
     member x.KeyModifiers = _modKey
-    member x.HasShiftModifier = _modKey = VimKeyModifiers.Shift
+    member x.HasKeyModifiers = _modKey <> VimKeyModifiers.None
     member x.IsDigit = 
         match _literal with
         | Some c -> CharUtil.IsDigit c
@@ -51,8 +51,7 @@ type KeyInput
                 else compare left.Key right.Key
                     
     override x.GetHashCode() = 
-        let c = x.Char
-        int32 c
+        x.Char.GetHashCode() ^^^ x.Key.GetHashCode() ^^^ x.KeyModifiers.GetHashCode()
 
     override x.Equals(obj) =
         match obj with
@@ -210,7 +209,7 @@ module KeyInputUtil =
         Seq.append alpha other
         |> Map.ofSeq
 
-    /// This is the set of predefined KeyInput values that Vim chars about 
+    /// This is the set of predefined KeyInput values that Vim cares about
     let VimKeyInputList = 
 
         let rawSeq = 
@@ -236,11 +235,14 @@ module KeyInputUtil =
         |> Seq.append controlSeq
         |> List.ofSeq
 
-    let VimKeyCharList = 
+    let VimKeyCharSet =
         VimKeyInputList
         |> Seq.map (fun ki -> ki.RawChar)
         |> SeqUtil.filterToSome
         |> Set.ofSeq
+
+    let VimKeyCharList =
+        VimKeyCharSet
         |> Set.toList
 
     /// Map for core characters to the KeyInput representation.  While several keys 
@@ -286,7 +288,7 @@ module KeyInputUtil =
     /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
         VimKeyInputList
-        |> Seq.filter (fun keyInput -> keyInput.KeyModifiers = VimKeyModifiers.None)
+        |> Seq.filter (fun keyInput -> not keyInput.HasKeyModifiers)
         |> Seq.map (fun keyInput -> keyInput.Key, keyInput)
         |> Map.ofSeq
 
@@ -464,3 +466,15 @@ module KeyInputUtil =
         | VimKey.KeypadEnter -> ApplyKeyModifiers EnterKey keyInput.KeyModifiers |> Some
         | _ -> None
 
+    let IsCore (keyInput: KeyInput) =
+        if not keyInput.HasKeyModifiers then
+            if keyInput.Key <> VimKey.RawCharacter then
+                // Any standard vim key without modifiers is a core key input.
+                true
+            elif Option.isSome keyInput.RawChar && VimKeyCharSet.Contains keyInput.Char then
+                // Any standard vim char without modifiers is a core key input.
+                true
+            else
+                false
+        else
+            false

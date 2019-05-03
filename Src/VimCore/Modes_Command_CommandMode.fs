@@ -170,7 +170,7 @@ type internal CommandMode
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSetUtil.Single
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
-        member x.CanProcess keyInput = not keyInput.IsMouseKey
+        member x.CanProcess keyInput = KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()

@@ -68,14 +68,14 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            // In insert mode we don't want text input going directly to VsVim.  Text input must
+            // In insert modes we don't want text input going directly to VsVim.  Text input must
             // be routed through Visual Studio and IOleCommandTarget in order to get intellisense
             // properly hooked up.  Not handling it in this KeyProcessor will eventually cause
             // it to be routed through IOleCommandTarget if it's input
             //
             // The Visual Studio KeyProcessor won't pass along control characters that are less than
             // or equal to 0x1f so we have to handle them here 
-            if (VimBuffer.ModeKind.IsAnyInsert() &&
+            if ((VimBuffer.ModeKind.IsAnyInsert() || VimBuffer.ModeKind.IsAnySelect()) &&
                 !VimBuffer.CanProcessAsCommand(keyInput) &&
                 (int)keyInput.Char > 0x1f)
             {

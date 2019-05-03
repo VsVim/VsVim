@@ -452,7 +452,8 @@ type internal InsertMode
         | _ -> ()
 
     /// Can Insert mode handle this particular KeyInput value 
-    member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
+    member x.CanProcess keyInput =
+        x.GetRawInsertCommand keyInput |> Option.isSome
 
     /// Complete the current batched edit command if one exists
     member x.CompleteCombinedEditCommand keyInput = 
@@ -513,15 +514,15 @@ type internal InsertMode
 
                 if keyInput.KeyModifiers = VimKeyModifiers.Control then
 
-                    // A key with only control pressed that isn't mapped is
-                    // never a direct insert. But on some international
+                    // A key with only the control modifier that isn't mapped
+                    // is never a direct insert. But on some international
                     // keyboards, it might translate to an ASCII control
                     // character. See issue #2462.
                     match Map.tryFind keyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> None
 
-                else if keyInput.KeyModifiers <> VimKeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
+                else if keyInput.HasKeyModifiers && not (CharUtil.IsLetterOrDigit c) then
 
                     // Certain keys such as Delete, Esc, etc ... have the same
                     // behavior when invoked with or without any modifiers.
