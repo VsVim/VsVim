@@ -489,6 +489,9 @@ type ICommonOperations =
     /// Normalize the set of spaces and tabs into spaces
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
+    /// Open link under caret
+    abstract OpenLinkUnderCaret: unit -> Result
+
     /// Put the specified StringData at the given point.
     abstract Put: SnapshotPoint -> StringData -> OperationKind -> unit
 

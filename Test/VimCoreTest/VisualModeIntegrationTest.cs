@@ -24,6 +24,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private IRegisterMap _registerMap;
         private IVimGlobalSettings _globalSettings;
+        protected MockVimHost _vimHost;
         protected TestableMouseDevice _testableMouseDevice;
 
         internal Register TestRegister
@@ -43,7 +44,8 @@ namespace Vim.UnitTest
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
 
             // Need to make sure it's focused so macro recording will work
-            ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
+            _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
+            _vimHost.FocusedTextView = _textView;
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
@@ -3847,6 +3849,46 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(index);
                 _vimBuffer.Process("Vj%");
                 Assert.Equal(_textBuffer.GetLineRange(startLine: 0, endLine: 3).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void OpenLink_Character()
+            {
+                Create("foo Xhttps://github.com/VsVim/VsVimX bar", "");
+                _globalSettings.Selection = "inclusive";
+                var line = _textBuffer.GetLine(0).GetText();
+                var beg = line.IndexOf('X') + 1;
+                var end = line.IndexOf('X', beg);
+                var count = end - beg - 1;
+                _textView.MoveCaretToLine(0, beg);
+                _vimBuffer.Process($"v{count}l");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            [WpfFact]
+            public void OpenLink_Line()
+            {
+                Create("https://github.com/VsVim/VsVim", "");
+                _vimBuffer.Process("V");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
 

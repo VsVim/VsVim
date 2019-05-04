@@ -2931,6 +2931,9 @@ type NormalCommand =
     /// Open all of the folds under the caret
     | OpenAllFoldsUnderCaret
 
+    /// Open link under caret
+    | OpenLinkUnderCaret
+
     /// Open a fold under the caret
     | OpenFoldUnderCaret
 
@@ -3155,6 +3158,7 @@ type NormalCommand =
         | NormalCommand.UndoLine -> None
         | NormalCommand.OpenAllFolds -> None
         | NormalCommand.OpenAllFoldsUnderCaret -> None
+        | NormalCommand.OpenLinkUnderCaret -> None
         | NormalCommand.OpenFoldUnderCaret -> None
         | NormalCommand.ToggleFoldUnderCaret -> None
         | NormalCommand.ToggleAllFolds -> None
@@ -3289,6 +3293,9 @@ type VisualCommand =
 
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
+
+    /// Open link in selection
+    | OpenLinkInSelection
 
     /// Open one fold in the selection
     | OpenFoldInSelection
@@ -4679,6 +4686,9 @@ type IVimHost =
 
     // Open the quick fix window (:cwindow)
     abstract OpenQuickFixWindow: unit -> unit
+
+    /// Open the the specified link
+    abstract OpenLink: link: string -> bool
 
     /// Quit the application
     abstract Quit: unit -> unit

@@ -182,6 +182,19 @@ namespace Vim.UI.Wpf
 
         public abstract void OpenQuickFixWindow();
 
+        public bool OpenLink(string link)
+        {
+            try
+            {
+                Process.Start(link);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
@@ -645,6 +658,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.GoToDefinition()
         {
             return GoToDefinition();
+        }
+
+        bool IVimHost.OpenLink(string link)
+        {
+            return OpenLink(link);
         }
 
         bool IVimHost.GoToGlobalDeclaration(ITextView textView, string identifier)

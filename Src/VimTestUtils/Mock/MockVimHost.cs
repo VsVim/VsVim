@@ -50,6 +50,7 @@ namespace Vim.UnitTest.Mock
         public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
+        public Func<string, bool> OpenLinkFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
@@ -361,6 +362,11 @@ namespace Vim.UnitTest.Mock
         void IVimHost.OpenQuickFixWindow()
         {
             OpenQuickFixWindowFunc();
+        }
+
+        bool IVimHost.OpenLink(string link)
+        {
+            return OpenLinkFunc(link);
         }
 
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)

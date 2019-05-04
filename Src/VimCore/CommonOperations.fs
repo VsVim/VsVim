@@ -1122,17 +1122,23 @@ type internal CommonOperations
             Magic = _globalSettings.Magic
             Count = VimRegexReplaceCount.One }
 
+    member x.IsLink (word: string) =
+        word.StartsWith("http:", StringComparison.OrdinalIgnoreCase) 
+        || word.StartsWith("https:", StringComparison.OrdinalIgnoreCase) 
+
     member x.GoToDefinition() =
-        let before = TextViewUtil.GetCaretVirtualPoint _textView
-        if _vimHost.GoToDefinition() then
-            _jumpList.Add before
-            Result.Succeeded
-        else
-            match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
-            | Some(span) -> 
-                let msg = Resources.Common_GotoDefFailed (span.GetText())
-                Result.Failed(msg)
-            | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | word when x.IsLink word ->
+            x.OpenLinkUnderCaret()
+        | word ->
+            let before = TextViewUtil.GetCaretVirtualPoint _textView
+            if _vimHost.GoToDefinition() then
+                _jumpList.Add before
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed word)
 
     member x.GoToLocalDeclaration() = 
         let caretPoint = x.CaretVirtualPoint
@@ -1303,6 +1309,17 @@ type internal CommonOperations
 
                 let remainder = text.Substring(index)
                 gapText + x.NormalizeBlanks remainder 0
+
+    /// Open link under caret
+    member x.OpenLinkUnderCaret () =
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | link ->
+            if _vimHost.OpenLink link then
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed link)
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -2230,6 +2247,7 @@ type internal CommonOperations
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
+        member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
