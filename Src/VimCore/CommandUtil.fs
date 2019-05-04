@@ -2154,6 +2154,13 @@ type internal CommandUtil
         _foldManager.OpenAllFolds span
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Open link under caret
+    member x.OpenLinkUnderCaret () =
+        match _commonOperations.OpenLinkUnderCaret() with
+        | Result.Succeeded -> ()
+        | Result.Failed(msg) -> _statusUtil.OnError msg
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Run the Ping command
     member x.Ping (pingData: PingData) data =
         pingData.Function data
@@ -2969,6 +2976,7 @@ type internal CommandUtil
         | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
+        | NormalCommand.OpenLinkUnderCaret -> x.OpenLinkUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret registerName count moveCaretAfterText

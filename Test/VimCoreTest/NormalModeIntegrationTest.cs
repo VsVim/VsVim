@@ -9317,6 +9317,21 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
                 Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
             }
+
+            [WpfFact]
+            public void OpenLink()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+            }
         }
 
         public sealed class MotionWrapTest : NormalModeIntegrationTest

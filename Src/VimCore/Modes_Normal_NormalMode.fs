@@ -174,6 +174,7 @@ type internal NormalMode
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
                 yield ("==", CommandFlags.Repeatable, NormalCommand.FormatCodeLines)
+                yield ("gx", CommandFlags.Repeatable, NormalCommand.OpenLinkUnderCaret)
                 yield ("gqgq", CommandFlags.Repeatable, NormalCommand.FormatTextLines false)
                 yield ("gqq", CommandFlags.Repeatable, NormalCommand.FormatTextLines false)
                 yield ("gwgw", CommandFlags.Repeatable, NormalCommand.FormatTextLines true)

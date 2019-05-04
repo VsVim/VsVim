@@ -1304,6 +1304,17 @@ type internal CommonOperations
                 let remainder = text.Substring(index)
                 gapText + x.NormalizeBlanks remainder 0
 
+    /// Open link under caret
+    member x.OpenLinkUnderCaret () =
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | link ->
+            if _vimHost.OpenLink link then
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed link)
+
     member x.ScrollLines dir count =
         for i = 1 to count do
             match dir with
@@ -2230,6 +2241,7 @@ type internal CommonOperations
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
+        member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
