@@ -9349,6 +9349,21 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void GoToUppercaseLink()
+            {
+                Create("foo HTTPS://GITHUB.COM/VSVIM/VSVIM bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal("HTTPS://GITHUB.COM/VSVIM/VSVIM", link);
+            }
+
+            [WpfFact]
             public void GoToLinkWithMouse()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");

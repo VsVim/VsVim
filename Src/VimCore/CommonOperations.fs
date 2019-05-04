@@ -1122,11 +1122,15 @@ type internal CommonOperations
             Magic = _globalSettings.Magic
             Count = VimRegexReplaceCount.One }
 
+    member x.IsLink (word: string) =
+        word.StartsWith("http:", StringComparison.OrdinalIgnoreCase) 
+        || word.StartsWith("https:", StringComparison.OrdinalIgnoreCase) 
+
     member x.GoToDefinition() =
         match x.WordUnderCursorOrEmpty with
         | "" ->
             Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
-        | word when word.StartsWith("http") ->
+        | word when x.IsLink word ->
             x.OpenLinkUnderCaret()
         | word ->
             let before = TextViewUtil.GetCaretVirtualPoint _textView
