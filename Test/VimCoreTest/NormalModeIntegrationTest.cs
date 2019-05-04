@@ -9332,6 +9332,39 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("gx");
                 Assert.Equal("https://github.com/VsVim/VsVim", link);
             }
+
+            [WpfFact]
+            public void GoToLink()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+            }
+
+            [WpfFact]
+            public void GoToLinkWithMouse()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                var point = _textView.GetPointInLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(point, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
+            }
         }
 
         public sealed class MotionWrapTest : NormalModeIntegrationTest

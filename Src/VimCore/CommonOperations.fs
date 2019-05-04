@@ -1123,16 +1123,18 @@ type internal CommonOperations
             Count = VimRegexReplaceCount.One }
 
     member x.GoToDefinition() =
-        let before = TextViewUtil.GetCaretVirtualPoint _textView
-        if _vimHost.GoToDefinition() then
-            _jumpList.Add before
-            Result.Succeeded
-        else
-            match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
-            | Some(span) -> 
-                let msg = Resources.Common_GotoDefFailed (span.GetText())
-                Result.Failed(msg)
-            | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | word when word.StartsWith("http") ->
+            x.OpenLinkUnderCaret()
+        | word ->
+            let before = TextViewUtil.GetCaretVirtualPoint _textView
+            if _vimHost.GoToDefinition() then
+                _jumpList.Add before
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed word)
 
     member x.GoToLocalDeclaration() = 
         let caretPoint = x.CaretVirtualPoint
