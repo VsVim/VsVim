@@ -158,11 +158,14 @@ namespace Vim.UnitTest
             Assert.True(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
+        /// <summary>
+        /// WPF window level shortcuts shouldn't be processed (for the benefit of VimApp)
+        /// </summary>
         [WpfFact]
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
+            Assert.False(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
         /// <summary>

@@ -467,14 +467,16 @@ module KeyInputUtil =
         | _ -> None
 
     let IsCore (keyInput: KeyInput) =
-        if not keyInput.HasKeyModifiers then
-            if keyInput.Key <> VimKey.RawCharacter then
-                // Any standard vim key without modifiers is a core key input.
-                true
-            elif Option.isSome keyInput.RawChar && VimKeyCharSet.Contains keyInput.Char then
-                // Any standard vim char without modifiers is a core key input.
-                true
-            else
-                false
+        if Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt then
+            // No key or char with the alt modifier is a core key input.
+            false
+        elif keyInput.Key <> VimKey.RawCharacter then
+            // Any standard vim key with or without modifiers is a core key input, with some exceptions.
+            match keyInput with
+            | keyInput when keyInput = ApplyKeyModifiers TabKey VimKeyModifiers.Control -> false
+            | _ -> true
+        elif not keyInput.HasKeyModifiers && Option.isSome keyInput.RawChar && VimKeyCharSet.Contains keyInput.Char then
+            // Any standard vim char without modifiers is a core key input.
+            true
         else
             false
