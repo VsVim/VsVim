@@ -559,7 +559,7 @@ module CharUtil =
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsControl x = System.Char.IsControl x
-    let IsAscii x = x >= 0 && x <= 127
+    let IsAscii x = x >= '\u0000' && x <= '\u00ff'
 
     /// Is this the Vim definition of a blank character.  That is it a space
     /// or tab
