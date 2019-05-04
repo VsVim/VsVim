@@ -393,8 +393,11 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private void SetImeState(InputMethodState state)
         {
+            if (InputMethod.Current.ImeState != state)
+            {
+                VimTrace.TraceInfo($"ImeCoordinator: in mode = {_inputMode} turning IME {state}");
+            }
             InputMethod.Current.ImeState = state;
-            VimTrace.TraceInfo($"ImeCoordinator: in mode = {_inputMode} turning IME {state}");
         }
 
         private bool GetHaveLanguageMappings()
