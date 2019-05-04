@@ -3294,6 +3294,9 @@ type VisualCommand =
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
 
+    /// Open link in selection
+    | OpenLinkInSelection
+
     /// Open one fold in the selection
     | OpenFoldInSelection
 

@@ -97,6 +97,7 @@ type internal VisualMode
                 yield ("=", CommandFlags.Repeatable, VisualCommand.FormatCodeLines)
                 yield ("gq", CommandFlags.Repeatable, VisualCommand.FormatTextLines false)
                 yield ("gw", CommandFlags.Repeatable, VisualCommand.FormatTextLines true)
+                yield ("gx", CommandFlags.Repeatable, VisualCommand.OpenLinkInSelection)
                 yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
                 yield ("<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection false)
                 yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
