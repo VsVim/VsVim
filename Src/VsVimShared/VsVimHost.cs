@@ -173,13 +173,19 @@ namespace Vim.VisualStudio
             public IVimApplicationSettings VimApplicationSettings { get; }
             public IMarkDisplayUtil MarkDisplayUtil { get; }
             public IControlCharUtil ControlCharUtil { get; }
+            public IClipboardDevice ClipboardDevice { get; }
 
             [ImportingConstructor]
-            public SettingsSync(IVimApplicationSettings vimApplicationSettings, IMarkDisplayUtil markDisplayUtil, IControlCharUtil controlCharUtil)
+            public SettingsSync(
+                IVimApplicationSettings vimApplicationSettings,
+                IMarkDisplayUtil markDisplayUtil,
+                IControlCharUtil controlCharUtil,
+                IClipboardDevice clipboardDevice)
             {
                 VimApplicationSettings = vimApplicationSettings;
                 MarkDisplayUtil = markDisplayUtil;
                 ControlCharUtil = controlCharUtil;
+                ClipboardDevice = clipboardDevice;
 
                 MarkDisplayUtil.HideMarksChanged += SyncToApplicationSettings;
                 ControlCharUtil.DisplayControlCharsChanged += SyncToApplicationSettings;
@@ -195,6 +201,7 @@ namespace Vim.VisualStudio
                 {
                     VimApplicationSettings.HideMarks = MarkDisplayUtil.HideMarks;
                     VimApplicationSettings.DisplayControlChars = ControlCharUtil.DisplayControlChars;
+                    VimApplicationSettings.ReportClipboardErrors = ClipboardDevice.ReportErrors;
                 });
             }
 
@@ -204,6 +211,7 @@ namespace Vim.VisualStudio
                 {
                     MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
                     ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
+                    ClipboardDevice.ReportErrors = VimApplicationSettings.ReportClipboardErrors;
                 });
             }
 
@@ -241,6 +249,7 @@ namespace Vim.VisualStudio
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly IClipboardDevice _clipboardDevice;
         private readonly SettingsSync _settingsSync;
         private IVim _vim;
 
@@ -304,7 +313,8 @@ namespace Vim.VisualStudio
             IProtectedOperations protectedOperations,
             IMarkDisplayUtil markDisplayUtil,
             IControlCharUtil controlCharUtil,
-            SVsServiceProvider serviceProvider)
+            SVsServiceProvider serviceProvider,
+            IClipboardDevice clipboardDevice)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -320,13 +330,14 @@ namespace Vim.VisualStudio
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
             _protectedOperations = protectedOperations;
+            _clipboardDevice = clipboardDevice;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitOutputPane();
 
-            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil);
+            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil, _clipboardDevice);
             _settingsSync.SyncFromApplicationSettings();
         }
 

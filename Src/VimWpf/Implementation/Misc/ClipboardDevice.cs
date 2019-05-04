@@ -10,17 +10,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
     {
         private readonly IProtectedOperations _protectedOperations;
 
-        /// <summary>
-        /// The WPF clipboard can get into a bad state which causes it to throw on every
-        /// usage of GetText.  When that happens we fall back to GetData instead.  
-        /// </summary>
-        private bool _useTextMethods;
+        private bool _reportErrors;
 
         [ImportingConstructor]
         internal ClipboardDevice(IProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
-            _useTextMethods = true;
+            _reportErrors = false;
         }
 
         private string GetText()
@@ -28,9 +24,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
             string text = null;
             void action()
             {
-                text = _useTextMethods
-                    ? Clipboard.GetText()
-                    : (string)Clipboard.GetData(DataFormats.UnicodeText);
+                text = Clipboard.GetText();
             }
 
             if (!TryAccessClipboard(action))
@@ -45,14 +39,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
         {
             void action()
             {
-                if (_useTextMethods)
-                {
-                    Clipboard.SetText(text);
-                }
-                else
-                {
-                    Clipboard.SetDataObject(text);
-                }
+                Clipboard.SetText(text);
             }
 
             TryAccessClipboard(action);
@@ -67,32 +54,30 @@ namespace Vim.UI.Wpf.Implementation.Misc
         /// WinForms handles the race.  WPF does not do this hence we have to implement it 
         /// manually here. 
         /// </summary>
-        private bool TryAccessClipboard(Action action, int retryCount = 5, int pauseMilliseconds = 100)
+        private bool TryAccessClipboard(Action action)
         {
-            var i = retryCount;
-            do
+            try
             {
-                try
+                action();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (_reportErrors)
                 {
-                    action();
-                    return true;
+                    _protectedOperations.Report(ex);
                 }
-                catch (Exception ex)
-                {
-                    i--;
-                    if (i == 0)
-                    {
-                        _protectedOperations.Report(ex);
-                        _useTextMethods = false;
-                        return false;
-                    }
-                }
-
-                Thread.Sleep(TimeSpan.FromMilliseconds(pauseMilliseconds));
-            } while (true);
+                return false;
+            }
         }
 
         #region IClipboardDevice
+
+        bool IClipboardDevice.ReportErrors
+        {
+            get { return _reportErrors; }
+            set { _reportErrors = value; }
+        }
 
         string IClipboardDevice.Text
         {

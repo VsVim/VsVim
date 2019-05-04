@@ -243,6 +243,10 @@ type ILineChangeTrackerFactory =
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 
+    /// Whether to report errors that occur when using the clipboard
+    abstract ReportErrors: bool with get, set
+
+    /// The text contents of the clipboard device
     abstract Text: string with get, set
 
 [<RequireQualifiedAccess>]
