@@ -1403,7 +1403,7 @@ type KeyInputSet
         while not current.IsEmpty do
             hashCode <- 
                 if hashCode = 1 then current.Head.GetHashCode()
-                else hashCode ^^^ current.Head.GetHashCode()
+                else HashUtil.Combine2 hashCode (current.Head.GetHashCode())
             current <- current.Tail
         hashCode
 

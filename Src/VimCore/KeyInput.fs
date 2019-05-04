@@ -51,7 +51,7 @@ type KeyInput
                 else compare left.Key right.Key
                     
     override x.GetHashCode() = 
-        x.Char.GetHashCode() ^^^ x.Key.GetHashCode() ^^^ x.KeyModifiers.GetHashCode()
+        HashUtil.Combine3 (x.Char.GetHashCode()) (x.Key.GetHashCode()) (x.KeyModifiers.GetHashCode())
 
     override x.Equals(obj) =
         match obj with
