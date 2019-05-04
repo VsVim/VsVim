@@ -1403,7 +1403,7 @@ type KeyInputSet
         while not current.IsEmpty do
             hashCode <- 
                 if hashCode = 1 then current.Head.GetHashCode()
-                else hashCode ^^^ current.Head.GetHashCode()
+                else HashUtil.Combine2 hashCode (current.Head.GetHashCode())
             current <- current.Tail
         hashCode
 
@@ -5489,6 +5489,20 @@ module VimExtensions =
     let IsAnyInsert modeKind = 
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
+
+    /// Is this ModeKind any type of Visual
+    [<Extension>]
+    let IsAnyVisual modeKind = 
+        modeKind = ModeKind.VisualCharacter ||
+        modeKind = ModeKind.VisualLine ||
+        modeKind = ModeKind.VisualBlock
+
+    /// Is this ModeKind any type of Select
+    [<Extension>]
+    let IsAnySelect modeKind = 
+        modeKind = ModeKind.SelectCharacter ||
+        modeKind = ModeKind.SelectLine ||
+        modeKind = ModeKind.SelectBlock
 
 module internal VimCoreExtensions =
     

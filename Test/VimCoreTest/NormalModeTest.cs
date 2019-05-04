@@ -158,27 +158,29 @@ namespace Vim.UnitTest
             Assert.True(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
+        /// <summary>
+        /// WPF window level shortcuts shouldn't be processed (for the benefit of VimApp)
+        /// </summary>
         [WpfFact]
         public void CanProcess_DontHandleControlTab()
         {
             Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiersDangerous(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
+            Assert.False(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
         /// <summary>
-        /// Must be able to process non-ASCII punctuation otherwise
-        /// they will end up as input
+        /// Non-ASCII characters should not be reported as being able to be
+        /// processed by normal mode
         /// </summary>
         [WpfFact]
-        public void CanProcessPrintableNonAscii()
+        public void CanProcess_PrintableNonAscii()
         {
-            // Reported in issue #1793.
             Create(s_defaultLines);
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¤')));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¨')));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('£')));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('§')));
-            Assert.True(_mode.CanProcess(KeyInputUtil.CharToKeyInput('´')));
+            Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¤')));
+            Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('¨')));
+            Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('£')));
+            Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('§')));
+            Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('´')));
         }
 
         #endregion

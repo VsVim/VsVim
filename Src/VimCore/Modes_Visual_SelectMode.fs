@@ -178,7 +178,8 @@ type internal SelectMode
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
     member x.CanProcess (keyInput: KeyInput) =
-        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
+        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
+        || _runner.DoesCommandStartWith keyInput
 
     member x.Process keyInput = 
 

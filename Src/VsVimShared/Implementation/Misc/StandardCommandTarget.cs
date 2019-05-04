@@ -23,6 +23,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
+        private readonly ICommonOperations _commonOperations;
         private readonly IDisplayWindowBroker _broker;
         private readonly IOleCommandTarget _nextOleCommandTarget;
         private static readonly Dictionary<KeyInput, Key> s_wpfKeyMap;
@@ -30,6 +31,7 @@ namespace Vim.VisualStudio.Implementation.Misc
         internal StandardCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
+            ICommonOperations commonOperations,
             IDisplayWindowBroker broker,
             IOleCommandTarget nextOleCommandTarget)
         {
@@ -38,6 +40,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
+            _commonOperations = commonOperations;
             _broker = broker;
             _nextOleCommandTarget = nextOleCommandTarget;
         }
@@ -360,6 +363,19 @@ namespace Vim.VisualStudio.Implementation.Misc
                         {
                             return true;
                         }
+
+                        // Discard any other unprocessed printable input in
+                        // non-input modes. Without this, Visual Studio will
+                        // see the command as unhandled and will try to handle
+                        // it itself by inserting the character into the
+                        // buffer.
+                        if (editCommand.EditCommandKind == EditCommandKind.UserInput &&
+                            CharUtil.IsPrintable(keyInput.Char) &&
+                            (_vimBuffer.ModeKind == ModeKind.Normal || _vimBuffer.ModeKind.IsAnyVisual()))
+                        {
+                            _commonOperations.Beep();
+                            return true;
+                        }
                     }
                     return false;
                 default:
@@ -414,19 +430,26 @@ namespace Vim.VisualStudio.Implementation.Misc
     internal sealed class StandardCommandTargetFactory : ICommandTargetFactory
     {
         private readonly ITextManager _textManager;
+        private readonly ICommonOperationsFactory _commonOperationsFactory;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactory;
 
         [ImportingConstructor]
-        internal StandardCommandTargetFactory(ITextManager textManager, IDisplayWindowBrokerFactoryService displayWindowBrokerFactory)
+        internal StandardCommandTargetFactory(
+            ITextManager textManager,
+            ICommonOperationsFactory commonOperationsFactory,
+            IDisplayWindowBrokerFactoryService displayWindowBrokerFactory)
         {
             _textManager = textManager;
+            _commonOperationsFactory = commonOperationsFactory;
             _displayWindowBrokerFactory = displayWindowBrokerFactory;
         }
 
         ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
-            var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
-            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker, nextCommandTarget);
+            var vimBuffer = vimBufferCoordinator.VimBuffer;
+            var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBuffer.TextView);
+            var commonOperations = _commonOperationsFactory.GetCommonOperations(vimBuffer.VimBufferData);
+            return new StandardCommandTarget(vimBufferCoordinator, _textManager, commonOperations, displayWindowBroker, nextCommandTarget);
         }
     }
 }

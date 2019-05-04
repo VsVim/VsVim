@@ -452,7 +452,8 @@ type internal InsertMode
         | _ -> ()
 
     /// Can Insert mode handle this particular KeyInput value 
-    member x.CanProcess keyInput = x.GetRawInsertCommand keyInput |> Option.isSome
+    member x.CanProcess keyInput =
+        x.GetRawInsertCommand keyInput |> Option.isSome
 
     /// Complete the current batched edit command if one exists
     member x.CompleteCombinedEditCommand keyInput = 
@@ -511,14 +512,26 @@ type internal InsertMode
                     let keyInputSet = KeyInputSet(keyInput)
                     RawInsertCommand.InsertCommand (keyInputSet, command, commandFlags) |> Some
 
-                if keyInput.KeyModifiers <> VimKeyModifiers.None && not (CharUtil.IsLetterOrDigit c) then
-                    // Certain keys such as Delete, Esc, etc ... have the same behavior when invoked
-                    // with or without any modifiers.  The modifiers must be considered because they
-                    // do participate in key mapping.  Once we get here though we must discard them
+                if keyInput.KeyModifiers = VimKeyModifiers.Control then
+
+                    // A key with only the control modifier that isn't mapped
+                    // is never a direct insert. But on some international
+                    // keyboards, it might translate to an ASCII control
+                    // character. See issue #2462.
+                    None
+
+                else if keyInput.HasKeyModifiers && not (CharUtil.IsLetterOrDigit c) then
+
+                    // Certain keys such as Delete, Esc, etc ... have the same
+                    // behavior when invoked with or without any modifiers.
+                    // The modifiers must be considered because they do
+                    // participate in key mapping.  Once we get here though we
+                    // must discard them
                     let alternateKeyInput = KeyInputUtil.ChangeKeyModifiersDangerous keyInput VimKeyModifiers.None
                     match Map.tryFind alternateKeyInput _commandMap with
                     | Some rawInsertCommand -> Some rawInsertCommand
                     | None -> getDirectInsert()
+
                 else
                     getDirectInsert()
 
