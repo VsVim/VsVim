@@ -518,9 +518,7 @@ type internal InsertMode
                     // is never a direct insert. But on some international
                     // keyboards, it might translate to an ASCII control
                     // character. See issue #2462.
-                    match Map.tryFind keyInput _commandMap with
-                    | Some rawInsertCommand -> Some rawInsertCommand
-                    | None -> None
+                    None
 
                 else if keyInput.HasKeyModifiers && not (CharUtil.IsLetterOrDigit c) then
 
