@@ -49,7 +49,9 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 var activeSessionPropertyInfo = _inlineRenameService.GetType().GetProperty("ActiveSession", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                 var activeSession = activeSessionPropertyInfo.GetValue(_inlineRenameService, null);
 
-                var cancelMethodInfo = activeSession.GetType().GetMethod("Cancel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                // Look up Microsoft.CodeAnalysis.Editor.Implementation.InlineRename.InlineRenameSession.Cancel()
+                // and call it.
+                var cancelMethodInfo = activeSession.GetType().GetMethod("Cancel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 cancelMethodInfo.Invoke(activeSession, null);
             }
             catch (Exception)
