@@ -16,16 +16,21 @@ type internal StatusUtil() =
         with get () = _vimBuffer
         and set value = _vimBuffer <- value
 
-    member x.DoWithBuffer func = 
+    member x.DoWithBuffer func (msg: string) = 
+        VimTrace.TraceInfo("Status Start\n{0}", msg)
+        VimTrace.TraceInfo("Status End")
         match _vimBuffer with
         | None -> ()
-        | Some buffer -> func buffer
+        | Some buffer -> msg |> func buffer
 
     interface IStatusUtil with
-        member x.OnStatus msg = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage msg)
-        member x.OnError msg = x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage msg)
-        member x.OnWarning msg = x.DoWithBuffer (fun buffer -> buffer.RaiseWarningMessage msg)
-        member x.OnStatusLong msgSeq = x.DoWithBuffer (fun buffer -> msgSeq |> StringUtil.CombineWith System.Environment.NewLine |> buffer.RaiseStatusMessage)
+        member x.OnStatus msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage)
+        member x.OnError msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage)
+        member x.OnWarning msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseWarningMessage)
+        member x.OnStatusLong msgSeq =
+            msgSeq
+            |> StringUtil.CombineWith System.Environment.NewLine
+            |> x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage)
 
 type internal PropagatingStatusUtil() = 
     let _statusUtilList = List<IStatusUtil>()

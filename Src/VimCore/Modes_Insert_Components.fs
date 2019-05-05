@@ -302,9 +302,9 @@ type internal TextChangeTracker
         for i = 0 to args.Changes.Count - 1 do
             VimTrace.TraceInfo("OnTextChange: change {0}", i)
             let change = args.Changes.[i]
-            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldText, change.NewText)
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", StringUtil.GetDisplayString(change.OldText), StringUtil.GetDisplayString(change.NewText))
             VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
-            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
+            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition.Position)
 
         match _effectiveChangeData with
         | Some data when data.Snapshot = args.Before ->
