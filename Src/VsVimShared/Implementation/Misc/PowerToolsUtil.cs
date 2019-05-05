@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 namespace Vim.VisualStudio.Implementation.Misc
 {
     [Export(typeof(IExtensionAdapter))]
-    internal sealed class PowerToolsUtil : IExtensionAdapter
+    internal sealed class PowerToolsUtil : VimExtensionAdapter
     {
         internal static readonly Guid QuickFindGuid = new Guid("4848f190-8e66-4af0-a898-454a568e8f65");
 
@@ -49,7 +49,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             {
                 return (bool)isActiveInfo.GetValue(searchModel, null);
             }
-            catch (Exception)
+            catch
             {
                 return false;
             }
@@ -86,7 +86,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                 var property = type.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
                 return property.GetValue(null, null);
             }
-            catch (Exception)
+            catch
             {
                 return null;
             }
@@ -100,33 +100,9 @@ namespace Vim.VisualStudio.Implementation.Misc
                 .FirstOrDefault();
         }
 
-        #region IExtensionAdapter
-
-        bool? IExtensionAdapter.IsUndoRedoExpected
-        {
-            get { return null; }
-        }
-
-        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
+        protected override bool IsIncrementalSearchActive(ITextView textView)
         {
             return IsQuickFindActive();
         }
-
-        bool? IExtensionAdapter.UseDefaultCaret
-        {
-            get { return null; }
-        }
-
-        #endregion
     }
 }

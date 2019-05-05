@@ -14,7 +14,7 @@ using System.Diagnostics;
 namespace Vim.VisualStudio.Implementation.ReSharper
 {
     [Export(typeof(IExtensionAdapter))]
-    internal sealed class ReSharperExtensionAdapter : IExtensionAdapter
+    internal sealed class ReSharperExtensionAdapter : VimExtensionAdapter
     {
         internal const string FilePathPrefixRegexEditor = "RegularExpressionEditor";
         internal const string FilePathPrefixUnitTestSessionOutput = "StackTraceExplorerEditor";
@@ -29,17 +29,17 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             _textDocumentFactoryService = textDocumentFactoryService;
         }
 
-        internal bool? ShouldCreateVimBuffer(ITextView textView)
+        internal bool IsResharperWindow(ITextView textView)
         {
             if (!_reSharperUtil.IsInstalled)
             {
-                return null;
+                return false;
             }
 
             var textBuffer = textView.TextDataModel.DocumentBuffer;
             if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out ITextDocument textDocument))
             {
-                return null;
+                return false;
             }
 
             // This is a bit of a heuristic.  It is technically possible for another component to create
@@ -48,24 +48,17 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             if (textDocument.FilePath.StartsWith(FilePathPrefixRegexEditor, StringComparison.OrdinalIgnoreCase) ||
                 textDocument.FilePath.StartsWith(FilePathPrefixUnitTestSessionOutput, StringComparison.OrdinalIgnoreCase))
             {
-                return false;
+                return true;
             }
 
-            return null;
+            return false;
         }
 
-        #region IExtensionAdapter
-
-        bool? IExtensionAdapter.IsUndoRedoExpected
-        {
-            get { return null; }
-        }
-
-        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        internal bool IsSelectionCommand(string command, string argument)
         {
             if (!_reSharperUtil.IsInstalled)
             {
-                return null;
+                return false;
             }
 
             var comparer = StringComparer.OrdinalIgnoreCase;
@@ -75,24 +68,13 @@ namespace Vim.VisualStudio.Implementation.ReSharper
                 return true;
             }
 
-            return null;
+            return false;
         }
 
-        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
-        {
-            return ShouldCreateVimBuffer(textView);
-        }
+        protected override bool ShouldCreateVimBuffer(ITextView textView) =>
+            IsResharperWindow(textView);
 
-        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.UseDefaultCaret
-        {
-            get { return null; }
-        }
-
-        #endregion
+        protected override bool ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
+            IsSelectionCommand(command, argument);
     }
 }

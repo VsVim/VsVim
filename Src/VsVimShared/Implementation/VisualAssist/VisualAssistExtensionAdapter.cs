@@ -7,7 +7,7 @@ using System.Text;
 namespace Vim.VisualStudio.Implementation.VisualAssist
 {
     [Export(typeof(IExtensionAdapter))]
-    internal sealed class VisualAssistExtensionAdapter : IExtensionAdapter
+    internal sealed class VisualAssistExtensionAdapter : VimExtensionAdapter
     {
         private IVisualAssistUtil _visualAssistUtil;
 
@@ -17,18 +17,13 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             _visualAssistUtil = visualAssistUtil;
         }
 
-        #region IExtensionAdapter
+        private bool IsInstalled => _visualAssistUtil.IsInstalled;
 
-        bool? IExtensionAdapter.IsUndoRedoExpected
-        {
-            get { return null; }
-        }
-
-        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
+        private bool IsSelectionCommand(string command, string argument)
         {
             if (!_visualAssistUtil.IsInstalled)
             {
-                return null;
+                return false;
             }
 
             var comparer = StringComparer.OrdinalIgnoreCase;
@@ -37,33 +32,12 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
                 return true;
             }
 
-            return null;
+            return false;
         }
 
-        bool? IExtensionAdapter.ShouldCreateVimBuffer(Microsoft.VisualStudio.Text.Editor.ITextView textView)
-        {
-            return null;
-        }
+        protected override bool ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
+            IsSelectionCommand(command, argument);
 
-        bool? IExtensionAdapter.IsIncrementalSearchActive(Microsoft.VisualStudio.Text.Editor.ITextView textView)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.UseDefaultCaret
-        {
-            get
-            {
-                if (!_visualAssistUtil.IsInstalled)
-                {
-                    return null;
-                }
-
-                // Visual Assist Intellisense is predicated on the insertion cursor being visible.
-                return true;
-            }
-        }
-
-        #endregion
+        protected override bool UseDefaultCaret => IsInstalled;
     }
 }
