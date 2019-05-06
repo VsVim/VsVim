@@ -44,20 +44,9 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         /// rename.  Need to register this as expected so the undo implementation doesn't
         /// raise any errors.
         /// </summary>
-        internal bool? IsUndoRedoExpected
+        internal bool IsUndoRedoExpected
         {
-            get
-            {
-                // An implementation of IsUndoRedoExpected should only ever
-                // return true or null, never false. This allows all registered
-                // extension adapters a chance to return true. The default
-                // value is false.
-                if (_roslynRenameUtil != null && _roslynRenameUtil.IsRenameActive)
-                {
-                    return true;
-                }
-                return null;
-            }
+            get { return _roslynRenameUtil != null && _roslynRenameUtil.IsRenameActive; }
         }
 
         [ImportingConstructor]
