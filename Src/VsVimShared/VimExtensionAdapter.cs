@@ -18,9 +18,6 @@ namespace Vim.VisualStudio
         protected virtual bool IsUndoRedoExpected =>
             false;
 
-        protected virtual bool ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
-            false;
-
         protected virtual bool ShouldCreateVimBuffer(ITextView textView) =>
             true;
 
@@ -41,9 +38,6 @@ namespace Vim.VisualStudio
 
         bool? IExtensionAdapter.IsUndoRedoExpected =>
             Unless(false, IsUndoRedoExpected);
-
-        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
-            Unless(false, ShouldKeepSelectionAfterHostCommand(command, argument));
 
         bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView) =>
             Unless(true, ShouldCreateVimBuffer(textView));

@@ -54,27 +54,7 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             return false;
         }
 
-        internal bool IsSelectionCommand(string command, string argument)
-        {
-            if (!_reSharperUtil.IsInstalled)
-            {
-                return false;
-            }
-
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            if (comparer.Equals(command, "ReSharper.ReSharper_ExtendSelection") ||
-                comparer.Equals(command, "ReSharper.ReSharper_SurroundWith"))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         protected override bool ShouldCreateVimBuffer(ITextView textView) =>
             IsResharperWindow(textView);
-
-        protected override bool ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
-            IsSelectionCommand(command, argument);
     }
 }

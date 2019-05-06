@@ -51,7 +51,7 @@ type internal CommandMode
 
         let lineCommand = _parser.ParseLineCommand command 
         match lineCommand with
-        | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
+        | LineCommand.HostCommand (hasBang, command, argument) -> _keepSelection <- not hasBang
         | _ -> ()
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer

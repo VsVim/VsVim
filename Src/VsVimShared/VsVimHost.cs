@@ -1148,24 +1148,6 @@ namespace Vim.VisualStudio
             }
         }
 
-        public override bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument) ?? false)
-            {
-                return true;
-            }
-
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            if (comparer.Equals(command, "Edit.SurroundWith"))
-            {
-                // Need to keep the selection here so the surround with command knows the selection
-                // to surround.
-                return true;
-            }
-
-            return base.ShouldKeepSelectionAfterHostCommand(command, argument);
-        }
-
         #region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)

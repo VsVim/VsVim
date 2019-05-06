@@ -1926,8 +1926,10 @@ type VimInterpreter
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
 
-    member x.RunHostCommand command argument =
+    member x.RunHostCommand hasBang command argument =
         _vimHost.RunHostCommand _textView command argument
+        if hasBang then
+            _textView.Selection.Clear()
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
@@ -2035,7 +2037,7 @@ type VimInterpreter
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
         | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
         | LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewHorizontally fileOptions commandOptions
-        | LineCommand.HostCommand (command, argument) -> x.RunHostCommand command argument
+        | LineCommand.HostCommand (hasBang, command, argument) -> x.RunHostCommand hasBang command argument
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine lineRange -> x.RunJumpToLastLine lineRange
         | LineCommand.Let (name, value) -> x.RunLet name value

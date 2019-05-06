@@ -19,25 +19,6 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
 
         private bool IsInstalled => _visualAssistUtil.IsInstalled;
 
-        private bool IsSelectionCommand(string command, string argument)
-        {
-            if (!_visualAssistUtil.IsInstalled)
-            {
-                return false;
-            }
-
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            if (comparer.Equals(command, "VAssistX.SmartSelectExtend"))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        protected override bool ShouldKeepSelectionAfterHostCommand(string command, string argument) =>
-            IsSelectionCommand(command, argument);
-
         protected override bool UseDefaultCaret => IsInstalled;
     }
 }
