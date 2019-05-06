@@ -17,8 +17,10 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             _visualAssistUtil = visualAssistUtil;
         }
 
-        private bool IsInstalled => _visualAssistUtil.IsInstalled;
+        // Use default caret when VisualAssist is installed.
+        protected override bool UseDefaultCaret =>
+            IsInstalled;
 
-        protected override bool UseDefaultCaret => IsInstalled;
+        private bool IsInstalled => _visualAssistUtil.IsInstalled;
     }
 }

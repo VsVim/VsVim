@@ -21,6 +21,10 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         private bool _inRename;
         private List<IVimBuffer> _vimBufferList = new List<IVimBuffer>();
 
+        // Undo-redo is expected when the Roslyn Rename window is active.
+        protected override bool IsUndoRedoExpected =>
+            IsActive;
+
         internal IRoslynRenameUtil RenameUtil
         {
             get { return _roslynRenameUtil; }
@@ -107,7 +111,5 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         {
             OnVimBufferCreated(vimBuffer);
         }
-
-        protected override bool IsUndoRedoExpected => IsActive;
     }
 }

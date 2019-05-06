@@ -29,6 +29,10 @@ namespace Vim.VisualStudio.Implementation.ReSharper
             _textDocumentFactoryService = textDocumentFactoryService;
         }
 
+        // Suppress VsVim in the Resharper window.
+        protected override bool ShouldCreateVimBuffer(ITextView textView) =>
+            !IsResharperWindow(textView);
+
         internal bool IsResharperWindow(ITextView textView)
         {
             if (!_reSharperUtil.IsInstalled)
@@ -53,8 +57,5 @@ namespace Vim.VisualStudio.Implementation.ReSharper
 
             return false;
         }
-
-        protected override bool ShouldCreateVimBuffer(ITextView textView) =>
-            IsResharperWindow(textView);
     }
 }

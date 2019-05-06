@@ -26,6 +26,10 @@ namespace Vim.VisualStudio.Implementation.Misc
             _isActivePropertyInfo = new Lazy<PropertyInfo>(GetIsActivePropertyInfo);
         }
 
+        // Detect PowerTools quick find as an incremental search.
+        protected override bool IsIncrementalSearchActive(ITextView textView) =>
+            IsQuickFindActive();
+
         private bool IsQuickFindActive()
         {
             if (!_isQuickFindInstalled)
@@ -98,11 +102,6 @@ namespace Vim.VisualStudio.Implementation.Misc
                 .GetAssemblies()
                 .Where(x => x.GetName().Name == "QuickFind")
                 .FirstOrDefault();
-        }
-
-        protected override bool IsIncrementalSearchActive(ITextView textView)
-        {
-            return IsQuickFindActive();
         }
     }
 }

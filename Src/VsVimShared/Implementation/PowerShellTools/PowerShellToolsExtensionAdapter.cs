@@ -16,6 +16,10 @@ namespace Vim.VisualStudio.Implementation.PowerShellTools
             _powerShellToolsUtil = powerShellToolsUtil;
         }
 
+        // Suppress VsVim in the PowerShell interactive window.
+        protected override bool ShouldCreateVimBuffer(ITextView textView) =>
+            !IsInteractive(textView);
+
         private bool IsInteractive(ITextView textView)
         {
             if (!_powerShellToolsUtil.IsInstalled)
@@ -24,7 +28,5 @@ namespace Vim.VisualStudio.Implementation.PowerShellTools
             var contentTypeDisplayName = textView.TextDataModel.DocumentBuffer.ContentType.DisplayName;
             return contentTypeDisplayName == ReplContentTypeName;
         }
-
-        protected override bool ShouldCreateVimBuffer(ITextView textView) => IsInteractive(textView);
     }
 }
