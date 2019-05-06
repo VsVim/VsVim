@@ -17,7 +17,8 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             _visualAssistUtil = visualAssistUtil;
         }
 
-        // Use default caret when VisualAssist is installed.
+        // Use default caret when VisualAssist is installed. Visual Assist
+        // Intellisense is predicated on the insertion cursor being visible.
         protected override bool UseDefaultCaret =>
             IsInstalled;
 
