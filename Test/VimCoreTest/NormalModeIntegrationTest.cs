@@ -7545,6 +7545,15 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
             }
+
+            [WpfFact]
+            public void Mixed()
+            {
+                // Reported in issue #2529.
+                Create("1 2 0x3 4 5 0x6 7 8", "");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("2 2 0x3 4 5 0x6 7 8", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class NumberedRegisterTest : NormalModeIntegrationTest
