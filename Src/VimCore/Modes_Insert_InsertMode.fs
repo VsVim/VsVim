@@ -186,6 +186,9 @@ type ActiveEditItem =
     /// In the middle of a digraph operation. Wait for the second digraph key
     | Digraph2 of KeyInput: KeyInput
 
+    /// In the middle of a insert literal operation. Wait for the next key
+    | Literal
+
     /// No active items
     | None
 
@@ -329,6 +332,7 @@ type internal InsertMode
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
+                ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
@@ -979,6 +983,12 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Digraph1 }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
+    /// Start an insertion of a literal character
+    member x.ProcessLiteralStart keyInput =
+        x.CancelWordCompletionSession()
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Literal }
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
     /// Start a undo session in insert mode
     member x.ProcessUndoStart keyInput =
         x.CancelWordCompletionSession()
@@ -1075,6 +1085,13 @@ type internal InsertMode
         finally
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
+    /// Process the character of a literal insertion
+    member x.ProcessLiteral (keyInput: KeyInput) = 
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+        keyInput.Char
+        |> string
+        |> x.InsertText
+
     // Insert the raw characters associated with a key input set
     member x.InsertText (text: string): ProcessResult =
         let insertCommand = InsertCommand.Insert text
@@ -1140,6 +1157,8 @@ type internal InsertMode
             x.ProcessDigraph1 keyInput
         | ActiveEditItem.Digraph2 _ ->
             x.ProcessDigraph2 keyInput
+        | ActiveEditItem.Literal ->
+            x.ProcessLiteral keyInput
 
     /// Record special marks associated with a new insert point
     member x.ResetInsertPoint () =
