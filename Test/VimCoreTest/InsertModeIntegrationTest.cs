@@ -3328,7 +3328,6 @@ namespace Vim.UnitTest
                         {
                             Assert.Equal("\t", command.AsInsertLiteral().Text);
                             count += 1;
-                            return false;
                         }
 
                         return false;

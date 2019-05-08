@@ -31,7 +31,7 @@ namespace Vim.UI.Wpf.UnitTest
             _textBuffer = _textView.TextBuffer;
             _controlCharUtil = new ControlCharUtil();
             _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
-            Typeface typeface = SystemFonts.CaptionFontFamily.GetTypefaces().First();
+            var typeface = SystemFonts.CaptionFontFamily.GetTypefaces().First();
             var textFormattingProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(typeface, 10.0, Colors.Black);
             _classificationFormatMap.SetupGet(x => x.DefaultTextProperties).Returns(textFormattingProperties);
             _source = new CharDisplayTaggerSource(
