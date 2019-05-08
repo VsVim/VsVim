@@ -3311,9 +3311,8 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Make sure a literal tab can be inserted even if expandtab
-            /// is set and even if the host custom processes normal
-            /// inserted text
+            /// Make sure a literal tab can be inserted even if expandtab is
+            /// set and even if the host custom processes ordinary text
             /// </summary>
             [WpfFact]
             public void InsertTab()
