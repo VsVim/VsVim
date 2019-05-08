@@ -3297,6 +3297,48 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class InsertLiteralTests : InsertModeIntegrationTest
+        {
+            /// <summary>
+            /// Insert a literal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q><Esc>");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure a literal tab can be inserted even if expandtab
+            /// is set and even if the host custom processes normal
+            /// inserted text
+            /// </summary>
+            [WpfFact]
+            public void InsertTab()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                var count = 0;
+                VimHost.TryCustomProcessFunc =
+                    (textView, command) =>
+                    {
+                        if (command.IsInsertLiteral)
+                        {
+                            Assert.Equal("\t", command.AsInsertLiteral().Text);
+                            count += 1;
+                            return false;
+                        }
+
+                        return false;
+                    };
+                _vimBuffer.ProcessNotation("<C-q><Tab>");
+                Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, count);
+            }
+        }
+
         public sealed class AtomicInsertTests : InsertModeIntegrationTest
         {
             protected override void Create(ModeArgument argument, params string[] lines)

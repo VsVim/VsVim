@@ -622,6 +622,11 @@ namespace Vim.UnitTest
             return (InsertCommand.Insert)command;
         }
 
+        public static InsertCommand.InsertLiteral AsInsertLiteral(this InsertCommand command)
+        {
+            return (InsertCommand.InsertLiteral)command;
+        }
+
         #endregion
 
         #region IMotionCapture
