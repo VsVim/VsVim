@@ -35,6 +35,7 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<IVsShell> _vsShell;
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
+        private Mock<IClipboardDevice> _clipboardDevice;
 
         private void Create()
         {
@@ -54,6 +55,7 @@ namespace Vim.VisualStudio.UnitTest
             _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
             _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
+            _clipboardDevice = _factory.Create<IClipboardDevice>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint selectionCookie = 42;
@@ -86,7 +88,8 @@ namespace Vim.VisualStudio.UnitTest
                 ProtectedOperations,
                 _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
                 _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
-                sp.Object);
+                sp.Object,
+                _clipboardDevice.Object);
             _host = _hostRaw;
         }
 
