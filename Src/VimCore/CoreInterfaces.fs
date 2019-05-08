@@ -3419,6 +3419,9 @@ type InsertCommand  =
     /// Insert of text into the ITextBuffer at the caret position 
     | Insert of Text: string
 
+    /// Insert of literal text into the ITextBuffer at the caret position 
+    | InsertLiteral of Text: string
+
     /// Move the caret in the given direction
     | MoveCaret of Direction: Direction
 
@@ -3500,6 +3503,7 @@ type InsertCommand  =
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
         | InsertCommand.Insert text -> Some (TextChange.Insert text)
+        | InsertCommand.InsertLiteral text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))

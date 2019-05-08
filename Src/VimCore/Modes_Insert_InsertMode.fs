@@ -1088,9 +1088,13 @@ type internal InsertMode
     /// Process the character of a literal insertion
     member x.ProcessLiteral (keyInput: KeyInput) = 
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-        keyInput.Char
-        |> string
-        |> x.InsertText
+        let insertCommand =
+            keyInput.Char
+            |> string
+            |> InsertCommand.InsertLiteral
+        let keyInputSet = KeyInputSet keyInput
+        let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+        x.RunInsertCommand insertCommand keyInputSet commandFlags
 
     // Insert the raw characters associated with a key input set
     member x.InsertText (text: string): ProcessResult =
@@ -1284,6 +1288,7 @@ type internal InsertMode
         let rec getText command = 
             match command with 
             | InsertCommand.Insert text -> Some text
+            | InsertCommand.InsertLiteral text -> Some text
             | InsertCommand.InsertNewLine -> Some Environment.NewLine
             | InsertCommand.InsertTab -> Some "\t"
             | InsertCommand.Combined (left, right) ->
