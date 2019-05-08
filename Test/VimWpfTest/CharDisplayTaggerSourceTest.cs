@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows;
+using System.Windows.Media;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Formatting;
 using Vim.UI.Wpf.Implementation.CharDisplay;
 using Vim.UnitTest;
 using Xunit;
@@ -17,6 +20,7 @@ namespace Vim.UI.Wpf.UnitTest
     {
         private ITextView _textView;
         private ITextBuffer _textBuffer;
+        private Mock<IClassificationFormatMap> _classificationFormatMap;
         private CharDisplayTaggerSource _source;
         private IBasicTaggerSource<IntraTextAdornmentTag> _basicTaggerSource;
         private IControlCharUtil _controlCharUtil;
@@ -26,7 +30,15 @@ namespace Vim.UI.Wpf.UnitTest
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _controlCharUtil = new ControlCharUtil();
-            _source = new CharDisplayTaggerSource(_textView, new Mock<IEditorFormatMap>(MockBehavior.Loose).Object, _controlCharUtil);
+            _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
+            Typeface typeface = SystemFonts.CaptionFontFamily.GetTypefaces().First();
+            var textFormattingProperties = TextFormattingRunProperties.CreateTextFormattingRunProperties(typeface, 10.0, Colors.Black);
+            _classificationFormatMap.SetupGet(x => x.DefaultTextProperties).Returns(textFormattingProperties);
+            _source = new CharDisplayTaggerSource(
+                _textView,
+                new Mock<IEditorFormatMap>(MockBehavior.Loose).Object,
+                _controlCharUtil,
+                _classificationFormatMap.Object);
             _basicTaggerSource = _source;
         }
 
