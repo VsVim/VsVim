@@ -227,6 +227,7 @@ namespace Vim.VisualStudio
         #endregion
 
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
+        internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
         private readonly IVsAdapter _vsAdapter;
         private readonly ITextManager _textManager;
@@ -240,6 +241,7 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
+        private readonly IVsUIShell _uiShell;
         private readonly IProtectedOperations _protectedOperations;
         private readonly SettingsSync _settingsSync;
         private IVim _vim;
@@ -319,6 +321,7 @@ namespace Vim.VisualStudio
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
+            _uiShell = serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _protectedOperations = protectedOperations;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
@@ -382,88 +385,45 @@ namespace Vim.VisualStudio
         {
             try
             {
-                // Many Visual Studio commands expect focus to be in the editor when 
-                // running.  Switch focus there if an appropriate ITextView is available
+                // Many Visual Studio commands expect the focus to be in the
+                // editor when  running.  Switch focus there if an appropriate
+                // ITextView is available.
                 if (contextTextView is IWpfTextView wpfTextView)
                 {
                     wpfTextView.VisualElement.Focus();
                 }
 
-                _dte.ExecuteCommand(command, args);
+                bool postCommand = false;
+                if (contextTextView.TextBuffer.ContentType.IsCPlusPlus())
+                {
+                    if (command.Equals(CommandNameGoToDefinition, StringComparison.OrdinalIgnoreCase) ||
+                        command.Equals(CommandNameGoToDeclaration, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // C++ commands like 'Edit.GoToDefinition' need to be
+                        // posted instead of executed and it needs to have a
+                        // null argument in order to work like it does when
+                        // bound to a keyboard shortcut like 'F12'.
+                        // Reported in issue #2535.
+                        postCommand = true;
+                        args = null;
+                    }
+                }
+
+                if (postCommand)
+                {
+                    var dteCommand = _dte.Commands.Item(command, 0);
+                    var guid = new Guid(dteCommand.Guid);
+                    _uiShell.PostExecCommand(ref guid, (uint)dteCommand.ID, 0, args);
+                }
+                else
+                {
+                    _dte.ExecuteCommand(command, args);
+                }
                 return true;
             }
             catch
             {
                 return false;
-            }
-        }
-
-        /// <summary>  
-        /// Get the C++ identifier which exists under the caret 
-        /// </summary>
-        private static string GetCPlusPlusIdentifier(ITextView textView)
-        {
-            var snapshot = textView.TextSnapshot;
-            bool isValid(int position)
-            {
-                if (position < 0 || position >= snapshot.Length)
-                {
-                    return false;
-                }
-
-                var c = snapshot[position];
-                return char.IsLetter(c) || char.IsDigit(c) || c == '_';
-            }
-
-            var start = textView.Caret.Position.BufferPosition.Position;
-            if (!isValid(start))
-            {
-                return null;
-            }
-
-            var end = start + 1;
-            while (isValid(end))
-            {
-                end++;
-            }
-
-            while (isValid(start - 1))
-            {
-                start--;
-            }
-
-            var span = new SnapshotSpan(snapshot, start, end - start);
-            return span.GetText();
-        }
-
-        /// <summary>
-        /// The C++ project system requires that the target of GoToDefinition be passed
-        /// as an argument to the command.  
-        /// </summary>
-        private bool GoToDefinitionCPlusPlus(ITextView textView, string target)
-        {
-            if (target == null)
-            {
-                target = GetCPlusPlusIdentifier(textView);
-            }
-
-            if (target != null)
-            {
-                return SafeExecuteCommand(textView, CommandNameGoToDefinition, target);
-            }
-
-            return SafeExecuteCommand(textView, CommandNameGoToDefinition);
-        }
-
-        private bool GoToDefinitionCore(ITextView textView, string target)
-        {
-            if (textView.TextBuffer.ContentType.IsCPlusPlus())
-            {
-                return GoToDefinitionCPlusPlus(textView, target);
-            }
-            else
-            {
-                return SafeExecuteCommand(textView, CommandNameGoToDefinition);
             }
         }
 
@@ -515,7 +475,7 @@ namespace Vim.VisualStudio
 
         public override bool GoToDefinition()
         {
-            return GoToDefinitionCore(_textManager.ActiveTextViewOptional, null);
+            return SafeExecuteCommand(_textManager.ActiveTextViewOptional, CommandNameGoToDefinition);
         }
 
         /// <summary>
@@ -1072,15 +1032,38 @@ namespace Vim.VisualStudio
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)
         {
-            return GoToDefinitionCore(textView, target);
+            // The difference between global and local declarations in vim is a
+            // heuristic one that is irrelevant when using a language service
+            // that precisely understands the semantics of the program being
+            // edited.
+            //
+            // At the semantic level, local variables have local declarations
+            // and global variables have global declarations, and so it is
+            // never ambiguous whether the given variable or function is local
+            // or global. It is only at the syntactic level that ambiguity
+            // could arise.
+            return GoToDeclaration(textView, target);
         }
 
         public override bool GoToLocalDeclaration(ITextView textView, string target)
         {
-            // This is technically incorrect as it should prefer local declarations. However 
-            // there is currently no better way in Visual Studio.  Added this method though
-            // so it's easier to plug in later should such an API become available
-            return GoToDefinitionCore(textView, target);
+            return GoToDeclaration(textView, target);
+        }
+
+        private bool GoToDeclaration(ITextView textView, string target)
+        {
+            // The 'Edit.GoToDeclaration' is not widely implemented (for
+            // example, C# does not implement it), and so we use
+            // 'Edit.GoToDefinition' unless we are sure the language service
+            // supports declarations.
+            if (textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                return SafeExecuteCommand(textView, CommandNameGoToDeclaration, target);
+            }
+            else
+            {
+                return SafeExecuteCommand(textView, CommandNameGoToDefinition, target);
+            }
         }
 
         public override void VimCreated(IVim vim)
