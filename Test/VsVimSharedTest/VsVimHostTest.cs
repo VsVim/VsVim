@@ -31,7 +31,7 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private Mock<_DTE> _dte;
-        private Mock<IVsUIShell4> _uiVSShell;
+        private Mock<IVsUIShell> _uiVSShell;
         private Mock<IVsShell> _vsShell;
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
@@ -46,7 +46,7 @@ namespace Vim.VisualStudio.UnitTest
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
-            _uiVSShell = _factory.Create<IVsUIShell4>();
+            _uiVSShell = _factory.Create<IVsUIShell>();
             _vsShell = _factory.Create<IVsShell>(MockBehavior.Loose);
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
@@ -197,6 +197,7 @@ namespace Vim.VisualStudio.UnitTest
                     Assert.True(_host.GoToDefinition());
                     _dte.Verify();
                 }
+
             }
         }
 
