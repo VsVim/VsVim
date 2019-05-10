@@ -105,17 +105,20 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 try
                 {
-                    var caret = _textView.Caret;
-                    var line = caret.ContainingTextViewLine;
-                    return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
+                    if (!_textView.IsClosed)
+                    {
+                        var caret = _textView.Caret;
+                        var line = caret.ContainingTextViewLine;
+                        return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
+                    }
                 }
                 catch (InvalidOperationException)
                 {
                     // InvalidOperationException is thrown when we ask for ContainingTextViewLine and the view
                     // is not yet completely rendered.  It's safe to say at this point that the caret is not 
                     // visible
-                    return false;
                 }
+                return false;
             }
         }
 
