@@ -1423,6 +1423,10 @@ type internal CommandUtil
                 | _ ->
                     false, 0UL)
 
+        // Choose the earliest match from the supported formats, breaking ties
+        // with the longest match. For example, "0x27" matches as both a hex
+        // number and a decimal number (just the leading zero), but the hex
+        // match is longer. Reported in issue #2529.
         let number =
             seq {
                 yield getBinary, NumberFormat.Binary
@@ -1434,6 +1438,8 @@ type internal CommandUtil
                 _localSettings.IsNumberFormatSupported numberFormat)
             |> Seq.map (fun (func, _) -> func())
             |> SeqUtil.filterToSome
+            |> Seq.sortByDescending (fun (_, span) -> span.Length)
+            |> Seq.sortBy (fun (_, span) -> span.Start.Position)
             |> SeqUtil.tryHeadOnly
 
         match number with
