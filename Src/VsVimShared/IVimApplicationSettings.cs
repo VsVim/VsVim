@@ -125,6 +125,11 @@ namespace Vim.VisualStudio
         string LastVersionUsed { get; set; }
 
         /// <summary>
+        /// Whether to report clipboard errors
+        /// </summary>
+        bool ReportClipboardErrors { get; set; }
+
+        /// <summary>
         /// The set of CommandKeyBinding that VsVim unbound in the conflicting key dialog
         /// </summary>
         ReadOnlyCollection<CommandKeyBinding> RemovedBindings { get; set; }

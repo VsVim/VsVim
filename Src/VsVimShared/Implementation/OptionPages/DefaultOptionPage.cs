@@ -247,6 +247,11 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         [Category(CategoryEditing)]
         public bool CleanMacros { get; set; }
 
+        [DisplayName("Report Clipboard Errors")]
+        [Description("Prevent VsVim from showing an error dialog for exceptions that occur when accessing the clipboard")]
+        [Category(CategoryEditing)]
+        public bool ReportClipboardErrors { get; set; }
+
         [DisplayName("VimRc File Loading")]
         [Description("Controls how VsVim probes for vsvimrc / vimrc files")]
         [Category(CategoryGeneral)]
@@ -343,6 +348,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 UseEditorTabAndBackspace = vimApplicationSettings.UseEditorTabAndBackspace;
                 UseEditorCommandMargin = vimApplicationSettings.UseEditorCommandMargin;
                 CleanMacros = vimApplicationSettings.CleanMacros;
+                ReportClipboardErrors = vimApplicationSettings.ReportClipboardErrors;
                 VimRcLoadSetting = vimApplicationSettings.VimRcLoadSetting;
                 DisplayControlCharacters = vimApplicationSettings.DisplayControlChars;
                 DisplayVimRcLoadErrors = !vimApplicationSettings.HaveNotifiedVimRcErrors;
@@ -368,6 +374,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 vimApplicationSettings.UseEditorTabAndBackspace = UseEditorTabAndBackspace;
                 vimApplicationSettings.UseEditorCommandMargin = UseEditorCommandMargin;
                 vimApplicationSettings.CleanMacros = CleanMacros;
+                vimApplicationSettings.ReportClipboardErrors = ReportClipboardErrors;
                 vimApplicationSettings.VimRcLoadSetting = VimRcLoadSetting;
                 vimApplicationSettings.DisplayControlChars = DisplayControlCharacters;
                 vimApplicationSettings.HaveNotifiedVimRcErrors = !DisplayVimRcLoadErrors;

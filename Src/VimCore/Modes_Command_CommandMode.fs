@@ -50,8 +50,11 @@ type internal CommandMode
                 command
 
         let lineCommand = _parser.ParseLineCommand command 
+
+        // We clear the selection for all line commands except a host command,
+        // which manages any selection clearing itself.
         match lineCommand with
-        | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
+        | LineCommand.HostCommand _ -> _keepSelection <- true
         | _ -> ()
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer

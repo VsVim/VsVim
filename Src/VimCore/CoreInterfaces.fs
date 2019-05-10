@@ -4716,12 +4716,6 @@ type IVimHost =
     /// Save the current document as a new file with the specified name
     abstract SaveTextAs: text: string -> filePath: string -> bool 
 
-    /// Should the selection be kept after running the given host command?  In general 
-    /// VsVim will clear the selection after a host command because that is the vim
-    /// behavior.  Certain host commands exist to set selection though and clearing that
-    /// isn't desirable
-    abstract ShouldKeepSelectionAfterHostCommand: command: string -> argument: string -> bool 
-
     /// Called by Vim when it encounters a new ITextView and needs to know if it should 
     /// create an IVimBuffer for it
     abstract ShouldCreateVimBuffer: textView: ITextView -> bool

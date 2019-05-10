@@ -31,6 +31,7 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal const string UseEditorTabAndBackspaceName = "UseEditorTabAndBackspace";
         internal const string UseEditorCommandMarginName = "UseEditorCommandMargin";
         internal const string CleanMacrosName = "CleanMacros";
+        internal const string ReportClipboardErrorsName = "ReportClipboardErrors";
         internal const string LastVersionUsedName = "LastVersionUsed";
         internal const string WordWrapDisplayName = "WordWrapDisplay";
         internal const string ErrorGetFormat = "Cannot get setting {0}";
@@ -222,6 +223,12 @@ namespace Vim.VisualStudio.Implementation.Settings
         {
             get { return GetString(LastVersionUsedName, null); }
             set { SetString(LastVersionUsedName, value); }
+        }
+
+        bool IVimApplicationSettings.ReportClipboardErrors
+        {
+            get { return GetBoolean(ReportClipboardErrorsName, defaultValue: false); }
+            set { SetBoolean(ReportClipboardErrorsName, value); }
         }
 
         event EventHandler<ApplicationSettingsEventArgs> IVimApplicationSettings.SettingsChanged
