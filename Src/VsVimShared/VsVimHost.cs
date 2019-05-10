@@ -241,7 +241,7 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
-        private readonly IVsUIShell _uiShell;
+        private readonly ICommandDispatcher _commandDispatcher;
         private readonly IProtectedOperations _protectedOperations;
         private readonly SettingsSync _settingsSync;
         private IVim _vim;
@@ -306,6 +306,7 @@ namespace Vim.VisualStudio
             IProtectedOperations protectedOperations,
             IMarkDisplayUtil markDisplayUtil,
             IControlCharUtil controlCharUtil,
+            ICommandDispatcher commandDispatcher,
             SVsServiceProvider serviceProvider)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
@@ -321,8 +322,8 @@ namespace Vim.VisualStudio
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
-            _uiShell = serviceProvider.GetService<SVsUIShell, IVsUIShell>();
             _protectedOperations = protectedOperations;
+            _commandDispatcher = commandDispatcher;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
@@ -381,20 +382,12 @@ namespace Vim.VisualStudio
             CloseAllOtherTabs(textView); // At least for now, :only == :tabonly
         }
 
-        private bool SafeExecuteCommand(ITextView contextTextView, string command, string args = "")
+        private bool SafeExecuteCommand(ITextView textView, string command, string args = "")
         {
             try
             {
-                // Many Visual Studio commands expect the focus to be in the
-                // editor when  running.  Switch focus there if an appropriate
-                // ITextView is available.
-                if (contextTextView is IWpfTextView wpfTextView)
-                {
-                    wpfTextView.VisualElement.Focus();
-                }
-
                 bool postCommand = false;
-                if (contextTextView.TextBuffer.ContentType.IsCPlusPlus())
+                if (textView.TextBuffer.ContentType.IsCPlusPlus())
                 {
                     if (command.Equals(CommandNameGoToDefinition, StringComparison.OrdinalIgnoreCase) ||
                         command.Equals(CommandNameGoToDeclaration, StringComparison.OrdinalIgnoreCase))
@@ -409,17 +402,7 @@ namespace Vim.VisualStudio
                     }
                 }
 
-                if (postCommand)
-                {
-                    var dteCommand = _dte.Commands.Item(command, 0);
-                    var guid = new Guid(dteCommand.Guid);
-                    _uiShell.PostExecCommand(ref guid, (uint)dteCommand.ID, 0, args);
-                }
-                else
-                {
-                    _dte.ExecuteCommand(command, args);
-                }
-                return true;
+                return _commandDispatcher.ExecuteCommand(textView, command, args, postCommand);
             }
             catch
             {
