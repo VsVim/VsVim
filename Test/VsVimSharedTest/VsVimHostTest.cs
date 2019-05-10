@@ -36,6 +36,7 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
         private Mock<ICommandDispatcher> _commandDispatcher;
+        private Mock<IClipboardDevice> _clipboardDevice;
 
         private void Create()
         {
@@ -56,6 +57,7 @@ namespace Vim.VisualStudio.UnitTest
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
             _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
             _commandDispatcher = _factory.Create<ICommandDispatcher>();
+            _clipboardDevice = _factory.Create<IClipboardDevice>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
             uint selectionCookie = 42;
@@ -90,7 +92,8 @@ namespace Vim.VisualStudio.UnitTest
                 _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
                 _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
                 _commandDispatcher.Object,
-                sp.Object);
+                sp.Object,
+                _clipboardDevice.Object);
             _host = _hostRaw;
         }
 
