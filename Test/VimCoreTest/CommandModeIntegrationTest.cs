@@ -1518,6 +1518,7 @@ namespace Vim.UnitTest
                 RunCommandRaw(":vsc! Edit.Comment");
                 Assert.True(didRun);
                 Assert.True(_textView.Selection.IsEmpty);
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
             }
 
             /// <summary>

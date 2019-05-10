@@ -1928,8 +1928,17 @@ type VimInterpreter
 
     member x.RunHostCommand hasBang command argument =
         _vimHost.RunHostCommand _textView command argument
-        if hasBang then
+        if hasBang && not _textView.Selection.IsEmpty then
+
+            // When clearing the selection after a host command, move the caret
+            // to the start of the selection because the selected text usually
+            // represents a "thing" (such as an identifier or group of text
+            // lines). The caret resting on the start of that thing better
+            // mimics the selection concept than putting the caret at the end
+            // of the thing.
+            let start = _textView.Selection.Start
             _textView.Selection.Clear()
+            TextViewUtil.MoveCaretToVirtualPoint _textView start
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
