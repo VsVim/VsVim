@@ -17,7 +17,7 @@ type internal StatusUtil() =
         and set value = _vimBuffer <- value
 
     member x.DoWithBuffer func (msg: string) = 
-        VimTrace.TraceInfo("Status Start\n{0}", msg)
+        VimTrace.TraceInfo("Status Start{0}{1}", System.Environment.NewLine, msg)
         VimTrace.TraceInfo("Status End")
         match _vimBuffer with
         | None -> ()
