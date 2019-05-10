@@ -587,7 +587,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | History
 
     /// Run a host command.  The first string is the command and the second string is the argument
-    | HostCommand of Command: string * Argument: string
+    | HostCommand of HasBang: bool * Command: string * Argument: string
 
     /// Process the 'split' command.  The values range as follows
     ///  - Height of the window if specified.  Expressed as a range.  The actual documentation

@@ -10,7 +10,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public abstract class PowerShellToolsExtensionAdapterTest
     {
-        private readonly PowerShellToolsExtensionAdapter _extensionAdapter;
+        private readonly IExtensionAdapter _extensionAdapter;
         private readonly Mock<IPowerShellToolsUtil> _powerShellToolsUtil;
 
         protected PowerShellToolsExtensionAdapterTest()

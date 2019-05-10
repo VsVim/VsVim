@@ -31,10 +31,11 @@ namespace Vim.VisualStudio.UnitTest
         private Mock<IEditorOperationsFactoryService> _editorOperationsFactoryService;
         private Mock<IVimApplicationSettings> _vimApplicationSettings;
         private Mock<_DTE> _dte;
-        private Mock<IVsUIShell4> _uiVSShell;
+        private Mock<IVsUIShell> _uiVSShell;
         private Mock<IVsShell> _vsShell;
         private Mock<StatusBar> _statusBar;
         private Mock<IExtensionAdapterBroker> _extensionAdapterBroker;
+        private Mock<ICommandDispatcher> _commandDispatcher;
         private Mock<IClipboardDevice> _clipboardDevice;
 
         private void Create()
@@ -47,7 +48,7 @@ namespace Vim.VisualStudio.UnitTest
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
-            _uiVSShell = _factory.Create<IVsUIShell4>();
+            _uiVSShell = _factory.Create<IVsUIShell>();
             _vsShell = _factory.Create<IVsShell>(MockBehavior.Loose);
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
@@ -55,6 +56,7 @@ namespace Vim.VisualStudio.UnitTest
             _textManager.Setup(x => x.GetDocumentTextViews(DocumentLoad.RespectLazy)).Returns(new List<ITextView>());
             _vimApplicationSettings = _factory.Create<IVimApplicationSettings>(MockBehavior.Loose);
             _extensionAdapterBroker = _factory.Create<IExtensionAdapterBroker>(MockBehavior.Loose);
+            _commandDispatcher = _factory.Create<ICommandDispatcher>();
             _clipboardDevice = _factory.Create<IClipboardDevice>(MockBehavior.Loose);
 
             var vsMonitorSelection = _factory.Create<IVsMonitorSelection>();
@@ -64,6 +66,7 @@ namespace Vim.VisualStudio.UnitTest
             var vsRunningDocumentTable = _factory.Create<IVsRunningDocumentTable>();
             uint runningDocumentTableCookie = 86;
             vsRunningDocumentTable.Setup(x => x.AdviseRunningDocTableEvents(It.IsAny<IVsRunningDocTableEvents3>(), out runningDocumentTableCookie)).Returns(VSConstants.S_OK);
+
 
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
@@ -88,6 +91,7 @@ namespace Vim.VisualStudio.UnitTest
                 ProtectedOperations,
                 _factory.Create<IMarkDisplayUtil>(MockBehavior.Loose).Object,
                 _factory.Create<IControlCharUtil>(MockBehavior.Loose).Object,
+                _commandDispatcher.Object,
                 sp.Object,
                 _clipboardDevice.Object);
             _host = _hostRaw;
@@ -112,8 +116,12 @@ namespace Vim.VisualStudio.UnitTest
                     Create();
                     var textView = CreateTextView("");
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, string.Empty)).Throws(new Exception());
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(textView, VsVimHost.CommandNameGoToDefinition, string.Empty, false))
+                        .Throws(new Exception())
+                        .Verifiable();
                     Assert.False(_host.GoToDefinition());
+                    _commandDispatcher.Verify();
                 }
 
                 [WpfFact]
@@ -122,8 +130,48 @@ namespace Vim.VisualStudio.UnitTest
                     Create();
                     var textView = CreateTextView("");
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, string.Empty));
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(textView, VsVimHost.CommandNameGoToDefinition, string.Empty, false))
+                        .Returns(true)
+                        .Verifiable();
                     Assert.True(_host.GoToDefinition());
+                    _commandDispatcher.Verify();
+                }
+
+                /// <summary>
+                /// Make sure that go to local declaration is translated into
+                /// go to defintion in a non-C++ language
+                /// </summary>
+                [WpfFact]
+                public void GoToLocalDeclaration()
+                {
+                    Create();
+                    var textView = CreateTextView("hello world");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(textView, VsVimHost.CommandNameGoToDefinition, "hello", false))
+                        .Returns(true)
+                        .Verifiable();
+                    Assert.True(_host.GoToLocalDeclaration(textView, "hello"));
+                    _commandDispatcher.Verify();
+                }
+
+                /// <summary>
+                /// Make sure that go to global declaration is translated into
+                /// go to defintion in a non-C++ language
+                /// </summary>
+                [WpfFact]
+                public void GoToGlobalDeclaration()
+                {
+                    Create();
+                    var textView = CreateTextView("hello world");
+                    _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(textView, VsVimHost.CommandNameGoToDefinition, "hello", false))
+                        .Returns(true)
+                        .Verifiable();
+                    Assert.True(_host.GoToGlobalDeclaration(textView, "hello"));
+                    _commandDispatcher.Verify();
                 }
 
                 /// <summary>
@@ -137,8 +185,12 @@ namespace Vim.VisualStudio.UnitTest
                     var ct = GetOrCreateContentType("csharp", "code");
                     var textView = CreateTextView(ct, "hello world");
                     _textManager.SetupGet(x => x.ActiveTextViewOptional).Returns(textView);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(textView, VsVimHost.CommandNameGoToDefinition, "", false))
+                        .Returns(true)
+                        .Verifiable();
                     Assert.True(_host.GoToDefinition());
+                    _commandDispatcher.Verify();
                 }
             }
 
@@ -156,49 +208,85 @@ namespace Vim.VisualStudio.UnitTest
                 }
 
                 /// <summary>
-                /// The C++ implementation of the goto definition command requires that the word which 
-                /// it should target be passed along as an argument to the command
+                /// The C++ implementation needs 'Edit.GoToDefinition' to
+                /// have a null argument and needs for it to be posted
                 /// </summary>
                 [WpfFact]
-                public void Simple()
+                public void GoToDefinition()
                 {
                     CreateWithText("hello world");
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello")).Verifiable();
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(_textView, VsVimHost.CommandNameGoToDefinition, null, true))
+                        .Returns(true)
+                        .Verifiable();
                     Assert.True(_host.GoToDefinition());
-                    _dte.Verify();
-                }
-
-                [WpfFact]
-                public void MiddleOfIdentifier()
-                {
-                    CreateWithText("cat; dog");
-                    _textView.MoveCaretTo(1);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "cat")).Verifiable();
-                    Assert.True(_host.GoToDefinition());
-                    _dte.Verify();
-                }
-
-                [WpfFact]
-                public void MiddleOfLongIdentifier()
-                {
-                    CreateWithText("big_cat; dog");
-                    _textView.MoveCaretTo(1);
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "big_cat")).Verifiable();
-                    Assert.True(_host.GoToDefinition());
-                    _dte.Verify();
+                    _commandDispatcher.Verify();
                 }
 
                 /// <summary>
-                /// The code should pass valid C++ identifiers to the GoToDefinition command.  It should not be 
-                /// using a full vim word (:help WORD) as it can include many non-legal C++ identifiers
+                /// The C++ implementation needs 'Edit.GoToDeclaration' to
+                /// have a null argument and needs for it to be posted
                 /// </summary>
                 [WpfFact]
-                public void Issue1122()
+                public void GoToLocalDeclaration()
                 {
-                    CreateWithText("cat; dog");
-                    _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "cat")).Verifiable();
-                    Assert.True(_host.GoToDefinition());
-                    _dte.Verify();
+                    CreateWithText("hello world");
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(_textView, VsVimHost.CommandNameGoToDeclaration, null, true))
+                        .Returns(true)
+                        .Verifiable();
+                    Assert.True(_host.GoToLocalDeclaration(_textView, "hello"));
+                    _commandDispatcher.Verify();
+                }
+
+                /// <summary>
+                /// The C++ implementation needs 'Edit.GoToDeclaration' to
+                /// have a null argument and needs for it to be posted
+                /// </summary>
+                [WpfFact]
+                public void GoToGlobalDeclaration()
+                {
+                    CreateWithText("hello world");
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(_textView, VsVimHost.CommandNameGoToDeclaration, null, true))
+                        .Returns(true)
+                        .Verifiable();
+                    Assert.True(_host.GoToGlobalDeclaration(_textView, "hello"));
+                    _commandDispatcher.Verify();
+                }
+
+                /// <summary>
+                /// When go to definition is executed as a host command, it
+                /// should use the same dispatching logic as if go to
+                /// definition were called directly
+                /// </summary>
+                [WpfFact]
+                public void GoToDefinition_HostCommand()
+                {
+                    CreateWithText("hello world");
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(_textView, VsVimHost.CommandNameGoToDefinition, null, true))
+                        .Returns(true)
+                        .Verifiable();
+                    _host.RunHostCommand(_textView, VsVimHost.CommandNameGoToDefinition, "");
+                    _commandDispatcher.Verify();
+                }
+
+                /// <summary>
+                /// When go to declaration is executed as a host command, it
+                /// should use the same dispatching logic as if go to
+                /// local/global declaration were called directly
+                /// </summary>
+                [WpfFact]
+                public void GoToDeclaration_HostCommand()
+                {
+                    CreateWithText("hello world");
+                    _commandDispatcher
+                        .Setup(x => x.ExecuteCommand(_textView, VsVimHost.CommandNameGoToDeclaration, null, true))
+                        .Returns(true)
+                        .Verifiable();
+                    _host.RunHostCommand(_textView, VsVimHost.CommandNameGoToDeclaration, "");
+                    _commandDispatcher.Verify();
                 }
             }
         }

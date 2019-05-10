@@ -4,7 +4,7 @@ using System.ComponentModel.Composition;
 namespace Vim.VisualStudio.Implementation.PowerShellTools
 {
     [Export(typeof(IExtensionAdapter))]
-    internal sealed class PowerShellToolsExtensionAdapter : IExtensionAdapter
+    internal sealed class PowerShellToolsExtensionAdapter : VimExtensionAdapter
     {
         //https://github.com/adamdriscoll/poshtools/blob/dev/ReplWindow/Repl/ReplConstants.cs
         private const string ReplContentTypeName = "PowerShellREPLCode";
@@ -16,45 +16,17 @@ namespace Vim.VisualStudio.Implementation.PowerShellTools
             _powerShellToolsUtil = powerShellToolsUtil;
         }
 
-        internal bool? ShouldCreateVimBuffer(ITextView textView)
+        // Suppress VsVim in the PowerShell interactive window.
+        protected override bool ShouldCreateVimBuffer(ITextView textView) =>
+            !IsInteractive(textView);
+
+        private bool IsInteractive(ITextView textView)
         {
             if (!_powerShellToolsUtil.IsInstalled)
-                return null;
-
-            var contentTypeDisplayName = textView.TextDataModel.DocumentBuffer.ContentType.DisplayName;
-            if (contentTypeDisplayName == ReplContentTypeName)
                 return false;
 
-            return null;
+            var contentTypeDisplayName = textView.TextDataModel.DocumentBuffer.ContentType.DisplayName;
+            return contentTypeDisplayName == ReplContentTypeName;
         }
-
-        #region IExtensionAdapter
-
-        bool? IExtensionAdapter.IsUndoRedoExpected
-        {
-            get { return null; }
-        }
-
-        bool? IExtensionAdapter.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.ShouldCreateVimBuffer(ITextView textView)
-        {
-            return ShouldCreateVimBuffer(textView);
-        }
-
-        bool? IExtensionAdapter.IsIncrementalSearchActive(ITextView textView)
-        {
-            return null;
-        }
-
-        bool? IExtensionAdapter.UseDefaultCaret
-        {
-            get { return null; }
-        }
-
-        #endregion
     }
 }

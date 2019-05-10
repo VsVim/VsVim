@@ -24,22 +24,9 @@ namespace Vim.VisualStudio.UnitTest
         }
 
         [Fact]
-        public void CorrectCommands()
+        public void UseDefaultCaret()
         {
-            Assert.True(_adapter.ShouldKeepSelectionAfterHostCommand("VAssistX.SmartSelectExtend", ""));
-        }
-
-        [Fact]
-        public void IncorrectCommands()
-        {
-            Assert.Null(_adapter.ShouldKeepSelectionAfterHostCommand("VAssistX.SmartSelectExtendEx", ""));
-        }
-
-        [Fact]
-        public void CorrectCommandsNotInstalled()
-        {
-            _visualAssistUtil.SetupGet(x => x.IsInstalled).Returns(false);
-            Assert.Null(_adapter.ShouldKeepSelectionAfterHostCommand("VAssistX.SmartSelectExtend", ""));
+            Assert.True(_adapter.UseDefaultCaret);
         }
     }
 }

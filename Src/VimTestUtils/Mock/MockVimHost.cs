@@ -399,11 +399,6 @@ namespace Vim.UnitTest.Mock
             get { return TabCount; }
         }
 
-        bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return false;
-        }
-
         bool IVimHost.UseDefaultCaret
         {
             get { return UseDefaultCaret; }

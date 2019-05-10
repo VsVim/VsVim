@@ -1484,6 +1484,43 @@ namespace Vim.UnitTest
                 Assert.True(didRun);
             }
 
+            [WpfFact]
+            public void KeepSelection()
+            {
+                Create("cat", "");
+                var didRun = false;
+                _vimHost.RunHostCommandFunc = (textView, commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                _textView.Selection.Select(_textBuffer.GetSpan(0, 3));
+                Assert.False(_textView.Selection.IsEmpty);
+                RunCommandRaw(":vsc Edit.Comment");
+                Assert.True(didRun);
+                Assert.False(_textView.Selection.IsEmpty);
+            }
+
+            [WpfFact]
+            public void ClearSelection()
+            {
+                Create("cat", "");
+                var didRun = false;
+                _vimHost.RunHostCommandFunc = (textView, commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                _textView.Selection.Select(_textBuffer.GetSpan(0, 3));
+                Assert.False(_textView.Selection.IsEmpty);
+                RunCommandRaw(":vsc! Edit.Comment");
+                Assert.True(didRun);
+                Assert.True(_textView.Selection.IsEmpty);
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
             /// <summary>
             /// It is legal for visual studio commands to have underscores in the name
             /// </summary>

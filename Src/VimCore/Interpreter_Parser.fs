@@ -1853,6 +1853,7 @@ type Parser
     /// name can use letters, numbers and a period.  The rest of the line after will be taken
     /// as the argument
     member x.ParseHostCommand() = 
+        let hasBang = x.ParseBang()
         x.SkipBlanks()
         let command = x.ParseWhile (fun token -> 
             match token.TokenKind with 
@@ -1866,7 +1867,7 @@ type Parser
         | Some command ->
             x.SkipBlanks()
             let argument = x.ParseRestOfLine()
-            LineCommand.HostCommand (command, argument)
+            LineCommand.HostCommand (hasBang, command, argument)
 
     member x.ParseWrite lineRange = 
         let hasBang = x.ParseBang()
