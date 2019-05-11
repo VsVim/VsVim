@@ -1117,8 +1117,8 @@ type internal InsertMode
         let convertHex (chars: string) = Convert.ToInt32(chars, 16)
 
         // Process decimal, octal or hexadecimal digits. This returns a tuple
-        // whether the keys were processed and any key input that needs to be
-        // reprocessed. See vim ':help i_CTRL-V_digit' for details.
+        // of whether the keys were processed and any key input that needs to
+        // be reprocessed. See vim ':help i_CTRL-V_digit' for details.
         let processDigits literalFormat (keyInputSet: KeyInputSet) =
             let maxDigits, isDigit, convert =
                 match literalFormat with
