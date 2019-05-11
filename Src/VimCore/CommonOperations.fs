@@ -2070,6 +2070,7 @@ type internal CommonOperations
 
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
+        let point = x.MapPointNegativeToCurrentSnapshot point
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
             x.EnsurePointExpanded point
         if Util.IsFlagSet viewFlags ViewFlags.Visible then
