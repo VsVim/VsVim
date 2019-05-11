@@ -1004,8 +1004,7 @@ type internal InsertMode
     /// Start an insertion of a literal character
     member x.ProcessLiteralStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Literal KeyInputSet.Empty }
-        ProcessResult.Handled ModeSwitch.NoSwitch
+        x.ProcessLiteral KeyInputSet.Empty
 
     /// Start a undo session in insert mode
     member x.ProcessUndoStart keyInput =
@@ -1103,7 +1102,7 @@ type internal InsertMode
         finally
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
-    /// Process the character of a literal insertion
+    /// Process the key input set of a literal insertion session
     member x.ProcessLiteral (keyInputSet: KeyInputSet) =
 
         // Function to insert literal text, i.e. text not custom processed.

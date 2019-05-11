@@ -3370,6 +3370,17 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Insert an uppercase octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>O033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Insert a hex escape
             /// </summary>
             [WpfFact]
@@ -3377,6 +3388,17 @@ namespace Vim.UnitTest
             {
                 Create("", "");
                 _vimBuffer.ProcessNotation("<C-q>x1b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an uppercase hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>X1B");
                 Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
             }
 
