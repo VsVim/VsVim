@@ -187,10 +187,28 @@ type ActiveEditItem =
     | Digraph2 of KeyInput: KeyInput
 
     /// In the middle of a insert literal operation. Wait for the next key
-    | Literal
+    | Literal of KeyInputSet: KeyInputSet
 
     /// No active items
     | None
+
+[<RequireQualifiedAccess>]
+type LiteralFormat =
+
+    /// Up to three decimal digits
+    | Decimal
+
+    // Up to three octal digits
+    | Octal
+
+    // Up to two hexadecimal digits
+    | Hexadecimal8
+
+    // Up to four hexadecimal digits
+    | Hexadecimal16
+
+    // Up to eight hexadecimal digits
+    | Hexadecimal32
 
 /// Data relating to a particular Insert mode session
 type InsertSessionData = {
@@ -986,7 +1004,7 @@ type internal InsertMode
     /// Start an insertion of a literal character
     member x.ProcessLiteralStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Literal }
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Literal KeyInputSet.Empty }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Start a undo session in insert mode
@@ -1086,15 +1104,87 @@ type internal InsertMode
             _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
     /// Process the character of a literal insertion
-    member x.ProcessLiteral (keyInput: KeyInput) = 
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
-        let insertCommand =
-            keyInput.Char
-            |> string
-            |> InsertCommand.InsertLiteral
-        let keyInputSet = KeyInputSet keyInput
-        let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-        x.RunInsertCommand insertCommand keyInputSet commandFlags
+    member x.ProcessLiteral (keyInputSet: KeyInputSet) =
+
+        // Function to insert literal text, i.e. text not custom processed.
+        let insertLiteral text =
+            let insertCommand = InsertCommand.InsertLiteral text
+            let commandFlags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+            x.RunInsertCommand insertCommand keyInputSet commandFlags |> ignore
+
+        // Base converion helpers.
+        let convertDecimal (chars: string) = Convert.ToInt32(chars)
+        let convertOctal (chars: string) = Convert.ToInt32(chars, 8)
+        let convertHex (chars: string) = Convert.ToInt32(chars, 16)
+
+        // Process decimal, octal or hexadecimal digits. This returns a tuple
+        // whether the keys were processed and any key input that needs to be
+        // reprocessed. See vim ':help i_CTRL-V_digit' for details.
+        let processDigits literalFormat (keyInputSet: KeyInputSet) =
+            let maxDigits, isDigit, convert =
+                match literalFormat with
+                | LiteralFormat.Decimal -> 3, CharUtil.IsDigit, convertDecimal
+                | LiteralFormat.Octal -> 3, CharUtil.IsOctalDigit, convertOctal
+                | LiteralFormat.Hexadecimal8 -> 2, CharUtil.IsHexDigit, convertHex
+                | LiteralFormat.Hexadecimal16 -> 4, CharUtil.IsHexDigit, convertHex
+                | LiteralFormat.Hexadecimal32 -> 8, CharUtil.IsHexDigit, convertHex
+            let digits =
+                keyInputSet.KeyInputs
+                |> Seq.map (fun keyInput -> keyInput.Char)
+                |> Seq.filter isDigit
+                |> String.Concat
+            if digits.Length = maxDigits || digits.Length < keyInputSet.Length then
+                convert digits
+                |> Char.ConvertFromUtf32
+                |> insertLiteral
+                let keyInput =
+                    keyInputSet.KeyInputs
+                    |> Seq.skip digits.Length
+                    |> SeqUtil.tryHeadOnly
+                true, keyInput
+            else
+                false, None
+
+        // Try to process the key input set. See vim help 'i_CTRL-V' for
+        // details.
+        let processed, keyInputToReprocess =
+            match keyInputSet.FirstKeyInput with
+            | Some firstKeyInput when firstKeyInput.IsDigit ->
+                processDigits LiteralFormat.Decimal keyInputSet
+            | Some firstKeyInput when (Char.ToLower firstKeyInput.Char) = 'o' ->
+                processDigits LiteralFormat.Octal keyInputSet.Rest
+            | Some firstKeyInput when (Char.ToLower firstKeyInput.Char) = 'x' ->
+                processDigits LiteralFormat.Hexadecimal8 keyInputSet.Rest
+            | Some firstKeyInput when firstKeyInput.Char = 'u' ->
+                processDigits LiteralFormat.Hexadecimal16 keyInputSet.Rest
+            | Some firstKeyInput when firstKeyInput.Char = 'U' ->
+                processDigits LiteralFormat.Hexadecimal32 keyInputSet.Rest
+            | Some firstKeyInput when firstKeyInput.RawChar.IsSome ->
+                firstKeyInput.Char
+                |> string
+                |> insertLiteral
+                true, None
+            | Some firstKeyInput ->
+                KeyNotationUtil.GetDisplayName firstKeyInput
+                |> insertLiteral
+                true, None
+            | None ->
+                false, None
+
+        // Update the active edit item.
+        let activeEditItem =
+            if processed then
+                ActiveEditItem.None
+            else
+                ActiveEditItem.Literal keyInputSet
+        _sessionData <- { _sessionData with ActiveEditItem = activeEditItem }
+
+        // Reprocess any unprocessed key input.
+        match keyInputToReprocess with
+        | Some keyInput ->
+            x.ProcessCore keyInput
+        | None ->
+            ProcessResult.Handled ModeSwitch.NoSwitch
 
     // Insert the raw characters associated with a key input set
     member x.InsertText (text: string): ProcessResult =
@@ -1161,8 +1251,8 @@ type internal InsertMode
             x.ProcessDigraph1 keyInput
         | ActiveEditItem.Digraph2 _ ->
             x.ProcessDigraph2 keyInput
-        | ActiveEditItem.Literal ->
-            x.ProcessLiteral keyInput
+        | ActiveEditItem.Literal keyInputSet ->
+            keyInputSet.Add keyInput |> x.ProcessLiteral
 
     /// Record special marks associated with a new insert point
     member x.ResetInsertPoint () =

@@ -1358,8 +1358,8 @@ type KeyInputSet
     /// Returns the rest of the KeyInput values after the first
     member x.Rest = 
         match x.KeyInputs with 
-        | [] -> List.Empty
-        | _ :: tail -> tail
+        | [] -> KeyInputSet.Empty
+        | _ :: tail -> KeyInputSet(tail)
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
