@@ -3335,6 +3335,72 @@ namespace Vim.UnitTest
                 Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
                 Assert.Equal(1, count);
             }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>027");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertShortDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>27 ");
+                Assert.Equal("\u001b ", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>o033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>x1b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf16 escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>u001b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf32 alien
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeAlien()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>U0001F47D");
+                Assert.Equal("\U0001F47D", _textBuffer.GetLine(0).GetText()); // 👽
+            }
         }
 
         public sealed class AtomicInsertTests : InsertModeIntegrationTest
