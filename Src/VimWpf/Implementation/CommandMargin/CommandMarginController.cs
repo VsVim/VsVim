@@ -639,7 +639,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         break;
                     case EditKind.SearchBackward:
                     case EditKind.SearchForward:
-                        if (commandText != string.Empty && _vimBuffer.IncrementalSearch.ActiveSession.IsSome())
+                        if (_vimBuffer.IncrementalSearch.ActiveSession.IsSome())
                         {
                             _vimBuffer.IncrementalSearch.ActiveSession.Value.ResetSearch(commandText);
                         }
