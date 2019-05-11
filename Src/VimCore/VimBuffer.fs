@@ -602,7 +602,7 @@ type internal VimBuffer
                 // There is no mode for the current key stroke but may be for the subsequent
                 // ones in the set.  Process the first one only here 
                 remainingSet.Value.FirstKeyInput.Value |> KeyInputSetUtil.Single |> processSet
-                remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
+                remainingSet := remainingSet.Value.Rest
             | _ -> 
                 let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 

@@ -636,6 +636,7 @@ type internal InsertUtil
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.Insert text -> x.Insert text 
+            | InsertCommand.InsertLiteral text -> x.Insert text 
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
             | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()

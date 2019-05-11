@@ -556,6 +556,8 @@ module CharUtil =
 
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
+    let IsOctalDigit (c: char) = c >= '0' && c <= '7'
+    let IsHexDigit (c: char) = System.Char.IsDigit c || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsControl x = System.Char.IsControl x

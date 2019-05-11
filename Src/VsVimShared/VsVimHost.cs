@@ -395,24 +395,23 @@ namespace Vim.VisualStudio
 
         private bool SafeExecuteCommand(ITextView textView, string command, string args = "")
         {
+            bool postCommand = false;
+            if (textView != null && textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                if (command.Equals(CommandNameGoToDefinition, StringComparison.OrdinalIgnoreCase) ||
+                    command.Equals(CommandNameGoToDeclaration, StringComparison.OrdinalIgnoreCase))
+                {
+                    // C++ commands like 'Edit.GoToDefinition' need to be
+                    // posted instead of executed and they need to have a null
+                    // argument in order to work like it does when bound to a
+                    // keyboard shortcut like 'F12'. Reported in issue #2535.
+                    postCommand = true;
+                    args = null;
+                }
+            }
+
             try
             {
-                bool postCommand = false;
-                if (textView.TextBuffer.ContentType.IsCPlusPlus())
-                {
-                    if (command.Equals(CommandNameGoToDefinition, StringComparison.OrdinalIgnoreCase) ||
-                        command.Equals(CommandNameGoToDeclaration, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // C++ commands like 'Edit.GoToDefinition' need to be
-                        // posted instead of executed and it needs to have a
-                        // null argument in order to work like it does when
-                        // bound to a keyboard shortcut like 'F12'.
-                        // Reported in issue #2535.
-                        postCommand = true;
-                        args = null;
-                    }
-                }
-
                 return _commandDispatcher.ExecuteCommand(textView, command, args, postCommand);
             }
             catch
