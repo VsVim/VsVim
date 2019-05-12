@@ -1220,7 +1220,7 @@ type internal CommonOperations
             | _ -> Array.empty<string>
 
         // Look up the ident in the tags file, preferring an exact match, then
-        // the shortest case-insensitive prefix matches.
+        // the shortest case-insensitive prefix match.
         let target =
             match ident with
             | "" -> None
