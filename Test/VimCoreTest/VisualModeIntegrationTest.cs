@@ -1744,6 +1744,49 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
                     Assert.Equal(new[] { "x\tdog", "x\tcat", "x\tbat", "", }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// A block inserted tab should allow custom processing on each
+                /// line, and in Visual Studio a tab expands to the shiftwidth
+                /// </summary>
+                [WpfFact]
+                public void CustomProcessedTab()
+                {
+                    // Reported in issue #2420.
+                    Create("dog", "cat", "bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 8;
+                    _vimBufferData.LocalSettings.ShiftWidth = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = true;
+                    EnterBlock(_textView.GetBlockSpan(0, 1, 0, 3));
+                    _vimHost.TryCustomProcessFunc = (textView, insertCommand) =>
+                        {
+                            if (insertCommand.IsInsertTab)
+                            {
+                                _textBuffer.Insert(_textView.GetCaretPoint().Position, "    ");
+                                return true;
+                            }
+                            return false;
+                        };
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "    dog", "    cat", "    bat", "", }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Without custom processing, a tab in vim expands to the
+                /// tabstop, not shiftwidth
+                /// </summary>
+                [WpfFact]
+                public void NonCustomProcessedTab()
+                {
+                    // Reported in issue #2420.
+                    Create("dog", "cat", "bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 8;
+                    _vimBufferData.LocalSettings.ShiftWidth = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = true;
+                    EnterBlock(_textView.GetBlockSpan(0, 1, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "        dog", "        cat", "        bat", "", }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class AppendTabTest : BlockInsertTest
