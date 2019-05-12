@@ -1205,17 +1205,42 @@ type VimInterpreter
         let wiki = "https://github.com/VsVim/VsVim/wiki"
         let link = wiki
         _vimHost.OpenLink link |> ignore
-        _statusUtil.OnStatus "For help on Vim, please use :vimhelp"
+        _statusUtil.OnStatus "For help on Vim, use :vimhelp"
 
     /// Show Vim help on the specified subject
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
-        // Function to find the vim installation folder
-        let findVimFolder () =
-            let programFiles = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFilesX86)
-            let vimFolder = System.IO.Path.Combine(programFiles, "Vim", "vim80")
-            if System.IO.Directory.Exists(vimFolder) then Some vimFolder else None
+        // Function to find a vim installation folder
+        let findVimFolder specialFolder =
+            try
+                let folder =
+                    match specialFolder with
+                    | System.Environment.SpecialFolder.ProgramFiles ->
+                        match System.Environment.GetEnvironmentVariable("ProgramW6432") with
+                        | null -> System.Environment.GetFolderPath(specialFolder)
+                        | folder -> folder
+                    | _ -> System.Environment.GetFolderPath(specialFolder)
+                let vimFolder = System.IO.Path.Combine(folder, "Vim")
+                if System.IO.Directory.Exists(vimFolder) then
+                    let latest =
+                        System.IO.Directory.EnumerateDirectories vimFolder
+                        |> Seq.map (fun pathName -> System.IO.Path.GetFileName(pathName))
+                        |> Seq.filter (fun folder ->
+                            folder.StartsWith("vim", System.StringComparison.OrdinalIgnoreCase))
+                        |> Seq.sortByDescending (fun folder ->
+                            folder.Substring(3)
+                            |> Seq.takeWhile CharUtil.IsDigit
+                            |> System.String.Concat
+                            |> int)
+                        |> Seq.tryHead
+                    match latest with
+                    | Some folder -> System.IO.Path.Combine(vimFolder, folder) |> Some
+                    | None -> None
+                else
+                    None
+            with
+            | _ -> None
 
         // Function to read lines from file without throwing exceptions
         let readAllLines file =
@@ -1224,22 +1249,34 @@ type VimInterpreter
             with
             | _ -> Array.empty<string>
 
-        match findVimFolder() with
+        // Find a vim installation folder, checking native first
+        let vimFolder =
+            match findVimFolder System.Environment.SpecialFolder.ProgramFiles with
+            | Some folder -> Some folder
+            | None -> findVimFolder System.Environment.SpecialFolder.ProgramFilesX86
+
+        match vimFolder with
         | Some vimFolder ->
             let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
 
-            // Look up the subject in the tags file, preferring an exact match.
+            // Look up the subject in the tags file, preferring an exact match,
+            // then shorter matches
             let target =
-                let tags = System.IO.Path.Combine(vimDoc, "tags")
-                readAllLines tags
-                |> Seq.map (fun line ->
-                    match line.Split([| '\t' |]) with
-                    | fields when fields.Length = 3 -> Some (fields.[0], fields.[1], fields.[2])
-                    | _ -> None)
-                |> Seq.choose id
-                |> Seq.filter (fun (tag, _, _) -> tag.Equals(subject, System.StringComparison.OrdinalIgnoreCase))
-                |> Seq.sortByDescending (fun (tag, _, _) -> tag = subject)
-                |> Seq.tryHead
+                match subject with
+                | "" -> None
+                | _ ->
+                    let tags = System.IO.Path.Combine(vimDoc, "tags")
+                    readAllLines tags
+                    |> Seq.map (fun line ->
+                        match line.Split([| '\t' |]) with
+                        | fields when fields.Length = 3 -> Some (fields.[0], fields.[1], fields.[2])
+                        | _ -> None)
+                    |> Seq.choose id
+                    |> Seq.filter (fun (tag, _, _) ->
+                        tag.StartsWith(subject, System.StringComparison.OrdinalIgnoreCase))
+                    |> Seq.sortBy (fun (tag, _, _) -> tag.Length)
+                    |> Seq.sortByDescending (fun (tag, _, _) -> tag = subject)
+                    |> Seq.tryHead
 
             // Try to navigate to the tag.
             match target with
@@ -1262,7 +1299,10 @@ type VimInterpreter
                 // Load the default help and report the error.
                 let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
                 _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
-                _statusUtil.OnError (sprintf "Cannnot find help tag for subject: %s" subject)
+                if StringUtil.IsNullOrEmpty subject then
+                    _statusUtil.OnStatus "For help on VsVim, use :help"
+                else
+                    _statusUtil.OnError (sprintf "Cannnot find help tag for subject: %s" subject)
 
         | None ->
 
@@ -1273,8 +1313,8 @@ type VimInterpreter
             let doc = "http://vimdoc.sourceforge.net/search.php"
             let link = sprintf "%s?search=%s&docs=help" doc subject
             _vimHost.OpenLink link |> ignore
+            _statusUtil.OnStatus "For help on VsVim, use :help"
 
-        _statusUtil.OnStatus "For help on VsVim, please use :help"
 
     /// Print out the applicable history information
     member x.RunHistory () = 
