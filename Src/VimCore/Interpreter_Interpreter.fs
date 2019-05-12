@@ -1243,7 +1243,7 @@ type VimInterpreter
 
             // Try to navigate to the tag.
             match target with
-            | Some (_, file, pattern) ->
+            | Some (tag, file, pattern) ->
 
                 // Load the help file into a new window and navigate to the tag.
                 let helpFile = System.IO.Path.Combine(vimDoc, file)
@@ -1256,6 +1256,7 @@ type VimInterpreter
                     |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
                     |> SeqUtil.headOrDefault (None, None)
                 _vimHost.LoadFileIntoNewWindow helpFile lineNumber columnNumber |> ignore
+                _statusUtil.OnStatus (sprintf "Found help tag: %s" tag)
             | None ->
 
                 // Load the default help and report the error.
