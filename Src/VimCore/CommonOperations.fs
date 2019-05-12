@@ -1219,8 +1219,8 @@ type internal CommonOperations
             with
             | _ -> Array.empty<string>
 
-        // Function to look up the ident in the tags file, preferring an exact
-        // match, then the shortest case-insensitive prefix matches
+        // Look up the ident in the tags file, preferring an exact match, then
+        // the shortest case-insensitive prefix matches.
         let target =
             match ident with
             | "" -> None
