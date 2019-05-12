@@ -624,16 +624,16 @@ type internal InsertMode
             | InsertKind.Normal, _ -> ()
             | InsertKind.Repeat (count, addNewLines, textChange), _ -> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
             | InsertKind.Block _, None -> ()
-            | InsertKind.Block (atEndOfLine, blockSpan), Some command -> 
+            | InsertKind.Block (atEndOfLine, blockSpan), Some insertCommand -> 
 
                 // The RepeatBlock command will be performing edits on the ITextBuffer.  We don't want to 
                 // track these changes.  They instead will be tracked by the InsertCommand that we return
                 try 
                     _textChangeTracker.TrackCurrentChange <- false
                     let combinedCommand = 
-                        match _insertUtil.RepeatBlock command atEndOfLine blockSpan with
+                        match _insertUtil.RepeatBlock insertCommand atEndOfLine blockSpan with
                         | Some text ->
-                            InsertCommand.BlockInsert (text, atEndOfLine, blockSpan.Height)
+                            InsertCommand.BlockInsert (insertCommand, atEndOfLine, blockSpan.Height)
                             |> Some
                         | None -> None
                     x.ChangeCombinedEditCommand combinedCommand

@@ -50,6 +50,14 @@ namespace Vim.UnitTest
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
+
+            // Some tests create a buffer than does not end with a newline and
+            // then insert text on the last line which would add one if ':set
+            // endofline' were in effect.
+            if (lines.Length > 0 && lines[lines.Length - 1] != string.Empty)
+            {
+                _vimBufferData.LocalSettings.EndOfLine = false;
+            }
         }
 
         public override void Dispose()
@@ -61,10 +69,8 @@ namespace Vim.UnitTest
 
         protected virtual void Create(int tabStop, params string[] lines)
         {
-            Create();
+            Create(lines);
             UpdateTabStop(_vimBuffer, tabStop);
-            _textView.SetText(lines);
-            _textView.MoveCaretTo(0);
         }
 
         protected void EnterMode(SnapshotSpan span)
