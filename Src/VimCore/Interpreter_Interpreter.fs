@@ -1242,79 +1242,48 @@ type VimInterpreter
             with
             | _ -> None
 
-        // Function to read lines from file without throwing exceptions
-        let readAllLines file =
-            try
-                System.IO.File.ReadAllLines(file)
-            with
-            | _ -> Array.empty<string>
-
         // Find a vim installation folder, checking native first
         let vimFolder =
             match findVimFolder System.Environment.SpecialFolder.ProgramFiles with
             | Some folder -> Some folder
             | None -> findVimFolder System.Environment.SpecialFolder.ProgramFilesX86
 
+        // Load the default help
+        let loadDefaultHelp vimDoc =
+            let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
+            _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
+
         match vimFolder with
         | Some vimFolder ->
+
+            // We found an installation folder for vim.
             let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
+            if StringUtil.IsNullOrEmpty subject then
+                loadDefaultHelp vimDoc
+                _statusUtil.OnStatus "For help on VsVim, use :help"
+            else
 
-            // Look up the subject in the tags file, preferring an exact match,
-            // then shorter matches
-            let target =
-                match subject with
-                | "" -> None
-                | _ ->
-                    let tags = System.IO.Path.Combine(vimDoc, "tags")
-                    readAllLines tags
-                    |> Seq.map (fun line ->
-                        match line.Split([| '\t' |]) with
-                        | fields when fields.Length = 3 -> Some (fields.[0], fields.[1], fields.[2])
-                        | _ -> None)
-                    |> Seq.choose id
-                    |> Seq.filter (fun (tag, _, _) ->
-                        tag.StartsWith(subject, System.StringComparison.OrdinalIgnoreCase))
-                    |> Seq.sortBy (fun (tag, _, _) -> tag.Length)
-                    |> Seq.sortByDescending (fun (tag, _, _) -> tag = subject)
-                    |> Seq.tryHead
+                // Try to navigate to the tag.
+                match _commonOperations.GoToTagInNewWindow vimDoc subject with
+                | Result.Succeeded ->
+                    ()
 
-            // Try to navigate to the tag.
-            match target with
-            | Some (tag, file, pattern) ->
+                | Result.Failed message ->
 
-                // Load the help file into a new window and navigate to the tag.
-                let helpFile = System.IO.Path.Combine(vimDoc, file)
-                let pattern = pattern.Substring(1)
-                let lineNumber, columnNumber =
-                    readAllLines helpFile
-                    |> Seq.mapi (fun lineNumber line -> lineNumber, line)
-                    |> Seq.map (fun (lineNumber, line) -> lineNumber, line.IndexOf(pattern))
-                    |> Seq.filter (fun (_, columnNumber) -> columnNumber <> -1)
-                    |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
-                    |> SeqUtil.headOrDefault (None, None)
-                _vimHost.LoadFileIntoNewWindow helpFile lineNumber columnNumber |> ignore
-                _statusUtil.OnStatus (sprintf "Found help tag: %s" tag)
-            | None ->
-
-                // Load the default help and report the error.
-                let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
-                _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
-                if StringUtil.IsNullOrEmpty subject then
-                    _statusUtil.OnStatus "For help on VsVim, use :help"
-                else
-                    _statusUtil.OnError (sprintf "Cannnot find help tag for subject: %s" subject)
+                    // Load the default help and report the error.
+                    loadDefaultHelp vimDoc
+                    _statusUtil.OnError message
 
         | None ->
 
-            // We cannot find the vim installation folder; use the web. Ideally
-            // we would use vimhelp.org here, but it doesn't support a
+            // We cannot find an installation folder for vim so use the web.
+            // Ideally we would use vimhelp.org here, but it doesn't support a
             // tag-based search API.
             let subject = System.Net.WebUtility.UrlEncode(subject)
             let doc = "http://vimdoc.sourceforge.net/search.php"
             let link = sprintf "%s?search=%s&docs=help" doc subject
             _vimHost.OpenLink link |> ignore
             _statusUtil.OnStatus "For help on VsVim, use :help"
-
 
     /// Print out the applicable history information
     member x.RunHistory () = 

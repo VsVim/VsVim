@@ -445,6 +445,9 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab: int -> unit
 
+    /// Using the specified base folder, go to the tag specified by ident
+    abstract GoToTagInNewWindow: folder: string -> ident: string -> Result
+
     /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
     /// will be positioned at the end of that change
     abstract FillInVirtualSpace: unit -> unit
