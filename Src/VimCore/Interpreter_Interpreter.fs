@@ -1202,13 +1202,15 @@ type VimInterpreter
 
     member x.RunHelp subject = 
         let wiki = "https://github.com/VsVim/VsVim/wiki"
-        let doc = "http://vimdoc.sourceforge.net/search.php"
-        let link =
-            if StringUtil.IsNullOrEmpty subject then
-                wiki
-            else
-                sprintf "%s?search=%s&docs=help" doc subject
+        let link = wiki
         let msg = sprintf "For help on VsVim, please visit (%s)" link
+        _vimHost.OpenLink link |> ignore
+        _statusUtil.OnStatus msg
+
+    member x.RunVimHelp subject = 
+        let doc = "http://vimdoc.sourceforge.net/search.php"
+        let link = sprintf "%s?search=%s&docs=help" doc subject
+        let msg = sprintf "For help on Vim, please visit (%s)" link
         _vimHost.OpenLink link |> ignore
         _statusUtil.OnStatus msg
 
@@ -2046,6 +2048,7 @@ type VimInterpreter
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.Help subject -> x.RunHelp subject
+        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()

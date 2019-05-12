@@ -583,6 +583,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Get help on VsVim
     | Help of Subject: string
 
+    /// Get help on Vim
+    | VimHelp of Subject: string
+
     /// Print out the default history 
     | History
 
