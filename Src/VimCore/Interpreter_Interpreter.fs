@@ -1203,16 +1203,16 @@ type VimInterpreter
     member x.RunHelp subject = 
         let wiki = "https://github.com/VsVim/VsVim/wiki"
         let link = wiki
-        let msg = sprintf "For help on VsVim, please visit (%s)" link
         _vimHost.OpenLink link |> ignore
-        _statusUtil.OnStatus msg
+        _statusUtil.OnStatus "For help on Vim, please use :vimhelp"
 
-    member x.RunVimHelp subject = 
+    member x.RunVimHelp (subject: string) = 
+        let subject = subject.Replace("*", "star")
+        let subject = System.Net.WebUtility.UrlEncode(subject)
         let doc = "http://vimdoc.sourceforge.net/search.php"
         let link = sprintf "%s?search=%s&docs=help" doc subject
-        let msg = sprintf "For help on Vim, please visit (%s)" link
         _vimHost.OpenLink link |> ignore
-        _statusUtil.OnStatus msg
+        _statusUtil.OnStatus "For help on VsVim, please use :help"
 
     /// Print out the applicable history information
     member x.RunHistory () = 
