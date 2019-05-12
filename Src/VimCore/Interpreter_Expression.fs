@@ -581,7 +581,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | GoToPreviousTab of Count: int option
 
     /// Get help on VsVim
-    | Help
+    | Help of Subject: string
 
     /// Print out the default history 
     | History

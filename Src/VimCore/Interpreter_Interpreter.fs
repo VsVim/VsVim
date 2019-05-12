@@ -1200,8 +1200,17 @@ type VimInterpreter
         let count = x.GetCountOrDefault count
         _commonOperations.GoToNextTab SearchPath.Backward count
 
-    member x.RunHelp () = 
-        _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/VsVim/VsVim/wiki)"
+    member x.RunHelp subject = 
+        let wiki = "https://github.com/VsVim/VsVim/wiki"
+        let doc = "http://vimdoc.sourceforge.net/search.php"
+        let link =
+            if StringUtil.IsNullOrEmpty subject then
+                wiki
+            else
+                sprintf "%s?search=%s&docs=help" doc subject
+        let msg = sprintf "For help on VsVim, please visit (%s)" link
+        _vimHost.OpenLink link |> ignore
+        _statusUtil.OnStatus msg
 
     /// Print out the applicable history information
     member x.RunHistory () = 
@@ -2036,7 +2045,7 @@ type VimInterpreter
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
-        | LineCommand.Help -> x.RunHelp()
+        | LineCommand.Help subject -> x.RunHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()

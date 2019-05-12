@@ -816,7 +816,7 @@ type Parser
             | LineCommand.GoToLastTab -> noRangeCommand
             | LineCommand.GoToNextTab _ -> noRangeCommand
             | LineCommand.GoToPreviousTab _ -> noRangeCommand
-            | LineCommand.Help -> noRangeCommand
+            | LineCommand.Help _ -> noRangeCommand
             | LineCommand.History -> noRangeCommand
             | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
             | LineCommand.HostCommand _ -> noRangeCommand
@@ -1924,8 +1924,9 @@ type Parser
 
     /// Parse out the :help command
     member x.ParseHelp() =
-        _tokenizer.MoveToEndOfLine()
-        LineCommand.Help
+        x.SkipBlanks ()
+        let subject = x.ParseRestOfLine()
+        LineCommand.Help subject
 
     /// Parse out the :history command
     member x.ParseHistory() =
