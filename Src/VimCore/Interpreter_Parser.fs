@@ -147,6 +147,7 @@ type Parser
         ("function", "fu")
         ("global", "g")
         ("help", "h")
+        ("vimhelp", "vimh")
         ("history", "his")
         ("if", "if")
         ("join", "j")
@@ -816,7 +817,8 @@ type Parser
             | LineCommand.GoToLastTab -> noRangeCommand
             | LineCommand.GoToNextTab _ -> noRangeCommand
             | LineCommand.GoToPreviousTab _ -> noRangeCommand
-            | LineCommand.Help -> noRangeCommand
+            | LineCommand.Help _ -> noRangeCommand
+            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.History -> noRangeCommand
             | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
             | LineCommand.HostCommand _ -> noRangeCommand
@@ -1924,8 +1926,15 @@ type Parser
 
     /// Parse out the :help command
     member x.ParseHelp() =
-        _tokenizer.MoveToEndOfLine()
-        LineCommand.Help
+        x.SkipBlanks ()
+        let subject = x.ParseRestOfLine()
+        LineCommand.Help subject
+
+    /// Parse out the :vimhelp command
+    member x.ParseVimHelp() =
+        x.SkipBlanks ()
+        let subject = x.ParseRestOfLine()
+        LineCommand.VimHelp subject
 
     /// Parse out the :history command
     member x.ParseHistory() =
@@ -2431,6 +2440,7 @@ type Parser
                 | "global" -> x.ParseGlobal lineRange
                 | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
+                | "vimhelp" -> noRange x.ParseVimHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])

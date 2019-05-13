@@ -1126,12 +1126,17 @@ type internal CommonOperations
         word.StartsWith("http:", StringComparison.OrdinalIgnoreCase) 
         || word.StartsWith("https:", StringComparison.OrdinalIgnoreCase) 
 
+    member x.IsVimLink (word: string) =
+        word.IndexOf('|') <> -1 && word.IndexOf('|', word.IndexOf('|') + 1) <> -1
+
     member x.GoToDefinition() =
         match x.WordUnderCursorOrEmpty with
         | "" ->
             Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
         | word when x.IsLink word ->
             x.OpenLinkUnderCaret()
+        | word when x.IsVimLink word ->
+            x.OpenVimLinkUnderCaret()
         | word ->
             let before = TextViewUtil.GetCaretVirtualPoint _textView
             if _vimHost.GoToDefinition() then
@@ -1202,6 +1207,58 @@ type internal CommonOperations
 
             if tabIndex >= 0 && tabIndex < tabCount then
                 _vimHost.GoToTab tabIndex
+
+    /// Using the specified base folder, go to the tag specified by ident
+    member x.GoToTagInNewWindow baseFolder ident =
+        let folder = baseFolder
+
+        // Function to read lines from file without throwing exceptions
+        let readAllLines file =
+            try
+                System.IO.File.ReadAllLines(file)
+            with
+            | _ -> Array.empty<string>
+
+        // Look up the ident in the tags file, preferring an exact match, then
+        // the shortest case-insensitive prefix match.
+        let target =
+            match ident with
+            | "" -> None
+            | _ ->
+                let tags = System.IO.Path.Combine(folder, "tags")
+                readAllLines tags
+                |> Seq.map (fun line ->
+                    match line.Split([| '\t' |]) with
+                    | fields when fields.Length = 3 -> Some (fields.[0], fields.[1], fields.[2])
+                    | _ -> None)
+                |> Seq.choose id
+                |> Seq.filter (fun (tag, _, _) ->
+                    tag.StartsWith(ident, System.StringComparison.OrdinalIgnoreCase))
+                |> Seq.sortBy (fun (tag, _, _) -> tag.Length)
+                |> Seq.sortByDescending (fun (tag, _, _) -> tag = ident)
+                |> Seq.tryHead
+
+        // Try to navigate to the tag.
+        match target with
+        | Some (tag, file, pattern) ->
+
+            // Load the target file into a new window and navigate to the tag.
+            // If the tag was not found in the file, go to the first line.
+            let targetFile = System.IO.Path.Combine(folder, file)
+            let pattern = pattern.Substring(1)
+            let lineNumber, columnNumber =
+                readAllLines targetFile
+                |> Seq.mapi (fun lineNumber line -> lineNumber, line)
+                |> Seq.map (fun (lineNumber, line) -> lineNumber, line.IndexOf(pattern))
+                |> Seq.filter (fun (_, columnNumber) -> columnNumber <> -1)
+                |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
+                |> SeqUtil.headOrDefault (Some 0, None)
+            if _vimHost.LoadFileIntoNewWindow targetFile lineNumber columnNumber then
+                Result.Succeeded
+            else
+                Result.Failed (sprintf "Cannot open target file %s with tag %s" targetFile tag)
+        | None ->
+            Result.Failed (sprintf "Cannot find a tag for ident %s" ident)
 
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
@@ -1320,6 +1377,22 @@ type internal CommonOperations
                 Result.Succeeded
             else
                 Result.Failed(Resources.Common_GotoDefFailed link)
+
+    /// Open link under caret
+    member x.OpenVimLinkUnderCaret () =
+        let link = x.WordUnderCursorOrEmpty
+        let first = link.IndexOf('|')
+        let second = if first = -1 then -1 else link.IndexOf('|', first + 1)
+        if first <> -1 && second <> -1 then
+            let link = link.Substring(first + 1, second - first - 1)
+            let bufferName = _vimHost.GetName(_textBuffer)
+            if StringUtil.IsNullOrEmpty link || StringUtil.IsNullOrEmpty bufferName then
+                Result.Failed(Resources.Common_GotoDefFailed link)
+            else
+                let baseFolder = System.IO.Path.GetDirectoryName(bufferName)
+                x.GoToTagInNewWindow baseFolder link
+        else
+            Result.Failed(Resources.Common_GotoDefFailed link)
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -2234,6 +2307,7 @@ type internal CommonOperations
         member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = x.GoToNextTab direction count
         member x.GoToTab index = x.GoToTab index
+        member x.GoToTagInNewWindow folder ident = x.GoToTagInNewWindow folder ident
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement

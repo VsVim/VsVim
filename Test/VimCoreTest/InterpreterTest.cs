@@ -1019,19 +1019,33 @@ namespace Vim.UnitTest
         public sealed class HelpTest : InterpreterTest
         {
             [WpfFact]
-            public void LinksToWikiWhenNoTopicSpecified()
+            public void LinksToWikiWhenNoSubjectSpecified()
             {
                 Create("");
+                var callCount = 0;
+                VimHost.OpenLinkFunc = link =>
+                {
+                    callCount += 1;
+                    Assert.Equal("https://github.com/VsVim/VsVim/wiki", link);
+                    return true;
+                };
                 ParseAndRun(@"help");
-                Assert.Contains("https://github.com/VsVim/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Equal(1, callCount);
             }
 
             [WpfFact]
-            public void LinksToWikiWhenTopicIsSpecified()
+            public void LinksToWikiWhenSubjectIsSpecified()
             {
                 Create("");
+                var callCount = 0;
+                VimHost.OpenLinkFunc = link =>
+                {
+                    callCount += 1;
+                    Assert.Equal("https://github.com/VsVim/VsVim/wiki", link);
+                    return true;
+                };
                 ParseAndRun(@"help :vsc");
-                Assert.Contains("https://github.com/VsVim/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Equal(1, callCount);
             }
         }
 

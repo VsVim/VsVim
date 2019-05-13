@@ -1200,8 +1200,90 @@ type VimInterpreter
         let count = x.GetCountOrDefault count
         _commonOperations.GoToNextTab SearchPath.Backward count
 
-    member x.RunHelp () = 
-        _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/VsVim/VsVim/wiki)"
+    /// Show VsVim help on the specified subject
+    member x.RunHelp subject = 
+        let wiki = "https://github.com/VsVim/VsVim/wiki"
+        let link = wiki
+        _vimHost.OpenLink link |> ignore
+        _statusUtil.OnStatus "For help on Vim, use :vimhelp"
+
+    /// Show Vim help on the specified subject
+    member x.RunVimHelp (subject: string) = 
+        let subject = subject.Replace("*", "star")
+
+        // Function to find a vim installation folder
+        let findVimFolder specialFolder =
+            try
+                let folder =
+                    match specialFolder with
+                    | System.Environment.SpecialFolder.ProgramFiles ->
+                        match System.Environment.GetEnvironmentVariable("ProgramW6432") with
+                        | null -> System.Environment.GetFolderPath(specialFolder)
+                        | folder -> folder
+                    | _ -> System.Environment.GetFolderPath(specialFolder)
+                let vimFolder = System.IO.Path.Combine(folder, "Vim")
+                if System.IO.Directory.Exists(vimFolder) then
+                    let latest =
+                        System.IO.Directory.EnumerateDirectories vimFolder
+                        |> Seq.map (fun pathName -> System.IO.Path.GetFileName(pathName))
+                        |> Seq.filter (fun folder ->
+                            folder.StartsWith("vim", System.StringComparison.OrdinalIgnoreCase))
+                        |> Seq.sortByDescending (fun folder ->
+                            folder.Substring(3)
+                            |> Seq.takeWhile CharUtil.IsDigit
+                            |> System.String.Concat
+                            |> int)
+                        |> Seq.tryHead
+                    match latest with
+                    | Some folder -> System.IO.Path.Combine(vimFolder, folder) |> Some
+                    | None -> None
+                else
+                    None
+            with
+            | _ -> None
+
+        // Find a vim installation folder, checking native first
+        let vimFolder =
+            match findVimFolder System.Environment.SpecialFolder.ProgramFiles with
+            | Some folder -> Some folder
+            | None -> findVimFolder System.Environment.SpecialFolder.ProgramFilesX86
+
+        // Load the default help
+        let loadDefaultHelp vimDoc =
+            let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
+            _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
+
+        match vimFolder with
+        | Some vimFolder ->
+
+            // We found an installation folder for vim.
+            let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
+            if StringUtil.IsNullOrEmpty subject then
+                loadDefaultHelp vimDoc
+                _statusUtil.OnStatus "For help on VsVim, use :help"
+            else
+
+                // Try to navigate to the tag.
+                match _commonOperations.GoToTagInNewWindow vimDoc subject with
+                | Result.Succeeded ->
+                    ()
+
+                | Result.Failed message ->
+
+                    // Load the default help and report the error.
+                    loadDefaultHelp vimDoc
+                    _statusUtil.OnError message
+
+        | None ->
+
+            // We cannot find an installation folder for vim so use the web.
+            // Ideally we would use vimhelp.org here, but it doesn't support a
+            // tag-based search API.
+            let subject = System.Net.WebUtility.UrlEncode(subject)
+            let doc = "http://vimdoc.sourceforge.net/search.php"
+            let link = sprintf "%s?search=%s&docs=help" doc subject
+            _vimHost.OpenLink link |> ignore
+            _statusUtil.OnStatus "For help on VsVim, use :help"
 
     /// Print out the applicable history information
     member x.RunHistory () = 
@@ -2036,7 +2118,8 @@ type VimInterpreter
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
-        | LineCommand.Help -> x.RunHelp()
+        | LineCommand.Help subject -> x.RunHelp subject
+        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()
