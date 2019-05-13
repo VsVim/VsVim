@@ -199,28 +199,38 @@ type internal IncrementalSearchSession
 
         _searchEnd.Trigger x (SearchResultEventArgs(searchResult))
 
-    /// Called when the processing is completed.  Raise the completed event and return
-    /// the final SearchResult
+    /// Called when the processing is completed.  Raise the completed event and
+    /// return the final SearchResult
     member private x.RunCompleted(startPoint, searchText) =
         let vimData = _vimBufferData.Vim.VimData
         let searchResult = 
 
-            let isCancelled searchResult = 
-                match searchResult with
-                | SearchResult.Cancelled _ -> true
-                | _ -> false
+            // The search result if the search completed and wasn't cancelled.
+            let completedSearchResult searchState =
+                match searchState with
+                | SearchState.Complete searchResult ->
+                    match searchResult with
+                    | SearchResult.Cancelled _ -> None
+                    | _ -> Some searchResult
+                | _ -> None
 
-            match _searchState with
-            | SearchState.NeverRun _ ->
-                // When the user simply hits Enter on an empty incremental search then
-                // we should be re-using the 'LastSearch' value.
+            if StringUtil.IsNullOrEmpty searchText then
+
+                // When the user simply hits Enter on an empty incremental
+                // search then we should be re-using the 'LastSearch' value.
                 x.RunSearchSyncWithResult(startPoint, vimData.LastSearchData.Pattern)
-            | SearchState.Complete searchResult when not (isCancelled searchResult) -> searchResult
-            | _ ->
-                // If the search is still in progress then we need to force it to be complete here. Need
-                // to avoid the tempatation to use methods like Task.Wait as that can cause deadlocks. Instead
-                // just synchronously run the search here. 
-                x.RunSearchSyncWithResult(startPoint, searchText)
+            else
+                
+                // Use a completed search result if possible.
+                match completedSearchResult _searchState with
+                | Some searchResult -> searchResult
+                | None ->
+
+                    // If the search is still in progress then we need to force
+                    // it to be complete here. Need to avoid the tempatation to
+                    // use methods like Task.Wait as that can cause deadlocks.
+                    // Instead just synchronously run the search here.
+                    x.RunSearchSyncWithResult(startPoint, searchText)
 
         vimData.LastSearchData <- _searchData
         x.RunCompleteSession()
