@@ -462,6 +462,10 @@ namespace Vim.UI.Wpf
         {
             const double roundOff = 0.01;
             var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+            if (textViewLine == null)
+            {
+                return;
+            }
 
             switch (textViewLine.VisibilityState)
             {
@@ -515,6 +519,10 @@ namespace Vim.UI.Wpf
         private void EnsureLinePointVisible(ITextView textView, SnapshotPoint point)
         {
             var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+            if (textViewLine == null)
+            {
+                return;
+            }
 
             const double horizontalPadding = 2.0;
             const double scrollbarPadding = 200.0;

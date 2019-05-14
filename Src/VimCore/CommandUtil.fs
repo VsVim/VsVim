@@ -3311,18 +3311,19 @@ type internal CommandUtil
                 lastLine
             else
 
-                // The last line is only partially visible. This could be either because
-                // the view is scrolled so that the bottom of the text row is clipped,
-                // or because line wrapping is in effect and there are off-screen
-                // wrapped text view lines. In either case, try to move to the text
-                // view line corresponding to the previous snapshot line.
+                // The last line is only partially visible. This could be
+                // either because the view is scrolled so that the bottom of
+                // the text row is clipped, or because line wrapping is in
+                // effect and there are off-screen wrapped text view lines. In
+                // either case, try to move to the text view line corresponding
+                // to the previous snapshot line.
                 let partialLine = SnapshotPointUtil.GetContainingLine lastLine.Start
                 let previousLineNumber = partialLine.LineNumber - 1
                 let previousLine = SnapshotUtil.GetLineOrFirst _textView.TextSnapshot previousLineNumber
-                let textViewLine = textViewLines.GetTextViewLineContainingBufferPosition previousLine.Start
-                if textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible then
+                match TextViewUtil.GetTextViewLineContainingPoint _textView previousLine.Start with
+                | Some textViewLine when textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible ->
                     textViewLine
-                else
+                | _ ->
                     lastLine
 
         let spacesToCaret = _commonOperations.GetSpacesToCaret()

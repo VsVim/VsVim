@@ -3002,6 +3002,29 @@ module TextViewUtil =
             with 
             | _ -> None
 
+    /// Get the text view line relative to the specified point
+    let GetTextViewLineRelativeToPoint textView offset point =
+        match GetTextViewLines textView with
+        | Some textViewLines ->
+
+            // Protect against GetTextViewLineContainingBufferPosition
+            // returning null.
+            match textViewLines.GetTextViewLineContainingBufferPosition point with
+            | textViewLine when textViewLine <> null ->
+                textViewLines.GetIndexOfTextLine textViewLine
+                |> (fun index -> index + offset)
+                |> max 0
+                |> min (textViewLines.Count - 1)
+                |> (fun index -> textViewLines.[index])
+                |> Some
+
+            | _ -> None
+        | None -> None
+
+    /// Get the text view line containing the specified point
+    let GetTextViewLineContainingPoint textView point =
+        GetTextViewLineRelativeToPoint textView 0 point
+
     /// Get the count of Visible lines in the ITextView
     let GetVisibleLineCount textView = 
         match GetTextViewLines textView with
@@ -3116,9 +3139,8 @@ module TextViewUtil =
                 let option = Editor.EnsureSpanVisibleOptions.AlwaysCenter
                 textView.ViewScroller.EnsureSpanVisible(span, option) |> ignore
 
-        // Be careful because using ITextViewLines can result in an exception.
-        try
-            let textViewLine = textView.GetTextViewLineContainingBufferPosition point
+        match GetTextViewLineContainingPoint textView point with
+        | Some textViewLine ->
             let onScreen = textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible
             if not onScreen then
 
@@ -3126,8 +3148,7 @@ module TextViewUtil =
                 match GetTextViewLines textView with
                 | Some textViewLines -> doScrollToPoint textViewLines
                 | _ -> ()
-        with
-        | _ -> ()
+        | None -> ()
 
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =
