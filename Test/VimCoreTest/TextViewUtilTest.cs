@@ -29,9 +29,17 @@ namespace Vim.UnitTest
                 caret: caret.Object,
                 factory: factory);
 
+            // Make sure we do all the caution checks necessary to ensure the
+            // text view line is valid.
+            textView.SetupGet(x => x.IsClosed).Returns(false).Verifiable();
+            textView.SetupGet(x => x.InLayout).Returns(false).Verifiable();
+            var lines = factory.Create<ITextViewLineCollection>();
+            textView.Setup(x => x.TextViewLines).Returns(lines.Object).Verifiable();
             var line = factory.Create<ITextViewLine>();
+            lines.SetupGet(x => x.IsValid).Returns(true).Verifiable();
+            lines.Setup(x => x.GetTextViewLineContainingBufferPosition(It.IsAny<SnapshotPoint>())).Returns(line.Object).Verifiable();
+            line.SetupGet(x => x.IsValid).Returns(true).Verifiable();
             line.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible).Verifiable();
-            textView.Setup(x => x.GetTextViewLineContainingBufferPosition(It.IsAny<SnapshotPoint>())).Returns(line.Object).Verifiable();
 
             var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2);
             caret.Setup(x => x.MoveTo(point)).Returns(new CaretPosition()).Verifiable();

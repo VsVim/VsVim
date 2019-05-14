@@ -3010,14 +3010,21 @@ module TextViewUtil =
             // Protect against GetTextViewLineContainingBufferPosition
             // returning null.
             match textViewLines.GetTextViewLineContainingBufferPosition point with
-            | textViewLine when textViewLine <> null ->
-                textViewLines.GetIndexOfTextLine textViewLine
-                |> (fun index -> index + offset)
-                |> max 0
-                |> min (textViewLines.Count - 1)
-                |> (fun index -> textViewLines.[index])
-                |> Some
+            | textViewLine when textViewLine <> null && textViewLine.IsValid ->
+                if offset = 0 then
+                    Some textViewLine
+                else
 
+                    // Validate offset.
+                    let index = textViewLines.GetIndexOfTextLine textViewLine
+                    if index + offset >= 0 && index + offset < textViewLines.Count then
+                        let textViewLine = textViewLines.[index + offset]
+                        if textViewLine.IsValid then
+                            Some textViewLine
+                        else
+                            None
+                    else
+                        None
             | _ -> None
         | None -> None
 
