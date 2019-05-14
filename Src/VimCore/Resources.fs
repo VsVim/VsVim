@@ -94,6 +94,7 @@ module internal Resources =
     let Internal_ErrorMappingBackToEdit = "Error mapping data back to the edit buffer"
 
     let Parser_Error = "Parse error"
+    let Parser_OnLine line = sprintf "Error on line %d" line
     let Parser_NoRangeAllowed = "No range allowed"
     let Parser_NoMarksMatching x = sprintf "No marks matching \"%c\"" x
     let Parser_NoBangAllowed = "No ! allowed"
