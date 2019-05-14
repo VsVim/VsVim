@@ -428,7 +428,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 Vim.MarkMap.SetGlobalMark(Letter.A, _vimTextBuffer, 0, 1);
                 var point = _textBuffer.GetVirtualPoint(1);
-                _commonOperations.Setup(x => x.MoveCaretToVirtualPoint(point, ViewFlags.Standard)).Verifiable();
+                _commonOperations.Setup(x => x.MoveCaretToVirtualPoint(point, ViewFlags.All)).Verifiable();
                 _commandUtil.JumpToMark(Mark.NewGlobalMark(Letter.A));
                 _commonOperations.Verify();
             }
@@ -1100,15 +1100,42 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Arbitrary characters may appear after a decimal number
+            /// </summary>
+            [WpfFact]
+            public void AddToWord_Decimal_MiddleOfWord()
+            {
+                // Reported in issue #2486
+                Create("part1Price");
+                _localSettings.NumberFormats = "";
+                _commandUtil.AddToWord(1);
+                Assert.Equal("part2Price", _textView.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
             /// When alpha is not supported we should be jumping past words to add to the numbers
             /// </summary>
             [WpfFact]
             public void AddToWord_Hex_PastWord()
             {
-                Create("dog0x1");
+                Create("dog0xe");
                 _localSettings.NumberFormats = "hex";
                 _commandUtil.AddToWord(1);
-                Assert.Equal("dog0x2", _textView.GetLine(0).GetText());
+                Assert.Equal("dog0xf", _textView.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Arbitrary characters may appear after a hex number
+            /// </summary>
+            [WpfFact]
+            public void AddToWord_Hex_MiddleOfWord()
+            {
+                Create("dog0xexyzzy");
+                _localSettings.NumberFormats = "hex";
+                _commandUtil.AddToWord(1);
+                Assert.Equal("dog0xfxyzzy", _textView.GetLine(0).GetText());
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
 

@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -21,9 +22,6 @@ namespace Vim.VisualStudio.Specific
             VsServiceProvider = vsServiceProvider;
             ComponentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
             ExportProvider = ComponentModel.DefaultExportProvider;
-
-            InitLazy();
-            InitPeek();
         }
 
         internal void GoToTab(int index)
@@ -92,14 +90,9 @@ namespace Vim.VisualStudio.Specific
             return IsActiveWindowFrame(vsWindowFrame);
         }
 
-        bool ISharedService.IsLazyLoaded(uint documentCookie)
+        void ISharedService.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            return IsLazyLoaded(documentCookie);
-        }
-
-        bool ISharedService.ClosePeekView(ITextView peekView)
-        {
-            return ClosePeekView(peekView);
+            RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
         bool ISharedService.HasMultipleCarets(ITextView textView)

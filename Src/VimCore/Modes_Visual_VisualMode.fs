@@ -97,6 +97,7 @@ type internal VisualMode
                 yield ("=", CommandFlags.Repeatable, VisualCommand.FormatCodeLines)
                 yield ("gq", CommandFlags.Repeatable, VisualCommand.FormatTextLines false)
                 yield ("gw", CommandFlags.Repeatable, VisualCommand.FormatTextLines true)
+                yield ("gx", CommandFlags.Repeatable, VisualCommand.OpenLinkInSelection)
                 yield ("!", CommandFlags.Repeatable, VisualCommand.FilterLines)
                 yield ("<C-a>", CommandFlags.Repeatable, VisualCommand.AddToSelection false)
                 yield ("<C-x>", CommandFlags.Repeatable, VisualCommand.SubtractFromSelection false)
@@ -156,7 +157,8 @@ type internal VisualMode
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     member x.CanProcess (keyInput: KeyInput) =
-        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
+        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
+        ||_runner.DoesCommandStartWith keyInput
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
@@ -225,8 +227,6 @@ type internal VisualMode
             else
                 match _runner.Run ki with
                 | BindResult.NeedMoreInput _ -> 
-                    // Commands like incremental search can move the caret and be incomplete.  Need to 
-                    // update the selection while waiting for the next key
                     _selectionTracker.UpdateSelection()
                     ProcessResult.HandledNeedMoreInput
 

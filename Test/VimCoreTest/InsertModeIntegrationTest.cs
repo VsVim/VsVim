@@ -779,6 +779,27 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Make sure external multi-part edits don't clear the last edit point
+            /// </summary>
+            [WpfFact]
+            public void InsertNonVim_MultiPart()
+            {
+                // Reported in issue #2440.
+                Create("big", "bad", "");
+                _textBuffer.Insert(3, " cat");
+                Assert.Equal(new[] { "big cat", "bad", "", }, _textBuffer.GetLines());
+                Assert.Equal(6, LastEditPoint.Value);
+                using (var edit = _textBuffer.CreateEdit())
+                {
+                    edit.Insert(_textBuffer.GetPointInLine(0, 0), "foo ");
+                    edit.Insert(_textBuffer.GetPointInLine(1, 0), "bar ");
+                    edit.Apply();
+                }
+                Assert.Equal(new[] { "foo big cat", "bar bad", "", }, _textBuffer.GetLines());
+                Assert.Equal(6, LastEditPoint.Value);
+            }
+
+            /// <summary>
             /// When there is a deletion of text then the LastEditPoint should point to the start
             /// of the deleted text
             /// </summary>
@@ -1472,6 +1493,54 @@ namespace Vim.UnitTest
             {
                 base.Create(argument, lines);
                 _globalSettings.VirtualEdit = "insert";
+            }
+
+            /// <summary>
+            /// Fill in leading virtual space with tabs when 'noexpandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithTabs()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = false;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 4), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Fill in leading virtual space with spaces when 'expandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithSpaces()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "    foo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 7), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Always fill in non-leading virtual space with spaces
+            /// </summary>
+            /// <param name="expandTab"></param>
+            [WpfTheory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void FillInNonLeadingVirtualSpaceWithSpaces(bool expandTab)
+            {
+                Create("f", "");
+                _localSettings.ExpandTab = expandTab;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(1, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("oo");
+                Assert.Equal(new[] { "f   oo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 6), _textView.GetCaretVirtualPoint());
             }
 
             [WpfFact]
@@ -3225,6 +3294,134 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("i<BS><BS>");
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
+            }
+        }
+
+        public sealed class InsertLiteralTests : InsertModeIntegrationTest
+        {
+            /// <summary>
+            /// Insert a literal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q><Esc>");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure a literal tab can be inserted even if expandtab is
+            /// set and even if the host custom processes ordinary text
+            /// </summary>
+            [WpfFact]
+            public void InsertTab()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                var count = 0;
+                VimHost.TryCustomProcessFunc =
+                    (textView, command) =>
+                    {
+                        if (command.IsInsertLiteral)
+                        {
+                            Assert.Equal("\t", command.AsInsertLiteral().Text);
+                            count += 1;
+                        }
+
+                        return false;
+                    };
+                _vimBuffer.ProcessNotation("<C-q><Tab>");
+                Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, count);
+            }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>027");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertShortDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>27 ");
+                Assert.Equal("\u001b ", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>o033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an uppercase octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>O033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>x1b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an uppercase hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>X1B");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf16 escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>u001b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf32 alien
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeAlien()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>U0001F47D");
+                Assert.Equal("\U0001F47D", _textBuffer.GetLine(0).GetText()); // 👽
             }
         }
 

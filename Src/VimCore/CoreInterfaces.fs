@@ -13,6 +13,7 @@ open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Collections.Generic
+open System.Threading.Tasks
 open Vim.Interpreter
 open System
 
@@ -226,6 +227,8 @@ type ILinkedUndoTransaction =
 
 /// Wraps all of the undo and redo operations
 type IUndoRedoOperations = 
+
+    abstract TextUndoHistory: ITextUndoHistory option
 
     /// Is there an open linked undo transaction
     abstract InLinkedUndoTransaction: bool
@@ -660,6 +663,9 @@ type SearchResult =
     /// but wasn't found do to the lack of a wrap in the SearchData value
     | NotFound of SeachData: SearchData * CanFindWithWrap: bool
 
+    /// The search was cancelled
+    | Cancelled of SearchData: SearchData
+
     /// There was an error converting the pattern to a searchable value.  The string value is the
     /// error message
     | Error of SearchData: SearchData * Error: string
@@ -671,6 +677,7 @@ type SearchResult =
         match x with 
         | SearchResult.Found (searchData, _, _, _) -> searchData
         | SearchResult.NotFound (searchData, _) -> searchData
+        | SearchResult.Cancelled (searchData) -> searchData
         | SearchResult.Error (searchData, _) -> searchData
 
 type SearchResultEventArgs(_searchResult: SearchResult) = 
@@ -1351,8 +1358,8 @@ type KeyInputSet
     /// Returns the rest of the KeyInput values after the first
     member x.Rest = 
         match x.KeyInputs with 
-        | [] -> List.Empty
-        | _ :: tail -> tail
+        | [] -> KeyInputSet.Empty
+        | _ :: tail -> KeyInputSet(tail)
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
@@ -1396,7 +1403,7 @@ type KeyInputSet
         while not current.IsEmpty do
             hashCode <- 
                 if hashCode = 1 then current.Head.GetHashCode()
-                else hashCode ^^^ current.Head.GetHashCode()
+                else HashUtil.Combine2 hashCode (current.Head.GetHashCode())
             current <- current.Tail
         hashCode
 
@@ -2924,6 +2931,9 @@ type NormalCommand =
     /// Open all of the folds under the caret
     | OpenAllFoldsUnderCaret
 
+    /// Open link under caret
+    | OpenLinkUnderCaret
+
     /// Open a fold under the caret
     | OpenFoldUnderCaret
 
@@ -3148,6 +3158,7 @@ type NormalCommand =
         | NormalCommand.UndoLine -> None
         | NormalCommand.OpenAllFolds -> None
         | NormalCommand.OpenAllFoldsUnderCaret -> None
+        | NormalCommand.OpenLinkUnderCaret -> None
         | NormalCommand.OpenFoldUnderCaret -> None
         | NormalCommand.ToggleFoldUnderCaret -> None
         | NormalCommand.ToggleAllFolds -> None
@@ -3283,6 +3294,9 @@ type VisualCommand =
     /// Open all folds in the selection
     | OpenAllFoldsInSelection
 
+    /// Open link in selection
+    | OpenLinkInSelection
+
     /// Open one fold in the selection
     | OpenFoldInSelection
 
@@ -3405,6 +3419,9 @@ type InsertCommand  =
     /// Insert of text into the ITextBuffer at the caret position 
     | Insert of Text: string
 
+    /// Insert of literal text into the ITextBuffer at the caret position 
+    | InsertLiteral of Text: string
+
     /// Move the caret in the given direction
     | MoveCaret of Direction: Direction
 
@@ -3486,6 +3503,7 @@ type InsertCommand  =
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
         | InsertCommand.Insert text -> Some (TextChange.Insert text)
+        | InsertCommand.InsertLiteral text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
         | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
@@ -3563,6 +3581,8 @@ and BindData<'T> = {
     BindFunction: KeyInput -> BindResult<'T>
 
 } with
+
+    member x.CreateBindResult() = BindResult.NeedMoreInput x
 
     /// Used for BindData where there can only be a complete result for a given 
     /// KeyInput.
@@ -4069,46 +4089,77 @@ type IJumpList =
     [<CLIEvent>]
     abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
+type IIncrementalSearchSession = 
+
+    /// Key that uniquely identifies this session
+    abstract Key: obj
+
+    /// Whether or not the search has started
+    abstract IsStarted: bool
+
+    /// Whether or not the session is complete. True when the session has finished the search
+    /// or was cancelled.
+    abstract IsCompleted: bool
+
+    /// When in the middle of a search this will return the SearchData for 
+    /// the search
+    abstract SearchData: SearchData 
+
+    /// When a search is complete within the session this will hold the result
+    abstract SearchResult: SearchResult option
+
+    /// Start an incremental search in the ITextView
+    abstract Start: unit -> BindData<SearchResult>
+
+    /// Reset the search to the specified text
+    abstract ResetSearch: searchText: string -> unit
+
+    /// Cancel the session without completing
+    abstract Cancel: unit -> unit
+
+    /// This will resolve to SearchResult for the current value of SearchData once the
+    /// search is complete
+    abstract GetSearchResultAsync: unit -> Task<SearchResult>
+
+    [<CLIEvent>]
+    abstract SearchStart: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+
+    [<CLIEvent>]
+    abstract SearchEnd: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+
+    [<CLIEvent>]
+    abstract SessionComplete: IDelegateEvent<System.EventHandler<EventArgs>>
+
+type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) = 
+    inherit System.EventArgs()
+
+    member x.Session = _session
+
 type IIncrementalSearch = 
 
-    /// True when a search is occurring
-    abstract InSearch: bool
+    /// The active IIncrementalSearchSession
+    abstract ActiveSession: IIncrementalSearchSession option
+
+    /// True when there is an IIncrementalSearchSession in progress
+    abstract HasActiveSession: bool
 
     /// True when the search is in a paste wait state
     abstract InPasteWait: bool
 
-    /// When in the middle of a search this will return the SearchData for 
-    /// the search
-    abstract CurrentSearchData: SearchData 
-
-    /// When in the middle of a search this will return the SearchResult for the 
-    /// search
-    abstract CurrentSearchResult: SearchResult 
-
-    /// When in the middle of a search this will return the actual text which
-    /// is being searched for
-    abstract CurrentSearchText: string
-
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
 
-    /// Begin an incremental search in the ITextView
-    abstract Begin: path: SearchPath -> BindData<SearchResult>
+    abstract CurrentSearchData: SearchData
 
-    /// Cancel an incremental search which is currently in progress
-    abstract Cancel: unit -> unit
+    abstract CurrentSearchText: string
 
-    /// Reset the current search to be the given value 
-    abstract ResetSearch: pattern: string -> unit
+    abstract CreateSession: searchPath: SearchPath -> IIncrementalSearchSession
 
-    [<CLIEvent>]
-    abstract CurrentSearchUpdated: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
+    /// Cancel the active session if there is one.
+    abstract CancelSession: unit -> unit
 
     [<CLIEvent>]
-    abstract CurrentSearchCompleted: IDelegateEvent<System.EventHandler<SearchResultEventArgs>>
-
-    [<CLIEvent>]
-    abstract CurrentSearchCancelled: IDelegateEvent<System.EventHandler<SearchDataEventArgs>>
+    abstract SessionCreated: IDelegateEvent<System.EventHandler<IncrementalSearchSessionEventArgs>>
 
 type RecordRegisterEventArgs(_register: Register, _isAppend: bool) =
     inherit System.EventArgs()
@@ -4640,6 +4691,9 @@ type IVimHost =
     // Open the quick fix window (:cwindow)
     abstract OpenQuickFixWindow: unit -> unit
 
+    /// Open the the specified link
+    abstract OpenLink: link: string -> bool
+
     /// Quit the application
     abstract Quit: unit -> unit
 
@@ -4650,6 +4704,9 @@ type IVimHost =
     /// output
     abstract RunCommand: workingDirectory: string -> file: string -> arguments: string -> input: string -> RunCommandResults
 
+    /// Run C# Script
+    abstract RunCSharpScript: vimBuffer:IVimBuffer -> callInfo: CallInfo -> createEachTime: bool -> unit
+
     /// Run the Visual studio command in the context of the given ITextView
     abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit
 
@@ -4658,12 +4715,6 @@ type IVimHost =
 
     /// Save the current document as a new file with the specified name
     abstract SaveTextAs: text: string -> filePath: string -> bool 
-
-    /// Should the selection be kept after running the given host command?  In general 
-    /// VsVim will clear the selection after a host command because that is the vim
-    /// behavior.  Certain host commands exist to set selection though and clearing that
-    /// isn't desirable
-    abstract ShouldKeepSelectionAfterHostCommand: command: string -> argument: string -> bool 
 
     /// Called by Vim when it encounters a new ITextView and needs to know if it should 
     /// create an IVimBuffer for it
@@ -5449,6 +5500,20 @@ module VimExtensions =
     let IsAnyInsert modeKind = 
         modeKind = ModeKind.Insert ||
         modeKind = ModeKind.Replace
+
+    /// Is this ModeKind any type of Visual
+    [<Extension>]
+    let IsAnyVisual modeKind = 
+        modeKind = ModeKind.VisualCharacter ||
+        modeKind = ModeKind.VisualLine ||
+        modeKind = ModeKind.VisualBlock
+
+    /// Is this ModeKind any type of Select
+    [<Extension>]
+    let IsAnySelect modeKind = 
+        modeKind = ModeKind.SelectCharacter ||
+        modeKind = ModeKind.SelectLine ||
+        modeKind = ModeKind.SelectBlock
 
 module internal VimCoreExtensions =
     

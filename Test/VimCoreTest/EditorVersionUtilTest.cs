@@ -26,6 +26,7 @@ namespace Vim.UnitTest
             Assert.Equal(12, EditorVersionUtil.GetMajorVersionNumber(EditorVersion.Vs2013));
             Assert.Equal(14, EditorVersionUtil.GetMajorVersionNumber(EditorVersion.Vs2015));
             Assert.Equal(15, EditorVersionUtil.GetMajorVersionNumber(EditorVersion.Vs2017));
+            Assert.Equal(16, EditorVersionUtil.GetMajorVersionNumber(EditorVersion.Vs2019));
         }
 
         [Fact]

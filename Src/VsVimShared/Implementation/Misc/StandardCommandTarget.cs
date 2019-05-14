@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text;
@@ -22,12 +23,15 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly ITextManager _textManager;
+        private readonly ICommonOperations _commonOperations;
         private readonly IDisplayWindowBroker _broker;
         private readonly IOleCommandTarget _nextOleCommandTarget;
+        private static readonly Dictionary<KeyInput, Key> s_wpfKeyMap;
 
         internal StandardCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
             ITextManager textManager,
+            ICommonOperations commonOperations,
             IDisplayWindowBroker broker,
             IOleCommandTarget nextOleCommandTarget)
         {
@@ -36,8 +40,24 @@ namespace Vim.VisualStudio.Implementation.Misc
             _textBuffer = _vimBuffer.TextBuffer;
             _textView = _vimBuffer.TextView;
             _textManager = textManager;
+            _commonOperations = commonOperations;
             _broker = broker;
             _nextOleCommandTarget = nextOleCommandTarget;
+        }
+
+        static StandardCommandTarget()
+        {
+            s_wpfKeyMap = new Dictionary<KeyInput, Key>
+            {
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Back), Key.Back },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Up), Key.Up },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Down), Key.Down },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Left), Key.Left },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Right), Key.Right },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Home), Key.Home },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.End), Key.End },
+                { KeyInputUtil.VimKeyToKeyInput(VimKey.Delete), Key.Delete },
+            };
         }
 
         /// <summary>
@@ -134,6 +154,18 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
+            // If we are in a peek defintion window and in command mode, the
+            // command margin text box won't receive certain keys like
+            // backspace as it normally would. Work around this problem by
+            // generating WPF key events for keys that we know should go to the
+            // command margin text box. Reported in issue #2492.
+            if (_vimBuffer.ModeKind == ModeKind.Command &&
+                _textView.IsPeekView() &&
+                TryProcessWithWpf(keyInput))
+            {
+                return true;
+            }
+
             // The only time we actively intercept keys and route them through IOleCommandTarget
             // is when one of the IDisplayWindowBroker windows is active
             //
@@ -179,6 +211,42 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             return handled;
+        }
+
+        /// <summary>
+        /// Try to process the key input with WPF
+        /// </summary>
+        /// <param name="keyInput"></param>
+        /// <returns></returns>
+        private bool TryProcessWithWpf(KeyInput keyInput)
+        {
+            if (s_wpfKeyMap.TryGetValue(keyInput, out Key wpfKey))
+            {
+                var previewDownHandled = InputManager.Current.ProcessInput(
+                    new KeyEventArgs(Keyboard.PrimaryDevice,
+                        Keyboard.PrimaryDevice.ActiveSource,
+                        0,
+                        wpfKey)
+                    {
+                       RoutedEvent = Keyboard.PreviewKeyDownEvent
+                    }
+                );
+                if (previewDownHandled)
+                {
+                    return true;
+                }
+                var downHandled = InputManager.Current.ProcessInput(
+                    new KeyEventArgs(Keyboard.PrimaryDevice,
+                        Keyboard.PrimaryDevice.ActiveSource,
+                        0,
+                        wpfKey)
+                    {
+                       RoutedEvent = Keyboard.KeyDownEvent
+                    }
+                );
+                return downHandled;
+            }
+            return false;
         }
 
         /// <summary>
@@ -295,6 +363,19 @@ namespace Vim.VisualStudio.Implementation.Misc
                         {
                             return true;
                         }
+
+                        // Discard any other unprocessed printable input in
+                        // non-input modes. Without this, Visual Studio will
+                        // see the command as unhandled and will try to handle
+                        // it itself by inserting the character into the
+                        // buffer.
+                        if (editCommand.EditCommandKind == EditCommandKind.UserInput &&
+                            CharUtil.IsPrintable(keyInput.Char) &&
+                            (_vimBuffer.ModeKind == ModeKind.Normal || _vimBuffer.ModeKind.IsAnyVisual()))
+                        {
+                            _commonOperations.Beep();
+                            return true;
+                        }
                     }
                     return false;
                 default:
@@ -349,19 +430,26 @@ namespace Vim.VisualStudio.Implementation.Misc
     internal sealed class StandardCommandTargetFactory : ICommandTargetFactory
     {
         private readonly ITextManager _textManager;
+        private readonly ICommonOperationsFactory _commonOperationsFactory;
         private readonly IDisplayWindowBrokerFactoryService _displayWindowBrokerFactory;
 
         [ImportingConstructor]
-        internal StandardCommandTargetFactory(ITextManager textManager, IDisplayWindowBrokerFactoryService displayWindowBrokerFactory)
+        internal StandardCommandTargetFactory(
+            ITextManager textManager,
+            ICommonOperationsFactory commonOperationsFactory,
+            IDisplayWindowBrokerFactoryService displayWindowBrokerFactory)
         {
             _textManager = textManager;
+            _commonOperationsFactory = commonOperationsFactory;
             _displayWindowBrokerFactory = displayWindowBrokerFactory;
         }
 
         ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator)
         {
-            var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBufferCoordinator.VimBuffer.TextView);
-            return new StandardCommandTarget(vimBufferCoordinator, _textManager, displayWindowBroker, nextCommandTarget);
+            var vimBuffer = vimBufferCoordinator.VimBuffer;
+            var displayWindowBroker = _displayWindowBrokerFactory.GetDisplayWindowBroker(vimBuffer.TextView);
+            var commonOperations = _commonOperationsFactory.GetCommonOperations(vimBuffer.VimBufferData);
+            return new StandardCommandTarget(vimBufferCoordinator, _textManager, commonOperations, displayWindowBroker, nextCommandTarget);
         }
     }
 }

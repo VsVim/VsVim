@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Implementation.SharedService
 {
@@ -21,14 +22,9 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 return false;
             }
 
-            bool ISharedService.IsLazyLoaded(uint documentCookie)
+            void ISharedService.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
-                return false;
-            }
-
-            bool ISharedService.ClosePeekView(ITextView peekView)
-            {
-                return false;
+                vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
             }
 
             bool ISharedService.HasMultipleCarets(ITextView peekView)

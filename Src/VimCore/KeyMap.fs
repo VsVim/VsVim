@@ -113,7 +113,7 @@ type Mapper
             elif not _isZeroMappingEnabled && Mapper.IsFirstKeyInputZero lhs then
                 // 0 mapping is disabled and we have a 0 input so we are done
                 let mappedKeyInputSet = KeyInputUtil.CharToKeyInput '0' |> KeyInputSetUtil.Single
-                let remainingKeyInputSet = lhs.Rest |> KeyInputSetUtil.OfList
+                let remainingKeyInputSet = lhs.Rest
                 successfulMap mappedKeyInputSet remainingKeyInputSet
             else
                 let mapped, remaining = x.ProcessMapping lhs keyMapping
@@ -150,7 +150,7 @@ type Mapper
                     // First character can't be mapped but the rest is still eligible for 
                     // mapping after that character is complete 
                     let mapped = KeyInputSet(lhs.FirstKeyInput.Value)
-                    let remaining = lhs.Rest |> KeyInputSetUtil.OfList
+                    let remaining = lhs.Rest
                     result := KeyMappingResult.PartiallyMapped (mapped, remaining)
                     isDone := true
 
@@ -221,6 +221,13 @@ type internal KeyMap
             let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
             match key, rhs with
             | Some left, Some right ->
+                // Empirically with vim/gvim, <S-$> on the left is never
+                // matched, but <S-$> on the right is treated as '$'. Reported
+                // in issue #2313.
+                let right =
+                    right.KeyInputs
+                    |> Seq.map KeyInputUtil.NormalizeKeyModifiers
+                    |> KeyInputSetUtil.OfSeq
                 let keyMapping = {
                     Left = left
                     Right = right

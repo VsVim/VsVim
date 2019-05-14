@@ -88,7 +88,7 @@ namespace Vim.VisualStudio.Implementation.UpgradeNotification
             {
                 var linkBanner = new LinkBanner
                 {
-                    LinkAddress = "https://github.com/jaredpar/VsVim/wiki/FAQ#vimrc",
+                    LinkAddress = "https://github.com/VsVim/VsVim/wiki/FAQ#vimrc",
                     LinkText = "FAQ",
                     BannerText = "VsVim automatically loaded an existing _vimrc file"
                 };

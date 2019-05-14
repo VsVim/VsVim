@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UI.Wpf
 {
@@ -181,6 +182,19 @@ namespace Vim.UI.Wpf
 
         public abstract void OpenQuickFixWindow();
 
+        public bool OpenLink(string link)
+        {
+            try
+            {
+                Process.Start(link);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
@@ -317,6 +331,8 @@ namespace Vim.UI.Wpf
             }
         }
 
+        public abstract void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
+
         public abstract void RunHostCommand(ITextView textView, string command, string argument);
 
         public virtual bool Save(ITextBuffer textBuffer)
@@ -350,11 +366,6 @@ namespace Vim.UI.Wpf
         public virtual bool ShouldIncludeRcFile(VimRcPath vimRcPath)
         {
             return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
-        }
-
-        public virtual bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return false;
         }
 
         public virtual bool SaveTextAs(string text, string filePath)
@@ -649,6 +660,11 @@ namespace Vim.UI.Wpf
             return GoToDefinition();
         }
 
+        bool IVimHost.OpenLink(string link)
+        {
+            return OpenLink(link);
+        }
+
         bool IVimHost.GoToGlobalDeclaration(ITextView textView, string identifier)
         {
             return GoToGlobalDeclaration(textView, identifier);
@@ -724,6 +740,11 @@ namespace Vim.UI.Wpf
             return RunCommand(workingDirectory, command, arguments, input);
         }
 
+        void IVimHost.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScript(vimBuffer, callInfo, createEachTime);
+        }
+
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)
         {
             RunHostCommand(textView, command, argument);
@@ -737,11 +758,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
             return SaveTextAs(text, filePath);
-        }
-
-        bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)

@@ -184,27 +184,31 @@ type ExpressionInterpreter
             | None -> VariableValue.Error
             | Some setting -> x.GetValueOfSetting setting
         | Expression.VariableName name -> x.GetValueOfVariable name.Name
+        | Expression.EnvironmentVariableName name ->
+            match SystemUtil.TryGetEnvironmentVariable name with
+            | None -> VariableValue.Error
+            | Some value -> VariableValue.String value
         | Expression.RegisterName name -> x.GetValueOfRegister name
         | Expression.FunctionCall(name, args) -> runExpression args |> _functionCaller.Call name
         | Expression.List expressions -> runExpression expressions |> VariableValue.List 
 
     /// Run the binary expression
     member x.RunBinaryExpression binaryKind (leftExpr: Expression) (rightExpr: Expression) = 
-
+        
+        // Actually it seems that the user doesn't see these messages
+        // and see a generic expression interpreting error instead
+        // as the error status is updated later...
         let notSupported() =
             _statusUtil.OnError "Binary operation not supported at this time"
             VariableValue.Error
 
-        let runAdd (leftValue: VariableValue) (rightValue: VariableValue) = 
-            if leftValue.VariableType = VariableType.List && rightValue.VariableType = VariableType.List then
-                // it's a list concatenation
-                notSupported()
-            else
-                let leftNumber = _getValue.ConvertToNumber leftValue
-                let rightNumber = _getValue.ConvertToNumber rightValue
-                match leftNumber, rightNumber with
-                | Some left, Some right -> left + right |> VariableValue.Number
-                | _ -> VariableValue.Error
+        let divByZero() =
+            _statusUtil.OnError Resources.Interpreter_DivByZero
+            VariableValue.Error
+
+        let modByZero() =
+            _statusUtil.OnError Resources.Interpreter_ModByZero
+            VariableValue.Error
 
         let runConcat (leftValue: VariableValue) (rightValue: VariableValue) =
             let leftString = _getValue.ConvertToString leftValue
@@ -213,16 +217,53 @@ type ExpressionInterpreter
             | Some left, Some right -> left + right |> VariableValue.String 
             | _ -> VariableValue.Error
             
+        let runNumericBinary (leftValue: VariableValue) (rightValue: VariableValue) (binaryKind: BinaryKind) = 
+            if leftValue.VariableType = VariableType.List || rightValue.VariableType = VariableType.List then
+                notSupported()
+            else
+                let leftNumber = _getValue.ConvertToNumber leftValue
+                let rightNumber = _getValue.ConvertToNumber rightValue
+                match leftNumber, rightNumber, binaryKind with
+                | Some left, Some right, BinaryKind.Add -> left + right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Subtract -> left - right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Multiply -> left * right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Divide when right = 0 -> divByZero() 
+                | Some left, Some right, BinaryKind.Divide -> left / right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.Modulo when right = 0 -> modByZero() 
+                | Some left, Some right, BinaryKind.Modulo -> left % right |> VariableValue.Number
+                | Some left, Some right, BinaryKind.GreaterThan -> left > right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.LessThan -> left < right |> System.Convert.ToInt32 |> VariableValue.Number
+                | _ -> VariableValue.Error
+
+        let runStringEquality (leftValue: VariableValue) (rightValue: VariableValue) (binaryKind: BinaryKind) = 
+            if leftValue.VariableType = VariableType.List || rightValue.VariableType = VariableType.List then
+                notSupported()
+            else
+                let leftString = _getValue.ConvertToString leftValue
+                let rightString = _getValue.ConvertToString rightValue
+                match leftString, rightString, binaryKind with
+                | Some left, Some right, BinaryKind.Equal ->
+                    left = right |> System.Convert.ToInt32 |> VariableValue.Number
+                | Some left, Some right, BinaryKind.NotEqual ->
+                    left <> right |> System.Convert.ToInt32 |> VariableValue.Number
+                | _ -> VariableValue.Error
 
         let leftValue = x.RunExpression leftExpr
         let rightValue = x.RunExpression rightExpr
         match binaryKind with
-        | BinaryKind.Add -> runAdd leftValue rightValue
-        | BinaryKind.Concatenate -> runConcat leftValue rightValue
-        | BinaryKind.Divide -> notSupported()
-        | BinaryKind.Modulo -> notSupported()
-        | BinaryKind.Multiply -> notSupported()
-        | BinaryKind.Subtract -> notSupported()
+        | BinaryKind.Concatenate ->
+            runConcat leftValue rightValue
+        | BinaryKind.Add
+        | BinaryKind.Divide
+        | BinaryKind.Modulo
+        | BinaryKind.Multiply
+        | BinaryKind.Subtract
+        | BinaryKind.GreaterThan
+        | BinaryKind.LessThan ->
+            runNumericBinary leftValue rightValue binaryKind
+        | BinaryKind.Equal
+        | BinaryKind.NotEqual ->
+            runStringEquality leftValue rightValue binaryKind
 
 [<Sealed>]
 [<Class>]
@@ -509,6 +550,13 @@ type VimInterpreter
         let autoCommands = List.append _vimData.AutoCommands newList
         _vimData.AutoCommands <- autoCommands
 
+    /// Move in a linewise fashion to point, preserving spaces or obeying
+    /// 'startofline'
+    member x.MoveLinewiseToPoint point =
+        let spaces = _commonOperations.GetSpacesToCaret()
+        _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded))
+        _commonOperations.RestoreSpacesToCaret spaces true
+
     /// Run the behave command
     member x.RunBehave model = 
         match model with 
@@ -523,6 +571,9 @@ type VimInterpreter
             _globalSettings.KeyModelOptions <- KeyModelOptions.None
             _globalSettings.Selection <- "inclusive"
         | _ -> _statusUtil.OnError (Resources.Interpreter_InvalidArgument model)
+
+    member x.RunCSharpScript (callInfo :CallInfo, createEachTime :bool) = 
+        _vimHost.RunCSharpScript _vimBuffer callInfo createEachTime
 
     member x.RunCall (callInfo: CallInfo) = 
         _statusUtil.OnError (Resources.Interpreter_CallNotSupported callInfo.Name)
@@ -635,16 +686,19 @@ type VimInterpreter
     /// Copy the text from the source address to the destination address
     member x.RunCopyTo sourceLineRange destLineRange count =
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "CopyTo" (fun sourceLineRange destPoint text ->
-
+            let spaces = _commonOperations.GetSpacesToCaret()
             let destTextBuffer = destPoint.Snapshot.TextBuffer
             destTextBuffer.Insert(destPoint.Position, text) |> ignore
-            x.MoveCaretToPositionOrStartOfLine destPoint.Position)
+            new SnapshotPoint(_textBuffer.CurrentSnapshot, destPoint.Position)
+            |> (fun point -> _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+            _commonOperations.RestoreSpacesToCaret spaces true)
 
     /// Move the text from the source address to the destination address
     member x.RunMoveTo sourceLineRange destLineRange count =
         x.RunCopyOrMoveTo sourceLineRange destLineRange count "MoveTo" (fun sourceLineRange destPoint text ->
 
             // Perform the move.
+            let spaces = _commonOperations.GetSpacesToCaret()
             let destTextBuffer = destPoint.Snapshot.TextBuffer
             let sourceTextBuffer = sourceLineRange.Start.Snapshot.TextBuffer
             use edit = destTextBuffer.CreateEdit()
@@ -665,7 +719,9 @@ type VimInterpreter
                 match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
                 | Some destPoint -> destPoint.Position
                 | None -> destPoint.Position
-                |> x.MoveCaretToPositionOrStartOfLine)
+                |> (fun position -> new SnapshotPoint(_textBuffer.CurrentSnapshot, position))
+                |> (fun point -> _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+                _commonOperations.RestoreSpacesToCaret spaces true)
 
     /// Compose two line commands
     member x.RunCompose lineCommand1 lineCommand2 =
@@ -673,17 +729,6 @@ type VimInterpreter
         x.RunLineCommand lineCommand1
         x.RunLineCommand lineCommand2
         transaction.Complete()
-
-    /// Move caret to position or the first non-blank on line if 'startofline' is set
-    member x.MoveCaretToPositionOrStartOfLine position =
-        if _globalSettings.StartOfLine then
-            SnapshotPoint(_textBuffer.CurrentSnapshot, position)
-            |> SnapshotPointUtil.GetContainingLine
-            |> SnapshotLineUtil.GetFirstNonBlankOrStart
-            |> SnapshotPointUtil.GetPosition
-        else
-            position
-        |> TextViewUtil.MoveCaretToPosition _textView
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
@@ -1155,8 +1200,90 @@ type VimInterpreter
         let count = x.GetCountOrDefault count
         _commonOperations.GoToNextTab SearchPath.Backward count
 
-    member x.RunHelp () = 
-        _statusUtil.OnStatus "For help on VsVim, please visit the Wiki page (https://github.com/jaredpar/VsVim/wiki)"
+    /// Show VsVim help on the specified subject
+    member x.RunHelp subject = 
+        let wiki = "https://github.com/VsVim/VsVim/wiki"
+        let link = wiki
+        _vimHost.OpenLink link |> ignore
+        _statusUtil.OnStatus "For help on Vim, use :vimhelp"
+
+    /// Show Vim help on the specified subject
+    member x.RunVimHelp (subject: string) = 
+        let subject = subject.Replace("*", "star")
+
+        // Function to find a vim installation folder
+        let findVimFolder specialFolder =
+            try
+                let folder =
+                    match specialFolder with
+                    | System.Environment.SpecialFolder.ProgramFiles ->
+                        match System.Environment.GetEnvironmentVariable("ProgramW6432") with
+                        | null -> System.Environment.GetFolderPath(specialFolder)
+                        | folder -> folder
+                    | _ -> System.Environment.GetFolderPath(specialFolder)
+                let vimFolder = System.IO.Path.Combine(folder, "Vim")
+                if System.IO.Directory.Exists(vimFolder) then
+                    let latest =
+                        System.IO.Directory.EnumerateDirectories vimFolder
+                        |> Seq.map (fun pathName -> System.IO.Path.GetFileName(pathName))
+                        |> Seq.filter (fun folder ->
+                            folder.StartsWith("vim", System.StringComparison.OrdinalIgnoreCase))
+                        |> Seq.sortByDescending (fun folder ->
+                            folder.Substring(3)
+                            |> Seq.takeWhile CharUtil.IsDigit
+                            |> System.String.Concat
+                            |> int)
+                        |> Seq.tryHead
+                    match latest with
+                    | Some folder -> System.IO.Path.Combine(vimFolder, folder) |> Some
+                    | None -> None
+                else
+                    None
+            with
+            | _ -> None
+
+        // Find a vim installation folder, checking native first
+        let vimFolder =
+            match findVimFolder System.Environment.SpecialFolder.ProgramFiles with
+            | Some folder -> Some folder
+            | None -> findVimFolder System.Environment.SpecialFolder.ProgramFilesX86
+
+        // Load the default help
+        let loadDefaultHelp vimDoc =
+            let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
+            _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
+
+        match vimFolder with
+        | Some vimFolder ->
+
+            // We found an installation folder for vim.
+            let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
+            if StringUtil.IsNullOrEmpty subject then
+                loadDefaultHelp vimDoc
+                _statusUtil.OnStatus "For help on VsVim, use :help"
+            else
+
+                // Try to navigate to the tag.
+                match _commonOperations.GoToTagInNewWindow vimDoc subject with
+                | Result.Succeeded ->
+                    ()
+
+                | Result.Failed message ->
+
+                    // Load the default help and report the error.
+                    loadDefaultHelp vimDoc
+                    _statusUtil.OnError message
+
+        | None ->
+
+            // We cannot find an installation folder for vim so use the web.
+            // Ideally we would use vimhelp.org here, but it doesn't support a
+            // tag-based search API.
+            let subject = System.Net.WebUtility.UrlEncode(subject)
+            let doc = "http://vimdoc.sourceforge.net/search.php"
+            let link = sprintf "%s?search=%s&docs=help" doc subject
+            _vimHost.OpenLink link |> ignore
+            _statusUtil.OnStatus "For help on VsVim, use :help"
 
     /// Print out the applicable history information
     member x.RunHistory () = 
@@ -1194,13 +1321,7 @@ type VimInterpreter
     /// Jump to the last line of the specified line range
     member x.RunJumpToLastLine lineRange = 
         x.RunWithLooseLineRangeOrDefault lineRange DefaultLineRange.CurrentLine (fun lineRange ->
-
-            // Make sure we jump to the first non-blank on this line
-            let point = 
-                lineRange.LastLine
-                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
-
-            _commonOperations.MoveCaretToPoint point (ViewFlags.Standard &&& (~~~ViewFlags.TextExpanded)))
+            x.MoveLinewiseToPoint lineRange.LastLine.Start)
 
     /// Run the let command
     member x.RunLet (name: VariableName) expr =
@@ -1437,12 +1558,12 @@ type VimInterpreter
     member x.RunRetab lineRange includeSpaces tabStop =
 
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
-            // If the user explicitly specified a 'tabstop' it becomes the new value.  Do this before
-            // we re-tab the line so the new value will be used
-            match tabStop with
-            | None -> ()
-            | Some tabStop -> _localSettings.TabStop <- tabStop
-    
+
+            let newTabStop =
+                match tabStop with
+                | None -> _localSettings.TabStop
+                | Some tabStop -> tabStop
+
             let snapshot = lineRange.Snapshot
     
             // First break into a sequence of SnapshotSpan values which contain only space and tab
@@ -1458,7 +1579,8 @@ type VimInterpreter
                     else
                         point |> SnapshotPointUtil.AddOne |> nextPoint 
     
-                Seq.unfold (fun point ->
+                lineRange.Start
+                |> Seq.unfold (fun point ->
                     match nextPoint point with
                     | None ->
                         None
@@ -1470,7 +1592,7 @@ type VimInterpreter
                             |> Seq.skipWhile SnapshotPointUtil.IsBlank
                             |> SeqUtil.headOrDefault lineRange.End
                         let span = SnapshotSpan(startPoint, endPoint)
-                        Some (span, endPoint)) lineRange.Start
+                        Some (span, endPoint))
                 |> Seq.filter (fun span -> 
     
                     // Filter down to the SnapshotSpan values which contain tabs or spaces
@@ -1488,10 +1610,17 @@ type VimInterpreter
             use edit = _textBuffer.CreateEdit()
             for span in spans do
                 let oldText = span.GetText()
-                let newText = _commonOperations.NormalizeBlanks oldText
+                let spacesToColumn = _commonOperations.GetSpacesToPoint span.Start
+                let newText = _commonOperations.NormalizeBlanksForNewTabStop oldText spacesToColumn newTabStop
                 edit.Replace(span.Span, newText) |> ignore
     
-            edit.Apply() |> ignore)
+            edit.Apply() |> ignore
+
+            // If the user explicitly specified a 'tabstop' it becomes the new value.
+            match tabStop with
+            | None -> ()
+            | Some tabStop -> _localSettings.TabStop <- tabStop)
+    
 
     /// Run the search command in the given direction
     member x.RunSearch lineRange path pattern = 
@@ -1515,14 +1644,10 @@ type VimInterpreter
     
             match result with
             | SearchResult.Found (searchData, span, _, _) ->
-                // Move it to the start of the line containing the match 
-                let point = 
-                    span.Start 
-                    |> SnapshotPointUtil.GetContainingLine 
-                    |> SnapshotLineUtil.GetFirstNonBlankOrStart
-                _commonOperations.MoveCaretToPoint point ViewFlags.Standard
+                x.MoveLinewiseToPoint span.Start
                 _vimData.LastSearchData <- searchData
             | SearchResult.NotFound _ -> ()
+            | SearchResult.Cancelled _ -> ()
             | SearchResult.Error _ -> ())
 
     /// Run the :set command.  Process each of the arguments 
@@ -1883,8 +2008,19 @@ type VimInterpreter
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
         _statusUtil.OnStatus msg
 
-    member x.RunHostCommand command argument =
+    member x.RunHostCommand hasBang command argument =
         _vimHost.RunHostCommand _textView command argument
+        if hasBang && not _textView.Selection.IsEmpty then
+
+            // When clearing the selection after a host command, move the caret
+            // to the start of the selection because the selected text usually
+            // represents a "thing" (such as an identifier or group of text
+            // lines). The caret resting on the start of that thing better
+            // mimics the selection concept than putting the caret at the end
+            // of the thing.
+            let start = _textView.Selection.Start
+            _textView.Selection.Clear()
+            TextViewUtil.MoveCaretToVirtualPoint _textView start
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
         x.RunWithLineRangeOrDefault lineRange DefaultLineRange.EntireBuffer (fun lineRange ->
@@ -1957,10 +2093,12 @@ type VimInterpreter
         | LineCommand.Call callInfo -> x.RunCall callInfo
         | LineCommand.ChangeDirectory path -> x.RunChangeDirectory path
         | LineCommand.ChangeLocalDirectory path -> x.RunChangeLocalDirectory path
-        | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2
-        | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList) -> x.RunClearKeyMap keyRemapModes mapArgumentList
         | LineCommand.Close hasBang -> x.RunClose hasBang
+        | LineCommand.Compose (lineCommand1, lineCommand2) -> x.RunCompose lineCommand1 lineCommand2
+        | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
+        | LineCommand.CSharpScript callInfo -> x.RunCSharpScript(callInfo, createEachTime = false)
+        | LineCommand.CSharpScriptCreateEachTime callInfo -> x.RunCSharpScript(callInfo, createEachTime = true)
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange registerName
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
@@ -1980,7 +2118,8 @@ type VimInterpreter
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
-        | LineCommand.Help -> x.RunHelp()
+        | LineCommand.Help subject -> x.RunHelp subject
+        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()
@@ -1990,7 +2129,7 @@ type VimInterpreter
         | LineCommand.GoToNextTab count -> x.RunGoToNextTab count
         | LineCommand.GoToPreviousTab count -> x.RunGoToPreviousTab count
         | LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewHorizontally fileOptions commandOptions
-        | LineCommand.HostCommand (command, argument) -> x.RunHostCommand command argument
+        | LineCommand.HostCommand (hasBang, command, argument) -> x.RunHostCommand hasBang command argument
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine lineRange -> x.RunJumpToLastLine lineRange
         | LineCommand.Let (name, value) -> x.RunLet name value

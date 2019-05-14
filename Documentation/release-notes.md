@@ -1,7 +1,7 @@
 # Release Notes
 
 ### Version 2.6.0
-[Issues closed in milestone 2.6.0](https://github.com/jaredpar/VsVim/milestone/45?closed=1)
+[Issues closed in milestone 2.6.0](https://github.com/VsVim/VsVim/milestone/45?closed=1)
 Primary Issues Addressed
 * Visual Studio 2019 support
 * Mark display in the editor margin
@@ -10,7 +10,7 @@ Primary Issues Addressed
 
 
 ### Version 2.5.0
-[Issues closed in milestone 2.5.0](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
+[Issues closed in milestone 2.5.0](https://github.com/VsVim/VsVim/milestone/47?closed=1)
 
 Primary Issues Addressed
 * Support for the `.` register 
@@ -19,21 +19,21 @@ Primary Issues Addressed
 * Lots of infrastructure issues 
 
 ### Version 2.4.1
-[Issues closed in milestone 2.4.1](https://github.com/jaredpar/VsVim/milestone/47?closed=1)
+[Issues closed in milestone 2.4.1](https://github.com/VsVim/VsVim/milestone/47?closed=1)
 
 Primary Issues Addressed
 * `Escape` not leaving Visual Mode
 * License file changed to txt from rtf
 
 ### Version 2.4.0
-[Issues closed in milestone 2.4.0](https://github.com/jaredpar/VsVim/milestone/46?closed=1)
+[Issues closed in milestone 2.4.0](https://github.com/VsVim/VsVim/milestone/46?closed=1)
 
 Primary Issues Addressed
 * `gt` and `gT` support in VS 2017
 * Exception opening files in VS 2017
 
 ### Version 2.2.0
-[Issues closed in milestone 2.2.0](https://github.com/jaredpar/VsVim/milestone/44?closed=1)
+[Issues closed in milestone 2.2.0](https://github.com/VsVim/VsVim/milestone/44?closed=1)
 
 Primary Issues Addressed
 * Basic telemetry support
@@ -41,7 +41,7 @@ Primary Issues Addressed
 * Key mappings and completion in insert mode
 
 ### Version 2.1.0
-[Issues closed in milestone 2.1.0](https://github.com/jaredpar/VsVim/issues?q=milestone%3A2.1.0+is%3Aclosed)
+[Issues closed in milestone 2.1.0](https://github.com/VsVim/VsVim/issues?q=milestone%3A2.1.0+is%3Aclosed)
 
 Primary Issues Addressed
 * Clean macro recording
@@ -50,14 +50,14 @@ Patched Issues in 2.1.1
 * Many selection issues involving end of line
 
 ### Version 2.0.0
-[Issues closed in milestone 2.0.0](https://github.com/jaredpar/VsVim/issues?q=milestone%3A2.0.0)
+[Issues closed in milestone 2.0.0](https://github.com/VsVim/VsVim/issues?q=milestone%3A2.0.0)
 
 Primary Issues Addressed
 * Many fixes to the block motion
 * VS 2015 support 
 
 ### Version 1.8.0
-[Issues closed in milestone 1.8.0](https://github.com/jaredpar/VsVim/issues?q=milestone%3A1.8.0+is%3Aclosed)
+[Issues closed in milestone 1.8.0](https://github.com/VsVim/VsVim/issues?q=milestone%3A1.8.0+is%3Aclosed)
 
 Primary Issues Addressed
 * Rewrote regex replace code to support many more Vim features
@@ -65,7 +65,7 @@ Primary Issues Addressed
 * Undo bug fixes
 
 ### Version 1.7.1
-[Issues closed in milestone 1.7.1](https://github.com/jaredpar/VsVim/issues?q=milestone%3A1.7.1+is%3Aclosed)
+[Issues closed in milestone 1.7.1](https://github.com/VsVim/VsVim/issues?q=milestone%3A1.7.1+is%3Aclosed)
 
 Primary Issues Addressed
 * Better comment support in vimrc
@@ -77,7 +77,7 @@ Patched Issues in 1.7.1.1
 * Double click selection issue
 
 ### Version 1.7.0
-[Issues closed in milestone 1.7.0](https://github.com/jaredpar/VsVim/issues?milestone=40&page=1&state=closed)
+[Issues closed in milestone 1.7.0](https://github.com/VsVim/VsVim/issues?milestone=40&page=1&state=closed)
 
 Primary Issues Addressed
 * VsVim now has a proper options page (Tools -> Options) 
@@ -87,7 +87,7 @@ Primary Issues Addressed
 * Word wrap glyph support 
 
 ### Version 1.6.0
-[Issues closed in milestone 1.6.0](https://github.com/jaredpar/VsVim/issues?milestone=39&page=1&state=closed)
+[Issues closed in milestone 1.6.0](https://github.com/VsVim/VsVim/issues?milestone=39&page=1&state=closed)
 
 Primary Issues Addressed
 * Added support for `backspace` and `whichwrap`
@@ -108,7 +108,7 @@ Patched Issues in 1.6.0.3
 * Support for Dev14 
 
 ### Version 1.5.0
-[Issues closed in milestone 1.5.0](https://github.com/jaredpar/VsVim/issues?milestone=38&page=1&state=closed)
+[Issues closed in milestone 1.5.0](https://github.com/VsVim/VsVim/issues?milestone=38&page=1&state=closed)
 
 Primary Issues Addressed
 * Search offsets 
@@ -118,7 +118,7 @@ Primary Issues Addressed
 * Support for Peek Definition Window
 
 ### Version 1.4.2
-[Issues closed in milestone 1.4.2](https://github.com/jaredpar/VsVim/issues?milestone=36&page=1&state=closed)
+[Issues closed in milestone 1.4.2](https://github.com/VsVim/VsVim/issues?milestone=36&page=1&state=closed)
 
 Primary Issues Addressed
 * Support for scrolloff setting
@@ -127,7 +127,7 @@ Primary Issues Addressed
 * :wa not saving properly in html files
 
 ### Version 1.4.1
-[Issues closed in milestone 1.4.1](https://github.com/jaredpar/VsVim/issues?milestone=35&page=1&state=closed)
+[Issues closed in milestone 1.4.1](https://github.com/VsVim/VsVim/issues?milestone=35&page=1&state=closed)
 
 Primary Issues Addressed
 * Block selection and tab / wide character issues
@@ -138,7 +138,7 @@ Primary Issues Addressed
 * Perf issues around block caret drawing
 
 ### Version 1.4.0
-[Issues closed in milestone 1.4.0](https://github.com/jaredpar/VsVim/issues?milestone=33&page=1&state=closed)
+[Issues closed in milestone 1.4.0](https://github.com/VsVim/VsVim/issues?milestone=33&page=1&state=closed)
 
 Primary Issues Addressed
 * Basic autocmd support ([[Details|AutoCmd support]])
@@ -147,7 +147,7 @@ Primary Issues Addressed
 * Better support for `)` motions
 
 ### Version 1.3.3
-[Issues closed in milestone 1.3.3](https://github.com/jaredpar/VsVim/issues?milestone=32&page=1&state=closed)
+[Issues closed in milestone 1.3.3](https://github.com/VsVim/VsVim/issues?milestone=32&page=1&state=closed)
 
 Primary Issues Addressed
 * vimrc entries not being properly handled
@@ -168,7 +168,7 @@ Patched Issues (1.3.3.3)
 * Fixed live template support in Resharper
 
 ### Version 1.3.2
-[Issues closed in milestone 1.3.2](https://github.com/jaredpar/VsVim/issues?milestone=29&page=1&state=closed)
+[Issues closed in milestone 1.3.2](https://github.com/VsVim/VsVim/issues?milestone=29&page=1&state=closed)
 
 Primary Issues Addressed
 * Navigation issues with C style pragma directives
@@ -178,7 +178,7 @@ Primary Issues Addressed
 * Several bugs around handling of `shiftwidth` and `tabstop`
 
 ### Version 1.3.1
-[Issues closed in milestone 1.3.1](https://github.com/jaredpar/VsVim/issues?milestone=27&page=1&state=closed)
+[Issues closed in milestone 1.3.1](https://github.com/VsVim/VsVim/issues?milestone=27&page=1&state=closed)
 
 Primary Issues Addressed
 * Non-English keyboard handling
@@ -197,7 +197,7 @@ Patched Issues (1.3.1.3)
 * gt, gT, tabn weren't working on 2010
 
 ### Version 1.3.0
-[Issues closed in milestone 1.3](https://github.com/jaredpar/VsVim/issues?milestone=23&state=closed)
+[Issues closed in milestone 1.3](https://github.com/VsVim/VsVim/issues?milestone=23&state=closed)
 
 Primary Issues Addressed
 * Key Handling
@@ -217,7 +217,7 @@ Patched Issues (1.3.0.2)
 * Certain key mappings not working in insert mode
 
 ### Version 1.2.2
-[Issues closed in milestone 1.2.2](https://github.com/jaredpar/VsVim/issues?milestone=25&state=closed)
+[Issues closed in milestone 1.2.2](https://github.com/VsVim/VsVim/issues?milestone=25&state=closed)
 
 Primary Issues Addressed
 
@@ -226,7 +226,7 @@ Primary Issues Addressed
 * Support for Mind Scape workbench files
 
 ### Version 1.2.1
-[Issues closed in milestone 1.2.1](https://github.com/jaredpar/VsVim/issues?milestone=24&state=closed)
+[Issues closed in milestone 1.2.1](https://github.com/VsVim/VsVim/issues?milestone=24&state=closed)
 
 Primary Issues Addressed
 
@@ -236,7 +236,7 @@ Primary Issues Addressed
 * Repeating commands resulted in intellisense being displayed
 
 ### Version 1.2
-[Issues closed in milestone 1.2](https://github.com/jaredpar/VsVim/issues?milestone=20&state=closed)
+[Issues closed in milestone 1.2](https://github.com/VsVim/VsVim/issues?milestone=20&state=closed)
 
 Primary Issues Addressed
 
@@ -251,7 +251,7 @@ Primary Issues Addressed
 * Continued performance tuning of :hlsearch
 
 ### Version 1.1.2
-[Issues closed in milestone 1.1.2](https://github.com/jaredpar/VsVim/issues?sort=created&direction=desc&state=closed&page=1&milestone=22)
+[Issues closed in milestone 1.1.2](https://github.com/VsVim/VsVim/issues?sort=created&direction=desc&state=closed&page=1&milestone=22)
 
 Primary Issues Addressed
 
@@ -261,7 +261,7 @@ Primary Issues Addressed
 * Tab on new line inserts tab on previous line
 
 ### Version 1.1.1
-[Issues closed in milestone 1.1.1](https://github.com/jaredpar/VsVim/issues?milestone=19&sort=created&direction=desc&state=closed)
+[Issues closed in milestone 1.1.1](https://github.com/VsVim/VsVim/issues?milestone=19&sort=created&direction=desc&state=closed)
 
 Primary Issues Addressed
 
@@ -278,7 +278,7 @@ Primary Issues Addressed
 * VsVim not running on machines with only Visual Studio 11 installed
 
 ### Version 1.1.0
-[Issues closed in milestone 1.1](https://github.com/jaredpar/VsVim/issues?sort=created&direction=desc&state=closed&page=1&milestone=10)
+[Issues closed in milestone 1.1](https://github.com/VsVim/VsVim/issues?sort=created&direction=desc&state=closed&page=1&milestone=10)
 
 Primary Issues Addressed
 
@@ -290,7 +290,7 @@ Primary Issues Addressed
 * Support added for Dev11 preview
 
 ### Version 1.0.3
-[Issues closed in milestone 1.0.3](https://github.com/jaredpar/VsVim/issues?milestone=17&state=closed)
+[Issues closed in milestone 1.0.3](https://github.com/VsVim/VsVim/issues?milestone=17&state=closed)
 
 Primary Issues Addressed
 
@@ -299,7 +299,7 @@ Primary Issues Addressed
 * Enter and Back were causing issues with R# in certain scenarios
 
 ### Version 1.0.2
-[Issues closed in milestone 1.0.2](https://github.com/jaredpar/VsVim/issues?milestone=16&state=closed)
+[Issues closed in milestone 1.0.2](https://github.com/VsVim/VsVim/issues?milestone=16&state=closed)
 
 Primary Issues Addressed
 

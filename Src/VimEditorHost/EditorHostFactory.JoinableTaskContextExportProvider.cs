@@ -1,5 +1,4 @@
-﻿#if VS2017
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
@@ -46,4 +45,3 @@ namespace Vim.EditorHost
         }
     }
 }
-#endif

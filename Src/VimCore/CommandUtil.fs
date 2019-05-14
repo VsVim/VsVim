@@ -136,7 +136,7 @@ type internal CommandUtil
 
     /// Add count values to the specific word
     member x.AddToWord count =
-        match x.AddToWordAtPoint x.CaretPoint count with
+        match x.AddToWordAtPointInSpan x.CaretPoint x.CaretLine.Extent count with
         | Some (span, text) ->
 
             // Need a transaction here in order to properly position the caret.
@@ -169,7 +169,7 @@ type internal CommandUtil
                         count * (index + 1)
                     else
                         count
-                match x.AddToWordAtPoint span.Start countForIndex with
+                match x.AddToWordAtPointInSpan span.Start span countForIndex with
                 | Some (span, text) ->
                     edit.Replace(span.Span, text) |> ignore
                 | None ->
@@ -181,9 +181,9 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Add count values to the specific word
-    member x.AddToWordAtPoint point count: (SnapshotSpan * string) option =
+    member x.AddToWordAtPointInSpan point span count: (SnapshotSpan * string) option =
 
-        match x.GetNumberValueAtPoint point with
+        match x.GetNumberAtPointInSpan point span with
         | Some (numberValue, span) ->
 
             // Calculate the new value of the number.
@@ -266,7 +266,7 @@ type internal CommandUtil
         let indent =
             x.CaretLine
             |> SnapshotLineUtil.GetIndentText
-            |> _commonOperations.NormalizeBlanks
+            |> (fun text -> _commonOperations.NormalizeBlanks text 0)
 
         // Adjust the indentation on a given line of text to have the indentation
         // previously calculated
@@ -781,8 +781,21 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete the selected text from the buffer and put it into the specified
-    /// register.
-    member x.DeleteLineSelection registerName (visualSpan: VisualSpan) =
+    /// register
+    member x.DeleteLineSelection registerName visualSpan =
+        match visualSpan with
+        | VisualSpan.Line range ->
+
+            // Hand off linewise deletion to common operations to handle
+            // caret positioning uniformly.
+            _commonOperations.DeleteLines range.StartLine range.Count registerName
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        | _ ->
+            x.DeleteLineSelectionNonLinewise registerName visualSpan
+
+    /// Delete the non-linewise selected text from the buffer and put it into
+    /// the specified register
+    member x.DeleteLineSelectionNonLinewise registerName (visualSpan: VisualSpan) =
 
         // For each of the 3 cases the caret should begin at the start of the
         // VisualSpan during undo so move the caret now.
@@ -831,10 +844,23 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
-    /// Delete the highlighted text from the buffer and put it into the specified
-    /// register.  The caret should be positioned at the beginning of the text for
-    /// undo / redo
-    member x.DeleteSelection registerName (visualSpan: VisualSpan) =
+    /// Delete the highlighted text from the buffer and put it into the
+    /// specified register
+    member x.DeleteSelection registerName visualSpan =
+        match visualSpan with
+        | VisualSpan.Line range ->
+
+            // Hand off linewise deletion to common operations to handle
+            // caret positioning uniformly.
+            _commonOperations.DeleteLines range.StartLine range.Count registerName
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        | _ ->
+            x.DeleteSelectionNonLinewise registerName visualSpan
+
+    /// Delete the non-linewise highlighted text from the buffer and put it
+    /// into the specified register.  The caret should be positioned at the
+    /// beginning of the text for undo / redo
+    member x.DeleteSelectionNonLinewise registerName (visualSpan: VisualSpan) =
         let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
@@ -956,15 +982,23 @@ type internal CommandUtil
             else
                 span, result.OperationKind
 
-        // Caret should be placed at the start of the motion for both undo / redo so place it
-        // before starting the transaction
-        TextViewUtil.MoveCaretToPoint _textView span.Start
-        x.EditWithUndoTransaction "Delete" (fun () ->
-            _textBuffer.Delete(span.Span) |> ignore
+        match operationKind with
+        | OperationKind.CharacterWise ->
 
-            // Translate the point to the current snapshot.
-            let point = span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
-            _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            x.EditWithUndoTransaction "Delete" (fun () ->
+                _textBuffer.Delete(span.Span) |> ignore
+
+                // Translate the point to the current snapshot.
+                let point = span.Start.TranslateTo(_textBuffer.CurrentSnapshot, PointTrackingMode.Negative)
+                _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
+
+        | OperationKind.LineWise ->
+
+            // Perform the deletion operation using common operations in order
+            // to handle the various cases.
+            let lineRange = SnapshotLineRangeUtil.CreateForSpan span
+            _commonOperations.DeleteLines lineRange.StartLine lineRange.Count None
 
         // Update the register with the result so long as something was actually deleted
         // from the buffer
@@ -1328,7 +1362,7 @@ type internal CommandUtil
     member x.GetRegister name = _commonOperations.GetRegister name
 
     member x.GetNumberValueAtCaret(): (NumberValue * SnapshotSpan) option =
-        x.GetNumberValueAtPoint x.CaretPoint
+        x.GetNumberAtPointInSpan x.CaretPoint x.CaretLine.Extent
 
     /// Get the number value at the specified point.  This is used for the
     /// CTRL-A and CTRL-X command so it will look forward on the current line
@@ -1336,22 +1370,20 @@ type internal CommandUtil
     ///
     /// TODO: Need to integrate the parsing functions here with that of the
     /// tokenizer which also parses out the same set of numbers
-    member x.GetNumberValueAtPoint point: (NumberValue * SnapshotSpan) option =
-        let line = SnapshotPointUtil.GetContainingLine point
-        let startPosition = line.Start.Position
-        let index = point.Position - startPosition
+    member x.GetNumberAtPointInSpan point span: (NumberValue * SnapshotSpan) option =
 
         // Get the match from the line with the given regex for the first
         // number that contains the point or begins after the point.
         let getNumber numberValue numberPattern parseFunc =
-            line
-            |> SnapshotLineUtil.GetText
+            let index = point.Position - span.Start.Position
+            span
+            |> SnapshotSpanUtil.GetText
             |> (fun text -> RegularExpressions.Regex.Matches(text, numberPattern))
             |> Seq.cast<RegularExpressions.Match>
             |> Seq.tryFind (fun m ->
                 index >= m.Index && index < m.Index + m.Length || index < m.Index)
             |> Option.map (fun m ->
-                let span = SnapshotSpan(point.Snapshot, startPosition + m.Index, m.Length)
+                let span = SnapshotSpan(span.Snapshot, span.Start.Position + m.Index, m.Length)
                 let succeeded, number = parseFunc m.Value
                 if succeeded then
                     Some (numberValue number, span)
@@ -1361,12 +1393,12 @@ type internal CommandUtil
 
         // Get the point for a decimal number.
         let getDecimal () =
-            getNumber NumberValue.Decimal @"-?\d+\b" (fun text ->
+            getNumber NumberValue.Decimal @"(?<!\d)-?\d+" (fun text ->
                 System.Int64.TryParse(text))
 
         // Get the point for a hex number.
         let getHex () =
-            getNumber NumberValue.Hex @"\b0[xX][0-9a-fA-F]+\b" (fun text ->
+            getNumber NumberValue.Hex @"(?<!\d)0[xX][0-9a-fA-F]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text.Substring(2), 16)
                 with
@@ -1375,7 +1407,7 @@ type internal CommandUtil
 
         // Get the point for an octal number.
         let getOctal () =
-            getNumber NumberValue.Octal @"\b0[0-7]+\b" (fun text ->
+            getNumber NumberValue.Octal @"(?<!\d)0[0-7]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text, 8)
                 with
@@ -1384,13 +1416,17 @@ type internal CommandUtil
 
         // Get the point for an binary number.
         let getBinary () =
-            getNumber NumberValue.Binary @"\b0[bB][0-1]+\b" (fun text ->
+            getNumber NumberValue.Binary @"(?<!\d)0[bB][0-1]+" (fun text ->
                 try
                     true, System.Convert.ToUInt64(text.Substring(2), 2)
                 with
                 | _ ->
                     false, 0UL)
 
+        // Choose the earliest match from the supported formats, breaking ties
+        // with the longest match. For example, "0x27" matches as both a hex
+        // number and a decimal number (just the leading zero), but the hex
+        // match is longer. Reported in issue #2529.
         let number =
             seq {
                 yield getBinary, NumberFormat.Binary
@@ -1402,6 +1438,8 @@ type internal CommandUtil
                 _localSettings.IsNumberFormatSupported numberFormat)
             |> Seq.map (fun (func, _) -> func())
             |> SeqUtil.filterToSome
+            |> Seq.sortByDescending (fun (_, span) -> span.Length)
+            |> Seq.sortBy (fun (_, span) -> span.Start.Position)
             |> SeqUtil.tryHeadOnly
 
         match number with
@@ -1412,7 +1450,7 @@ type internal CommandUtil
 
                 // Now check for alpha by going forward to the first alpha
                 // character.
-                SnapshotSpan(point, line.EndIncludingLineBreak)
+                SnapshotSpan(point, span.End)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> Seq.skipWhile (fun point ->
                     point
@@ -1754,13 +1792,13 @@ type internal CommandUtil
             else
                 point
                 |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetFirstNonBlankOrStart
+                |> SnapshotLineUtil.GetFirstNonBlankOrEnd
                 |> VirtualSnapshotPointUtil.OfPoint
 
         // Jump to the given point in the ITextBuffer
         let jumpLocal (point: VirtualSnapshotPoint) =
             let point = adjustPointForExact point
-            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.Standard
+            _commonOperations.MoveCaretToVirtualPoint point ViewFlags.All
             _jumpList.Add before
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -2120,6 +2158,27 @@ type internal CommandUtil
     member x.OpenAllFoldsInSelection (visualSpan: VisualSpan) =
         let span = visualSpan.LineRange.ExtentIncludingLineBreak
         _foldManager.OpenAllFolds span
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Open link in selection
+    member x.OpenLinkInSelection (visualSpan: VisualSpan) =
+        let openLink link =
+            if _vimHost.OpenLink link then
+                ()
+            else
+                Resources.Common_GotoDefFailed link
+                |> _statusUtil.OnError
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
+        match visualSpan with
+        | VisualSpan.Character span -> span.Span.GetText() |> openLink
+        | VisualSpan.Line span -> span.GetText() |> openLink
+        | VisualSpan.Block _ -> CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Open link under caret
+    member x.OpenLinkUnderCaret () =
+        match _commonOperations.OpenLinkUnderCaret() with
+        | Result.Succeeded -> ()
+        | Result.Failed(msg) -> _statusUtil.OnError msg
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
@@ -2494,7 +2553,7 @@ type internal CommandUtil
     member x.RepeatLastCommand (repeatData: CommandData) =
 
         // Chain the running of the next command on the basis of the success of
-        // the previous command
+        // the previous command.
         let chainCommand commandResult runNextCommand =
             match commandResult with
             | CommandResult.Error ->
@@ -2506,43 +2565,25 @@ type internal CommandUtil
                 | _ -> ()
                 runNextCommand ()
 
-        // Repeating an insert command is a bit different than repeating a normal command because
-        // of the way the caret position is handled.  Every insert command ends with a move left
-        // on the caret.  When repeating this move left is only done once though.
-        let repeatInsert command count =
-            let command, doMoveLeft =
-                match command with
-                | InsertCommand.Combined (leftCommand, rightCommand) ->
-                    match leftCommand with
-                    | InsertCommand.MoveCaret Direction.Left -> rightCommand, true
-                    | _ -> command, false
-                | _ -> command, false
-
-            // Run the commands in sequence.  Only continue onto the second if the first
-            // command succeeds.  We do want any actions performed in the linked commands
-            // to remain linked so do this inside of an edit transaction
-            let rec func count commandResult =
-                if count = 0 then
-                    commandResult
-                else
-                    chainCommand commandResult (fun () -> func (count - 1) (_insertUtil.RunInsertCommand command))
-
-            let commandResult = func (count - 1) (_insertUtil.RunInsertCommand command)
-
-            if doMoveLeft then
-                chainCommand commandResult (fun () -> _insertUtil.RunInsertCommand (InsertCommand.MoveCaret Direction.Left))
+        // Repeat an insertion sub-command the specified number of times.
+        let rec repeatInsert command count =
+            let commandResult = _insertUtil.RunInsertCommand command
+            if count >= 2 then
+                chainCommand commandResult (fun () -> repeatInsert command (count - 1))
             else
                 commandResult
 
-        // Function to actually repeat the last change
+        // Actually repeat the last change.
         let rec repeat (storedCommand: StoredCommand) (repeatData: CommandData option) =
 
-            // Before repeating a command it needs to be updated in the context of the repeat operation. This
-            // includes recalculating the visual span and considering explicit counts that are passed into
-            // the repeat operation.
+            // Before repeating a command it needs to be updated in the context
+            // of the repeat operation. This includes recalculating the visual
+            // span and considering explicit counts that are passed into the
+            // repeat operation.
             //
-            // When a count is passed to repeat then it acts as if it was the only count passed to the original
-            // command. This overrides the original count or counts passed to motion operators.
+            // When a count is passed to repeat then it acts as if it was the
+            // only count passed to the original command. This overrides the
+            // original count or counts passed to motion operators.
             let repeatCount =
                 match repeatData with
                 | None -> None
@@ -2567,8 +2608,9 @@ type internal CommandUtil
                     | NormalCommand.PutBeforeCaretWithIndent
                         ->
 
-                        // Special case when redoing positive numbered register puts:
-                        // increment the register number (see vim ':help redo-register').
+                        // Special case when redoing positive numbered register
+                        // puts: increment the register number (see vim ':help
+                        // redo-register').
                         match data.RegisterName with
                         | Some (RegisterName.Numbered numberedRegister) ->
                             match numberedRegister.NextPositive with
@@ -2585,6 +2627,7 @@ type internal CommandUtil
                     | _ ->
                         data
                 x.RunNormalCommand command data
+
             | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) ->
                 let data =
                     match repeatCount with
@@ -2592,21 +2635,35 @@ type internal CommandUtil
                     | None -> data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
-            | StoredCommand.InsertCommand (command, _) ->
 
+            | StoredCommand.InsertCommand (command, _) ->
                 let count =
                     match repeatData with
                     | Some repeatData -> repeatData.CountOrDefault
                     | None -> 1
-
                 repeatInsert command count
+
             | StoredCommand.LinkedCommand (command1, command2) ->
 
-                // Run the commands in sequence.  Only continue onto the second if the first
-                // command succeeds.  We do want any actions performed in the linked commands
-                // to remain linked so do this inside of an edit transaction
+                // Run the first command using the supplied repeat data. This
+                // might be for example, 'change word', and with a repeat count
+                // of two, we will change two words.
                 let commandResult = repeat command1 repeatData
-                chainCommand commandResult (fun () -> repeat command2 None)
+
+                // Check whether the command completed with a switch to insert
+                // mode with a count. If so (as with 'insert before'), then
+                // apply that count toward the next command. Otherwise (as with
+                // 'change word'), execute the next without any repeat data.
+                let repeatData =
+                    match commandResult with
+                    | CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)) ->
+                        Some { CommandData.Default with Count = Some count }
+                    | _ ->
+                        None
+
+                // Run the next command in sequence.  Only continue onto the
+                // second if the first command succeeded.
+                chainCommand commandResult (fun () -> repeat command2 repeatData)
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
@@ -2939,6 +2996,7 @@ type internal CommandUtil
         | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
+        | NormalCommand.OpenLinkUnderCaret -> x.OpenLinkUnderCaret()
         | NormalCommand.OpenFoldUnderCaret -> x.OpenFoldUnderCaret data.CountOrDefault
         | NormalCommand.Ping pingData -> x.Ping pingData data
         | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret registerName count moveCaretAfterText
@@ -3028,6 +3086,7 @@ type internal CommandUtil
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
+        | VisualCommand.OpenLinkInSelection -> x.OpenLinkInSelection visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
@@ -3072,35 +3131,6 @@ type internal CommandUtil
                 // Mark set can fail if the user chooses a readonly mark like '<'
                 _commonOperations.Beep()
             CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Get the current number of spaces to caret we are maintaining
-    member x.GetSpacesToCaret () =
-        let spacesToCaret = _commonOperations.GetSpacesToVirtualColumn x.CaretVirtualColumn
-        match _commonOperations.MaintainCaretColumn with
-        | MaintainCaretColumn.None -> spacesToCaret
-        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
-        | MaintainCaretColumn.EndOfLine -> spacesToCaret
-
-    /// Restore spaces to caret, or move to start of line if 'startofline' is set
-    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
-
-        // First apply scroll offset.
-        _commonOperations.AdjustCaretForScrollOffset()
-
-        // At this point the view has been scolled and the caret is on the proper line.  Need to
-        // adjust the caret within the line to the appropriate column
-        if useStartOfLine && _globalSettings.StartOfLine then
-            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
-            TextViewUtil.MoveCaretToPoint _textView point
-        else
-            let virtualColumn = 
-                if _vimTextBuffer.UseVirtualSpace then
-                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
-                else
-                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
-                    VirtualSnapshotColumn(column)
-            TextViewUtil.MoveCaretToVirtualPoint _textView virtualColumn.VirtualStartPoint
-            _commonOperations.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Get the number lines in the current window
     member x.GetWindowLineCount (textViewLines: ITextViewLineCollection) =
@@ -3153,7 +3183,7 @@ type internal CommandUtil
         let minCount = 1
         let count = max count minCount
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         // Update the caret to the specified offset from the first visible line if possible
         let updateCaretToOffset lineOffset =
@@ -3216,7 +3246,13 @@ type internal CommandUtil
                     updateCaretToOffset lineOffset
             | _ -> ()
 
-            x.RestoreSpacesToCaret spacesToCaret true
+            // First apply scroll offset.
+            _commonOperations.AdjustCaretForScrollOffset()
+
+            // At this point the view has been scrolled and the caret is on the
+            // proper line.  Need to adjust the caret within the line to the
+            // appropriate column.
+            _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3289,7 +3325,7 @@ type internal CommandUtil
                 else
                     lastLine
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         match getIsUp direction with
         | None ->
@@ -3333,7 +3369,13 @@ type internal CommandUtil
                 // Move the caret to the beginning of that line.
                 _textView.Caret.MoveTo(line.Start) |> ignore
 
-                x.RestoreSpacesToCaret spacesToCaret true
+                // First apply scroll offset.
+                _commonOperations.AdjustCaretForScrollOffset()
+
+                // At this point the view has been scrolled and the caret is on
+                // the proper line.  Need to adjust the caret within the line
+                // to the appropriate column.
+                _commonOperations.RestoreSpacesToCaret spacesToCaret true
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3406,7 +3448,7 @@ type internal CommandUtil
         // it should always be at least at big as count.
         let rowCount = max rowCount count
 
-        let spacesToCaret = x.GetSpacesToCaret()
+        let spacesToCaret = _commonOperations.GetSpacesToCaret()
 
         x.ScrollViewportVerticallyByLines direction rowCount
 
@@ -3422,7 +3464,13 @@ type internal CommandUtil
                     TextViewUtil.MoveCaretToPoint _textView lineRange.Start
             | _ -> ()
 
-            x.RestoreSpacesToCaret spacesToCaret false
+            // First apply scroll offset.
+            _commonOperations.AdjustCaretForScrollOffset()
+
+            // At this point the view has been scrolled and the caret is on the
+            // proper line.  Need to adjust the caret within the line to the
+            // appropriate column.
+            _commonOperations.RestoreSpacesToCaret spacesToCaret false
 
         CommandResult.Completed ModeSwitch.NoSwitch
 

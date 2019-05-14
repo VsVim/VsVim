@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using EnvDTE80;
 using System.Windows.Threading;
 using System.Diagnostics;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -85,7 +86,7 @@ namespace Vim.VisualStudio
                     default:
                         Debug.Assert(false);
                         return SettingValue.NewToggle(false);
-               }
+                }
             }
 
             SettingValue IVimCustomSettingSource.GetSettingValue(string name)
@@ -172,13 +173,19 @@ namespace Vim.VisualStudio
             public IVimApplicationSettings VimApplicationSettings { get; }
             public IMarkDisplayUtil MarkDisplayUtil { get; }
             public IControlCharUtil ControlCharUtil { get; }
+            public IClipboardDevice ClipboardDevice { get; }
 
             [ImportingConstructor]
-            public SettingsSync(IVimApplicationSettings vimApplicationSettings, IMarkDisplayUtil markDisplayUtil, IControlCharUtil controlCharUtil)
+            public SettingsSync(
+                IVimApplicationSettings vimApplicationSettings,
+                IMarkDisplayUtil markDisplayUtil,
+                IControlCharUtil controlCharUtil,
+                IClipboardDevice clipboardDevice)
             {
                 VimApplicationSettings = vimApplicationSettings;
                 MarkDisplayUtil = markDisplayUtil;
                 ControlCharUtil = controlCharUtil;
+                ClipboardDevice = clipboardDevice;
 
                 MarkDisplayUtil.HideMarksChanged += SyncToApplicationSettings;
                 ControlCharUtil.DisplayControlCharsChanged += SyncToApplicationSettings;
@@ -194,6 +201,7 @@ namespace Vim.VisualStudio
                 {
                     VimApplicationSettings.HideMarks = MarkDisplayUtil.HideMarks;
                     VimApplicationSettings.DisplayControlChars = ControlCharUtil.DisplayControlChars;
+                    VimApplicationSettings.ReportClipboardErrors = ClipboardDevice.ReportErrors;
                 });
             }
 
@@ -203,8 +211,9 @@ namespace Vim.VisualStudio
                 {
                     MarkDisplayUtil.HideMarks = VimApplicationSettings.HideMarks;
                     ControlCharUtil.DisplayControlChars = VimApplicationSettings.DisplayControlChars;
+                    ClipboardDevice.ReportErrors = VimApplicationSettings.ReportClipboardErrors;
                 });
-           }
+            }
 
             private void SyncAction(Action action)
             {
@@ -226,6 +235,7 @@ namespace Vim.VisualStudio
         #endregion
 
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
+        internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
         private readonly IVsAdapter _vsAdapter;
         private readonly ITextManager _textManager;
@@ -239,7 +249,9 @@ namespace Vim.VisualStudio
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private readonly IVsRunningDocumentTable _runningDocumentTable;
         private readonly IVsShell _vsShell;
+        private readonly ICommandDispatcher _commandDispatcher;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly IClipboardDevice _clipboardDevice;
         private readonly SettingsSync _settingsSync;
         private IVim _vim;
 
@@ -303,7 +315,9 @@ namespace Vim.VisualStudio
             IProtectedOperations protectedOperations,
             IMarkDisplayUtil markDisplayUtil,
             IControlCharUtil controlCharUtil,
-            SVsServiceProvider serviceProvider)
+            ICommandDispatcher commandDispatcher,
+            SVsServiceProvider serviceProvider,
+            IClipboardDevice clipboardDevice)
             : base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
@@ -319,13 +333,15 @@ namespace Vim.VisualStudio
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
             _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
             _protectedOperations = protectedOperations;
+            _commandDispatcher = commandDispatcher;
+            _clipboardDevice = clipboardDevice;
 
             _vsMonitorSelection.AdviseSelectionEvents(this, out uint selectionCookie);
             _runningDocumentTable.AdviseRunningDocTableEvents(this, out uint runningDocumentTableCookie);
 
             InitOutputPane();
 
-            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil);
+            _settingsSync = new SettingsSync(vimApplicationSettings, markDisplayUtil, controlCharUtil, _clipboardDevice);
             _settingsSync.SyncFromApplicationSettings();
         }
 
@@ -337,7 +353,7 @@ namespace Vim.VisualStudio
             // The output window is not guaraneed to be accessible on startup. On certain configurations of VS2015
             // it can throw an exception. Delaying the creation of the Window until after startup has likely 
             // completed. Additionally using IProtectedOperations to guard against exeptions 
-            // https://github.com/jaredpar/VsVim/issues/2249
+            // https://github.com/VsVim/VsVim/issues/2249
 
             _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
 
@@ -358,7 +374,7 @@ namespace Vim.VisualStudio
                         outputPane.OutputString(e.Message + Environment.NewLine);
                     }
                 };
-            } 
+            }
         }
 
         public override void EnsurePackageLoaded()
@@ -377,92 +393,30 @@ namespace Vim.VisualStudio
             CloseAllOtherTabs(textView); // At least for now, :only == :tabonly
         }
 
-        private bool SafeExecuteCommand(ITextView contextTextView, string command, string args = "")
+        private bool SafeExecuteCommand(ITextView textView, string command, string args = "")
         {
+            bool postCommand = false;
+            if (textView != null && textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                if (command.Equals(CommandNameGoToDefinition, StringComparison.OrdinalIgnoreCase) ||
+                    command.Equals(CommandNameGoToDeclaration, StringComparison.OrdinalIgnoreCase))
+                {
+                    // C++ commands like 'Edit.GoToDefinition' need to be
+                    // posted instead of executed and they need to have a null
+                    // argument in order to work like it does when bound to a
+                    // keyboard shortcut like 'F12'. Reported in issue #2535.
+                    postCommand = true;
+                    args = null;
+                }
+            }
+
             try
             {
-                // Many Visual Studio commands expect focus to be in the editor when 
-                // running.  Switch focus there if an appropriate ITextView is available
-                if (contextTextView is IWpfTextView wpfTextView)
-                {
-                    wpfTextView.VisualElement.Focus();
-                }
-
-                _dte.ExecuteCommand(command, args);
-                return true;
+                return _commandDispatcher.ExecuteCommand(textView, command, args, postCommand);
             }
             catch
             {
                 return false;
-            }
-        }
-
-        /// <summary>  
-        /// Get the C++ identifier which exists under the caret 
-        /// </summary>
-        private static string GetCPlusPlusIdentifier(ITextView textView)
-        {
-            var snapshot = textView.TextSnapshot;
-            bool isValid(int position)
-            {
-                if (position < 0 || position >= snapshot.Length)
-                {
-                    return false;
-                }
-
-                var c = snapshot[position];
-                return char.IsLetter(c) || char.IsDigit(c) || c == '_';
-            }
-
-            var start = textView.Caret.Position.BufferPosition.Position;
-            if (!isValid(start))
-            {
-                return null;
-            }
-
-            var end = start + 1;
-            while (isValid(end))
-            {
-                end++;
-            }
-
-            while (isValid(start - 1))
-            {
-                start--;
-            }
-
-            var span = new SnapshotSpan(snapshot, start, end - start);
-            return span.GetText();
-        }
-
-        /// <summary>
-        /// The C++ project system requires that the target of GoToDefinition be passed
-        /// as an argument to the command.  
-        /// </summary>
-        private bool GoToDefinitionCPlusPlus(ITextView textView, string target)
-        {
-            if (target == null)
-            {
-                target = GetCPlusPlusIdentifier(textView);
-            }
-
-            if (target != null)
-            {
-                return SafeExecuteCommand(textView, CommandNameGoToDefinition, target);
-            }
-
-            return SafeExecuteCommand(textView, CommandNameGoToDefinition);
-        }
-
-        private bool GoToDefinitionCore(ITextView textView, string target)
-        {
-            if (textView.TextBuffer.ContentType.IsCPlusPlus())
-            {
-                return GoToDefinitionCPlusPlus(textView, target);
-            }
-            else
-            {
-                return SafeExecuteCommand(textView, CommandNameGoToDefinition);
             }
         }
 
@@ -514,7 +468,7 @@ namespace Vim.VisualStudio
 
         public override bool GoToDefinition()
         {
-            return GoToDefinitionCore(_textManager.ActiveTextViewOptional, null);
+            return SafeExecuteCommand(_textManager.ActiveTextViewOptional, CommandNameGoToDefinition);
         }
 
         /// <summary>
@@ -772,6 +726,11 @@ namespace Vim.VisualStudio
         public override void Quit()
         {
             _dte.Quit();
+        }
+
+        public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            _sharedService.RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)
@@ -1066,15 +1025,38 @@ namespace Vim.VisualStudio
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)
         {
-            return GoToDefinitionCore(textView, target);
+            // The difference between global and local declarations in vim is a
+            // heuristic one that is irrelevant when using a language service
+            // that precisely understands the semantics of the program being
+            // edited.
+            //
+            // At the semantic level, local variables have local declarations
+            // and global variables have global declarations, and so it is
+            // never ambiguous whether the given variable or function is local
+            // or global. It is only at the syntactic level that ambiguity
+            // could arise.
+            return GoToDeclaration(textView, target);
         }
 
         public override bool GoToLocalDeclaration(ITextView textView, string target)
         {
-            // This is technically incorrect as it should prefer local declarations. However 
-            // there is currently no better way in Visual Studio.  Added this method though
-            // so it's easier to plug in later should such an API become available
-            return GoToDefinitionCore(textView, target);
+            return GoToDeclaration(textView, target);
+        }
+
+        private bool GoToDeclaration(ITextView textView, string target)
+        {
+            // The 'Edit.GoToDeclaration' is not widely implemented (for
+            // example, C# does not implement it), and so we use
+            // 'Edit.GoToDefinition' unless we are sure the language service
+            // supports declarations.
+            if (textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                return SafeExecuteCommand(textView, CommandNameGoToDeclaration, target);
+            }
+            else
+            {
+                return SafeExecuteCommand(textView, CommandNameGoToDefinition, target);
+            }
         }
 
         public override void VimCreated(IVim vim)
@@ -1140,24 +1122,6 @@ namespace Vim.VisualStudio
                     Contract.Assert(false);
                     return base.ShouldIncludeRcFile(vimRcPath);
             }
-        }
-
-        public override bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            if (_extensionAdapterBroker.ShouldKeepSelectionAfterHostCommand(command, argument) ?? false)
-            {
-                return true;
-            }
-
-            var comparer = StringComparer.OrdinalIgnoreCase;
-            if (comparer.Equals(command, "Edit.SurroundWith"))
-            {
-                // Need to keep the selection here so the surround with command knows the selection
-                // to surround.
-                return true;
-            }
-
-            return base.ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
         #region IVsSelectionEvents

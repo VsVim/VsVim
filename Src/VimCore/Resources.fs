@@ -30,6 +30,7 @@ module internal Resources =
     let Common_SelectionInvalid = "An invalid selection was detected"
     let Common_SearchForwardWrapped = "search hit BOTTOM, continuing at TOP"
     let Common_SearchBackwardWrapped = "search hit TOP, continuing at BOTTOM"
+    let Common_SearchCancelled = "Search was cancelled"
     let Common_SearchHitBottomWithout name = sprintf "search hit BOTTOM without match for: %s" name
     let Common_SearchHitTopWithout name = sprintf "search hit TOP without match for: %s" name
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
@@ -118,6 +119,8 @@ module internal Resources =
     let Interpreter_CallNotSupported name = sprintf ":call to function %s not supported" name
     let Interpreter_KeyMappingOptionNotSupported x = sprintf "Key mapping option is not supported: '%s'" x
     let Interpreter_InvalidConversionToString t = sprintf "Using %s as a String" t
+    let Interpreter_DivByZero = "Attempt to divide by zero. Not supported."
+    let Interpreter_ModByZero = "Attempt to mod by zero. Not supported."
 
     let Regex_Unknown = "Unknown error building regex"
     let Regex_UnmatchedParen = "Unmatched ("

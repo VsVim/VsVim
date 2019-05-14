@@ -24,7 +24,7 @@ namespace Vim.UI.Wpf.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             
             _search = _factory.Create<IIncrementalSearch>();
-            _search.SetupGet(x => x.InSearch).Returns(false);
+            _search.SetupGet(x => x.HasActiveSession).Returns(false);
             
             _normalMode = _factory.Create<INormalMode>();
             _normalMode.SetupGet(x => x.Command).Returns(string.Empty);

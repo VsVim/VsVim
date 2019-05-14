@@ -50,8 +50,11 @@ type internal CommandMode
                 command
 
         let lineCommand = _parser.ParseLineCommand command 
+
+        // We clear the selection for all line commands except a host command,
+        // which manages any selection clearing itself.
         match lineCommand with
-        | LineCommand.HostCommand (command, argument) -> _keepSelection <- _vimHost.ShouldKeepSelectionAfterHostCommand command argument
+        | LineCommand.HostCommand _ -> _keepSelection <- true
         | _ -> ()
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
@@ -170,7 +173,7 @@ type internal CommandMode
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSetUtil.Single
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
-        member x.CanProcess keyInput = not keyInput.IsMouseKey
+        member x.CanProcess keyInput = KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()

@@ -8,11 +8,11 @@ type internal DisabledMode(_vimBufferData: IVimBufferData) =
     let _globalSettings = _localSettings.GlobalSettings
     
     member x.HelpString = 
-        let ki = _globalSettings.DisableAllCommand
-        if VimKeyModifiers.None = ki.KeyModifiers then 
-            sprintf "Vim Disabled. Type %s to re-enable" (ki.Key.ToString())
+        let keyInput = _globalSettings.DisableAllCommand
+        if VimKeyModifiers.None = keyInput.KeyModifiers then 
+            sprintf "Vim Disabled. Type %s to re-enable" (keyInput.Key.ToString())
         else
-            sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.KeyModifiers.ToString())
+            sprintf "Vim Disabled. Type %s+%s to re-enable" (keyInput.Key.ToString()) (keyInput.KeyModifiers.ToString())
 
     member x.Process keyInput = 
         if keyInput = _globalSettings.DisableAllCommand then
@@ -25,7 +25,7 @@ type internal DisabledMode(_vimBufferData: IVimBufferData) =
         member x.HelpMessage = x.HelpString
         member x.ModeKind = ModeKind.Disabled        
         member x.CommandNames = Seq.singleton (KeyInputSet(_globalSettings.DisableAllCommand))
-        member x.CanProcess ki = ki = _globalSettings.DisableAllCommand
+        member x.CanProcess keyInput = keyInput = _globalSettings.DisableAllCommand
         member x.Process keyInput = x.Process keyInput
         member x.OnEnter _  = ()
         member x.OnLeave() = ()

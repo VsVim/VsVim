@@ -346,6 +346,7 @@ type internal InsertUtil
         x.RunBackspacingCommand InsertCommand.DeleteWordBeforeCursor
 
     member x.Insert text =
+        _operations.FillInVirtualSpace()
         if _editorOperations.InsertText(text) then
             if _localSettings.EndOfLine then
 
@@ -433,7 +434,9 @@ type internal InsertUtil
                     // If there is actual text on this new line (enter in the middle of the
                     // line) then we need to insert white space.  Else we just put the caret
                     // into virtual space
-                    let indentText = StringUtil.Repeat indent " " |> _operations.NormalizeBlanks
+                    let indentText =
+                        StringUtil.Repeat indent " "
+                        |> (fun text -> _operations.NormalizeBlanks text 0)
                     if indentText.Length > 0 && newLine.Length > 0 then
                         _textBuffer.Insert(newLine.Start.Position, indentText) |> ignore
                         TextViewUtil.MoveCaretToPosition _textView (newLine.Start.Position + indentText.Length)
@@ -480,7 +483,7 @@ type internal InsertUtil
             // is currently on an indent boundary then we add a full indent, otherwise we just move
             // out to the end of the current indent
             let addedSpaces = 
-                let caretSpaces = _operations.GetSpacesToColumn x.CaretColumn
+                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
                 let remainder = caretSpaces % indentSpaces
                 indentSpaces - remainder
 
@@ -493,7 +496,7 @@ type internal InsertUtil
                     _textBuffer.Insert(x.CaretPoint.Position, text) |> ignore
                     caretPosition
                  else
-                    // When inserting tabs though spaces before the caret are actually normalized into spaces if
+                    // When inserting tabs the spaces before the caret are actually normalized into spaces if
                     // we've hit a tab boundary which is defined by 'tabstop'
                     let insertColumn = 
                         let mutable column = x.CaretColumn
@@ -633,6 +636,7 @@ type internal InsertUtil
             | InsertCommand.DeleteAllIndent -> x.DeleteAllIndent() 
             | InsertCommand.DeleteWordBeforeCursor -> x.DeleteWordBeforeCursor()
             | InsertCommand.Insert text -> x.Insert text 
+            | InsertCommand.InsertLiteral text -> x.Insert text 
             | InsertCommand.InsertCharacterAboveCaret -> x.InsertCharacterAboveCaret()
             | InsertCommand.InsertCharacterBelowCaret -> x.InsertCharacterBelowCaret()
             | InsertCommand.InsertNewLine -> x.InsertNewLine()
@@ -666,7 +670,7 @@ type internal InsertUtil
 
         // Convert spaces, tabs and virtual space to a column
         let column = 
-            (_operations.NormalizeBlanksToSpaces (indentSpan.GetText())).Length +
+            (_operations.NormalizeBlanksToSpaces (indentSpan.GetText()) 0).Length +
                 if isBlankLine && x.CaretVirtualPoint.IsInVirtualSpace then
                     x.CaretVirtualPoint.VirtualSpaces
                 else
@@ -685,7 +689,7 @@ type internal InsertUtil
         // Replace the current indent with a new indent
         let newColumn = max (column + offset) 0
         let spaces = StringUtil.RepeatChar newColumn ' '
-        let indent = _operations.NormalizeBlanks spaces
+        let indent = _operations.NormalizeBlanks spaces 0
 
         x.EditWithUndoTransaction "Shift line" (fun () ->
             _textBuffer.Replace(indentSpan.Span, indent) |> ignore
@@ -868,7 +872,7 @@ type internal InsertUtil
             // Backspacing over white space.  If everything between here and the previous tab boundary
             // is indent then take it all.  
             let tabBoundarySpaces = 
-                let caretSpaces = _operations.GetSpacesToColumn x.CaretColumn
+                let caretSpaces = _operations.GetSpacesToPoint x.CaretPoint
                 let remainder = caretSpaces % _localSettings.SoftTabStop 
                 if remainder = 0 then 
                     caretSpaces - _localSettings.SoftTabStop

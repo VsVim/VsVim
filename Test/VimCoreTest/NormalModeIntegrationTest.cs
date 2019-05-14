@@ -9,6 +9,7 @@ using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -1749,6 +1750,26 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// When using a named register, the unnamed register has the same
+            /// value, even when appending
+            /// </summary>
+            [WpfFact]
+            public void UnnamedRegisterActsLikeLastRegister()
+            {
+                // Reported in issue #2480.
+                Create("cat", "dog", "");
+                _vimBuffer.Process("\"cyw");
+                Assert.Equal("cat", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
+                Assert.Equal("cat", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
+                Assert.Equal("cat", UnnamedRegister.StringValue);
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("\"Cyw");
+                Assert.Equal("catdog", _vimBuffer.RegisterMap.GetRegister('c').StringValue);
+                Assert.Equal("catdog", _vimBuffer.RegisterMap.GetRegister('C').StringValue);
+                Assert.Equal("catdog", UnnamedRegister.StringValue);
+            }
+
+            /// <summary>
             /// An empty last line is treated the same as one which contains text
             /// </summary>
             [WpfFact]
@@ -1830,7 +1851,7 @@ namespace Vim.UnitTest
                 Create("cat", "");
                 _vimBuffer.ProcessNotation("y/<Esc>");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
             }
         }
 
@@ -2792,6 +2813,19 @@ namespace Vim.UnitTest
                     Assert.Equal("  cat", _textBuffer.GetLine(0).GetText());
                     Assert.Equal("dog", _textBuffer.GetLine(1).GetText());
                 }
+
+                /// <summary>
+                /// Key modifiers in the right hand side of mappings are normalized
+                /// </summary>
+                [WpfFact]
+                public void NormalizedRightHandSide()
+                {
+                    // Reported in issue #2313.
+                    Create("cat", "dog", "");
+                    _vimBuffer.Process(":map nn <S-$>", enter: true);
+                    _vimBuffer.Process("nn");
+                    Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
             }
         }
 
@@ -3131,6 +3165,19 @@ namespace Vim.UnitTest
                 Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
                 _vimBuffer.Process("'a");
                 Assert.Equal(_textBuffer.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Jumping to a mark on a completely blank line with ' should jump
+            /// to the end of the line
+            /// </summary>
+            [WpfFact]
+            public void JumpToCompletelyBlankLine()
+            {
+                Create("cat", "        ");
+                Vim.MarkMap.SetLocalMark('a', _vimBufferData, 1, 3);
+                _vimBuffer.Process("'a");
+                Assert.Equal(_textBuffer.GetPointInLine(1, 7), _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -4136,11 +4183,12 @@ namespace Vim.UnitTest
                 /// at the end of the string
                 /// </summary>
                 [WpfFact]
-                public void CaseInsensitiveAtEndOfSearhString()
+                public async Task CaseInsensitiveAtEndOfSearhString()
                 {
                     Create("cat dog bear");
                     _vimBuffer.Process("/DOG");
-                    Assert.True(_vimBuffer.IncrementalSearch.CurrentSearchResult.IsNotFound);
+                    await _vimBuffer.IncrementalSearch.GetSearchCompleteAsync();
+                    Assert.True(_vimBuffer.IncrementalSearch.ActiveSession.Value.SearchResult.Value.IsNotFound);
                     _vimBuffer.Process(@"\c", enter: true);
                     Assert.Equal(4, _textView.GetCaretPoint().Position);
                 }
@@ -4632,6 +4680,37 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("/big/;/dog", enter: true);
                     Assert.Equal(8, _textView.GetCaretPoint().Position);
                     Assert.Equal("dog", _vimData.LastSearchData.Pattern);
+                }
+            }
+
+            public sealed class IncrementalMiscTest : IncrementalSearchTest
+            {
+                [WpfFact]
+                public void KeyRemapMode_CommandInIncrementalSearch()
+                {
+                    Create("foobar");
+                    _vimBuffer.Process('/');
+                    Assert.Equal(KeyRemapMode.Command, _normalMode.KeyRemapMode);
+                }
+
+                [WpfFact]
+                public void IsWaitingForInput2()
+                {
+                    Create("foobar");
+                    _vimBuffer.Process('/');
+                    Assert.True(_normalMode.CommandRunner.IsWaitingForMoreInput);
+                }
+
+                /// <summary>
+                /// When in a need more state, process everything
+                /// </summary>
+                [WpfFact]
+                public void CanProcess4()
+                {
+                    Create("cat dog");
+                    _vimBuffer.Process(KeyInputUtil.CharToKeyInput('/'));
+                    Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
+                    Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
                 }
             }
         }
@@ -5877,6 +5956,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Repeating an insert with a new count applies the count to the
+            /// insertion
+            /// </summary>
+            [WpfFact]
+            public void RepeatInsertWithNewCount()
+            {
+                // Reported in issue #2259.
+                Create("cat", "");
+                _vimBuffer.Process("i");
+                _vimBuffer.Process("dog ");
+                _vimBuffer.Process(KeyInputUtil.EscapeKey);
+                Assert.Equal("dog cat", _textView.GetLine(0).GetText());
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("2.");
+                Assert.Equal("dog dog dog cat", _textView.GetLine(0).GetText());
+                Assert.Equal(7, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
             /// Test the repeating of a command that changes white space to tabs
             /// </summary>
             [WpfFact]
@@ -6308,7 +6406,7 @@ namespace Vim.UnitTest
                 {
                     _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(1).Start, 0.0, ViewRelativePosition.Top);
                     _textView.MoveCaretToLine(2);
-                    TestableSynchronizationContext.RunAll();
+                    DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                     Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
@@ -6321,7 +6419,7 @@ namespace Vim.UnitTest
                 public void UpMovesCaretWithoutScroll()
                 {
                     _textView.MoveCaretToLine(2);
-                    TestableSynchronizationContext.RunAll();
+                    DoEvents();
                     _vimBuffer.ProcessNotation("<C-u>");
                     Assert.Equal(1, _textView.GetCaretLine().LineNumber);
                 }
@@ -6452,7 +6550,7 @@ namespace Vim.UnitTest
                     _globalSettings.ScrollOffset = 2;
                     var caretLine = 4;
                     _textView.MoveCaretToLine(caretLine);
-                    TestableSynchronizationContext.RunAll();
+                    DoEvents();
                     var topLine = 0;
                     PutLineAtTop(topLine);
                     _vimBuffer.ProcessNotation("H");
@@ -6550,14 +6648,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
@@ -6588,12 +6686,13 @@ namespace Vim.UnitTest
             /// the scroll as if the caret was at the found search point 
             /// </summary>
             [WpfFact]
-            public void IncrementalSearchForward()
+            public async void IncrementalSearchForward()
             {
                 _globalSettings.IncrementalSearch = true;
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(0);
                 _vimBuffer.ProcessNotation("/g");
+                await _vimBuffer.GetSearchCompleteAsync();
                 AssertLastLine(8);
             }
 
@@ -6641,7 +6740,7 @@ namespace Vim.UnitTest
             {
                 _textView.ScrollToTop();
                 _textView.MoveCaretToLine(4);
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 AssertFirstLine(2);
             }
 
@@ -6653,7 +6752,7 @@ namespace Vim.UnitTest
                 var lineNumber = _textBuffer.CurrentSnapshot.LineCount - 1;
                 _textView.DisplayTextLineContainingBufferPosition(_textBuffer.GetLine(lineNumber).Start, 0.0, ViewRelativePosition.Bottom);
                 _textView.MoveCaretToLine(lineNumber);
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 _vimBuffer.ProcessNotation("<c-d>");
                 Assert.Equal(lineNumber, _textView.GetCaretLine().LineNumber);
             }
@@ -7446,6 +7545,15 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-a>");
                 Assert.Equal("dog", _textBuffer.GetLine(0).GetText());
             }
+
+            [WpfFact]
+            public void Mixed()
+            {
+                // Reported in issue #2529.
+                Create("1 2 0x3 4 5 0x6 7 8", "");
+                _vimBuffer.ProcessNotation("<C-a>");
+                Assert.Equal("2 2 0x3 4 5 0x6 7 8", _textBuffer.GetLine(0).GetText());
+            }
         }
 
         public sealed class NumberedRegisterTest : NormalModeIntegrationTest
@@ -7750,7 +7858,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// See the full discussion in issue #509
             ///
-            /// https://github.com/jaredpar/VsVim/issues/509
+            /// https://github.com/VsVim/VsVim/issues/509
             ///
             /// Make sure that doing a ""][" from the middle of the line ends on the '}' if it is
             /// preceded by a blank line
@@ -8972,6 +9080,50 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Deleting to the end of the file should move the caret up
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_ToEndOfFile()
+            {
+                // Reported in issue #2477.
+                Create("cat", "dog", "fish", "");
+                _textView.MoveCaretToLine(1, 0);
+                _vimBuffer.Process("dG");
+                Assert.Equal(new[] { "cat", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting lines should obey the 'startofline' setting
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_StartOfLine()
+            {
+                // Reported in issue #2477.
+                Create(" cat", "  dog", " fish", "");
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Deleting lines should preserve spaces to caret when
+            /// 'nostartofline' is in effect
+            /// </summary>
+            [WpfFact]
+            public void DeleteLines_NoStartOfLine()
+            {
+                // Reported in issue #2477.
+                Create(" cat", "  dog", " fish", "");
+                _globalSettings.StartOfLine = false;
+                _textView.MoveCaretToLine(1, 2);
+                _vimBuffer.Process("dd");
+                Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
             /// Subtract a negative decimal number
             /// </summary>
             [WpfFact]
@@ -9173,6 +9325,69 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dd");
                 Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
                 Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
+            }
+
+            [WpfFact]
+            public void OpenLink()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+            }
+
+            [WpfFact]
+            public void GoToLink()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+            }
+
+            [WpfFact]
+            public void GoToUppercaseLink()
+            {
+                Create("foo HTTPS://GITHUB.COM/VSVIM/VSVIM bar", "");
+                _textView.MoveCaretToLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal("HTTPS://GITHUB.COM/VSVIM/VSVIM", link);
+            }
+
+            [WpfFact]
+            public void GoToLinkWithMouse()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                var point = _textView.GetPointInLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(point, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
             }
         }
 

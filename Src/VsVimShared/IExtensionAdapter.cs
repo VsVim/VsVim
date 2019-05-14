@@ -16,8 +16,6 @@ namespace Vim.VisualStudio
     {
         bool? IsUndoRedoExpected { get; }
 
-        bool? ShouldKeepSelectionAfterHostCommand(string command, string argument);
-
         bool? ShouldCreateVimBuffer(ITextView textView);
 
         bool? IsIncrementalSearchActive(ITextView textView);

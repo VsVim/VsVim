@@ -270,7 +270,7 @@ namespace Vim.VisualStudio
 
         private CommandStatus QueryStatus(EditCommand editCommand)
         {
-            VimTrace.TraceInfo("VsCommandTarget::QueryStatus {0}", editCommand);
+            VimTrace.TraceDebug("VsCommandTarget::QueryStatus {0}", editCommand);
 
             var action = CommandStatus.PassOn;
             foreach (var commandTarget in _commandTargets)
@@ -282,7 +282,7 @@ namespace Vim.VisualStudio
                 }
             }
 
-            VimTrace.TraceInfo("VsCommandTarget::QueryStatus ", action);
+            VimTrace.TraceDebug("VsCommandTarget::QueryStatus {0}", action);
             return action;
         }
 

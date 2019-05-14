@@ -4,7 +4,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CleanVsix</RootNamespace>
     <AssemblyName>CleanVsix</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

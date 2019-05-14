@@ -5,6 +5,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest.Mock
 {
@@ -44,10 +45,12 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
+        public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
+        public Func<string, bool> OpenLinkFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
         public ITextView LastClosed { get; set; }
@@ -100,6 +103,7 @@ namespace Vim.UnitTest.Mock
             GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
             RunCommandFunc = delegate { throw new NotImplementedException(); };
+            RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
@@ -254,6 +258,11 @@ namespace Vim.UnitTest.Mock
             return RunCommandFunc(workingDirectory, command, arguments, input);
         }
 
+        void IVimHost.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScriptFunc(vimBuffer, callInfo, createEachTime);
+        }
+
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)
         {
             RunHostCommandFunc(textView, command, argument);
@@ -355,6 +364,11 @@ namespace Vim.UnitTest.Mock
             OpenQuickFixWindowFunc();
         }
 
+        bool IVimHost.OpenLink(string link)
+        {
+            return OpenLinkFunc(link);
+        }
+
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
@@ -383,11 +397,6 @@ namespace Vim.UnitTest.Mock
         int IVimHost.TabCount
         {
             get { return TabCount; }
-        }
-
-        bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return false;
         }
 
         bool IVimHost.UseDefaultCaret

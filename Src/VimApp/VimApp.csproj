@@ -5,7 +5,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VimApp</RootNamespace>
     <AssemblyName>VimApp</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
   </PropertyGroup>
   <ItemGroup>

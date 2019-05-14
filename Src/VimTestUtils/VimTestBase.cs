@@ -46,6 +46,10 @@ namespace Vim.UnitTest
         /// </summary>
         private static readonly Dictionary<int, VimEditorHost> s_cachedVimEditorHostMap = new Dictionary<int, VimEditorHost>();
 
+        public StaContext StaContext { get; }
+        public Dispatcher Dispatcher => StaContext.Dispatcher;
+        public DispatcherSynchronizationContext DispatcherSynchronizationContext { get; }
+
         public CompositionContainer CompositionContainer
         {
             get { return _vimEditorHost.CompositionContainer; }
@@ -212,8 +216,6 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.VimErrorDetector; }
         }
 
-        public TestableSynchronizationContext TestableSynchronizationContext {get; private set;}
-
         protected VimTestBase()
         {
             // Parts of the core editor in Vs2012 depend on there being an Application.Current value else
@@ -224,7 +226,8 @@ namespace Vim.UnitTest
                 new Application();
             }
 
-            if (!StaTaskScheduler.DefaultSta.IsRunningInScheduler)
+            StaContext = StaContext.Default;
+            if (!StaContext.IsRunningInThread)
             {
                 throw new Exception($"Need to apply {nameof(WpfFactAttribute)} to this test case");
             }
@@ -255,8 +258,6 @@ namespace Vim.UnitTest
             // Don't show trace information in the unit tests.  It really clutters the output in an
             // xUnit run
             VimTrace.TraceSwitch.Level = TraceLevel.Off;
-
-            TestableSynchronizationContext = new TestableSynchronizationContext();
         }
 
         public virtual void Dispose()
@@ -332,8 +333,12 @@ namespace Vim.UnitTest
 
             VariableMap.Clear();
             VimErrorDetector.Clear();
-            TestableSynchronizationContext?.Dispose();
-            TestableSynchronizationContext = null;
+        }
+
+        public void DoEvents()
+        {
+            Debug.Assert(SynchronizationContext.Current.GetEffectiveSynchronizationContext() is DispatcherSynchronizationContext);
+            Dispatcher.DoEvents();
         }
 
         private void CheckForErrors()
@@ -342,16 +347,6 @@ namespace Vim.UnitTest
             {
                 var message = FormatException(VimErrorDetector.GetErrors());
                 throw new Exception(message);
-            }
-
-            if (TestableSynchronizationContext.PostedCallbackCount != 0)
-            {
-                throw new Exception("Posted items that did not finish");
-            }
-
-            if (SynchronizationContext.Current?.GetType() != typeof(TestableSynchronizationContext))
-            {
-                throw new Exception("Invalid SynchronizationContext on test dispose");
             }
         }
 

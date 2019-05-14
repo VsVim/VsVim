@@ -243,6 +243,10 @@ type ILineChangeTrackerFactory =
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 
+    /// Whether to report errors that occur when using the clipboard
+    abstract ReportErrors: bool with get, set
+
+    /// The text contents of the clipboard device
     abstract Text: string with get, set
 
 [<RequireQualifiedAccess>]
@@ -394,9 +398,12 @@ type ICommonOperations =
     /// Get the standard ReplaceData for the given SnapshotPoint
     abstract GetReplaceData: point: SnapshotPoint -> VimRegexReplaceData
 
+    /// Get the current number of spaces to caret we are maintaining
+    abstract GetSpacesToCaret: unit -> int
+
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
-    abstract GetSpacesToColumn: column: SnapshotColumn -> int
+    abstract GetSpacesToPoint: point: SnapshotPoint -> int
 
     /// Get the point that visually corresponds to the specified column on its line
     abstract GetColumnForSpacesOrEnd: contextLine: ITextSnapshotLine -> spaces: int -> SnapshotColumn
@@ -438,6 +445,9 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab: int -> unit
 
+    /// Using the specified base folder, go to the tag specified by ident
+    abstract GoToTagInNewWindow: folder: string -> ident: string -> Result
+
     /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
     /// will be positioned at the end of that change
     abstract FillInVirtualSpace: unit -> unit
@@ -475,13 +485,19 @@ type ICommonOperations =
     abstract NavigateToPoint: VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks: text: string -> string
+    abstract NormalizeBlanks: text: string -> spacesToColumn: int -> string
 
     /// Normalize the spaces and tabs in the string at the given column in the buffer
     abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
-    /// Normalize the set of blanks into spaces
-    abstract NormalizeBlanksToSpaces: string -> string
+    /// Normalize the spaces and tabs in the string for a new tabstop
+    abstract NormalizeBlanksForNewTabStop: text: string -> spacesToColumn: int -> tabStop: int -> string
+
+    /// Normalize the set of spaces and tabs into spaces
+    abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
+
+    /// Open link under caret
+    abstract OpenLinkUnderCaret: unit -> Result
 
     /// Put the specified StringData at the given point.
     abstract Put: SnapshotPoint -> StringData -> OperationKind -> unit
@@ -497,6 +513,9 @@ type ICommonOperations =
 
     /// Redo the buffer changes "count" times
     abstract Redo: count:int -> unit
+
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit

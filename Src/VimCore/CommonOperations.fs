@@ -35,6 +35,7 @@ module internal CommonUtil =
                     Resources.Common_PatternNotFound
 
             statusUtil.OnError (format searchData.Pattern)
+        | SearchResult.Cancelled _ -> statusUtil.OnError Resources.Common_SearchCancelled
         | SearchResult.Error (_, msg) -> statusUtil.OnError msg
 
 type internal CommonOperations
@@ -166,6 +167,14 @@ type internal CommonOperations
 
         RegisterValue(stringData, operationKind)
 
+    /// Get the current number of spaces to caret we are maintaining
+    member x.GetSpacesToCaret () =
+        let spacesToCaret = x.GetSpacesToVirtualColumn x.CaretVirtualColumn
+        match x.MaintainCaretColumn with
+        | MaintainCaretColumn.None -> spacesToCaret
+        | MaintainCaretColumn.Spaces spaces -> max spaces spacesToCaret
+        | MaintainCaretColumn.EndOfLine -> spacesToCaret
+
     /// Get the count of spaces to get to the specified absolute column offset.  This will count
     /// tabs as counting for 'tabstop' spaces
     member x.GetSpacesToColumnNumber line columnNumber = 
@@ -177,8 +186,8 @@ type internal CommonOperations
         VirtualSnapshotColumn.GetSpacesToColumnNumber(line, columnNumber, _localSettings.TabStop)
 
     /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
-    member x.GetSpacesToColumn (column: SnapshotColumn) =
-        column.GetSpacesToColumn _localSettings.TabStop
+    member x.GetSpacesToPoint (point: SnapshotPoint) =
+        SnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
 
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
@@ -222,12 +231,39 @@ type internal CommonOperations
             else
                 _editorOptions.GetNewLineCharacter()
 
+    /// In order for Undo / Redo to function properly there needs to be an ITextView for the ITextBuffer
+    /// accessible in the property bag of the ITextUndoHistory object. In 2017 and before this was added
+    /// during AfterTextBufferChangeUndoPrimitive.Create. In 2019 this stopped happening and hence undo /
+    /// redo is broken. Forcing it to be present here. 
+    /// https://github.com/VsVim/VsVim/issues/2463
+    member x.EnsureUndoHasView() =
+        match _undoRedoOperations.TextUndoHistory with
+        | None -> ()
+        | Some textUndoHistory -> 
+            let key = typeof<ITextView>
+            let properties = textUndoHistory.Properties
+            if not (PropertyCollectionUtil.ContainsKey key properties) then
+                properties.AddProperty(key, _textView)
+
     // Convert any virtual spaces to real normalized spaces
     member x.FillInVirtualSpace () =
+
+        // This is an awkward situation if 'expandtab' is in effect because
+        // Visual Studio uses tabs when filling in virtual space, but vim
+        // doesn't. VsVim needs to insert tabs when filling in leading virtual
+        // space to emulate the way vim copies leading tabs from surrounding
+        // lines, but shouldn't insert tabs when filling in non-leading virtual
+        // space because vim never inserts tabs in that situation.
         if x.CaretVirtualPoint.IsInVirtualSpace then
             let blanks: string = 
                 let blanks = StringUtil.RepeatChar x.CaretVirtualColumn.VirtualSpaces ' '
-                x.NormalizeBlanks blanks
+                if x.CaretPoint = x.CaretLine.Start then
+
+                    // The line is completely empty so use tabs if appropriate.
+                    let spacesToColumn = x.GetSpacesToPoint x.CaretPoint
+                    x.NormalizeBlanks blanks spacesToColumn
+                else
+                    blanks
 
             // Make sure to position the caret to the end of the newly inserted spaces
             let position = x.CaretColumn.StartPosition + blanks.Length
@@ -620,31 +656,35 @@ type internal CommonOperations
                 let span = NormalizedSnapshotSpanCollectionUtil.GetOverarchingSpan col
                 span.Start.GetContainingLine()
 
-    /// Delete count lines from the cursor.  The caret should be positioned at the start
-    /// of the first line for both undo / redo
+    /// Delete count lines from the the specified line.  The caret should be
+    /// positioned on the first line for both undo / redo
     member x.DeleteLines (startLine: ITextSnapshotLine) count registerName =
 
         // Function to actually perform the delete
         let doDelete spanOnVisualSnapshot caretPointOnVisualSnapshot includesLastLine =  
 
-            // Make sure to map the SnapshotSpan back into the text / edit buffer
+            // Make sure to map the SnapshotSpan back into the text / edit
+            // buffer.
             let span = BufferGraphUtil.MapSpanDownToSingle _bufferGraph spanOnVisualSnapshot x.CurrentSnapshot
             let point = BufferGraphUtil.MapPointDownToSnapshotStandard _bufferGraph caretPointOnVisualSnapshot x.CurrentSnapshot
             match span, point with
             | Some span, Some caretPoint ->
-                // Use a transaction to properly position the caret for undo / redo.  We want it in the same
-                // place for undo / redo so move it before the transaction
-                TextViewUtil.MoveCaretToPoint _textView caretPoint
-                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun() ->
-                    let snapshot = _textBuffer.Delete(span.Span)
 
-                    // After delete the span should move to the start of the line of the same number 
-                    let caretPoint = 
-                        let lineNumber = SnapshotPointUtil.GetLineNumber caretPoint
-                        SnapshotUtil.GetLineOrLast x.CurrentSnapshot lineNumber
-                        |> SnapshotLineUtil.GetStart
+                // Use a transaction to properly position the caret for undo /
+                // redo.  We want it in the same place for undo / redo so move
+                // it before the transaction.
+                let spaces = x.GetSpacesToCaret()
+                TextViewUtil.MoveCaretToPoint _textView span.Start
+                x.RestoreSpacesToCaret spaces true
+                _undoRedoOperations.EditWithUndoTransaction "Delete Lines" _textView (fun () ->
+                    _textBuffer.Delete(span.Span) |> ignore
 
-                    TextViewUtil.MoveCaretToPoint _textView caretPoint)
+                    // After delete the caret should move to the line of the
+                    // same number.
+                    SnapshotPointUtil.GetLineNumber caretPoint
+                    |> SnapshotUtil.GetLineOrLast x.CurrentSnapshot
+                    |> (fun line -> TextViewUtil.MoveCaretToPoint _textView line.Start)
+                    x.RestoreSpacesToCaret spaces true)
 
                 // Need to manipulate the StringData so that it includes the expected trailing newline
                 let stringData = 
@@ -664,7 +704,7 @@ type internal CommonOperations
 
         // First we need to remap the 'startLine' value.  To do the delete we need to know the 
         // correct start line in the edit buffer.  What we are provided is a value in the edit
-        // buffer but it may be a line further down in the buffer do to folding.  
+        // buffer but it may be a line further down in the buffer due to folding.
         let startLine = x.AdjustEditLineForVisualSnapshotLine startLine
 
         // The span should be calculated using the visual snapshot if available.  Binding 
@@ -1082,17 +1122,28 @@ type internal CommonOperations
             Magic = _globalSettings.Magic
             Count = VimRegexReplaceCount.One }
 
+    member x.IsLink (word: string) =
+        word.StartsWith("http:", StringComparison.OrdinalIgnoreCase) 
+        || word.StartsWith("https:", StringComparison.OrdinalIgnoreCase) 
+
+    member x.IsVimLink (word: string) =
+        word.IndexOf('|') <> -1 && word.IndexOf('|', word.IndexOf('|') + 1) <> -1
+
     member x.GoToDefinition() =
-        let before = TextViewUtil.GetCaretVirtualPoint _textView
-        if _vimHost.GoToDefinition() then
-            _jumpList.Add before
-            Result.Succeeded
-        else
-            match _wordUtil.GetFullWordSpan WordKind.BigWord _textView.Caret.Position.BufferPosition with
-            | Some(span) -> 
-                let msg = Resources.Common_GotoDefFailed (span.GetText())
-                Result.Failed(msg)
-            | None ->  Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | word when x.IsLink word ->
+            x.OpenLinkUnderCaret()
+        | word when x.IsVimLink word ->
+            x.OpenVimLinkUnderCaret()
+        | word ->
+            let before = TextViewUtil.GetCaretVirtualPoint _textView
+            if _vimHost.GoToDefinition() then
+                _jumpList.Add before
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed word)
 
     member x.GoToLocalDeclaration() = 
         let caretPoint = x.CaretVirtualPoint
@@ -1157,6 +1208,58 @@ type internal CommonOperations
             if tabIndex >= 0 && tabIndex < tabCount then
                 _vimHost.GoToTab tabIndex
 
+    /// Using the specified base folder, go to the tag specified by ident
+    member x.GoToTagInNewWindow baseFolder ident =
+        let folder = baseFolder
+
+        // Function to read lines from file without throwing exceptions
+        let readAllLines file =
+            try
+                System.IO.File.ReadAllLines(file)
+            with
+            | _ -> Array.empty<string>
+
+        // Look up the ident in the tags file, preferring an exact match, then
+        // the shortest case-insensitive prefix match.
+        let target =
+            match ident with
+            | "" -> None
+            | _ ->
+                let tags = System.IO.Path.Combine(folder, "tags")
+                readAllLines tags
+                |> Seq.map (fun line ->
+                    match line.Split([| '\t' |]) with
+                    | fields when fields.Length = 3 -> Some (fields.[0], fields.[1], fields.[2])
+                    | _ -> None)
+                |> Seq.choose id
+                |> Seq.filter (fun (tag, _, _) ->
+                    tag.StartsWith(ident, System.StringComparison.OrdinalIgnoreCase))
+                |> Seq.sortBy (fun (tag, _, _) -> tag.Length)
+                |> Seq.sortByDescending (fun (tag, _, _) -> tag = ident)
+                |> Seq.tryHead
+
+        // Try to navigate to the tag.
+        match target with
+        | Some (tag, file, pattern) ->
+
+            // Load the target file into a new window and navigate to the tag.
+            // If the tag was not found in the file, go to the first line.
+            let targetFile = System.IO.Path.Combine(folder, file)
+            let pattern = pattern.Substring(1)
+            let lineNumber, columnNumber =
+                readAllLines targetFile
+                |> Seq.mapi (fun lineNumber line -> lineNumber, line)
+                |> Seq.map (fun (lineNumber, line) -> lineNumber, line.IndexOf(pattern))
+                |> Seq.filter (fun (_, columnNumber) -> columnNumber <> -1)
+                |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
+                |> SeqUtil.headOrDefault (Some 0, None)
+            if _vimHost.LoadFileIntoNewWindow targetFile lineNumber columnNumber then
+                Result.Succeeded
+            else
+                Result.Failed (sprintf "Cannot open target file %s with tag %s" targetFile tag)
+        | None ->
+            Result.Failed (sprintf "Cannot find a tag for ident %s" ident)
+
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
         let point =  TextViewUtil.GetCaretPoint _textView
@@ -1180,49 +1283,48 @@ type internal CommonOperations
             |> SnapshotSpanUtil.GetText
             |> Seq.takeWhile CharUtil.IsBlank
             |> StringUtil.OfCharSeq
-        x.NormalizeBlanksToSpaces text, text.Length
+        x.NormalizeBlanksToSpaces text 0, text.Length
 
     /// Normalize any blanks to the appropriate number of space characters based on the 
     /// Vim settings
-    member x.NormalizeBlanksToSpaces (text: string) =
-        Contract.Assert(StringUtil.IsBlanks text)
-        let builder = System.Text.StringBuilder()
-        let tabSize = _localSettings.TabStop
-        for c in text do
-            match c with 
-            | ' ' -> 
-                builder.AppendChar ' '
-            | '\t' ->
-                // Insert spaces up to the next tab size modulus.  
-                let count = 
-                    let remainder = builder.Length % tabSize
-                    if remainder = 0 then tabSize else remainder
-                for i = 1 to count do
-                    builder.AppendChar ' '
-            | _ -> 
-                builder.AppendChar ' '
-        builder.ToString()
+    member x.NormalizeBlanksToSpaces (text: string) spacesToColumn =
+        StringUtil.ExpandTabsForColumn text spacesToColumn _localSettings.TabStop
 
-    /// Normalize spaces into tabs / spaces based on the ExpandTab, TabStop settings
-    member x.NormalizeSpaces (text: string) = 
+    /// Normalize spaces into tabs / spaces based on the ExpandTab and TabSize
+    /// settings
+    member x.NormalizeSpaces text spacesToColumn =
+        x.NormalizeSpacesForTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Normalize spaces into tabs / spaces based on the ExpandTab setting
+    /// and the specified TabStop setting
+    member x.NormalizeSpacesForTabStop (text: string) spacesToColumn tabStop =
         Contract.Assert(Seq.forall (fun c -> c = ' ') text)
-        if _localSettings.ExpandTab then
+        if _localSettings.ExpandTab || text.Length <= 1 then
             text
         else
-            let tabSize = _localSettings.TabStop
-            let spacesCount = text.Length % tabSize
-            let tabCount = (text.Length - spacesCount) / tabSize 
-            let prefix = StringUtil.RepeatChar tabCount '\t'
+            let endSpaces = spacesToColumn + text.Length
+            let startSpaces, tabsCount =
+                let endTabs = endSpaces - endSpaces % tabStop
+                if endTabs > spacesToColumn
+                then endTabs, (endTabs - spacesToColumn + tabStop - 1) / tabStop
+                else spacesToColumn, 0
+            let spacesCount = endSpaces - startSpaces
+            let prefix = StringUtil.RepeatChar tabsCount '\t'
             let suffix = StringUtil.RepeatChar spacesCount ' '
             prefix + suffix
 
-    /// Fully normalize white space into tabs / spaces based on the ExpandTab, TabSize 
-    /// settings
-    member x.NormalizeBlanks text = 
+    /// Fully normalize white space into tabs / spaces based on the ExpandTab
+    /// and TabSize settings
+    member x.NormalizeBlanks text spacesToColumn =
+        x.NormalizeBlanksForNewTabStop text spacesToColumn _localSettings.TabStop
+
+    /// Fully normalize white space into tabs / spaces based on the current
+    /// ExpandTab and TabStop settings to a new TabStop setting
+    member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop =
         Contract.Assert(StringUtil.IsBlanks text)
         text
-        |> x.NormalizeBlanksToSpaces
-        |> x.NormalizeSpaces
+        |> (fun text -> x.NormalizeBlanksToSpaces text spacesToColumn)
+        |> (fun text -> x.NormalizeSpacesForTabStop text spacesToColumn tabStop)
 
     /// Given the specified blank 'text' at the specified column normalize it out to the
     /// correct spaces / tab based on the 'expandtab' setting.  This has to consider the 
@@ -1233,7 +1335,7 @@ type internal CommonOperations
             // If the column is on a 'tabstop' boundary then there is no difficulty here
             // with accounting for partial tabs.  Just normalize as we would for any other
             // function 
-            x.NormalizeBlanks text
+            x.NormalizeBlanks text spacesToColumn
         else
             // First step is to trim away the start of the 'text' string which will fill up
             // the gap to the next tab boundary.  
@@ -1263,7 +1365,34 @@ type internal CommonOperations
                         "\t"
 
                 let remainder = text.Substring(index)
-                gapText + x.NormalizeBlanks remainder
+                gapText + x.NormalizeBlanks remainder 0
+
+    /// Open link under caret
+    member x.OpenLinkUnderCaret () =
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | link ->
+            if _vimHost.OpenLink link then
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed link)
+
+    /// Open link under caret
+    member x.OpenVimLinkUnderCaret () =
+        let link = x.WordUnderCursorOrEmpty
+        let first = link.IndexOf('|')
+        let second = if first = -1 then -1 else link.IndexOf('|', first + 1)
+        if first <> -1 && second <> -1 then
+            let link = link.Substring(first + 1, second - first - 1)
+            let bufferName = _vimHost.GetName(_textBuffer)
+            if StringUtil.IsNullOrEmpty link || StringUtil.IsNullOrEmpty bufferName then
+                Result.Failed(Resources.Common_GotoDefFailed link)
+            else
+                let baseFolder = System.IO.Path.GetDirectoryName(bufferName)
+                x.GoToTagInNewWindow baseFolder link
+        else
+            Result.Failed(Resources.Common_GotoDefFailed link)
 
     member x.ScrollLines dir count =
         for i = 1 to count do
@@ -1289,7 +1418,8 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
+                let spaces = StringUtil.RepeatChar length ' '
+                x.NormalizeSpaces spaces 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -1305,7 +1435,7 @@ type internal CommonOperations
         col |> Seq.iter (fun span ->
             // Get the span we are formatting within the line
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
-            let ws = x.NormalizeSpaces (ws + shiftText)
+            let ws = x.NormalizeSpaces (ws + shiftText) 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -1324,7 +1454,8 @@ type internal CommonOperations
             let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
             let ws = 
                 let length = max (ws.Length - count) 0
-                StringUtil.RepeatChar length ' ' |> x.NormalizeSpaces
+                let spaces = StringUtil.RepeatChar length ' '
+                x.NormalizeSpaces spaces 0
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
@@ -1345,7 +1476,7 @@ type internal CommonOperations
                 // Get the span we are formatting within the line
                 let span = line.Extent
                 let ws, originalLength = x.GetAndNormalizeLeadingBlanksToSpaces span
-                let ws = x.NormalizeSpaces (ws + shiftText)
+                let ws = x.NormalizeSpaces (ws + shiftText) 0
                 edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
 
         edit.Apply() |> ignore
@@ -1982,6 +2113,7 @@ type internal CommonOperations
     /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the undo completes
     member x.Undo count = 
+        x.EnsureUndoHasView()
         _undoRedoOperations.Undo count
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
@@ -1989,9 +2121,25 @@ type internal CommonOperations
     /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
     /// after the redo completes
     member x.Redo count = 
+        x.EnsureUndoHasView()
         _undoRedoOperations.Redo count
         x.AdjustCaretForVirtualEdit()
         x.EnsureAtPoint x.CaretPoint ViewFlags.Standard
+
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    member x.RestoreSpacesToCaret (spacesToCaret: int) (useStartOfLine: bool) =
+        if useStartOfLine && _globalSettings.StartOfLine then
+            let point = SnapshotLineUtil.GetFirstNonBlankOrEnd x.CaretLine
+            TextViewUtil.MoveCaretToPoint _textView point
+        else
+            let virtualColumn = 
+                if _vimTextBuffer.UseVirtualSpace then
+                    VirtualSnapshotColumn.GetColumnForSpaces(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                else
+                    let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spacesToCaret, _localSettings.TabStop)
+                    VirtualSnapshotColumn(column)
+            x.MoveCaretToVirtualPoint virtualColumn.VirtualStartPoint ViewFlags.VirtualEdit
+            x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
@@ -2047,10 +2195,13 @@ type internal CommonOperations
 
             _registerMap.SetRegisterValue name value
 
-            // If this is not the unnamed register then the unnamed register needs to 
-            // be updated 
+            // If this is not the unnamed register then the unnamed register
+            // needs to  be updated to the value of the register we just set
+            // (or appended to).
             if name <> RegisterName.Unnamed then
-                _registerMap.SetRegisterValue RegisterName.Unnamed value
+                _registerMap.GetRegister name
+                |> (fun register -> register.RegisterValue)
+                |> _registerMap.SetRegisterValue RegisterName.Unnamed
 
             let hasNewLine = 
                 match value.StringData with 
@@ -2142,7 +2293,8 @@ type internal CommonOperations
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
         member x.GetReplaceData point = x.GetReplaceData point
-        member x.GetSpacesToColumn column = x.GetSpacesToColumn column
+        member x.GetSpacesToCaret() = x.GetSpacesToCaret()
+        member x.GetSpacesToPoint point = x.GetSpacesToPoint point
         member x.GetColumnForSpacesOrEnd contextLine spaces = x.GetColumnForSpacesOrEnd contextLine spaces
         member x.GetSpacesToVirtualColumn column = x.GetSpacesToVirtualColumn column
         member x.GetVirtualColumnForSpaces contextLine spaces = x.GetVirtualColumnForSpaces contextLine spaces
@@ -2155,6 +2307,7 @@ type internal CommonOperations
         member x.GoToDefinition() = x.GoToDefinition()
         member x.GoToNextTab direction count = x.GoToNextTab direction count
         member x.GoToTab index = x.GoToTab index
+        member x.GoToTagInNewWindow folder ident = x.GoToTagInNewWindow folder ident
         member x.Join range kind = x.Join range kind
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
@@ -2164,14 +2317,17 @@ type internal CommonOperations
         member x.MoveCaretToVirtualPoint point viewFlags =  x.MoveCaretToVirtualPoint point viewFlags
         member x.MoveCaretToMotionResult data = x.MoveCaretToMotionResult data
         member x.NavigateToPoint point = x.NavigateToPoint point
-        member x.NormalizeBlanks text = x.NormalizeBlanks text
+        member x.NormalizeBlanks text spacesToColumn = x.NormalizeBlanks text spacesToColumn
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
-        member x.NormalizeBlanksToSpaces text = x.NormalizeBlanksToSpaces text
+        member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
+        member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
+        member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
         member x.RecordLastChange oldSpan newSpan = x.RecordLastChange oldSpan newSpan
         member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
+        member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier

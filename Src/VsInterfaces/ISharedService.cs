@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
 
 namespace Vim.VisualStudio
 {
@@ -48,14 +49,10 @@ namespace Vim.VisualStudio
         void GoToTab(int index);
 
         /// <summary>
-        /// Is the document represented by the cookie being lazily loaded by the IDE?
+        /// Run C# Script.
         /// </summary>
-        bool IsLazyLoaded(uint documentCookie);
-
-        /// <summary>
-        /// Helper to close an <see cref="ITextView"/> when it is a peek window. 
-        /// </summary>
-        bool ClosePeekView(ITextView peekView);
+        /// <returns></returns>
+        void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
 
         /// <summary>
         /// Helper to close an <see cref="ITextView"/> when it is a peek window. 

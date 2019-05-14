@@ -16,7 +16,7 @@ namespace Vim.VisualStudio.UnitTest
 {
     public abstract class ReSharperExtensionAdapterTest 
     {
-        private readonly ReSharperExtensionAdapter _extensionAdapter;
+        private readonly IExtensionAdapter _extensionAdapter;
         private readonly Mock<IReSharperUtil> _resharperUtil;
         private readonly Mock<ITextDocumentFactoryService> _textDocumentFactoryService;
 

@@ -12,6 +12,7 @@ using Vim.UI.Wpf;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace VimApp
 {
@@ -282,6 +283,11 @@ namespace VimApp
             return false;
         }
 
+        public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void RunHostCommand(ITextView textView, string command, string argument)
         {
             var msg = $"Host Command Name='{command}' Argument='{argument}'";
@@ -334,7 +340,7 @@ namespace VimApp
 
         private bool TryLoadPath(string filePath, out IWpfTextView textView)
         {
-            return 
+            return
                 TryLoadPathAsFile(filePath, out textView) ||
                 TryLoadPathAsDirectory(filePath, out textView);
         }

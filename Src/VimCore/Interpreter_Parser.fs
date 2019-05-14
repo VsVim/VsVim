@@ -126,9 +126,11 @@ type Parser
         ("chdir", "chd")
         ("close", "clo")
         ("cnext", "cn")
-        ("cprevious", "cp")
-        ("cwindow", "cw")
         ("copy", "co")
+        ("cprevious", "cp")
+        ("csx", "cs")
+        ("csxe", "csxe")
+        ("cwindow", "cw")
         ("delete","d")
         ("delmarks", "delm")
         ("digraphs", "dig")
@@ -145,6 +147,7 @@ type Parser
         ("function", "fu")
         ("global", "g")
         ("help", "h")
+        ("vimhelp", "vimh")
         ("history", "his")
         ("if", "if")
         ("join", "j")
@@ -789,6 +792,8 @@ type Parser
             | LineCommand.Close _ -> noRangeCommand
             | LineCommand.Compose _ -> noRangeCommand
             | LineCommand.CopyTo (_, destLineRange, count) -> LineCommand.CopyTo (lineRange, destLineRange, count)
+            | LineCommand.CSharpScript _ -> noRangeCommand
+            | LineCommand.CSharpScriptCreateEachTime _ -> noRangeCommand
             | LineCommand.Delete (_, registerName) -> LineCommand.Delete (lineRange, registerName)
             | LineCommand.DeleteAllMarks -> noRangeCommand
             | LineCommand.DeleteMarks _ -> noRangeCommand
@@ -812,7 +817,8 @@ type Parser
             | LineCommand.GoToLastTab -> noRangeCommand
             | LineCommand.GoToNextTab _ -> noRangeCommand
             | LineCommand.GoToPreviousTab _ -> noRangeCommand
-            | LineCommand.Help -> noRangeCommand
+            | LineCommand.Help _ -> noRangeCommand
+            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.History -> noRangeCommand
             | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
             | LineCommand.HostCommand _ -> noRangeCommand
@@ -1067,6 +1073,26 @@ type Parser
         match destinationLineRange with
         | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
+
+    member x.ParseCSharpScript(lineRange:LineRangeSpecifier, createEachTime:bool) = 
+        x.SkipBlanks()
+
+        let isScriptLocal = x.ParseScriptLocalPrefix()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Word name ->
+            _tokenizer.MoveNextToken()
+            let arguments = x.ParseRestOfLine()
+            let callInfo = {
+                LineRange = lineRange
+                Name = name
+                Arguments = arguments
+                IsScriptLocal = isScriptLocal
+            }
+            if createEachTime then
+               LineCommand.CSharpScriptCreateEachTime callInfo 
+            else
+               LineCommand.CSharpScript callInfo 
+        | _ -> LineCommand.ParseError Resources.Parser_Error
 
     /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
@@ -1815,10 +1841,21 @@ type Parser
                 ParseResult.Succeeded name
         | _ -> ParseResult.Failed Resources.Parser_Error
 
+    member x.ParseEnvironmentVariableName() =
+        _tokenizer.MoveNextToken()
+        use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDigitsInWord
+        let tokenKind = _tokenizer.CurrentTokenKind
+        _tokenizer.MoveNextToken()
+        match tokenKind with
+        | TokenKind.Word word ->
+            Expression.EnvironmentVariableName word |> ParseResult.Succeeded
+        | _ -> ParseResult.Failed "Environment variable name missing"
+
     /// Parse out a visual studio command.  The format is "commandName argument".  The command
     /// name can use letters, numbers and a period.  The rest of the line after will be taken
     /// as the argument
     member x.ParseHostCommand() = 
+        let hasBang = x.ParseBang()
         x.SkipBlanks()
         let command = x.ParseWhile (fun token -> 
             match token.TokenKind with 
@@ -1832,7 +1869,7 @@ type Parser
         | Some command ->
             x.SkipBlanks()
             let argument = x.ParseRestOfLine()
-            LineCommand.HostCommand (command, argument)
+            LineCommand.HostCommand (hasBang, command, argument)
 
     member x.ParseWrite lineRange = 
         let hasBang = x.ParseBang()
@@ -1889,8 +1926,15 @@ type Parser
 
     /// Parse out the :help command
     member x.ParseHelp() =
-        _tokenizer.MoveToEndOfLine()
-        LineCommand.Help
+        x.SkipBlanks ()
+        let subject = x.ParseRestOfLine()
+        LineCommand.Help subject
+
+    /// Parse out the :vimhelp command
+    member x.ParseVimHelp() =
+        x.SkipBlanks ()
+        let subject = x.ParseRestOfLine()
+        LineCommand.VimHelp subject
 
     /// Parse out the :history command
     member x.ParseHistory() =
@@ -2374,6 +2418,8 @@ type Parser
                 | "cnext" -> handleCount x.ParseQuickFixNext
                 | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
+                | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
+                | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
                 | "cwindow" -> noRange x.ParseQuickFixWindow
                 | "delete" -> x.ParseDelete lineRange
@@ -2394,6 +2440,7 @@ type Parser
                 | "global" -> x.ParseGlobal lineRange
                 | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
+                | "vimhelp" -> noRange x.ParseVimHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
@@ -2580,6 +2627,8 @@ type Parser
             x.ParseList()
         | TokenKind.Character '{' ->
             x.ParseDictionary()
+        | TokenKind.Character '$' ->
+            x.ParseEnvironmentVariableName()
         | TokenKind.Character '@' ->
             _tokenizer.MoveNextToken()
             match x.ParseRegisterName ParseRegisterName.All with
@@ -2647,6 +2696,10 @@ type Parser
             | TokenKind.Character '.' -> return! parseBinary BinaryKind.Concatenate
             | TokenKind.Character '-' -> return! parseBinary BinaryKind.Subtract
             | TokenKind.Character '%' -> return! parseBinary BinaryKind.Modulo
+            | TokenKind.Character '>' -> return! parseBinary BinaryKind.GreaterThan
+            | TokenKind.Character '<' -> return! parseBinary BinaryKind.LessThan
+            | TokenKind.ComplexOperator "==" -> return! parseBinary BinaryKind.Equal
+            | TokenKind.ComplexOperator "!=" -> return! parseBinary BinaryKind.NotEqual
             | _ -> return expr
         }
 

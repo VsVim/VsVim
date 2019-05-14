@@ -119,7 +119,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 }
 
                 var search = _vimBuffer.IncrementalSearch;
-                if (search.InSearch && search.InPasteWait)
+                if (search.HasActiveSession && search.InPasteWait)
                 {
                     return true;
                 }
@@ -572,7 +572,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// </summary>
         private void ToggleLanguage()
         {
-            var isForInsert = !_vimBuffer.IncrementalSearch.InSearch;
+            var isForInsert = !_vimBuffer.IncrementalSearch.HasActiveSession;
             _commonOperations.ToggleLanguage(isForInsert);
         }
 
@@ -639,9 +639,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         break;
                     case EditKind.SearchBackward:
                     case EditKind.SearchForward:
-                        if (_vimBuffer.IncrementalSearch.InSearch)
+                        if (_vimBuffer.IncrementalSearch.ActiveSession.IsSome())
                         {
-                            _vimBuffer.IncrementalSearch.ResetSearch(commandText);
+                            _vimBuffer.IncrementalSearch.ActiveSession.Value.ResetSearch(commandText);
                         }
                         break;
                     case EditKind.None:
@@ -704,6 +704,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
             else
             {
+                if (args.PreviousMode?.ModeKind == ModeKind.Uninitialized)
+                    return;
+
                 UpdateForSwitchMode(args.CurrentMode);
             }
         }
@@ -920,7 +923,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 ChangeEditKind(kind);
             }
-            if (kind == EditKind.Command && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
+            if (GetPrefixChar(kind).HasValue && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
             {
                 textBox.SelectionStart = 1;
             }
@@ -963,7 +966,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 return EditKind.Command;
             }
 
-            if (_vimBuffer.IncrementalSearch.InSearch)
+            if (_vimBuffer.IncrementalSearch.HasActiveSession)
             {
                 return _vimBuffer.IncrementalSearch.CurrentSearchData.Kind.IsAnyForward
                     ? EditKind.SearchForward

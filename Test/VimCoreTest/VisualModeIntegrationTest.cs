@@ -11,6 +11,7 @@ using Xunit;
 using Xunit.Extensions;
 using System.Collections.Generic;
 using Vim.UnitTest.Exports;
+using System.Threading.Tasks;
 
 namespace Vim.UnitTest
 {
@@ -23,6 +24,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private IRegisterMap _registerMap;
         private IVimGlobalSettings _globalSettings;
+        protected MockVimHost _vimHost;
         protected TestableMouseDevice _testableMouseDevice;
 
         internal Register TestRegister
@@ -42,7 +44,8 @@ namespace Vim.UnitTest
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
 
             // Need to make sure it's focused so macro recording will work
-            ((MockVimHost)_vimBuffer.Vim.VimHost).FocusedTextView = _textView;
+            _vimHost = (MockVimHost)_vimBuffer.Vim.VimHost;
+            _vimHost.FocusedTextView = _textView;
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
@@ -69,9 +72,7 @@ namespace Vim.UnitTest
             var characterSpan = new CharacterSpan(span);
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.False(TestableSynchronizationContext.IsEmpty);
-            TestableSynchronizationContext.RunAll();
-            Assert.True(TestableSynchronizationContext.IsEmpty);
+            DoEvents();
         }
 
         protected void EnterMode(ModeKind kind, SnapshotSpan span)
@@ -92,8 +93,7 @@ namespace Vim.UnitTest
             var visualSelection = VisualSelection.NewCharacter(characterSpan, SearchPath.Forward);
             visualSelection.SelectAndMoveCaret(_textView);
             // skipping check: context.IsEmpty == false
-            TestableSynchronizationContext.RunAll();
-            Assert.True(TestableSynchronizationContext.IsEmpty);
+            DoEvents();
         }
 
         protected void EnterBlock(BlockSpan blockSpan)
@@ -101,9 +101,7 @@ namespace Vim.UnitTest
             var visualSpan = VisualSpan.NewBlock(blockSpan);
             var visualSelection = VisualSelection.CreateForward(visualSpan);
             visualSelection.SelectAndMoveCaret(_textView);
-            Assert.False(TestableSynchronizationContext.IsEmpty);
-            TestableSynchronizationContext.RunAll();
-            Assert.True(TestableSynchronizationContext.IsEmpty);
+            DoEvents();
             _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
         }
 
@@ -900,6 +898,72 @@ namespace Vim.UnitTest
                 }
             }
 
+            public sealed class LineTest : DeleteSelectionTest
+            {
+                /// <summary>
+                /// Deleting to the end of the file should move the caret up
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_ToEndOfFile()
+                {
+                    // Reported in issue #2477.
+                    Create("cat", "dog", "fish", "");
+                    _textView.MoveCaretToLine(1, 0);
+                    _vimBuffer.Process("VGd");
+                    Assert.Equal(new[] { "cat", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Deleting lines should obey the 'startofline' setting
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_StartOfLine()
+                {
+                    // Reported in issue #2477.
+                    Create(" cat", "  dog", " fish", "");
+                    _textView.MoveCaretToLine(1, 2);
+                    _vimBuffer.Process("Vd");
+                    Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 1), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Deleting lines should preserve spaces to caret when
+                /// 'nostartofline' is in effect
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_NoStartOfLine()
+                {
+                    // Reported in issue #2477.
+                    Create(" cat", "  dog", " fish", "");
+                    _globalSettings.StartOfLine = false;
+                    _textView.MoveCaretToLine(1, 2);
+                    _vimBuffer.Process("Vd");
+                    Assert.Equal(new[] { " cat", " fish", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
+                }
+
+                /// <summary>
+                /// Undoing a visual line delete should return the caret to the first line
+                /// </summary>
+                [WpfFact]
+                public void DeleteLines_Undo()
+                {
+                    // Reported in issue #2477.
+                    Create("cat", "dog", "fish", "bear", "");
+                    _textView.MoveCaretToLine(1, 0);
+                    _vimBuffer.Process("Vj");
+                    Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+                    _vimBuffer.Process("d");
+                    Assert.Equal(new[] { "cat", "bear", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                    _vimBuffer.Process("u");
+                    Assert.Equal(new[] { "cat", "dog", "fish", "bear", "" }, _textBuffer.GetLines());
+                    Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+                }
+            }
+
             public sealed class BlockTest : DeleteSelectionTest
             {
                 [WpfFact]
@@ -977,7 +1041,7 @@ namespace Vim.UnitTest
                 /// <summary>
                 /// The 'e' motion should select up to and including the end of the word
                 ///
-                /// https://github.com/jaredpar/VsVim/issues/568
+                /// https://github.com/VsVim/VsVim/issues/568
                 /// </summary>
                 [WpfFact]
                 public void EndOfWordMotion()
@@ -1831,6 +1895,40 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new[] { "bar()", "bar()" },
                     _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class BlockAdd : VisualModeIntegrationTest
+        {
+            /// <summary>
+            /// The block add should only add to numbers within the selection
+            /// </summary>
+            [WpfTheory]
+            [MemberData(nameof(SelectionOptions))]
+            public void Simple(string selection)
+            {
+                // Reported in issue #2501.
+                Create(
+                    " 1  This is the first thing. Here's a number: 99.",
+                    "",
+                    " 2 This is the second thing.",
+                    "   Here is another number 123.",
+                    "",
+                    " 3 This is the last thing.",
+                    ""
+                );
+                _globalSettings.Selection = selection;
+                _vimBuffer.ProcessNotation("<C-q>5j2l<C-a>");
+                var expected = new[] {
+                    " 2  This is the first thing. Here's a number: 99.",
+                    "",
+                    " 3 This is the second thing.",
+                    "   Here is another number 123.",
+                    "",
+                    " 4 This is the last thing.",
+                    ""
+                };
+                Assert.Equal(expected, _textBuffer.GetLines());
             }
         }
 
@@ -2710,7 +2808,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 0),
                     false);
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
 
@@ -2726,7 +2824,7 @@ namespace Vim.UnitTest
                 _textView.Selection.Select(
                     new SnapshotSpan(_textView.GetLine(1).Start, 1),
                     false);
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
             }
 
@@ -2741,7 +2839,7 @@ namespace Vim.UnitTest
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.Selection.Select(_textView.GetLine(1).Extent, false);
                 _vimBuffer.Process(KeyInputUtil.CharToKeyInput('y'));
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal("  world", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
@@ -2755,7 +2853,7 @@ namespace Vim.UnitTest
                 EnterMode(_textView.GetLine(0).Extent);
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 _textView.SelectAndMoveCaret(new SnapshotSpan(_textView.GetLine(1).Start, 3));
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 _vimBuffer.Process("ly");
                 Assert.Equal("  wo", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
@@ -2839,30 +2937,33 @@ namespace Vim.UnitTest
 
             [WpfTheory]
             [MemberData(nameof(VirtualEditOptions))]
-            public void IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
+            public async Task IncrementalSearch_LineModeShouldSelectFullLine(string virtualEdit)
             {
                 Create("dog", "cat", "tree");
                 _globalSettings.VirtualEdit = virtualEdit;
                 SwitchEnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/c");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             [WpfFact]
-            public void IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
+            public async Task IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
             {
                 Create("dog", "", "cat", "tree");
                 EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
                 _vimBuffer.Process("/ca");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
             }
 
             [WpfFact]
-            public void IncrementalSearch_CharModeShouldExtendToSearchResult()
+            public async Task IncrementalSearch_CharModeShouldExtendToSearchResult()
             {
                 Create("dog", "cat");
                 EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
                 _vimBuffer.Process("/o");
+                await _vimBuffer.GetSearchCompleteAsync();
                 Assert.Equal(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
             }
 
@@ -2888,7 +2989,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Esc>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal("ca", _textView.GetSelectionSpan().GetText());
             }
 
@@ -2901,7 +3002,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog", "tree");
                 _vimBuffer.ProcessNotation("vl/dog<Enter>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
-                Assert.False(_vimBuffer.IncrementalSearch.InSearch);
+                Assert.False(_vimBuffer.IncrementalSearch.HasActiveSession);
                 Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
             }
 
@@ -2916,7 +3017,7 @@ namespace Vim.UnitTest
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetSpan(1, 2));
                 var visualSelection = VisualSelection.CreateForward(visualSpan);
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Character, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -2931,7 +3032,7 @@ namespace Vim.UnitTest
                 var lineRange = _textView.GetLineRange(0, 1);
                 var visualSelection = VisualSelection.NewLine(lineRange, SearchPath.Forward, 1);
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Line, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -2946,7 +3047,7 @@ namespace Vim.UnitTest
                 var blockSpan = _textView.GetBlockSpan(1, 2, 0, 2);
                 var visualSelection = VisualSelection.NewBlock(blockSpan, BlockCaretLocation.BottomLeft);
                 _vimBuffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 Assert.Equal(visualSelection, VisualSelection.CreateForSelection(_textView, VisualKind.Block, SelectionKind.Inclusive, tabStop: 4));
             }
 
@@ -3748,6 +3849,46 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(index);
                 _vimBuffer.Process("Vj%");
                 Assert.Equal(_textBuffer.GetLineRange(startLine: 0, endLine: 3).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+            }
+
+            [WpfFact]
+            public void OpenLink_Character()
+            {
+                Create("foo Xhttps://github.com/VsVim/VsVimX bar", "");
+                _globalSettings.Selection = "inclusive";
+                var line = _textBuffer.GetLine(0).GetText();
+                var beg = line.IndexOf('X') + 1;
+                var end = line.IndexOf('X', beg);
+                var count = end - beg - 1;
+                _textView.MoveCaretToLine(0, beg);
+                _vimBuffer.Process($"v{count}l");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            [WpfFact]
+            public void OpenLink_Line()
+            {
+                Create("https://github.com/VsVim/VsVim", "");
+                _vimBuffer.Process("V");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _vimBuffer.Process("gx");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
         }
 

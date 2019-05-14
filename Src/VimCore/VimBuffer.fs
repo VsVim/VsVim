@@ -132,8 +132,8 @@ type internal ModeMap
             oldMode.OnLeave()
 
             // Incremental search should not persist between mode changes.  
-            if _incrementalSearch.InSearch then
-                _incrementalSearch.Cancel()
+            if _incrementalSearch.HasActiveSession then
+                _incrementalSearch.CancelSession()
 
             _vimTextBuffer.SwitchMode kind arg
 
@@ -303,6 +303,9 @@ type internal VimBuffer
             match x.Mode.ModeKind with
             | ModeKind.Insert -> x.InsertMode.IsDirectInsert keyInput
             | ModeKind.Replace -> x.ReplaceMode.IsDirectInsert keyInput
+            | ModeKind.SelectCharacter -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectLine -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectBlock -> x.InsertMode.IsDirectInsert keyInput
             | _ -> false
 
         // Can the given KeyInput be processed as a command or potentially a 
@@ -599,7 +602,7 @@ type internal VimBuffer
                 // There is no mode for the current key stroke but may be for the subsequent
                 // ones in the set.  Process the first one only here 
                 remainingSet.Value.FirstKeyInput.Value |> KeyInputSetUtil.Single |> processSet
-                remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
+                remainingSet := remainingSet.Value.Rest
             | _ -> 
                 let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 
@@ -702,7 +705,7 @@ type internal VimBuffer
  
             if _isClosed && not x.IsProcessingInput then
                 _postClosedEvent.Trigger x   
-    
+
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
         _errorMessageEvent.Trigger x args

@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
 using Vim.EditorHost;
 using Microsoft.FSharp.Core;
+using Vim.Interpreter;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -96,6 +97,11 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             public override bool NavigateTo(VirtualSnapshotPoint point)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
                 throw new NotImplementedException();
             }
