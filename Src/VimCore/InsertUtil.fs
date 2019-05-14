@@ -611,9 +611,8 @@ type internal InsertUtil
                     x.ApplyBlockInsert text atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
-                    match TrackingPointUtil.GetPointInSnapshot blockSpan.Start.StartPoint PointTrackingMode.Negative x.CurrentSnapshot with
-                    | None -> ()
-                    | Some point -> TextViewUtil.MoveCaretToPoint _textView point
+                    _operations.MapPointNegativeToCurrentSnapshot blockSpan.Start.StartPoint
+                    |> TextViewUtil.MoveCaretToPoint _textView
                     
                     Some text)
             | _ -> None

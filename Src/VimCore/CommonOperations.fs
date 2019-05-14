@@ -2143,6 +2143,7 @@ type internal CommonOperations
 
     /// Ensure the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
+        let point = x.MapPointNegativeToCurrentSnapshot point
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
             x.EnsurePointExpanded point
         if Util.IsFlagSet viewFlags ViewFlags.Visible then
@@ -2266,6 +2267,23 @@ type internal CommonOperations
                 | 2 -> _globalSettings.ImeSearch <- 0
                 | _ -> _globalSettings.ImeSearch <- 2
 
+    /// Map the specified point with negative tracking to the current snapshot
+    member x.MapPointNegativeToCurrentSnapshot (point: SnapshotPoint) =
+        x.MapPointToCurrentSnapshot point PointTrackingMode.Negative
+
+    /// Map the specified point with positive tracking to the current snapshot
+    member x.MapPointPositiveToCurrentSnapshot (point: SnapshotPoint) =
+        x.MapPointToCurrentSnapshot point PointTrackingMode.Positive
+
+    /// Map the specified point with the specified tracking to the current snapshot
+    member x.MapPointToCurrentSnapshot (point: SnapshotPoint) (pointTrackingMode: PointTrackingMode) =
+        let snapshot = _textBuffer.CurrentSnapshot
+        if point.Snapshot = snapshot then
+            point
+        else
+            TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
+            |> OptionUtil.getOrDefault (SnapshotPoint(snapshot, min point.Position snapshot.Length))
+
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
@@ -2337,6 +2355,8 @@ type internal CommonOperations
         member x.SortLines range reverseOrder flags pattern = x.SortLines range reverseOrder flags pattern
         member x.Substitute pattern replace range flags = x.Substitute pattern replace range flags
         member x.ToggleLanguage isForInsert = x.ToggleLanguage isForInsert
+        member x.MapPointNegativeToCurrentSnapshot point = x.MapPointNegativeToCurrentSnapshot point
+        member x.MapPointPositiveToCurrentSnapshot point = x.MapPointPositiveToCurrentSnapshot point
         member x.Undo count = x.Undo count
 
 [<Export(typeof<ICommonOperationsFactory>)>]

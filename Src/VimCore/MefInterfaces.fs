@@ -544,6 +544,12 @@ type ICommonOperations =
     /// Toggle the use of typing language characters
     abstract ToggleLanguage: isForInsert: bool -> unit
 
+    /// Map the specified point with negative tracking to the current snapshot
+    abstract MapPointNegativeToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
+
+    /// Map the specified point with positive tracking to the current snapshot
+    abstract MapPointPositiveToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
+
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
 
