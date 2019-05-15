@@ -41,5 +41,5 @@
     <ProjectReference Include="..\..\VsVimShared\VsVimShared.csproj" />
   </ItemGroup>
   <Import Project="..\VsSpecific\VsSpecific.projitems" Label="Shared" />
-  <Import Project="..\VimCompletion\VimCompletion.projitems" Label="Shared" />
+  <Import Project="..\..\VimCompletion\VimCompletion.projitems" Label="Shared" />
 </Project>
