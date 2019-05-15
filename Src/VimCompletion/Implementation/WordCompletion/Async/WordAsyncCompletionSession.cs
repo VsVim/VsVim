@@ -1,11 +1,7 @@
 ﻿#if VS_SPECIFIC_2019
 using System;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
-using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Vim.Extensions;
-using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using System.Threading;
@@ -13,8 +9,6 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
 using System.Reflection;
-using System.Runtime.Remoting.Channels;
-using System.Linq.Expressions;
 
 namespace VsSpecific.Implementation.WordCompletion.Async
 {

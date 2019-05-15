@@ -7,6 +7,7 @@
     <AssemblyName>VimApp</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2019</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -16,6 +17,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(VsVimAppConfig)">
@@ -35,4 +37,5 @@
     <ProjectReference Include="..\VimEditorHost\VimEditorHost.csproj" />
     <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
   </ItemGroup>
+  <Import Project="..\VimCompletion\VimCompletion.projitems" Label="Shared" />
 </Project>
