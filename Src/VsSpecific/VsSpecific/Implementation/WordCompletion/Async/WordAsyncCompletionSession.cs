@@ -9,6 +9,12 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using System.Threading;
+using System.Windows.Threading;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Editor;
+using System.Reflection;
+using System.Runtime.Remoting.Channels;
+using System.Linq.Expressions;
 
 namespace VsSpecific.Implementation.WordCompletion.Async
 {
@@ -22,12 +28,20 @@ namespace VsSpecific.Implementation.WordCompletion.Async
         private readonly IAsyncCompletionSession _asyncCompletionSession;
         private bool _isDismissed;
         private event EventHandler _dismissed;
+        private readonly DispatcherTimer _tipTimer;
+        private readonly IVsTextView _vsTextView;
 
-        internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession)
+        internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
         {
             _textView = asyncCompletionSession.TextView;
             _asyncCompletionSession = asyncCompletionSession;
             _asyncCompletionSession.Dismissed += delegate { OnDismissed(); };
+            _vsTextView = vsEditorAdaptersFactoryService.GetViewAdapter(_textView);
+            if (_vsTextView is object)
+            {
+                _tipTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Normal, callback: ResetTipOpacity, Dispatcher.CurrentDispatcher);
+                _tipTimer.Start();
+            }
         }
 
         /// <summary>
@@ -39,6 +53,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             _isDismissed = true;
             _textView.ClearWordCompletionData();
             _dismissed?.Invoke(this, EventArgs.Empty);
+            _tipTimer?.Stop();
         }
 
         private bool WithOperations(Action<IAsyncCompletionSessionOperations> action)
@@ -55,6 +70,32 @@ namespace VsSpecific.Implementation.WordCompletion.Async
         private bool MoveDown() => WithOperations(operations => operations.SelectDown());
         private bool MoveUp() => WithOperations(operations => operations.SelectUp());
         private void Commit() => _asyncCompletionSession.Commit(KeyInputUtil.EnterKey.Char, CancellationToken.None);
+
+        /// <summary>
+        /// The async completion presenter will fade out the completion menu when the control key is clicked. That 
+        /// is unfortunate for VsVim as control is held down for the duration of a completion session. This ... method
+        /// is used to reset the opacity to 1.0 
+        /// </summary>
+        private void ResetTipOpacity(object sender, EventArgs e)
+        {
+            try
+            {
+                var methodInfo = _vsTextView.GetType().BaseType.GetMethod(
+                    "SetTipOpacity",
+                    BindingFlags.NonPublic | BindingFlags.Instance,
+                    Type.DefaultBinder,
+                    types: new[] { typeof(double) },
+                    modifiers: null);
+                if (methodInfo is object)
+                {
+                    methodInfo.Invoke(_vsTextView, new object[] { (double)1.0 });
+                }
+            }
+            catch (Exception ex)
+            {
+                VimTrace.TraceDebug($"Unable to set tip opacity {ex}");
+            }
+        }
 
         #region IWordCompletionSession
 

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
@@ -34,13 +35,15 @@ namespace VsSpecific.Implementation.WordCompletion.Async
         /// </summary>
         private readonly object _completionDataKey = new object();
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
+        private readonly IVsEditorAdaptersFactoryService _vsEditorAdaptersFactoryService;
 
         private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
 
         [ImportingConstructor]
-        internal WordAsyncCompletionSessionFactoryService(IAsyncCompletionBroker asyncCompletionBroker)
+        internal WordAsyncCompletionSessionFactoryService(IAsyncCompletionBroker asyncCompletionBroker, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
+            _vsEditorAdaptersFactoryService = vsEditorAdaptersFactoryService;
         }
 
         private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
@@ -84,7 +87,7 @@ namespace VsSpecific.Implementation.WordCompletion.Async
             }
 
             asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);
-            return new WordAsyncCompletionSession(asyncCompletionSession);
+            return new WordAsyncCompletionSession(asyncCompletionSession, _vsEditorAdaptersFactoryService);
             /*
 
             var wordCompletionSession = new WordAsyncompletionSession();
