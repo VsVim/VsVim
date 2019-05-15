@@ -47,7 +47,8 @@ namespace Vim.UI.Wpf.UnitTest
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
                 VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
                 CommonOperationsFactory.GetCommonOperations(_vimBuffer.VimBufferData),
-                _clipboardDevice);
+                _clipboardDevice,
+                false);
         }
 
         /// <summary>
