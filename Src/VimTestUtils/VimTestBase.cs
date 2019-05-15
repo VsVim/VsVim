@@ -13,7 +13,6 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation.Misc;
-using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using System.Windows;

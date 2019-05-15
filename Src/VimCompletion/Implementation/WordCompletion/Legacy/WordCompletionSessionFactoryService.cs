@@ -22,9 +22,9 @@ namespace Vim.Implementation.WordCompletion.Legacy
     /// </summary>
     [Name("Vim Word Completion Session Factory Service")]
     [ContentType(VimConstants.AnyContentType)]
-    [Export(typeof(IWordCompletionSessionFactoryService))]
+    [Export(typeof(WordLegacyCompletionSessionFactoryService))]
     [Export(typeof(ICompletionSourceProvider))]
-    internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider
+    internal sealed class WordLegacyCompletionSessionFactoryService : ICompletionSourceProvider
     {
         #region CompletionData
 
@@ -172,8 +172,6 @@ namespace Vim.Implementation.WordCompletion.Legacy
         private readonly ICompletionBroker _completionBroker;
         private readonly IIntellisenseSessionStackMapService _intellisenseSessionStackMapService;
 
-        private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
-
         /// <summary>
         /// This is inserted into every ICompletionSession property bag which is created for
         /// a word completion.  It's used to identify all ICompletionSession values which are 
@@ -182,21 +180,13 @@ namespace Vim.Implementation.WordCompletion.Legacy
         internal static object WordCompletionSessionKey = new object();
 
         [ImportingConstructor]
-        internal WordCompletionSessionFactoryService(ICompletionBroker completionBroker, IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
+        internal WordLegacyCompletionSessionFactoryService(ICompletionBroker completionBroker, IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
         {
             _completionBroker = completionBroker;
             _intellisenseSessionStackMapService = intellisenseSessionStackMapService;
         }
 
-        private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
-        {
-            var args = new WordCompletionSessionEventArgs(wordCompletionSession);
-            _createdEvent(this, args);
-        }
-
-        #region IWordCompletionSessionFactoryService
-
-        IWordCompletionSession IWordCompletionSessionFactoryService.CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
+        internal IWordCompletionSession CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
         {
             var completionData = new CompletionData(
                 wordSpan,
@@ -256,8 +246,6 @@ namespace Vim.Implementation.WordCompletion.Legacy
                 // line', it doesn't seem to take effect on the first try.
                 wordCompletionSession.SendCommand(command);
 
-                RaiseCompleted(wordCompletionSession);
-
                 return wordCompletionSession;
             }
             finally
@@ -265,14 +253,6 @@ namespace Vim.Implementation.WordCompletion.Legacy
                 textView.Properties.RemoveProperty(_completionDataKey);
             }
         }
-
-        event EventHandler<WordCompletionSessionEventArgs> IWordCompletionSessionFactoryService.Created
-        {
-            add { _createdEvent += value; }
-            remove { _createdEvent -= value; }
-        }
-
-        #endregion
 
         #region ICompletionSourceProvider
 

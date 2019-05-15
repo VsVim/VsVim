@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+#pragma warning disable 649
 
 namespace Vim.Implementation.WordCompletion.Legacy
 {
@@ -418,7 +419,7 @@ namespace Vim.Implementation.WordCompletion.Legacy
         {
             // If this is not associated with an IWordCompletionSession then we don't want to special case
             // this in any way
-            if (!session.Properties.ContainsProperty(WordCompletionSessionFactoryService.WordCompletionSessionKey))
+            if (!session.Properties.ContainsProperty(WordLegacyCompletionSessionFactoryService.WordCompletionSessionKey))
             {
                 return null;
             }

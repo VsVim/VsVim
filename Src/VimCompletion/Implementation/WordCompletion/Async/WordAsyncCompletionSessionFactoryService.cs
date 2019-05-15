@@ -27,8 +27,8 @@ namespace Vim.Implementation.WordCompletion.Async
     /// starting a word completion session
     /// </summary>
     [Name("Vim Word Completion Session Factory Service")]
-    [Export(typeof(IWordCompletionSessionFactoryService))]
-    internal sealed class WordAsyncCompletionSessionFactoryService : IWordCompletionSessionFactoryService
+    [Export(typeof(WordAsyncCompletionSessionFactoryService))]
+    internal sealed class WordAsyncCompletionSessionFactoryService
     {
         /// <summary>
         /// Key used to hide the CompletionData in the ITextView
@@ -54,9 +54,7 @@ namespace Vim.Implementation.WordCompletion.Async
             _createdEvent(this, args);
         }
 
-        #region IWordCompletionSessionFactoryService
-
-        IWordCompletionSession IWordCompletionSessionFactoryService.CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
+        internal IWordCompletionSession CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
         {
             // Dismiss any active ICompletionSession instances.  It's possible and possibly common for 
             // normal intellisense to be active when the user invokes word completion.  We want only word
@@ -90,48 +88,7 @@ namespace Vim.Implementation.WordCompletion.Async
 
             asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);
             return new WordAsyncCompletionSession(asyncCompletionSession, _vsEditorAdaptersFactoryService);
-            /*
-
-            var wordCompletionSession = new WordAsyncompletionSession();
-            // Now move the word completion set to the fron
-            var wordCompletionSet = completionSession.CompletionSets.OfType<WordCompletionSet>().FirstOrDefault();
-            if (wordCompletionSet == null)
-            {
-                wordCompletionSet = new WordCompletionSet();
-            }
-            completionSession.SelectedCompletionSet = wordCompletionSet;
-
-            var intellisenseSessionStack = _intellisenseSessionStackMapService.GetStackForTextView(textView);
-            var wordTrackingSpan = wordSpan.Snapshot.CreateTrackingSpan(wordSpan.Span, SpanTrackingMode.EdgeInclusive);
-            var wordCompletionSession = new WordCompletionSession(
-                wordTrackingSpan,
-                intellisenseSessionStack,
-                completionSession,
-                wordCompletionSet);
-
-            // Ensure the correct item is selected and committed to the ITextBuffer.  If this is a forward completion
-            // then we select the first item, else the last.  Sending the command will go ahead and insert the 
-            // completion in the given span
-            var command = isForward ? IntellisenseKeyboardCommand.TopLine : IntellisenseKeyboardCommand.BottomLine;
-            wordCompletionSession.SendCommand(command);
-
-            // For reasons I don't understand, if the command is 'bottom
-            // line', it doesn't seem to take effect on the first try.
-            wordCompletionSession.SendCommand(command);
-
-            RaiseCompleted(wordCompletionSession);
-
-            return wordCompletionSession;
-            */
         }
-
-        event EventHandler<WordCompletionSessionEventArgs> IWordCompletionSessionFactoryService.Created
-        {
-            add { _createdEvent += value; }
-            remove { _createdEvent -= value; }
-        }
-
-        #endregion
     }
 }
 
