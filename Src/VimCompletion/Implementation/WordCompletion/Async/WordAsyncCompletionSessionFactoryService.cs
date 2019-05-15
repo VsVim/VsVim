@@ -40,7 +40,9 @@ namespace VsSpecific.Implementation.WordCompletion.Async
         private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
 
         [ImportingConstructor]
-        internal WordAsyncCompletionSessionFactoryService(IAsyncCompletionBroker asyncCompletionBroker, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
+        internal WordAsyncCompletionSessionFactoryService(
+            IAsyncCompletionBroker asyncCompletionBroker,
+            [Import(AllowDefault = true)] IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
             _vsEditorAdaptersFactoryService = vsEditorAdaptersFactoryService;
