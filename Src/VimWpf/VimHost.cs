@@ -219,6 +219,15 @@ namespace Vim.UI.Wpf
             return false;
         }
 
+        public virtual bool IsLoaded(ITextView textView)
+        {
+            if (textView is IWpfTextView wpfTextView)
+            {
+                return wpfTextView.VisualElement.IsLoaded;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Default to seeing if the entire text buffer area is read only
         /// </summary>
@@ -250,7 +259,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
-        public abstract bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
+        public abstract FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
@@ -685,6 +694,11 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
+        bool IVimHost.IsLoaded(ITextView textView)
+        {
+            return IsLoaded(textView);
+        }
+
         bool IVimHost.IsReadOnly(ITextBuffer textBuffer)
         {
             return IsReadOnly(textBuffer);
@@ -695,7 +709,7 @@ namespace Vim.UI.Wpf
             return LoadFileIntoExistingWindow(filePath, textView);
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadFileIntoNewWindow(filePath, line, column);
         }

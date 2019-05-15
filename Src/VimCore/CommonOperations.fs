@@ -40,6 +40,7 @@ module internal CommonUtil =
 
 type internal CommonOperations
     (
+        _commonOperationsFactory: ICommonOperationsFactory,
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option,
@@ -1173,8 +1174,10 @@ type internal CommonOperations
 
     /// No need to check for dirty since we are opening a new window
     member x.GoToFileInNewWindow name =
-        if not (_vimHost.LoadFileIntoNewWindow name (Some 0) None) then
-            _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+        match x.LoadFileIntoNewWindow name (Some 0) None with
+        | Result.Succeeded -> ()
+        | Result.Failed message ->
+            _statusUtil.OnError message
 
     member x.GoToNextTab path count = 
 
@@ -1253,12 +1256,10 @@ type internal CommonOperations
                 |> Seq.filter (fun (_, columnNumber) -> columnNumber <> -1)
                 |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
                 |> SeqUtil.headOrDefault (Some 0, None)
-            if _vimHost.LoadFileIntoNewWindow targetFile lineNumber columnNumber then
-                Result.Succeeded
-            else
-                Result.Failed (sprintf "Cannot open target file %s with tag %s" targetFile tag)
+            x.LoadFileIntoNewWindow targetFile lineNumber columnNumber
         | None ->
-            Result.Failed (sprintf "Cannot find a tag for ident %s" ident)
+            Resources.Common_CouldNotFindTag ident
+            |> Result.Failed
 
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
@@ -1955,6 +1956,23 @@ type internal CommonOperations
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore
 
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    member x.LoadFileIntoNewWindow file lineNumber columnNumber =
+        match _vimHost.LoadFileIntoNewWindow file lineNumber columnNumber with
+        | Some textView ->
+
+            // Ensure that our view flags are enforced in the new window.
+            _vim.GetOrCreateVimBuffer textView
+            |> (fun vimBuffer -> vimBuffer.VimBufferData)
+            |> _commonOperationsFactory.GetCommonOperations
+            |> (fun otherCommonOperations -> otherCommonOperations.EnsureAtCaret ViewFlags.Standard)
+            Result.Succeeded
+
+        | None ->
+            Resources.Common_CouldNotOpenFile file
+            |> Result.Failed
+
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
     member x.Put point stringData opKind =
@@ -2327,6 +2345,7 @@ type internal CommonOperations
         member x.GoToTab index = x.GoToTab index
         member x.GoToTagInNewWindow folder ident = x.GoToTagInNewWindow folder ident
         member x.Join range kind = x.Join range kind
+        member x.LoadFileIntoNewWindow file lineNumber columnNumber = x.LoadFileIntoNewWindow file lineNumber columnNumber
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToColumn column viewFlags =  x.MoveCaretToColumn column viewFlags
@@ -2367,7 +2386,7 @@ type CommonOperationsFactory
         _outliningManagerService: IOutliningManagerService,
         _undoManagerProvider: ITextBufferUndoManagerProvider,
         _mouseDevice: IMouseDevice
-    ) = 
+    ) as this = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
     /// service and instead manually query by a predefined key
@@ -2384,7 +2403,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
+        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData: IVimBufferData) = 

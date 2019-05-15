@@ -29,6 +29,7 @@ type internal SelectionChangeTracker
     let _bag = DisposableBag()
 
     let mutable _syncingSelection = false
+    let mutable _syncingCaret = false
 
     /// Did the selection change while we were in the middle of processing 
     /// key input and not in Visual Mode 
@@ -98,42 +99,54 @@ type internal SelectionChangeTracker
         else
             x.SetModeForSelection()
 
-    /// If the caret changes position and it wasn't initiated by VsVim then we should be 
-    /// adjusting the screen to account for 'scrolloff'
+    /// If the caret changes position and it wasn't initiated by VsVim, then we
+    /// should adjust the window to ensure the caret is on screeen and account
+    /// for 'scrolloff'
     member x.OnPositionChanged() = 
 
-        // Don't apply the scroll offset if it isn't applicable, if the
-        // text view is currently being laid out, or if we are in the middle
-        // of processing input. If we are processing input then the mode is
-        // is responsible for ensuring that the scroll offset is obeyed,
-        // so let the mode handle it.
+        // If we are processing input then the mode is is responsible for
+        // controlling the window, so let the mode handle it.
         if
-            _vimBuffer.GlobalSettings.ScrollOffset > 0
-            && not _textView.InLayout
+            not _syncingCaret
             && not _vimBuffer.IsProcessingInput
             && not _mouseDevice.IsRightButtonPressed
         then
 
-            // Do the update being cautious that anything could have
-            // happened between when we posted it and when it actually
-            // runs.
+            // Do the update being cautious that anything could have happened
+            // between when we posted it and when it actually runs.
             let doUpdate () =
                 try
-                    if not _textView.IsClosed then
-                        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
-                with
-                | _ -> ()
+                    _syncingCaret <- true
+                    try
+                        if not _textView.InLayout && not _textView.IsClosed then
+                            _commonOperations.EnsureAtCaret ViewFlags.Standard
+                    with
+                    | _ -> ()
+                finally
+                    _syncingCaret <- false
 
             // Delay the update to give whoever changed the caret position the
-            // opportunity to scroll the view according to their own needs.
-            // If another extension moves the caret far offscreen and then
-            // centers it if the caret is not onscreen, then reacting too
-            // early to the caret position will defeat their offscreen
-            // handling. An example is double-clicking on a test in an
-            // unopened document in "Test Explorer".
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then
-                context.Post((fun _ -> doUpdate()), null)
+            // opportunity to scroll the view according to their own needs. If
+            // another extension moves the caret far offscreen and then centers
+            // it if the caret is not onscreen, then reacting too early to the
+            // caret position will defeat their offscreen handling. An example
+            // is double-clicking on a test in an unopened document in "Test
+            // Explorer".
+            let isReady () = _vimHost.IsLoaded _textView
+            let postUpdate () =
+                let context = System.Threading.SynchronizationContext.Current
+                if context <> null then context.Post( (fun _ -> doUpdate()), null)
+                else doUpdate()
+            if isReady() then
+                postUpdate()
+            else
+                let bag = DisposableBag()
+                _textView.LayoutChanged
+                |> Observable.subscribe (fun _ -> 
+                    if isReady() then
+                        postUpdate()
+                        bag.DisposeAll())
+                |> bag.Add
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()

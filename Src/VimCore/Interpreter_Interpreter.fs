@@ -1248,7 +1248,7 @@ type VimInterpreter
         // Load the default help
         let loadDefaultHelp vimDoc =
             let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
-            _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
+            _commonOperations.LoadFileIntoNewWindow helpFile (Some 0) None |> ignore
 
         match vimFolder with
         | Some vimFolder ->
@@ -1873,7 +1873,7 @@ type VimInterpreter
         else
             let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
-            | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
+            | None -> _statusUtil.OnError (Resources.Common_CouldNotOpenFile filePath)
             | Some lines -> x.RunScript lines
 
     /// Run the :stopinsert command
@@ -1960,7 +1960,7 @@ type VimInterpreter
     member x.RunTabNew symbolicPath = 
         let filePath = x.InterpretSymbolicPath symbolicPath
         let resolvedFilePath = x.ResolveVimPath filePath
-        _vimHost.LoadFileIntoNewWindow resolvedFilePath (Some 0) None |> ignore
+        _commonOperations.LoadFileIntoNewWindow resolvedFilePath (Some 0) None |> ignore
 
     member x.RunOnly() =
         _vimHost.CloseAllOtherWindows _textView

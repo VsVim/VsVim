@@ -4664,6 +4664,9 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty: textBuffer: ITextBuffer -> bool
 
+    /// Whether the ITextView is loaded
+    abstract IsLoaded: textView: ITextView -> bool
+
     /// Is the ITextBuffer read only
     abstract IsReadOnly: textBuffer: ITextBuffer -> bool
 
@@ -4676,9 +4679,9 @@ type IVimHost =
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
 
-    /// Loads a file into a new window, optionally moving the caret to the
-    /// first non-blank on a specific line or to a specific line and column
-    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> bool
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> ITextView option
 
     /// Run the host specific make operation
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit

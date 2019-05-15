@@ -91,12 +91,15 @@ namespace Vim.UnitTest
                 .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
                 .Returns<IEnumerable<ICollapsible>>(null);
 
+            var commonOperationsFactory = _factory.Create<ICommonOperationsFactory>();
             _operationsRaw = new CommonOperations(
+                commonOperationsFactory.Object,
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
                 FSharpOption.Create(_outlining.Object),
                 MouseDevice);
             _operations = _operationsRaw;
+            commonOperationsFactory.Setup(x => x.GetCommonOperations(vimBufferData)).Returns(_operations);
         }
 
         private static string CreateLinesWithLineBreak(params string[] lines)

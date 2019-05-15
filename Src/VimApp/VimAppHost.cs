@@ -157,7 +157,7 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
@@ -185,12 +185,12 @@ namespace VimApp
                 var point = wpfTextView.Caret.Position.VirtualBufferPosition;
                 NavigateTo(point);
 
-                return true;
+                return FSharpOption.Create<ITextView>(wpfTextView);
             }
             catch (Exception ex)
             {
                 _vim.ActiveStatusUtil.OnError(ex.Message);
-                return false;
+                return FSharpOption<ITextView>.None;
             }
         }
 

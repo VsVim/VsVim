@@ -455,6 +455,10 @@ type ICommonOperations =
     /// Joins the lines in the range
     abstract Join: SnapshotLineRange -> JoinKind -> unit
 
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: file: string -> lineNumber: int option -> columnNumber: int option -> Result
+
     /// Move the caret in the specified direction
     abstract MoveCaret: caretMovement: CaretMovement -> bool
 
