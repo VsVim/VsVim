@@ -9,9 +9,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim.Extensions;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion.Legacy
 {
-    /*
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView
     /// instance and given set of words.
@@ -23,8 +22,8 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     /// </summary>
     [Name("Vim Word Completion Session Factory Service")]
     [ContentType(VimConstants.AnyContentType)]
-    // [Export(typeof(IWordCompletionSessionFactoryService))]
-    // [Export(typeof(ICompletionSourceProvider))]
+    [Export(typeof(IWordCompletionSessionFactoryService))]
+    [Export(typeof(ICompletionSourceProvider))]
     internal sealed class WordCompletionSessionFactoryService : IWordCompletionSessionFactoryService, ICompletionSourceProvider
     {
         #region CompletionData
@@ -156,6 +155,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             {
                 get { return _properties; }
             }
+
+            void IWordCompletionSession.Commit()
+            {
+
+            }
         }
 
         #endregion
@@ -279,5 +283,4 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
 
         #endregion
     }
-    */
 }

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace VsSpecific.Implementation.WordCompletion.Async
+namespace Vim.Implementation.WordCompletion.Async
 {
     internal static class Extensions
     {

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion.Legacy
 {
     internal sealed class WordCompletionSet : CompletionSet
     {

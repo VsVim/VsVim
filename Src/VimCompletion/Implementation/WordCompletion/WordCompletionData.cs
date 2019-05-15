@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text;
 using System.Collections.ObjectModel;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion
 {
     /// <summary>
     /// Information about the completion which needs to be passed around between the 

@@ -6,7 +6,7 @@ using Vim.Extensions;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion.Legacy
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  Wraps an ICompletionSession

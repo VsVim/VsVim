@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Utilities;
 using System;
 using Vim;
 
-namespace VsSpecific.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion
 {
     /// <summary>
     /// An IWordCompletionSession which starts out dismissed.

@@ -11,9 +11,8 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.Implementation.WordCompletion.Legacy
 {
-    /*
     /// <summary>
     /// This class is responsible for creating IIntellisensePresenter instances for presented 
     /// IWordCompletionSession values.
@@ -36,7 +35,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     /// </summary>
     [Name("Word Completion Presenter Provider")]
     [Order(Before = "Default Completion Presenter")]
-    // [Export(typeof(IIntellisensePresenterProvider))]
+    [Export(typeof(IIntellisensePresenterProvider))]
     [ContentType(VimConstants.AnyContentType)]
     internal sealed class WordCompletionPresenterProvider : IIntellisensePresenterProvider
     {
@@ -457,5 +456,4 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
             return null;
         }
     }
-    */
 }

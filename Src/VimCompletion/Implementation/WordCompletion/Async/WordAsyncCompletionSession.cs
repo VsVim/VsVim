@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
 using System.Reflection;
 
-namespace VsSpecific.Implementation.WordCompletion.Async
+namespace Vim.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  
