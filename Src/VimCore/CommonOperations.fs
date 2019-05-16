@@ -153,7 +153,7 @@ type internal CommonOperations
     /// Perform the specified action when the text view is ready
     member x.PerformActionWhenReady (action: unit -> unit) =
 
-        // Check whether the text view is ready for the action
+        // Whether the text view is ready for the action
         let isReady () = _vimHost.IsLoaded _textView
 
         // Do the action if it is safe to do so. The window might have been
@@ -162,17 +162,31 @@ type internal CommonOperations
             if not _textView.IsClosed then
                 action()
 
+        // Try to do the action if the text view is ready
+        let tryDoAction (bag: DisposableBag) =
+
+            // When it finally becomes ready, post the action because we should
+            // not perform any text view related actions from the text view's
+            // layout changed handler.
+            if isReady() then
+                let context = System.Threading.SynchronizationContext.Current
+                if context <> null then
+                    context.Post((fun _ -> doAction()), null)
+                else
+                    doAction()
+                bag.DisposeAll()
+
         if isReady() then
-            action()
+
+            // If the text view is ready, do the action immediately.
+            doAction()
         else
+
+            // Otherwise, keep checking on each layout change whether the text
+            // view is ready for the action yet.
             let bag = DisposableBag()
             _textView.LayoutChanged
-            |> Observable.subscribe (fun _ -> 
-                if isReady() then
-                    let context = System.Threading.SynchronizationContext.Current
-                    if context <> null then context.Post( (fun _ -> doAction()), null)
-                    else doAction()
-                    bag.DisposeAll())
+            |> Observable.subscribe (fun _ -> tryDoAction bag)
             |> bag.Add
 
     /// Create a possibly LineWise register value with the specified string value at the given 
@@ -2184,7 +2198,7 @@ type internal CommonOperations
             x.MoveCaretToVirtualPoint virtualColumn.VirtualStartPoint ViewFlags.VirtualEdit
             x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
-    /// Ensure the given view properties are met at the given point
+    /// Synchronously ensure that the given view properties are met at the given point
     member x.EnsureAtPointSync point viewFlags = 
         let point = x.MapPointNegativeToCurrentSnapshot point
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
@@ -2196,7 +2210,7 @@ type internal CommonOperations
         if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
             x.AdjustCaretForVirtualEdit()
     
-    /// Ensure the given view properties are met at the given point
+    /// Ensure that the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
         x.PerformActionWhenReady (fun () -> x.EnsureAtPointSync point viewFlags)
 

@@ -43,6 +43,7 @@ namespace Vim.UnitTest
             // Create the Vim instance with our Mock'd services
             _registerMap = Vim.RegisterMap;
             _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.IsLoaded(It.IsAny<ITextView>())).Returns(true);
             var globalSettings = Vim.GlobalSettings;
             globalSettings.Magic = true;
             globalSettings.SmartCase = false;
