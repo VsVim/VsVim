@@ -156,6 +156,12 @@ type internal CommonOperations
         // Check whether the text view is ready for the action
         let isReady () = _vimHost.IsLoaded _textView
 
+        // Do the action if it is safe to do so. The window might have been
+        // closed in the meantime
+        let doAction () =
+            if not _textView.IsClosed then
+                action()
+
         if isReady() then
             action()
         else
@@ -164,8 +170,8 @@ type internal CommonOperations
             |> Observable.subscribe (fun _ -> 
                 if isReady() then
                     let context = System.Threading.SynchronizationContext.Current
-                    if context <> null then context.Post( (fun _ -> action()), null)
-                    else action()
+                    if context <> null then context.Post( (fun _ -> doAction()), null)
+                    else doAction()
                     bag.DisposeAll())
             |> bag.Add
 
