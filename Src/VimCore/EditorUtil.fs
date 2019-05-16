@@ -3146,16 +3146,14 @@ module TextViewUtil =
                 let option = Editor.EnsureSpanVisibleOptions.AlwaysCenter
                 textView.ViewScroller.EnsureSpanVisible(span, option) |> ignore
 
+        // We need to scroll if the caret is offscreen.
         match GetTextViewLineContainingPoint textView point with
-        | Some textViewLine ->
-            let onScreen = textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible
-            if not onScreen then
-
-                // The line the point is on is off-screen.
-                match GetTextViewLines textView with
-                | Some textViewLines -> doScrollToPoint textViewLines
-                | _ -> ()
-        | None -> ()
+        | Some textViewLine when textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible ->
+            ()
+        | _ ->
+            match GetTextViewLines textView with
+            | Some textViewLines -> doScrollToPoint textViewLines
+            | _ -> ()
 
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =
