@@ -26,6 +26,9 @@ using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
+using Vim.Implementation.WordCompletion;
+using Vim.Implementation.WordCompletion.Async;
+using Vim.Implementation.WordCompletion.Legacy;
 
 namespace Vim.UnitTest
 {
@@ -553,7 +556,9 @@ namespace Vim.UnitTest
                     typeof(global::Vim.UnitTest.Exports.VimHost),
                     typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
-                    // typeof(WordCompletionSessionFactoryService),
+                    typeof(WordCompletionSessionFactoryService),
+                    typeof(WordAsyncCompletionSessionFactoryService),
+                    typeof(WordLegacyCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
                     typeof(OutlinerTaggerProvider)));
 
