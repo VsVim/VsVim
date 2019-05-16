@@ -27,7 +27,6 @@ using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
 using Vim.Implementation.WordCompletion;
-using Vim.Implementation.WordCompletion.Async;
 using Vim.Implementation.WordCompletion.Legacy;
 
 namespace Vim.UnitTest
@@ -557,7 +556,9 @@ namespace Vim.UnitTest
                     typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
                     typeof(WordCompletionSessionFactoryService),
-                    typeof(WordAsyncCompletionSessionFactoryService),
+#if VS_SPECIFIC_2019
+                    typeof(Vim.Implementation.WordCompletion.Async.WordAsyncCompletionSessionFactoryService),
+#endif
                     typeof(WordLegacyCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
                     typeof(OutlinerTaggerProvider)));
