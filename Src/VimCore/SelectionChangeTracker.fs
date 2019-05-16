@@ -29,7 +29,6 @@ type internal SelectionChangeTracker
     let _bag = DisposableBag()
 
     let mutable _syncingSelection = false
-    let mutable _syncingCaret = false
 
     /// Did the selection change while we were in the middle of processing 
     /// key input and not in Visual Mode 
@@ -107,24 +106,9 @@ type internal SelectionChangeTracker
         // If we are processing input then the mode is is responsible for
         // controlling the window, so let the mode handle it.
         if
-            not _syncingCaret
-            && not _vimBuffer.IsProcessingInput
+            not _vimBuffer.IsProcessingInput
             && not _mouseDevice.IsRightButtonPressed
         then
-
-            // Do the update being cautious that anything could have happened
-            // between when we posted it and when it actually runs.
-            let doUpdate () =
-                try
-                    _syncingCaret <- true
-                    try
-                        if not _textView.InLayout && not _textView.IsClosed then
-                            _commonOperations.EnsureAtCaret ViewFlags.Standard
-                    with
-                    | _ -> ()
-                finally
-                    _syncingCaret <- false
-
             // Delay the update to give whoever changed the caret position the
             // opportunity to scroll the view according to their own needs. If
             // another extension moves the caret far offscreen and then centers
@@ -132,21 +116,10 @@ type internal SelectionChangeTracker
             // caret position will defeat their offscreen handling. An example
             // is double-clicking on a test in an unopened document in "Test
             // Explorer".
-            let isReady () = _vimHost.IsLoaded _textView
-            let postUpdate () =
-                let context = System.Threading.SynchronizationContext.Current
-                if context <> null then context.Post( (fun _ -> doUpdate()), null)
-                else doUpdate()
-            if isReady() then
-                postUpdate()
-            else
-                let bag = DisposableBag()
-                _textView.LayoutChanged
-                |> Observable.subscribe (fun _ -> 
-                    if isReady() then
-                        postUpdate()
-                        bag.DisposeAll())
-                |> bag.Add
+            let doUpdate () = _commonOperations.EnsureAtCaret ViewFlags.Standard
+            let context = System.Threading.SynchronizationContext.Current
+            if context <> null then context.Post( (fun _ -> doUpdate()), null)
+            else doUpdate()
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()

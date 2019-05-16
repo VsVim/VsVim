@@ -150,6 +150,25 @@ type internal CommonOperations
         else
             _vimHost.Close _textView
 
+    /// Perform the specified action when the text view is ready
+    member x.PerformActionWhenReady (action: unit -> unit) =
+
+        // Check whether the text view is ready for the action
+        let isReady () = _vimHost.IsLoaded _textView
+
+        if isReady() then
+            action()
+        else
+            let bag = DisposableBag()
+            _textView.LayoutChanged
+            |> Observable.subscribe (fun _ -> 
+                if isReady() then
+                    let context = System.Threading.SynchronizationContext.Current
+                    if context <> null then context.Post( (fun _ -> action()), null)
+                    else action()
+                    bag.DisposeAll())
+            |> bag.Add
+
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 
@@ -2160,7 +2179,7 @@ type internal CommonOperations
             x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
     /// Ensure the given view properties are met at the given point
-    member x.EnsureAtPoint point viewFlags = 
+    member x.EnsureAtPointSync point viewFlags = 
         let point = x.MapPointNegativeToCurrentSnapshot point
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
             x.EnsurePointExpanded point
@@ -2170,6 +2189,10 @@ type internal CommonOperations
             x.AdjustTextViewForScrollOffsetAtPoint point
         if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
             x.AdjustCaretForVirtualEdit()
+    
+    /// Ensure the given view properties are met at the given point
+    member x.EnsureAtPoint point viewFlags = 
+        x.PerformActionWhenReady (fun () -> x.EnsureAtPointSync point viewFlags)
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
