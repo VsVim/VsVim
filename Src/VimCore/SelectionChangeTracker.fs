@@ -98,12 +98,12 @@ type internal SelectionChangeTracker
         else
             x.SetModeForSelection()
 
-    /// If the caret changes position and it wasn't initiated by VsVim, then we
-    /// should adjust the window to ensure the caret is on screeen and account
-    /// for 'scrolloff'
+    /// React to external caret position changes by ensuring that our view
+    /// properties are met, such as the caret being visible and 'scrolloff'
+    /// being taken into account
     member x.OnPositionChanged() = 
 
-        // If we are processing input then the mode is is responsible for
+        // If we are processing input then the mode is responsible for
         // controlling the window, so let the mode handle it.
         if
             not _vimBuffer.IsProcessingInput
@@ -116,10 +116,18 @@ type internal SelectionChangeTracker
             // caret position will defeat their offscreen handling. An example
             // is double-clicking on a test in an unopened document in "Test
             // Explorer".
-            let doUpdate () = _commonOperations.EnsureAtCaret ViewFlags.Standard
+            let doUpdate () =
+
+                // Proceed cautiously because the window might have been closed
+                // in the meantime.
+                if not _textView.IsClosed then
+                    _commonOperations.EnsureAtCaret ViewFlags.Standard
+
             let context = System.Threading.SynchronizationContext.Current
-            if context <> null then context.Post( (fun _ -> doUpdate()), null)
-            else doUpdate()
+            if context <> null then
+                context.Post((fun _ -> doUpdate()), null)
+            else
+                doUpdate()
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()
