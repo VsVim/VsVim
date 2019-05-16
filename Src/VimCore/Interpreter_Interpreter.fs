@@ -716,10 +716,7 @@ type VimInterpreter
 
                 // Translate the insertion point to the current snapshot and
                 // move to it.
-                match TrackingPointUtil.GetPointInSnapshot destPoint PointTrackingMode.Negative newSnapshot with
-                | Some destPoint -> destPoint.Position
-                | None -> destPoint.Position
-                |> (fun position -> new SnapshotPoint(_textBuffer.CurrentSnapshot, position))
+                _commonOperations.MapPointNegativeToCurrentSnapshot destPoint
                 |> (fun point -> _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit)
                 _commonOperations.RestoreSpacesToCaret spaces true)
 

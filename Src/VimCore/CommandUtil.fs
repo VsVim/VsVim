@@ -244,11 +244,8 @@ type internal CommandUtil
     /// and returns the position mapped into the current ITextSnapshot
     member x.ApplyEditAndMapPoint (textEdit: ITextEdit) position =
         let editSnapshot = textEdit.Apply()
-        let editPoint = SnapshotPoint(editSnapshot, position)
-        let currentSnapshot = x.CurrentSnapshot
-        match TrackingPointUtil.GetPointInSnapshot editPoint PointTrackingMode.Negative currentSnapshot with
-        | None -> SnapshotPoint(currentSnapshot, 0)
-        | Some point -> point
+        SnapshotPoint(editSnapshot, position)
+        |> _commonOperations.MapPointNegativeToCurrentSnapshot
 
     member x.ApplyEditAndMapColumn (textEdit: ITextEdit) position =
         let point = x.ApplyEditAndMapPoint textEdit position
@@ -1893,12 +1890,9 @@ type internal CommandUtil
             let number = range.StartLineNumber + range.Count - 2
             let line = SnapshotUtil.GetLine range.Snapshot number
             line |> SnapshotLineUtil.GetLastIncludedPoint |> OptionUtil.getOrDefault line.Start
-        match TrackingPointUtil.GetPointInSnapshot point PointTrackingMode.Positive x.CurrentSnapshot with
-        | None ->
-            ()
-        | Some point ->
-            let point = SnapshotPointUtil.AddOneOrCurrent point
-            TextViewUtil.MoveCaretToPoint _textView point
+        _commonOperations.MapPointPositiveToCurrentSnapshot point
+        |> SnapshotPointUtil.AddOneOrCurrent
+        |> TextViewUtil.MoveCaretToPoint _textView
 
     /// Move the caret to the result of the motion
     member x.MoveCaretToMotion motion count =
@@ -2473,26 +2467,21 @@ type internal CommandUtil
                     EditSpan.Block col, OperationKind.CharacterWise)
 
         // Translate the deleted span to the current snapshot.
-        let snapshot = _textView.TextSnapshot
-        let startPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.Start PointTrackingMode.Negative snapshot
-        let endPoint = TrackingPointUtil.GetPointInSnapshot visualSpan.End PointTrackingMode.Positive snapshot
-        match startPoint, endPoint with
-        | Some startPoint, Some endPoint ->
+        let startPoint = _commonOperations.MapPointNegativeToCurrentSnapshot visualSpan.Start
+        let endPoint = _commonOperations.MapPointPositiveToCurrentSnapshot visualSpan.End
 
-            // Record last visual selection as if what was put were selected.
-            let tabStop = _localSettings.TabStop
-            let selectionKind = _globalSettings.SelectionKind
-            let endPoint =
-                if visualSpan.VisualKind = VisualKind.Line || selectionKind = SelectionKind.Inclusive then
-                    SnapshotPointUtil.GetPreviousCharacterSpanWithWrap endPoint
-                else
-                    endPoint
-            _vimTextBuffer.LastVisualSelection <-
-                VisualSelection.CreateForPoints visualSpan.VisualKind startPoint endPoint tabStop
-                |> (fun visualSelection -> visualSelection.AdjustForSelectionKind selectionKind)
-                |> Some
-        | _ ->
-            ()
+        // Record last visual selection as if what was put were selected.
+        let tabStop = _localSettings.TabStop
+        let selectionKind = _globalSettings.SelectionKind
+        let endPoint =
+            if visualSpan.VisualKind = VisualKind.Line || selectionKind = SelectionKind.Inclusive then
+                SnapshotPointUtil.GetPreviousCharacterSpanWithWrap endPoint
+            else
+                endPoint
+        _vimTextBuffer.LastVisualSelection <-
+            VisualSelection.CreateForPoints visualSpan.VisualKind startPoint endPoint tabStop
+            |> (fun visualSelection -> visualSelection.AdjustForSelectionKind selectionKind)
+            |> Some
 
         // Update the unnamed register with the deleted text
         let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
