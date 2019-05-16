@@ -218,10 +218,16 @@ namespace Vim.VisualStudio.UnitTest
             editorHostFactory.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(ISharedService).Assembly));
-            editorHostFactory.Add(new TypeCatalog(
+
+            var types = new List<Type>()
+            {
                 typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(VimErrorDetector)));
+                typeof(VimErrorDetector)
+            };
+
+            global::Vim.Implementation.WordCompletion.WordCompletionSessionFactoryService.AddCompositionTypes(types);
+            editorHostFactory.Add(new TypeCatalog(types));
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }

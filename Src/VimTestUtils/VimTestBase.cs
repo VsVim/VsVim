@@ -548,20 +548,21 @@ namespace Vim.UnitTest
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
                 // Other Exports needed to construct VsVim
-                editorHostFactory.Add(new TypeCatalog(
+                var types = new List<Type>()
+                {
                     typeof(TestableClipboardDevice),
                     typeof(TestableKeyboardDevice),
                     typeof(TestableMouseDevice),
                     typeof(global::Vim.UnitTest.Exports.VimHost),
                     typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
-                    typeof(WordCompletionSessionFactoryService),
-#if VS_SPECIFIC_2019
-                    typeof(Vim.Implementation.WordCompletion.Async.WordAsyncCompletionSessionFactoryService),
-#endif
-                    typeof(WordLegacyCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
-                    typeof(OutlinerTaggerProvider)));
+                    typeof(OutlinerTaggerProvider)
+                };
+
+                WordCompletionSessionFactoryService.AddCompositionTypes(types);
+
+                editorHostFactory.Add(new TypeCatalog(types));
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
                 host = new VimEditorHost(compositionContainer);

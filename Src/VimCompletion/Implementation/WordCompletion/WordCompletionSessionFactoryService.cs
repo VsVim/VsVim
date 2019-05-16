@@ -50,7 +50,7 @@ namespace Vim.Implementation.WordCompletion
             RaiseCreated(session);
             return session;
         }
-        
+
 #elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 
         private readonly WordLegacyCompletionSessionFactoryService _legacyFactory;
@@ -67,6 +67,7 @@ namespace Vim.Implementation.WordCompletion
             RaiseCreated(session);
             return session;
         }
+
 #else
 #error Unsupported configuration
 #endif
@@ -77,6 +78,16 @@ namespace Vim.Implementation.WordCompletion
         {
             var args = new WordCompletionSessionEventArgs(wordCompletionSession);
             _createdEvent(this, args);
+        }
+
+        internal static void AddCompositionTypes(List<Type> list)
+        {
+            list.Add(typeof(WordCompletionSessionFactoryService));
+            list.Add(typeof(WordLegacyCompletionSessionFactoryService));
+
+#if VS_SPECIFIC_2019
+            list.Add(typeof(WordAsyncCompletionSessionFactoryService));
+#endif
         }
 
         #region IWordCompletionSessionFactoryService
