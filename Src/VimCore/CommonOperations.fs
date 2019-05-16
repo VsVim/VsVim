@@ -151,7 +151,7 @@ type internal CommonOperations
             _vimHost.Close _textView
 
     /// Perform the specified action when the text view is ready
-    member x.PerformActionWhenReady (action: unit -> unit) =
+    member x.DoActionWhenReady (action: unit -> unit) =
 
         // Whether the text view is ready for the action
         let isReady () = _vimHost.IsLoaded _textView
@@ -2210,9 +2210,13 @@ type internal CommonOperations
         if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
             x.AdjustCaretForVirtualEdit()
     
+    /// Ensure the view properties are met at the caret
+    member x.EnsureAtCaret viewFlags = 
+        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
+
     /// Ensure that the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
-        x.PerformActionWhenReady (fun () -> x.EnsureAtPointSync point viewFlags)
+        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync point viewFlags)
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -2362,7 +2366,7 @@ type internal CommonOperations
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
-        member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
+        member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FilterLines range command = x.FilterLines range command
