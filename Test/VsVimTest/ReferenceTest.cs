@@ -158,6 +158,7 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.Text.Logic":
                     case "Microsoft.VisualStudio.Text.UI":
                     case "Microsoft.VisualStudio.Text.UI.Wpf":
+                    case "Microsoft.VisualStudio.Language":
                     case "Microsoft.VisualStudio.Language.Intellisense":
                     case "Microsoft.VisualStudio.Language.NavigateTo.Interfaces":
                         return new ReferenceData(assemblyName, ReferenceKind.Editor, getVersionFromVersionNumber());
