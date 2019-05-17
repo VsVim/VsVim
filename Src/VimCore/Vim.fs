@@ -575,6 +575,10 @@ type internal Vim
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
         textBuffer.Properties.[_vimTextBufferKey] <- vimTextBuffer
 
+        // Scan the file for a modeline.
+        if _globalSettings.ModeLine && _globalSettings.ModeLines > 0 then
+            ()
+
         // If we are currently disabled then the new IVimTextBuffer instance should be disabled
         // as well
         if _isDisabled then

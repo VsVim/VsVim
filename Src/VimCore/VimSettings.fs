@@ -394,6 +394,12 @@ type internal GlobalSettings() =
         member x.MaxMapDepth
             with get() = _map.GetNumberValue MaxMapDepth
             and set value = _map.TrySetValue MaxMapDepth (SettingValue.Number value) |> ignore
+        member x.ModeLine 
+            with get() = _map.GetBoolValue ModeLineName
+            and set value = _map.TrySetValue ModeLineName (SettingValue.Toggle value) |> ignore
+        member x.ModeLines 
+            with get() = _map.GetNumberValue ModeLinesName
+            and set value = _map.TrySetValue ModeLinesName (SettingValue.Number value) |> ignore
         member x.MouseModel 
             with get() = _map.GetStringValue MouseModelName
             and set value = _map.TrySetValue MouseModelName (SettingValue.String value) |> ignore

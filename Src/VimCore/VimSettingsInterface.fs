@@ -30,6 +30,8 @@ module GlobalSettingNames =
     let LastStatusName = "laststatus"
     let MagicName = "magic"
     let MaxMapDepth =  "maxmapdepth"
+    let ModeLineName = "modeline"
+    let ModeLinesName = "modelines"
     let MouseModelName = "mousemodel"
     let ParagraphsName = "paragraphs"
     let PathName = "path"
@@ -343,12 +345,6 @@ and IVimGlobalSettings =
     /// The number of items to keep in the history lists
     abstract History: int with get, set
 
-    /// Whether or not the magic option is set
-    abstract Magic: bool with get, set
-
-    /// Maximum number of recursive depths which occur for a mapping
-    abstract MaxMapDepth: int with get, set
-
     /// Whether or not we should be ignoring case in the ITextBuffer
     abstract IgnoreCase: bool with get, set
 
@@ -447,6 +443,18 @@ and IVimGlobalSettings =
 
     /// The value of this option influences when a window will have a status line
     abstract LastStatus: int with get, set
+
+    /// Whether or not the magic option is set
+    abstract Magic: bool with get, set
+
+    /// Maximum number of recursive depths which occur for a mapping
+    abstract MaxMapDepth: int with get, set
+
+    /// Whether or not the 'modeline' option is set
+    abstract ModeLine: bool with get, set
+
+    /// How many text lines to search for a modeline
+    abstract ModeLines: int with get, set
 
     /// The 'mousemodel' setting
     abstract MouseModel: string with get, set
