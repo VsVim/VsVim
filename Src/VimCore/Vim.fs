@@ -593,15 +593,6 @@ type internal Vim
         let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
         let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
 
-        // Check the text buffer for a modeline if it hasn't already been
-        // checked.
-        match vimTextBuffer.CheckModeLine() with
-        | Some modeLine, Some badOption ->
-            Resources.Common_InvalidModeLineSetting badOption modeLine
-            |> vimBufferData.StatusUtil.OnError
-        | _ ->
-            ()
-
         // Apply the specified window settings
         match windowSettings with
         | None -> ()

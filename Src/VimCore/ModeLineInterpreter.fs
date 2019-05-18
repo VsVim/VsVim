@@ -24,9 +24,6 @@ type internal ModeLineInterpreter
 
     let _globalSettings = _localSettings.GlobalSettings
 
-    // Whether the modeline has been checked since this text buffer was created
-    let mutable _wasModeLineChecked: bool = false
-
     /// Sequence of insecure local setting names that could be used by a
     /// malicious modeline to cause harm to the user
     static let _insecureListedLocalSettingNames =
@@ -157,23 +154,19 @@ type internal ModeLineInterpreter
         // access to a text buffer, not the text view, and so we cannot report
         // an error to the user. As a result, whenever a vim buffer gets or
         // creates a vim text buffer, it should perform the modeline check.
-        if not _wasModeLineChecked then
-            _wasModeLineChecked <- true
-            try
-                let modeLines = _globalSettings.ModeLines
-                if _globalSettings.ModeLine && modeLines > 0 then
-                    tryProcessModeLines modeLines
-                else
-                    None, None
-            with
-            | ex ->
-
-                // Empirically, exceptions may be silently caught by some
-                // caller in the call stack. As a result, we catch any
-                // exceptions here so they are at least reported in the
-                // debugger, and so that this can be a convenient place to put
-                // a breakpoint.
-                VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
+        try
+            let modeLines = _globalSettings.ModeLines
+            if _globalSettings.ModeLine && modeLines > 0 then
+                tryProcessModeLines modeLines
+            else
                 None, None
-        else
+        with
+        | ex ->
+
+            // Empirically, exceptions may be silently caught by some
+            // caller in the call stack. As a result, we catch any
+            // exceptions here so they are at least reported in the
+            // debugger, and so that this can be a convenient place to put
+            // a breakpoint.
+            VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
             None, None
