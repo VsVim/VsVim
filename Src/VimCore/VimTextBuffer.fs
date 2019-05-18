@@ -3,6 +3,7 @@
 
 namespace Vim
 
+open System.Text.RegularExpressions
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -33,6 +34,8 @@ type internal VimTextBuffer
     let mutable _isSoftTabStopValidForBackspace = true
     let mutable _inOneTimeCommand: ModeKind option = None
     let mutable _inSelectModeOneCommand: bool = false
+    let mutable _wasModeLineChecked: bool = false
+    let mutable _modeLine: string option = None
 
     /// Raise the mark set event
     member x.RaiseMarkSet localMark =
@@ -201,6 +204,123 @@ type internal VimTextBuffer
         | _
             -> _globalSettings.IsVirtualEditAll
 
+    /// Check the contents of the buffer for a modeline
+    member x.CheckModeLine () =
+
+        // Regular expressions to parse the modeline.
+        let escapedModeLine = @"(([^:\\]|\\:?)*)";
+        let firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + escapedModeLine + ":"
+        let secondPattern = @"[ \t]vim:(.*):$"
+        let nextGroup = escapedModeLine + @"(:|$)"
+        let assignment = @"^([\w[\w\d_]*)=(.*)$"
+
+        // Ignore empty or not yet supported settings.
+        // Example: "vim:tw=78:ts=8:noet:ft=help:norl:"
+        let ignoreSetting (settingName: string) =
+            match settingName with
+            | "" | "tw" | "ft" | "rl" -> true
+            | _ -> false
+
+        // Process a single option like 'ts=8'.
+        let processOption (option: string) =
+            let option = option.Trim()
+            let settingName, setter =
+                let m = Regex.Match(option, assignment)
+                if m.Success then
+                    let settingName = m.Groups.[1].Value
+                    let strValue = m.Groups.[2].Value
+                    settingName, (fun () -> _localSettings.TrySetValueFromString settingName strValue)
+                elif option.StartsWith("no") then
+                    let settingName = option.Substring(2)
+                    settingName, (fun () ->_localSettings.TrySetValue settingName (SettingValue.Toggle false))
+                else
+                    let settingName = option
+                    settingName, (fun () -> _localSettings.TrySetValue settingName (SettingValue.Toggle true))
+            if ignoreSetting settingName then
+                true
+            else
+                setter()
+
+        // Try to process the list of options.
+        let tryProcessOptions (options: string List) =
+            options
+            |> Seq.tryFind (fun option -> not (processOption option))
+
+        // Split the option string into fields.
+        let splitFields (options: string) =
+            options.Replace(@"\:", ":").Split(' ', '\t')
+
+        // Process the "first" format of modeline, e.g. "vim: set ...".
+        let processFirst (modeLine: string) =
+            let m = Regex.Match(modeLine, firstPattern)
+            if m.Success then
+                let firstBadOption =
+                    let fields =
+                        splitFields m.Groups.[1].Value
+                        |> Seq.toList
+                    tryProcessOptions fields
+                Some modeLine, firstBadOption
+            else
+                None, None
+
+        // Process the "second" format of modeline, e.g. "vim: ...".
+        let processSecond (modeLine: string) =
+            let m = Regex.Match(modeLine, secondPattern)
+            if m.Success then
+                let firstBadOption =
+                    let fields =
+                        Regex.Matches(m.Groups.[1].Value, nextGroup)
+                        |> Seq.cast<Match>
+                        |> Seq.map (fun m -> splitFields m.Groups.[1].Value)
+                        |> Seq.collect id
+                        |> Seq.toList
+                    tryProcessOptions fields
+                Some modeLine, firstBadOption
+            else
+                None, None
+
+        // Try to process either of the two modeline formats.
+        let tryProcessModeLine modeLine =
+            let result, firstBadOption = processFirst modeLine
+            if result.IsSome then
+                result, firstBadOption
+            else
+                processSecond modeLine
+
+        // Try to process the first few and last few lines as modelines.
+        let tryProcessModeLines modeLines =
+            let lineCount = _textBuffer.CurrentSnapshot.LineCount
+            let snapshot = _textBuffer.CurrentSnapshot
+            let modeLine, firstBadOption =
+                seq {
+                    yield seq { 0 .. modeLines - 1 }
+                    yield seq { lineCount - modeLines .. lineCount - 1 }
+                }
+                |> Seq.concat
+                |> Seq.filter (fun lineNumber -> lineNumber >= 0 && lineNumber < lineCount)
+                |> Seq.sort
+                |> Seq.distinct
+                |> Seq.map (fun lineNumber -> SnapshotUtil.GetLine snapshot lineNumber)
+                |> Seq.map SnapshotLineUtil.GetText
+                |> Seq.map tryProcessModeLine
+                |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
+            _modeLine <- modeLine
+            firstBadOption
+
+        // Perform this check only once for a given text buffer.
+        if not _wasModeLineChecked then
+            _wasModeLineChecked <- true
+            try
+                let modeLines = _globalSettings.ModeLines
+                if _globalSettings.ModeLine && modeLines > 0 then
+                    tryProcessModeLines modeLines
+                else
+                    None
+            with
+            | _ -> None
+        else
+            None
+
     /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
     member x.Clear() =
         // First clear out the Letter based marks
@@ -325,6 +445,7 @@ type internal VimTextBuffer
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
         member x.UseVirtualSpace = x.UseVirtualSpace
+        member x.CheckModeLine() = x.CheckModeLine()
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark lineNumber offset = x.SetLocalMark localMark lineNumber offset

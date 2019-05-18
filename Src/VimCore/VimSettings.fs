@@ -169,6 +169,8 @@ type internal GlobalSettings() =
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
             (MagicName, MagicName, SettingValue.Toggle true, SettingOptions.None)
             (MaxMapDepth, "mmd", SettingValue.Number 1000, SettingOptions.None)
+            (ModeLineName, "ml", SettingValue.Toggle true, SettingOptions.None)
+            (ModeLinesName, "mls", SettingValue.Number 5, SettingOptions.None)
             (MouseModelName, "mousem", SettingValue.String "popup", SettingOptions.None)
             (PathName,"pa", SettingValue.String ".,,", SettingOptions.FileName)
             (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp", SettingOptions.None)
@@ -562,19 +564,25 @@ type internal LocalSettings
         | NumberFormat.Alpha ->
             isSupported "alpha"
 
+    member x.TrySetValue settingName value =
+        if _map.OwnsSetting settingName then _map.TrySetValue settingName value
+        else _globalSettings.TrySetValue settingName value
+
+    member x.TrySetValueFromString settingName strValue =
+        if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
+        else _globalSettings.TrySetValueFromString settingName strValue
+
+    member x.GetSetting settingName =
+        if _map.OwnsSetting settingName then _map.GetSetting settingName
+        else _globalSettings.GetSetting settingName
+
     interface IVimLocalSettings with 
         // IVimSettings
         
         member x.Settings = _map.Settings
-        member x.TrySetValue settingName value = 
-            if _map.OwnsSetting settingName then _map.TrySetValue settingName value
-            else _globalSettings.TrySetValue settingName value
-        member x.TrySetValueFromString settingName strValue = 
-            if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
-            else _globalSettings.TrySetValueFromString settingName strValue
-        member x.GetSetting settingName =
-            if _map.OwnsSetting settingName then _map.GetSetting settingName
-            else _globalSettings.GetSetting settingName
+        member x.TrySetValue settingName value = x.TrySetValue settingName value
+        member x.TrySetValueFromString settingName strValue =  x.TrySetValueFromString settingName strValue
+        member x.GetSetting settingName = x.GetSetting settingName
 
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent

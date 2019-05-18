@@ -575,10 +575,6 @@ type internal Vim
         // Put the IVimTextBuffer into the ITextBuffer property bag so we can query for it in the future
         textBuffer.Properties.[_vimTextBufferKey] <- vimTextBuffer
 
-        // Scan the file for a modeline.
-        if _globalSettings.ModeLine && _globalSettings.ModeLines > 0 then
-            ()
-
         // If we are currently disabled then the new IVimTextBuffer instance should be disabled
         // as well
         if _isDisabled then
@@ -596,6 +592,13 @@ type internal Vim
         let vimTextBuffer = x.GetOrCreateVimTextBuffer textView.TextBuffer
         let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
         let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
+
+        // Check the text buffer for a modeline if it hasn't already been checked.
+        match vimTextBuffer.CheckModeLine() with
+        | Some badOption ->
+            vimBufferData.StatusUtil.OnError (sprintf "Modeline error: %s" badOption)
+        | None ->
+            ()
 
         // Apply the specified window settings
         match windowSettings with
