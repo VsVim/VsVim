@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text
 
 [<Sealed>]
 [<Class>]
-type internal ModeLineInterpreter 
+type internal ModeLineInterpreter
     (
         _textBuffer: ITextBuffer,
         _localSettings: IVimLocalSettings
@@ -35,7 +35,7 @@ type internal ModeLineInterpreter
     member x.CheckModeLine () =
 
         // Whether we should ignore the setting
-        let shouldIgnoreSetting (settingName: string) =
+        let shouldIgnoreSetting settingName =
 
             // Ignore empty settings and settings we don't support yet. Ideally
             // we would produce an error for unrecognized settings but vim has
@@ -44,7 +44,7 @@ type internal ModeLineInterpreter
             let localSetting = _localSettings.GetSetting settingName
             if settingName = "" then
 
-                // Ignore the empty setting.
+                // Ignore an empty setting.
                 true
             elif not (Regex.Match(settingName, _settingName).Success) then
 
@@ -58,7 +58,7 @@ type internal ModeLineInterpreter
                 false
 
         // Whether we should allow the setting
-        let shouldAllowSetting (settingName: string) =
+        let shouldAllowSetting settingName =
 
             // For security reasons, we disallow certain local settings.
             let globalSetting = _globalSettings.GetSetting settingName
@@ -79,18 +79,33 @@ type internal ModeLineInterpreter
         // Process a single option like 'ts=8'.
         let processOption (option: string) =
             let option = option.Trim()
+
+            // Determine what kind of option this is.
             let settingName, setter =
                 let m = Regex.Match(option, _assignment)
                 if m.Success then
+
+                    // The option is an assigned setting.
                     let settingName = m.Groups.[1].Value
                     let strValue = m.Groups.[2].Value
-                    settingName, (fun () -> _localSettings.TrySetValueFromString settingName strValue)
+                    let setter = fun () -> _localSettings.TrySetValueFromString settingName strValue
+                    settingName, setter
                 elif option.StartsWith("no") then
+
+                    // The option toggles the setting off.
                     let settingName = option.Substring(2)
-                    settingName, (fun () ->_localSettings.TrySetValue settingName (SettingValue.Toggle false))
+                    let toggleOff = (SettingValue.Toggle false)
+                    let setter = fun () ->_localSettings.TrySetValue settingName toggleOff
+                    settingName, setter
                 else
+
+                    // The option toggles the setting on.
                     let settingName = option
-                    settingName, (fun () -> _localSettings.TrySetValue settingName (SettingValue.Toggle true))
+                    let toggleOn = (SettingValue.Toggle true)
+                    let setter = fun () -> _localSettings.TrySetValue settingName toggleOn
+                    settingName, setter
+
+            // Check whether we should apply the setter.
             if shouldIgnoreSetting settingName then
                 true
             elif shouldAllowSetting settingName then
@@ -103,7 +118,7 @@ type internal ModeLineInterpreter
             options.Replace(@"\:", ":").Split(' ', '\t')
 
         // Process the "first" format of modeline, e.g. "vim: set ... :".
-        let processFirst (modeLine: string) =
+        let processFirst modeLine =
             let m = Regex.Match(modeLine, _firstPattern)
             if m.Success then
                 let firstBadOption =
@@ -114,7 +129,7 @@ type internal ModeLineInterpreter
                 None, None
 
         // Process the "second" format of modeline, e.g. "vim: ...".
-        let processSecond (modeLine: string) =
+        let processSecond modeLine =
             let m = Regex.Match(modeLine, _secondPattern)
             if m.Success then
                 let firstBadOption =
@@ -160,10 +175,9 @@ type internal ModeLineInterpreter
         with
         | ex ->
 
-            // Empirically, exceptions may be silently caught by some
-            // caller in the call stack. As a result, we catch any
-            // exceptions here so they are at least reported in the
-            // debugger, and so that this can be a convenient place to put
-            // a breakpoint.
+            // Empirically, exceptions may be silently caught by some caller
+            // in the call stack. As a result, we catch any exceptions here so
+            // they are at least reported in the debugger, and so that this
+            // can be a convenient place to put a breakpoint.
             VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
             None, None
