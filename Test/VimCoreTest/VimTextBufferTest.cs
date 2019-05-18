@@ -180,7 +180,20 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void IgnoreBlank()
+            public void AllowMultipleSettings()
+            {
+                var modeLine = " vim:ts=8 sw=8:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                _localSettings.ShiftWidth = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+                Assert.Equal(8, _localSettings.ShiftWidth);
+            }
+
+            [WpfFact]
+            public void IgnoreEmpty()
             {
                 var modeLine = " vim::";
                 Create(modeLine);
