@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Interpreter;
 
@@ -11,6 +12,11 @@ namespace Vim.VisualStudio.Implementation.SharedService
             WindowFrameState ISharedService.GetWindowFrameState()
             {
                 return WindowFrameState.Default;
+            }
+
+            FSharpOption<IWordCompletionSessionFactory> ISharedService.GetWordCompletionSessionFactory()
+            {
+                return FSharpOption<IWordCompletionSessionFactory>.None;
             }
 
             void ISharedService.GoToTab(int index)

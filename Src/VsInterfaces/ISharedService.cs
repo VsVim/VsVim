@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Interpreter;
 
@@ -30,6 +31,8 @@ namespace Vim.VisualStudio
     /// </summary>
     public interface ISharedService
     {
+        FSharpOption<IWordCompletionSessionFactory> GetWordCompletionSessionFactory();
+
         /// <summary>
         /// Is this the active IVsWindow frame which has focus?  This method is used during macro
         /// running and hence must account for view changes which occur during a macro run.  Say by the

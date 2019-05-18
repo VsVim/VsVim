@@ -176,11 +176,19 @@ type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSessi
 
     member x.WordCompletionSession = _wordCompletionSession
 
-/// Factory service for creating IWordCompletionSession instances
+/// Factory for creating a IWordCompletionSession instance. This type cannot be MEF imported
+/// but instead is available via IVimHost
+type IWordCompletionSessionFactory = 
+
+    /// Create a session with the given set of words
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
+
+/// Factory service for creating IWordCompletionSession instances. This type is available as 
+/// a MEF import
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
 
     /// Raised when the session is created
     [<CLIEvent>]
@@ -4596,6 +4604,9 @@ type IVimHost =
 
     /// Whether to use the Visual Studio caret or the VsVim caret in insert mode
     abstract UseDefaultCaret: bool
+
+    /// The IWordCompletionSessionFactory for the host if if one is available
+    abstract WordCompletionSessionFactory : IWordCompletionSessionFactory option
 
     /// Ensure that the VsVim package is loaded
     abstract EnsurePackageLoaded: unit -> unit

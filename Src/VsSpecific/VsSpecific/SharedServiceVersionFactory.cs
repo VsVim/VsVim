@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
+using Vim.VisualStudio.Specific.Implementation.WordCompletion;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -28,7 +29,7 @@ namespace Vim.VisualStudio.Specific
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
         {
-            get { return VsSpecificConstants.VisualStudioVersion; }
+            get { return VimSpecificUtil.TargetVisualStudioVersion; }
         }
 
         ISharedService ISharedServiceVersionFactory.Create()

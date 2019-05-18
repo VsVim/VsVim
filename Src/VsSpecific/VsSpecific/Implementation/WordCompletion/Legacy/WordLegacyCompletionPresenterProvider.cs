@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 #pragma warning disable 649
 
-namespace Vim.Implementation.WordCompletion.Legacy
+namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 {
     /// <summary>
     /// This class is responsible for creating IIntellisensePresenter instances for presented 
@@ -38,7 +38,7 @@ namespace Vim.Implementation.WordCompletion.Legacy
     [Order(Before = "Default Completion Presenter")]
     [Export(typeof(IIntellisensePresenterProvider))]
     [ContentType(VimConstants.AnyContentType)]
-    internal sealed class WordCompletionPresenterProvider : IIntellisensePresenterProvider
+    internal sealed class WordLegacyCompletionPresenterProvider : IIntellisensePresenterProvider
     {
         #region WordCompletionPresenter
 
@@ -419,7 +419,7 @@ namespace Vim.Implementation.WordCompletion.Legacy
         {
             // If this is not associated with an IWordCompletionSession then we don't want to special case
             // this in any way
-            if (!session.Properties.ContainsProperty(WordLegacyCompletionSessionFactoryService.WordCompletionSessionKey))
+            if (!session.Properties.ContainsProperty(WordLegacyCompletionSessionFactory.WordCompletionSessionKey))
             {
                 return null;
             }

@@ -298,6 +298,11 @@ namespace Vim.VisualStudio
             get { return _extensionAdapterBroker.UseDefaultCaret ?? base.UseDefaultCaret; }
         }
 
+        public override FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory
+        {
+            get { return _sharedService.GetWordCompletionSessionFactory(); }
+        }
+
         [ImportingConstructor]
         internal VsVimHost(
             IVsAdapter adapter,

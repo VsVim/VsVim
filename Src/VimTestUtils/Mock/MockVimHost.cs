@@ -62,6 +62,7 @@ namespace Vim.UnitTest.Mock
         public int GetTabIndexData { get; set; }
         public WordWrapStyles WordWrapStyle { get; set; }
         public bool UseDefaultCaret { get; set; }
+        public FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory { get; set; }
 
         public MockVimHost()
         {

@@ -226,7 +226,6 @@ namespace Vim.VisualStudio.UnitTest
                 typeof(VimErrorDetector)
             };
 
-            global::Vim.Implementation.WordCompletion.WordCompletionSessionFactoryService.AddCompositionTypes(types);
             editorHostFactory.Add(new TypeCatalog(types));
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
@@ -15,7 +16,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 
-namespace Vim.Implementation.WordCompletion.Async
+namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView
@@ -26,35 +27,21 @@ namespace Vim.Implementation.WordCompletion.Async
     /// ITextView.  Ideally we don't want to provide any completion information unless we are actually
     /// starting a word completion session
     /// </summary>
-    [Name("Vim Word Completion Session Factory Service")]
-    [Export(typeof(WordAsyncCompletionSessionFactoryService))]
-    internal sealed class WordAsyncCompletionSessionFactoryService
+    internal sealed class WordAsyncCompletionSessionFactory
     {
-        /// <summary>
-        /// Key used to hide the CompletionData in the ITextView
-        /// </summary>
-        private readonly object _completionDataKey = new object();
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
         private readonly IVsEditorAdaptersFactoryService _vsEditorAdaptersFactoryService;
 
-        private event EventHandler<WordCompletionSessionEventArgs> _createdEvent = delegate { };
-
         [ImportingConstructor]
-        internal WordAsyncCompletionSessionFactoryService(
+        internal WordAsyncCompletionSessionFactory(
             IAsyncCompletionBroker asyncCompletionBroker,
-            [Import(AllowDefault = true)] IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
+            IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
             _vsEditorAdaptersFactoryService = vsEditorAdaptersFactoryService;
         }
 
-        private void RaiseCompleted(IWordCompletionSession wordCompletionSession)
-        {
-            var args = new WordCompletionSessionEventArgs(wordCompletionSession);
-            _createdEvent(this, args);
-        }
-
-        internal IWordCompletionSession CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
+        internal FSharpOption<IWordCompletionSession> CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
         {
             // Dismiss any active ICompletionSession instances.  It's possible and possibly common for 
             // normal intellisense to be active when the user invokes word completion.  We want only word
@@ -64,7 +51,7 @@ namespace Vim.Implementation.WordCompletion.Async
             // Store the WordCompletionData inside the ITextView. The IAsyncCompletionSource implementation will 
             // asked to provide data for the creation of the IAsyncCompletionSession. Hence we must share through
             // ITextView
-            var wordCompletionData = new WordCompletionData(
+            var wordCompletionData = new VimWordCompletionData(
                 wordSpan,
                 new ReadOnlyCollection<string>(wordCollection.ToList()));
             textView.SetWordCompletionData(wordCompletionData);
@@ -83,7 +70,7 @@ namespace Vim.Implementation.WordCompletion.Async
             // just return the equivalent IWordCompletionSession (one which is dismissed)
             if (asyncCompletionSession.IsDismissed)
             {
-                return new DismissedWordCompletionSession(textView);
+                return FSharpOption<IWordCompletionSession>.None;
             }
 
             asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);

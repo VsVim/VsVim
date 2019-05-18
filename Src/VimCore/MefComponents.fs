@@ -482,3 +482,25 @@ type internal ProtectedOperations =
         member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
         member x.Report ex = x.AlertAll ex
 
+[<Export(typeof<IWordCompletionSessionFactoryService>)>]
+type internal VimWordCompletionSessionFactoryService 
+    [<ImportingConstructor>]
+    (
+        _vimHost: Lazy<IVimHost>
+    ) =
+
+    let _created = StandardEvent<WordCompletionSessionEventArgs>()
+
+    member x.CreateWordCompletionSession textView wordSpan words isForward =
+        match _vimHost.Value.WordCompletionSessionFactory with
+        | None -> None
+        | Some factory -> 
+            match factory.CreateWordCompletionSession textView wordSpan words isForward with
+            | None -> None
+            | Some session -> 
+                _created.Trigger x (WordCompletionSessionEventArgs(session))
+                Some session
+    interface IWordCompletionSessionFactoryService with
+        member x.CreateWordCompletionSession textView wordSpan words isForward = x.CreateWordCompletionSession textView wordSpan words isForward     
+        [<CLIEvent>]
+        member x.Created = _created.Publish

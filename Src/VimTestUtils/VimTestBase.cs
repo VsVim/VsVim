@@ -26,8 +26,6 @@ using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
-using Vim.Implementation.WordCompletion;
-using Vim.Implementation.WordCompletion.Legacy;
 
 namespace Vim.UnitTest
 {
@@ -559,8 +557,6 @@ namespace Vim.UnitTest
                     typeof(AlternateKeyUtil),
                     typeof(OutlinerTaggerProvider)
                 };
-
-                WordCompletionSessionFactoryService.AddCompositionTypes(types);
 
                 editorHostFactory.Add(new TypeCatalog(types));
 

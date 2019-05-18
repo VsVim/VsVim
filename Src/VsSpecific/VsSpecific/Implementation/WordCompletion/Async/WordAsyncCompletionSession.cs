@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
 using System.Reflection;
 
-namespace Vim.Implementation.WordCompletion.Async
+namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  
@@ -25,12 +25,12 @@ namespace Vim.Implementation.WordCompletion.Async
         private readonly DispatcherTimer _tipTimer;
         private readonly IVsTextView _vsTextView;
 
-        internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
+        internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
         {
             _textView = asyncCompletionSession.TextView;
             _asyncCompletionSession = asyncCompletionSession;
             _asyncCompletionSession.Dismissed += delegate { OnDismissed(); };
-            _vsTextView = vsEditorAdaptersFactoryService?.GetViewAdapter(_textView);
+            _vsTextView = vsEditorAdaptersFactoryService.GetViewAdapter(_textView);
             if (_vsTextView is object)
             {
                 _tipTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Normal, callback: ResetTipOpacity, Dispatcher.CurrentDispatcher);

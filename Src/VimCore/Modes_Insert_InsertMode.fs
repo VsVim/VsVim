@@ -731,9 +731,9 @@ type internal InsertMode
         // empty completion list as there is nothing to display.  The lack of anything to display 
         // doesn't make the command an error though
         if not (List.isEmpty wordList) then
-            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward
-
-            if not wordCompletionSession.IsDismissed then
+            match _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward with
+            | None -> ()
+            | Some wordCompletionSession ->
                 // When the completion session is dismissed we want to clean out the session 
                 // data 
                 wordCompletionSession.Dismissed

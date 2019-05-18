@@ -8,6 +8,9 @@ using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Interpreter;
+using Vim.VisualStudio.Specific.Implementation.WordCompletion;
+using Microsoft.FSharp.Core;
+using System.ComponentModel.Composition.Primitives;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -73,7 +76,20 @@ namespace Vim.VisualStudio.Specific
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
+        internal FSharpOption<IWordCompletionSessionFactory> GetWordCompletionSessionFactory()
+        {
+            var all1 = ExportProvider.GetExportedValues<VimWordCompletionUtil>();
+            var all2 = ExportProvider.GetExportedValues<IWordCompletionSessionFactory>();
+            throw null;
+            //return FSharpOption<IWordCompletionSessionFactory>.Some(provider);
+        }
+
         #region ISharedService
+
+        FSharpOption<IWordCompletionSessionFactory> ISharedService.GetWordCompletionSessionFactory()
+        {
+            return GetWordCompletionSessionFactory();
+        }
 
         WindowFrameState ISharedService.GetWindowFrameState()
         {

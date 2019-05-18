@@ -10,6 +10,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionPresenterProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NotSupportedCSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
@@ -17,6 +30,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)VsSpecificConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimSpecificUtil.cs" />
   </ItemGroup>
 </Project>
