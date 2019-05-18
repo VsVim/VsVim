@@ -597,7 +597,7 @@ type internal Vim
         // checked.
         match vimTextBuffer.CheckModeLine() with
         | Some modeLine, Some badOption ->
-            sprintf "Error: '%s' in modeline '%s'" badOption modeLine
+            Resources.Common_InvalidModeLineSetting badOption modeLine
             |> vimBufferData.StatusUtil.OnError
         | _ ->
             ()
