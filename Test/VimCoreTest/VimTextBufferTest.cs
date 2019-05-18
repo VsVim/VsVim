@@ -204,6 +204,19 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void AllowQuotedColon()
+            {
+                var modeLine = @" vim:comments=\:*,\://,\:#,\:;:ts=8:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                _localSettings.Comments = "";
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+                Assert.Equal(":*,://,:#,:;", _localSettings.Comments);
+            }
+
+            [WpfFact]
             public void IgnoreEmpty()
             {
                 var modeLine = " vim::";
