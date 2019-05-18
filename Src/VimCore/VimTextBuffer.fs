@@ -19,6 +19,15 @@ type internal VimTextBuffer
         _vim: IVim
     ) =
 
+    // Regular expressions to parse the modeline.
+    static let _escapedModeLine = @"(([^:\\]|\\:?)*)";
+    static let _firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
+    static let _secondPattern = @"[ \t]vim:(.*):$"
+    static let _nextGroup = _escapedModeLine + @"(:|$)"
+    static let _settingPattern = @"([\w[\w\d_]*)";
+    static let _assignment = @"^" + _settingPattern + @"=(.*)$"
+    static let _settingName = @"^" + _settingPattern + "$"
+
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
@@ -207,25 +216,23 @@ type internal VimTextBuffer
     /// Check the contents of the buffer for a modeline
     member x.CheckModeLine () =
 
-        // Regular expressions to parse the modeline.
-        let escapedModeLine = @"(([^:\\]|\\:?)*)";
-        let firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + escapedModeLine + ":"
-        let secondPattern = @"[ \t]vim:(.*):$"
-        let nextGroup = escapedModeLine + @"(:|$)"
-        let assignment = @"^([\w[\w\d_]*)=(.*)$"
-
-        // Ignore empty or not yet supported settings.
-        // Example: "vim:tw=78:ts=8:noet:ft=help:norl:"
+        // Ignore empty settings and settings we don't support yet.
         let ignoreSetting (settingName: string) =
-            match settingName with
-            | "" | "tw" | "ft" | "rl" -> true
-            | _ -> false
+            if settingName = "" then
+                true
+            elif _localSettings.GetSetting settingName |> Option.isNone then
+                if Regex.Match(settingName, _settingName).Success then
+                    true
+                else
+                    false
+            else
+                false
 
         // Process a single option like 'ts=8'.
         let processOption (option: string) =
             let option = option.Trim()
             let settingName, setter =
-                let m = Regex.Match(option, assignment)
+                let m = Regex.Match(option, _assignment)
                 if m.Success then
                     let settingName = m.Groups.[1].Value
                     let strValue = m.Groups.[2].Value
@@ -252,7 +259,7 @@ type internal VimTextBuffer
 
         // Process the "first" format of modeline, e.g. "vim: set ...".
         let processFirst (modeLine: string) =
-            let m = Regex.Match(modeLine, firstPattern)
+            let m = Regex.Match(modeLine, _firstPattern)
             if m.Success then
                 let firstBadOption =
                     let fields =
@@ -265,11 +272,11 @@ type internal VimTextBuffer
 
         // Process the "second" format of modeline, e.g. "vim: ...".
         let processSecond (modeLine: string) =
-            let m = Regex.Match(modeLine, secondPattern)
+            let m = Regex.Match(modeLine, _secondPattern)
             if m.Success then
                 let firstBadOption =
                     let fields =
-                        Regex.Matches(m.Groups.[1].Value, nextGroup)
+                        Regex.Matches(m.Groups.[1].Value, _nextGroup)
                         |> Seq.cast<Match>
                         |> Seq.map (fun m -> splitFields m.Groups.[1].Value)
                         |> Seq.collect id
