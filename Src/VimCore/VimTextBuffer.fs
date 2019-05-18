@@ -19,7 +19,7 @@ type internal VimTextBuffer
         _vim: IVim
     ) =
 
-    // Regular expressions to parse the modeline.
+    /// Regular expressions to parse the modeline
     static let _escapedModeLine = @"(([^:\\]|\\:?)*)";
     static let _firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
     static let _secondPattern = @"[ \t]vim:(.*):$"
@@ -44,7 +44,6 @@ type internal VimTextBuffer
     let mutable _inOneTimeCommand: ModeKind option = None
     let mutable _inSelectModeOneCommand: bool = false
     let mutable _wasModeLineChecked: bool = false
-    let mutable _modeLine: string option = None
 
     /// Raise the mark set event
     member x.RaiseMarkSet localMark =
@@ -216,8 +215,11 @@ type internal VimTextBuffer
     /// Check the contents of the buffer for a modeline
     member x.CheckModeLine () =
 
-        // Ignore empty settings and settings we don't support yet.
-        let ignoreSetting (settingName: string) =
+        // Ignore empty settings and settings we don't support yet. Ideally we
+        // would produce an error for unrecognized settings but vim has many
+        // settings and failing on the first unsupported setting would prevent
+        // the remainder of the settings from being applied.
+        let shouldIgnoreSetting (settingName: string) =
             if settingName = "" then
                 true
             elif _localSettings.GetSetting settingName |> Option.isNone then
@@ -243,17 +245,12 @@ type internal VimTextBuffer
                 else
                     let settingName = option
                     settingName, (fun () -> _localSettings.TrySetValue settingName (SettingValue.Toggle true))
-            if ignoreSetting settingName then
+            if shouldIgnoreSetting settingName then
                 true
             else
                 setter()
 
-        // Try to process the list of options.
-        let tryProcessOptions (options: string List) =
-            options
-            |> Seq.tryFind (fun option -> not (processOption option))
-
-        // Split the option string into fields.
+        // Split the options string into fields.
         let splitFields (options: string) =
             options.Replace(@"\:", ":").Split(' ', '\t')
 
@@ -262,10 +259,8 @@ type internal VimTextBuffer
             let m = Regex.Match(modeLine, _firstPattern)
             if m.Success then
                 let firstBadOption =
-                    let fields =
-                        splitFields m.Groups.[1].Value
-                        |> Seq.toList
-                    tryProcessOptions fields
+                    splitFields m.Groups.[1].Value
+                    |> Seq.tryFind (fun option -> not (processOption option))
                 Some modeLine, firstBadOption
             else
                 None, None
@@ -275,46 +270,43 @@ type internal VimTextBuffer
             let m = Regex.Match(modeLine, _secondPattern)
             if m.Success then
                 let firstBadOption =
-                    let fields =
-                        Regex.Matches(m.Groups.[1].Value, _nextGroup)
-                        |> Seq.cast<Match>
-                        |> Seq.map (fun m -> splitFields m.Groups.[1].Value)
-                        |> Seq.collect id
-                        |> Seq.toList
-                    tryProcessOptions fields
+                    Regex.Matches(m.Groups.[1].Value, _nextGroup)
+                    |> Seq.cast<Match>
+                    |> Seq.map (fun m -> splitFields m.Groups.[1].Value)
+                    |> Seq.concat
+                    |> Seq.tryFind (fun option -> not (processOption option))
                 Some modeLine, firstBadOption
             else
                 None, None
 
         // Try to process either of the two modeline formats.
         let tryProcessModeLine modeLine =
-            let result, firstBadOption = processFirst modeLine
-            if result.IsSome then
-                result, firstBadOption
-            else
-                processSecond modeLine
+            let result = processFirst modeLine
+            match result with
+            | Some _, _ -> result
+            | None, _ ->
+               let result = processSecond modeLine
+               result
 
         // Try to process the first few and last few lines as modelines.
         let tryProcessModeLines modeLines =
             let lineCount = _textBuffer.CurrentSnapshot.LineCount
             let snapshot = _textBuffer.CurrentSnapshot
-            let modeLine, firstBadOption =
-                seq {
-                    yield seq { 0 .. modeLines - 1 }
-                    yield seq { lineCount - modeLines .. lineCount - 1 }
-                }
-                |> Seq.concat
-                |> Seq.filter (fun lineNumber -> lineNumber >= 0 && lineNumber < lineCount)
-                |> Seq.sort
-                |> Seq.distinct
-                |> Seq.map (fun lineNumber -> SnapshotUtil.GetLine snapshot lineNumber)
-                |> Seq.map SnapshotLineUtil.GetText
-                |> Seq.map tryProcessModeLine
-                |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
-            _modeLine <- modeLine
-            firstBadOption
+            seq {
+                yield seq { 0 .. min (modeLines - 1) (lineCount - 1) }
+                yield seq { max modeLines (lineCount - modeLines) .. lineCount - 1 }
+            }
+            |> Seq.concat
+            |> Seq.map (SnapshotUtil.GetLine snapshot)
+            |> Seq.map SnapshotLineUtil.GetText
+            |> Seq.map tryProcessModeLine
+            |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
 
-        // Perform this check only once for a given text buffer.
+        // Perform this check only once for a given text buffer. A vim text
+        // buffer doesn't have any connection to the vim buffer and so it
+        // cannot report an error to the user. As a result, whenever a vim
+        // buffer gets or creates a vim text buffer, it should do the modeline
+        // check.
         if not _wasModeLineChecked then
             _wasModeLineChecked <- true
             try
@@ -322,11 +314,19 @@ type internal VimTextBuffer
                 if _globalSettings.ModeLine && modeLines > 0 then
                     tryProcessModeLines modeLines
                 else
-                    None
+                    None, None
             with
-            | _ -> None
+            | ex ->
+
+                // Empirically, exceptions may be silently caught by some
+                // caller in the call stack. As a result, we catch any
+                // exceptions so they are at least reported in the debugger,
+                // and so that this can be a convenient place to put a
+                // breakpoint.
+                VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
+                None, None
         else
-            None
+            None, None
 
     /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
     member x.Clear() =

@@ -5084,7 +5084,7 @@ and IVimTextBuffer =
     abstract UseVirtualSpace: bool
 
     /// Check the contents of the buffer for a modeline
-    abstract CheckModeLine: unit -> string option
+    abstract CheckModeLine: unit -> string option * string option
 
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
     /// state 
