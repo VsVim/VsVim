@@ -169,6 +169,17 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void TrailingColonOptional()
+            {
+                var modeLine = " vim:ts=8";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+            }
+
+            [WpfFact]
             public void AllowWhitespace()
             {
                 var modeLine = " vim: ts=8 :";

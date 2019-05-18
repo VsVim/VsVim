@@ -16,7 +16,7 @@ type internal ModeLineInterpreter
     /// Regular expressions to parse the modeline
     static let _escapedModeLine = @"(([^:\\]|\\:?)*)";
     static let _firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
-    static let _secondPattern = @"[ \t]vim:(.*):$"
+    static let _secondPattern = @"[ \t]vim:(.*)$"
     static let _nextGroup = _escapedModeLine + @"(:|$)"
     static let _settingPattern = @"([\w[\w\d_]*)";
     static let _assignment = @"^" + _settingPattern + @"=(.*)$"
