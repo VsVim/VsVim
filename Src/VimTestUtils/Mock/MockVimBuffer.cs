@@ -415,5 +415,10 @@ namespace Vim.UnitTest.Mock
         {
             get { return CommandUtilImpl; }
         }
+
+        public FSharpOption<string> LastMessage
+        {
+            get { return FSharpOption<string>.None; }
+        }
     }
 }

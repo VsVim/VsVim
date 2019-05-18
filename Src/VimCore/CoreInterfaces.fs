@@ -5145,6 +5145,9 @@ and IVimBuffer =
     /// Jump list
     abstract JumpList: IJumpList
 
+    /// The last status message produced, if any
+    abstract LastMessage: string option
+
     /// Local settings for the buffer
     abstract LocalSettings: IVimLocalSettings
 
