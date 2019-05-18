@@ -158,13 +158,26 @@ namespace Vim.UnitTest
         public sealed class ModeLineTest : VimTextBufferTest
         {
             [WpfFact]
-            public void Simple()
+            public void FirstForm()
             {
                 var modeLine = " vim:ts=8:";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
                 var result = _vimTextBuffer.CheckModeLine();
                 Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsNone());
+                Assert.Equal(8, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void SecondForm()
+            {
+                var modeLine = "/* vim: set ts=8 : */";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsNone());
                 Assert.Equal(8, _localSettings.TabStop);
             }
 
@@ -214,6 +227,19 @@ namespace Vim.UnitTest
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.Equal(":*,://,:#,:;", _localSettings.Comments);
+            }
+
+            [WpfFact]
+            public void BackslashOnlyQuotesColon()
+            {
+                var modeLine = @" vim:comments=\\:\x:ts=8:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                _localSettings.Comments = "";
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+                Assert.Equal(@"\:\x", _localSettings.Comments);
             }
 
             [WpfFact]
