@@ -24,9 +24,11 @@ type internal ModeLineInterpreter
 
     let _globalSettings = _localSettings.GlobalSettings
 
+    // Whether the modeline has been checked since this text buffer was created
     let mutable _wasModeLineChecked: bool = false
 
-    /// Sequence of insecure local setting names
+    /// Sequence of insecure local setting names that could be used by a
+    /// malicious modeline to cause harm to the user
     static let _insecureListedLocalSettingNames =
         Seq.empty
         |> Seq.toArray
@@ -151,11 +153,10 @@ type internal ModeLineInterpreter
             |> Seq.map tryProcessModeLine
             |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
 
-        // Perform this check only once for a given text buffer. A vim text
-        // buffer doesn't have any connection to the vim buffer and so it
-        // cannot report an error to the user. As a result, whenever a vim
-        // buffer gets or creates a vim text buffer, it should do the modeline
-        // check.
+        // Perform this check only once for a given text buffer. We only have
+        // access to a text buffer, not the text view, and so we cannot report
+        // an error to the user. As a result, whenever a vim buffer gets or
+        // creates a vim text buffer, it should perform the modeline check.
         if not _wasModeLineChecked then
             _wasModeLineChecked <- true
             try

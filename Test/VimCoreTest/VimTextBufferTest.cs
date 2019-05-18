@@ -169,6 +169,80 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void AllowWhitespace()
+            {
+                var modeLine = " vim: ts=8 :";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void IgnoreBlank()
+            {
+                var modeLine = " vim::";
+                Create(modeLine);
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsNone());
+            }
+
+            [WpfFact]
+            public void IgnoreInvalid()
+            {
+                var modeLine = " vim:answer=42:";
+                Create(modeLine);
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsNone());
+            }
+
+            [WpfFact]
+            public void FailGlobal()
+            {
+                var modeLine = " vim:virtualedit=all:";
+                Create(modeLine);
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsSome());
+            }
+
+            [WpfFact]
+            public void FailMalformedSetting()
+            {
+                var modeLine = " vim:*foo*:";
+                Create(modeLine);
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsSome());
+            }
+
+            [WpfFact]
+            public void FailMalformedValue()
+            {
+                var modeLine = " vim:ts=invalid:";
+                Create(modeLine);
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsSome());
+            }
+
+            [WpfFact]
+            public void FailOnFirstError()
+            {
+                var modeLine = " vim:*foo*:ts=8:*bar*:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.True(result.Item2.IsSome());
+                Assert.Equal("*foo*", result.Item2.Value);
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [WpfFact]
             public void ObeysModeLineSetting()
             {
                 var modeLine = " vim:ts=8:";
