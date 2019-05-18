@@ -19,9 +19,9 @@ type internal VimTextBuffer
 
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
+    let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
-    let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
 
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None

@@ -10,12 +10,16 @@ namespace Vim.UnitTest
     {
         protected IVimTextBuffer _vimTextBuffer;
         protected ITextBuffer _textBuffer;
+        protected IVimLocalSettings _localSettings;
+        protected IVimGlobalSettings _globalSettings;
         protected LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
 
         private void Create(params string[] lines)
         {
             _vimTextBuffer = CreateVimTextBuffer(lines);
             _textBuffer = _vimTextBuffer.TextBuffer;
+            _localSettings = _vimTextBuffer.LocalSettings;
+            _globalSettings = _localSettings.GlobalSettings;
         }
 
         public sealed class LastInsertExitPoint : VimTextBufferTest
@@ -148,6 +152,71 @@ namespace Vim.UnitTest
                 _vimTextBuffer.Clear();
                 Assert.True(_vimTextBuffer.LastEditPoint.IsNone());
                 Assert.True(_vimTextBuffer.LastInsertExitPoint.IsNone());
+            }
+        }
+
+        public sealed class ModeLineTest : VimTextBufferTest
+        {
+            [WpfFact]
+            public void Simple()
+            {
+                var modeLine = " vim:ts=8:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void ObeysModeLineSetting()
+            {
+                var modeLine = " vim:ts=8:";
+                Create(modeLine);
+                _globalSettings.ModeLine = false;
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.False(result.Item1.IsSome());
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void ObeysModeLinesSetting()
+            {
+                var modeLine = " vim:ts=8:";
+                Create(modeLine);
+                _globalSettings.ModeLines = 0;
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.False(result.Item1.IsSome());
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void EndOfLongFile()
+            {
+                var modeLine = " vim:ts=8:";
+                Create(Enumerable.Repeat("", 100).Concat(new[] { modeLine }).ToArray());
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void HelpFile()
+            {
+                var modeLine = " vim:tw=78:ts=8:noet:ft=help:norl:";
+                Create(modeLine);
+                _localSettings.TextWidth = 132;
+                _localSettings.TabStop = 4;
+                _localSettings.ExpandTab = true;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.Equal(modeLine, result.Item1.Value);
+                Assert.True(result.Item2.IsNone());
+                Assert.Equal(78, _localSettings.TextWidth);
+                Assert.Equal(8, _localSettings.TabStop);
+                Assert.False(_localSettings.ExpandTab);
             }
         }
     }
