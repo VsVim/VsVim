@@ -5,6 +5,8 @@ namespace Vim
 open System.Text.RegularExpressions
 open Microsoft.VisualStudio.Text
 
+[<Sealed>]
+[<Class>]
 type internal ModeLineInterpreter 
     (
         _textBuffer: ITextBuffer,
@@ -40,8 +42,6 @@ type internal ModeLineInterpreter
             // we would produce an error for unrecognized settings but vim has
             // many settings and failing on the first unsupported setting would
             // prevent the remainder of the settings from being applied.
-            // Furthermore, for security reasons, we only allow a very limited
-            // set of local settings to be applied via the modeline mechanism.
             let localSetting = _localSettings.GetSetting settingName
             if settingName = "" then
 
@@ -169,9 +169,9 @@ type internal ModeLineInterpreter
 
                 // Empirically, exceptions may be silently caught by some
                 // caller in the call stack. As a result, we catch any
-                // exceptions so they are at least reported in the debugger,
-                // and so that this can be a convenient place to put a
-                // breakpoint.
+                // exceptions here so they are at least reported in the
+                // debugger, and so that this can be a convenient place to put
+                // a breakpoint.
                 VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
                 None, None
         else
