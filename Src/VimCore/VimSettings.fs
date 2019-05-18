@@ -791,7 +791,10 @@ type internal EditorToSettingSynchronizer
             | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
             | SettingSyncSource.Vim -> x.CopyVimToEditorSettings vimBuffer
 
-            // Check the text buffer for a modeline.
+            // Any applicable modeline takes precedence over both the editor
+            // and the default settings. Apply modeline settings now that we
+            // have synchronized the local settings between the editor and the
+            // defaults.
             match vimBuffer.VimTextBuffer.CheckModeLine() with
             | Some modeLine, Some badOption ->
                 Resources.Common_InvalidModeLineSetting badOption modeLine

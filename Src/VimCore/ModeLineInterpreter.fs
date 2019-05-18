@@ -60,12 +60,12 @@ type internal ModeLineInterpreter
         // Whether we should allow the setting
         let shouldAllowSetting (settingName: string) =
 
-            // For security reasons, we only allow whitelisted local settings.
+            // For security reasons, we disallow certain local settings.
             let globalSetting = _globalSettings.GetSetting settingName
             let localSetting = _localSettings.GetSetting settingName
             if Option.isSome globalSetting then
 
-                // Disallow global settings.
+                // Disallow all global settings.
                 false
             elif Option.isSome localSetting then
 
@@ -102,7 +102,7 @@ type internal ModeLineInterpreter
         let splitFields (options: string) =
             options.Replace(@"\:", ":").Split(' ', '\t')
 
-        // Process the "first" format of modeline, e.g. "vim: set ...".
+        // Process the "first" format of modeline, e.g. "vim: set ... :".
         let processFirst (modeLine: string) =
             let m = Regex.Match(modeLine, _firstPattern)
             if m.Success then
@@ -150,10 +150,7 @@ type internal ModeLineInterpreter
             |> Seq.map tryProcessModeLine
             |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
 
-        // Perform this check only once for a given text buffer. We only have
-        // access to a text buffer, not the text view, and so we cannot report
-        // an error to the user. As a result, whenever a vim buffer gets or
-        // creates a vim text buffer, it should perform the modeline check.
+        // Apply any applicable modelines.
         try
             let modeLines = _globalSettings.ModeLines
             if _globalSettings.ModeLine && modeLines > 0 then
