@@ -28,6 +28,12 @@ type internal VimTextBuffer
     static let _assignment = @"^" + _settingPattern + @"=(.*)$"
     static let _settingName = @"^" + _settingPattern + "$"
 
+    /// Sequence of insecure local setting names
+    static let _insecureListedLocalSettingNames =
+        Seq.empty
+        |> Seq.toArray
+        :> string seq
+
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
@@ -215,18 +221,47 @@ type internal VimTextBuffer
     /// Check the contents of the buffer for a modeline
     member x.CheckModeLine () =
 
-        // Ignore empty settings and settings we don't support yet. Ideally we
-        // would produce an error for unrecognized settings but vim has many
-        // settings and failing on the first unsupported setting would prevent
-        // the remainder of the settings from being applied.
+        // Whether we should ignore the setting
         let shouldIgnoreSetting (settingName: string) =
+
+            // Ignore empty settings and settings we don't support yet. Ideally
+            // we would produce an error for unrecognized settings but vim has
+            // many settings and failing on the first unsupported setting would
+            // prevent the remainder of the settings from being applied.
+            // Furthermore, for security reasons, we only allow a very limited
+            // set of local settings to be applied via the modeline mechanism.
+            let localSetting = _localSettings.GetSetting settingName
             if settingName = "" then
+
+                // Ignore the empty setting.
                 true
-            elif _localSettings.GetSetting settingName |> Option.isNone then
-                if Regex.Match(settingName, _settingName).Success then
-                    true
-                else
-                    false
+            elif not (Regex.Match(settingName, _settingName).Success) then
+
+                // Don't ignore illegal setting names.
+                false
+            elif Option.isNone localSetting then
+
+                // Ignore unsupported settings.
+                true
+            else
+                false
+
+        // Whether we should allow the setting
+        let shouldAllowSetting (settingName: string) =
+
+            // For security reasons, we only allow whitelisted local settings.
+            let globalSetting = _globalSettings.GetSetting settingName
+            let localSetting = _localSettings.GetSetting settingName
+            if Option.isSome globalSetting then
+
+                // Disallow global settings.
+                false
+            elif Option.isSome localSetting then
+
+                // Allow any local setting that isn't insecure.
+                _insecureListedLocalSettingNames
+                |> Seq.contains localSetting.Value.Name
+                |> not
             else
                 false
 
@@ -247,8 +282,10 @@ type internal VimTextBuffer
                     settingName, (fun () -> _localSettings.TrySetValue settingName (SettingValue.Toggle true))
             if shouldIgnoreSetting settingName then
                 true
-            else
+            elif shouldAllowSetting settingName then
                 setter()
+            else
+                false
 
         // Split the options string into fields.
         let splitFields (options: string) =
