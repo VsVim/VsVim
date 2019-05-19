@@ -15,8 +15,8 @@ type internal ModeLineInterpreter
 
     /// Regular expressions to parse the modeline
     static let _escapedModeLine = @"(([^:\\]|\\:?)*)";
-    static let _firstPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
-    static let _secondPattern = @"[ \t]vim:(.*)$"
+    static let _firstPattern = @"[ \t]vim:(.*)$"
+    static let _secondPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
     static let _nextGroup = _escapedModeLine + @"(:|$)"
     static let _settingPattern = @"([\w[\w\d_]*)";
     static let _assignment = @"^" + _settingPattern + @"=(.*)$"
@@ -117,20 +117,9 @@ type internal ModeLineInterpreter
         let splitFields (options: string) =
             options.Replace(@"\:", ":").Split(' ', '\t')
 
-        // Process the "first" format of modeline, e.g. "vim: set ... :".
-        let processFirst modeLine =
+        // Process the "first" format of modeline, i.e. "vim: ...".
+        let processFirstForm modeLine =
             let m = Regex.Match(modeLine, _firstPattern)
-            if m.Success then
-                let firstBadOption =
-                    splitFields m.Groups.[1].Value
-                    |> Seq.tryFind (fun option -> not (processOption option))
-                Some modeLine, firstBadOption
-            else
-                None, None
-
-        // Process the "second" format of modeline, e.g. "vim: ...".
-        let processSecond modeLine =
-            let m = Regex.Match(modeLine, _secondPattern)
             if m.Success then
                 let firstBadOption =
                     Regex.Matches(m.Groups.[1].Value, _nextGroup)
@@ -142,13 +131,24 @@ type internal ModeLineInterpreter
             else
                 None, None
 
+        // Process the "second" format of modeline, i.e. "vim: set ... :".
+        let processSecondForm modeLine =
+            let m = Regex.Match(modeLine, _secondPattern)
+            if m.Success then
+                let firstBadOption =
+                    splitFields m.Groups.[1].Value
+                    |> Seq.tryFind (fun option -> not (processOption option))
+                Some modeLine, firstBadOption
+            else
+                None, None
+
         // Try to process either of the two modeline formats.
         let tryProcessModeLine modeLine =
-            let result = processFirst modeLine
+            let result = processSecondForm modeLine
             match result with
             | Some _, _ -> result
             | None, _ ->
-               let result = processSecond modeLine
+               let result = processFirstForm modeLine
                result
 
         // Try to process the first few and last few lines as modelines.
