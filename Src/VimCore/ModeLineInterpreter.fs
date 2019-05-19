@@ -31,7 +31,9 @@ type internal ModeLineInterpreter
         |> Seq.toArray
         :> string seq
 
-    /// Check the contents of the buffer for a modeline
+    /// Check the contents of the buffer for a modeline, returning a tuple of
+    /// the line we used as a modeline, if any, and a string representing the
+    /// first sub-option that produced an error if any
     member x.CheckModeLine () =
 
         // Whether we should ignore the setting
