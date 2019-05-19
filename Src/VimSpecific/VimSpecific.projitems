@@ -9,6 +9,7 @@
     <Import_RootNamespace>VimSpecific</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)HostIdentifiers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />

@@ -6,18 +6,27 @@ namespace Vim.VisualStudio.Specific
 {
     internal static class VimSpecificUtil
     {
+#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+        internal static bool HasAsyncCompletion => false;
+#elif VS_SPECIFIC_2019
+        internal static bool HasAsyncCompletion => true;
+#else
+#error Unsupported configuration
+#endif
+        internal static bool HasLegacyCompletion => !HasAsyncCompletion;
+
 #if VIM_SPECIFIC_TEST_HOST
-        internal const string HostIdentifier = "VsVim Test Host ";
+        internal const string HostIdentifier = HostIdentifiers.TestHost;
 #else
 
 #if VS_SPECIFIC_2015
-        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2015;
+        internal const string HostIdentifier = HostIdentifiers.VisualStudio2015;
         internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2015;
 #elif VS_SPECIFIC_2017
-        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2017;
+        internal const string HostIdentifier = HostIdentifiers.VisualStudio2017;
         internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2017;
 #elif VS_SPECIFIC_2019
-        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2019;
+        internal const string HostIdentifier = HostIdentifiers.VisualStudio2019;
         internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2019;
 #else
 #error Unsupported configuration

@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.UnitTest
 {
@@ -2530,8 +2531,8 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion action which accepts the first match
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_Simple()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Simple_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2539,11 +2540,22 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
 
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Simple_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<CR>");
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            }
+
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_ChooseNext()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_ChooseNext_Legacy()
             {
                 Create("c dog", "cat copter");
                 _textView.MoveCaretTo(1);
@@ -2553,11 +2565,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Simulate choosing the second possibility in the completion list
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_ChooseNext_Async()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-N><CR>");
+                Assert.Equal("copter dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Typing a char while the completion list is up should cancel it out and 
             /// cause the char to be added to the IVimBuffer
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_TypeAfter()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_TypeAfter_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2566,12 +2592,22 @@ namespace Vim.UnitTest
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
             }
 
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_TypeAfter_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process('s');
+                Assert.Equal("cs dog", _textView.GetLine(0).GetText());
+            }
+
             /// <summary>
             /// Esacpe should cancel both word completion and insert mode.  It's just
             /// like normal intellisense in that respect
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_Escape()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Escape_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2579,6 +2615,22 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Esacpe should cancel both word completion and insert mode.  It's just
+            /// like normal intellisense in that respect
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Escape_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                Dispatcher.DoEvents();
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
