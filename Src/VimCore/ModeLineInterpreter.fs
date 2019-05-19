@@ -165,7 +165,8 @@ type internal ModeLineInterpreter
             |> Seq.map (SnapshotUtil.GetLine snapshot)
             |> Seq.map SnapshotLineUtil.GetText
             |> Seq.map tryProcessModeLine
-            |> SeqUtil.tryFindOrDefault (fun (modeLine, _) -> modeLine.IsSome) (None, None)
+            |> Seq.tryFind (fun (modeLine, _) -> modeLine.IsSome)
+            |> Option.defaultValue (None, None)
 
         // Apply any applicable modelines.
         try
