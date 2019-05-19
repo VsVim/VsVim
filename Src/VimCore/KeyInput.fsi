@@ -55,6 +55,15 @@ type KeyInput =
 type KeyInputData =
     member KeyInput: KeyInput
     member WasMapped: bool
+    member Char: char
+    member RawChar: char option
+    member Key: VimKey
+    member KeyModifiers: VimKeyModifiers
+    member HasKeyModifiers: bool
+    member IsDigit: bool
+    member IsArrowKey: bool 
+    member IsFunctionKey: bool
+    member IsMouseKey: bool
     static member Create: keyInput: KeyInput -> wasMapped: bool -> KeyInputData
 
 module KeyInputUtil = 

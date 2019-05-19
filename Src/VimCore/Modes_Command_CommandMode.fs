@@ -18,9 +18,9 @@ type internal CommandMode
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
-    static let BindDataError: BindData<int> = {
+    static let BindDataError: MappedBindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
-        BindFunction = fun _ -> BindResult.Error
+        MappedBindFunction = fun _ -> MappedBindResult.Error
     }
 
     let mutable _command = StringUtil.Empty
@@ -78,8 +78,8 @@ type internal CommandMode
     member x.Process (keyInputData: KeyInputData) =
         let keyInput = keyInputData.KeyInput
 
-        match _bindData.BindFunction keyInput with
-        | BindResult.Complete _ ->
+        match _bindData.MappedBindFunction keyInputData with
+        | MappedBindResult.Complete _ ->
             _bindData <- BindDataError
 
             // It is possible for the execution of the command to change the mode (say :s.../c) 
@@ -90,13 +90,13 @@ type internal CommandMode
                     ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else 
                 ProcessResult.Handled ModeSwitch.NoSwitch
-        | BindResult.Cancelled ->
+        | MappedBindResult.Cancelled ->
             _bindData <- BindDataError
             ProcessResult.OfModeKind ModeKind.Normal
-        | BindResult.Error ->
+        | MappedBindResult.Error ->
             _bindData <- BindDataError
             ProcessResult.OfModeKind ModeKind.Normal
-        | BindResult.NeedMoreInput bindData ->
+        | MappedBindResult.NeedMoreInput bindData ->
             _bindData <- bindData
             ProcessResult.HandledNeedMoreInput
 

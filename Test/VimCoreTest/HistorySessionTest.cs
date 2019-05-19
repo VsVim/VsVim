@@ -58,7 +58,7 @@ namespace Vim.UnitTest
 
         private readonly Client _client;
         private readonly IHistorySession<int, int> _historySession;
-        private BindData<int> _bindData;
+        private MappedBindData<int> _bindData;
 
         public HistorySessionTest()
         {
@@ -75,11 +75,12 @@ namespace Vim.UnitTest
             }
         }
 
-        public void Process(KeyInput keyInput)
+        public void Process(KeyInput keyInput, bool wasMapped = false)
         {
-            var result = _bindData.BindFunction.Invoke(keyInput);
+            var keyInputData = KeyInputData.Create(keyInput, wasMapped);
+            var result = _bindData.MappedBindFunction.Invoke(keyInputData);
             _bindData = result.IsNeedMoreInput
-                ? ((BindResult<int>.NeedMoreInput)result).BindData
+                ? ((MappedBindResult<int>.NeedMoreInput)result).MappedBindData
                 : null;
         }
 
