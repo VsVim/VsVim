@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
 using Vim.VisualStudio.Specific.Implementation.WordCompletion;
+using System.Collections;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -18,11 +19,13 @@ namespace Vim.VisualStudio.Specific
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
         internal SVsServiceProvider VsServiceProvider { get; }
+        internal VsSpecificServiceHost VsSpecificServiceHost { get; }
 
         [ImportingConstructor]
-        internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider)
+        internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider, [ImportMany] IEnumerable<Lazy<IVsSpecificService>> vsSpecificServices)
         {
             VsServiceProvider = vsServiceProvider;
+            VsSpecificServiceHost = new VsSpecificServiceHost(vsServiceProvider, vsSpecificServices);
         }
 
         #region ISharedServiceVersionFactory
@@ -34,7 +37,7 @@ namespace Vim.VisualStudio.Specific
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService(VsServiceProvider);
+            return new SharedService(VsServiceProvider, VsSpecificServiceHost);
         }
 
         #endregion

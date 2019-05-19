@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,15 +41,15 @@ namespace Vim.VisualStudio.Specific
 #error Unsupported configuration
 #endif
 
-        /// <summary>
-        /// Is this <see cref="_DTE"/> instance the one this assembly was compiled for?
-        /// </summary>
-        internal static bool IsTargetVisualStudio(_DTE dte) => TargetVisualStudioVersion == dte.GetVisualStudioVersion();
+        internal static bool IsTargetVisualStudio(SVsServiceProvider vsServiceProvider)
+        {
+            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
+            return dte.GetVisualStudioVersion() == TargetVisualStudioVersion;
+        }
+    }
 
-        /// <summary>
-        /// Is this instance the one this assembly was compiled for?
-        /// </summary>
-        internal static bool IsTargetVisualStudio(SVsServiceProvider serviceProvider) =>
-            IsTargetVisualStudio(serviceProvider.GetService<SDTE, _DTE>());
+    internal abstract class VsSpecificService : IVsSpecificService
+    {
+        VisualStudioVersion IVsSpecificService.VisualStudioVersion => VimSpecificUtil.TargetVisualStudioVersion;
     }
 }

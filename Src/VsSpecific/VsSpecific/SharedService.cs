@@ -11,18 +11,22 @@ using Vim.Interpreter;
 using Vim.VisualStudio.Specific.Implementation.WordCompletion;
 using Microsoft.FSharp.Core;
 using System.ComponentModel.Composition.Primitives;
+using System;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Specific
 {
     internal sealed partial class SharedService : ISharedService
     {
         internal SVsServiceProvider VsServiceProvider { get; }
+        internal VsSpecificServiceHost VsSpecificServiceHost { get; }
         internal IComponentModel ComponentModel { get; }
         internal ExportProvider ExportProvider { get; }
 
-        internal SharedService(SVsServiceProvider vsServiceProvider)
+        internal SharedService(SVsServiceProvider vsServiceProvider, VsSpecificServiceHost vsSpecificServiceHost)
         {
             VsServiceProvider = vsServiceProvider;
+            VsSpecificServiceHost = vsSpecificServiceHost;
             ComponentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
             ExportProvider = ComponentModel.DefaultExportProvider;
         }
@@ -78,10 +82,8 @@ namespace Vim.VisualStudio.Specific
 
         internal FSharpOption<IWordCompletionSessionFactory> GetWordCompletionSessionFactory()
         {
-            var all1 = ExportProvider.GetExportedValues<VimWordCompletionUtil>();
-            var all2 = ExportProvider.GetExportedValues<IWordCompletionSessionFactory>();
-            throw null;
-            //return FSharpOption<IWordCompletionSessionFactory>.Some(provider);
+            var factory = VsSpecificServiceHost.GetService<IWordCompletionSessionFactory>();
+            return FSharpOption.Create(factory);
         }
 
         #region ISharedService

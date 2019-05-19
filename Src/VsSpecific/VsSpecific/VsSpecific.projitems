@@ -32,4 +32,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimSpecificUtil.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
 </Project>
