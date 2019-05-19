@@ -24,9 +24,9 @@ type internal ModeLineInterpreter
 
     let _globalSettings = _localSettings.GlobalSettings
 
-    /// Sequence of insecure local setting names that could be used by a
-    /// malicious modeline to cause harm to the user
-    static let _insecureListedLocalSettingNames =
+    /// List of insecure local setting names that could be used in a file with
+    /// a malicious modeline to cause risk or harm to the user
+    static let _insecureLocalSettingNames =
         Seq.empty
         |> Seq.toArray
         :> string seq
@@ -70,7 +70,7 @@ type internal ModeLineInterpreter
             elif Option.isSome localSetting then
 
                 // Allow any local setting that isn't insecure.
-                _insecureListedLocalSettingNames
+                _insecureLocalSettingNames
                 |> Seq.contains localSetting.Value.Name
                 |> not
             else
