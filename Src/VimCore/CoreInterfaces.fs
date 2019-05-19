@@ -1472,8 +1472,10 @@ module KeyInputSetUtil =
 [<NoEquality>]
 type KeyMappingResult =
 
-    /// The values were mapped completely and require no further mapping. This 
-    /// could be a result of a no-op mapping though
+    /// The values were not mapped
+    | Unmapped of KeyInputSet: KeyInputSet
+
+    /// The values were mapped completely and require no further mapping
     | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
@@ -1494,6 +1496,7 @@ type KeyMappingResult =
     /// was possible 
     member x.KeyInputSet = 
         match x with
+        | Unmapped keyInputSet -> keyInputSet
         | Mapped keyInputSet -> keyInputSet
         | PartiallyMapped (keyInputSet, _) -> keyInputSet
         | Recursive -> KeyInputSet.Empty

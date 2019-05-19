@@ -44,25 +44,33 @@ type internal HistorySession<'TData, 'TResult>
         _inPasteWait <- false
 
     member x.CreateBindResult() = 
-        let bindData = { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process } 
+        let bindData = { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.ProcessKeyInput } 
         BindResult<_>.NeedMoreInput bindData
 
     member x.CreateBindDataStorage() = 
-        BindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process })
+        BindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.ProcessKeyInput })
 
     /// Process a single KeyInput value in the state machine. 
-    member x.Process (keyInput: KeyInput) =
+    member x.ProcessKeyInput (keyInput: KeyInput) =
+        KeyInputData.Create keyInput false
+        |> x.Process
+
+    /// Process a single KeyInput value in the state machine. 
+    member x.Process (keyInputData: KeyInputData) =
+        let keyInput = keyInputData.KeyInput
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
             // Enter key completes the action
             let result = _historyClient.Completed _clientData _command
-            _historyClient.HistoryList.Add _command
+            if not keyInputData.WasMapped then
+                _historyClient.HistoryList.Add _command
             _inPasteWait <- false
             BindResult.Complete result
         | Some HistoryCommand.Cancel ->
             // Escape cancels the current search.  It does update the history though
             _historyClient.Cancelled _clientData
-            _historyClient.HistoryList.Add _command
+            if not keyInputData.WasMapped then
+                _historyClient.HistoryList.Add _command
             _inPasteWait <- false
             BindResult.Cancelled
         | Some HistoryCommand.Back ->

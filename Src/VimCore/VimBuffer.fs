@@ -339,6 +339,9 @@ type internal VimBuffer
             | None -> false
 
         match x.GetKeyInputMapping keyInput with
+        | KeyMappingResult.Unmapped keyInputSet -> 
+            mapped keyInputSet
+
         | KeyMappingResult.Mapped keyInputSet -> 
             mapped keyInputSet
 
@@ -610,6 +613,9 @@ type internal VimBuffer
                 let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 
                     match keyMappingResult with
+                    | KeyMappingResult.Unmapped mappedKeyInputSet -> 
+                        processUnmappedSet mappedKeyInputSet
+                        KeyInputSet.Empty
                     | KeyMappingResult.Mapped mappedKeyInputSet -> 
                         mapCount := mapCount.Value + 1
                         processMappedSet mappedKeyInputSet
