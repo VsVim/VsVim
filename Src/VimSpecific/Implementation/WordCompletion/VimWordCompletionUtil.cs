@@ -60,8 +60,10 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
 
         [ImportingConstructor]
         internal VimWordCompletionUtil(
+            Lazy<IVimHost> vimHost,
             ICompletionBroker completionBroker,
             IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
+            :base(vimHost)
         {
             _legacyFactory = new WordLegacyCompletionSessionFactory(completionBroker, intellisenseSessionStackMapService);
         }

@@ -82,11 +82,6 @@ namespace Vim.UI.Wpf
             get { return false; }
         }
 
-        public virtual FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory
-        {
-            get { return FSharpOption<IWordCompletionSessionFactory>.None; }
-        }
-
         protected VimHost(
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
@@ -596,11 +591,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.UseDefaultCaret
         {
             get { return UseDefaultCaret; }
-        }
-
-        FSharpOption<IWordCompletionSessionFactory> IVimHost.WordCompletionSessionFactory
-        {
-            get { return WordCompletionSessionFactory;  }
         }
 
         void IVimHost.EnsurePackageLoaded()

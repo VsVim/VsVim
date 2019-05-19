@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel.Composition.Hosting;
+using System.Collections.Generic;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -9,25 +11,34 @@ namespace Vim.VisualStudio.Specific
 #else
 
 #if VS_SPECIFIC_2015
-        internal const string HostIdentifier = "VsVim 2015";
-        internal const VisualStudioVersion VisualStudioVersion = VisualStudioVersion.Vs2015;
+        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2015;
+        internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2015;
 #elif VS_SPECIFIC_2017
-        internal const string HostIdentifier = "VsVim 2017";
-        internal const VisualStudioVersion VisualStudioVersion = VisualStudioVersion.Vs2017;
+        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2017;
+        internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2017;
 #elif VS_SPECIFIC_2019
-        internal const string HostIdentifier = "VsVim 2019";
-        internal const VisualStudioVersion VisualStudioVersion = VisualStudioVersion.Vs2019;
+        internal const string HostIdentifier = VisualStudioVersionUtil.HostIdentifier2019;
+        internal const VisualStudioVersion TargetVisualStudioVersion = VisualStudioVersion.Vs2019;
 #else
 #error Unsupported configuration
 #endif
-
-        internal static bool IsTargetVisualStudio(SVsServiceProvider vsServiceProvider)
-        {
-            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
-            return dte.GetVisualStudioVersion() == TargetVisualStudioVersion;
-        }
 #endif
         internal const string MefNamePrefix = HostIdentifier + " ";
+
+        internal static TypeCatalog GetTypeCatalog()
+        {
+            var list = new List<Type>()
+            {
+#if VS_SPECIFIC_2019
+                typeof(Implementation.WordCompletion.Async.WordAsyncCompletionSourceProvider),
+#endif
+                typeof(Implementation.WordCompletion.Legacy.WordLegacyCompletionPresenterProvider),
+                typeof(Implementation.WordCompletion.Legacy.WordLegacyCompletionSourceProvider),
+                typeof(Implementation.WordCompletion.VimWordCompletionUtil),
+            };
+
+            return new TypeCatalog(list);
+        }
     }
 
     internal abstract class VimSpecificService : IVimSpecificService

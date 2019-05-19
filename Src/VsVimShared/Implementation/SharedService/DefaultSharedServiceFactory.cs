@@ -14,11 +14,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 return WindowFrameState.Default;
             }
 
-            FSharpOption<IWordCompletionSessionFactory> ISharedService.GetWordCompletionSessionFactory()
-            {
-                return FSharpOption<IWordCompletionSessionFactory>.None;
-            }
-
             void ISharedService.GoToTab(int index)
             {
             }

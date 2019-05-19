@@ -4608,9 +4608,6 @@ type IVimHost =
     /// Whether to use the Visual Studio caret or the VsVim caret in insert mode
     abstract UseDefaultCaret: bool
 
-    /// The IWordCompletionSessionFactory for the host if if one is available
-    abstract WordCompletionSessionFactory : IWordCompletionSessionFactory option
-
     /// Ensure that the VsVim package is loaded
     abstract EnsurePackageLoaded: unit -> unit
 

@@ -19,13 +19,11 @@ namespace Vim.VisualStudio.Specific
     internal sealed class SharedServiceVersionFactory : ISharedServiceVersionFactory
     {
         internal SVsServiceProvider VsServiceProvider { get; }
-        internal VsSpecificServiceHost VsSpecificServiceHost { get; }
 
         [ImportingConstructor]
-        internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider, [ImportMany] IEnumerable<Lazy<IVsSpecificService>> vsSpecificServices)
+        internal SharedServiceVersionFactory(SVsServiceProvider vsServiceProvider)
         {
             VsServiceProvider = vsServiceProvider;
-            VsSpecificServiceHost = new VsSpecificServiceHost(vsServiceProvider, vsSpecificServices);
         }
 
         #region ISharedServiceVersionFactory
@@ -37,7 +35,7 @@ namespace Vim.VisualStudio.Specific
 
         ISharedService ISharedServiceVersionFactory.Create()
         {
-            return new SharedService(VsServiceProvider, VsSpecificServiceHost);
+            return new SharedService(VsServiceProvider);
         }
 
         #endregion

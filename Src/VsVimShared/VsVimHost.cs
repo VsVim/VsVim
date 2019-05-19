@@ -283,6 +283,8 @@ namespace Vim.VisualStudio
             get { return _vimApplicationSettings.DefaultSettings; }
         }
 
+        public override string HostIdentifier => VisualStudioVersionUtil.GetHostIdentifier(DTE.GetVisualStudioVersion());
+
         public override bool IsUndoRedoExpected
         {
             get { return _extensionAdapterBroker.IsUndoRedoExpected ?? base.IsUndoRedoExpected; }
@@ -296,11 +298,6 @@ namespace Vim.VisualStudio
         public override bool UseDefaultCaret
         {
             get { return _extensionAdapterBroker.UseDefaultCaret ?? base.UseDefaultCaret; }
-        }
-
-        public override FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory
-        {
-            get { return _sharedService.GetWordCompletionSessionFactory(); }
         }
 
         [ImportingConstructor]

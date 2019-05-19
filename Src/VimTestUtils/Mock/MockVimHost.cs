@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.UnitTest.Mock
 {
@@ -22,6 +23,7 @@ namespace Vim.UnitTest.Mock
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
         public bool IsUndoRedoExpected { get; set; }
+        public string HostIdentifier { get; } = VimSpecificUtil.HostIdentifier;
         public DefaultSettings DefaultSettings { get; set; }
         public bool EnsuredPackageLoaded { get; private set; }
         public int BeepCount { get; set; }

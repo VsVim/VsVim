@@ -26,6 +26,7 @@ using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.UnitTest
 {
@@ -559,6 +560,7 @@ namespace Vim.UnitTest
                 };
 
                 editorHostFactory.Add(new TypeCatalog(types));
+                editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
                 host = new VimEditorHost(compositionContainer);

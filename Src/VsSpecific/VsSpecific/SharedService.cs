@@ -19,14 +19,12 @@ namespace Vim.VisualStudio.Specific
     internal sealed partial class SharedService : ISharedService
     {
         internal SVsServiceProvider VsServiceProvider { get; }
-        internal VsSpecificServiceHost VsSpecificServiceHost { get; }
         internal IComponentModel ComponentModel { get; }
         internal ExportProvider ExportProvider { get; }
 
-        internal SharedService(SVsServiceProvider vsServiceProvider, VsSpecificServiceHost vsSpecificServiceHost)
+        internal SharedService(SVsServiceProvider vsServiceProvider)
         {
             VsServiceProvider = vsServiceProvider;
-            VsSpecificServiceHost = vsSpecificServiceHost;
             ComponentModel = (IComponentModel)vsServiceProvider.GetService(typeof(SComponentModel));
             ExportProvider = ComponentModel.DefaultExportProvider;
         }
@@ -80,18 +78,7 @@ namespace Vim.VisualStudio.Specific
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
-        internal FSharpOption<IWordCompletionSessionFactory> GetWordCompletionSessionFactory()
-        {
-            var factory = VsSpecificServiceHost.GetService<IWordCompletionSessionFactory>();
-            return FSharpOption.Create(factory);
-        }
-
         #region ISharedService
-
-        FSharpOption<IWordCompletionSessionFactory> ISharedService.GetWordCompletionSessionFactory()
-        {
-            return GetWordCompletionSessionFactory();
-        }
 
         WindowFrameState ISharedService.GetWindowFrameState()
         {
