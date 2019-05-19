@@ -439,7 +439,11 @@ type internal InsertMode
         | ActiveEditItem.PasteSpecial _ -> Some '"'
         | ActiveEditItem.Digraph1 -> Some '?'
         | ActiveEditItem.Digraph2 firstKeyInput -> Some firstKeyInput.Char
-        | _ -> None
+        | ActiveEditItem.Literal _ -> Some '^'
+        | ActiveEditItem.None -> None
+        | ActiveEditItem.OverwriteReplace -> None
+        | ActiveEditItem.WordCompletion _ -> None
+        | ActiveEditItem.Undo _ -> None
 
     member x.IsInPaste = x.PasteCharacter.IsSome
 
