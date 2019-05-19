@@ -47,6 +47,13 @@ code uses `[ImportMany]`. The implementation though must be careful to disable f
 it is loaded in the wrong VS version. For instance `ICompletionProvider` should only return instances
 when VsSpecific is loading in the correct Visual Studio version.
 
+When stuck on MEF issues inside of Visual Studio take a look at the composition error file as it will
+usually have a detailed explanation of the error: 
+
+- Open `%LOCALAPPDATA%\Microsoft\VisualStudio`
+- Open the directory matching `16.*Exp`
+- Open `ComponentModelCache\Microsoft.VisualStudio.Default.err` 
+
 
 
 
