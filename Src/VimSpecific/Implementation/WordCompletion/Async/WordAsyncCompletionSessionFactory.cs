@@ -32,10 +32,9 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
         private readonly IVsEditorAdaptersFactoryService _vsEditorAdaptersFactoryService;
 
-        [ImportingConstructor]
         internal WordAsyncCompletionSessionFactory(
             IAsyncCompletionBroker asyncCompletionBroker,
-            IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService)
+            IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
             _vsEditorAdaptersFactoryService = vsEditorAdaptersFactoryService;

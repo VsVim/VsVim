@@ -4591,6 +4591,9 @@ type IVimHost =
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings: DefaultSettings
 
+    /// The identifier that represents this specific host
+    abstract HostIdentifier: string
+
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled: bool
 

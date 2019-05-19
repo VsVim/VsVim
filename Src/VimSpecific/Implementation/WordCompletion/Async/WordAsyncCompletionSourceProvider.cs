@@ -15,18 +15,16 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
     [ContentType(VimConstants.AnyContentType)]
     [Export(typeof(IAsyncCompletionSourceProvider))]
     [Order(Before = "Roslyn Completion Source Provider")]
-    internal sealed class WordAsyncCompletionSourceProvider : IAsyncCompletionSourceProvider
+    internal sealed class WordAsyncCompletionSourceProvider : VimSpecificService, IAsyncCompletionSourceProvider
     {
-        private readonly SVsServiceProvider _vsServiceProvider;
-
         [ImportingConstructor]
-        internal WordAsyncCompletionSourceProvider(SVsServiceProvider vsServiceProvider)
+        internal WordAsyncCompletionSourceProvider(Lazy<IVimHost> vimHost)
+            : base(vimHost)
         {
-            _vsServiceProvider = vsServiceProvider;
         }
 
         IAsyncCompletionSource IAsyncCompletionSourceProvider.GetOrCreate(ITextView textView) =>
-            VimSpecificUtil.IsTargetVisualStudio(_vsServiceProvider)
+            InsideValidHost
                 ? new WordAsyncCompletionSource(textView)
                 : null;
     }   

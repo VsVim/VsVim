@@ -25,21 +25,20 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
     [Name(VimSpecificUtil.MefNamePrefix + "Legacy Completion Source")]
     [ContentType(VimConstants.AnyContentType)]
     [Export(typeof(ICompletionSourceProvider))]
-    internal sealed class WordLegacyCompletionSourceProvider: ICompletionSourceProvider
+    internal sealed class WordLegacyCompletionSourceProvider: VimSpecificService, ICompletionSourceProvider
     {
-        private readonly SVsServiceProvider _vsServiceProvider;
-
         [ImportingConstructor]
-        internal WordLegacyCompletionSourceProvider(SVsServiceProvider vsServiceProvider)
+        internal WordLegacyCompletionSourceProvider(Lazy<IVimHost> vimHost)
+            :base(vimHost)
         {
-            _vsServiceProvider = vsServiceProvider;
+
         }
 
         #region ICompletionSourceProvider
 
         ICompletionSource ICompletionSourceProvider.TryCreateCompletionSource(ITextBuffer textBuffer)
         {
-            return VimSpecificUtil.IsTargetVisualStudio(_vsServiceProvider)
+            return InsideValidHost
                 ? new WordLegacyCompletionSource(textBuffer)
                 : null;
         }

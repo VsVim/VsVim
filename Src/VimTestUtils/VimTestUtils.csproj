@@ -7,8 +7,7 @@
     <AssemblyName>Vim.UnitTest.Utils</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
+    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />

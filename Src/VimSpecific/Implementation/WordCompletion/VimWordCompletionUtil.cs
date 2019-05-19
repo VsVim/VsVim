@@ -25,8 +25,8 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
     /// ITextView.  Ideally we don't want to provide any completion information unless we are actually
     /// starting a word completion session
     /// </summary>
-    [Export(typeof(IVsSpecificService))]
-    internal sealed class VimWordCompletionUtil : VsSpecificService, IWordCompletionSessionFactory
+    [Export(typeof(IVimSpecificService))]
+    internal sealed class VimWordCompletionUtil : VimSpecificService, IWordCompletionSessionFactory
     {
 #if VS_SPECIFIC_2019
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
@@ -35,10 +35,12 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
 
         [ImportingConstructor]
         internal VimWordCompletionUtil(
+            Lazy<IVimHost> vimHost,
             IAsyncCompletionBroker asyncCompletionBroker,
             ICompletionBroker completionBroker,
-            IVsEditorAdaptersFactoryService vsEditorAdapterFactoryService,
-            IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
+            IIntellisenseSessionStackMapService intellisenseSessionStackMapService,
+            [Import(AllowDefault = true)] IVsEditorAdaptersFactoryService vsEditorAdapterFactoryService = null)
+            :base(vimHost)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
             _asyncFactory = new WordAsyncCompletionSessionFactory(asyncCompletionBroker, vsEditorAdapterFactoryService);

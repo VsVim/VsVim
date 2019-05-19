@@ -8,4 +8,23 @@
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace>VimSpecific</Import_RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionPresenterProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimSpecificUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)REAME.md" />
+  </ItemGroup>
 </Project>
