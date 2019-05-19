@@ -3374,7 +3374,7 @@ type InsertCommand  =
     /// Block edit of the specified TextChange value.  The bool signifies whether
     /// the insert is at the end of the line. The int represents the number of 
     /// lines on which this block insert should take place
-    | BlockInsert of Text: string * AtEndOfLine: bool * Height: int
+    | BlockInsert of InsertCommand: InsertCommand * AtEndOfLine: bool * Height: int
 
     /// This is an insert command which is a combination of other insert commands
     | Combined of Left: InsertCommand * Right: InsertCommand

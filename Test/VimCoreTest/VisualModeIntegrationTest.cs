@@ -50,6 +50,14 @@ namespace Vim.UnitTest
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
+
+            // Some tests create a buffer than does not end with a newline and
+            // then insert text on the last line which would add one if ':set
+            // endofline' were in effect.
+            if (lines.Length > 0 && lines[lines.Length - 1] != string.Empty)
+            {
+                _vimBufferData.LocalSettings.EndOfLine = false;
+            }
         }
 
         public override void Dispose()
@@ -61,10 +69,8 @@ namespace Vim.UnitTest
 
         protected virtual void Create(int tabStop, params string[] lines)
         {
-            Create();
+            Create(lines);
             UpdateTabStop(_vimBuffer, tabStop);
-            _textView.SetText(lines);
-            _textView.MoveCaretTo(0);
         }
 
         protected void EnterMode(SnapshotSpan span)
@@ -1737,6 +1743,49 @@ namespace Vim.UnitTest
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
                     _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
                     Assert.Equal(new[] { "x\tdog", "x\tcat", "x\tbat", "", }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// A block inserted tab should allow custom processing on each
+                /// line, and in Visual Studio a tab expands to the shiftwidth
+                /// </summary>
+                [WpfFact]
+                public void CustomProcessedTab()
+                {
+                    // Reported in issue #2420.
+                    Create("dog", "cat", "bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 8;
+                    _vimBufferData.LocalSettings.ShiftWidth = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = true;
+                    EnterBlock(_textView.GetBlockSpan(0, 1, 0, 3));
+                    _vimHost.TryCustomProcessFunc = (textView, insertCommand) =>
+                        {
+                            if (insertCommand.IsInsertTab)
+                            {
+                                _textBuffer.Insert(_textView.GetCaretPoint().Position, "    ");
+                                return true;
+                            }
+                            return false;
+                        };
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "    dog", "    cat", "    bat", "", }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Without custom processing, a tab in vim expands to the
+                /// tabstop, not shiftwidth
+                /// </summary>
+                [WpfFact]
+                public void NonCustomProcessedTab()
+                {
+                    // Reported in issue #2420.
+                    Create("dog", "cat", "bat", "");
+                    _vimBufferData.LocalSettings.TabStop = 8;
+                    _vimBufferData.LocalSettings.ShiftWidth = 4;
+                    _vimBufferData.LocalSettings.ExpandTab = true;
+                    EnterBlock(_textView.GetBlockSpan(0, 1, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-i><Tab><Esc>");
+                    Assert.Equal(new[] { "        dog", "        cat", "        bat", "", }, _textBuffer.GetLines());
                 }
             }
 
