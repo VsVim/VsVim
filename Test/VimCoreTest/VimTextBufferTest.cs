@@ -330,6 +330,17 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void MiddleOfLongFile()
+            {
+                var modeLine = " vim:ts=8:";
+                Create(Enumerable.Repeat("", 100).Concat(new[] { modeLine }).Concat(Enumerable.Repeat("", 100)).ToArray());
+                _localSettings.TabStop = 4;
+                var result = _vimTextBuffer.CheckModeLine();
+                Assert.False(result.Item1.IsSome());
+                Assert.Equal(4, _localSettings.TabStop);
+            }
+
+            [WpfFact]
             public void EndOfLongFile()
             {
                 var modeLine = " vim:ts=8:";
