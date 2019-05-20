@@ -14,13 +14,13 @@ type internal ModeLineInterpreter
     ) =
 
     /// Regular expressions to parse the modeline
-    static let _escapedModeLine = @"(([^:\\]|\\:?)*)";
-    static let _firstPattern = @"[ \t]vim:(.*)$"
-    static let _secondPattern = @"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":"
-    static let _nextGroup = _escapedModeLine + @"(:|$)"
-    static let _settingPattern = @"([\w[\w\d_]*)";
-    static let _assignment = @"^" + _settingPattern + @"=(.*)$"
-    static let _settingName = @"^" + _settingPattern + "$"
+    static let _escapedModeLine = @"(([^:\\]|\\:?)*)"
+    static let _firstFormRegex = new Regex(@"[ \t]vim:(.*)$", RegexOptions.Compiled)
+    static let _secondFormRegex = new Regex(@"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":", RegexOptions.Compiled)
+    static let _nextGroupRegex = new Regex(_escapedModeLine + @"(:|$)", RegexOptions.Compiled)
+    static let _settingPattern = @"([\w[\w\d_]*)"
+    static let _assignmentRegex = new Regex(@"^" + _settingPattern + @"=(.*)$", RegexOptions.Compiled)
+    static let _settingNameRegex = new Regex(@"^" + _settingPattern + "$", RegexOptions.Compiled)
 
     let _globalSettings = _localSettings.GlobalSettings
 
@@ -48,7 +48,7 @@ type internal ModeLineInterpreter
 
                 // Ignore an empty setting.
                 true
-            elif not (Regex.Match(settingName, _settingName).Success) then
+            elif not (_settingNameRegex.Match(settingName).Success) then
 
                 // Don't ignore illegal setting names.
                 false
@@ -84,7 +84,7 @@ type internal ModeLineInterpreter
 
             // Determine what kind of option this is.
             let settingName, setter =
-                let m = Regex.Match(option, _assignment)
+                let m = _assignmentRegex.Match(option)
                 if m.Success then
 
                     // The option is an assigned setting.
@@ -121,10 +121,10 @@ type internal ModeLineInterpreter
 
         // Process the "first" format of modeline, i.e. "vim: ...".
         let processFirstForm modeLine =
-            let m = Regex.Match(modeLine, _firstPattern)
+            let m = _firstFormRegex.Match(modeLine)
             if m.Success then
                 let firstBadOption =
-                    Regex.Matches(m.Groups.[1].Value, _nextGroup)
+                    _nextGroupRegex.Matches(m.Groups.[1].Value)
                     |> Seq.cast<Match>
                     |> Seq.map (fun m -> splitFields m.Groups.[1].Value)
                     |> Seq.concat
@@ -135,7 +135,7 @@ type internal ModeLineInterpreter
 
         // Process the "second" format of modeline, i.e. "vim: set ... :".
         let processSecondForm modeLine =
-            let m = Regex.Match(modeLine, _secondPattern)
+            let m = _secondFormRegex.Match(modeLine)
             if m.Success then
                 let firstBadOption =
                     splitFields m.Groups.[1].Value
