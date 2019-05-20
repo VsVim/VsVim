@@ -3650,10 +3650,10 @@ type BindDataStorage<'T> =
 /// This is the result of attemping to bind a series of KeyInputData values
 /// into a Motion Command, etc ...
 [<RequireQualifiedAccess>]
-type MappedBindResult<'T> = 
+type MappedBindResult<'T> =
 
     /// Successfully bound to a value
-    | Complete of Result: 'T 
+    | Complete of Result: 'T
 
     /// More input is needed to complete the binding operation
     | NeedMoreInput of MappedBindData: MappedBindData<'T>
@@ -3670,14 +3670,14 @@ type MappedBindResult<'T> =
     /// forwarding from one to the other once the value is completed
     member x.Map (mapFunc: 'T -> MappedBindResult<'U>): MappedBindResult<'U> =
         match x with
-        | Complete value -> mapFunc value 
+        | Complete value -> mapFunc value
         | NeedMoreInput (bindData: MappedBindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
 
     /// Used to convert a MappedBindResult<'T>.Completed to
     /// MappedBindResult<'U>.Completed through a conversion function
-    member x.Convert (convertFunc: 'T -> 'U): MappedBindResult<'U> = 
+    member x.Convert (convertFunc: 'T -> 'U): MappedBindResult<'U> =
         x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
 
     /// Convert this MappedBindResult<'T> to a BindResult<'T>
@@ -3692,7 +3692,7 @@ and MappedBindData<'T> = {
 
     /// The optional KeyRemapMode which should be used when binding the next
     /// KeyInput in the sequence
-    KeyRemapMode: KeyRemapMode 
+    KeyRemapMode: KeyRemapMode
 
     /// Function to call to get the MappedBindResult for this data
     MappedBindFunction: KeyInputData -> MappedBindResult<'T>
@@ -3703,9 +3703,9 @@ and MappedBindData<'T> = {
 
     /// Very similar to the Convert function.  This will instead map a
     /// MappedBindData<'T>.Completed to a MappedBindData<'U> of any form
-    member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> = 
+    member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> =
         let originalBindFunc = x.MappedBindFunction
-        let bindFunc keyInput = 
+        let bindFunc keyInput =
             match originalBindFunc keyInput with
             | MappedBindResult.Cancelled -> MappedBindResult.Cancelled
             | MappedBindResult.Complete value -> mapFunc value
@@ -3717,7 +3717,7 @@ and MappedBindData<'T> = {
     /// binding to succeed so we can create a projected value.  This function
     /// will allow us to translate a MappedBindResult<'T>.Completed ->
     /// MappedBindResult<'U>.Completed
-    member x.Convert (convertFunc: 'T -> 'U): MappedBindData<'U> = 
+    member x.Convert (convertFunc: 'T -> 'U): MappedBindData<'U> =
         x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
 
     /// Convert this MappedBindData<'T> to a BindData<'T> (note that as a
@@ -3748,7 +3748,7 @@ type MappedBindDataStorage<'T> =
     with
 
     /// Creates the MappedBindData
-    member x.CreateBindData () = 
+    member x.CreateMappedBindData () = 
         match x with
         | Simple bindData -> bindData
         | Complex func -> func()

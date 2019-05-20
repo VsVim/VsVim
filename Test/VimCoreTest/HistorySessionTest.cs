@@ -64,7 +64,7 @@ namespace Vim.UnitTest
         {
             _client = new Client() { HistoryList = new HistoryList(), RegisterMap = Vim.RegisterMap };
             _historySession = HistoryUtil.CreateHistorySession(_client, 0, "", null);
-            _bindData = _historySession.CreateBindDataStorage().CreateBindData();
+            _bindData = _historySession.CreateBindDataStorage().CreateMappedBindData();
         }
 
         public void ProcessNotation(string notation)

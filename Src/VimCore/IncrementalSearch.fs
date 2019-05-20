@@ -102,7 +102,7 @@ type internal IncrementalSearchSession
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
         _sessionState <- SessionState.Started historySession
-        historySession.CreateBindDataStorage().CreateBindData() |> convertBindData
+        historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
     member x.GetSearchResultAsync() =
         match _searchState with

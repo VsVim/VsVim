@@ -136,7 +136,7 @@ type internal CommandMode
 
         _command <- ""
         _historySession <- Some historySession
-        _bindData <- historySession.CreateBindDataStorage().CreateBindData()
+        _bindData <- historySession.CreateBindDataStorage().CreateMappedBindData()
         _keepSelection <- false
         _isPartialCommand <- false
 
