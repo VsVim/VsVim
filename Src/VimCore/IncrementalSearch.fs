@@ -102,22 +102,6 @@ type internal IncrementalSearchSession
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
         _sessionState <- SessionState.Started historySession
-
-        let rec convertBindData (mappedBindData: MappedBindData<'T>): BindData<'T> =
-            {
-                KeyRemapMode = mappedBindData.KeyRemapMode
-                BindFunction = (fun keyInput ->
-                    KeyInputData.Create keyInput false
-                    |> mappedBindData.MappedBindFunction
-                    |> convertBindResult)
-            }
-        and convertBindResult (mappedBindResult: MappedBindResult<'T>): BindResult<'T> =
-            match mappedBindResult with
-            | MappedBindResult.Cancelled -> BindResult.Cancelled
-            | MappedBindResult.Complete result -> BindResult.Complete result
-            | MappedBindResult.Error -> BindResult.Error
-            | MappedBindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (convertBindData bindData)
-
         historySession.CreateBindDataStorage().CreateBindData() |> convertBindData
 
     member x.GetSearchResultAsync() =

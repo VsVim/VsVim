@@ -3647,8 +3647,8 @@ type BindDataStorage<'T> =
         | Simple bindData -> Simple (bindData.Convert mapFunc)
         | Complex func -> Complex (fun () -> func().Convert mapFunc)
 
-/// This is the result of attemping to bind a series of KeyInput values into a Motion
-/// Command, etc ... 
+/// This is the result of attemping to bind a series of KeyInputData values
+/// into a Motion Command, etc ...
 [<RequireQualifiedAccess>]
 type MappedBindResult<'T> = 
 
@@ -3666,8 +3666,8 @@ type MappedBindResult<'T> =
 
     with
 
-    /// Used to compose to MappedBindResult<'T> functions together by forwarding from
-    /// one to the other once the value is completed
+    /// Used to compose to MappedBindResult<'T> functions together by
+    /// forwarding from one to the other once the value is completed
     member x.Map (mapFunc: 'T -> MappedBindResult<'U>): MappedBindResult<'U> =
         match x with
         | Complete value -> mapFunc value 
@@ -3675,15 +3675,23 @@ type MappedBindResult<'T> =
         | Error -> Error
         | Cancelled -> Cancelled
 
-    /// Used to convert a MappedBindResult<'T>.Completed to MappedBindResult<'U>.Completed through a conversion
-    /// function
+    /// Used to convert a MappedBindResult<'T>.Completed to
+    /// MappedBindResult<'U>.Completed through a conversion function
     member x.Convert (convertFunc: 'T -> 'U): MappedBindResult<'U> = 
         x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
 
+    /// Convert this MappedBindResult<'T> to a BindResult<'T>
+    member x.ConvertToBindResult (): BindResult<'T> =
+        match x with
+        | MappedBindResult.Complete result -> BindResult.Complete result
+        | MappedBindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.ConvertToBindData())
+        | MappedBindResult.Error -> BindResult.Error
+        | MappedBindResult.Cancelled -> BindResult.Cancelled
+
 and MappedBindData<'T> = {
 
-    /// The optional KeyRemapMode which should be used when binding
-    /// the next KeyInput in the sequence
+    /// The optional KeyRemapMode which should be used when binding the next
+    /// KeyInput in the sequence
     KeyRemapMode: KeyRemapMode 
 
     /// Function to call to get the MappedBindResult for this data
@@ -3693,8 +3701,8 @@ and MappedBindData<'T> = {
 
     member x.CreateBindResult() = MappedBindResult.NeedMoreInput x
 
-    /// Very similar to the Convert function.  This will instead map a MappedBindData<'T>.Completed
-    /// to a MappedBindData<'U> of any form 
+    /// Very similar to the Convert function.  This will instead map a
+    /// MappedBindData<'T>.Completed to a MappedBindData<'U> of any form
     member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> = 
         let originalBindFunc = x.MappedBindFunction
         let bindFunc keyInput = 
@@ -3705,11 +3713,23 @@ and MappedBindData<'T> = {
             | MappedBindResult.NeedMoreInput bindData -> MappedBindResult.NeedMoreInput (bindData.Map mapFunc)
         { KeyRemapMode = x.KeyRemapMode; MappedBindFunction = bindFunc }
 
-    /// Often types bindings need to compose together because we need an inner binding
-    /// to succeed so we can create a projected value.  This function will allow us
-    /// to translate a MappedBindResult<'T>.Completed -> MappedBindResult<'U>.Completed
+    /// Often types bindings need to compose together because we need an inner
+    /// binding to succeed so we can create a projected value.  This function
+    /// will allow us to translate a MappedBindResult<'T>.Completed ->
+    /// MappedBindResult<'U>.Completed
     member x.Convert (convertFunc: 'T -> 'U): MappedBindData<'U> = 
         x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
+
+    /// Convert this MappedBindData<'T> to a BindData<'T> (note that as a
+    /// result of the conversion all key inputs will all appear to be unmapped)
+    member x.ConvertToBindData (): BindData<'T> =
+        {
+            KeyRemapMode = x.KeyRemapMode
+            BindFunction = (fun keyInput ->
+                KeyInputData.Create keyInput false
+                |> x.MappedBindFunction
+                |> (fun mappedBindResult -> mappedBindResult.ConvertToBindResult()))
+        }
 
 /// Several types of MappedBindData<'T> need to take an action when a binding begins against
 /// themselves. This action needs to occur before the first KeyInput value is processed
