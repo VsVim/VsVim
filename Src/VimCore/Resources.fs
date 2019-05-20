@@ -38,6 +38,7 @@ module internal Resources =
     let Common_LinesDeleted lines = sprintf "%d lines deleted" lines
     let Common_LinesChanged lines = sprintf "%d lines changed" lines
     let Common_LinesYanked lines = sprintf "%d lines yanked" lines
+    let Common_InvalidModeLineSetting setting modeLine = sprintf "Invalid setting '%s' in '%s'" setting modeLine
 
     let Undo_ChainBroken = "Undo chain broken. Falling back to Visual Studio undo"
     let Undo_LinkedChainBroken = "Undo linked chain broken. Falling back to Visual Studio undo"

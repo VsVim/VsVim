@@ -142,6 +142,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             UpdateForRecordingChanged();
             UpdateTextColor();
             UpdateStatusLineVisibility();
+            UpdateLastMessage();
+        }
+
+        private void UpdateLastMessage()
+        {
+            if (_vimBuffer.LastMessage.IsSome())
+            {
+                UpdateCommandLine(_vimBuffer.LastMessage.Value);
+            }
         }
 
         private void OnGotAggregateFocus(object sender, EventArgs e)
