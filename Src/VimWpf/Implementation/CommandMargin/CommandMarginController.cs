@@ -76,6 +76,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private readonly ICommonOperations _commonOperations;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly FrameworkElement _parentVisualElement;
+        private readonly bool _isFirstCommandMargin;
         private readonly PasteWaitMemo _pasteWaitMemo = new PasteWaitMemo();
         private VimBufferKeyEventState _vimBufferKeyEventState;
         private bool _inUpdateVimBufferState;
@@ -128,7 +129,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        internal CommandMarginController(IVimBuffer buffer, FrameworkElement parentVisualElement, CommandMarginControl control, IEditorFormatMap editorFormatMap, IClassificationFormatMap classificationFormatMap, ICommonOperations commonOperations, IClipboardDevice clipboardDevice)
+        internal CommandMarginController(
+            IVimBuffer buffer,
+            FrameworkElement parentVisualElement,
+            CommandMarginControl control,
+            IEditorFormatMap editorFormatMap,
+            IClassificationFormatMap classificationFormatMap,
+            ICommonOperations commonOperations,
+            IClipboardDevice clipboardDevice,
+            bool isFirstCommandMargin)
         {
             _vimBuffer = buffer;
             _margin = control;
@@ -137,11 +146,39 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _classificationFormatMap = classificationFormatMap;
             _commonOperations = commonOperations;
             _clipboardDevice = clipboardDevice;
+            _isFirstCommandMargin = isFirstCommandMargin;
 
+            InitializeMargin();
             Connect();
             UpdateForRecordingChanged();
             UpdateTextColor();
             UpdateStatusLineVisibility();
+            UpdateLastMessage();
+        }
+
+        private void UpdateLastMessage()
+        {
+            if (_vimBuffer.LastMessage.IsSome())
+            {
+                UpdateCommandLine(_vimBuffer.LastMessage.Value);
+            }
+        }
+
+        private void InitializeMargin()
+        {
+            var message = string.Empty;
+            if (_isFirstCommandMargin)
+            {
+                if (_vimBuffer.Vim.VimRcState is VimRcState.LoadSucceeded rcState && rcState.Errors.Length != 0)
+                {
+                    message = string.Join(Environment.NewLine, rcState.Errors);
+                }
+                else
+                {
+                    message = $"Welcome to VsVim Version {VimConstants.VersionNumber}";
+                }
+            }
+            _margin.CommandLineTextBox.Text = message;
         }
 
         private void OnGotAggregateFocus(object sender, EventArgs e)

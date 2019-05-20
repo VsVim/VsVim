@@ -188,6 +188,7 @@ type internal VimBuffer
     let _bag = DisposableBag()
     let _modeMap = ModeMap(_vimBufferData.VimTextBuffer, _incrementalSearch)
     let _keyMap = _vim.KeyMap
+    let mutable _lastMessage: string option = None
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
@@ -717,14 +718,17 @@ type internal VimBuffer
 
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _errorMessageEvent.Trigger x args
 
     member x.RaiseWarningMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _warningMessageEvent.Trigger x args
 
     member x.RaiseStatusMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _statusMessageEvent.Trigger x args
 
     /// Remove an IMode from the IVimBuffer instance
@@ -786,6 +790,7 @@ type internal VimBuffer
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList
+        member x.LastMessage = _lastMessage
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.NormalMode = x.NormalMode

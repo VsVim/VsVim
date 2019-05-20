@@ -3002,6 +3002,36 @@ module TextViewUtil =
             with 
             | _ -> None
 
+    /// Get the text view line relative to the specified point
+    let GetTextViewLineRelativeToPoint textView offset point =
+        match GetTextViewLines textView with
+        | Some textViewLines ->
+
+            // Protect against GetTextViewLineContainingBufferPosition
+            // returning null.
+            match textViewLines.GetTextViewLineContainingBufferPosition point with
+            | textViewLine when textViewLine <> null && textViewLine.IsValid ->
+                if offset = 0 then
+                    Some textViewLine
+                else
+
+                    // Validate offset.
+                    let index = textViewLines.GetIndexOfTextLine textViewLine
+                    if index + offset >= 0 && index + offset < textViewLines.Count then
+                        let textViewLine = textViewLines.[index + offset]
+                        if textViewLine.IsValid then
+                            Some textViewLine
+                        else
+                            None
+                    else
+                        None
+            | _ -> None
+        | None -> None
+
+    /// Get the text view line containing the specified point
+    let GetTextViewLineContainingPoint textView point =
+        GetTextViewLineRelativeToPoint textView 0 point
+
     /// Get the count of Visible lines in the ITextView
     let GetVisibleLineCount textView = 
         match GetTextViewLines textView with
@@ -3116,18 +3146,14 @@ module TextViewUtil =
                 let option = Editor.EnsureSpanVisibleOptions.AlwaysCenter
                 textView.ViewScroller.EnsureSpanVisible(span, option) |> ignore
 
-        // Be careful because using ITextViewLines can result in an exception.
-        try
-            let textViewLine = textView.GetTextViewLineContainingBufferPosition point
-            let onScreen = textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible
-            if not onScreen then
-
-                // The line the point is on is off-screen.
-                match GetTextViewLines textView with
-                | Some textViewLines -> doScrollToPoint textViewLines
-                | _ -> ()
-        with
-        | _ -> ()
+        // We need to scroll if the caret is offscreen.
+        match GetTextViewLineContainingPoint textView point with
+        | Some textViewLine when textViewLine.VisibilityState = Formatting.VisibilityState.FullyVisible ->
+            ()
+        | _ ->
+            match GetTextViewLines textView with
+            | Some textViewLines -> doScrollToPoint textViewLines
+            | _ -> ()
 
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =

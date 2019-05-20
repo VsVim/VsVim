@@ -29,7 +29,7 @@ namespace Vim.UnitTest
         {
             var lineCommand = VimUtil.ParseLineCommand(command);
             Assert.True(lineCommand.IsParseError);
-            Assert.Equal(error, lineCommand.AsParseError().Error);
+            Assert.Contains(error, lineCommand.AsParseError().Error);
         }
 
         protected LineCommand ParseLineCommand(string text)
@@ -1793,7 +1793,8 @@ let x = 42
             public void Parse_Close_Trailing()
             {
                 var lineCommand = VimUtil.ParseLineCommand("close foo");
-                Assert.True(lineCommand.IsParseError(Resources.CommandMode_TrailingCharacters));
+                Assert.True(lineCommand.IsParseError);
+                Assert.Contains(Resources.CommandMode_TrailingCharacters, lineCommand.AsParseError().Error);
             }
 
             /// <summary>

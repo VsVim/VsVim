@@ -1,5 +1,7 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 using Moq;
+using System;
 using Xunit;
 
 namespace Vim.UnitTest
@@ -11,6 +13,7 @@ namespace Vim.UnitTest
     public abstract class EditorToSettingSynchronizerTest : VimTestBase
     {
         private readonly Mock<IVimBuffer> _vimBuffer;
+        private readonly Mock<IVimTextBuffer> _vimTextBuffer;
         private readonly EditorToSettingSynchronizer _synchronizer;
         private readonly IVimLocalSettings _localSettings;
         private readonly IVimWindowSettings _windowSettings;
@@ -34,6 +37,10 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.WindowSettings).Returns(_windowSettings);
             _vimBuffer.SetupGet(x => x.TextView).Returns(textView);
             _vimBuffer.SetupGet(x => x.Vim).Returns(vim.Object);
+            _vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
+            _vimTextBuffer.Setup(x => x.CheckModeLine()).Returns(Tuple.Create(FSharpOption<string>.None, FSharpOption<string>.None));
+            _vimBuffer.SetupGet(x => x.Vim).Returns(vim.Object);
+            _vimBuffer.SetupGet(x => x.VimTextBuffer).Returns(_vimTextBuffer.Object);
         }
 
         public sealed class StartSynchronizingTest : EditorToSettingSynchronizerTest
