@@ -3374,7 +3374,7 @@ type InsertCommand  =
     /// Block edit of the specified TextChange value.  The bool signifies whether
     /// the insert is at the end of the line. The int represents the number of 
     /// lines on which this block insert should take place
-    | BlockInsert of Text: string * AtEndOfLine: bool * Height: int
+    | BlockInsert of InsertCommand: InsertCommand * AtEndOfLine: bool * Height: int
 
     /// This is an insert command which is a combination of other insert commands
     | Combined of Left: InsertCommand * Right: InsertCommand
@@ -5086,6 +5086,11 @@ and IVimTextBuffer =
     /// Whether to use virtual space
     abstract UseVirtualSpace: bool
 
+    /// Check the contents of the buffer for a modeline, returning a tuple of
+    /// the line we used as a modeline, if any, and a string representing the
+    /// first sub-option that produced an error if any
+    abstract CheckModeLine: unit -> string option * string option
+
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
     /// state 
     abstract Clear: unit -> unit
@@ -5144,6 +5149,9 @@ and IVimBuffer =
 
     /// Jump list
     abstract JumpList: IJumpList
+
+    /// The last status message produced, if any
+    abstract LastMessage: string option
 
     /// Local settings for the buffer
     abstract LocalSettings: IVimLocalSettings

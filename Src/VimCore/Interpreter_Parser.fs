@@ -34,10 +34,11 @@ module ParseResultUtil =
 
 type ParseResultBuilder
     (
+        _parser: Parser,
         _errorMessage: string
     ) = 
 
-    new () = ParseResultBuilder(Resources.Parser_Error)
+    new (parser) = ParseResultBuilder(parser, Resources.Parser_Error)
 
     /// Bind a ParseResult value
     member x.Bind (parseResult: ParseResult<'T>, (rest: 'T -> ParseResult<'U>)) = 
@@ -68,23 +69,24 @@ type ParseResultBuilder
     member x.Zero () = 
         ParseResult.Failed _errorMessage
 
-type LineCommandBuilder
+and LineCommandBuilder
     (
+        _parser: Parser,
         _errorMessage: string
     ) = 
 
-    new () = LineCommandBuilder(Resources.Parser_Error)
+    new (parser) = LineCommandBuilder(parser, Resources.Parser_Error)
 
     /// Bind a ParseResult value
     member x.Bind (parseResult: ParseResult<'T>, rest) = 
         match parseResult with
-        | ParseResult.Failed msg -> LineCommand.ParseError msg
+        | ParseResult.Failed msg -> _parser.ParseError msg
         | ParseResult.Succeeded value -> rest value
 
     /// Bind an option value
     member x.Bind (parseValue: 'T option, rest) = 
         match parseValue with
-        | None -> LineCommand.ParseError _errorMessage
+        | None -> _parser.ParseError _errorMessage
         | Some value -> rest value
 
     member x.Return (value: LineCommand) =
@@ -92,27 +94,26 @@ type LineCommandBuilder
 
     member x.Return (parseResult: ParseResult<LineCommand>) =
         match parseResult with
-        | ParseResult.Failed msg -> LineCommand.ParseError msg
+        | ParseResult.Failed msg -> _parser.ParseError msg
         | ParseResult.Succeeded lineCommand -> lineCommand
 
     member x.Return (msg: string) = 
-        LineCommand.ParseError msg
+        _parser.ParseError msg
 
     member x.ReturnFrom value = 
         value
 
     member x.Zero () = 
-        LineCommand.ParseError _errorMessage
+        _parser.ParseError _errorMessage
 
-[<Sealed>]
-type Parser
+and [<Sealed>] Parser
     (
         _globalSettings: IVimGlobalSettings,
         _vimData: IVimData
-    ) = 
+    ) as this = 
 
-    let _parseResultBuilder = ParseResultBuilder()
-    let _lineCommandBuilder = LineCommandBuilder()
+    let _parseResultBuilder = ParseResultBuilder(this)
+    let _lineCommandBuilder = LineCommandBuilder(this)
     let _tokenizer = Tokenizer("", TokenizerFlags.None)
     let mutable _lines = [|""|] 
     let mutable _lineIndex = 0
@@ -507,6 +508,12 @@ type Parser
         | None -> StringUtil.Empty
         | Some text -> text
 
+    /// Create a line number annotated parse error
+    member x.ParseError message =
+        let lineMessage = _lineIndex + 1 |> Resources.Parser_OnLine
+        sprintf "%s: %s" lineMessage message
+        |> LineCommand.ParseError
+
     /// Parse out the mapclear variants. 
     member x.ParseMapClear allowBang keyRemapModes =
         let hasBang = x.ParseBang()
@@ -517,7 +524,7 @@ type Parser
             if allowBang then
                 LineCommand.ClearKeyMap ([KeyRemapMode.Insert; KeyRemapMode.Command], mapArgumentList) 
             else
-                LineCommand.ParseError Resources.Parser_NoBangAllowed
+                x.ParseError Resources.Parser_NoBangAllowed
         else
             LineCommand.ClearKeyMap (keyRemapModes, mapArgumentList)
 
@@ -553,7 +560,7 @@ type Parser
             if allowBang then
                 x.ParseMapKeysCore [KeyRemapMode.Insert; KeyRemapMode.Command] true
             else
-                LineCommand.ParseError Resources.Parser_NoBangAllowed
+                x.ParseError Resources.Parser_NoBangAllowed
         else
             x.ParseMapKeysCore keyRemapModes true
 
@@ -564,7 +571,7 @@ type Parser
             if allowBang then
                 x.ParseMapKeysCore [KeyRemapMode.Insert; KeyRemapMode.Command] false
             else
-                LineCommand.ParseError Resources.Parser_NoBangAllowed
+                x.ParseError Resources.Parser_NoBangAllowed
         else
             x.ParseMapKeysCore keyRemapModes false
 
@@ -575,14 +582,14 @@ type Parser
             x.SkipBlanks()
             let mapArgumentList = x.ParseMapArguments()
             match x.ParseKeyNotation() with
-            | None -> LineCommand.ParseError Resources.Parser_InvalidArgument
+            | None -> x.ParseError Resources.Parser_InvalidArgument
             | Some keyNotation -> LineCommand.UnmapKeys (keyNotation, modes, mapArgumentList)
 
         if x.ParseBang() then
             if allowBang then
                 inner [KeyRemapMode.Insert; KeyRemapMode.Command]
             else
-                LineCommand.ParseError Resources.Parser_NoBangAllowed
+                x.ParseError Resources.Parser_NoBangAllowed
         else
             inner keyRemapModes
 
@@ -768,17 +775,17 @@ type Parser
         if _tokenizer.CurrentChar = ':' then
             _tokenizer.MoveNextChar()
             match _vimData.LastLineCommand with
-            | None -> LineCommand.ParseError "Error"
+            | None -> x.ParseError "Error"
             | Some lineCommand -> x.MergeLineRangeWithCommand lineRange lineCommand
         else
-            LineCommand.ParseError "Error"
+            x.ParseError "Error"
 
     /// Merge new line range with previous line command
     member x.MergeLineRangeWithCommand lineRange lineCommand =
         let noRangeCommand =
             match lineRange with
             | LineRangeSpecifier.None -> lineCommand
-            | _ -> LineCommand.ParseError "Error"
+            | _ -> x.ParseError "Error"
         match lineRange with
         | LineRangeSpecifier.None -> lineCommand
         | _ ->
@@ -879,7 +886,7 @@ type Parser
 
         let isRemove = x.ParseBang()
         let standardError = "Values missing"
-        let onError msg = LineCommand.ParseError msg
+        let onError msg = x.ParseError msg
         let onStandardError () = onError standardError
 
         // Parse out the auto group name from the current point in the tokenizer
@@ -1002,7 +1009,7 @@ type Parser
             // This is the add form of auto command.  It will be followed by the events, pattern
             // and actual command in that order
             match parseEventKindList () with
-            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Failed msg -> x.ParseError msg
             | ParseResult.Succeeded eventKindList ->
                 x.SkipBlanks()
                 let patternList = parsePatternList ()
@@ -1021,7 +1028,7 @@ type Parser
     member x.ParseBehave() =
         x.SkipBlanks()
         if _tokenizer.IsAtEndOfLine then
-            LineCommand.ParseError Resources.Parser_Error
+            x.ParseError Resources.Parser_Error
         else
             let mode = _tokenizer.CurrentToken.TokenText
             _tokenizer.MoveNextToken()
@@ -1042,7 +1049,7 @@ type Parser
                 IsScriptLocal = isScriptLocal
             }
             LineCommand.Call callInfo 
-        | _ -> LineCommand.ParseError Resources.Parser_Error
+        | _ -> x.ParseError Resources.Parser_Error
 
     /// Parse out the change directory command.  The path here is optional
     member x.ParseChangeDirectory() =
@@ -1071,7 +1078,7 @@ type Parser
         x.SkipBlanks()
         let count = x.ParseNumber()
         match destinationLineRange with
-        | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
+        | LineRangeSpecifier.None -> x.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.CopyTo (sourceLineRange, destinationLineRange, count)
 
     member x.ParseCSharpScript(lineRange:LineRangeSpecifier, createEachTime:bool) = 
@@ -1092,7 +1099,7 @@ type Parser
                LineCommand.CSharpScriptCreateEachTime callInfo 
             else
                LineCommand.CSharpScript callInfo 
-        | _ -> LineCommand.ParseError Resources.Parser_Error
+        | _ -> x.ParseError Resources.Parser_Error
 
     /// Parse out the :move command.  It has a single required argument that is the destination
     /// address
@@ -1102,7 +1109,7 @@ type Parser
         x.SkipBlanks()
         let count = x.ParseNumber()
         match destinationLineRange with
-        | LineRangeSpecifier.None -> LineCommand.ParseError Resources.Common_InvalidAddress
+        | LineRangeSpecifier.None -> x.ParseError Resources.Common_InvalidAddress
         | _ -> LineCommand.MoveTo (sourceLineRange, destinationLineRange, count)
 
     /// Parse out the :delete command
@@ -1158,7 +1165,7 @@ type Parser
 
             if hadError.Value then
                 _tokenizer.MoveToEndOfLine()
-                LineCommand.ParseError Resources.Parser_Error
+                x.ParseError Resources.Parser_Error
             else
                 LineCommand.DeleteMarks (List.ofSeq list)
 
@@ -1308,7 +1315,7 @@ type Parser
                 LineCommands = List.ofSeq lines
             }
             LineCommand.Function func
-        | _ -> LineCommand.ParseError Resources.Parser_Error
+        | _ -> x.ParseError Resources.Parser_Error
 
     /// Parse a {pattern} out of the text.  The text will be consumed until the unescaped value 
     /// 'delimiter' is provided or the end of the input is reached.  The method will return a tuple
@@ -1530,7 +1537,7 @@ type Parser
                     let replace, _ = x.ParsePattern delimiter
                     x.SkipBlanks()
                     match x.ParseSubstituteFlags() with
-                    | ParseResult.Failed message -> LineCommand.ParseError message
+                    | ParseResult.Failed message -> x.ParseError message
                     | ParseResult.Succeeded flags ->
                         let flags = processFlags flags
                         x.SkipBlanks()
@@ -1559,7 +1566,7 @@ type Parser
     member x.ParseSubstituteRepeatCore lineRange processFlags =
         x.SkipBlanks()
         match x.ParseSubstituteFlags() with
-        | ParseResult.Failed message -> LineCommand.ParseError message
+        | ParseResult.Failed message -> x.ParseError message
         | ParseResult.Succeeded flags ->
             let flags = processFlags flags
 
@@ -1778,7 +1785,7 @@ type Parser
             | TokenKind.EndOfLine ->
                 let list = withValue []
                 LineCommand.Unlet (hasBang, list)
-            | _ -> LineCommand.ParseError "Error"
+            | _ -> x.ParseError "Error"
         getNames (fun x -> x)
 
     member x.ParseQuickFixNext count =
@@ -1865,7 +1872,7 @@ type Parser
             | TokenKind.Character '_' -> true
             | _ -> false)
         match command with 
-        | None -> LineCommand.ParseError Resources.Parser_Error
+        | None -> x.ParseError Resources.Parser_Error
         | Some command ->
             x.SkipBlanks()
             let argument = x.ParseRestOfLine()
@@ -1943,8 +1950,8 @@ type Parser
     /// Parse out the core global information. 
     member x.ParseGlobalCore lineRange matchPattern =
         match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character '\\' -> LineCommand.ParseError Resources.Parser_InvalidArgument
-        | TokenKind.Character '"' -> LineCommand.ParseError Resources.Parser_InvalidArgument
+        | TokenKind.Character '\\' -> x.ParseError Resources.Parser_InvalidArgument
+        | TokenKind.Character '"' -> x.ParseError Resources.Parser_InvalidArgument
         | TokenKind.Character delimiter ->
             _tokenizer.MoveNextToken()
             let pattern, foundDelimiter = x.ParsePattern delimiter
@@ -1952,8 +1959,8 @@ type Parser
                 let command = x.ParseSingleLine()
                 LineCommand.Global (lineRange, pattern, matchPattern, command)
             else
-                LineCommand.ParseError Resources.Parser_InvalidArgument
-        | _ -> LineCommand.ParseError Resources.Parser_InvalidArgument
+                x.ParseError Resources.Parser_InvalidArgument
+        | _ -> x.ParseError Resources.Parser_InvalidArgument
 
     /// Parse out the :if command from the buffer
     member x.ParseIfStart() = 
@@ -1974,7 +1981,7 @@ type Parser
     member x.ParseIfOrElseIf onSuccess = 
         x.SkipBlanks()
         match x.ParseExpressionCore() with
-        | ParseResult.Failed msg -> LineCommand.ParseError msg
+        | ParseResult.Failed msg -> x.ParseError msg
         | ParseResult.Succeeded expr -> 
             let lineCommand = onSuccess expr 
             _tokenizer.MoveToEndOfLine()
@@ -2002,7 +2009,7 @@ type Parser
             LineCommand.Nop
         else
             match x.ParseExpressionCore() with
-            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Failed msg -> x.ParseError msg
             | ParseResult.Succeeded expr -> LineCommand.Echo expr
 
     /// Parse out the :execute command
@@ -2013,7 +2020,7 @@ type Parser
             LineCommand.Nop
         else
             match x.ParseExpressionCore() with
-            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Failed msg -> x.ParseError msg
             | ParseResult.Succeeded expr -> LineCommand.Execute expr
 
     /// Parse out the :let command
@@ -2029,7 +2036,7 @@ type Parser
                 else
                     match x.ParseVariableName() with
                     | ParseResult.Succeeded name -> inner (fun rest -> cont (name :: rest))
-                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                    | ParseResult.Failed msg -> x.ParseError msg
 
             inner (fun rest ->
                 let names = firstName :: rest
@@ -2044,10 +2051,10 @@ type Parser
                     _tokenizer.MoveNextToken()
                     match x.ParseExpressionCore() with
                     | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
-                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                    | ParseResult.Failed msg -> x.ParseError msg
                 else
-                    LineCommand.ParseError Resources.Parser_Error
-            | None -> LineCommand.ParseError "Invalid register name"
+                    x.ParseError Resources.Parser_Error
+            | None -> x.ParseError "Invalid register name"
         | TokenKind.Word name ->
             match x.ParseVariableName() with
             | ParseResult.Succeeded name ->
@@ -2055,12 +2062,12 @@ type Parser
                     _tokenizer.MoveNextToken()
                     match x.ParseExpressionCore() with
                     | ParseResult.Succeeded expr -> LineCommand.Let (name, expr)
-                    | ParseResult.Failed msg -> LineCommand.ParseError msg
+                    | ParseResult.Failed msg -> x.ParseError msg
                 else
                     parseDisplayLet name
-            | ParseResult.Failed msg -> LineCommand.ParseError msg
+            | ParseResult.Failed msg -> x.ParseError msg
         | TokenKind.EndOfLine -> LineCommand.DisplayLet []
-        | _ -> LineCommand.ParseError "Error"
+        | _ -> x.ParseError "Error"
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
@@ -2162,7 +2169,7 @@ type Parser
                     _tokenizer.MoveNextChar()
                     parseSetValue name argumentFunc
                 else
-                    LineCommand.ParseError Resources.Parser_Error
+                    x.ParseError Resources.Parser_Error
 
             match _tokenizer.CurrentTokenKind with
             | TokenKind.EndOfLine ->
@@ -2207,9 +2214,9 @@ type Parser
                     | TokenKind.Character '-' -> parseCompoundOperator name SetArgument.SubtractSetting
                     | TokenKind.Blank -> _tokenizer.MoveNextToken(); parseNext (SetArgument.UseSetting name)
                     | TokenKind.EndOfLine -> parseNext (SetArgument.UseSetting name)
-                    | _ -> LineCommand.ParseError Resources.Parser_Error
+                    | _ -> x.ParseError Resources.Parser_Error
             | _ ->
-                 LineCommand.ParseError Resources.Parser_Error                   
+                 x.ParseError Resources.Parser_Error
 
         parseOption (fun x -> x)
 
@@ -2224,7 +2231,7 @@ type Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         match x.ParseSortFlags() with
-        | ParseResult.Failed message -> LineCommand.ParseError message
+        | ParseResult.Failed message -> x.ParseError message
         | ParseResult.Succeeded flags ->
             x.SkipBlanks()
             match _tokenizer.CurrentTokenKind with
@@ -2237,7 +2244,7 @@ type Parser
                     else
                         x.SkipBlanks()
                         match x.ParseSortFlags() with
-                        | ParseResult.Failed message -> LineCommand.ParseError message
+                        | ParseResult.Failed message -> x.ParseError message
                         | ParseResult.Succeeded moreFlags ->
                             let flags = flags ||| moreFlags
                             LineCommand.Sort (lineRange, hasBang, flags, Some pattern)
@@ -2292,7 +2299,7 @@ type Parser
                 let char1 = _tokenizer.CurrentChar
                 _tokenizer.MoveNextChar()
                 if _tokenizer.IsAtEndOfLine then
-                    result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+                    result <- x.ParseError Resources.CommandMode_InvalidCommand |> Some
                 else
                     let char2 = _tokenizer.CurrentChar
                     _tokenizer.MoveNextChar()
@@ -2302,7 +2309,7 @@ type Parser
                         let digraph = (char1, char2, number)
                         digraphList <- digraph :: digraphList
                     | None ->
-                        result <- LineCommand.ParseError Resources.CommandMode_InvalidCommand |> Some
+                        result <- x.ParseError Resources.CommandMode_InvalidCommand |> Some
 
         match result with
         | Some lineCommand ->
@@ -2345,7 +2352,7 @@ type Parser
 
             match message with
             | None -> LineCommand.DisplayMarks (List.ofSeq list)
-            | Some message -> LineCommand.ParseError message
+            | Some message -> x.ParseError message
         | _ ->
             // Simple case.  No marks to parse out.  Just return them all
             LineCommand.DisplayMarks List.empty
@@ -2368,7 +2375,7 @@ type Parser
         let noRange parseFunc = 
             match lineRange with
             | LineRangeSpecifier.None -> parseFunc()
-            | _ -> LineCommand.ParseError Resources.Parser_NoRangeAllowed
+            | _ -> x.ParseError Resources.Parser_NoRangeAllowed
 
         let handleParseResult (lineCommand: LineCommand) =
             let lineCommand = 
@@ -2390,7 +2397,7 @@ type Parser
 
                         // If there are still characters then it's illegal
                         // trailing characters.
-                        LineCommand.ParseError Resources.CommandMode_TrailingCharacters
+                        x.ParseError Resources.CommandMode_TrailingCharacters
             x.MoveToNextLine() |> ignore
             lineCommand
 
@@ -2537,7 +2544,7 @@ type Parser
                 | "!" -> x.ParseShellCommand lineRange
                 | "@" -> x.ParseAtCommand lineRange
                 | "#" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
-                | _ -> LineCommand.ParseError Resources.Parser_Error
+                | _ -> x.ParseError Resources.Parser_Error
 
             handleParseResult parseResult
 
@@ -2848,7 +2855,7 @@ and ConditionalParser
 
         match isDone, error with
         | _, Some msg -> LineCommand.ParseError msg
-        | false, None -> LineCommand.ParseError "Unmatched Conditional Block"
+        | false, None -> _parser.ParseError "Unmatched Conditional Block"
         | true, None -> _builder |> List.ofSeq |> LineCommand.If 
                 
     member x.CreateConditionalBlock() = 

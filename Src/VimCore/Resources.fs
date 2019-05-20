@@ -40,6 +40,7 @@ module internal Resources =
     let Common_LinesYanked lines = sprintf "%d lines yanked" lines
     let Common_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let Common_CouldNotFindTag ident = sprintf "Could not open tag \"%s\"" ident
+    let Common_InvalidModeLineSetting setting modeLine = sprintf "Invalid setting '%s' in '%s'" setting modeLine
 
     let Undo_ChainBroken = "Undo chain broken. Falling back to Visual Studio undo"
     let Undo_LinkedChainBroken = "Undo linked chain broken. Falling back to Visual Studio undo"
@@ -95,6 +96,7 @@ module internal Resources =
     let Internal_ErrorMappingBackToEdit = "Error mapping data back to the edit buffer"
 
     let Parser_Error = "Parse error"
+    let Parser_OnLine line = sprintf "Error on line %d" line
     let Parser_NoRangeAllowed = "No range allowed"
     let Parser_NoMarksMatching x = sprintf "No marks matching \"%c\"" x
     let Parser_NoBangAllowed = "No ! allowed"

@@ -183,22 +183,22 @@ type internal InsertUtil
             TextViewUtil.MoveCaretToPosition _textView position
         | None -> textEdit.Cancel()
 
-    /// Apply the given TextChange to the specified BlockSpan 
-    member x.ApplyBlockInsert (text: string) atEndOfLine startLineNumber spaces height = 
+    /// Apply the given TextChange to the specified BlockSpan
+    member x.ApplyBlockInsert (insertCommand: InsertCommand) atEndOfLine startLineNumber spaces height =
 
-        // Don't edit past the end of the ITextBuffer 
-        let height = 
+        // Don't edit past the end of the ITextBuffer.
+        let height =
             let maxHeight = x.CurrentSnapshot.LineCount - startLineNumber
             min maxHeight height
 
-        // It is possible that a repeat of a block edit will begin part of the way through
-        // a wide character (think a 4 space tab).  If any edits have this behavior the first
-        // pass will break them up into the appropriate number of spaces
-        let fixOverlapEdits () = 
+        // It is possible that a repeat of a block edit will begin part of the
+        // way through a wide character (think a 4 space tab).  If any edits
+        // have this behavior the first pass will break them up into the
+        // appropriate number of spaces
+        let fixOverlapEdits () =
             use textEdit = _textBuffer.CreateEdit()
-
             let currentSnapshot = x.CurrentSnapshot
-            for i = 0 to (height - 1) do 
+            for i = 0 to height - 1 do
 
                 let lineNumber = startLineNumber + i
                 let line = SnapshotUtil.GetLine currentSnapshot lineNumber
@@ -208,70 +208,46 @@ type internal InsertUtil
                     let span = column.Column.Span
                     textEdit.Replace(span.Span, text) |> ignore
 
-            if textEdit.HasEffectiveChanges then 
+            if textEdit.HasEffectiveChanges then
                 textEdit.Apply() |> ignore
             else
                 textEdit.Cancel()
 
-        // Actually apply the edit to the lines in the block selection
-        let doApply () = 
-            use textEdit = _textBuffer.CreateEdit()
-            let mutable abortChange = false
+        // Actually apply the edit to the lines in the block selection.
+        let doApply () =
+            for i = 0 to height - 1 do
 
-            let currentSnapshot = x.CurrentSnapshot
-            for i = 0 to (height - 1) do
-
+                let currentSnapshot = x.CurrentSnapshot
                 let lineNumber = startLineNumber + i
                 let currentLine = SnapshotUtil.GetLine currentSnapshot lineNumber
 
-                // Only apply the edit to lines which were included in the original selection
+                // Only apply the edit to lines which were included in the
+                // original selection.
                 let tabStop = _localSettings.TabStop
                 let column =
                     if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine) |> Some
                     else SnapshotColumn.GetColumnForSpaces(currentLine, spaces, tabStop)
-                match column with 
+                match column with
                 | Some column ->
-                    let position = column.StartPosition
-                    let text =
-                        if _localSettings.ExpandTab then
-                            StringUtil.ExpandTabsForColumn text column.ColumnNumber tabStop
-                        else
-                            text
-
-                    // Unfortunately, we may have to delete some of the preceding
-                    // spaces if they are no longer needed to maintain the
-                    // column position.
-                    if text.StartsWith("\t") then
-                        let mutable n = 0
-                        let columnNumber = column.ColumnNumber
-                        while columnNumber - n > 0 && (columnNumber - n) % tabStop <> 0
-                        && column.Subtract(n + 1).IsCharacter(' ') do
-                            n <- n + 1
-                        let span = Span(position - n, n)
-                        if not (textEdit.Replace(span, text)) then
-                            abortChange <- true
-                    else
-                        if not (textEdit.Insert(position, text)) then
-                            abortChange <- true
+                    SnapshotPoint(_textBuffer.CurrentSnapshot, column.StartPosition)
+                    |> TextViewUtil.MoveCaretToPoint _textView
+                    x.RunInsertCommand insertCommand |> ignore
                 | None -> ()
 
-            if abortChange then
-                textEdit.Cancel()
-            else
-                textEdit.Apply() |> ignore
-
-        fixOverlapEdits ()
-        doApply ()
+        if not atEndOfLine then
+            fixOverlapEdits()
+        doApply()
 
     /// Delete the character before the cursor
     member x.Back () =
         x.RunBackspacingCommand InsertCommand.Back
 
-    /// Block insert the specified text at the caret point over the specified number of lines
-    member x.BlockInsert text atEndOfLine height = 
+    /// Block insert the specified text at the caret point over the specified
+    /// number of lines
+    member x.BlockInsert text atEndOfLine height =
         let column = x.CaretColumn
         let spaces = column.GetSpacesToColumn _localSettings.TabStop
-        x.ApplyBlockInsert text atEndOfLine column.LineNumber spaces height 
+        x.ApplyBlockInsert text atEndOfLine column.LineNumber spaces height
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
@@ -608,7 +584,7 @@ type internal InsertUtil
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
                     let startLineNumber = blockSpan.Start.LineNumber + 1
-                    x.ApplyBlockInsert text atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
+                    x.ApplyBlockInsert insertCommand atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
                     _operations.MapPointNegativeToCurrentSnapshot blockSpan.Start.StartPoint
@@ -626,7 +602,7 @@ type internal InsertUtil
         else
             match command with
             | InsertCommand.Back -> x.Back()
-            | InsertCommand.BlockInsert (text, atEndOfLine, count) -> x.BlockInsert text atEndOfLine count
+            | InsertCommand.BlockInsert (insertCommand, atEndOfLine, count) -> x.BlockInsert insertCommand atEndOfLine count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()
