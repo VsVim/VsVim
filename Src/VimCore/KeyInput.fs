@@ -90,15 +90,6 @@ type KeyInputData
 
     member x.KeyInput = _keyInput
     member x.WasMapped = _wasMapped
-    member x.Char = _keyInput.Char
-    member x.RawChar = _keyInput.RawChar
-    member x.Key = _keyInput.Key
-    member x.KeyModifiers = _keyInput.KeyModifiers
-    member x.HasKeyModifiers = _keyInput.HasKeyModifiers
-    member x.IsDigit = _keyInput.IsDigit
-    member x.IsArrowKey = _keyInput.IsArrowKey
-    member x.IsFunctionKey = _keyInput.IsFunctionKey
-    member x.IsMouseKey = _keyInput.IsMouseKey
     static member Create keyInput wasMapped = KeyInputData(keyInput, wasMapped)
 
 module KeyInputUtil = 

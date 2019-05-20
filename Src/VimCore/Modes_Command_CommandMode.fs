@@ -76,8 +76,6 @@ type internal CommandMode
                 selection.Clear()
 
     member x.Process (keyInputData: KeyInputData) =
-        let keyInput = keyInputData.KeyInput
-
         match _bindData.MappedBindFunction keyInputData with
         | MappedBindResult.Complete _ ->
             _bindData <- BindDataError

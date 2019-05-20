@@ -361,9 +361,9 @@ type internal NormalMode
         || _runner.DoesCommandStartWith keyInput
     
     member x.Process (keyInputData: KeyInputData) = 
-        let keyInput = keyInputData.KeyInput
 
         // Update the text of the command so long as this isn't a control character 
+        let keyInput = keyInputData.KeyInput
         if not (CharUtil.IsControl keyInput.Char) then
             let command = _data.Command + keyInput.Char.ToString()
             _data <- { _data with Command = command }

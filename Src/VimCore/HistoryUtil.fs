@@ -55,14 +55,18 @@ type internal HistorySession<'TData, 'TResult>
         let keyInput = keyInputData.KeyInput
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
-            // Enter key completes the action
+
+            // Enter key completes the action and updates the history if not
+            // mapped.
             let result = _historyClient.Completed _clientData _command
             if not keyInputData.WasMapped then
                 _historyClient.HistoryList.Add _command
             _inPasteWait <- false
             MappedBindResult.Complete result
         | Some HistoryCommand.Cancel ->
-            // Escape cancels the current search.  It does update the history though
+
+            // Escape cancels the current search and updates the history if not
+            // mapped.
             _historyClient.Cancelled _clientData
             if not keyInputData.WasMapped then
                 _historyClient.HistoryList.Add _command
