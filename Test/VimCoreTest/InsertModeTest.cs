@@ -126,7 +126,7 @@ namespace Vim.UnitTest
             _activeWordCompletionSession = _factory.Create<IWordCompletionSession>(MockBehavior.Loose);
             _wordCompletionSessionFactoryService
                 .Setup(x => x.CreateWordCompletionSession(_textView, It.IsAny<SnapshotSpan>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()))
-                .Returns(_activeWordCompletionSession.Object);
+                .Returns(FSharpOption.Create(_activeWordCompletionSession.Object));
             _modeRaw.StartWordCompletionSession(true);
         }
 

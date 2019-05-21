@@ -5,6 +5,15 @@
     <_NETCoreSdkIsPreview>false</_NETCoreSdkIsPreview>
   </PropertyGroup>
 
+  <!-- 
+    This is set for projects which host the VimSpecific project as a part 
+    test hosting: VimApp or VimTestUtils
+    -->
+  <PropertyGroup Condition="'$(VsVimSpecificTestHost)' == 'true'">
+    <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+  </PropertyGroup>
+
   <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
 
   <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />

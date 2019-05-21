@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>de7e4031-d2e8-450e-8558-f00a6f19fa5c</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VimSpecific</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)HostIdentifiers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionPresenterProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimSpecificUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)REAME.md" />
+  </ItemGroup>
+</Project>

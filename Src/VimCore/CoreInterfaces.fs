@@ -161,6 +161,9 @@ type IWordCompletionSession =
     /// Select the previous word in the session.
     abstract MovePrevious: unit -> bool
 
+    /// Commit the current session
+    abstract Commit: unit -> unit
+
     /// Dismiss the completion session 
     abstract Dismiss: unit -> unit
 
@@ -173,11 +176,19 @@ type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSessi
 
     member x.WordCompletionSession = _wordCompletionSession
 
-/// Factory service for creating IWordCompletionSession instances
+/// Factory for creating a IWordCompletionSession instance. This type cannot be MEF imported
+/// but instead is available via IVimHost
+type IWordCompletionSessionFactory = 
+
+    /// Create a session with the given set of words
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
+
+/// Factory service for creating IWordCompletionSession instances. This type is available as 
+/// a MEF import
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
 
     /// Raised when the session is created
     [<CLIEvent>]
@@ -4579,6 +4590,9 @@ type IVimHost =
 
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings: DefaultSettings
+
+    /// The identifier that represents this specific host
+    abstract HostIdentifier: string
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled: bool

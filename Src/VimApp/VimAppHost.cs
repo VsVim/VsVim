@@ -13,6 +13,7 @@ using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.VisualStudio.Specific;
 
 namespace VimApp
 {
@@ -29,6 +30,8 @@ namespace VimApp
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
+
+        public override string HostIdentifier => VimSpecificUtil.HostIdentifier;
 
         internal IVimWindowManager VimWindowManager
         {

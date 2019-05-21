@@ -17,6 +17,10 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
+    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
+
+    /// The set of KeyInput value that should commit a session
+    static member CommitKeyInput = _commitKeyInput
 
     /// Get a fun (string -> bool) that determines if a particular word should be included in the output
     /// based on the text that we are searching for 
@@ -731,9 +735,9 @@ type internal InsertMode
         // empty completion list as there is nothing to display.  The lack of anything to display 
         // doesn't make the command an error though
         if not (List.isEmpty wordList) then
-            let wordCompletionSession = _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward
-
-            if not wordCompletionSession.IsDismissed then
+            match _wordCompletionSessionFactoryService.CreateWordCompletionSession _textView wordSpan wordList isForward with
+            | None -> ()
+            | Some wordCompletionSession ->
                 // When the completion session is dismissed we want to clean out the session 
                 // data 
                 wordCompletionSession.Dismissed
@@ -979,6 +983,9 @@ type internal InsertMode
                 wordCompletionSession.MovePrevious() |> Some
             elif keyInput = KeyNotationUtil.StringToKeyInput("<Up>") then
                 wordCompletionSession.MovePrevious() |> Some
+            elif List.contains keyInput WordCompletionUtil.CommitKeyInput then
+                wordCompletionSession.Commit() 
+                Some true
             else
                 None
         match handled with

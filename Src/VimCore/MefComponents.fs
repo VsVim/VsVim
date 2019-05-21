@@ -482,3 +482,53 @@ type internal ProtectedOperations =
         member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
         member x.Report ex = x.AlertAll ex
 
+[<Export(typeof<IVimSpecificServiceHost>)>]
+type internal VimSpecificServiceHost
+    [<ImportingConstructor>]
+    (
+        _vimHost: Lazy<IVimHost>,
+        [<ImportMany>] _services: Lazy<IVimSpecificService> seq
+    ) =
+
+    member x.GetService<'T>(): 'T option =
+        let vimHost = _vimHost.Value
+        _services 
+            |> Seq.map (fun serviceLazy -> 
+                try
+                    let service = serviceLazy.Value
+                    if service.HostIdentifier = vimHost.HostIdentifier then
+                        match service :> obj with
+                        | :? 'T as t -> Some t
+                        | _ -> None
+                    else None
+                with
+                | _ -> None)
+            |> SeqUtil.filterToSome
+            |> SeqUtil.tryHeadOnly
+
+    interface IVimSpecificServiceHost with
+        member x.GetService<'T>() = x.GetService<'T>()
+
+[<Export(typeof<IWordCompletionSessionFactoryService>)>]
+type internal VimWordCompletionSessionFactoryService 
+    [<ImportingConstructor>]
+    (
+        _vimSpecificServiceHost: IVimSpecificServiceHost
+    ) =
+
+    let _created = StandardEvent<WordCompletionSessionEventArgs>()
+
+    member x.CreateWordCompletionSession textView wordSpan words isForward =
+        match _vimSpecificServiceHost.GetService<IWordCompletionSessionFactory>() with
+        | None -> None
+        | Some factory -> 
+            match factory.CreateWordCompletionSession textView wordSpan words isForward with
+            | None -> None
+            | Some session -> 
+                _created.Trigger x (WordCompletionSessionEventArgs(session))
+                Some session
+
+    interface IWordCompletionSessionFactoryService with
+        member x.CreateWordCompletionSession textView wordSpan words isForward = x.CreateWordCompletionSession textView wordSpan words isForward     
+        [<CLIEvent>]
+        member x.Created = _created.Publish

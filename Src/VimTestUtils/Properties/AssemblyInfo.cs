@@ -11,3 +11,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("6819ad26-901e-4261-95aa-9913d435296a")]
 
 [assembly: InternalsVisibleTo("Vim.Core.UnitTest")]
+[assembly: InternalsVisibleTo("Vim.VisualStudio.Shared.UnitTest")]

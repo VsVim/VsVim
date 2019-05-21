@@ -5,17 +5,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 {
-    internal sealed class WordCompletionSet : CompletionSet
+    internal sealed class WordLegacyCompletionSet : CompletionSet
     {
         internal const string Name = "Words";
 
-        internal WordCompletionSet()
+        internal WordLegacyCompletionSet()
         {
         }
 
-        internal WordCompletionSet(ITrackingSpan wordTrackingSpan, IEnumerable<Completion> completions)
+        internal WordLegacyCompletionSet(ITrackingSpan wordTrackingSpan, IEnumerable<Completion> completions)
             : base(Name, Name, wordTrackingSpan, completions, null)
         {
         }
