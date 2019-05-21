@@ -3684,7 +3684,8 @@ type MappedBindResult<'T> =
     member x.ConvertToBindResult (): BindResult<'T> =
         match x with
         | MappedBindResult.Complete result -> BindResult.Complete result
-        | MappedBindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.ConvertToBindData())
+        | MappedBindResult.NeedMoreInput mappedBindData ->
+            BindResult.NeedMoreInput (mappedBindData.ConvertToBindData())
         | MappedBindResult.Error -> BindResult.Error
         | MappedBindResult.Cancelled -> BindResult.Cancelled
 
@@ -3705,12 +3706,13 @@ and MappedBindData<'T> = {
     /// MappedBindData<'T>.Completed to a MappedBindData<'U> of any form
     member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> =
         let originalBindFunc = x.MappedBindFunction
-        let bindFunc keyInput =
-            match originalBindFunc keyInput with
-            | MappedBindResult.Cancelled -> MappedBindResult.Cancelled
+        let bindFunc keyInputData =
+            match originalBindFunc keyInputData with
             | MappedBindResult.Complete value -> mapFunc value
+            | MappedBindResult.NeedMoreInput mappedBindData ->
+                MappedBindResult.NeedMoreInput (mappedBindData.Map mapFunc)
             | MappedBindResult.Error -> MappedBindResult.Error
-            | MappedBindResult.NeedMoreInput bindData -> MappedBindResult.NeedMoreInput (bindData.Map mapFunc)
+            | MappedBindResult.Cancelled -> MappedBindResult.Cancelled
         { KeyRemapMode = x.KeyRemapMode; MappedBindFunction = bindFunc }
 
     /// Often types bindings need to compose together because we need an inner
@@ -3723,19 +3725,17 @@ and MappedBindData<'T> = {
     /// Convert this MappedBindData<'T> to a BindData<'T> (note that as a
     /// result of the conversion all key inputs will all appear to be unmapped)
     member x.ConvertToBindData (): BindData<'T> =
-        {
-            KeyRemapMode = x.KeyRemapMode
-            BindFunction = (fun keyInput ->
-                KeyInputData.Create keyInput false
-                |> x.MappedBindFunction
-                |> (fun mappedBindResult -> mappedBindResult.ConvertToBindResult()))
-        }
+        let bindFunc keyInput =
+            KeyInputData.Create keyInput false
+            |> x.MappedBindFunction
+            |> (fun mappedBindResult -> mappedBindResult.ConvertToBindResult())
+        { KeyRemapMode = x.KeyRemapMode; BindFunction = bindFunc }
 
-/// Several types of MappedBindData<'T> need to take an action when a binding begins against
-/// themselves. This action needs to occur before the first KeyInput value is processed
-/// and hence they need a jump start. The most notable is IncrementalSearch which 
-/// needs to enter 'Search' mode before processing KeyInput values so the cursor can
-/// be updated
+/// Several types of MappedBindData<'T> need to take an action when a binding
+/// begins against themselves. This action needs to occur before the first
+/// KeyInput value is processed and hence they need a jump start. The most
+/// notable is IncrementalSearch which  needs to enter 'Search' mode before
+/// processing KeyInput values so the cursor can be updated
 [<RequireQualifiedAccess>]
 type MappedBindDataStorage<'T> =
 
@@ -3753,8 +3753,9 @@ type MappedBindDataStorage<'T> =
         | Simple bindData -> bindData
         | Complex func -> func()
 
-    /// Convert from a MappedBindDataStorage<'T> -> MappedBindDataStorage<'U>.  The 'mapFunc' value
-    /// will run on the final 'T' data if it eventually is completed
+    /// Convert from a MappedBindDataStorage<'T> -> MappedBindDataStorage<'U>.
+    /// The 'mapFunc' value will run on the final 'T' data if it eventually is
+    /// completed
     member x.Convert mapFunc = 
         match x with
         | Simple bindData -> Simple (bindData.Convert mapFunc)
