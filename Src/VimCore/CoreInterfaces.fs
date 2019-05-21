@@ -4524,7 +4524,7 @@ type internal IHistoryClient<'TData, 'TResult> =
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed: data: 'TData -> command: string -> 'TResult
+    abstract Completed: data: 'TData -> command: string -> wasMapped: bool -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided

@@ -22,11 +22,11 @@ namespace Vim.UnitTest
 
             public int? CancelledValue { get; set; }
 
-            public Tuple<int, string> CompletedValue { get; set; }
+            public Tuple<int, string, bool> CompletedValue { get; set; }
 
             public int? CompletedReturn { get; set; }
 
-            public Tuple<int, string> ProcessValue { get; set; }
+            public Tuple<int, string, bool> ProcessValue { get; set; }
 
             public int? ProcessReturn { get; set; }
 
@@ -41,15 +41,15 @@ namespace Vim.UnitTest
                 CancelledValue = value;
             }
 
-            public int Completed(int data, string command)
+            public int Completed(int data, string command, bool wasMapped)
             {
-                CompletedValue = Tuple.Create(data, command);
+                CompletedValue = Tuple.Create(data, command, wasMapped);
                 return CompletedReturn ?? data;
             }
 
             public int ProcessCommand(int data, string command)
             {
-                ProcessValue = Tuple.Create(data, command);
+                ProcessValue = Tuple.Create(data, command, false);
                 return ProcessReturn ?? data;
             }
         }

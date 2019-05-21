@@ -264,7 +264,7 @@ type internal IncrementalSearchSession
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
             x.RunSearchAsync searchPoint searchText
             searchPoint)
-        member x.Completed searchPoint searchText = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
+        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with

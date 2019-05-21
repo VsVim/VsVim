@@ -58,7 +58,7 @@ type internal HistorySession<'TData, 'TResult>
 
             // Enter key completes the action and updates the history if not
             // mapped.
-            let result = _historyClient.Completed _clientData _command
+            let result = _historyClient.Completed _clientData _command keyInputData.WasMapped
             if not keyInputData.WasMapped then
                 _historyClient.HistoryList.Add _command
             _inPasteWait <- false

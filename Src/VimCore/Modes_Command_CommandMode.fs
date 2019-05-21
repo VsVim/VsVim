@@ -42,7 +42,7 @@ type internal CommandMode
         | Some historySession -> historySession.InPasteWait
         | None -> false
 
-    member x.ParseAndRunInput (command: string) = 
+    member x.ParseAndRunInput (command: string) (wasMapped: bool) = 
         let command = 
             if command.Length > 0 && command.[0] = ':' then
                 command.Substring(1)
@@ -59,8 +59,9 @@ type internal CommandMode
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         let result = vimInterpreter.RunLineCommand lineCommand
-        _vimData.LastCommandLine <- command
-        _vimData.LastLineCommand <- Some lineCommand
+        if not wasMapped then
+            _vimData.LastCommandLine <- command
+            _vimData.LastLineCommand <- Some lineCommand
         result
 
     // Command mode can be validly entered with the selection active.  Consider
@@ -107,9 +108,9 @@ type internal CommandMode
             0
 
         /// Run the specified command
-        let completed command =
+        let completed command wasMapped =
             x.Command <- StringUtil.Empty
-            x.ParseAndRunInput command
+            x.ParseAndRunInput command wasMapped
             x.MaybeClearSelection false
             0
 
@@ -126,7 +127,7 @@ type internal CommandMode
                 member this.RemapMode = KeyRemapMode.Command
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand _ command = processCommand command
-                member this.Completed _ command = completed command
+                member this.Completed _ command wasMapped = completed command wasMapped
                 member this.Cancelled _ = cancelled ()
             }
         HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
@@ -179,7 +180,7 @@ type internal CommandMode
         member x.OnClose() = ()
 
         member x.RunCommand command = 
-            x.ParseAndRunInput command
+            x.ParseAndRunInput command true
 
         [<CLIEvent>]
         member x.CommandChanged = _commandChangedEvent.Publish
