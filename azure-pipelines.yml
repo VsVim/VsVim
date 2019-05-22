@@ -15,5 +15,5 @@ jobs:
     inputs:
         solution: VsVim.sln
         vsVersion: 15.0
-        restoreNuGetPackages: true
+        msbuildArgs: '/restore'
       
