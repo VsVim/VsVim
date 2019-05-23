@@ -3393,7 +3393,25 @@ type EditSpan =
 module EditUtil = 
 
     /// NewLine to use for the ITextBuffer
-    let NewLine (options: IEditorOptions) = DefaultOptionExtensions.GetNewLineCharacter options
+    let NewLine (options: IEditorOptions) (textBuffer: ITextBuffer) =
+
+        // According to the documentation for
+        // DefaultOptions.NewLineCharacterOptionId,
+        // DefaultOptionExtensions.GetNewLineCharacter is only used if
+        // DefaultOptionExtensions.GetReplicateNewLineCharacter is false or if
+        // the text buffer is empty. See issue #2561.
+        let replicateNewLine = DefaultOptionExtensions.GetReplicateNewLineCharacter options
+        if replicateNewLine && textBuffer.CurrentSnapshot.Length > 0 then
+            let firstNewLine =
+                SnapshotUtil.GetLine textBuffer.CurrentSnapshot 0
+                |> SnapshotLineUtil.GetLineBreakSpan
+                |> SnapshotSpanUtil.GetText
+            if StringUtil.IsNullOrEmpty firstNewLine then
+                DefaultOptionExtensions.GetNewLineCharacter options
+            else
+                firstNewLine
+        else
+            DefaultOptionExtensions.GetNewLineCharacter options
 
     /// Get the text for a tab character based on the given options
     let GetTabText (options: IEditorOptions) = 
