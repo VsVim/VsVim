@@ -4,11 +4,6 @@ Each section has the set of sorted commands listed alphabetically. Aliases for t
 
 This is the set of motions which are currently supported listed alphabetically. Aliases for the same motion are separated with '/' characters and are sorted by the more common alias
 
-- aw : A normal word
-- aW : A big word
-- as : A sentence 
-- ap : A paragraph 
-- a" / a' / a` : A quoted string
 - b / &lt;S-Left&gt; : Normal word backward
 - B / &lt;C-Left&gt; : Big word backward  
 - e : End of normal word
@@ -27,7 +22,6 @@ This is the set of motions which are currently supported listed alphabetically. 
 - G 
 - h / &lt;Left&gt; / &lt;Bs&gt; / &lt;C-H&gt; : character left
 - H
-- i" / i' / i` : inner quoted string contents
 - j / &lt;Down&gt; / &lt;C-N&gt; / &lt;C-J&gt; : line down
 - k / &lt;Up&gt; / &lt;C-P&gt;: line up
 - l / &lt;Right&gt; / &lt;Space&gt; : character right
@@ -54,6 +48,10 @@ This is the set of motions which are currently supported listed alphabetically. 
 - %
 - \* 
 - \# 
+
+## Text Objects
+
+All text objects (words, sentences, paragraphs, strings (",'), pair delimited ( [, {, (, <, xml )) are supported with their a- and i- form.
 
 ## Normal Mode 
 
