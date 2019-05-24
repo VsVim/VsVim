@@ -1,33 +1,48 @@
-# .NET Desktop
-# Build and run tests for .NET Desktop or Windows classic desktop solutions.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
+pr:
+- dev/jaredpar/*
 
-trigger:
-- master
+jobs:
+- job: VsVim_Build 
+  pool: 
+    vmImage: 'vs2017-win2016'
+  steps:
 
-pool:
-  vmImage: 'windows-latest'
+  - task: PowerShell@2
+    displayName: Build 
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -build
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+  - task: PowerShell@2
+    displayName: Test
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -test
 
-steps:
-- task: NuGetToolInstaller@1
+  - task: PowerShell@2
+    displayName: Test Extra
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -testExtra
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+  - task: PublishPipelineArtifact@0
+    displayName: Publish Vsix 
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\Binaries\Deploy'
+      artifactName: 'Vsix'
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+  - task: PublishPipelineArtifact@0
+    displayName: Publish Logs
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\Binaries\Logs'
+      artifactName: 'Logs'
+    condition: always()
 
-- task: VSTest@2
-  inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+  - task: PublishTestResults@2
+    displayName: Publish xUnit Test Results
+    inputs:
+      testRunner: XUnit
+      testResultsFiles: '$(Build.SourcesDirectory)\Binaries\xUnitResults\*.xml'
+      mergeTestResults: true
+      testRunTitle: 'VsVim Test Results'
+    condition: always()
