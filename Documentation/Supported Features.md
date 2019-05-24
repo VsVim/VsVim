@@ -87,10 +87,15 @@ This is the set of motions which are currently supported listed alphabetically. 
 - O
 - p
 - P
+- q : macro recording
+- r
+- R : replace mode
 - s
 - S
 - x
 - X
+- z_ : folding. most commands are supported. works only syntax based, if VS supports the filetype.
+- z_ : scrolling (zt, zb, zz, ...). 
 - &lt;C-w&gt;&lt;C-j&gt;
 - &lt;C-w&gt;j
 - &lt;C-w&gt;&lt;C-k&gt;
@@ -111,13 +116,17 @@ This is the set of motions which are currently supported listed alphabetically. 
 - &gt;&gt;
 - ==
 
+## Marks and Registers
+
+Most marks and registers that vim automatically manages, are supported.
+
 ## Commands
 
 - substitute
 - global (g) and converse (v)
 - Ex-commands to (m)ove, (co)py, (d)elete and join lines
 - practically all forms of ranges: line numbers (incl. relative), marks and pattern(!)
-- mapping: all map, unmap, remap and mapclear commands
+- mapping: all map, unmap, remap and mapclear commands (not for commandmode: cnoremap ...)
 - normal: execute key sequence in normal mode
 - registers
 - cwindow
