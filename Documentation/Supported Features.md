@@ -117,8 +117,6 @@ This is the set of motions which are currently supported listed alphabetically. 
 
 ## Misc
 
-- Text object selections (aw, (, {,) do not properly handle white space in all cases.  Additionally they cannot be used as selection operators in Visual Mode.  This support is planned for 0.9.7.  
-- Motions \*, \#, g* and g# are available as commands prior to 0.9.6 but are just not available as motions
 - Status line display is supported through `statusline` and `laststatus` settings, with the following caveats: `statusline` is static text (no expansion is performed) and `laststatus` only supports values of `0` (hide status line) and non-zero (show status line).
 
 
