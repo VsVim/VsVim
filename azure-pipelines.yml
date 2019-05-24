@@ -6,16 +6,43 @@ jobs:
   pool: 
     vmImage: 'vs2017-win2016'
   steps:
-  - task: VSBUild@1
-    displayName: Build
+
+  - task: PowerShell@2
+    displayName: Build 
     inputs:
-        solution: VsVim.sln
-        vsVersion: 15.0
-        configuration: Debug
-        msbuildArgs: '/restore /m /v:m /p:DeployExtension=false /bl:Binaries\Logs\msbuild.binlog'
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -build
+
+  - task: PowerShell@2
+    displayName: Test
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -test
+
+  - task: PowerShell@2
+    displayName: Test Extra
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -config Debug -testExtra
 
   - task: PublishPipelineArtifact@0
+    displayName: Publish Vsix 
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\Binaries\Deploy'
+      artifactName: 'Vsix'
+
+  - task: PublishPipelineArtifact@0
+    displayName: Publish Logs
     inputs:
       targetPath: '$(Build.SourcesDirectory)\Binaries\Logs'
       artifactName: 'Logs'
+    condition: always()
 
+  - task: PublishTestResults@2
+    displayName: Publish xUnit Test Results
+    inputs:
+      testRunner: XUnit
+      testResultsFiles: '$(Build.SourcesDirectory)\Binaries\xUnitResults\*.xml'
+      mergeTestResults: true
+      testRunTitle: 'VsVim Test Results'
+    condition: always()

@@ -1,6 +1,7 @@
 param (
   [switch]$build = $false,
   [switch]$test = $false,
+  [switch]$testExtra = $false,
 
   # Whether or not  we're running in CI / Pipelines
   [switch]$ci = $false,
@@ -28,7 +29,6 @@ function Write-PipelineError([string]$message) {
     Write-Host $message
   }
 }
-
 
 function Get-MSBuildPath() {
   $vsWhere = Join-Path $toolsDir "vswhere.exe"
@@ -78,23 +78,23 @@ function Test-VsixContents() {
 
     $foundFiles = Get-ChildItem $target | %{ $_.Name }
     if ($foundFiles.Count -ne $expectedFiles.Count) { 
-        Write-Host "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
-        Write-Host "Wrong number of foundFiles in VSIX." 
-        Write-Host "Extra foundFiles"
+        Write-PipelineError "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
+        Write-PipelineError "Wrong number of foundFiles in VSIX." 
+        Write-PipelineError "Extra foundFiles"
         foreach ($file in $foundFiles) {
             if (-not $expectedFiles.Contains($file)) {
-                Write-Host "`t$file"
+                Write-PipelineError "`t$file"
             }
         }
 
         Write-Host "Missing foundFiles"
         foreach ($file in $expectedFiles) {
             if (-not $foundFiles.Contains($file)) {
-                Write-Host "`t$file"
+                Write-PipelineError "`t$file"
             }
         }
 
-        Write-Host "Location: $target"
+        Write-PipelineError "Location: $target"
     }
 
     foreach ($item in $expectedFiles) {
@@ -104,26 +104,6 @@ function Test-VsixContents() {
         if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
             throw "Small file detected $item in the zip file ($target)"
         }
-    }
-}
-
-# Run all of the unit tests
-function Test-UnitTests() { 
-    Write-Host "Running unit tests"
-    $resultsDir = Join-Path $binariesDir "xunitResults"
-    Create-Directory $resultsDir
-
-    $all = 
-        "VimCoreTest\net472\Vim.Core.UnitTest.dll",
-        "VimWpfTest\net472\Vim.UI.Wpf.UnitTest.dll",
-        "VsVimSharedTest\net472\Vim.VisualStudio.Shared.UnitTest.dll"
-    $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
-
-    foreach ($filePath in $all) { 
-        $filePath = Join-Path $configDir $filePath
-        $logFilePath = Join-Path $resultsDir "$($filePath).xml"
-        $arg = "$filePath -xml $logFilePath"
-        Exec-Console $xunit $filePath
     }
 }
 
@@ -161,7 +141,51 @@ function Test-Version() {
     }
 }
 
-function Build-Vsix() {
+function Test-UnitTests() { 
+    Write-Host "Running unit tests"
+    $resultsDir = Join-Path $binariesDir "xunitResults"
+    Create-Directory $resultsDir
+
+    $all = 
+        "VimCoreTest\net472\Vim.Core.UnitTest.dll",
+        "VimWpfTest\net472\Vim.UI.Wpf.UnitTest.dll",
+        "VsVimSharedTest\net472\Vim.VisualStudio.Shared.UnitTest.dll"
+        "VsVimTestn\net472\VsVim.UnitTest.dll"
+    $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
+    $anyFailed = $false
+
+    foreach ($filePath in $all) { 
+        $filePath = Join-Path $configDir $filePath
+        $fileName = [IO.Path]::GetFileNameWithoutExtension($filePath)
+        $logFilePath = Join-Path $resultsDir "$($fileName).xml"
+        $arg = "$filePath -xml $logFilePath"
+        try {
+          Exec-Console $xunit $arg
+        }
+        catch {
+          $anyFailed = $true
+        }
+    }
+
+    if ($anyFailed) {
+        throw "Unit tests failed"
+    }
+}
+
+
+function Build-Solution(){ 
+    Write-Host "Building VsVim"
+    Write-Host "Building Solution"
+    $binlogFilePath = Join-Path $logsDir "msbuild.binlog"
+    $args = "/nologo /restore /v:m /m /bl:$binlogFilePath /p:Configuration=$config VsVim.sln"
+    if ($ci) {
+      $args += " /p:DeployExtension=false"
+
+    }
+
+    Exec-Console $msbuild $args
+
+    Write-Host "Cleaning Vsix"
     Create-Directory $deployDir
     Push-Location $deployDir 
     try { 
@@ -180,12 +204,6 @@ function Build-Vsix() {
     finally {
         Pop-Location
     }
-} 
-
-function Build-Code(){ 
-    Write-Host "Building VsVim.sln"
-    $binlogFilePath = Join-Path $logsDir "msbuild.binlog"
-    Exec-Console $msbuild "/nologo /restore /v:m /m /bl:$binlogFilePath /p:Configuration=$config VsVim.sln"
 }
 
 Push-Location $rootDir
@@ -196,12 +214,16 @@ try {
     Write-Host "Using MSBuild from $msbuild"
 
     if ($build) {
-      Build-Code
-      Build-Vsix
+      Build-Solution
     }
 
     if ($test) {
       Test-UnitTests
+    }
+
+    if ($testExtra) {
+      Test-VsixContents
+      Test-version
     }
 }
 catch {
