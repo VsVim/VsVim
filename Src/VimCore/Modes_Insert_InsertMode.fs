@@ -1352,7 +1352,7 @@ type internal InsertMode
         let updateRepeat count addNewLines textChange =
 
             let insertKind = 
-                let commandTextChange = insertCommand.TextChange _editorOptions
+                let commandTextChange = insertCommand.TextChange _editorOptions _textBuffer
                 match commandTextChange with
                 | None -> 
                     // Certain actions such as caret movement cause us to abandon the repeat session

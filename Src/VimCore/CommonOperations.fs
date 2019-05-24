@@ -274,7 +274,7 @@ type internal CommonOperations
     member x.FilterLines (range: SnapshotLineRange) program =
 
         // Extract the lines to be filtered.
-        let newLine = EditUtil.NewLine _editorOptions
+        let newLine = EditUtil.NewLine _editorOptions _textBuffer
         let input =
             range.Lines
             |> Seq.map SnapshotLineUtil.GetText
@@ -467,7 +467,7 @@ type internal CommonOperations
             |> Seq.mapi addLeader
 
         // Concatenate the formatted lines.
-        let newLine = EditUtil.NewLine _editorOptions
+        let newLine = EditUtil.NewLine _editorOptions _textBuffer
         let replacement = formattedLines |> String.concat newLine
 
         // Replace the old lines with the formatted lines.
@@ -1632,7 +1632,7 @@ type internal CommonOperations
                 sortedLines
 
         // Concatenate the sorted lines.
-        let newLine = EditUtil.NewLine _editorOptions
+        let newLine = EditUtil.NewLine _editorOptions _textBuffer
         let replacement = sortedLines |> String.concat newLine
 
         // Replace the old lines with the sorted lines.
@@ -1972,7 +1972,7 @@ type internal CommonOperations
             // Simple strings can go directly in at the position.  Need to adjust the text if 
             // we are inserting at the end of the buffer
             let text = 
-                let newLine = EditUtil.NewLine _editorOptions
+                let newLine = EditUtil.NewLine _editorOptions _textBuffer
                 match opKind with
                 | OperationKind.LineWise -> 
                     if SnapshotPointUtil.IsEndPoint point && not (SnapshotPointUtil.IsStartOfLine point) then
@@ -2040,7 +2040,7 @@ type internal CommonOperations
     
                 // Add the text to the end of the buffer.
                 if not (Seq.isEmpty appendCol) then
-                    let prefix = (EditUtil.NewLine _editorOptions) + (String.replicate columnNumber " ")
+                    let prefix = (EditUtil.NewLine _editorOptions _textBuffer) + (String.replicate columnNumber " ")
                     let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                     let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                     edit.Insert(endPoint.Position, text) |> ignore
@@ -2049,7 +2049,7 @@ type internal CommonOperations
 
                 // Strings are inserted line wise into the ITextBuffer.  Build up an
                 // aggregate string and insert it here
-                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _editorOptions)) StringUtil.Empty
+                let text = col |> Seq.fold (fun state elem -> state + elem + (EditUtil.NewLine _editorOptions _textBuffer)) StringUtil.Empty
 
                 edit.Insert(point.Position, text) |> ignore
 
