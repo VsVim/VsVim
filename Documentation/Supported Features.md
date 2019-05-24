@@ -17,6 +17,8 @@ This is the set of motions which are currently supported listed alphabetically. 
 - g_ : Last non white space on the line 
 - ge : Backward to end of word
 - gE : Backward to end of WORD
+- gn : operate on next match
+- gN
 - g* 
 - g# 
 - g0 : First character of screen line
@@ -64,6 +66,8 @@ This is the set of motions which are currently supported listed alphabetically. 
 - gf
 - gJ
 - gI
+- gn
+- gN
 - gp
 - gP
 - gugu
@@ -110,6 +114,9 @@ This is the set of motions which are currently supported listed alphabetically. 
 ## Commands
 
 - substitute
+- global (g) and converse (v)
+- Ex-commands to (m)ove, (co)py, (d)elete and join lines
+- practically all forms of ranges: line numbers (incl. relative), marks and pattern(!)
 - mapping: all map, unmap, remap and mapclear commands
 - normal: execute key sequence in normal mode
 - registers
