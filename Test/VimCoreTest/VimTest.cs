@@ -64,6 +64,8 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("VimTest.cs");
             _vimHost.Setup(x => x.EnsurePackageLoaded());
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim74);
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             if (createVim)
             {
                 CreateVim();
