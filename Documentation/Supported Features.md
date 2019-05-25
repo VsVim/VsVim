@@ -103,7 +103,7 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - guu
 - gUgU
 - gUU
-- g~g~
+- g~ g~
 - g~~
 - g?g?
 - g??
