@@ -98,7 +98,7 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - S
 - x
 - X
-- z_ : folding. most commands are supported. works only syntax based, if VS supports the filetype.
+- z_ : folding (zo, zc, za ...). most commands are supported. works only syntax based, if VS supports the filetype.
 - z_ : scrolling (zt, zb, zz, ...). 
 - &lt;C-w&gt;&lt;C-j&gt;
 - &lt;C-w&gt;j
