@@ -199,11 +199,7 @@ type internal SelectionChangeTracker
             finally
                 _syncingSelection <- false
         | Some _ -> 
-            // It's not guaranteed that this will be set.  Visual Studio for instance will
-            // null this out in certain WPF designer scenarios
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then context.Post( (fun _ -> doUpdate()), null)
-            else doUpdate()
+            _commonOperations.DoActionAsync doUpdate
 
     /// In a normal character style selection vim extends the selection to include the value
     /// under the caret.  The editor by default does an exclusive selection.  Adjust the selection

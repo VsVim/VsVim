@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
@@ -45,7 +46,16 @@ namespace Vim.UnitTest
             };
             _context = new TestableSynchronizationContext();
 
-            _tracker = new SelectionChangeTracker(_vimBuffer.Object, _factory.Create<ICommonOperations>(MockBehavior.Loose).Object, selectionList.ToFSharpList(), _mouseDevice.Object);
+            // Mock 'DoActionAsync' in 'ICommonOperations'.
+            var commonOperations = _factory.Create<ICommonOperations>();
+            commonOperations.Setup(x => x.DoActionAsync(It.IsAny<FSharpFunc<Unit, Unit>>()))
+                .Callback((FSharpFunc<Unit, Unit> action) => _context.Post(_ => action.Invoke(null), null));
+
+            _tracker = new SelectionChangeTracker(
+                _vimBuffer.Object,
+                commonOperations.Object,
+                selectionList.ToFSharpList(),
+                _mouseDevice.Object);
         }
 
         public void Dispose()
@@ -225,34 +235,6 @@ namespace Vim.UnitTest
             _vimBuffer.Setup(x => x.SwitchMode(It.IsAny<ModeKind>(), It.IsAny<ModeArgument>())).Throws(new Exception());
             _context.RunAll();
             _factory.Verify();
-        }
-
-        /// <summary>
-        /// Make sure that we handle the case where the synchronization context isn't 
-        /// set
-        /// </summary>
-        [Fact]
-        public void BadSynchronizationContext()
-        {
-            var old = SynchronizationContext.Current;
-            try
-            {
-                SynchronizationContext.SetSynchronizationContext(null);
-                _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
-                _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
-                _vimBuffer
-                    .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
-                    .Returns(_factory.Create<IMode>().Object)
-                    .Verifiable();
-                _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
-                _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
-                _factory.Verify();
-                Assert.True(_context.IsEmpty);     // Shouldn't be accessible
-            }
-            finally
-            {
-                SynchronizationContext.SetSynchronizationContext(old);
-            }
         }
 
         /// <summary>

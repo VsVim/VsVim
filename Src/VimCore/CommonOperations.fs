@@ -150,6 +150,17 @@ type internal CommonOperations
         else
             _vimHost.Close _textView
 
+    /// Perform the specified action asynchronously using the scheduler
+    member x.DoActionAsync (action: unit -> unit) =
+
+        // It's not guaranteed that this will be set.  Visual Studio for
+        // instance will null this out in certain WPF designer scenarios.
+        let context = System.Threading.SynchronizationContext.Current
+        if context <> null then
+            context.Post((fun _ -> action()), null)
+        else
+            action()
+
     /// Perform the specified action when the text view is ready
     member x.DoActionWhenReady (action: unit -> unit) =
         _vimHost.DoActionWhenTextViewReady action _textView
@@ -2331,6 +2342,7 @@ type internal CommonOperations
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
+        member x.DoActionAsync action = x.DoActionAsync action
         member x.DoActionWhenReady action = x.DoActionWhenReady action
         member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags

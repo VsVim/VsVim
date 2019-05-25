@@ -10,11 +10,13 @@ using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
+using System.Threading;
 
 namespace Vim.UnitTest
 {
     public class CommonOperationsTest : VimTestBase
     {
+        private TestableSynchronizationContext _context;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private IFoldManager _foldManager;
@@ -34,6 +36,7 @@ namespace Vim.UnitTest
 
         protected void Create(params string[] lines)
         {
+            _context = new TestableSynchronizationContext();
             _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
@@ -1521,6 +1524,44 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption<int>.None);
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(2, indent.Value);
+            }
+
+            /// <summary>
+            /// Make sure that we handle the case where the synchronization
+            /// context isn't  set
+            /// </summary>
+            [WpfFact]
+            public void BadSynchronizationContext()
+            {
+                // Install testable synchronization context.
+                Create("cat", "dog", "");
+
+                // Define a testable callback.
+                var count = 0;
+                Unit action(Unit arg)
+                {
+                    count += 1;
+                    return null;
+                }
+
+                var oldContext = (TestableSynchronizationContext)SynchronizationContext.Current;
+                try
+                {
+                    // Temporarily null out the current synchronization
+                    // context.
+                    SynchronizationContext.SetSynchronizationContext(null);
+
+                    _operations.DoActionAsync(FSharpFuncUtil.Create<Unit, Unit>(action));
+
+                    // The old context should not be accessible, but the
+                    // function should still have been called.
+                    Assert.True(oldContext.IsEmpty);
+                    Assert.Equal(1, count);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(oldContext);
+                }
             }
         }
 

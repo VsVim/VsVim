@@ -639,14 +639,17 @@ type internal Vim
             not vimBuffer.IsProcessingInput
             && not _mouseDevice.IsRightButtonPressed
         then
+            let commonOperations =
+                vimBuffer.VimBufferData
+                |> _commonOperationsFactory.GetCommonOperations
+
             // Delay the update to give whoever changed the caret position the
             // opportunity to scroll the view according to their own needs. If
-            // another extension moves the caret far offscreen and then centers
-            // it if the caret is not onscreen, then reacting too early to the
-            // caret position will defeat their offscreen handling. An example
-            // is double-clicking on a test in an unopened document in "Test
-            // Explorer".
-            let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+            // another extension moves the caret far offscreen and then
+            // centers it if the caret is not onscreen, then reacting too
+            // early to the caret position will defeat their offscreen
+            // handling. An example is double-clicking on a test in an
+            // unopened document in "Test Explorer".
             let doUpdate () =
 
                 // Proceed cautiously because the window might have been closed
@@ -654,11 +657,7 @@ type internal Vim
                 if not vimBuffer.TextView.IsClosed then
                     commonOperations.EnsureAtCaret ViewFlags.Standard
 
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then
-                context.Post((fun _ -> doUpdate()), null)
-            else
-                doUpdate()
+            commonOperations.DoActionAsync doUpdate
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
     /// the IVimBufferCreationListener collection about it
