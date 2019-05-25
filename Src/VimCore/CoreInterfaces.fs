@@ -4630,6 +4630,9 @@ type IVimHost =
     /// of the vimrc
     abstract CreateHiddenTextView: unit -> ITextView
 
+    /// Perform the specified action when the specified text view is ready
+    abstract DoActionWhenTextViewReady: action: (unit -> unit) -> textView: ITextView -> unit
+
     /// Called at the end of a bulk operation such as a macro replay or a repeat of
     /// a last command
     abstract EndBulkOperation: unit -> unit
@@ -4677,9 +4680,6 @@ type IVimHost =
 
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty: textBuffer: ITextBuffer -> bool
-
-    /// Perform the specified action when the text view is ready
-    abstract DoActionWhenReady: textView: ITextView -> action: (unit -> unit) -> unit
 
     /// Is the ITextBuffer read only
     abstract IsReadOnly: textBuffer: ITextBuffer -> bool

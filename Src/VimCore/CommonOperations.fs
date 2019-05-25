@@ -152,7 +152,7 @@ type internal CommonOperations
 
     /// Perform the specified action when the text view is ready
     member x.DoActionWhenReady (action: unit -> unit) =
-        _vimHost.DoActionWhenReady _textView action
+        _vimHost.DoActionWhenTextViewReady action _textView
 
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always

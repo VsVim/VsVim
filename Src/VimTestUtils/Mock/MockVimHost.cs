@@ -46,7 +46,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
-        public Action<ITextView, FSharpFunc<Unit, Unit>> DoActionWhenReadyFunc { get; set; }
+        public Action<FSharpFunc<Unit, Unit>, ITextView> DoActionWhenTextViewReadyFunc { get; set; }
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
@@ -115,7 +115,7 @@ namespace Vim.UnitTest.Mock
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
-            DoActionWhenReadyFunc = null;
+            DoActionWhenTextViewReadyFunc = null;
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
@@ -238,11 +238,15 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        void IVimHost.DoActionWhenReady(ITextView textView, FSharpFunc<Unit, Unit> action)
+        void IVimHost.DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
-            if (DoActionWhenReadyFunc != null)
+            if (DoActionWhenTextViewReadyFunc != null)
             {
-                DoActionWhenReadyFunc(textView, action);
+                DoActionWhenTextViewReadyFunc(action, textView);
+            }
+            else
+            {
+                action.Invoke(null);
             }
         }
 

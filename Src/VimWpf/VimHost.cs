@@ -226,11 +226,11 @@ namespace Vim.UI.Wpf
 
 
         /// <summary>
-        /// Perform the specified action when the text view is ready
+        /// Perform the specified action when the specified text view is ready
         /// </summary>
         /// <param name="textView"></param>
         /// <param name="action"></param>
-        public virtual void DoActionWhenReady(ITextView textView, FSharpFunc<Unit, Unit> action)
+        public virtual void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
             Action doAction = () =>
             {
@@ -732,9 +732,9 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
-        void IVimHost.DoActionWhenReady(ITextView textView, FSharpFunc<Unit, Unit> action)
+        void IVimHost.DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
-            DoActionWhenReady(textView, action);
+            DoActionWhenTextViewReady(action, textView);
         }
 
         bool IVimHost.IsReadOnly(ITextBuffer textBuffer)

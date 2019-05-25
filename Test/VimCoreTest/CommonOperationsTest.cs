@@ -43,8 +43,8 @@ namespace Vim.UnitTest
             // Create the Vim instance with our Mock'd services
             _registerMap = Vim.RegisterMap;
             _vimHost = _factory.Create<IVimHost>();
-            _vimHost.Setup(x => x.DoActionWhenReady(It.IsAny<ITextView>(), It.IsAny<FSharpFunc<Unit, Unit>>()))
-                .Callback((ITextView textView, FSharpFunc<Unit, Unit> action) => action.Invoke(null));
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             var globalSettings = Vim.GlobalSettings;
             globalSettings.Magic = true;
             globalSettings.SmartCase = false;
