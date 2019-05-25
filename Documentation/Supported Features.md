@@ -51,7 +51,7 @@ This is the set of motions which are currently supported listed alphabetically. 
 
 ## Text Objects
 
-All text objects (words, sentences, paragraphs, strings (",'), pair delimited ( [, {, (, <, xml )) are supported with their a- and i- form.
+All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( [], {}, (), <>, xmltags ) are supported with their a- and i- form.
 
 ## Normal Mode 
 
