@@ -8,18 +8,20 @@ This is the set of motions which are currently supported listed alphabetically. 
 - B / &lt;C-Left&gt; : Big word backward  
 - e : End of normal word
 - E : End of big word 
-- gg
-- g_ : Last non white space on the line 
+- f : move forward to character
+- F
 - ge : Backward to end of word
 - gE : Backward to end of WORD
+- gg
+- G 
 - gn : operate on next match
 - gN
 - g* 
-- g# 
+- g#
+- g_ : Last non white space on the line 
 - g0 : First character of screen line
 - g^ : First visible character on line
 - g$ : Last visible character on line
-- G 
 - h / &lt;Left&gt; / &lt;Bs&gt; / &lt;C-H&gt; : character left
 - H
 - j / &lt;Down&gt; / &lt;C-N&gt; / &lt;C-J&gt; : line down
@@ -29,6 +31,9 @@ This is the set of motions which are currently supported listed alphabetically. 
 - M
 - n
 - N
+- t
+- T
+- v : modifier to a motion to act as in visual mode. Together with operator. Example: dvb.
 - w / &lt;S-Right&gt; : Normal Word 
 - W / &lt;C-Right&gt; : Big Word
 - 0 : Beginning of the line
@@ -61,6 +66,7 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - cc
 - dd
 - D
+- gd
 - gf
 - gJ
 - gI
@@ -114,9 +120,13 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - &gt;&gt;
 - ==
 
-## Marks and Registers
+## Marks
+Local (small letter) and global marks are supported (linewise and exact character). Movements to marks can be used with operators.
+Most marks that vim automatically manages, are supported.
 
-Most marks and registers that vim automatically manages, are supported.
+## Registers
+Named registers are supported, append with uppercase letters is supported. Recording to and executing registers as macros is supported.
+Most registers that vim automatically manages, are supported.
 
 ## Commands
 
