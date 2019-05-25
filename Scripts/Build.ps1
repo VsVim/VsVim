@@ -1,11 +1,16 @@
 param (
+  # Actions 
   [switch]$build = $false,
   [switch]$test = $false,
   [switch]$testExtra = $false,
+  [switch]$help = $false,
 
-  # Whether or not  we're running in CI / Pipelines
+  # Settings
   [switch]$ci = $false,
-  [string]$config = "Release")
+  [string]$config = "Release",
+
+
+  [parameter(ValueFromRemainingArguments=$true)][string[]]$properties)
 
 Set-StrictMode -version 2.0
 $ErrorActionPreference="Stop"
@@ -17,6 +22,17 @@ $ErrorActionPreference="Stop"
 [string]$deployDir = Join-Path $binariesDir "Deploy"
 [string]$logsDir = Join-Path $binariesDir "Logs"
 [string]$toolsDir = Join-Path $rootDir "Tools"
+
+function Print-Usage() {
+  Write-Host "Actions:"
+  Write-Host "  -build                    Build VsVim"
+  Write-Host "  -test                     Run unit tests"
+  Write-Host "  -testExtra                Run extra verification"
+  Write-Host ""
+  Write-Host "Settings:"
+  Write-Host "  -ci                       True when running in CI"
+  Write-Host "  -config <value>           Build configuration: 'Debug' or 'Release'"
+}
 
 # Toggle between human readable messages and Azure Pipelines messages based on 
 # our current environment.
@@ -174,6 +190,9 @@ function Test-UnitTests() {
 
 
 function Build-Solution(){ 
+    $msbuild = Get-MSBuildPath
+    Write-Host "Using MSBuild from $msbuild"
+
     Write-Host "Building VsVim"
     Write-Host "Building Solution"
     $binlogFilePath = Join-Path $logsDir "msbuild.binlog"
@@ -210,8 +229,10 @@ Push-Location $rootDir
 try {
     . "Scripts\Common-Utils.ps1"
 
-    $msbuild = Get-MSBuildPath
-    Write-Host "Using MSBuild from $msbuild"
+    if ($help -or ($properties -ne $null)) {
+      Print-Usage
+      exit 0
+    }
 
     if ($build) {
       Build-Solution
