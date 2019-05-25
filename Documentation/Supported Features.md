@@ -215,7 +215,7 @@ Local (small letter) and global marks are supported (linewise and exact characte
 Most marks that vim automatically manages, are supported.
 
 ## Registers
-Named registers are supported, append with uppercase letters is supported. Recording to and executing registers as macros is supported.
+Named registers are supported. Append with uppercase letters is supported. Recording to and executing registers as macros is supported.
 Most registers that vim automatically manages, are supported.
 
 ## Commands
