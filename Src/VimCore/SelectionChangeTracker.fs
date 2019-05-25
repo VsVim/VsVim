@@ -39,10 +39,6 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
         |> _bag.Add
 
-        _textView.Caret.PositionChanged 
-        |> Observable.subscribe (fun _ -> this.OnPositionChanged())
-        |> _bag.Add
-
         _vimBuffer.Closed
         |> Observable.subscribe (fun _ -> this.OnBufferClosed())
         |> _bag.Add
@@ -97,37 +93,6 @@ type internal SelectionChangeTracker
             ()
         else
             x.SetModeForSelection()
-
-    /// React to external caret position changes by ensuring that our view
-    /// properties are met, such as the caret being visible and 'scrolloff'
-    /// being taken into account
-    member x.OnPositionChanged() = 
-
-        // If we are processing input then the mode is responsible for
-        // controlling the window, so let the mode handle it.
-        if
-            not _vimBuffer.IsProcessingInput
-            && not _mouseDevice.IsRightButtonPressed
-        then
-            // Delay the update to give whoever changed the caret position the
-            // opportunity to scroll the view according to their own needs. If
-            // another extension moves the caret far offscreen and then centers
-            // it if the caret is not onscreen, then reacting too early to the
-            // caret position will defeat their offscreen handling. An example
-            // is double-clicking on a test in an unopened document in "Test
-            // Explorer".
-            let doUpdate () =
-
-                // Proceed cautiously because the window might have been closed
-                // in the meantime.
-                if not _textView.IsClosed then
-                    _commonOperations.EnsureAtCaret ViewFlags.Standard
-
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then
-                context.Post((fun _ -> doUpdate()), null)
-            else
-                doUpdate()
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()

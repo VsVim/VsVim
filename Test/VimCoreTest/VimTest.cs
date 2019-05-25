@@ -95,7 +95,8 @@ namespace Vim.UnitTest
                 _variableMap,
                 new EditorToSettingSynchronizer(),
                 new StatusUtilFactory(),
-                CommonOperationsFactory);
+                CommonOperationsFactory,
+                MouseDevice);
             _vim = _vimRaw;
             _vim.AutoLoadDigraphs = false;
             _vim.AutoLoadVimRc = false;
