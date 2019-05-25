@@ -5,13 +5,24 @@ jobs:
 - job: VsVim_Build 
   pool: 
     vmImage: 'vs2017-win2016'
+
+  strategy:
+    maxParallel: 2
+    matrix:
+      Vs2017:
+        _testConfig: 15.0
+        _name: Vs2017
+      Vs2019:
+        _testConfig: 16.0
+        _name: Vs2019
+
   steps:
 
   - task: PowerShell@2
     displayName: Build 
     inputs:
       filePath: Scripts\Build.ps1
-      arguments: -ci -config Debug -build
+      arguments: -ci -config Debug -build -testConfig $(_testConfig)
 
   - task: PowerShell@2
     displayName: Test
@@ -29,13 +40,13 @@ jobs:
     displayName: Publish Vsix 
     inputs:
       targetPath: '$(Build.SourcesDirectory)\Binaries\Deploy'
-      artifactName: 'Vsix'
+      artifactName: 'Vsix $(_name)'
 
   - task: PublishPipelineArtifact@0
     displayName: Publish Logs
     inputs:
       targetPath: '$(Build.SourcesDirectory)\Binaries\Logs'
-      artifactName: 'Logs'
+      artifactName: 'Logs $(_name)'
     condition: always()
 
   - task: PublishTestResults@2
@@ -44,5 +55,5 @@ jobs:
       testRunner: XUnit
       testResultsFiles: '$(Build.SourcesDirectory)\Binaries\xUnitResults\*.xml'
       mergeTestResults: true
-      testRunTitle: 'VsVim Test Results'
+      testRunTitle: 'VsVim Test Results $(_name)'
     condition: always()
