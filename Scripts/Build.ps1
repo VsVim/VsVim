@@ -8,7 +8,7 @@ param (
   # Settings
   [switch]$ci = $false,
   [string]$config = "Release",
-
+  [string]$testConfig = "",
 
   [parameter(ValueFromRemainingArguments=$true)][string[]]$properties)
 
@@ -32,6 +32,13 @@ function Print-Usage() {
   Write-Host "Settings:"
   Write-Host "  -ci                       True when running in CI"
   Write-Host "  -config <value>           Build configuration: 'Debug' or 'Release'"
+  Write-Host "  -testConfig <value>       VS version to build tests for: 15.0 or 16.0"
+}
+
+function Process-Arguments() {
+  if (($testConfig -ne "") -and (-not $build)) {
+    throw "The -testConfig option can only be specified with -build"
+  }
 }
 
 # Toggle between human readable messages and Azure Pipelines messages based on 
@@ -197,6 +204,10 @@ function Build-Solution(){
     Write-Host "Building Solution"
     $binlogFilePath = Join-Path $logsDir "msbuild.binlog"
     $args = "/nologo /restore /v:m /m /bl:$binlogFilePath /p:Configuration=$config VsVim.sln"
+    if ($testConfig -ne "") {
+      $args += " /p:VsVimTargetVersion=`"$testConfig`""
+    }
+
     if ($ci) {
       $args += " /p:DeployExtension=false"
 
