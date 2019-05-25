@@ -13,6 +13,7 @@ using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace Vim.UnitTest
 {
@@ -91,7 +92,8 @@ namespace Vim.UnitTest
                 _factory.Create<IBulkOperations>().Object,
                 _variableMap,
                 new EditorToSettingSynchronizer(),
-                new StatusUtilFactory());
+                new StatusUtilFactory(),
+                CommonOperationsFactory);
             _vim = _vimRaw;
             _vim.AutoLoadDigraphs = false;
             _vim.AutoLoadVimRc = false;

@@ -364,6 +364,9 @@ type ICommonOperations =
     /// This operation is performed against the visual buffer.  
     abstract DeleteLines: startLine: ITextSnapshotLine -> maxCount: int -> registerName: RegisterName option -> unit
 
+    /// Perform the specified action when the text view is ready
+    abstract DoActionWhenReady: action: (unit -> unit) -> unit
+
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 

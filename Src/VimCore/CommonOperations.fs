@@ -152,42 +152,7 @@ type internal CommonOperations
 
     /// Perform the specified action when the text view is ready
     member x.DoActionWhenReady (action: unit -> unit) =
-
-        // Whether the text view is ready for the action
-        let isReady () = _vimHost.IsLoaded _textView
-
-        // Do the action if it is safe to do so. The window might have been
-        // closed in the meantime
-        let doAction () =
-            if not _textView.IsClosed then
-                action()
-
-        // Try to do the action if the text view is ready
-        let tryDoAction (bag: DisposableBag) =
-
-            // When it finally becomes ready, post the action because we should
-            // not perform any text view related actions from the text view's
-            // layout changed handler.
-            if isReady() then
-                let context = System.Threading.SynchronizationContext.Current
-                if context <> null then
-                    context.Post((fun _ -> doAction()), null)
-                else
-                    doAction()
-                bag.DisposeAll()
-
-        if isReady() then
-
-            // If the text view is ready, do the action immediately.
-            doAction()
-        else
-
-            // Otherwise, keep checking on each layout change whether the text
-            // view is ready for the action yet.
-            let bag = DisposableBag()
-            _textView.LayoutChanged
-            |> Observable.subscribe (fun _ -> tryDoAction bag)
-            |> bag.Add
+        _vimHost.DoActionWhenReady _textView action
 
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
@@ -2366,6 +2331,7 @@ type internal CommonOperations
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
+        member x.DoActionWhenReady action = x.DoActionWhenReady action
         member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()

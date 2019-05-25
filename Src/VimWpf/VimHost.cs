@@ -219,13 +219,33 @@ namespace Vim.UI.Wpf
             return false;
         }
 
-        public virtual bool IsLoaded(ITextView textView)
+
+        /// <summary>
+        /// Perform the specified action when the text view is ready
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <param name="action"></param>
+        public virtual void DoActionWhenReady(ITextView textView, FSharpFunc<Unit, Unit> action)
         {
-            if (textView is IWpfTextView wpfTextView)
+            Action doAction = () =>
             {
-                return wpfTextView.VisualElement.IsLoaded;
+                if (!textView.IsClosed)
+                {
+                    action.Invoke(null);
+                }
+            };
+            if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
+            {
+                // FrameworkElement.Loaded Event:
+                //
+                // Occurs when a FrameworkElement has been constructed and
+                // added to the object tree, and is ready for interaction.
+                wpfTextView.VisualElement.Loaded += (sender, e) => doAction();
             }
-            return true;
+            else
+            {
+                doAction();
+            }
         }
 
         /// <summary>
@@ -702,9 +722,9 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
-        bool IVimHost.IsLoaded(ITextView textView)
+        void IVimHost.DoActionWhenReady(ITextView textView, FSharpFunc<Unit, Unit> action)
         {
-            return IsLoaded(textView);
+            DoActionWhenReady(textView, action);
         }
 
         bool IVimHost.IsReadOnly(ITextBuffer textBuffer)

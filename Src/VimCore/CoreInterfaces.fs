@@ -4664,8 +4664,8 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty: textBuffer: ITextBuffer -> bool
 
-    /// Whether the ITextView is loaded
-    abstract IsLoaded: textView: ITextView -> bool
+    /// Perform the specified action when the text view is ready
+    abstract DoActionWhenReady: textView: ITextView -> action: (unit -> unit) -> unit
 
     /// Is the ITextBuffer read only
     abstract IsReadOnly: textBuffer: ITextBuffer -> bool

@@ -309,50 +309,26 @@ type internal VimBufferFactory
         _statusUtilFactory.InitializeVimBuffer (bufferRaw :> IVimBufferInternal)
         bufferRaw
 
-    /// Setup the initial mode for an IVimBuffer.  The mode should be the current mode of the
-    /// underlying IVimTextBuffer.  This should be as easy as switching the mode on startup 
-    /// but this is complicated by the initialization of ITextView instances.  They can, and 
-    /// often are, passed to CreateVimBuffer in an uninitialized state.  In that state certain
-    /// operations like Select can't be done.  Hence we have to delay the mode switch until 
-    /// the ITextView is fully initialized.  Put all of that logic here.
+    /// Setup the initial mode for an IVimBuffer
     member x.SetupInitialMode (vimBuffer: IVimBuffer) =
-
-        let textView = vimBuffer.TextView
         let vimBufferData = vimBuffer.VimBufferData
-
-        // Check and see if the ITextView is ready to be used by VsVim.  This check is 
-        // run many times and it is possible that the ITextView is actually closed
-        // before we are ever able to switch to the initial mode.  Must take that into
-        // account
-        let isReady () = TextViewUtil.GetTextViewLines textView |> Option.isSome
+        let commonOperations = _commonOperationsFactory.GetCommonOperations(vimBufferData)
 
         // The ITextView is initialized and no one has forced the IVimBuffer out of
         // the uninitialized state.  Do the switch now to the correct mode
-        let runInit () =
-            if not textView.IsClosed && vimBuffer.ModeKind = ModeKind.Uninitialized then
-                Contract.Assert(isReady())
-                vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None |> ignore
+        let setupInitialMode () =
+            if vimBuffer.ModeKind = ModeKind.Uninitialized then
+                vimBuffer.SwitchMode vimBufferData.VimTextBuffer.ModeKind ModeArgument.None
+                |> ignore
 
-        if isReady () then
-            runInit ()
-        else
-            // It's not initialized.  Need to wait for the ITextView to get initialized. Setup 
-            // the event listener so we can setup the true mode.  Make sure to unhook from the 
-            // event to avoid memory leaks
-            let bag = DisposableBag()
-
-            // LayoutChanged is a good trigger event here but we can't actually initialize our
-            // modes within this event.  The editor is not fully usable until a layout is complete. If 
-            // any operation were to trigger a layout while in the LayoutChanged handler an 
-            // exception would be thrown.
-            textView.LayoutChanged
-            |> Observable.subscribe (fun _ -> 
-                if isReady () then
-                    let context = System.Threading.SynchronizationContext.Current
-                    if context <> null then context.Post( (fun _ -> runInit()), null)
-                    else runInit()
-                    bag.DisposeAll())
-            |> bag.Add
+        // The mode should be the current mode of the underlying
+        // IVimTextBuffer.  This should be as easy as switching the mode on
+        // startup  but this is complicated by the initialization of ITextView
+        // instances.  They can, and  often are, passed to CreateVimBuffer in
+        // an uninitialized state.  In that state certain operations like
+        // Select can't be done.  Hence we have to delay the mode switch until
+        // the ITextView is fully initialized.
+        commonOperations.DoActionWhenReady setupInitialMode
 
     interface IVimBufferFactory with
         member x.CreateVimTextBuffer textBuffer vim = x.CreateVimTextBuffer textBuffer vim :> IVimTextBuffer
@@ -377,7 +353,8 @@ type internal Vim
         _bulkOperations: IBulkOperations,
         _variableMap: VariableMap,
         _editorToSettingSynchronizer: IEditorToSettingsSynchronizer,
-        _statusUtilFactory: IStatusUtilFactory
+        _statusUtilFactory: IStatusUtilFactory,
+        _commonOperationsFactory: ICommonOperationsFactory
     ) as this =
 
     /// This key is placed in the ITextView property bag to note that vim buffer creation has
@@ -461,7 +438,8 @@ type internal Vim
         clipboard: IClipboardDevice,
         bulkOperations: IBulkOperations,
         editorToSettingSynchronizer: IEditorToSettingsSynchronizer,
-        statusUtilFactory: IStatusUtilFactory) =
+        statusUtilFactory: IStatusUtilFactory,
+        commonOperationsFactory: ICommonOperationsFactory) =
         let markMap = MarkMap(bufferTrackingService)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let vimData = VimData(globalSettings) :> IVimData
@@ -482,7 +460,8 @@ type internal Vim
             bulkOperations,
             variableMap,
             editorToSettingSynchronizer,
-            statusUtilFactory)
+            statusUtilFactory,
+            commonOperationsFactory)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
