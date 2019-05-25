@@ -232,13 +232,13 @@ namespace Vim.UI.Wpf
         /// <param name="action"></param>
         public virtual void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
-            Action doAction = () =>
+            void doAction()
             {
                 if (!textView.IsClosed)
                 {
                     action.Invoke(null);
                 }
-            };
+            }
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
             {
                 // FrameworkElement.Loaded Event:

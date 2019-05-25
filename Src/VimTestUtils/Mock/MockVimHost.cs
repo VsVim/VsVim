@@ -246,8 +246,8 @@ namespace Vim.UnitTest.Mock
             }
             else
             {
-                // Simulate the conditions that would be tree if
-                // wpfTextView.IsLoaded were false using textView.
+                // Simulate the conditions that would be true if
+                // wpfTextView.IsLoaded were true using textView.
                 if (!textView.IsClosed && !textView.InLayout && textView.TextViewLines != null)
                 {
                     action.Invoke(null);
