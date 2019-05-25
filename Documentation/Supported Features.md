@@ -1,5 +1,23 @@
 Each section has the set of sorted commands listed alphabetically. Aliases for the same command are separated with '/' characters and are sorted by the more common alias
 
+## Operators
+These operators are supported. They work with all motions and text objects in the next paragraphs.
+
+- c
+- d
+- gU
+- gu
+- g?
+- g~
+- y
+- zf
+- &lt;
+- &gt;
+- !
+- =
+- gq
+- gw
+
 ## Motions
 
 This is the set of motions which are currently supported listed alphabetically. Aliases for the same motion are separated with '/' characters and are sorted by the more common alias
@@ -67,7 +85,7 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - dd
 - D
 - ga
-- gd
+- gd : using Goto.Definition from visual studio
 - gf
 - gJ
 - gh
@@ -191,25 +209,6 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 - !!
 - :
 - &lt;C-^&gt;
-
-
-
-## Operators
-These operators are supported:
-- c
-- d
-- gU
-- gu
-- g?
-- g~
-- y
-- zf
-- &lt;
-- &gt;
-- !
-- =
-- gq
-- gw
 
 ## Marks
 Local (small letter) and global marks are supported (linewise and exact character). Movements to marks can be used with operators.
