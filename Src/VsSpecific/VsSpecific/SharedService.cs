@@ -8,6 +8,11 @@ using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Interpreter;
+using Vim.VisualStudio.Specific.Implementation.WordCompletion;
+using Microsoft.FSharp.Core;
+using System.ComponentModel.Composition.Primitives;
+using System;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Specific
 {

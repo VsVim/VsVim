@@ -6,23 +6,23 @@ using Vim.Extensions;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.Implementation.WordCompletion
+namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  Wraps an ICompletionSession
     /// to provide the friendly interface the core Vim engine is expecting
     /// </summary>
-    internal sealed class WordCompletionSession : IWordCompletionSession
+    internal sealed class WordLegacyCompletionSession : IWordCompletionSession
     {
         private readonly ITextView _textView;
         private readonly ICompletionSession _completionSession;
-        private readonly WordCompletionSet _wordCompletionSet;
         private readonly IIntellisenseSessionStack _intellisenseSessionStack;
         private readonly ITrackingSpan _wordTrackingSpan;
+        private readonly WordLegacyCompletionSet _wordCompletionSet;
         private bool _isDismissed;
         private event EventHandler _dismissed;
 
-        internal WordCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, WordCompletionSet wordCompletionSet)
+        internal WordLegacyCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, WordLegacyCompletionSet wordCompletionSet)
         {
             _textView = completionSession.TextView;
             _wordTrackingSpan = wordTrackingSpan;
@@ -39,8 +39,8 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         private void OnDismissed()
         {
             _isDismissed = true;
-
             _dismissed?.Invoke(this, EventArgs.Empty);
+            _textView.ClearWordCompletionData();
         }
 
         /// <summary>
@@ -129,6 +129,11 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
         bool IWordCompletionSession.MovePrevious()
         {
             return MoveWithWrap(moveNext: false);
+        }
+
+        void IWordCompletionSession.Commit()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

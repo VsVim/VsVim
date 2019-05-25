@@ -13,7 +13,6 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation.Misc;
-using Vim.UI.Wpf.Implementation.WordCompletion;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using System.Windows;
@@ -27,6 +26,7 @@ using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.UnitTest
 {
@@ -547,16 +547,20 @@ namespace Vim.UnitTest
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
                 // Other Exports needed to construct VsVim
-                editorHostFactory.Add(new TypeCatalog(
+                var types = new List<Type>()
+                {
                     typeof(TestableClipboardDevice),
                     typeof(TestableKeyboardDevice),
                     typeof(TestableMouseDevice),
                     typeof(global::Vim.UnitTest.Exports.VimHost),
                     typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
-                    typeof(WordCompletionSessionFactoryService),
                     typeof(AlternateKeyUtil),
-                    typeof(OutlinerTaggerProvider)));
+                    typeof(OutlinerTaggerProvider)
+                };
+
+                editorHostFactory.Add(new TypeCatalog(types));
+                editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
                 host = new VimEditorHost(compositionContainer);

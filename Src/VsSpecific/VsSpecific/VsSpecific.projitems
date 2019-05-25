@@ -17,6 +17,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)VsSpecificConstants.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
   </ItemGroup>
 </Project>

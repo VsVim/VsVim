@@ -74,4 +74,12 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Implementation\OptionPages\DefaultOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="Implementation\OptionPages\KeyboardOptionPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
+  </ItemGroup>
 </Project>

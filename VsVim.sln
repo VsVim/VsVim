@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27106.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28714.193
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}"
 	ProjectSection(SolutionItems) = preProject
@@ -11,8 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		License.txt = License.txt
-		README.md = README.md
 		README.ch.md = README.ch.md
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVim", "Src\VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
@@ -59,11 +59,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest", "Test\VsVimTest\VsVimTest.csproj", "{1B6583BD-A59E-44EE-98DA-29B18E99443B}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimSpecific", "Src\VimSpecific\VimSpecific.shproj", "{DE7E4031-D2E8-450E-8558-F00A6F19FA5C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{003af6b2-eb30-4494-b89f-15e1390fe47d}*SharedItemsImports = 13
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{4bbec6cf-089e-4f22-8649-5144388c655d}*SharedItemsImports = 4
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{d8eb4054-f9eb-45de-b07f-254e253028e7}*SharedItemsImports = 4
+		Src\VimSpecific\VimSpecific.projitems*{de7e4031-d2e8-450e-8558-f00a6f19fa5c}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -251,6 +254,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E112A054-F81F-4775-B456-EA82B71C573A} = {7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E627ED8F-1A4B-4324-826C-77B96CB9CB83}

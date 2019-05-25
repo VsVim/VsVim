@@ -1797,6 +1797,32 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LastLineShouldUseBufferNewLine_Replicate()
+            {
+                // Reported in issue #2561.
+
+                // The first line has a CRLF line ending.
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _textView.Options.SetOptionValue(DefaultOptions.ReplicateNewLineCharacterOptionId, true);
+                _textView.Options.SetOptionValue(DefaultOptions.NewLineCharacterOptionId, "\n");
+                _vimBuffer.Process("yy");
+                Assert.Equal("dog\r\n", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
+            public void LastLineShouldUseBufferNewLine_NoReplicate()
+            {
+                // The first line has a CRLF line ending.
+                Create("cat", "dog");
+                _textView.MoveCaretToLine(1);
+                _textView.Options.SetOptionValue(DefaultOptions.ReplicateNewLineCharacterOptionId, false);
+                _textView.Options.SetOptionValue(DefaultOptions.NewLineCharacterOptionId, "\n");
+                _vimBuffer.Process("yy");
+                Assert.Equal("dog\n", UnnamedRegister.StringValue);
+            }
+
+            [WpfFact]
             public void Issue1203()
             {
                 Create("cat dog", "fish");

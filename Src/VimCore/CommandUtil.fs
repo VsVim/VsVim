@@ -2402,7 +2402,7 @@ type internal CommandUtil
                     let stringData =
                         match stringData with
                         | StringData.Simple str ->
-                            let str = if EditUtil.EndsWithNewLine str then str else str + (EditUtil.NewLine _options)
+                            let str = if EditUtil.EndsWithNewLine str then str else str + (EditUtil.NewLine _options _textBuffer)
                             StringData.Simple str
                         | StringData.Block _ ->
                             stringData
@@ -2758,7 +2758,7 @@ type internal CommandUtil
     member x.ReplaceSelection keyInput (visualSpan: VisualSpan) =
 
         let replaceText =
-            if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options
+            if keyInput = KeyInputUtil.EnterKey then EditUtil.NewLine _options _textBuffer
             else System.String(keyInput.Char, 1)
 
         // First step is we want to update the selection.  A replace char operation

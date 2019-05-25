@@ -161,6 +161,9 @@ type IWordCompletionSession =
     /// Select the previous word in the session.
     abstract MovePrevious: unit -> bool
 
+    /// Commit the current session
+    abstract Commit: unit -> unit
+
     /// Dismiss the completion session 
     abstract Dismiss: unit -> unit
 
@@ -173,11 +176,19 @@ type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSessi
 
     member x.WordCompletionSession = _wordCompletionSession
 
-/// Factory service for creating IWordCompletionSession instances
+/// Factory for creating a IWordCompletionSession instance. This type cannot be MEF imported
+/// but instead is available via IVimHost
+type IWordCompletionSessionFactory = 
+
+    /// Create a session with the given set of words
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
+
+/// Factory service for creating IWordCompletionSession instances. This type is available as 
+/// a MEF import
 type IWordCompletionSessionFactoryService = 
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession
+    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
 
     /// Raised when the session is created
     [<CLIEvent>]
@@ -3488,12 +3499,12 @@ type InsertCommand  =
             InsertCommand.Combined (leftCommand, rightCommand)
 
     /// Convert this InsertCommand to a TextChange object
-    member x.TextChange editorOptions = 
+    member x.TextChange editorOptions textBuffer = 
         match x with 
         | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
         | InsertCommand.BlockInsert _ -> None
         | InsertCommand.Combined (left, right) -> 
-            match left.TextChange editorOptions, right.TextChange editorOptions with
+            match left.TextChange editorOptions textBuffer, right.TextChange editorOptions textBuffer with
             | Some l, Some r -> TextChange.Combination (l, r) |> Some
             | _ -> None
         | InsertCommand.CompleteMode _ -> None
@@ -3506,7 +3517,7 @@ type InsertCommand  =
         | InsertCommand.InsertLiteral text -> Some (TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
-        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions))
+        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions textBuffer))
         | InsertCommand.InsertPreviouslyInsertedText _ -> None
         | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
         | InsertCommand.MoveCaret _ -> None
@@ -4579,6 +4590,9 @@ type IVimHost =
 
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings: DefaultSettings
+
+    /// The identifier that represents this specific host
+    abstract HostIdentifier: string
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled: bool

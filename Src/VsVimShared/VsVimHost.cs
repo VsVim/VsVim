@@ -283,6 +283,8 @@ namespace Vim.VisualStudio
             get { return _vimApplicationSettings.DefaultSettings; }
         }
 
+        public override string HostIdentifier => VisualStudioVersionUtil.GetHostIdentifier(DTE.GetVisualStudioVersion());
+
         public override bool IsUndoRedoExpected
         {
             get { return _extensionAdapterBroker.IsUndoRedoExpected ?? base.IsUndoRedoExpected; }
