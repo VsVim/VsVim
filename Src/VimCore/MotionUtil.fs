@@ -368,38 +368,9 @@ type internal StringLiteralTestPoint
     static member CreateFromPoint (point: SnapshotPoint) =
         let line = SnapshotPointUtil.GetContainingLine point
         let isLiteral = Array.create line.LengthIncludingLineBreak false
-        let startPosition = line.Start.Position
-
-        // Process the specified point in context detecting literal strings.
-        let mutable startOffset = 0
-        let mutable quote: char option = None
-        let mutable escape = false
-        let findLiterals point =
-            let c = SnapshotPointUtil.GetChar point
-            let offset = point.Position - startPosition
-            if quote <> None then
-                if escape then
-                    escape <- false
-                else
-                    match quote with
-                    | Some quoteChar when c = quoteChar ->
-                        for offset in startOffset .. offset do
-                            isLiteral.[offset] <- true
-                        quote <- None
-                    | Some _ when c = '\\' -> escape <- true
-                    | _ -> ()
-            elif c = '\'' || c = '\"' then
-                startOffset <- offset
-                quote <- Some c
-
-        // Populate the 'is literal' array of booleans with true for any
-        // embedded syntactically complete literals.
-        line
-        |> SnapshotLineUtil.GetExtent
-        |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-        |> Seq.iter findLiterals
-
-        StringLiteralTestPoint(point, line, isLiteral)
+        let result = StringLiteralTestPoint(point, line, isLiteral)
+        result.FindLiterals()
+        result
 
     /// Get the StringLiteralTestPoint for the specified point reusing the
     /// cached snapshot line and boolean array when possible
@@ -412,6 +383,76 @@ type internal StringLiteralTestPoint
     /// Whether the character at the snapshot point associated with this
     /// literal point is part of a string literal
     member x.IsLiteral = _isLiteral.[_point.Position - _line.Start.Position]
+
+    /// Process the specified point in context detecting literal strings
+    member private x.FindLiterals () =
+
+        // Extract the text of the current line.
+        let line =
+            _line
+            |> SnapshotLineUtil.GetExtentIncludingLineBreak
+            |> SnapshotSpanUtil.GetText
+
+        // Populate the 'is literal' array of booleans with true for any
+        // embedded syntactically-complete literals.
+        let mutable startOffset = 0
+        let mutable quote: char option = None
+        let mutable escape = false
+        let mutable verbatim = false
+        for offset in 0 .. line.Length - 1 do
+            let c = line.[offset]
+            match quote with
+            | Some quoteChar ->
+                if escape then
+
+                    // The current character is escaped.
+                    escape <- false
+
+                elif
+                    verbatim
+                    && c = quoteChar
+                    && offset + 1 < line.Length
+                    && line.[offset + 1] = quoteChar
+                then
+
+                    // Encountered first of two adjacent quote characters.
+                    escape <- true
+
+                elif c = quoteChar then
+
+                    // Found the terminating quote character. Mark all the
+                    // characters between startOffset and offset inclusive as
+                    // part of a string literal.
+                    for offset in startOffset .. offset do
+                        _isLiteral.[offset] <- true
+
+                    quote <- None
+
+                elif not verbatim && c = '\\' then
+
+                    // Backslash quotes the following character unless
+                    // verbatim.
+                    escape <- true
+
+            | None ->
+                if c = '@' then
+
+                    // The next character, if a quote, will start a verbatim
+                    // string literal.
+                    verbatim <- true
+
+                elif c = '\'' || c = '\"' then
+
+                    // Found the start of a new (possibly verbatim) string
+                    // literal.
+                    startOffset <- offset
+                    quote <- Some c
+
+                else
+
+                    // An '@' only modifies an immediately following quote
+                    // character.
+                    verbatim <- false
 
 type internal BlockUtil() =
 
@@ -488,57 +529,36 @@ type internal BlockUtil() =
                 count = 0, count
             inner
 
-        // Compute a tuple of three quantities:
-        // - Whether the target point is inside a string literal
-        // - The start point of the string, as long as it there
-        //   is no unmatched start character in string literals
-        //   before the target
-        // - The quote character used to delineate the string
+        // Compute two quantities:
+        //
+        // Whether the target point is inside a string literal
+        //
+        // The starting point of that string, but only if it there is no
+        // unmatched start character in the string literals before the target
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
-            let mutable escape = false
-            let mutable quote = None
+            let mutable literalPoint = StringLiteralTestPoint.CreateFromPoint target
+            let mutable wasLiteral = false
             let mutable start = None
             let mutable depth = 0
-            let mutable result = false, None, None
-            let mutable inResult = false
+            let mutable result = false, None
 
             for point in sequence do
                 let c = SnapshotPointUtil.GetChar point
-                match quote with
-                | Some quoteChar ->
-                    if escape then
-                        escape <- false
-                    elif c = '\\' then
-                        escape <- true
-                    else
-                        match quote with
-                        | Some quoteChar when c = quoteChar ->
-                            inResult <- false
-                            quote <- None
-                        | Some quoteChar when c = '\n' ->
-
-                            // The sequence ends with an unterminated literal.
-                            if inResult then
-                                result <- false, None, None
-                                inResult <- false
-                                quote <- None
-
-                        | Some _ when c = '\\' -> escape <- true
-                        | _ -> ()
+                literalPoint <- literalPoint.FromPoint point
+                let isLiteral = literalPoint.IsLiteral
+                if isLiteral then
+                    if not wasLiteral then
+                        start <- Some point
                     if point = target then
                         if depth <= 0 then
-                            result <- true, start, Some quoteChar
+                            result <- true, start
                         else
-                            result <- true, None, Some quoteChar
-                        inResult <- true
-                    elif c = startChar then
+                            result <- true, None
+                    if c = startChar then
                         depth <- depth + 1
                     elif c = endChar then
                         depth <- depth - 1
-                | _ ->
-                    if c = '\'' || c = '\"' then
-                        quote <- Some c
-                        start <- Some point
+                    wasLiteral <- isLiteral
 
             result
 
@@ -558,8 +578,8 @@ type internal BlockUtil() =
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
                 |> isInStringLiteral referencePoint
                 with
-                | true, Some adjustedReferencePoint, _ -> adjustedReferencePoint, false
-                | true, None, Some _ -> referencePoint, true
+                | true, Some adjustedReferencePoint -> adjustedReferencePoint, false
+                | true, None _ -> referencePoint, true
                 | _ -> referencePoint, false
 
         // A literal point can answer whether a snapshot point is part of a

@@ -454,6 +454,15 @@ namespace Vim.UnitTest
                 var span = GetBlockSpan(BlockKind.CurlyBracket, _textBuffer.GetPoint(10));
                 Assert.Equal(_textBuffer.GetSpan(10, 28), span);
             }
+
+            [WpfFact]
+            public void VerbatimString()
+            {
+                // Requested in issue #2504.
+                Create("if (Directory.Exists(myDirectory + @\"\\\" + mySubDirectory))");
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(4));
+                Assert.Equal(_textBuffer.GetSpan(3, 55), span);
+            }
         }
 
         public sealed class AllBlockTest : MotionUtilTest
