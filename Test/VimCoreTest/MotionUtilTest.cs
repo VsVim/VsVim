@@ -445,6 +445,15 @@ namespace Vim.UnitTest
                 var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(10));
                 Assert.Equal(_textBuffer.GetSpan(9, 11), span);
             }
+
+            [WpfFact]
+            public void StrayApostrophe()
+            {
+                // Reported in issue #2566.
+                Create("if (done) { /* we're done */ Done(); }");
+                var span = GetBlockSpan(BlockKind.CurlyBracket, _textBuffer.GetPoint(10));
+                Assert.Equal(_textBuffer.GetSpan(10, 28), span);
+            }
         }
 
         public sealed class AllBlockTest : MotionUtilTest

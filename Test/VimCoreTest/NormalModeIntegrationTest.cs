@@ -1134,6 +1134,24 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("%");
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
+
+            [WpfFact]
+            public void StrayApostropheOnSameLine()
+            {
+                // Reported in issue #2566.
+                Create(
+                    "if (done)",
+                    "{ // we're done",
+                    "    Done();",
+                    "}",
+                    ""
+                    );
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(3, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class UnmatchedTokenTest : NormalModeIntegrationTest
