@@ -5,7 +5,7 @@ pr:
 - dev/jaredpar/*
 
 jobs:
-- job: VsVim_Build
+- job: VsVim_Build_Test
   pool: 
     vmImage: 'vs2017-win2016'
 
@@ -40,12 +40,6 @@ jobs:
       arguments: -ci -config Debug -testExtra
 
   - task: PublishPipelineArtifact@0
-    displayName: Publish Vsix 
-    inputs:
-      targetPath: '$(Build.SourcesDirectory)\Binaries\Deploy'
-      artifactName: 'Vsix $(_name)'
-
-  - task: PublishPipelineArtifact@0
     displayName: Publish Logs
     inputs:
       targetPath: '$(Build.SourcesDirectory)\Binaries\Logs'
@@ -60,3 +54,33 @@ jobs:
       mergeTestResults: true
       testRunTitle: 'VsVim Test Results $(_name)'
     condition: always()
+
+# This job is meant for building a Release VSIX for consumption and 
+# publishing it to two locations:
+#   - An Azure DevOps artifact for easy download / use on PR or CI
+#   - The Open VSIX gallery during CI
+- job: Produce_Vsix
+  pool: 
+    vmImage: 'vs2017-win2016'
+
+  steps:
+  - task: PowerShell@2
+    displayName: Build 
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -build -updateVsixVersion -config Release
+
+  - task: PublishPipelineArtifact@0
+    displayName: Publish Vsix 
+    inputs:
+      targetPath: '$(Build.SourcesDirectory)\Binaries\Deploy'
+      artifactName: 'Vsix'
+
+  - task: PowerShell@2
+    displayName: Publish to Open VSIX Gallery
+    inputs:
+      filePath: Scripts\Build.ps1
+      arguments: -ci -uploadVsix -config Release
+    condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
+
+
