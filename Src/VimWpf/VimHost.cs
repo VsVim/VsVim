@@ -232,23 +232,38 @@ namespace Vim.UI.Wpf
         /// <param name="action"></param>
         public virtual void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
+            // Local functions to do the action.
             void doAction()
             {
+                // Perform action if the text view is still open.
                 if (!textView.IsClosed)
                 {
                     action.Invoke(null);
                 }
             }
+            void doActionHandler(object sender, RoutedEventArgs e)
+            {
+                // Unsubscribe.
+                if (sender is FrameworkElement element)
+                {
+                    element.Loaded -= doActionHandler;
+                }
+
+                // Then do the action.
+                doAction();
+            }
+
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
             {
                 // FrameworkElement.Loaded Event:
                 //
                 // Occurs when a FrameworkElement has been constructed and
                 // added to the object tree, and is ready for interaction.
-                wpfTextView.VisualElement.Loaded += (sender, e) => doAction();
+                wpfTextView.VisualElement.Loaded += doActionHandler;
             }
             else
             {
+                // If the element is already loaded, do the action immediately.
                 doAction();
             }
         }
