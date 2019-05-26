@@ -1,8 +1,11 @@
+trigger:
+- dev/jaredpar/*
+
 pr:
 - dev/jaredpar/*
 
 jobs:
-- job: VsVim_Build 
+- job: VsVim_Build
   pool: 
     vmImage: 'vs2017-win2016'
 
