@@ -4630,6 +4630,9 @@ type IVimHost =
     /// of the vimrc
     abstract CreateHiddenTextView: unit -> ITextView
 
+    /// Perform the specified action when the specified text view is ready
+    abstract DoActionWhenTextViewReady: action: (unit -> unit) -> textView: ITextView -> unit
+
     /// Called at the end of a bulk operation such as a macro replay or a repeat of
     /// a last command
     abstract EndBulkOperation: unit -> unit
@@ -4690,9 +4693,9 @@ type IVimHost =
     /// Loads the new file into the existing window
     abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
 
-    /// Loads a file into a new window, optionally moving the caret to the
-    /// first non-blank on a specific line or to a specific line and column
-    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> bool
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> ITextView option
 
     /// Run the host specific make operation
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit

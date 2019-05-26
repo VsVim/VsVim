@@ -2059,7 +2059,7 @@ namespace Vim.UnitTest
                         _name = name;
                         _line = line;
                         _column = column;
-                        return true;
+                        return FSharpOption<ITextView>.None;
                     };
             }
 

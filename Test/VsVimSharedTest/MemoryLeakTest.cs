@@ -247,6 +247,13 @@ namespace Vim.VisualStudio.UnitTest
                 Dispatcher.CurrentDispatcher.DoEvents();
             }
 
+            // Force the buffer into normal mode if the WPF 'Loaded' event
+            // hasn't fired.
+            if (vimBuffer.ModeKind == ModeKind.Uninitialized)
+            {
+                vimBuffer.SwitchMode(vimBuffer.VimBufferData.VimTextBuffer.ModeKind, ModeArgument.None);
+            }
+
             return vimBuffer;
         }
 

@@ -38,6 +38,8 @@ module internal Resources =
     let Common_LinesDeleted lines = sprintf "%d lines deleted" lines
     let Common_LinesChanged lines = sprintf "%d lines changed" lines
     let Common_LinesYanked lines = sprintf "%d lines yanked" lines
+    let Common_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
+    let Common_CouldNotFindTag ident = sprintf "Could not open tag \"%s\"" ident
     let Common_InvalidModeLineSetting setting modeLine = sprintf "Invalid setting '%s' in '%s'" setting modeLine
 
     let Undo_ChainBroken = "Undo chain broken. Falling back to Visual Studio undo"
@@ -63,7 +65,6 @@ module internal Resources =
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
-    let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
     let CommandMode_TrailingCharacters = "Trailing characters"
     let CommandMode_NoPreviousSubstitute =  "No previous substitute regular expression"

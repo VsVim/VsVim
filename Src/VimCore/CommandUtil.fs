@@ -1815,14 +1815,14 @@ type internal CommandUtil
                 match markMap.GetMarkInfo mark _vimBufferData with
                 | None -> markNotSet()
                 | Some markInfo ->
-                    let vimHost = _vimBufferData.Vim.VimHost
                     let name = markInfo.Name
                     let line = Some markInfo.Line
                     let column = if exact then Some markInfo.Column else None
-                    if vimHost.LoadFileIntoNewWindow name line column then
+                    match _commonOperations.LoadFileIntoNewWindow name line column with
+                    | Result.Succeeded ->
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    else
-                        _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+                    | Result.Failed message ->
+                        _statusUtil.OnError message
                         CommandResult.Error
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then

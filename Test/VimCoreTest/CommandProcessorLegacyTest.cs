@@ -42,6 +42,8 @@ namespace Vim.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("CommandProcessorLegacyTest.cs");
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _operations

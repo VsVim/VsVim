@@ -40,6 +40,7 @@ module internal CommonUtil =
 
 type internal CommonOperations
     (
+        _commonOperationsFactory: ICommonOperationsFactory,
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option,
@@ -148,6 +149,21 @@ type internal CommonOperations
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
             _vimHost.Close _textView
+
+    /// Perform the specified action asynchronously using the scheduler
+    member x.DoActionAsync (action: unit -> unit) =
+
+        // It's not guaranteed that this will be set.  Visual Studio for
+        // instance will null this out in certain WPF designer scenarios.
+        let context = System.Threading.SynchronizationContext.Current
+        if context <> null then
+            context.Post((fun _ -> action()), null)
+        else
+            action()
+
+    /// Perform the specified action when the text view is ready
+    member x.DoActionWhenReady (action: unit -> unit) =
+        _vimHost.DoActionWhenTextViewReady action _textView
 
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
@@ -1173,8 +1189,10 @@ type internal CommonOperations
 
     /// No need to check for dirty since we are opening a new window
     member x.GoToFileInNewWindow name =
-        if not (_vimHost.LoadFileIntoNewWindow name (Some 0) None) then
-            _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+        match x.LoadFileIntoNewWindow name (Some 0) None with
+        | Result.Succeeded -> ()
+        | Result.Failed message ->
+            _statusUtil.OnError message
 
     member x.GoToNextTab path count = 
 
@@ -1253,12 +1271,10 @@ type internal CommonOperations
                 |> Seq.filter (fun (_, columnNumber) -> columnNumber <> -1)
                 |> Seq.map (fun (lineNumber, columnNumber) -> Some lineNumber, Some columnNumber)
                 |> SeqUtil.headOrDefault (Some 0, None)
-            if _vimHost.LoadFileIntoNewWindow targetFile lineNumber columnNumber then
-                Result.Succeeded
-            else
-                Result.Failed (sprintf "Cannot open target file %s with tag %s" targetFile tag)
+            x.LoadFileIntoNewWindow targetFile lineNumber columnNumber
         | None ->
-            Result.Failed (sprintf "Cannot find a tag for ident %s" ident)
+            Resources.Common_CouldNotFindTag ident
+            |> Result.Failed
 
     /// Return the full word under the cursor or an empty string
     member x.WordUnderCursorOrEmpty =
@@ -1955,6 +1971,23 @@ type internal CommonOperations
             // Now position the caret on the new snapshot
             edit.Apply() |> ignore
 
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    member x.LoadFileIntoNewWindow file lineNumber columnNumber =
+        match _vimHost.LoadFileIntoNewWindow file lineNumber columnNumber with
+        | Some textView ->
+
+            // Ensure that our view flags are enforced in the new window.
+            _vim.GetOrCreateVimBuffer textView
+            |> (fun vimBuffer -> vimBuffer.VimBufferData)
+            |> _commonOperationsFactory.GetCommonOperations
+            |> (fun otherCommonOperations -> otherCommonOperations.EnsureAtCaret ViewFlags.Standard)
+            Result.Succeeded
+
+        | None ->
+            Resources.Common_CouldNotOpenFile file
+            |> Result.Failed
+
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
     member x.Put point stringData opKind =
@@ -2141,8 +2174,8 @@ type internal CommonOperations
             x.MoveCaretToVirtualPoint virtualColumn.VirtualStartPoint ViewFlags.VirtualEdit
             x.MaintainCaretColumn <- MaintainCaretColumn.Spaces spacesToCaret
 
-    /// Ensure the given view properties are met at the given point
-    member x.EnsureAtPoint point viewFlags = 
+    /// Synchronously ensure that the given view properties are met at the given point
+    member x.EnsureAtPointSync point viewFlags = 
         let point = x.MapPointNegativeToCurrentSnapshot point
         if Util.IsFlagSet viewFlags ViewFlags.TextExpanded then
             x.EnsurePointExpanded point
@@ -2152,6 +2185,14 @@ type internal CommonOperations
             x.AdjustTextViewForScrollOffsetAtPoint point
         if Util.IsFlagSet viewFlags ViewFlags.VirtualEdit && point.Position = x.CaretPoint.Position then
             x.AdjustCaretForVirtualEdit()
+    
+    /// Ensure the view properties are met at the caret
+    member x.EnsureAtCaret viewFlags = 
+        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
+
+    /// Ensure that the given view properties are met at the given point
+    member x.EnsureAtPoint point viewFlags = 
+        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync point viewFlags)
 
     /// Ensure the given SnapshotPoint is not in a collapsed region on the screen
     member x.EnsurePointExpanded point = 
@@ -2301,7 +2342,9 @@ type internal CommonOperations
         member x.CloseWindowUnlessDirty() = x.CloseWindowUnlessDirty()
         member x.CreateRegisterValue point stringData operationKind = x.CreateRegisterValue point stringData operationKind
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
-        member x.EnsureAtCaret viewFlags = x.EnsureAtPoint x.CaretPoint viewFlags
+        member x.DoActionAsync action = x.DoActionAsync action
+        member x.DoActionWhenReady action = x.DoActionWhenReady action
+        member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FilterLines range command = x.FilterLines range command
@@ -2327,6 +2370,7 @@ type internal CommonOperations
         member x.GoToTab index = x.GoToTab index
         member x.GoToTagInNewWindow folder ident = x.GoToTagInNewWindow folder ident
         member x.Join range kind = x.Join range kind
+        member x.LoadFileIntoNewWindow file lineNumber columnNumber = x.LoadFileIntoNewWindow file lineNumber columnNumber
         member x.MoveCaret caretMovement = x.MoveCaret caretMovement
         member x.MoveCaretWithArrow caretMovement = x.MoveCaretWithArrow caretMovement
         member x.MoveCaretToColumn column viewFlags =  x.MoveCaretToColumn column viewFlags
@@ -2367,7 +2411,7 @@ type CommonOperationsFactory
         _outliningManagerService: IOutliningManagerService,
         _undoManagerProvider: ITextBufferUndoManagerProvider,
         _mouseDevice: IMouseDevice
-    ) = 
+    ) as this = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
     /// service and instead manually query by a predefined key
@@ -2384,7 +2428,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
+        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData: IVimBufferData) = 

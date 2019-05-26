@@ -39,10 +39,6 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
         |> _bag.Add
 
-        _textView.Caret.PositionChanged 
-        |> Observable.subscribe (fun _ -> this.OnPositionChanged())
-        |> _bag.Add
-
         _vimBuffer.Closed
         |> Observable.subscribe (fun _ -> this.OnBufferClosed())
         |> _bag.Add
@@ -97,43 +93,6 @@ type internal SelectionChangeTracker
             ()
         else
             x.SetModeForSelection()
-
-    /// If the caret changes position and it wasn't initiated by VsVim then we should be 
-    /// adjusting the screen to account for 'scrolloff'
-    member x.OnPositionChanged() = 
-
-        // Don't apply the scroll offset if it isn't applicable, if the
-        // text view is currently being laid out, or if we are in the middle
-        // of processing input. If we are processing input then the mode is
-        // is responsible for ensuring that the scroll offset is obeyed,
-        // so let the mode handle it.
-        if
-            _vimBuffer.GlobalSettings.ScrollOffset > 0
-            && not _textView.InLayout
-            && not _vimBuffer.IsProcessingInput
-            && not _mouseDevice.IsRightButtonPressed
-        then
-
-            // Do the update being cautious that anything could have
-            // happened between when we posted it and when it actually
-            // runs.
-            let doUpdate () =
-                try
-                    if not _textView.IsClosed then
-                        _commonOperations.EnsureAtCaret ViewFlags.ScrollOffset
-                with
-                | _ -> ()
-
-            // Delay the update to give whoever changed the caret position the
-            // opportunity to scroll the view according to their own needs.
-            // If another extension moves the caret far offscreen and then
-            // centers it if the caret is not onscreen, then reacting too
-            // early to the caret position will defeat their offscreen
-            // handling. An example is double-clicking on a test in an
-            // unopened document in "Test Explorer".
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then
-                context.Post((fun _ -> doUpdate()), null)
 
     member x.OnBufferClosed() = 
         _bag.DisposeAll()
@@ -240,11 +199,7 @@ type internal SelectionChangeTracker
             finally
                 _syncingSelection <- false
         | Some _ -> 
-            // It's not guaranteed that this will be set.  Visual Studio for instance will
-            // null this out in certain WPF designer scenarios
-            let context = System.Threading.SynchronizationContext.Current
-            if context <> null then context.Post( (fun _ -> doUpdate()), null)
-            else doUpdate()
+            _commonOperations.DoActionAsync doUpdate
 
     /// In a normal character style selection vim extends the selection to include the value
     /// under the caret.  The editor by default does an exclusive selection.  Adjust the selection

@@ -321,7 +321,7 @@ namespace Vim.UnitTest
                     .Setup(x => x.ReadAllLines(filePath))
                     .Returns(FSharpOption<string[]>.None);
                 ParseAndRun($":source {filePath}");
-                Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
+                Assert.Equal(Resources.Common_CouldNotOpenFile(filePath), _statusUtil.LastError);
             }
         }
 

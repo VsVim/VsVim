@@ -46,10 +46,11 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView, InsertCommand, bool> TryCustomProcessFunc { get; set; }
         public Func<ITextView> CreateHiddenTextViewFunc { get; set; }
         public Func<ITextBuffer, bool> IsDirtyFunc { get; set; }
+        public Action<FSharpFunc<Unit, Unit>, ITextView> DoActionWhenTextViewReadyFunc { get; set; }
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
-        public Func<string, FSharpOption<int>, FSharpOption<int>, bool> LoadIntoNewWindowFunc { get; set; }
+        public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
@@ -114,6 +115,7 @@ namespace Vim.UnitTest.Mock
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
+            DoActionWhenTextViewReadyFunc = null;
             LastClosed = null;
             LastSaved = null;
             ShouldCreateVimBufferImpl = false;
@@ -236,6 +238,23 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
+        void IVimHost.DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
+        {
+            if (DoActionWhenTextViewReadyFunc != null)
+            {
+                DoActionWhenTextViewReadyFunc(action, textView);
+            }
+            else
+            {
+                // Simulate the conditions that would be true if
+                // wpfTextView.IsLoaded were true using textView.
+                if (!textView.IsClosed && !textView.InLayout && textView.TextViewLines != null)
+                {
+                    action.Invoke(null);
+                }
+            }
+        }
+
         bool IVimHost.IsReadOnly(ITextBuffer value)
         {
             return false;
@@ -281,7 +300,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadIntoNewWindowFunc(filePath, line, column);
         }

@@ -140,6 +140,10 @@ namespace Vim.UnitTest
 
             public sealed class BottomTest : ScrollOffsetTest
             {
+                /// <summary>
+                /// If the caret is moved externally, do not allow it to stay
+                /// offscreen
+                /// </summary>
                 [WpfFact]
                 public void Disabled()
                 {
@@ -148,7 +152,7 @@ namespace Vim.UnitTest
                     _textView.ScrollToTop();
                     _textView.MoveCaretToLine(_lastLineNumber);
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();
-                    AssertLastLine(4);
+                    AssertLastLine(_lastLineNumber);
                 }
 
                 [WpfFact]
