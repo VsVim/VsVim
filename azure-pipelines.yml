@@ -1,9 +1,12 @@
 trigger:
 - dev/jaredpar/*
+- master
 
 pr:
 - dev/jaredpar/*
+- master
 
+# Standard CI loop (build and test). This will run against VS2017 and VS2019
 jobs:
 - job: VsVim_Build_Test
   pool: 
@@ -82,5 +85,4 @@ jobs:
       filePath: Scripts\Build.ps1
       arguments: -ci -uploadVsix -config Release
     condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
-
 
