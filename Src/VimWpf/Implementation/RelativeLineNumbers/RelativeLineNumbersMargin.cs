@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
-
+using Microsoft.VisualStudio.Threading;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 using Task = System.Threading.Tasks.Task;
@@ -16,6 +16,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly LineNumberDrawer _lineNumberDrawer;
         private readonly SafeRefreshLock _refreshLock;
         private readonly LineNumbersCalculator _lineNumbersCalculator;
+        private readonly JoinableTaskFactory _joinableTaskFactory;
 
         public override bool Enabled =>
             _textView.Properties.GetProperty<bool>(LineNumbersMarginOptions.LineNumbersMarginOptionName);
@@ -45,6 +46,13 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             _linesTracker.LineNumbersChanged += async (x, y) => await RedrawLinesAsync().ConfigureAwait(true);
             localSettings.SettingChanged += async (s, e) => await UpdateVimNumberSettings(e).ConfigureAwait(true);
+
+            // See:
+            // https://github.com/microsoft/vs-threading/blob/master/doc/testing_vs.md
+            //_joinableTaskFactory = ThreadHelper.JoinableTaskFactory;
+
+            var jointableTaskContext = new JoinableTaskContext();
+            _joinableTaskFactory = jointableTaskContext.Factory;
         }
 
         private async Task UpdateVimNumberSettings(SettingEventArgs eventArgs)
@@ -75,7 +83,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
                 var newLineNumbers = _lineNumbersCalculator.CalculateLineNumbers();
 
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                await _joinableTaskFactory.SwitchToMainThreadAsync();
 
                 _lineNumberDrawer.UpdateLines(newLineNumbers);
             }
