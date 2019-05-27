@@ -387,20 +387,27 @@ type internal StringLiteralTestPoint
     /// Process the specified point in context detecting literal strings
     member private x.FindLiterals () =
 
-        // Extract the text of the current line.
-        let line =
+        // Produce a sequence of the points in the current line.
+        let points =
             _line
             |> SnapshotLineUtil.GetExtentIncludingLineBreak
-            |> SnapshotSpanUtil.GetText
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+
+        // Get the character after point
+        let getNextChar point =
+            point
+            |> SnapshotPointUtil.AddOne
+            |> SnapshotPointUtil.GetChar
 
         // Populate the 'is literal' array of booleans with true for any
         // embedded syntactically-complete literals.
         let mutable startOffset = 0
-        let mutable quote: char option = None
-        let mutable escape = false
         let mutable verbatim = false
-        for offset in 0 .. line.Length - 1 do
-            let c = line.[offset]
+        let mutable quote = None
+        let mutable escape = false
+        for point in points do
+            let c = SnapshotPointUtil.GetChar point
+            let offset = point.Position - _line.Start.Position
             match quote with
             | Some quoteChar ->
                 if escape then
@@ -411,8 +418,8 @@ type internal StringLiteralTestPoint
                 elif
                     verbatim
                     && c = quoteChar
-                    && offset + 1 < line.Length
-                    && line.[offset + 1] = quoteChar
+                    && point.Position + 1 < _line.EndIncludingLineBreak.Position
+                    && getNextChar point = quoteChar
                 then
 
                     // Encountered first of two adjacent quote characters.
@@ -427,6 +434,7 @@ type internal StringLiteralTestPoint
                         _isLiteral.[offset] <- true
 
                     quote <- None
+                    verbatim <- false
 
                 elif not verbatim && c = '\\' then
 
@@ -488,7 +496,8 @@ type internal BlockUtil() =
         // Our "univeral string" (covering common cases in C, C++, C#,
         // F#, Python and Java, etc.) is text surrounded with single
         // or double quotes and using backslash to escape the quote
-        // character.
+        // character. We also support, as an extension to vim,
+        // verbatim strings in C# and F#.
 
         // A more robust solution would be to use an abstract syntax
         // tree supplied by a language service appropriate for the
@@ -498,21 +507,24 @@ type internal BlockUtil() =
 
         let startChar, endChar = blockKind.Characters
 
-        // Is the char at the given point escaped?
+        // Whether the char at the specified point is escaped
         let isEscaped point =
             match SnapshotPointUtil.TrySubtractOne point with
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
-        // Is the char at the given point double escaped?
+        // Whether the char at the specified point is double escaped
         let isDoubleEscaped point =
-            match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
-            | None, _
-            | _, None -> false
-            | Some point1, Some point2 -> SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+            match SnapshotPointUtil.TrySubtract point 1, SnapshotPointUtil.TrySubtract point 2 with
+            | Some point1, Some point2 ->
+                SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+            | _ -> false
 
-        // Is the char at the given point unescaped and equal to the specified character?
-        let isChar c point = SnapshotPointUtil.GetChar point = c && (not (isEscaped point) || isDoubleEscaped point)
+        // Is the char at the given point unescaped and equal to the specified
+        // character?
+        let isChar c point =
+            SnapshotPointUtil.GetChar point = c
+            && (not (isEscaped point) || isDoubleEscaped point)
 
         // Given the specified block start and end characters, return a
         // function that transform a tuple of a point and the current nesting
@@ -562,15 +574,30 @@ type internal BlockUtil() =
 
             result
 
-        // Choose a reference point within the block.
+        // Choose a reference point within the block. This is the context point
+        // unless but it needs to be moved inside the block because vim treats
+        // the character under the cusor as the context point.
         let referencePoint =
             if isChar startChar contextPoint then
                 SnapshotPointUtil.AddOneOrCurrent contextPoint
             else
                 contextPoint
 
-        // Go to the beginning of the line and then scan forward to the
-        // beginning of the containing string literal, if any.
+        // We now have to decide whether we are searching inside string
+        // literals or outside of them.  As a special case, if we are inside a
+        // string literal but there, say, no parentheses in the string literal,
+        // we want to treat the block that contains the string literal rather
+        // than fail to find a block within the string literal.
+        //
+        // Example, if we in the string "bar" and type 'vat('
+        //
+        // foo(arg1, "bar", arg3)
+        //
+        // we want to select the parenthesized block. To handle this, we move
+        // the reference point to outside of the string (the beginning).
+        //
+        // Do this by going to the beginning of the line and then scanning
+        // forward to the beginning of the containing string literal, if any.
         let referencePoint, referencePointIsInStringLiteral =
             match
                 SnapshotPointUtil.GetContainingLine referencePoint
@@ -610,7 +637,7 @@ type internal BlockUtil() =
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
         // Then search forward for the character that ends this block.
-        let lastPoint =
+        let endPoint =
             match startPoint with
             | None -> None
             | Some startPoint ->
@@ -619,9 +646,9 @@ type internal BlockUtil() =
                 |> filterToContext
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
-        // Return the span from the block start to block end.
-        match startPoint, lastPoint with
-        | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
+        // Return the span from start of the block to the end of the block.
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint -> Some (startPoint, endPoint)
         | _ -> None
 
 
