@@ -62,6 +62,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
                 textView,
                 formatProvider,
                 vimBuffer.LocalSettings,
+                marginContainer,
                 _joinableTaskFactoryProvider);
         }
     }

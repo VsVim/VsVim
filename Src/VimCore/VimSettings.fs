@@ -517,7 +517,7 @@ type internal LocalSettings
             (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
             (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
             (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
-            (RelativeNumberName, "rnu", SettingValue.Toggle true, SettingOptions.None)
+            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
             (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
             (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
             (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
@@ -747,28 +747,9 @@ type internal EditorToSettingSynchronizer
         _settingList.Add(
             {
                 EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
-                GetEditorValue = fun _ -> false |> SettingValue.Toggle |> Some
-                VimSettingName = LocalSettingNames.RelativeNumberName
-                GetVimSettingValue = (fun vimBuffer ->
-                    let number = vimBuffer.LocalSettings.Number
-                    let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
-                    let nativeMarginVisible = number && not relativeNumber
-                    box nativeMarginVisible)
-                IsLocal = true
-            })
-
-        _settingList.Add(
-            {
-                EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
-                GetEditorValue = fun editor ->
-                    editor.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, false)
-                    editor |> SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
+                GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
                 VimSettingName = LocalSettingNames.NumberName
-                GetVimSettingValue = (fun vimBuffer ->
-                    let number = vimBuffer.LocalSettings.Number
-                    let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
-                    let nativeMarginVisible = number && not relativeNumber
-                    box nativeMarginVisible)
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
                 IsLocal = true
             })
 
