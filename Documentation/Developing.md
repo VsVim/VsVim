@@ -50,3 +50,8 @@ The goals of the CI is:
 1. To validate the consistency of the build: versions numbers, VSIX content,
 etc ...
 1. To upload successful builds to the Open VSIX gallery
+
+Azure DevOps Links:
+
+- [VsVim Builds](https://dev.azure.com/VsVim/VsVim/_build?definitionId=1&_a=summary)
+- [Vsvim Project](https://dev.azure.com/VsVim/VsVim)
