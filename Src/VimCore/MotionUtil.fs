@@ -348,11 +348,13 @@ type MatchingTokenKind =
     /// A C style block comment
     | Comment
 
-    // Parens
+    // Parentheses
     | Parens
 
+    // Square brackets
     | Brackets
 
+    // Curly braces
     | Braces
 
 /// Determine whether a given point is in a string literal by parsing forward
@@ -361,28 +363,29 @@ type internal StringLiteralTestPoint
     (
         _point: SnapshotPoint,
         _line: ITextSnapshotLine,
-        _isLiteral: bool []
+        _isInStringLiteral: bool []
     ) =
 
-    /// Constructor for a literal column corresponding to a point
+    /// Create a StringLiteralTestPoint for the specified point
     static member CreateFromPoint (point: SnapshotPoint) =
         let line = SnapshotPointUtil.GetContainingLine point
-        let isLiteral = Array.create line.LengthIncludingLineBreak false
-        let result = StringLiteralTestPoint(point, line, isLiteral)
+        let isInStringLiteral = Array.create line.LengthIncludingLineBreak false
+        let result = StringLiteralTestPoint(point, line, isInStringLiteral)
         result.FindLiterals()
         result
 
-    /// Get the StringLiteralTestPoint for the specified point reusing the
-    /// cached snapshot line and boolean array when possible
+    /// Get a StringLiteralTestPoint for the specified point reusing the
+    /// cached snapshot line and boolean array where possible
     member x.FromPoint (point: SnapshotPoint) =
         if _line.ExtentIncludingLineBreak.Contains(point) then
-            StringLiteralTestPoint(point, _line, _isLiteral)
+            StringLiteralTestPoint(point, _line, _isInStringLiteral)
         else
             StringLiteralTestPoint.CreateFromPoint point
 
     /// Whether the character at the snapshot point associated with this
-    /// literal point is part of a string literal
-    member x.IsLiteral = _isLiteral.[_point.Position - _line.Start.Position]
+    /// test point is part of a string literal
+    member x.IsInStringLiteral =
+        _isInStringLiteral.[_point.Position - _line.Start.Position]
 
     /// Process the specified point in context detecting literal strings
     member private x.FindLiterals () =
@@ -431,7 +434,7 @@ type internal StringLiteralTestPoint
                     // characters between startOffset and offset inclusive as
                     // part of a string literal.
                     for offset in startOffset .. offset do
-                        _isLiteral.[offset] <- true
+                        _isInStringLiteral.[offset] <- true
 
                     quote <- None
                     verbatim <- false
@@ -548,18 +551,18 @@ type internal BlockUtil() =
         // The starting point of that string, but only if it there is no
         // unmatched start character in the string literals before the target
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
-            let mutable literalPoint = StringLiteralTestPoint.CreateFromPoint target
-            let mutable wasLiteral = false
+            let mutable testPoint = StringLiteralTestPoint.CreateFromPoint target
+            let mutable wasInStringLiteral = false
             let mutable start = None
             let mutable depth = 0
             let mutable result = false, None
 
             for point in sequence do
                 let c = SnapshotPointUtil.GetChar point
-                literalPoint <- literalPoint.FromPoint point
-                let isLiteral = literalPoint.IsLiteral
-                if isLiteral then
-                    if not wasLiteral then
+                testPoint <- testPoint.FromPoint point
+                let isInStringLiteral = testPoint.IsInStringLiteral
+                if isInStringLiteral then
+                    if not wasInStringLiteral then
                         start <- Some point
                     if point = target then
                         if depth <= 0 then
@@ -570,7 +573,7 @@ type internal BlockUtil() =
                         depth <- depth + 1
                     elif c = endChar then
                         depth <- depth - 1
-                    wasLiteral <- isLiteral
+                    wasInStringLiteral <- isInStringLiteral
 
             result
 
@@ -612,20 +615,20 @@ type internal BlockUtil() =
         // A literal point can answer whether a snapshot point is part of a
         // string literal, even when scanning backwards. It does this by
         // parsing forward from the beginning of the containing line.
-        let literalReferencePoint = StringLiteralTestPoint.CreateFromPoint referencePoint
+        let referenceTestPoint = StringLiteralTestPoint.CreateFromPoint referencePoint
 
         // Process points skipping points that are not in string literals if
         // the context is a string literal and skipping string literals
         // otherwise.
         let rec filterToContext (sequence: SnapshotPoint seq) =
-            let mutable literalPoint = literalReferencePoint
+            let mutable testPoint = referenceTestPoint
             seq {
                 for point in sequence do
 
                     // Computing a literal point is not expensive except when
                     // switching to a new line, even when scanning backwards.
-                    literalPoint <- literalPoint.FromPoint point
-                    if literalPoint.IsLiteral = referencePointIsInStringLiteral then
+                    testPoint <- testPoint.FromPoint point
+                    if testPoint.IsInStringLiteral = referencePointIsInStringLiteral then
                         yield point
             }
 
@@ -646,7 +649,7 @@ type internal BlockUtil() =
                 |> filterToContext
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
-        // Return the span from start of the block to the end of the block.
+        // Return the span from the start of the block to the end of the block.
         match startPoint, endPoint with
         | Some startPoint, Some endPoint -> Some (startPoint, endPoint)
         | _ -> None
