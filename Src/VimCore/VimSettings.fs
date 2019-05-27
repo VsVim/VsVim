@@ -169,6 +169,8 @@ type internal GlobalSettings() =
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
             (MagicName, MagicName, SettingValue.Toggle true, SettingOptions.None)
             (MaxMapDepth, "mmd", SettingValue.Number 1000, SettingOptions.None)
+            (ModeLineName, "ml", SettingValue.Toggle true, SettingOptions.None)
+            (ModeLinesName, "mls", SettingValue.Number 5, SettingOptions.None)
             (MouseModelName, "mousem", SettingValue.String "popup", SettingOptions.None)
             (PathName,"pa", SettingValue.String ".,,", SettingOptions.FileName)
             (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp", SettingOptions.None)
@@ -394,6 +396,12 @@ type internal GlobalSettings() =
         member x.MaxMapDepth
             with get() = _map.GetNumberValue MaxMapDepth
             and set value = _map.TrySetValue MaxMapDepth (SettingValue.Number value) |> ignore
+        member x.ModeLine 
+            with get() = _map.GetBoolValue ModeLineName
+            and set value = _map.TrySetValue ModeLineName (SettingValue.Toggle value) |> ignore
+        member x.ModeLines 
+            with get() = _map.GetNumberValue ModeLinesName
+            and set value = _map.TrySetValue ModeLinesName (SettingValue.Number value) |> ignore
         member x.MouseModel 
             with get() = _map.GetStringValue MouseModelName
             and set value = _map.TrySetValue MouseModelName (SettingValue.String value) |> ignore
@@ -557,19 +565,25 @@ type internal LocalSettings
         | NumberFormat.Alpha ->
             isSupported "alpha"
 
+    member x.TrySetValue settingName value =
+        if _map.OwnsSetting settingName then _map.TrySetValue settingName value
+        else _globalSettings.TrySetValue settingName value
+
+    member x.TrySetValueFromString settingName strValue =
+        if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
+        else _globalSettings.TrySetValueFromString settingName strValue
+
+    member x.GetSetting settingName =
+        if _map.OwnsSetting settingName then _map.GetSetting settingName
+        else _globalSettings.GetSetting settingName
+
     interface IVimLocalSettings with 
         // IVimSettings
         
         member x.Settings = _map.Settings
-        member x.TrySetValue settingName value = 
-            if _map.OwnsSetting settingName then _map.TrySetValue settingName value
-            else _globalSettings.TrySetValue settingName value
-        member x.TrySetValueFromString settingName strValue = 
-            if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
-            else _globalSettings.TrySetValueFromString settingName strValue
-        member x.GetSetting settingName =
-            if _map.OwnsSetting settingName then _map.GetSetting settingName
-            else _globalSettings.GetSetting settingName
+        member x.TrySetValue settingName value = x.TrySetValue settingName value
+        member x.TrySetValueFromString settingName strValue =  x.TrySetValueFromString settingName strValue
+        member x.GetSetting settingName = x.GetSetting settingName
 
         member x.GlobalSettings = _globalSettings
         member x.AutoIndent
@@ -808,6 +822,17 @@ type internal EditorToSettingSynchronizer
             match settingSyncSource with
             | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
             | SettingSyncSource.Vim -> x.CopyVimToEditorSettings vimBuffer
+
+            // Any applicable modeline takes precedence over both the editor
+            // and the default settings. Apply modeline settings now that we
+            // have synchronized the local settings between the editor and the
+            // defaults.
+            match vimBuffer.VimTextBuffer.CheckModeLine() with
+            | Some modeLine, Some badOption ->
+                Resources.Common_InvalidModeLineSetting badOption modeLine
+                |> vimBuffer.VimBufferData.StatusUtil.OnError
+            | _ ->
+                ()
 
     member x.SetupSynchronization (vimBuffer: IVimBuffer) = 
         let editorOptions = vimBuffer.TextView.Options

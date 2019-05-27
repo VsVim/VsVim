@@ -42,6 +42,8 @@ namespace Vim.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _vimHost.Setup(x => x.IsDirty(It.IsAny<ITextBuffer>())).Returns(false);
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("CommandProcessorLegacyTest.cs");
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _operations
@@ -90,72 +92,6 @@ namespace Vim.UnitTest
         {
             _operations.Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces)).Verifiable();
             RunCommand(rangeText + "j");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Ensure the '$' / move to last line command is implemented properly
-        /// </summary>
-        [WpfFact]
-        public void LastLine()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start, ViewFlags.Standard & ~ViewFlags.TextExpanded))
-                .Verifiable();
-            RunCommand("$");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
-        /// and ITextBuffer line numbers differ as Vim begins at 1
-        /// </summary>
-        [WpfFact]
-        public void Jump_UseVimLineNumber()
-        {
-            Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(1).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
-            RunCommand("2");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
-        /// in Vim
-        /// </summary>
-        [WpfFact]
-        public void Jump_FirstLineSpecial()
-        {
-            Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(0).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
-            RunCommand("0");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
-        /// last line number
-        /// </summary>
-        [WpfFact]
-        public void Jump_LineNumberTooBig()
-        {
-            Create("cat", "dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLine(2).Start, ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
-            RunCommand("300");
-            _operations.Verify();
-        }
-
-        /// <summary>
-        /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
-        /// that line
-        /// </summary>
-        [WpfFact]
-        public void Jump_Indent()
-        {
-            Create("cat", "  dog", "tree");
-            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetPointInLine(1, 2), ViewFlags.Standard & ~ViewFlags.TextExpanded)).Verifiable();
-            RunCommand("2");
             _operations.Verify();
         }
 

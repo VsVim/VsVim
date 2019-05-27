@@ -18,7 +18,7 @@ namespace CleanVsix
                 return;
             }
 
-            try 
+            try
             {
                 var vsixPath = args[0];
                 var tempFolderPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -54,6 +54,11 @@ namespace CleanVsix
                     case "envdte":
                     case "envdte80":
                     case "stdole":
+                    case "system.collections.immutable":
+                    case "microsoft.codeanalysis.scripting":
+                    case "microsoft.codeanalysis":
+                    case "microsoft.codeanalysis.csharp.scripting":
+                    case "microsoft.codeanalysis.csharp":
                         delete = true;
                         break;
                     default:

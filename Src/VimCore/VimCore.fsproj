@@ -85,6 +85,8 @@
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fsi" />
     <Compile Include="FoldManager.fs" />
+    <Compile Include="ModeLineInterpreter.fsi" />
+    <Compile Include="ModeLineInterpreter.fs" />
     <Compile Include="VimTextBuffer.fsi" />
     <Compile Include="VimTextBuffer.fs" />
     <Compile Include="VimBuffer.fsi" />

@@ -113,7 +113,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
         {
-            VimTrace.TraceInfo($"MarkGlyphTagger::TextBufferChanged {e.AfterVersion}");
+            VimTrace.TraceDebug($"MarkGlyphTagger::TextBufferChanged {e.AfterVersion}");
             UpdateAllMarks();
         }
 
@@ -301,10 +301,10 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     )
                 );
             _glyphPairs.AddRange(pairs);
-            VimTrace.TraceInfo($"MarkGlyphTagger: Glyph Pairs");
+            VimTrace.TraceDebug($"MarkGlyphTagger: Glyph Pairs");
             foreach (var pair in _glyphPairs)
             {
-                VimTrace.TraceInfo($"MarkGlyphTagger: {pair.Item2} -> {pair.Item1}");
+                VimTrace.TraceDebug($"MarkGlyphTagger: {pair.Item2} -> {pair.Item1}");
             }
         }
 
@@ -317,7 +317,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
 
             var snapshot = span.Snapshot;
             var list = new List<ITagSpan<MarkGlyphTag>>();
-            VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: starting...");
+            VimTrace.TraceDebug($"MarkGlyphTagger::GetTags: starting...");
             foreach (var pair in _glyphPairs)
             {
                 var chars = pair.Item1;
@@ -329,7 +329,7 @@ namespace Vim.UI.Wpf.Implementation.MarkGlyph
                     var startSpan = new SnapshotSpan(line.Start, 0);
                     if (span.Contains(startSpan))
                     {
-                        VimTrace.TraceInfo($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
+                        VimTrace.TraceDebug($"MarkGlyphTagger::GetTags: tag {lineNumber} {chars}");
                         var tag = new MarkGlyphTag(chars);
                         var tagSpan = new TagSpan<MarkGlyphTag>(startSpan, tag);
                         list.Add(tagSpan);

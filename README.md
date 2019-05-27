@@ -1,15 +1,15 @@
 VsVim
 ===
 
-VsVim is a free vim emulator for Visual Studio 2012 through to 2017.  
+VsVim is a free vim emulator for Visual Studio 2015 through to 2019.
 
 AppVeyor Status: [![Build status](https://ci.appveyor.com/api/projects/status/gf5rlu19syrja9lr)](https://ci.appveyor.com/project/jaredpar/vsvim)
 
 ## Developing
 
-This project requires Visual Studio 2017 to be edited.  Make sure to install the F# and Visual Studio extension work load.  
+This project requires Visual Studio 2017 or 2019 to be edited.  Make sure to install the F# and Visual Studio extension work load. 
 
-When developing please follow the [coding guidelines](https://github.com/jaredpar/VsVim/blob/master/Documentation/CodingGuidelines.md)
+When developing please follow the [coding guidelines](https://github.com/VsVim/VsVim/blob/master/Documentation/CodingGuidelines.md)
 
 ## License
 

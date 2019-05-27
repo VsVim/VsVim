@@ -321,7 +321,7 @@ namespace Vim.UnitTest
                     .Setup(x => x.ReadAllLines(filePath))
                     .Returns(FSharpOption<string[]>.None);
                 ParseAndRun($":source {filePath}");
-                Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
+                Assert.Equal(Resources.Common_CouldNotOpenFile(filePath), _statusUtil.LastError);
             }
         }
 
@@ -1019,19 +1019,33 @@ namespace Vim.UnitTest
         public sealed class HelpTest : InterpreterTest
         {
             [WpfFact]
-            public void LinksToWikiWhenNoTopicSpecified()
+            public void LinksToWikiWhenNoSubjectSpecified()
             {
                 Create("");
+                var callCount = 0;
+                VimHost.OpenLinkFunc = link =>
+                {
+                    callCount += 1;
+                    Assert.Equal("https://github.com/VsVim/VsVim/wiki", link);
+                    return true;
+                };
                 ParseAndRun(@"help");
-                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Equal(1, callCount);
             }
 
             [WpfFact]
-            public void LinksToWikiWhenTopicIsSpecified()
+            public void LinksToWikiWhenSubjectIsSpecified()
             {
                 Create("");
+                var callCount = 0;
+                VimHost.OpenLinkFunc = link =>
+                {
+                    callCount += 1;
+                    Assert.Equal("https://github.com/VsVim/VsVim/wiki", link);
+                    return true;
+                };
                 ParseAndRun(@"help :vsc");
-                Assert.Contains("https://github.com/jaredpar/VsVim/wiki", _statusUtil.LastStatus);
+                Assert.Equal(1, callCount);
             }
         }
 
@@ -1317,11 +1331,143 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void RHSCanBeBinaryExpression()
+            public void RHSCanBeEnvironmentVariable()
+            {
+                Create("");
+                var variable = "magic";
+                var value = "xyzzy";
+                try
+                {
+                    Environment.SetEnvironmentVariable(variable, value);
+                    ParseAndRun($"let x = ${variable}");
+                    AssertValue("x", value);
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(variable, null);
+                }
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryAddExpression()
             {
                 Create("");
                 ParseAndRun("let x=1+2");
                 AssertValue("x", 3);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinarySubtractExpression()
+            {
+                Create("");
+                ParseAndRun("let x=1-2");
+                AssertValue("x", -1);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryMultiplyExpression()
+            {
+                Create("");
+                ParseAndRun("let x=4*2");
+                AssertValue("x", 8);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryDivideExpression()
+            {
+                Create("");
+                ParseAndRun("let x=24/3");
+                AssertValue("x", 8);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryModuloExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20%7");
+                AssertValue("x", 6);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryDivideExpressionAndHandleDivByZero()
+            {
+                Create("");
+
+                bool gotExpectedError = false;
+
+                _statusUtil.ErrorRaised +=
+                    (s, e) => gotExpectedError |=
+                        e.Message == Resources.Interpreter_DivByZero;
+
+                _variableMap["x"] = VariableValue.NewNumber(7);
+                ParseAndRun("let x=24/0");
+                AssertValue("x", 7);
+                Assert.True(gotExpectedError);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryModuloExpressionAndHandleModuloByZero()
+            {
+                Create("");
+
+                bool gotExpectedError = false;
+
+                _statusUtil.ErrorRaised +=
+                    (s, e) => gotExpectedError |=
+                        e.Message == Resources.Interpreter_ModByZero;
+
+                _variableMap["x"] = VariableValue.NewNumber(7);
+                ParseAndRun("let x=20%0");
+                AssertValue("x", 7);
+                Assert.True(gotExpectedError);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryGreaterExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20>7");
+                AssertValue("x", 1);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryLessExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20<7");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20==7");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeBinaryNotEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x=20!=7");
+                AssertValue("x", 1);
+            }
+
+            [WpfFact]
+            public void RHSCanBeStringEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x='foo'=='bar'");
+                AssertValue("x", 0);
+            }
+
+            [WpfFact]
+            public void RHSCanBeStringNotEqualExpression()
+            {
+                Create("");
+                ParseAndRun("let x='foo'!='bar'");
+                AssertValue("x", 1);
             }
 
             [WpfFact]
@@ -1776,6 +1922,14 @@ namespace Vim.UnitTest
                 _localSettings.TabStop = 42;
                 ParseAndRun("if 0", "set ts=13", "elseif 0", "set ts=12", "endif");
                 Assert.Equal(42, _localSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void IfElseIfBinaryExpression()
+            {
+                Create();
+                ParseAndRun("if 1!=0", "set ts=13", "elseif 2>2", "set ts=12", "endif");
+                Assert.Equal(13, _localSettings.TabStop);
             }
         }
 
@@ -2888,7 +3042,7 @@ namespace Vim.UnitTest
                 TestInterpretation("src/version", "%:r:r");
                 TestInterpretation("src/version", "%:r:r:r");
             }
-            
+
             [WpfFact]
             public void InvalidModifiers()
             {
@@ -2909,7 +3063,7 @@ namespace Vim.UnitTest
             public void ExtensionOnlyFilename()
             {
                 Create();
-                
+
                 _vimBufferData.SetupGet(x => x.CurrentRelativeFilePath).Returns(".vimrc");
                 _vimBufferData.SetupGet(x => x.CurrentFilePath).Returns(@"c:\A\B\C\D\.vimrc");
 
@@ -2951,7 +3105,7 @@ namespace Vim.UnitTest
             {
                 AssertPathEquivalent(expected, _interpreter.InterpretSymbolicPath(_parser.ParseDirectoryPath(symbolicPath)));
             }
-            
+
             private void Create()
             {
                 _factory = new MockRepository(MockBehavior.Default)
@@ -2980,7 +3134,7 @@ namespace Vim.UnitTest
             {
                 var aParts = expected.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
                 var bParts = actual.Split(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
-                if(aParts.Length == bParts.Length)
+                if (aParts.Length == bParts.Length)
                     if (Enumerable.Range(0, aParts.Length).All(i => StringComparer.OrdinalIgnoreCase.Equals(aParts[i], bParts[i])))
                         return;
                 throw new XunitException($"Paths are not equivalent: Expected '{expected}', Actual '{actual}'");

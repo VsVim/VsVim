@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
 using Vim.EditorHost;
 using Microsoft.FSharp.Core;
+using Vim.Interpreter;
 
 namespace Vim.UI.Wpf.UnitTest
 {
@@ -80,7 +81,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+            public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
             {
                 throw new NotImplementedException();
             }
@@ -96,6 +97,11 @@ namespace Vim.UI.Wpf.UnitTest
             }
 
             public override bool NavigateTo(VirtualSnapshotPoint point)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
                 throw new NotImplementedException();
             }
@@ -123,6 +129,11 @@ namespace Vim.UI.Wpf.UnitTest
             public override int GetTabIndex(ITextView textView)
             {
                 throw new NotImplementedException();
+            }
+
+            public override string HostIdentifier
+            {
+                get { throw new NotImplementedException(); }
             }
         }
 

@@ -197,8 +197,11 @@ type internal TextChangeTracker
         // and replaced with tabs.  The result of the edit though should be recorded as simply 
         // tabs
         if change.OldText.Length > 0 && StringUtil.IsBlanks change.NewText && StringUtil.IsBlanks change.OldText then
-            let oldText = _operations.NormalizeBlanks change.OldText
-            let newText = _operations.NormalizeBlanks change.NewText
+            let spacesToColumn =
+                SnapshotUtil.GetPoint beforeSnapshot change.OldSpan.Start
+                |> _operations.GetSpacesToPoint
+            let oldText = _operations.NormalizeBlanks change.OldText spacesToColumn
+            let newText = _operations.NormalizeBlanks change.NewText spacesToColumn
             if newText.StartsWith oldText then
                 let diffText = newText.Substring(oldText.Length)
                 TextChange.Insert diffText 
@@ -299,9 +302,9 @@ type internal TextChangeTracker
         for i = 0 to args.Changes.Count - 1 do
             VimTrace.TraceInfo("OnTextChange: change {0}", i)
             let change = args.Changes.[i]
-            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldText, change.NewText)
+            VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", StringUtil.GetDisplayString(change.OldText), StringUtil.GetDisplayString(change.NewText))
             VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
-            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition)
+            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition.Position)
 
         match _effectiveChangeData with
         | Some data when data.Snapshot = args.Before ->

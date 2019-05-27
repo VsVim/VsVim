@@ -105,17 +105,20 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 try
                 {
-                    var caret = _textView.Caret;
-                    var line = caret.ContainingTextViewLine;
-                    return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
+                    if (!_textView.IsClosed)
+                    {
+                        var caret = _textView.Caret;
+                        var line = caret.ContainingTextViewLine;
+                        return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
+                    }
                 }
                 catch (InvalidOperationException)
                 {
                     // InvalidOperationException is thrown when we ask for ContainingTextViewLine and the view
                     // is not yet completely rendered.  It's safe to say at this point that the caret is not 
                     // visible
-                    return false;
                 }
+                return false;
             }
         }
 
@@ -181,8 +184,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         ///
         /// Either way though need to guard against this case to unblock users.
         /// 
-        /// https://github.com/jaredpar/VsVim/issues/631
-        /// https://github.com/jaredpar/VsVim/issues/1860
+        /// https://github.com/VsVim/VsVim/issues/631
+        /// https://github.com/VsVim/VsVim/issues/1860
         /// </summary>
         private static DispatcherTimer CreateBlinkTimer(IProtectedOperations protectedOperations, EventHandler onCaretBlinkTimer)
         {

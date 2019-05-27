@@ -166,6 +166,8 @@ namespace Vim.UnitTest
         internal AsyncTagger<string, TextMarkerTag> _asyncTagger;
         protected ITagger<TextMarkerTag> _asyncTaggerInterface;
 
+        public TestableSynchronizationContext TestableSynchronizationContext { get; }
+
         protected NormalizedSnapshotSpanCollection EntireBufferSpan
         {
             get { return new NormalizedSnapshotSpanCollection(_textBuffer.CurrentSnapshot.GetExtent()); }
@@ -174,6 +176,13 @@ namespace Vim.UnitTest
         internal AsyncTaggerTest()
         {
             _mockFactory = new MockFactory();
+            TestableSynchronizationContext = new TestableSynchronizationContext();
+        }
+
+        public override void Dispose()
+        {
+            TestableSynchronizationContext.Dispose();
+            base.Dispose();
         }
 
         protected void Create(params string[] lines)
@@ -977,8 +986,7 @@ namespace Vim.UnitTest
                         {
                             return span.Snapshot.GetLineFromLineNumber(1).Extent;
                         }
-
-                        return null;
+                    return null;
                     });
 
                 for (var i = 0; i < _textBuffer.CurrentSnapshot.LineCount; i++)

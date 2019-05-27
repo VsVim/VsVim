@@ -7,6 +7,7 @@ open System.Diagnostics
 type VimTraceKind =
     | Info
     | Error
+    | Debug
 
 type VimTraceEventArgs (_message: string, _kind: VimTraceKind) =
     inherit System.EventArgs()
@@ -21,6 +22,7 @@ type VimTrace() =
 
     static let _prefixInfo = "VsVim "
     static let _prefixError = "VsVim Error "
+    static let _prefixDebug = "VsVim Debug "
     static let _traceSwitch = TraceSwitch("VsVim", "VsVim Trace")
 
     static member TraceSwitch = _traceSwitch
@@ -56,6 +58,19 @@ type VimTrace() =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
+
+    [<Conditional("DEBUG")>]
+    static member TraceDebug(msg: string) = 
+        let msg = _prefixDebug + msg
+        Trace.WriteLineIf(VimTrace.TraceSwitch.TraceVerbose, msg)
+        VimTrace.Raise msg VimTraceKind.Debug
+
+    [<Conditional("DEBUG")>]
+    static member TraceDebug(format: string, [<ParamArrayAttribute>] args: obj []) = 
+        let msg = String.Format(format, args)
+        let msg = _prefixDebug + msg
+        Trace.WriteLineIf(VimTrace.TraceSwitch.TraceVerbose, msg)
+        VimTrace.Raise msg VimTraceKind.Debug
 
     static member private Raise msg kind = 
         let args = VimTraceEventArgs(msg, kind)

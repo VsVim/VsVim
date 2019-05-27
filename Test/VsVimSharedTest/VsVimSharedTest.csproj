@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Shared.UnitTest</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
   </PropertyGroup>
   <ItemGroup>

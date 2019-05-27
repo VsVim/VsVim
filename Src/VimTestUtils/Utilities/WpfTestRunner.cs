@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
-using Vim.EditorHost;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -24,6 +21,11 @@ namespace Vim.UnitTest.Utilities
     /// </summary>
     public sealed class WpfTestRunner : XunitTestRunner
     {
+        /// <summary>
+        /// A long timeout used to avoid hangs in tests, where a test failure manifests as an operation never occurring.
+        /// </summary>
+        private static readonly TimeSpan HangMitigatingTimeout = TimeSpan.FromMinutes(1);
+
         public WpfTestSharedData SharedData { get; }
 
         public WpfTestRunner(
@@ -46,47 +48,20 @@ namespace Vim.UnitTest.Utilities
         protected override Task<decimal> InvokeTestMethodAsync(ExceptionAggregator aggregator)
         {
             SharedData.ExecutingTest(TestMethod);
-            var sta = StaTaskScheduler.DefaultSta;
-            var task = Task.Factory.StartNew(async () =>
+            Debug.Assert(StaTestFramework.IsCreated);
+
+            var taskScheduler = new SynchronizationContextTaskScheduler(StaContext.Default.DispatcherSynchronizationContext);
+            return Task.Factory.StartNew(async () =>
             {
-                Debug.Assert(sta.StaThread == Thread.CurrentThread);
+                Debug.Assert(SynchronizationContext.Current is DispatcherSynchronizationContext);
 
                 using (await SharedData.TestSerializationGate.DisposableWaitAsync(CancellationToken.None))
                 {
-                    try
-                    {
-                        // All WPF Tests need a DispatcherSynchronizationContext and we dont want to block pending keyboard
-                        // or mouse input from the user. So use background priority which is a single level below user input.
-                        var context = new DispatcherSynchronizationContext();
-
-                        // xUnit creates its own synchronization context and wraps any existing context so that messages are
-                        // still pumped as necessary. So we are safe setting it here, where we are not safe setting it in test.
-                        SynchronizationContext.SetSynchronizationContext(context);
-
-                        // Just call back into the normal xUnit dispatch process now that we are on an STA Thread with no synchronization context.
-                        var invoker = new WpfTestInvoker(SharedData, Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource);
-                        var baseTask = invoker.RunAsync();
-                        do
-                        {
-                            var delay = Task.Delay(TimeSpan.FromMilliseconds(10), CancellationTokenSource.Token);
-                            var completed = await Task.WhenAny(baseTask, delay).ConfigureAwait(false);
-                            if (completed == baseTask)
-                            {
-                                return await baseTask.ConfigureAwait(false);
-                            }
-                        }
-                        while (true);
-                    }
-                    finally
-                    {
-                        // Cleanup the synchronization context even if the test is failing exceptionally
-                        SynchronizationContext.SetSynchronizationContext(null);
-                    }
+                    // Just call back into the normal xUnit dispatch process now that we are on an STA Thread with no synchronization context.
+                    var invoker = new XunitTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource);
+                    return await invoker.RunAsync();
                 }
-            }, CancellationTokenSource.Token, TaskCreationOptions.None, sta);
-
-            return task.Unwrap();
+            }, CancellationTokenSource.Token, TaskCreationOptions.None, taskScheduler).Unwrap();
         }
-        
     }
 }

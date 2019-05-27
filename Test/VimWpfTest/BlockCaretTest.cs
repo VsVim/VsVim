@@ -25,6 +25,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _textview = new Mock<ITextView>(MockBehavior.Strict);
             _textview.SetupGet(x => x.Caret).Returns(_caret.Object);
+            _textview.SetupGet(x => x.IsClosed).Returns(false);
             _formatMap = new Mock<IEditorFormatMap>(MockBehavior.Strict);
             _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
             _layer = new Mock<IAdornmentLayer>(MockBehavior.Strict);

@@ -256,7 +256,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 protected override void DoOperation()
                 {
-                    SetupStringGet("myProp", "cat");
+                    SetupStringGet("myProp", "cat", defaultValue: "");
                     Assert.Equal("cat", _vimApplicationSettingsRaw.GetString("myProp", ""));
                 }
             }
@@ -279,10 +279,9 @@ namespace Vim.VisualStudio.UnitTest
 
             protected abstract void DoOperation();
 
-            private void SetupBoolGet(string propName, bool value)
+            private void SetupBoolGet(string propName, bool value, bool defaultValue = false)
             {
-                _settingsStore.Setup(x => x.PropertyExists(VimApplicationSettings.CollectionPath, propName)).Returns(true);
-                _settingsStore.Setup(x => x.GetBoolean(VimApplicationSettings.CollectionPath, propName)).Returns(value);
+                _settingsStore.Setup(x => x.GetBoolean(VimApplicationSettings.CollectionPath, propName, defaultValue)).Returns(value);
             }
 
             private void SetupBoolSet(string propName, bool value)
@@ -290,10 +289,9 @@ namespace Vim.VisualStudio.UnitTest
                 _settingsStore.Setup(x => x.SetBoolean(VimApplicationSettings.CollectionPath, propName, value)).Verifiable();
             }
 
-            private void SetupStringGet(string propName, string value)
+            private void SetupStringGet(string propName, string value, string defaultValue = null)
             {
-                _settingsStore.Setup(x => x.PropertyExists(VimApplicationSettings.CollectionPath, propName)).Returns(true);
-                _settingsStore.Setup(x => x.GetString(VimApplicationSettings.CollectionPath, propName)).Returns(value);
+                _settingsStore.Setup(x => x.GetString(VimApplicationSettings.CollectionPath, propName, defaultValue)).Returns(value);
             }
 
             private void SetupStringSet(string propName, string value)

@@ -12,6 +12,8 @@ using Vim.UI.Wpf;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
+using Vim.Interpreter;
+using Vim.VisualStudio.Specific;
 
 namespace VimApp
 {
@@ -28,6 +30,8 @@ namespace VimApp
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
+
+        public override string HostIdentifier => VimSpecificUtil.HostIdentifier;
 
         internal IVimWindowManager VimWindowManager
         {
@@ -156,7 +160,7 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
@@ -184,12 +188,12 @@ namespace VimApp
                 var point = wpfTextView.Caret.Position.VirtualBufferPosition;
                 NavigateTo(point);
 
-                return true;
+                return FSharpOption.Create<ITextView>(wpfTextView);
             }
             catch (Exception ex)
             {
                 _vim.ActiveStatusUtil.OnError(ex.Message);
-                return false;
+                return FSharpOption<ITextView>.None;
             }
         }
 
@@ -282,6 +286,11 @@ namespace VimApp
             return false;
         }
 
+        public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void RunHostCommand(ITextView textView, string command, string argument)
         {
             var msg = $"Host Command Name='{command}' Argument='{argument}'";
@@ -334,7 +343,7 @@ namespace VimApp
 
         private bool TryLoadPath(string filePath, out IWpfTextView textView)
         {
-            return 
+            return
                 TryLoadPathAsFile(filePath, out textView) ||
                 TryLoadPathAsDirectory(filePath, out textView);
         }

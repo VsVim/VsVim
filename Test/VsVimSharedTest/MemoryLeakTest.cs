@@ -5,7 +5,6 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
 using Vim.EditorHost;
-using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -21,6 +20,9 @@ using Vim.UnitTest;
 using Vim.UnitTest.Exports;
 using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
+using System.Threading;
+using EnvDTE;
+using Thread = System.Threading.Thread;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -216,10 +218,15 @@ namespace Vim.VisualStudio.UnitTest
             editorHostFactory.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(ISharedService).Assembly));
-            editorHostFactory.Add(new TypeCatalog(
+
+            var types = new List<Type>()
+            {
                 typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(VimErrorDetector)));
+                typeof(VimErrorDetector)
+            };
+
+            editorHostFactory.Add(new TypeCatalog(types));
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }
@@ -238,6 +245,13 @@ namespace Vim.VisualStudio.UnitTest
             for (var i = 0; i < 10; i++)
             {
                 Dispatcher.CurrentDispatcher.DoEvents();
+            }
+
+            // Force the buffer into normal mode if the WPF 'Loaded' event
+            // hasn't fired.
+            if (vimBuffer.ModeKind == ModeKind.Uninitialized)
+            {
+                vimBuffer.SwitchMode(vimBuffer.VimBufferData.VimTextBuffer.ModeKind, ModeArgument.None);
             }
 
             return vimBuffer;
@@ -409,6 +423,21 @@ namespace Vim.VisualStudio.UnitTest
             var vimBuffer = CreateVimBuffer();
             vimBuffer.TextBuffer.SetText("hello world");
             vimBuffer.Process("/world", enter: true);
+
+            // This will kick off five search items on the thread pool, each of which
+            // has a strong reference. Need to wait until they have all completed.
+            var count = 0;
+            while (count < 5)
+            {
+                while (_synchronizationContext.PostedCallbackCount > 0)
+                {
+                    _synchronizationContext.RunOne();
+                    count++;
+                }
+
+                Thread.Yield();
+            }
+
             var weakTextBuffer = new WeakReference(vimBuffer.TextBuffer);
 
             // Clean up 

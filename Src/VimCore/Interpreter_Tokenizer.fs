@@ -77,6 +77,26 @@ type internal TokenStream() =
                 else
                     _index <- _text.Length
                     TokenKind.EndOfLine
+            elif c = '=' then
+                x.IncrementIndex()
+                match x.CurrentChar with
+                | None -> TokenKind.Character c
+                | Some cSecond ->
+                  if cSecond = '=' then
+                    x.IncrementIndex()
+                    TokenKind.ComplexOperator "=="
+                  else
+                    TokenKind.Character c
+            elif c = '!' then
+                x.IncrementIndex()
+                match x.CurrentChar with
+                | None -> TokenKind.Character c
+                | Some cSecond ->
+                  if cSecond = '=' then
+                    x.IncrementIndex()
+                    TokenKind.ComplexOperator "!="
+                  else
+                    TokenKind.Character c
             else
                 x.IncrementIndex()
                 TokenKind.Character c

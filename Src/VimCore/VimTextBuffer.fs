@@ -1,5 +1,4 @@
-﻿
-#light
+﻿#light
 
 namespace Vim
 
@@ -20,6 +19,7 @@ type internal VimTextBuffer
 
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
+    let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
 
@@ -201,6 +201,12 @@ type internal VimTextBuffer
         | _
             -> _globalSettings.IsVirtualEditAll
 
+    /// Check the contents of the buffer for a modeline, returning a tuple of
+    /// the line we used as a modeline, if any, and a string representing the
+    /// first sub-option that produced an error if any
+    member x.CheckModeLine () =
+        _modeLineInterpreter.CheckModeLine()
+
     /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
     member x.Clear() =
         // First clear out the Letter based marks
@@ -325,6 +331,7 @@ type internal VimTextBuffer
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
         member x.UseVirtualSpace = x.UseVirtualSpace
+        member x.CheckModeLine() = x.CheckModeLine()
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark lineNumber offset = x.SetLocalMark localMark lineNumber offset

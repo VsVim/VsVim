@@ -132,8 +132,8 @@ type internal ModeMap
             oldMode.OnLeave()
 
             // Incremental search should not persist between mode changes.  
-            if _incrementalSearch.InSearch then
-                _incrementalSearch.Cancel()
+            if _incrementalSearch.HasActiveSession then
+                _incrementalSearch.CancelSession()
 
             _vimTextBuffer.SwitchMode kind arg
 
@@ -188,6 +188,7 @@ type internal VimBuffer
     let _bag = DisposableBag()
     let _modeMap = ModeMap(_vimBufferData.VimTextBuffer, _incrementalSearch)
     let _keyMap = _vim.KeyMap
+    let mutable _lastMessage: string option = None
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
 
@@ -303,6 +304,9 @@ type internal VimBuffer
             match x.Mode.ModeKind with
             | ModeKind.Insert -> x.InsertMode.IsDirectInsert keyInput
             | ModeKind.Replace -> x.ReplaceMode.IsDirectInsert keyInput
+            | ModeKind.SelectCharacter -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectLine -> x.InsertMode.IsDirectInsert keyInput
+            | ModeKind.SelectBlock -> x.InsertMode.IsDirectInsert keyInput
             | _ -> false
 
         // Can the given KeyInput be processed as a command or potentially a 
@@ -599,7 +603,7 @@ type internal VimBuffer
                 // There is no mode for the current key stroke but may be for the subsequent
                 // ones in the set.  Process the first one only here 
                 remainingSet.Value.FirstKeyInput.Value |> KeyInputSetUtil.Single |> processSet
-                remainingSet := remainingSet.Value.Rest |> KeyInputSetUtil.OfList
+                remainingSet := remainingSet.Value.Rest
             | _ -> 
                 let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 
@@ -702,17 +706,20 @@ type internal VimBuffer
  
             if _isClosed && not x.IsProcessingInput then
                 _postClosedEvent.Trigger x   
-    
+
     member x.RaiseErrorMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _errorMessageEvent.Trigger x args
 
     member x.RaiseWarningMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _warningMessageEvent.Trigger x args
 
     member x.RaiseStatusMessage msg = 
         let args = StringEventArgs(msg)
+        _lastMessage <- Some msg
         _statusMessageEvent.Trigger x args
 
     /// Remove an IMode from the IVimBuffer instance
@@ -774,6 +781,7 @@ type internal VimBuffer
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList
+        member x.LastMessage = _lastMessage
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.NormalMode = x.NormalMode

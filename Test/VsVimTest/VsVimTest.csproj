@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
+    <AssemblyName>VsVim.UnitTest</AssemblyName>
+    <TargetFramework>net472</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Resources\**" />
+    <EmbeddedResource Remove="Resources\**" />
+    <None Remove="Resources\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <PackageReference Include="Castle.Core" Version="4.0.0-beta002" />
+    <PackageReference Include="Moq" Version="4.5.28" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj" />
+    <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
+    <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
+    <ProjectReference Include="..\..\Src\VsVim\VsVim.csproj" />
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2015\Vs2015.csproj">
+      <Aliases>VsVim2015</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2017\Vs2017.csproj">
+      <Aliases>VsVim2017</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2019\Vs2019.csproj">
+      <Aliases>VsVim2019</Aliases>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- 
+     This project must always target the latest, no matter if it's loaded in VS2017 or VS2019.
+  --> 
+  <ItemGroup>
+    <None Include="$(RepoPath)\References\VS2019\App.config">
+      <Link>app.config</Link>
+    </None>
+  </ItemGroup>
+
+  <Import Project="$(RepoPath)\References\VS2019\Runnable.props" />
+</Project>

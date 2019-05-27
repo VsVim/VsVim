@@ -1418,6 +1418,55 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class RetabCommandTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void NewTabStop()
+            {
+                Create("\t\tfoo", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab 8");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(8, _vimBuffer.LocalSettings.TabStop);
+            }
+
+            [WpfFact]
+            public void Untabify()
+            {
+                // Reported in issue #2493.
+                Create("\tfoo\tbar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = true;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void Tabify()
+            {
+                Create("    foo bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    foo bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfoo bar", "" }, _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void TabifyNonLeading()
+            {
+                Create("    fo  bar", "");
+                _vimBuffer.LocalSettings.TabStop = 4;
+                _vimBuffer.LocalSettings.ExpandTab = false;
+                RunCommand("retab");
+                Assert.Equal(new[] { "    fo  bar", "" }, _textBuffer.GetLines());
+                RunCommand("retab!");
+                Assert.Equal(new[] { "\tfo\tbar", "" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class RunHostCommandTest : CommandModeIntegrationTest
         {
             [WpfFact]
@@ -1433,6 +1482,43 @@ namespace Vim.UnitTest
                     };
                 RunCommandRaw(":vsc Edit.Comment");
                 Assert.True(didRun);
+            }
+
+            [WpfFact]
+            public void KeepSelection()
+            {
+                Create("cat", "");
+                var didRun = false;
+                _vimHost.RunHostCommandFunc = (textView, commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                _textView.Selection.Select(_textBuffer.GetSpan(0, 3));
+                Assert.False(_textView.Selection.IsEmpty);
+                RunCommandRaw(":vsc Edit.Comment");
+                Assert.True(didRun);
+                Assert.False(_textView.Selection.IsEmpty);
+            }
+
+            [WpfFact]
+            public void ClearSelection()
+            {
+                Create("cat", "");
+                var didRun = false;
+                _vimHost.RunHostCommandFunc = (textView, commandName, argument) =>
+                    {
+                        didRun = true;
+                        Assert.Equal("Edit.Comment", commandName);
+                        Assert.Equal("", argument);
+                    };
+                _textView.Selection.Select(_textBuffer.GetSpan(0, 3));
+                Assert.False(_textView.Selection.IsEmpty);
+                RunCommandRaw(":vsc! Edit.Comment");
+                Assert.True(didRun);
+                Assert.True(_textView.Selection.IsEmpty);
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
             }
 
             /// <summary>
@@ -1658,6 +1744,68 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
                 RunCommand(".,.1>");
                 Assert.Equal(new[] { "  dog", "  cat", "tree" }, _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class JumpTest : CommandModeIntegrationTest
+        {
+            /// <summary>
+            /// Ensure the '$' / move to last line command is implemented properly
+            /// </summary>
+            [WpfFact]
+            public void LastLine()
+            {
+                Create("foo", "bar", "baz", "");
+                RunCommand("$");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Entering just a line number should jump to the corresponding Vim line number.  Note that Vim
+            /// and ITextBuffer line numbers differ as Vim begins at 1
+            /// </summary>
+            [WpfFact]
+            public void Jump_UseVimLineNumber()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("2");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Even though Vim line numbers begin at 1, 0 is still a valid jump to the first line number 
+            /// in Vim
+            /// </summary>
+            [WpfFact]
+            public void Jump_FirstLineSpecial()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("0");
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// When the line number exceeds the number of lines in the ITextBuffer it should just go to the
+            /// last line number
+            /// </summary>
+            [WpfFact]
+            public void Jump_LineNumberTooBig()
+            {
+                Create("cat", "dog", "tree", "");
+                RunCommand("300");
+                Assert.Equal(_textView.GetPointInLine(2, 0), _textView.GetCaretPoint());
+            }
+
+            /// <summary>
+            /// Whichever line is targeted the point it jumps to should be the first non space / tab character on
+            /// that line
+            /// </summary>
+            [WpfFact]
+            public void Jump_Indent()
+            {
+                Create("cat", "  dog", "tree", "");
+                RunCommand("2");
+                Assert.Equal(_textView.GetPointInLine(1, 2), _textView.GetCaretPoint());
             }
         }
 

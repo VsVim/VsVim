@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
   </PropertyGroup>
   <ItemGroup>

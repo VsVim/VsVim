@@ -7,6 +7,12 @@ using Microsoft.VisualStudio.ComponentModelHost;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.Interpreter;
+using Vim.VisualStudio.Specific.Implementation.WordCompletion;
+using Microsoft.FSharp.Core;
+using System.ComponentModel.Composition.Primitives;
+using System;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Specific
 {
@@ -87,6 +93,11 @@ namespace Vim.VisualStudio.Specific
         bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
         {
             return IsActiveWindowFrame(vsWindowFrame);
+        }
+
+        void ISharedService.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
         #endregion

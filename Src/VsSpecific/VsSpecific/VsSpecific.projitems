@@ -9,8 +9,16 @@
     <Import_RootNamespace>VsSpecific</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NotSupportedCSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SharedService.CSharpScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)VsSpecificConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
   </ItemGroup>
 </Project>

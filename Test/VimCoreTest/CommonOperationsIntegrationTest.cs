@@ -44,14 +44,14 @@ namespace Vim.UnitTest
 
             private void AssertFirstLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 var actual = _textView.GetFirstVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
 
             private void AssertLastLine(int lineNumber)
             {
-                TestableSynchronizationContext.RunAll();
+                DoEvents();
                 var actual = _textView.GetLastVisibleLineNumber();
                 Assert.Equal(lineNumber, actual);
             }
@@ -140,6 +140,10 @@ namespace Vim.UnitTest
 
             public sealed class BottomTest : ScrollOffsetTest
             {
+                /// <summary>
+                /// If the caret is moved externally, do not allow it to stay
+                /// offscreen
+                /// </summary>
                 [WpfFact]
                 public void Disabled()
                 {
@@ -148,7 +152,7 @@ namespace Vim.UnitTest
                     _textView.ScrollToTop();
                     _textView.MoveCaretToLine(_lastLineNumber);
                     _commonOperationsRaw.AdjustTextViewForScrollOffset();
-                    AssertLastLine(4);
+                    AssertLastLine(_lastLineNumber);
                 }
 
                 [WpfFact]
@@ -250,6 +254,8 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
+#if VSVIM_DEV_2017
+            // https://github.com/VsVim/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave
             /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
@@ -270,6 +276,11 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
+#elif VSVIM_DEV_2019
+            // https://github.com/VsVim/VsVim/issues/2463
+#else
+#error Unsupported configuration
+#endif
 
             /// <summary>
             /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor
@@ -378,13 +389,13 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class GetSpacesToColumnTest : CommonOperationsIntegrationTest
+        public sealed class GetSpacesToPointTest : CommonOperationsIntegrationTest
         {
             [WpfFact]
             public void Simple()
             {
                 Create("cat");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
             }
 
             /// <summary>
@@ -395,7 +406,7 @@ namespace Vim.UnitTest
             {
                 Create("\tcat");
                 _vimBuffer.LocalSettings.TabStop = 20;
-                Assert.Equal(20, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(1)));
+                Assert.Equal(20, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(1)));
             }
 
             /// <summary>
@@ -407,7 +418,7 @@ namespace Vim.UnitTest
             {
                 Create("a\tcat");
                 _vimBuffer.LocalSettings.TabStop = 4;
-                Assert.Equal(4, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
+                Assert.Equal(4, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
             }
 
             [WpfFact]
@@ -415,15 +426,15 @@ namespace Vim.UnitTest
             {
                 const string alien = "\U0001F47D"; // 👽
                 Create($"{alien}o{alien}");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(2)));
-                Assert.Equal(3, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(3)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(2)));
+                Assert.Equal(3, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(3)));
             }
 
             [WpfFact]
             public void WideCharacter()
             {
                 Create($"\u115fot");
-                Assert.Equal(2, _commonOperations.GetSpacesToColumn(_textBuffer.GetColumnFromPosition(1)));
+                Assert.Equal(2, _commonOperations.GetSpacesToPoint(_textBuffer.GetPoint(1)));
             }
         }
 

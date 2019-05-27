@@ -4,17 +4,17 @@
     <Identity Publisher="Jared Parsons" Version="2.7.0.0" Id="VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3" Language="en-US" />
     <DisplayName>VsVim</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
-    <MoreInfo>https://github.com/jaredpar/VsVim</MoreInfo>
+    <MoreInfo>https://github.com/VsVim/VsVim</MoreInfo>
     <License>License.txt</License>
     <Icon>VsVim_large.png</Icon>
     <PreviewImage>VsVim_small.png</PreviewImage>
     <Tags>vsvim</Tags>
   </Metadata>
   <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[11.0,17.0)" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
-    <InstallationTarget Version="[11.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[14.0,17.0)" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.IntegratedShell" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[14.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
     <InstallationTarget Id="AtmelStudio" Version="7.0" />
   </Installation>
   <Assets>

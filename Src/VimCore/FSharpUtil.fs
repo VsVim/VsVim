@@ -375,7 +375,7 @@ module internal GenericListUtil =
     let OfSeq (col: 'T seq) = System.Collections.Generic.List<'T>(col)
 
 [<RequireQualifiedAccess>]
-type internal CharComparer =
+type CharComparer =
     | Exact
     | IgnoreCase
 
@@ -510,7 +510,7 @@ type internal CharSpan
         let length = endIndex - startIndex
         CharSpan(str, startIndex, length, charComparer)
 
-module internal CharUtil =
+module CharUtil =
 
     let PrintableCategories =
         seq {
@@ -556,9 +556,12 @@ module internal CharUtil =
 
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
+    let IsOctalDigit (c: char) = c >= '0' && c <= '7'
+    let IsHexDigit (c: char) = System.Char.IsDigit c || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsControl x = System.Char.IsControl x
+    let IsAscii x = x >= '\u0000' && x <= '\u00ff'
 
     /// Is this the Vim definition of a blank character.  That is it a space
     /// or tab

@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using Vim.Interpreter;
 
 namespace Vim.UI.Wpf
 {
@@ -52,6 +53,11 @@ namespace Vim.UI.Wpf
         }
 
         public abstract int TabCount
+        {
+            get;
+        }
+
+        public abstract string HostIdentifier
         {
             get;
         }
@@ -181,6 +187,19 @@ namespace Vim.UI.Wpf
 
         public abstract void OpenQuickFixWindow();
 
+        public bool OpenLink(string link)
+        {
+            try
+            {
+                Process.Start(link);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
@@ -203,6 +222,50 @@ namespace Vim.UI.Wpf
             }
 
             return false;
+        }
+
+
+        /// <summary>
+        /// Perform the specified action when the specified text view is ready
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <param name="action"></param>
+        public virtual void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
+        {
+            // Local functions to do the action.
+            void doAction()
+            {
+                // Perform action if the text view is still open.
+                if (!textView.IsClosed)
+                {
+                    action.Invoke(null);
+                }
+            }
+            void doActionHandler(object sender, RoutedEventArgs e)
+            {
+                // Unsubscribe.
+                if (sender is FrameworkElement element)
+                {
+                    element.Loaded -= doActionHandler;
+                }
+
+                // Then do the action.
+                doAction();
+            }
+
+            if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
+            {
+                // FrameworkElement.Loaded Event:
+                //
+                // Occurs when a FrameworkElement has been constructed and
+                // added to the object tree, and is ready for interaction.
+                wpfTextView.VisualElement.Loaded += doActionHandler;
+            }
+            else
+            {
+                // If the element is already loaded, do the action immediately.
+                doAction();
+            }
         }
 
         /// <summary>
@@ -236,7 +299,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
-        public abstract bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
+        public abstract FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
@@ -317,6 +380,8 @@ namespace Vim.UI.Wpf
             }
         }
 
+        public abstract void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
+
         public abstract void RunHostCommand(ITextView textView, string command, string argument);
 
         public virtual bool Save(ITextBuffer textBuffer)
@@ -350,11 +415,6 @@ namespace Vim.UI.Wpf
         public virtual bool ShouldIncludeRcFile(VimRcPath vimRcPath)
         {
             return vimRcPath.VimRcKind == VimRcKind.VsVimRc;
-        }
-
-        public virtual bool ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return false;
         }
 
         public virtual bool SaveTextAs(string text, string filePath)
@@ -451,6 +511,10 @@ namespace Vim.UI.Wpf
         {
             const double roundOff = 0.01;
             var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+            if (textViewLine == null)
+            {
+                return;
+            }
 
             switch (textViewLine.VisibilityState)
             {
@@ -504,6 +568,10 @@ namespace Vim.UI.Wpf
         private void EnsureLinePointVisible(ITextView textView, SnapshotPoint point)
         {
             var textViewLine = textView.GetTextViewLineContainingBufferPosition(point);
+            if (textViewLine == null)
+            {
+                return;
+            }
 
             const double horizontalPadding = 2.0;
             const double scrollbarPadding = 200.0;
@@ -550,6 +618,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.AutoSynchronizeSettings
         {
             get { return AutoSynchronizeSettings; }
+        }
+
+        string IVimHost.HostIdentifier
+        {
+            get { return HostIdentifier; }
         }
 
         bool IVimHost.IsAutoCommandEnabled
@@ -644,6 +717,11 @@ namespace Vim.UI.Wpf
             return GoToDefinition();
         }
 
+        bool IVimHost.OpenLink(string link)
+        {
+            return OpenLink(link);
+        }
+
         bool IVimHost.GoToGlobalDeclaration(ITextView textView, string identifier)
         {
             return GoToGlobalDeclaration(textView, identifier);
@@ -669,6 +747,11 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
+        void IVimHost.DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
+        {
+            DoActionWhenTextViewReady(action, textView);
+        }
+
         bool IVimHost.IsReadOnly(ITextBuffer textBuffer)
         {
             return IsReadOnly(textBuffer);
@@ -679,7 +762,7 @@ namespace Vim.UI.Wpf
             return LoadFileIntoExistingWindow(filePath, textView);
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadFileIntoNewWindow(filePath, line, column);
         }
@@ -719,6 +802,11 @@ namespace Vim.UI.Wpf
             return RunCommand(workingDirectory, command, arguments, input);
         }
 
+        void IVimHost.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            RunCSharpScript(vimBuffer, callInfo, createEachTime);
+        }
+
         void IVimHost.RunHostCommand(ITextView textView, string command, string argument)
         {
             RunHostCommand(textView, command, argument);
@@ -732,11 +820,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
             return SaveTextAs(text, filePath);
-        }
-
-        bool IVimHost.ShouldKeepSelectionAfterHostCommand(string command, string argument)
-        {
-            return ShouldKeepSelectionAfterHostCommand(command, argument);
         }
 
         bool IVimHost.ShouldCreateVimBuffer(ITextView textView)

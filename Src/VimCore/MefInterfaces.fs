@@ -243,6 +243,10 @@ type ILineChangeTrackerFactory =
 /// Provides access to the system clipboard 
 type IClipboardDevice =
 
+    /// Whether to report errors that occur when using the clipboard
+    abstract ReportErrors: bool with get, set
+
+    /// The text contents of the clipboard device
     abstract Text: string with get, set
 
 [<RequireQualifiedAccess>]
@@ -360,6 +364,12 @@ type ICommonOperations =
     /// This operation is performed against the visual buffer.  
     abstract DeleteLines: startLine: ITextSnapshotLine -> maxCount: int -> registerName: RegisterName option -> unit
 
+    /// Perform the specified action asynchronously using the scheduler
+    abstract DoActionAsync: action: (unit -> unit) -> unit
+
+    /// Perform the specified action when the text view is ready
+    abstract DoActionWhenReady: action: (unit -> unit) -> unit
+
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 
@@ -394,9 +404,12 @@ type ICommonOperations =
     /// Get the standard ReplaceData for the given SnapshotPoint
     abstract GetReplaceData: point: SnapshotPoint -> VimRegexReplaceData
 
+    /// Get the current number of spaces to caret we are maintaining
+    abstract GetSpacesToCaret: unit -> int
+
     /// Get the number of spaces (when tabs are expanded) that is necessary to get to the 
     /// specified point on it's line
-    abstract GetSpacesToColumn: column: SnapshotColumn -> int
+    abstract GetSpacesToPoint: point: SnapshotPoint -> int
 
     /// Get the point that visually corresponds to the specified column on its line
     abstract GetColumnForSpacesOrEnd: contextLine: ITextSnapshotLine -> spaces: int -> SnapshotColumn
@@ -438,12 +451,19 @@ type ICommonOperations =
     /// 0 and 1 can be used to access the first tab
     abstract GoToTab: int -> unit
 
+    /// Using the specified base folder, go to the tag specified by ident
+    abstract GoToTagInNewWindow: folder: string -> ident: string -> Result
+
     /// Convert any virtual spaces into real spaces / tabs based on the current settings.  The caret 
     /// will be positioned at the end of that change
     abstract FillInVirtualSpace: unit -> unit
 
     /// Joins the lines in the range
     abstract Join: SnapshotLineRange -> JoinKind -> unit
+
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: file: string -> lineNumber: int option -> columnNumber: int option -> Result
 
     /// Move the caret in the specified direction
     abstract MoveCaret: caretMovement: CaretMovement -> bool
@@ -475,13 +495,19 @@ type ICommonOperations =
     abstract NavigateToPoint: VirtualSnapshotPoint -> bool
 
     /// Normalize the spaces and tabs in the string
-    abstract NormalizeBlanks: text: string -> string
+    abstract NormalizeBlanks: text: string -> spacesToColumn: int -> string
 
     /// Normalize the spaces and tabs in the string at the given column in the buffer
     abstract NormalizeBlanksAtColumn: text: string -> column: SnapshotColumn -> string
 
-    /// Normalize the set of blanks into spaces
-    abstract NormalizeBlanksToSpaces: string -> string
+    /// Normalize the spaces and tabs in the string for a new tabstop
+    abstract NormalizeBlanksForNewTabStop: text: string -> spacesToColumn: int -> tabStop: int -> string
+
+    /// Normalize the set of spaces and tabs into spaces
+    abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
+
+    /// Open link under caret
+    abstract OpenLinkUnderCaret: unit -> Result
 
     /// Put the specified StringData at the given point.
     abstract Put: SnapshotPoint -> StringData -> OperationKind -> unit
@@ -497,6 +523,9 @@ type ICommonOperations =
 
     /// Redo the buffer changes "count" times
     abstract Redo: count:int -> unit
+
+    /// Restore spaces to caret, or move to start of line if 'startofline' is set
+    abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
@@ -524,6 +553,12 @@ type ICommonOperations =
 
     /// Toggle the use of typing language characters
     abstract ToggleLanguage: isForInsert: bool -> unit
+
+    /// Map the specified point with negative tracking to the current snapshot
+    abstract MapPointNegativeToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
+
+    /// Map the specified point with positive tracking to the current snapshot
+    abstract MapPointPositiveToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
 
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
@@ -627,3 +662,14 @@ type IEditorToSettingsSynchronizer =
 
     abstract SyncSetting: data: SettingSyncData -> unit
 
+/// There are some VsVim services which are only valid in specific host environments. These
+/// services will implement and export this interface. At runtime the identifier can be
+/// compared to the IVimHost.Identifier to see if it's valid
+type IVimSpecificService = 
+    abstract HostIdentifier: string
+
+/// This will look for an export of <see cref="IVimSpecificService"\> that is convertible to 
+/// 'T and return it
+type IVimSpecificServiceHost =
+
+    abstract GetService: unit -> 'T option

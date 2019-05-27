@@ -8,9 +8,9 @@ type internal ExternalEditMode(_vimBufferData: IVimBufferData) =
         member x.VimTextBuffer = _vimBufferData.VimTextBuffer
         member x.ModeKind = ModeKind.ExternalEdit
         member x.CommandNames = Seq.empty
-        member x.CanProcess ki = ki = KeyInputUtil.EscapeKey
-        member x.Process ki = 
-            if ki = KeyInputUtil.EscapeKey then
+        member x.CanProcess keyInput = keyInput = KeyInputUtil.EscapeKey
+        member x.Process keyInput = 
+            if keyInput = KeyInputUtil.EscapeKey then
                 ProcessResult.OfModeKind ModeKind.Normal
             else
                 ProcessResult.NotHandled

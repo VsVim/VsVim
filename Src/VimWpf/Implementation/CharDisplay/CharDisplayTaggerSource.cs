@@ -34,6 +34,7 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         private static readonly ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>> s_emptyTagColllection = new ReadOnlyCollection<ITagSpan<IntraTextAdornmentTag>>(new List<ITagSpan<IntraTextAdornmentTag>>());
         private readonly ITextView _textView;
         private readonly IEditorFormatMap _editorFormatMap;
+        private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IControlCharUtil _controlCharUtil;
         private readonly List<AdornmentData> _adornmentCache = new List<AdornmentData>();
         private Brush _foregroundBrush;
@@ -44,11 +45,16 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
             get { return _adornmentCache; }
         }
 
-        internal CharDisplayTaggerSource(ITextView textView, IEditorFormatMap editorFormatMap, IControlCharUtil controlCharUtil)
+        internal CharDisplayTaggerSource(
+            ITextView textView,
+            IEditorFormatMap editorFormatMap,
+            IControlCharUtil controlCharUtil,
+            IClassificationFormatMap classificationFormatMap)
         {
             _textView = textView;
             _editorFormatMap = editorFormatMap;
             _controlCharUtil = controlCharUtil;
+            _classificationFormatMap = classificationFormatMap;
             UpdateBrushes();
 
             _textView.TextBuffer.Changed += OnTextBufferChanged;
@@ -100,16 +106,27 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 }
                 else
                 {
-                    var textBox = new TextBox
+                    var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+                    var typeface = textRunProperties.Typeface;
+                    var fontSize = textRunProperties.FontRenderingEmSize;
+                    var textHeight = _textView.LineHeight;
+                    var textBlock = new TextBlock
                     {
                         Text = text,
-                        BorderThickness = new Thickness(0)
+                        Foreground = _foregroundBrush,
+                        Background = Brushes.Transparent,
+                        FontFamily = typeface.FontFamily,
+                        FontStretch = typeface.Stretch,
+                        FontWeight = typeface.Weight,
+                        FontStyle = typeface.Style,
+                        FontSize = fontSize,
+                        Height = textHeight,
+                        LineHeight = textHeight != 0 ? textHeight : double.NaN,
+                        LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+                        BaselineOffset = 0,
                     };
-                    textBox.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                    textBox.Foreground = _foregroundBrush;
-                    textBox.CaretBrush = _foregroundBrush;
-                    textBox.FontWeight = FontWeights.Bold;
-                    adornment = textBox;
+                    textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    adornment = textBlock;
                     _adornmentCache.Insert(cacheIndex, new AdornmentData(position, adornment));
                 }
 

@@ -72,7 +72,7 @@ namespace Vim.VisualStudio
             _commandTargetFactoryList = Orderer.Order(commandTargetFactoryList).Select(x => x.Value).ToReadOnlyCollection();
 
 #if DEBUG
-            VimTrace.TraceSwitch.Level = TraceLevel.Info;
+            VimTrace.TraceSwitch.Level = TraceLevel.Verbose;
 #endif
 
             // Make sure that for this 

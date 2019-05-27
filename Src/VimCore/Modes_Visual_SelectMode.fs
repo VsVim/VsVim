@@ -150,10 +150,9 @@ type internal SelectMode
                 // add one here (or even the length of the insert text).  The insert occurred at
                 // the exact point we are tracking and we chose PointTrackingMode.Positive so this
                 // will push the point past the insert
-                let snapshot = TextEditUtil.ApplyAndGetLatest edit
-                match TrackingPointUtil.GetPointInSnapshot span.End PointTrackingMode.Positive snapshot with
-                | None -> ()
-                | Some point -> TextViewUtil.MoveCaretToPoint _textView point
+                edit.Apply() |> ignore
+                _commonOperations.MapPointPositiveToCurrentSnapshot span.End
+                |> TextViewUtil.MoveCaretToPoint _textView
 
         // During undo we don't want the currently selected text to be reselected as that
         // would put the editor back into select mode.  Clear the selection now so that
@@ -178,7 +177,8 @@ type internal SelectMode
             ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
 
     member x.CanProcess (keyInput: KeyInput) =
-        not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
+        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
+        || _runner.DoesCommandStartWith keyInput
 
     member x.Process keyInput = 
 

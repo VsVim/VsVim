@@ -34,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
             _marginControl.CommandLineTextBox.Text = string.Empty;
 
             _search = _factory.Create<IIncrementalSearch>();
-            _search.SetupGet(x => x.InSearch).Returns(false);
+            _search.SetupGet(x => x.HasActiveSession).Returns(false);
             _search.SetupGet(x => x.InPasteWait).Returns(false);
             _vimBuffer = new MockVimBuffer
             {
@@ -64,7 +64,8 @@ namespace Vim.UI.Wpf.UnitTest
                 VimEditorHost.EditorFormatMapService.GetEditorFormatMap(_vimBuffer.TextView),
                 VimEditorHost.ClassificationFormatMapService.GetClassificationFormatMap(_vimBuffer.TextView),
                 CommonOperationsFactory.GetCommonOperations(vimBufferData),
-                _clipboardDevice);
+                _clipboardDevice,
+                false);
         }
 
         public sealed class InCommandLineUpdateTest : CommandMarginControllerTest
@@ -143,7 +144,7 @@ namespace Vim.UI.Wpf.UnitTest
                 searchKind = searchKind ?? SearchKind.Forward;
 
                 var data = new SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions);
-                _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+                _search.SetupGet(x => x.HasActiveSession).Returns(true).Verifiable();
                 _search.SetupGet(x => x.CurrentSearchData).Returns(data).Verifiable();
                 _search.SetupGet(x => x.CurrentSearchText).Returns(pattern).Verifiable();
             }
@@ -417,7 +418,7 @@ namespace Vim.UI.Wpf.UnitTest
                 mode.SetupGet(x => x.CommandRunner).Returns(runner.Object);
                 runner.SetupGet(x => x.Inputs).Returns(FSharpList<KeyInput>.Empty);
                 _globalSettings.SetupGet(x => x.ShowCommand).Returns(true);
-                _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
+                _search.SetupGet(x => x.HasActiveSession).Returns(false).Verifiable();
                 mode.SetupGet(x => x.Command).Returns("foo");
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
                 _vimBuffer.BufferedKeyInputsImpl = FSharpList<KeyInput>.Empty;
@@ -532,7 +533,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _vimBuffer.ModeImpl = mode.Object;
                 SimulateSearch("cat", SearchKind.Backward);
                 SimulateKeystroke();
-                _search.SetupGet(x => x.InSearch).Returns(false);
+                _search.SetupGet(x => x.HasActiveSession).Returns(false);
                 SimulateKeystroke();
                 Assert.Equal(Resources.VisualCharacterBanner, _marginControl.CommandLineTextBox.Text);
             }

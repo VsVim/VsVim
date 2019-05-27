@@ -320,6 +320,10 @@ type BinaryKind =
     | Multiply
     | Modulo
     | Subtract
+    | GreaterThan
+    | LessThan
+    | Equal
+    | NotEqual
 
 /// Data for the :call command
 type CallInfo = {
@@ -446,6 +450,9 @@ and [<RequireQualifiedAccess>] Expression =
     /// The name of a variable
     | VariableName of VariableName: VariableName
 
+    /// The name of an environment variable
+    | EnvironmentVariableName of EnvironmentVariableName: string
+
     /// Invocation of a function
     | FunctionCall of VariableName: VariableName * Arguments: Expression list
 
@@ -483,6 +490,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified
     | CopyTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
+
+    ///  The :csx command to run C# script.
+    | CSharpScript of CallInfo: CallInfo
+
+    ///  The :csxe command to run C# script and create each time.
+    | CSharpScriptCreateEachTime of CallInfo: CallInfo
 
     /// Delete the specified marks
     | DeleteMarks of Marks: Mark list
@@ -568,13 +581,16 @@ and [<RequireQualifiedAccess>] LineCommand =
     | GoToPreviousTab of Count: int option
 
     /// Get help on VsVim
-    | Help
+    | Help of Subject: string
+
+    /// Get help on Vim
+    | VimHelp of Subject: string
 
     /// Print out the default history 
     | History
 
     /// Run a host command.  The first string is the command and the second string is the argument
-    | HostCommand of Command: string * Argument: string
+    | HostCommand of HasBang: bool * Command: string * Argument: string
 
     /// Process the 'split' command.  The values range as follows
     ///  - Height of the window if specified.  Expressed as a range.  The actual documentation

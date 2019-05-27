@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.UnitTest
 {
@@ -1495,6 +1496,54 @@ namespace Vim.UnitTest
                 _globalSettings.VirtualEdit = "insert";
             }
 
+            /// <summary>
+            /// Fill in leading virtual space with tabs when 'noexpandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithTabs()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = false;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "\tfoo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 4), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Fill in leading virtual space with spaces when 'expandtab' is set
+            /// </summary>
+            [WpfFact]
+            public void FillInLeadingVirtualSpaceWithSpaces()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(0, virtualSpaces: 4);
+                _vimBuffer.ProcessNotation("foo");
+                Assert.Equal(new[] { "    foo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 7), _textView.GetCaretVirtualPoint());
+            }
+
+            /// <summary>
+            /// Always fill in non-leading virtual space with spaces
+            /// </summary>
+            /// <param name="expandTab"></param>
+            [WpfTheory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void FillInNonLeadingVirtualSpaceWithSpaces(bool expandTab)
+            {
+                Create("f", "");
+                _localSettings.ExpandTab = expandTab;
+                _localSettings.TabStop = 4;
+                _textView.MoveCaretTo(1, virtualSpaces: 3);
+                _vimBuffer.ProcessNotation("oo");
+                Assert.Equal(new[] { "f   oo", "" }, _textBuffer.GetLines());
+                Assert.Equal(_textBuffer.GetVirtualPointInLine(0, 6), _textView.GetCaretVirtualPoint());
+            }
+
             [WpfFact]
             public void CharRightRealToVirtual()
             {
@@ -2482,8 +2531,8 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion action which accepts the first match
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_Simple()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Simple_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2491,11 +2540,22 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
 
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Simple_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<CR>");
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            }
+
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_ChooseNext()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_ChooseNext_Legacy()
             {
                 Create("c dog", "cat copter");
                 _textView.MoveCaretTo(1);
@@ -2505,11 +2565,25 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Simulate choosing the second possibility in the completion list
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_ChooseNext_Async()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-N><CR>");
+                Assert.Equal("copter dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Typing a char while the completion list is up should cancel it out and 
             /// cause the char to be added to the IVimBuffer
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_TypeAfter()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_TypeAfter_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2518,12 +2592,22 @@ namespace Vim.UnitTest
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
             }
 
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_TypeAfter_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process('s');
+                Assert.Equal("cs dog", _textView.GetLine(0).GetText());
+            }
+
             /// <summary>
             /// Esacpe should cancel both word completion and insert mode.  It's just
             /// like normal intellisense in that respect
             /// </summary>
-            [WpfFact]
-            public void WordCompletion_Escape()
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Escape_Legacy()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2531,6 +2615,22 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Esacpe should cancel both word completion and insert mode.  It's just
+            /// like normal intellisense in that respect
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Escape_Async()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                Dispatcher.DoEvents();
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -3246,6 +3346,134 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("i<BS><BS>");
                     Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 }
+            }
+        }
+
+        public sealed class InsertLiteralTests : InsertModeIntegrationTest
+        {
+            /// <summary>
+            /// Insert a literal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q><Esc>");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Make sure a literal tab can be inserted even if expandtab is
+            /// set and even if the host custom processes ordinary text
+            /// </summary>
+            [WpfFact]
+            public void InsertTab()
+            {
+                Create("", "");
+                _localSettings.ExpandTab = true;
+                var count = 0;
+                VimHost.TryCustomProcessFunc =
+                    (textView, command) =>
+                    {
+                        if (command.IsInsertLiteral)
+                        {
+                            Assert.Equal("\t", command.AsInsertLiteral().Text);
+                            count += 1;
+                        }
+
+                        return false;
+                    };
+                _vimBuffer.ProcessNotation("<C-q><Tab>");
+                Assert.Equal("\t", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(1, count);
+            }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>027");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a decimal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertShortDecimalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>27 ");
+                Assert.Equal("\u001b ", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>o033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an uppercase octal escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseOctalEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>O033");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert a hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>x1b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an uppercase hex escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUppercaseHexEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>X1B");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf16 escape
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeEscape()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>u001b");
+                Assert.Equal("\u001b", _textBuffer.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Insert an utf32 alien
+            /// </summary>
+            [WpfFact]
+            public void InsertUnicodeAlien()
+            {
+                Create("", "");
+                _vimBuffer.ProcessNotation("<C-q>U0001F47D");
+                Assert.Equal("\U0001F47D", _textBuffer.GetLine(0).GetText()); // 👽
             }
         }
 

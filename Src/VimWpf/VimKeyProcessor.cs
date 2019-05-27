@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -63,7 +64,11 @@ namespace Vim.UI.Wpf
         /// </summary>
         public override void TextInput(TextCompositionEventArgs args)
         {
-            VimTrace.TraceInfo("VimKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}", args.Text, args.ControlText, args.SystemText);
+            VimTrace.TraceInfo("VimKeyProcessor::TextInput Text={0} ControlText={1} SystemText={2}",
+                StringUtil.GetDisplayString(args.Text),
+                StringUtil.GetDisplayString(args.ControlText),
+                StringUtil.GetDisplayString(args.SystemText));
+
             var handled = false;
 
             var text = args.Text;
