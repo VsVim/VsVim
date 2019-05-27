@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     [DebuggerDisplay("{Number} {Baseline}")]
     public struct Line

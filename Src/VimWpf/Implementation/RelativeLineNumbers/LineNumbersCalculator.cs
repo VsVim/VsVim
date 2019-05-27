@@ -6,9 +6,9 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 
-using Vim.UI.Wpf.RelativeLineNumbers.Util;
+using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     public class LineNumbersCalculator
     {

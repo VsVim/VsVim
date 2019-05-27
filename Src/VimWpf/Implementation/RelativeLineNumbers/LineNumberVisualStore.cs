@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     public class LineNumberVisualStore
     {

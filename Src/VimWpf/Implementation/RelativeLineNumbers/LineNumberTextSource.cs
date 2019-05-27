@@ -4,7 +4,7 @@ using System.Windows.Media.TextFormatting;
 
 using Microsoft.VisualStudio.Text.Formatting;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     public class LineNumberTextSource : TextSource
     {

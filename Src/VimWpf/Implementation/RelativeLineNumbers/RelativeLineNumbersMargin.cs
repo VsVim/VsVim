@@ -2,11 +2,11 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 
-using Vim.UI.Wpf.RelativeLineNumbers.Util;
+using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 using Task = System.Threading.Tasks.Task;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     internal sealed class RelativeLineNumbersMargin : VerticalCanvasMargin
     {

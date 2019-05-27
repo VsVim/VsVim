@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers.Util
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util
 {
     public class SafeRefreshLock
     {

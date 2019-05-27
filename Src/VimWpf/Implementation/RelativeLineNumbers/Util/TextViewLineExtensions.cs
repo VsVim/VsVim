@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.Text.Formatting;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers.Util
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util
 {
     internal static class TextViewLineExtensions
     {

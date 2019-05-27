@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [Name(LineNumbersMarginOptions.LineNumbersMarginOptionName)]

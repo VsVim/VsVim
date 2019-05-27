@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 
 using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     internal class LineNumberFormatTracker : ILineFormatTracker
     {

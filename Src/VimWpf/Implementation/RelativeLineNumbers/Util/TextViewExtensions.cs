@@ -3,7 +3,7 @@
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers.Util
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util
 {
     public static class TextViewExtensions
     {

@@ -14,8 +14,8 @@ module LineNumbersMarginOptions =
 [<Export(typeof<EditorOptionDefinition>)>]
 [<Sealed>]
 type public VsVimLineNumbersMarginOption() =
-  inherit EditorOptionDefinition<bool>()
-  override x.Default
-    with get() = false
-  override x.Key 
-    with get() = LineNumbersMarginOptions.LineNumbersMarginOptionId
+    inherit EditorOptionDefinition<bool>()
+    override x.Default
+        with get() = false
+    override x.Key 
+        with get() = LineNumbersMarginOptions.LineNumbersMarginOptionId

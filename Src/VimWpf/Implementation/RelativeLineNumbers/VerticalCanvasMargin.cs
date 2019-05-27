@@ -4,7 +4,7 @@ using System.Windows.Controls;
 
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace Vim.UI.Wpf.RelativeLineNumbers
+namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     public abstract class VerticalCanvasMargin : IWpfTextViewMargin
     {

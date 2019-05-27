@@ -750,10 +750,10 @@ type internal EditorToSettingSynchronizer
                 GetEditorValue = fun _ -> false |> SettingValue.Toggle |> Some
                 VimSettingName = LocalSettingNames.RelativeNumberName
                 GetVimSettingValue = (fun vimBuffer ->
-                  let number = vimBuffer.LocalSettings.Number
-                  let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
-                  let nativeMarginVisible = number && not relativeNumber
-                  box nativeMarginVisible)
+                    let number = vimBuffer.LocalSettings.Number
+                    let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
+                    let nativeMarginVisible = number && not relativeNumber
+                    box nativeMarginVisible)
                 IsLocal = true
             })
 
@@ -761,14 +761,14 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
                 GetEditorValue = fun editor ->
-                  editor.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, false)
-                  editor |> SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
+                    editor.SetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId, false)
+                    editor |> SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
                 VimSettingName = LocalSettingNames.NumberName
                 GetVimSettingValue = (fun vimBuffer ->
-                  let number = vimBuffer.LocalSettings.Number
-                  let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
-                  let nativeMarginVisible = number && not relativeNumber
-                  box nativeMarginVisible)
+                    let number = vimBuffer.LocalSettings.Number
+                    let relativeNumber = vimBuffer.LocalSettings.RelativeNumber
+                    let nativeMarginVisible = number && not relativeNumber
+                    box nativeMarginVisible)
                 IsLocal = true
             })
 
