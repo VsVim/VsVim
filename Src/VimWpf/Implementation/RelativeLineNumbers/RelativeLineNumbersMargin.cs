@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Windows;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Threading;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 using Task = System.Threading.Tasks.Task;

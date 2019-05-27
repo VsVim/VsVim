@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows.Media.TextFormatting;
-
 using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers

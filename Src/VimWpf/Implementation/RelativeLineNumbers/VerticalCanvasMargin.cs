@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
