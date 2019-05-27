@@ -59,8 +59,6 @@ namespace Vim.UnitTest.Utilities
 
                 Dispatcher = dispatcher;
                 DispatcherSynchronizationContext = syncContext;
-
-                AppDomain.CurrentDomain.DomainUnload += delegate { this.Dispose(); };
             }
 
             // Work around the WeakEventTable Shutdown race conditions
@@ -76,6 +74,7 @@ namespace Vim.UnitTest.Utilities
             if (StaThread.IsAlive)
             {
                 Dispatcher.InvokeShutdown();
+                StaThread.Join();
             }
         }
 
