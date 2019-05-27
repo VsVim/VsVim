@@ -18,17 +18,8 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly IWpfTextViewMargin _marginContainer;
         private readonly IJoinableTaskFactoryProvider _joinableTaskFactoryProvider;
 
-        public override bool Enabled
-        {
-            get
-            {
-                if (_textView.Properties.TryGetProperty(LineNumbersMarginOptions.LineNumbersMarginOptionName, out bool enabled))
-                {
-                    return enabled;
-                }
-                return false;
-            }
-        }
+        public override bool Enabled =>
+            _textView.Options.GetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId);
 
         public RelativeLineNumbersMargin(
             IWpfTextView textView,
