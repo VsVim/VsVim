@@ -47,13 +47,13 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private bool TryGetCaretIndex(out int caretIndex)
         {
-            var caretLine = _textView.Caret.ContainingTextViewLine;
+            var caretLine = _textView.Caret.Position.BufferPosition.GetContainingLine();
 
             var firstVisibleLine =
                 _textView.TextViewLines.First(x => x.IsFirstTextViewLineForSnapshotLine);
 
-            if (TryGetVisualLineNumber(caretLine, out int caretVisualLineNumber) &&
-                TryGetVisualLineNumber(firstVisibleLine, out int referenceVisualLineNumber))
+            if (TryGetVisualLineNumber(caretLine.Start, out int caretVisualLineNumber) &&
+                TryGetVisualLineNumber(firstVisibleLine.Start, out int referenceVisualLineNumber))
             {
                 caretIndex = caretVisualLineNumber - referenceVisualLineNumber;
                 return true;
@@ -63,19 +63,19 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             return false;
         }
 
-        private bool TryGetVisualLineNumber(ITextViewLine line, out int visualLineNumber)
+        private bool TryGetVisualLineNumber(SnapshotPoint point, out int visualLineNumber)
         {
             var visualSnapshot = _textView.VisualSnapshot;
 
             var position = _textView.BufferGraph.MapUpToSnapshot(
-                line.Start,
+                point,
                 PointTrackingMode.Negative,
                 PositionAffinity.Successor,
                 visualSnapshot)?.Position;
 
             visualLineNumber = position.HasValue
-                                   ? visualSnapshot.GetLineNumberFromPosition(position.Value)
-                                   : 0;
+                ? visualSnapshot.GetLineNumberFromPosition(position.Value)
+                : 0;
 
             return position.HasValue;
         }
