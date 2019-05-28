@@ -19,10 +19,7 @@ namespace Vim.VisualStudio
             _joinableTaskFactory = ThreadHelper.JoinableTaskFactory;
         }
 
-        public JoinableTaskFactory JoinableTaskFactory
-        {
-            get { return _joinableTaskFactory; }
-        }
+        public JoinableTaskFactory JoinableTaskFactory => _joinableTaskFactory;
 
         JoinableTaskFactory IJoinableTaskFactoryProvider.JoinableTaskFactory => JoinableTaskFactory;
     }

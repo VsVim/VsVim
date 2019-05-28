@@ -28,10 +28,7 @@ namespace VimApp
             _joinableTaskFactory = s_joinableTaskContext.Factory;
         }
 
-        public JoinableTaskFactory JoinableTaskFactory
-        {
-            get { return _joinableTaskFactory; }
-        }
+        public JoinableTaskFactory JoinableTaskFactory => _joinableTaskFactory;
 
         JoinableTaskFactory IJoinableTaskFactoryProvider.JoinableTaskFactory => JoinableTaskFactory;
     }
