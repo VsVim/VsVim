@@ -63,7 +63,7 @@ type KeyInput
             match _literal with
             | Some c -> StringUtil.GetDisplayString (string(c))
             | None -> "none"
-        System.String.Format("{0}:{1}:{2}", displayChar, x.Key, x.KeyModifiers);
+        System.String.Format("{0}:{1}:{2}", displayChar, x.Key, x.KeyModifiers)
 
     static member DefaultValue = KeyInput(VimKey.None, VimKeyModifiers.None, None)
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
@@ -80,6 +80,20 @@ type KeyInput
 
     interface System.IComparable<KeyInput> with
         member x.CompareTo other = x.CompareTo other
+
+[<Sealed>]
+type KeyInputData
+    (
+        _keyInput: KeyInput,
+        _wasMapped: bool
+    ) =
+
+    member x.KeyInput = _keyInput
+    member x.WasMapped = _wasMapped
+    static member Create keyInput wasMapped = KeyInputData(keyInput, wasMapped)
+
+    override x.ToString() =
+        System.String.Format("{0}:{1}", x.KeyInput, x.WasMapped)
 
 module KeyInputUtil = 
 

@@ -144,7 +144,7 @@ type Mapper
                     processMapping lhs brokenMatchArray.[0].Value
                 elif lhs.Length = 1 then
                     // No mappings for the lhs so we are done
-                    result := KeyMappingResult.Mapped lhs
+                    result := KeyMappingResult.Unmapped lhs
                     isDone := true
                 else
                     // First character can't be mapped but the rest is still eligible for 

@@ -360,9 +360,10 @@ type internal NormalMode
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         || _runner.DoesCommandStartWith keyInput
     
-    member x.Process (keyInput: KeyInput) = 
+    member x.Process (keyInputData: KeyInputData) = 
 
         // Update the text of the command so long as this isn't a control character 
+        let keyInput = keyInputData.KeyInput
         if not (CharUtil.IsControl keyInput.Char) then
             let command = _data.Command + keyInput.Char.ToString()
             _data <- { _data with Command = command }
@@ -402,7 +403,7 @@ type internal NormalMode
         member x.CommandNames = x.CommandNames
         member x.ModeKind = ModeKind.Normal
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = ()
         member x.OnClose() = _eventHandlers.DisposeAll()

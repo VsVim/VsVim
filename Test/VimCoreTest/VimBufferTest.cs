@@ -133,7 +133,7 @@ namespace Vim.UnitTest
             public void ExceptionDuringProcessing()
             {
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
-                normal.Setup(x => x.Process(It.IsAny<KeyInput>())).Throws(new Exception());
+                normal.Setup(x => x.Process(It.IsAny<KeyInputData>())).Throws(new Exception());
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _textView.SetText("hello world");
 
@@ -385,7 +385,7 @@ namespace Vim.UnitTest
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
 
                 int keyCount = 0;
-                normal.Setup(x => x.Process(It.IsAny<KeyInput>()))
+                normal.Setup(x => x.Process(It.IsAny<KeyInputData>()))
                       .Callback(() =>
                                 {
                                     if (keyCount == 0)
@@ -413,7 +413,7 @@ namespace Vim.UnitTest
                 _vimBuffer.PostClosed += delegate { count++; };
 
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
-                normal.Setup(x => x.Process(It.Is<KeyInput>(k => k.Equals(KeyInputUtil.CharToKeyInput('A')))))
+                normal.Setup(x => x.Process(It.Is<KeyInputData>(k => k.KeyInput.Equals(KeyInputUtil.CharToKeyInput('A')))))
                       .Callback(() => { _vimBuffer.Close(); })
                       .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
                 
@@ -794,7 +794,7 @@ namespace Vim.UnitTest
             public void SwitchModeOneTimeCommand_SetProperty()
             {
                 var mode = CreateAndAddInsertMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NewSwitchModeOneTimeCommand(ModeKind.Normal)));
+                mode.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.NewHandled(ModeSwitch.NewSwitchModeOneTimeCommand(ModeKind.Normal)));
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process('c');
                 Assert.True(_vimBuffer.InOneTimeCommand.IsSome(ModeKind.Insert));
@@ -807,7 +807,7 @@ namespace Vim.UnitTest
             public void Process_HandleSwitchPreviousMode()
             {
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
-                normal.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
+                normal.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process('l');
                 Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
@@ -836,7 +836,7 @@ namespace Vim.UnitTest
             public void Process_OneTimeCommand_NeedMoreInputDoesNothing()
             {
                 var mode = CreateAndAddNormalMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.HandledNeedMoreInput);
+                mode.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.HandledNeedMoreInput);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
                 _vimBuffer.Process('c');
@@ -851,7 +851,7 @@ namespace Vim.UnitTest
             public void Process_OneTimeCommand_Escape()
             {
                 var mode = CreateAndAddNormalMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Error);
+                mode.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.Error);
                 mode.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
@@ -868,7 +868,7 @@ namespace Vim.UnitTest
             public void Process_OneTimeCommand_VisualMode_Handled()
             {
                 var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
+                mode.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.None);
                 _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
                 _vimBuffer.Process('l');
@@ -883,7 +883,7 @@ namespace Vim.UnitTest
             public void Process_OneTimeCommand_VisualMode_SwitchPreviousMode()
             {
                 var mode = CreateAndAddVisualLineMode(MockBehavior.Loose);
-                mode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
+                mode.Setup(x => x.Process(It.IsAny<KeyInputData>())).Returns(ProcessResult.NewHandled(ModeSwitch.SwitchPreviousMode));
                 _vimBuffer.SwitchMode(ModeKind.VisualLine, ModeArgument.None);
                 _vimBufferRaw.InOneTimeCommand = FSharpOption.Create(ModeKind.Replace);
                 _vimBuffer.Process('l');

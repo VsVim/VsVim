@@ -180,7 +180,8 @@ type internal SelectMode
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         || _runner.DoesCommandStartWith keyInput
 
-    member x.Process keyInput = 
+    member x.Process (keyInputData: KeyInputData) = 
+        let keyInput = keyInputData.KeyInput
 
         let processResult = 
             if keyInput = KeyInputUtil.EscapeKey then
@@ -267,7 +268,7 @@ type internal SelectMode
         member x.CommandNames =  Commands |> Seq.map (fun binding -> binding.KeyInputSet)
         member x.ModeKind = _modeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInput =  x.Process keyInput
+        member x.Process keyInputData =  x.Process keyInputData
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
         member x.OnClose() = x.OnClose()
