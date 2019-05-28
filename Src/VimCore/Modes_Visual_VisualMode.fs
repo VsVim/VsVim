@@ -208,12 +208,13 @@ type internal VisualMode
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
 
-    member x.Process (ki: KeyInput) =  
+    member x.Process (keyInputData: KeyInputData) =  
+        let keyInput = keyInputData.KeyInput
 
         // Save the last visual selection at the global level for use with [count]V|v except
         // in the case of <Esc>. This <Esc> exception is not a documented behavior but exists
         // experimentally. 
-        match ki, _vimTextBuffer.LastVisualSelection with
+        match keyInput, _vimTextBuffer.LastVisualSelection with
         | keyInput, Some lastVisualSelection when keyInput <> KeyInputUtil.EscapeKey ->
             let vimData = _vimBufferData.Vim.VimData
             match StoredVisualSelection.CreateFromVisualSpan lastVisualSelection.VisualSpan with
@@ -222,10 +223,10 @@ type internal VisualMode
         | _ -> ()
 
         let result = 
-            if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
+            if keyInput = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
-                match _runner.Run ki with
+                match _runner.Run keyInput with
                 | BindResult.NeedMoreInput _ -> 
                     _selectionTracker.UpdateSelection()
                     ProcessResult.HandledNeedMoreInput
@@ -257,7 +258,7 @@ type internal VisualMode
                 | BindResult.Error ->
                     _selectionTracker.UpdateSelection()
                     _operations.Beep()
-                    if ki.IsMouseKey then
+                    if keyInput.IsMouseKey then
                         ProcessResult.NotHandled
                     else
                         ProcessResult.Handled ModeSwitch.NoSwitch
@@ -320,7 +321,7 @@ type internal VisualMode
         member x.CommandNames = x.CommandNames
         member x.ModeKind = _modeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInput =  x.Process keyInput
+        member x.Process keyInputData =  x.Process keyInputData
         member x.OnEnter modeArgument = x.OnEnter modeArgument
         member x.OnLeave () = x.OnLeave()
         member x.OnClose() = x.OnClose()

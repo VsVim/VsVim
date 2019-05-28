@@ -1134,6 +1134,24 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("%");
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
+
+            [WpfFact]
+            public void StrayApostropheOnSameLine()
+            {
+                // Reported in issue #2566.
+                Create(
+                    "if (done)",
+                    "{ // we're done",
+                    "    Done();",
+                    "}",
+                    ""
+                    );
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(3, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class UnmatchedTokenTest : NormalModeIntegrationTest
@@ -2851,6 +2869,30 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(":map nn <S-$>", enter: true);
                     _vimBuffer.Process("nn");
                     Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Only commands typed interactively enter the command history
+                /// </summary>
+                [WpfFact]
+                public void MappedCommandsDontEnterHistory()
+                {
+                    // Reported in issue #2318.
+                    Create("cat", "dog", "");
+                    _localSettings.TabStop = 4;
+                    _vimBuffer.Process(":nnoremap x :set ts=8<CR>");
+                    _vimBuffer.ProcessNotation("<CR>");
+                    var lastCommand = "echo 'hello'";
+                    _vimBuffer.ProcessNotation($":{lastCommand}<CR>");
+                    Assert.Equal(4, _localSettings.TabStop);
+                    _vimBuffer.Process("x");
+                    Assert.Equal(8, _localSettings.TabStop);
+                    var vimData = _vimBuffer.Vim.VimData;
+                    Assert.Equal(lastCommand, vimData.CommandHistory.Items[0]);
+                    Assert.Equal(lastCommand, vimData.LastCommandLine);
+                    Assert.True(vimData.LastLineCommand.IsSome());
+                    Assert.True(vimData.LastLineCommand.Value.IsEcho);
+                    Assert.Equal(new[] { "cat", "dog", "", }, _textBuffer.GetLines());
                 }
             }
         }

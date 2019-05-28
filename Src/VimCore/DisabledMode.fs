@@ -14,8 +14,8 @@ type internal DisabledMode(_vimBufferData: IVimBufferData) =
         else
             sprintf "Vim Disabled. Type %s+%s to re-enable" (keyInput.Key.ToString()) (keyInput.KeyModifiers.ToString())
 
-    member x.Process keyInput = 
-        if keyInput = _globalSettings.DisableAllCommand then
+    member x.Process (keyInputData: KeyInputData) = 
+        if keyInputData.KeyInput = _globalSettings.DisableAllCommand then
             ProcessResult.OfModeKind ModeKind.Normal
         else
             ProcessResult.NotHandled
@@ -26,7 +26,7 @@ type internal DisabledMode(_vimBufferData: IVimBufferData) =
         member x.ModeKind = ModeKind.Disabled        
         member x.CommandNames = Seq.singleton (KeyInputSet(_globalSettings.DisableAllCommand))
         member x.CanProcess keyInput = keyInput = _globalSettings.DisableAllCommand
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter _  = ()
         member x.OnLeave() = ()
         member x.OnClose() = ()

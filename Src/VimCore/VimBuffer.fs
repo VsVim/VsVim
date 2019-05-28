@@ -340,6 +340,9 @@ type internal VimBuffer
             | None -> false
 
         match x.GetKeyInputMapping keyInput with
+        | KeyMappingResult.Unmapped keyInputSet -> 
+            mapped keyInputSet
+
         | KeyMappingResult.Mapped keyInputSet -> 
             mapped keyInputSet
 
@@ -472,7 +475,8 @@ type internal VimBuffer
 
     /// Process the single KeyInput value.  No mappings are considered here.  The KeyInput is 
     /// simply processed directly
-    member x.ProcessOneKeyInput (keyInput: KeyInput) =
+    member x.ProcessOneKeyInput (keyInput: KeyInput) (wasMapped: bool) =
+        let keyInputData = KeyInputData.Create keyInput wasMapped
 
         let processResult = 
 
@@ -492,7 +496,7 @@ type internal VimBuffer
                     // The <nop> key should have no affect
                     ProcessResult.Handled ModeSwitch.NoSwitch
                 else
-                    let result = x.Mode.Process keyInput
+                    let result = x.Mode.Process keyInputData
 
                     // Certain types of commands can always cause the current mode to be exited for
                     // the previous one time command mode.  Handle them here
@@ -590,31 +594,36 @@ type internal VimBuffer
 
         // Process the KeyInput values in the given set to completion without considering
         // any further key mappings
-        let processSet (keyInputSet: KeyInputSet) = 
-            let mutable error = false
+        let processSet (keyInputSet: KeyInputSet) (wasMapped: bool) =
             for keyInput in keyInputSet.KeyInputs do
                 if not (isError ()) then 
                     let keyInput = x.GetNonKeypadEquivalent keyInput
-                    processResult := x.ProcessOneKeyInput keyInput
+                    processResult := x.ProcessOneKeyInput keyInput wasMapped
+
+        let processUnmappedSet keyInputSet = processSet keyInputSet false
+        let processMappedSet keyInputSet = processSet keyInputSet true
 
         while remainingSet.Value.Length > 0 && not (isError ()) do
             match x.KeyRemapMode with
             | KeyRemapMode.None -> 
                 // There is no mode for the current key stroke but may be for the subsequent
                 // ones in the set.  Process the first one only here 
-                remainingSet.Value.FirstKeyInput.Value |> KeyInputSetUtil.Single |> processSet
+                remainingSet.Value.FirstKeyInput.Value |> KeyInputSetUtil.Single |> processUnmappedSet
                 remainingSet := remainingSet.Value.Rest
             | _ -> 
                 let keyMappingResult = x.GetKeyMappingCore remainingSet.Value x.KeyRemapMode
                 remainingSet := 
                     match keyMappingResult with
+                    | KeyMappingResult.Unmapped mappedKeyInputSet -> 
+                        processUnmappedSet mappedKeyInputSet
+                        KeyInputSet.Empty
                     | KeyMappingResult.Mapped mappedKeyInputSet -> 
                         mapCount := mapCount.Value + 1
-                        processSet mappedKeyInputSet
+                        processMappedSet mappedKeyInputSet
                         KeyInputSet.Empty
                     | KeyMappingResult.PartiallyMapped (mappedKeyInputSet, remainingSet) ->
                         mapCount := mapCount.Value + 1
-                        processSet mappedKeyInputSet
+                        processMappedSet mappedKeyInputSet
                         remainingSet
                     | KeyMappingResult.NeedsMoreInput keyInputSet -> 
                         _bufferedKeyInput <- Some keyInputSet
@@ -693,16 +702,16 @@ type internal VimBuffer
             //  :imap ii long
             //
             // Then type 'i' in insert mode and wait for the time out.  It will print 'short'
-            let keyInputSet = 
+            let keyInputSet, wasMapped = 
                 let keyMapping = 
                     _keyMap.GetKeyMappingsForMode x.KeyRemapMode
                     |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
                 match keyMapping with
-                | None -> keyInputSet
-                | Some keyMapping -> keyMapping.Right
+                | None -> keyInputSet, false
+                | Some keyMapping -> keyMapping.Right, true
 
             keyInputSet.KeyInputs
-            |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput |> ignore)
+            |> Seq.iter (fun keyInput -> x.ProcessOneKeyInput keyInput wasMapped |> ignore)
  
             if _isClosed && not x.IsProcessingInput then
                 _postClosedEvent.Trigger x   

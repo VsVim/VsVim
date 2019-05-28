@@ -22,11 +22,11 @@ namespace Vim.UnitTest
 
             public int? CancelledValue { get; set; }
 
-            public Tuple<int, string> CompletedValue { get; set; }
+            public Tuple<int, string, bool> CompletedValue { get; set; }
 
             public int? CompletedReturn { get; set; }
 
-            public Tuple<int, string> ProcessValue { get; set; }
+            public Tuple<int, string, bool> ProcessValue { get; set; }
 
             public int? ProcessReturn { get; set; }
 
@@ -41,15 +41,15 @@ namespace Vim.UnitTest
                 CancelledValue = value;
             }
 
-            public int Completed(int data, string command)
+            public int Completed(int data, string command, bool wasMapped)
             {
-                CompletedValue = Tuple.Create(data, command);
+                CompletedValue = Tuple.Create(data, command, wasMapped);
                 return CompletedReturn ?? data;
             }
 
             public int ProcessCommand(int data, string command)
             {
-                ProcessValue = Tuple.Create(data, command);
+                ProcessValue = Tuple.Create(data, command, false);
                 return ProcessReturn ?? data;
             }
         }
@@ -58,13 +58,13 @@ namespace Vim.UnitTest
 
         private readonly Client _client;
         private readonly IHistorySession<int, int> _historySession;
-        private BindData<int> _bindData;
+        private MappedBindData<int> _bindData;
 
         public HistorySessionTest()
         {
             _client = new Client() { HistoryList = new HistoryList(), RegisterMap = Vim.RegisterMap };
             _historySession = HistoryUtil.CreateHistorySession(_client, 0, "", null);
-            _bindData = _historySession.CreateBindDataStorage().CreateBindData();
+            _bindData = _historySession.CreateBindDataStorage().CreateMappedBindData();
         }
 
         public void ProcessNotation(string notation)
@@ -75,11 +75,12 @@ namespace Vim.UnitTest
             }
         }
 
-        public void Process(KeyInput keyInput)
+        public void Process(KeyInput keyInput, bool wasMapped = false)
         {
-            var result = _bindData.BindFunction.Invoke(keyInput);
+            var keyInputData = KeyInputData.Create(keyInput, wasMapped);
+            var result = _bindData.MappedBindFunction.Invoke(keyInputData);
             _bindData = result.IsNeedMoreInput
-                ? ((BindResult<int>.NeedMoreInput)result).BindData
+                ? ((MappedBindResult<int>.NeedMoreInput)result).MappedBindData
                 : null;
         }
 

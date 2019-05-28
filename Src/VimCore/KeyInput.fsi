@@ -51,6 +51,14 @@ type KeyInput =
     interface System.IComparable<KeyInput>
     interface System.IEquatable<KeyInput>
 
+/// Represents a key input together with whether the key input was the result
+/// of a mapping
+[<Sealed>]
+type KeyInputData =
+    member KeyInput: KeyInput
+    member WasMapped: bool
+    static member Create: keyInput: KeyInput -> wasMapped: bool -> KeyInputData
+
 module KeyInputUtil = 
 
     /// The Null Key: VimKey.Null

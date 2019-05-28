@@ -44,32 +44,40 @@ type internal HistorySession<'TData, 'TResult>
         _inPasteWait <- false
 
     member x.CreateBindResult() = 
-        let bindData = { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process } 
-        BindResult<_>.NeedMoreInput bindData
+        let bindData = { KeyRemapMode = _historyClient.RemapMode; MappedBindFunction = x.Process } 
+        MappedBindResult<_>.NeedMoreInput bindData
 
     member x.CreateBindDataStorage() = 
-        BindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; BindFunction = x.Process })
+        MappedBindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; MappedBindFunction = x.Process })
 
     /// Process a single KeyInput value in the state machine. 
-    member x.Process (keyInput: KeyInput) =
+    member x.Process (keyInputData: KeyInputData) =
+        let keyInput = keyInputData.KeyInput
+        let wasMapped = keyInputData.WasMapped
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
         | Some HistoryCommand.Execute ->
-            // Enter key completes the action
-            let result = _historyClient.Completed _clientData _command
-            _historyClient.HistoryList.Add _command
+
+            // Enter key completes the action and updates the history if not
+            // mapped.
+            let result = _historyClient.Completed _clientData _command wasMapped
+            if not wasMapped then
+                _historyClient.HistoryList.Add _command
             _inPasteWait <- false
-            BindResult.Complete result
+            MappedBindResult.Complete result
         | Some HistoryCommand.Cancel ->
-            // Escape cancels the current search.  It does update the history though
+
+            // Escape cancels the current search and updates the history if not
+            // mapped.
             _historyClient.Cancelled _clientData
-            _historyClient.HistoryList.Add _command
+            if not wasMapped then
+                _historyClient.HistoryList.Add _command
             _inPasteWait <- false
-            BindResult.Cancelled
+            MappedBindResult.Cancelled
         | Some HistoryCommand.Back ->
             match _command.Length with
             | 0 -> 
                 _historyClient.Cancelled _clientData
-                BindResult.Cancelled
+                MappedBindResult.Cancelled
             | _ -> 
                 let command = _command.Substring(0, _command.Length - 1)
                 x.ResetCommand command
@@ -109,7 +117,7 @@ type internal HistorySession<'TData, 'TResult>
         | false, _
         | _, None ->
             x.ResetCommand ""
-            BindResult<_>.Error
+            MappedBindResult<_>.Error
         | true, Some buffer ->
             let motion = Motion.InnerWord wordKind
             let arg = MotionArgument(MotionContext.AfterOperator)

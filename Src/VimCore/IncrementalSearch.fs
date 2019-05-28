@@ -102,7 +102,7 @@ type internal IncrementalSearchSession
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
         _sessionState <- SessionState.Started historySession
-        historySession.CreateBindDataStorage().CreateBindData()
+        historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
     member x.GetSearchResultAsync() =
         match _searchState with
@@ -264,7 +264,7 @@ type internal IncrementalSearchSession
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
             x.RunSearchAsync searchPoint searchText
             searchPoint)
-        member x.Completed searchPoint searchText = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
+        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with

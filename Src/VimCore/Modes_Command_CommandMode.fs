@@ -18,9 +18,9 @@ type internal CommandMode
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
-    static let BindDataError: BindData<int> = {
+    static let BindDataError: MappedBindData<int> = {
         KeyRemapMode = KeyRemapMode.None;
-        BindFunction = fun _ -> BindResult.Error
+        MappedBindFunction = fun _ -> MappedBindResult.Error
     }
 
     let mutable _command = StringUtil.Empty
@@ -42,7 +42,7 @@ type internal CommandMode
         | Some historySession -> historySession.InPasteWait
         | None -> false
 
-    member x.ParseAndRunInput (command: string) = 
+    member x.ParseAndRunInput (command: string) (wasMapped: bool) = 
         let command = 
             if command.Length > 0 && command.[0] = ':' then
                 command.Substring(1)
@@ -59,8 +59,9 @@ type internal CommandMode
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
         let result = vimInterpreter.RunLineCommand lineCommand
-        _vimData.LastCommandLine <- command
-        _vimData.LastLineCommand <- Some lineCommand
+        if not wasMapped then
+            _vimData.LastCommandLine <- command
+            _vimData.LastLineCommand <- Some lineCommand
         result
 
     // Command mode can be validly entered with the selection active.  Consider
@@ -75,10 +76,9 @@ type internal CommandMode
             else 
                 selection.Clear()
 
-    member x.Process (keyInput: KeyInput) =
-
-        match _bindData.BindFunction keyInput with
-        | BindResult.Complete _ ->
+    member x.Process (keyInputData: KeyInputData) =
+        match _bindData.MappedBindFunction keyInputData with
+        | MappedBindResult.Complete _ ->
             _bindData <- BindDataError
 
             // It is possible for the execution of the command to change the mode (say :s.../c) 
@@ -89,13 +89,13 @@ type internal CommandMode
                     ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else 
                 ProcessResult.Handled ModeSwitch.NoSwitch
-        | BindResult.Cancelled ->
+        | MappedBindResult.Cancelled ->
             _bindData <- BindDataError
             ProcessResult.OfModeKind ModeKind.Normal
-        | BindResult.Error ->
+        | MappedBindResult.Error ->
             _bindData <- BindDataError
             ProcessResult.OfModeKind ModeKind.Normal
-        | BindResult.NeedMoreInput bindData ->
+        | MappedBindResult.NeedMoreInput bindData ->
             _bindData <- bindData
             ProcessResult.HandledNeedMoreInput
 
@@ -108,9 +108,9 @@ type internal CommandMode
             0
 
         /// Run the specified command
-        let completed command =
+        let completed command wasMapped =
             x.Command <- StringUtil.Empty
-            x.ParseAndRunInput command
+            x.ParseAndRunInput command wasMapped
             x.MaybeClearSelection false
             0
 
@@ -127,7 +127,7 @@ type internal CommandMode
                 member this.RemapMode = KeyRemapMode.Command
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand _ command = processCommand command
-                member this.Completed _ command = completed command
+                member this.Completed _ command wasMapped = completed command wasMapped
                 member this.Cancelled _ = cancelled ()
             }
         HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
@@ -137,7 +137,7 @@ type internal CommandMode
 
         _command <- ""
         _historySession <- Some historySession
-        _bindData <- historySession.CreateBindDataStorage().CreateBindData()
+        _bindData <- historySession.CreateBindDataStorage().CreateMappedBindData()
         _keepSelection <- false
         _isPartialCommand <- false
 
@@ -174,13 +174,13 @@ type internal CommandMode
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
         member x.CanProcess keyInput = KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = ()
 
         member x.RunCommand command = 
-            x.ParseAndRunInput command
+            x.ParseAndRunInput command true
 
         [<CLIEvent>]
         member x.CommandChanged = _commandChangedEvent.Publish

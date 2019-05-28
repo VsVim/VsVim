@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             var result = _map.GetKeyMappingResult(lhs, mode);
             if (lhs.Length == 1)
             {
-                Assert.True(result.IsMapped);
+                Assert.True(result.IsMapped || result.IsUnmapped);
             }
             else
             {
@@ -55,7 +55,7 @@ namespace Vim.UnitTest
         {
             mode = mode ?? KeyRemapMode.Normal;
             var ret = _map.GetKeyMappingResult(lhs, mode);
-            Assert.True(ret.IsMapped);
+            Assert.True(ret.IsMapped || ret.IsUnmapped);
             Assert.Equal(KeyInputSetUtil.OfString(expected), ret.GetMappedKeyInputs());
         }
 

@@ -192,7 +192,8 @@ type internal SubstituteConfirmMode
         member x.ModeKind = ModeKind.SubstituteConfirm
         member x.VimTextBuffer = _vimTextBuffer
 
-        member x.Process ki = 
+        member x.Process keyInputData = 
+            let keyInput = keyInputData.KeyInput
 
             // Guard against the case where confirm mode is incorrectly entered
             match _confirmData with
@@ -201,7 +202,7 @@ type internal SubstituteConfirmMode
             | Some data -> 
 
                 // It's valid so process the input
-                match Map.tryFind ki _commandMap with
+                match Map.tryFind keyInput _commandMap with
                 | None -> ProcessResult.Handled ModeSwitch.NoSwitch
                 | Some func -> func data |> ProcessResult.Handled
 

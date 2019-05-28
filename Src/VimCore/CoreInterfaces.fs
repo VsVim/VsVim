@@ -1483,8 +1483,10 @@ module KeyInputSetUtil =
 [<NoEquality>]
 type KeyMappingResult =
 
-    /// The values were mapped completely and require no further mapping. This 
-    /// could be a result of a no-op mapping though
+    /// The values were not mapped
+    | Unmapped of KeyInputSet: KeyInputSet
+
+    /// The values were mapped completely and require no further mapping
     | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
@@ -1505,6 +1507,7 @@ type KeyMappingResult =
     /// was possible 
     member x.KeyInputSet = 
         match x with
+        | Unmapped keyInputSet -> keyInputSet
         | Mapped keyInputSet -> keyInputSet
         | PartiallyMapped (keyInputSet, _) -> keyInputSet
         | Recursive -> KeyInputSet.Empty
@@ -3655,6 +3658,120 @@ type BindDataStorage<'T> =
         | Simple bindData -> Simple (bindData.Convert mapFunc)
         | Complex func -> Complex (fun () -> func().Convert mapFunc)
 
+/// This is the result of attemping to bind a series of KeyInputData values
+/// into a Motion Command, etc ...
+[<RequireQualifiedAccess>]
+type MappedBindResult<'T> =
+
+    /// Successfully bound to a value
+    | Complete of Result: 'T
+
+    /// More input is needed to complete the binding operation
+    | NeedMoreInput of MappedBindData: MappedBindData<'T>
+
+    /// There was an error completing the binding operation
+    | Error
+
+    /// Motion was cancelled via user input
+    | Cancelled
+
+    with
+
+    /// Used to compose to MappedBindResult<'T> functions together by
+    /// forwarding from one to the other once the value is completed
+    member x.Map (mapFunc: 'T -> MappedBindResult<'U>): MappedBindResult<'U> =
+        match x with
+        | Complete value -> mapFunc value
+        | NeedMoreInput (bindData: MappedBindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
+        | Error -> Error
+        | Cancelled -> Cancelled
+
+    /// Used to convert a MappedBindResult<'T>.Completed to
+    /// MappedBindResult<'U>.Completed through a conversion function
+    member x.Convert (convertFunc: 'T -> 'U): MappedBindResult<'U> =
+        x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
+
+    /// Convert this MappedBindResult<'T> to a BindResult<'T>
+    member x.ConvertToBindResult (): BindResult<'T> =
+        match x with
+        | MappedBindResult.Complete result -> BindResult.Complete result
+        | MappedBindResult.NeedMoreInput mappedBindData ->
+            BindResult.NeedMoreInput (mappedBindData.ConvertToBindData())
+        | MappedBindResult.Error -> BindResult.Error
+        | MappedBindResult.Cancelled -> BindResult.Cancelled
+
+and MappedBindData<'T> = {
+
+    /// The optional KeyRemapMode which should be used when binding the next
+    /// KeyInput in the sequence
+    KeyRemapMode: KeyRemapMode
+
+    /// Function to call to get the MappedBindResult for this data
+    MappedBindFunction: KeyInputData -> MappedBindResult<'T>
+
+} with
+
+    member x.CreateBindResult() = MappedBindResult.NeedMoreInput x
+
+    /// Very similar to the Convert function.  This will instead map a
+    /// MappedBindData<'T>.Completed to a MappedBindData<'U> of any form
+    member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> =
+        let originalBindFunc = x.MappedBindFunction
+        let bindFunc keyInputData =
+            match originalBindFunc keyInputData with
+            | MappedBindResult.Complete value -> mapFunc value
+            | MappedBindResult.NeedMoreInput mappedBindData ->
+                MappedBindResult.NeedMoreInput (mappedBindData.Map mapFunc)
+            | MappedBindResult.Error -> MappedBindResult.Error
+            | MappedBindResult.Cancelled -> MappedBindResult.Cancelled
+        { KeyRemapMode = x.KeyRemapMode; MappedBindFunction = bindFunc }
+
+    /// Often types bindings need to compose together because we need an inner
+    /// binding to succeed so we can create a projected value.  This function
+    /// will allow us to translate a MappedBindResult<'T>.Completed ->
+    /// MappedBindResult<'U>.Completed
+    member x.Convert (convertFunc: 'T -> 'U): MappedBindData<'U> =
+        x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
+
+    /// Convert this MappedBindData<'T> to a BindData<'T> (note that as a
+    /// result of the conversion all key inputs will all appear to be unmapped)
+    member x.ConvertToBindData (): BindData<'T> =
+        let bindFunc keyInput =
+            KeyInputData.Create keyInput false
+            |> x.MappedBindFunction
+            |> (fun mappedBindResult -> mappedBindResult.ConvertToBindResult())
+        { KeyRemapMode = x.KeyRemapMode; BindFunction = bindFunc }
+
+/// Several types of MappedBindData<'T> need to take an action when a binding
+/// begins against themselves. This action needs to occur before the first
+/// KeyInput value is processed and hence they need a jump start. The most
+/// notable is IncrementalSearch which  needs to enter 'Search' mode before
+/// processing KeyInput values so the cursor can be updated
+[<RequireQualifiedAccess>]
+type MappedBindDataStorage<'T> =
+
+    /// Simple MappedBindData<'T> which doesn't require activation
+    | Simple of MappedBindData: MappedBindData<'T> 
+
+    /// Complex MappedBindData<'T> which does require activation
+    | Complex of CreateBindDataFunc: (unit -> MappedBindData<'T>)
+
+    with
+
+    /// Creates the MappedBindData
+    member x.CreateMappedBindData () = 
+        match x with
+        | Simple bindData -> bindData
+        | Complex func -> func()
+
+    /// Convert from a MappedBindDataStorage<'T> -> MappedBindDataStorage<'U>.
+    /// The 'mapFunc' value will run on the final 'T' data if it eventually is
+    /// completed
+    member x.Convert mapFunc = 
+        match x with
+        | Simple bindData -> Simple (bindData.Convert mapFunc)
+        | Complex func -> Complex (fun () -> func().Convert mapFunc)
+
 /// Representation of binding of Command's to KeyInputSet values and flags which correspond
 /// to the execution of the command
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -4419,7 +4536,7 @@ type internal IHistoryClient<'TData, 'TResult> =
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed: data: 'TData -> command: string -> 'TResult
+    abstract Completed: data: 'TData -> command: string -> wasMapped: bool -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
@@ -4448,7 +4565,7 @@ type internal IHistorySession<'TData, 'TResult> =
 
     /// Create an BindDataStorage for this session which will process relevant KeyInput values
     /// as manipulating the current history
-    abstract CreateBindDataStorage: unit -> BindDataStorage<'TResult>
+    abstract CreateBindDataStorage: unit -> MappedBindDataStorage<'TResult>
 
 /// Represents shared state which is available to all IVimBuffer instances.
 type IVimData = 
@@ -5394,7 +5511,7 @@ and IMode =
     abstract CanProcess: KeyInput -> bool
 
     /// Process the given KeyInput
-    abstract Process: KeyInput -> ProcessResult
+    abstract Process: KeyInputData -> ProcessResult
 
     /// Called when the mode is entered
     abstract OnEnter: ModeArgument -> unit
