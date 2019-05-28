@@ -6,7 +6,7 @@ using Vim.UI.Wpf;
 namespace Vim.VisualStudio
 {
     [Export(typeof(IJoinableTaskFactoryProvider))]
-    internal class VsVimJoinableTaskFactoryProvider : IJoinableTaskFactoryProvider
+    internal sealed class VsVimJoinableTaskFactoryProvider : IJoinableTaskFactoryProvider
     {
         private readonly JoinableTaskFactory _joinableTaskFactory;
 

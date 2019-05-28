@@ -5,7 +5,7 @@ using Vim.UI.Wpf;
 namespace VimApp
 {
     [Export(typeof(IJoinableTaskFactoryProvider))]
-    internal class VimAppJoinableTaskFactoryProvider : IJoinableTaskFactoryProvider
+    internal sealed class VimAppJoinableTaskFactoryProvider : IJoinableTaskFactoryProvider
     {
         private static readonly object s_lock = new object();
         private static JoinableTaskContext s_joinableTaskContext;
