@@ -11,7 +11,7 @@ namespace Vim.VisualStudio
         private readonly JoinableTaskFactory _joinableTaskFactory;
 
         [ImportingConstructor]
-        VsVimJoinableTaskFactoryProvider()
+        internal VsVimJoinableTaskFactoryProvider()
         {
             // See:
             // https://github.com/microsoft/vs-threading/blob/master/doc/library_with_jtf.md

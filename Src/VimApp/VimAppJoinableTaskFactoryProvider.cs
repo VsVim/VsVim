@@ -13,7 +13,7 @@ namespace VimApp
         private readonly JoinableTaskFactory _joinableTaskFactory;
 
         [ImportingConstructor]
-        VimAppJoinableTaskFactoryProvider()
+        internal VimAppJoinableTaskFactoryProvider()
         {
             // See:
             // https://github.com/microsoft/vs-threading/blob/master/doc/library_with_jtf.md
