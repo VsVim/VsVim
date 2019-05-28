@@ -15,6 +15,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly IVimLocalSettings _localSettings;
         private readonly IWpfTextViewMargin _marginContainer;
         private readonly IJoinableTaskFactoryProvider _joinableTaskFactoryProvider;
+        private readonly IProtectedOperations _protectedOperations;
 
         private readonly LineNumbersTracker _linesTracker;
         private readonly LineNumberDrawer _lineNumberDrawer;
@@ -33,7 +34,8 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             ILineFormatTracker formatTracker,
             IVimLocalSettings localSettings,
             IWpfTextViewMargin marginContainer,
-            IJoinableTaskFactoryProvider joinableTaskFactoryProvider)
+            IJoinableTaskFactoryProvider joinableTaskFactoryProvider,
+            IProtectedOperations protectedOperations)
             : base(LineNumbersMarginOptions.LineNumbersMarginOptionName)
         {
             _textView = textView
@@ -50,6 +52,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             _joinableTaskFactoryProvider = joinableTaskFactoryProvider
                 ?? throw new ArgumentNullException(nameof(joinableTaskFactoryProvider));
+
+            _protectedOperations = protectedOperations
+                ?? throw new ArgumentNullException(nameof(protectedOperations));
 
             _lineNumbersCalculator = new LineNumbersCalculator(_textView, _localSettings);
 
@@ -147,8 +152,20 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private ICollection<Line> GetNewLineNumbers()
         {
-            Canvas.Width = _formatTracker.NumberWidth * _linesTracker.LinesCountWidthChars;
-            return _lineNumbersCalculator.CalculateLineNumbers();
+            // Avoid hard crashing when async as it will bring down all of
+            // Visual Studio.
+            try
+            {
+                Canvas.Width = _formatTracker.NumberWidth * _linesTracker.LinesCountWidthChars;
+                return _lineNumbersCalculator.CalculateLineNumbers();
+            }
+            catch (Exception ex)
+            {
+                var message = $"Unable to get new line numbers: {ex.Message}";
+                var exception = new Exception(message, ex);
+                _protectedOperations.Report(exception);
+                return new Line[0];
+            }
         }
 
 

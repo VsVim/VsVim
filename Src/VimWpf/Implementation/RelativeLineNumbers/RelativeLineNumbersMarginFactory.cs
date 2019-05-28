@@ -19,6 +19,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly IClassificationFormatMapService _formatMapService;
         private readonly IClassificationTypeRegistryService _typeRegistryService;
         private readonly IJoinableTaskFactoryProvider _joinableTaskFactoryProvider;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IVim _vim;
 
         [ImportingConstructor]
@@ -26,6 +27,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             IClassificationFormatMapService formatMapService,
             IClassificationTypeRegistryService typeRegistryService,
             IJoinableTaskFactoryProvider joinableTaskFactoryProvider,
+            IProtectedOperations protectedOperations,
             IVim vim)
         {
             _formatMapService = formatMapService
@@ -36,6 +38,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             _joinableTaskFactoryProvider = joinableTaskFactoryProvider
                 ?? throw new ArgumentNullException(nameof(joinableTaskFactoryProvider));
+
+            _protectedOperations = protectedOperations
+                ?? throw new ArgumentNullException(nameof(protectedOperations));
 
             _vim = vim
                 ?? throw new ArgumentNullException(nameof(vim));
@@ -62,7 +67,8 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
                 formatProvider,
                 vimBuffer.LocalSettings,
                 marginContainer,
-                _joinableTaskFactoryProvider);
+                _joinableTaskFactoryProvider,
+                _protectedOperations);
         }
     }
 }
