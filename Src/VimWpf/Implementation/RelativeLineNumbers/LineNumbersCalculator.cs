@@ -94,6 +94,13 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private int GetNumberToDisplay(ITextViewLine wpfLine, int distanceToCaret, bool hasValidCaret)
         {
+            // Detect the phantom line.
+            if (wpfLine.Start.Position == wpfLine.End.Position &&
+                wpfLine.Start.Position == wpfLine.Snapshot.Length)
+            {
+                return -1;
+            }
+
             var absoluteCaretLineNumber =
                 _localSettings.Number && hasValidCaret && distanceToCaret == 0;
 

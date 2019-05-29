@@ -58,7 +58,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         public WpfTextLine MakeTextLine(int lineNumber)
         {
-            string text = lineNumber.ToString(CultureInfo.CurrentUICulture.NumberFormat);
+            // Use '~' for the phantom line, otherwise the line number.
+            string text = lineNumber == -1 ? "~" :
+                lineNumber.ToString(CultureInfo.CurrentUICulture.NumberFormat);
 
             var textSource = new LineNumberTextSource(text, _formatting);
             var format = new TextFormattingParagraphProperties(_formatting);
