@@ -64,40 +64,20 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             _linesTracker = new LineNumbersTracker(_textView);
 
+#if USE_ASYNC_LINE_NUMBER_MARGIN
             _linesTracker.LineNumbersChanged += async (x, y) => await RedrawLinesAsync().ConfigureAwait(true);
-            _localSettings.SettingChanged += async (s, e) => await UpdateVimNumberSettings(e).ConfigureAwait(true);
-            _textView.Options.OptionChanged += async (s, e) => await OnEditorOptionsChanged(e).ConfigureAwait(true);
+            _localSettings.SettingChanged += async (s, e) => await UpdateVimNumberSettingsAsync(e).ConfigureAwait(true);
+            _textView.Options.OptionChanged += async (s, e) => await OnEditorOptionsChangedAsync(e).ConfigureAwait(true);
+#else
+            _linesTracker.LineNumbersChanged += (x, y) => RedrawLines();
+            _localSettings.SettingChanged += (s, e) => UpdateVimNumberSettings(e);
+            _textView.Options.OptionChanged += (s, e) => OnEditorOptionsChanged(e);
+#endif
 
             SetVisualStudioMarginVisibility(Visibility.Hidden);
             if (_textView.VisualElement.IsLoaded)
             {
                 RedrawLines();
-            }
-        }
-
-        private async Task UpdateVimNumberSettings(SettingEventArgs eventArgs)
-        {
-            if (_localSettings.RelativeNumber)
-            {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
-                await RedrawLinesAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
-            }
-        }
-
-        private async Task OnEditorOptionsChanged(EditorOptionChangedEventArgs eventArgs)
-        {
-            if (Enabled)
-            {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
-                await RedrawLinesAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
             }
         }
 
@@ -135,6 +115,58 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private void RedrawLines()
         {
             UpdateLines(GetNewLineNumbers());
+        }
+
+        private void UpdateVimNumberSettings(SettingEventArgs eventArgs)
+        {
+            if (_localSettings.RelativeNumber)
+            {
+                SetVisualStudioMarginVisibility(Visibility.Hidden);
+                RedrawLines();
+            }
+            else
+            {
+                SetVisualStudioMarginVisibility(Visibility.Visible);
+            }
+        }
+
+        private void OnEditorOptionsChanged(EditorOptionChangedEventArgs eventArgs)
+        {
+            if (Enabled)
+            {
+                SetVisualStudioMarginVisibility(Visibility.Hidden);
+                RedrawLines();
+            }
+            else
+            {
+                SetVisualStudioMarginVisibility(Visibility.Visible);
+            }
+        }
+
+        private async Task UpdateVimNumberSettingsAsync(SettingEventArgs eventArgs)
+        {
+            if (_localSettings.RelativeNumber)
+            {
+                SetVisualStudioMarginVisibility(Visibility.Hidden);
+                await RedrawLinesAsync().ConfigureAwait(true);
+            }
+            else
+            {
+                SetVisualStudioMarginVisibility(Visibility.Visible);
+            }
+        }
+
+        private async Task OnEditorOptionsChangedAsync(EditorOptionChangedEventArgs eventArgs)
+        {
+            if (Enabled)
+            {
+                SetVisualStudioMarginVisibility(Visibility.Hidden);
+                await RedrawLinesAsync().ConfigureAwait(true);
+            }
+            else
+            {
+                SetVisualStudioMarginVisibility(Visibility.Visible);
+            }
         }
 
         private async Task RedrawLinesAsync()
