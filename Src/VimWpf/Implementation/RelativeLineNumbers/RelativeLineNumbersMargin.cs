@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         public override bool Enabled =>
             _textView.Options.GetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId);
 
-        public RelativeLineNumbersMargin(
+        internal RelativeLineNumbersMargin(
             IWpfTextView textView,
             ILineFormatTracker formatTracker,
             IVimLocalSettings localSettings,

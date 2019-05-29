@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public abstract class VerticalCanvasMargin : IWpfTextViewMargin
+    internal abstract class VerticalCanvasMargin : IWpfTextViewMargin
     {
         public string MarginName { get; }
 

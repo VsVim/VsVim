@@ -5,13 +5,13 @@ using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public class LineNumberTextSource : TextSource
+    internal sealed class LineNumberTextSource : TextSource
     {
         private readonly string _text;
 
         private readonly TextFormattingRunProperties _formatting;
 
-        public LineNumberTextSource(string text, TextFormattingRunProperties formatting)
+        internal LineNumberTextSource(string text, TextFormattingRunProperties formatting)
         {
             _text = text;
             _formatting = formatting;

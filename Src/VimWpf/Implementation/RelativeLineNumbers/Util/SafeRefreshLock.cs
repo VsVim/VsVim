@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util
 {
-    public class SafeRefreshLock
+    internal sealed class SafeRefreshLock
     {
         private int _inProgress;
         private int _refreshRequested;

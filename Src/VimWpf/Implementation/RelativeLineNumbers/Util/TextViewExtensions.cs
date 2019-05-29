@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util
 {
-    public static class TextViewExtensions
+    internal static class TextViewExtensions
     {
         public static int GetLineCount(this ITextView textView)
         {

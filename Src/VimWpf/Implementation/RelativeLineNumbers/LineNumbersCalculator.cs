@@ -9,12 +9,12 @@ using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public class LineNumbersCalculator
+    internal sealed class LineNumbersCalculator
     {
         private readonly IWpfTextView _textView;
         private readonly IVimLocalSettings _localSettings;
 
-        public LineNumbersCalculator(IWpfTextView textView, IVimLocalSettings localSettings)
+        internal LineNumbersCalculator(IWpfTextView textView, IVimLocalSettings localSettings)
         {
             _textView = textView
                 ?? throw new ArgumentNullException(nameof(textView));

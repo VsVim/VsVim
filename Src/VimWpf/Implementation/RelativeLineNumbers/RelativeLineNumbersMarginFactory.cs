@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [TextViewRole(PredefinedTextViewRoles.EmbeddedPeekTextView)]
     [DeferCreation(OptionName = LineNumbersMarginOptions.LineNumbersMarginOptionName)]
-    public sealed class RelativeLineNumbersMarginFactory : IWpfTextViewMarginProvider
+    internal sealed class RelativeLineNumbersMarginFactory : IWpfTextViewMarginProvider
     {
         private readonly IClassificationFormatMapService _formatMapService;
         private readonly IClassificationTypeRegistryService _typeRegistryService;
@@ -23,7 +23,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        public RelativeLineNumbersMarginFactory(
+        internal RelativeLineNumbersMarginFactory(
             IClassificationFormatMapService formatMapService,
             IClassificationTypeRegistryService typeRegistryService,
             IJoinableTaskFactoryProvider joinableTaskFactoryProvider,

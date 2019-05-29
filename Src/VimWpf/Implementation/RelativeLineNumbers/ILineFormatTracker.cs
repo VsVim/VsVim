@@ -5,7 +5,7 @@ using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public interface ILineFormatTracker
+    internal interface ILineFormatTracker
     {
         Brush Background { get; }
 

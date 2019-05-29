@@ -6,13 +6,13 @@ using System.Windows.Controls;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public class LineNumberDrawer
+    internal sealed class LineNumberDrawer
     {
         private readonly Canvas _canvas;
         private readonly ILineFormatTracker _formatTracker;
         private readonly LineNumberVisualStore _store;
 
-        public LineNumberDrawer(Canvas canvas, ILineFormatTracker formatTracker)
+        internal LineNumberDrawer(Canvas canvas, ILineFormatTracker formatTracker)
         {
             _canvas = canvas
                 ?? throw new ArgumentNullException(nameof(canvas));

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public class LineNumberVisualStore
+    internal sealed class LineNumberVisualStore
     {
         private readonly Dictionary<int, LineNumberVisual> _cache;
 
         private readonly ILineFormatTracker _formatTracker;
 
-        public LineNumberVisualStore(ILineFormatTracker formatTracker)
+        internal LineNumberVisualStore(ILineFormatTracker formatTracker)
         {
             _formatTracker = formatTracker
                 ?? throw new ArgumentNullException(nameof(formatTracker));

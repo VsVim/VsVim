@@ -9,13 +9,13 @@ using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public class LineNumberVisual : UIElement
+    internal class LineNumberVisual : UIElement
     {
         private readonly WpfTextLine _textLine;
 
         private readonly List<Point> _renderTargets;
 
-        public LineNumberVisual(WpfTextLine textLine)
+        internal LineNumberVisual(WpfTextLine textLine)
         {
             _textLine = textLine
                 ?? throw new ArgumentNullException(nameof(textLine));

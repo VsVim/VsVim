@@ -12,7 +12,7 @@ using WpfTextLine = System.Windows.Media.TextFormatting.TextLine;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    internal class LineNumberFormatTracker : ILineFormatTracker
+    internal sealed class LineNumberFormatTracker : ILineFormatTracker
     {
         private readonly IFormattedLineSource _formattedLineSource;
         private readonly IClassificationFormatMap _classificationFormatMap;

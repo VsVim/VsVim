@@ -5,7 +5,7 @@ using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
-    public sealed class LineNumbersTracker
+    internal sealed class LineNumbersTracker
     {
         private readonly IWpfTextView _textView;
 
@@ -16,7 +16,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         public int LinesCountWidthChars { get; private set; }
 
-        public LineNumbersTracker(IWpfTextView textView)
+        internal LineNumbersTracker(IWpfTextView textView)
         {
             _textView = textView
                 ?? throw new ArgumentNullException(nameof(textView));
