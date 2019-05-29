@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
@@ -11,6 +12,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private bool _zoomChanged;
         private bool _heightChanged;
+        private bool _bufferChanged;
 
         public event EventHandler<EventArgs> LineNumbersChanged;
 
@@ -21,6 +23,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             _textView = textView
                 ?? throw new ArgumentNullException(nameof(textView));
 
+            _textView.TextBuffer.Changed += OnTextBufferChanged;
             _textView.LayoutChanged += OnLayoutChanged;
             _textView.ZoomLevelChanged += OnZoomChanged;
             _textView.ViewportHeightChanged += OnViewportHeightChanged;
@@ -45,6 +48,29 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             }
 
             LineNumbersChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
+        {
+            var beforeCount = e.Before.LineCount;
+            var afterCount = e.After.LineCount;
+            if (beforeCount != afterCount)
+            {
+                // The number of lines changed.
+                _bufferChanged = true;
+            }
+            else
+            {
+                // Detect a change in the phantom line.
+                var beforeLine = e.Before.GetLineFromLineNumber(beforeCount - 1);
+                var afterLine = e.After.GetLineFromLineNumber(afterCount - 1);
+                var beforeEmpty = beforeLine.LengthIncludingLineBreak == 0;
+                var afterEmpty = afterLine.LengthIncludingLineBreak == 0;
+                if (beforeEmpty != afterEmpty)
+                {
+                    _bufferChanged = true;
+                }
+            }
         }
 
         private void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
@@ -73,8 +99,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             bool linesMoved = e.TranslatedLines.Count > 0;
             bool scroll = e.VerticalTranslation;
 
-            if (linesMoved || scroll || _heightChanged || _zoomChanged)
+            if (linesMoved || scroll || _bufferChanged || _heightChanged || _zoomChanged)
             {
+                _bufferChanged = false;
                 _zoomChanged = false;
                 _heightChanged = false;
 
