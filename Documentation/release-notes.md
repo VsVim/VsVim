@@ -1,5 +1,69 @@
 # Release Notes
 
+### Version 2.7.0
+[Issues closed in 2.7.0 Milestone](https://github.com/VsVim/VsVim/milestone/48)
+Primary Issues Addressed
+* % motion failing if there's an ' on the same line as a match
+* Unit tests pause for several minutes after completing
+* Format paragraph does not respect unix line endings
+* Display the '^' character when entering literal characters
+* Vim help files use the user's tab settings rather than those specified in the files
+* Loading a file doesn't scroll the new window correctly unless 'scrolloff' is set
+* Improve help
+* System.ArgumentException in VB.Net
+* Search behavior has changed
+* In C++, CTRL-] opens the Find Symbol Results panel instead of going to the definition directly.
+* Runtime exception on file close
+* Number increment (Ctrl+A) jumps over decimal numbers to next hex number
+* Status messages do not appear in the trace log
+* Reduce the volume of output in the trace window
+* Ctrl+Click does not follow link in spite of tooltip
+* Visual Studio 2019 always Display \"Welcome to Vim\"
+* verbatim strings break block commands di) da)
+* CTRL+A in blockwise-visual mode increments numbers not in selection
+* suddenly today VS2019 cannot start vsvim 
+* CleanVsix no longer runs on appveyor
+* Publishing to the vsixgallery fails
+* The 'retab' command mangles non-leading tabs
+* Backspace issue in peek definition window
+* Increasing / Decreasing a number does not work within words
+* Append yanked line does not append to unnamed register
+* Deleting by line to the end of the buffer leaves caret on phantom line
+* map visual studio command ExpandSelectiontoContainingBlock
+* Detecting 2017 vs 2019 in vsvimrc
+* Neither Ctrl-V not Ctrl-Q quote Ctrl characters or the escape key
+* <C-N> (word completion) exception in VS 2019
+* Make incremental search asynchronous
+* inconsistent Ctrl-ú (Ctrl-[) handling in different modes (Czech keyboard)
+* Echoing environment variables
+* Searching with /, then pressing Ctrl-A and typing FOO inserts /O/O/F
+* CTRL-W Window navigaton bug
+* CTRL + P completion list in wrong order
+* Command Mode should respect words
+* Can't press <Esc> to exit F2-rename window
+* What the setting Hide Marks Value
+* Delay before showing insertion caret after 'o' command
+* Parameter name: span was out of range of valid values [vs2015/2.6.0.0] 
+* Inserting tabs in block selection still does not work properly
+* markers margin
+* normal mode across all files
+* Remove VS2012 and VS2013 support
+* Bug: t<char>  followed by ; does not go to the next match
+* Double-click to select word then drag doesn't continue to select whole words
+* Commands issued as part of a mapping should not be recorded in the command history
+* map nn <S-$> does not work
+* Insert mode unicode input
+* CompositionFailedException: This part (Vim.Vim) cannot be instantiated
+* Commands sometimes appear in the source code 
+* Crash in DisplayLineDown
+* vs2017, set clipboard=unnamed,vs encounter an exception
+* Weird behavior after clicking into an escape sequence
+* VsVim is active in Powershell Interactive but probably should'nt be
+* Half page navigation using <C-D>,<C-U> is very slow
+* Highlighting in Insert Mode goes to Visual Mode, but goes back to Command Mode
+* Show line numbers in parse errors
+* Support vim modelines
+
 ### Version 2.6.0
 [Issues closed in milestone 2.6.0](https://github.com/VsVim/VsVim/milestone/45?closed=1)
 Primary Issues Addressed
