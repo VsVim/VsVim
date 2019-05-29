@@ -2110,6 +2110,10 @@ type internal CommandUtil
         else
             CommandResult.Error
 
+    /// Perform no operation
+    member x.NoOperation () =
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
     member x.OpenFoldInSelection (visualSpan: VisualSpan) =
@@ -2983,6 +2987,7 @@ type internal CommandUtil
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
+        | NormalCommand.NoOperation -> x.NoOperation()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenLinkUnderCaret -> x.OpenLinkUnderCaret()

@@ -183,6 +183,18 @@ namespace Vim.UnitTest
             Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('´')));
         }
 
+        /// <summary>
+        /// Verify that normal mode can process both C-LeftMouse and C-LeftRelease
+        /// </summary>
+        [WpfFact]
+        public void CanProcess_ControlClickAndRelease()
+        {
+            // Reported in issue #2580.
+            Create(s_defaultLines);
+            Assert.True(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.LeftMouse), VimKeyModifiers.Control)));
+            Assert.True(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.LeftRelease), VimKeyModifiers.Control)));
+        }
+
         #endregion
 
         #region Movement
