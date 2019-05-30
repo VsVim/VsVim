@@ -584,13 +584,16 @@ module VimRegexFactory =
     let ConvertCharAsNormal (data: VimRegexBuilder) c = 
         if not (TryAppendNamedCollection data c) then
             data.AppendEscapedChar c
-            data.IsStartOfPattern <- false
+        data.IsStartOfPattern <- false
 
     /// Convert the given character as a special character.  This is done independent of any 
     /// magic setting.
     let ConvertCharAsSpecial (data: VimRegexBuilder) c = 
+        let isStartOfPattern = data.IsStartOfPattern
+        data.IsStartOfPattern <- false
         let isAlternate = data.IsAlternate
         data.IsAlternate <- false
+
         match c with
         | '.' ->
             if data.IsCollectionOpen then
@@ -621,7 +624,7 @@ module VimRegexFactory =
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' ->
-            if data.IsStartOfPattern then
+            if isStartOfPattern then
                 data.AppendChar '^'
             elif data.IsStartOfCollection then
                 data.AppendChar '^'
@@ -650,7 +653,9 @@ module VimRegexFactory =
                     data.AppendEscapedChar '['
                     data.AppendEscapedChar ']'
                     data.IncrementIndex 1
-                | Some '^' -> data.BeginCollection()
+                | Some '^' ->
+                    data.BeginCollection()
+                    data.IsAlternate <- isAlternate
                 | _ -> 
                     data.BeginCollection()
                     if isAlternate then
@@ -689,10 +694,18 @@ module VimRegexFactory =
             data.AppendString NewLineRegex
             data.IncludesNewLine <- true
         | 't' -> data.AppendString @"\t"
-        | 'v' -> data.MagicKind <- MagicKind.VeryMagic
-        | 'V' -> data.MagicKind <- MagicKind.VeryNoMagic
-        | 'm' -> data.MagicKind <- MagicKind.Magic
-        | 'M' -> data.MagicKind <- MagicKind.NoMagic
+        | 'v' ->
+            data.MagicKind <- MagicKind.VeryMagic
+            data.IsStartOfPattern <- isStartOfPattern
+        | 'V' ->
+            data.MagicKind <- MagicKind.VeryNoMagic
+            data.IsStartOfPattern <- isStartOfPattern
+        | 'm' ->
+            data.MagicKind <- MagicKind.Magic
+            data.IsStartOfPattern <- isStartOfPattern
+        | 'M' ->
+            data.MagicKind <- MagicKind.NoMagic
+            data.IsStartOfPattern <- isStartOfPattern
         | 'C' -> 
             data.MatchCase <- true
             data.CaseSpecifier <- CaseSpecifier.OrdinalCase
