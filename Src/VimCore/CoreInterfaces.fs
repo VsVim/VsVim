@@ -2933,6 +2933,9 @@ type NormalCommand =
     /// Move the caret to position of the mouse cursor
     | MoveCaretToMouse
 
+    /// Perform no operation
+    | NoOperation
+
     /// Undo count operations in the ITextBuffer
     | Undo
 
@@ -3168,6 +3171,7 @@ type NormalCommand =
         | NormalCommand.JumpToNewerPosition -> None
         | NormalCommand.MoveCaretToMotion _ -> None
         | NormalCommand.MoveCaretToMouse -> None
+        | NormalCommand.NoOperation -> None
         | NormalCommand.Undo -> None
         | NormalCommand.UndoLine -> None
         | NormalCommand.OpenAllFolds -> None
