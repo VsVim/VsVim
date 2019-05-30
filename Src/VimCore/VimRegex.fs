@@ -299,10 +299,13 @@ type VimRegexBuilder
         _options: VimRegexOptions
     ) =
 
+    let mutable _builder = StringBuilder()
+
     let mutable _index = 0
     let mutable _magicKind = _magicKind
     let mutable _matchCase = _matchCase
-    let mutable _builder = StringBuilder()
+    let mutable _caseSpecifier = CaseSpecifier.None
+    let mutable _isAlternate = false
     let mutable _isBroken = false
     let mutable _groupCount = 0
     let mutable _isStartOfPattern = true
@@ -312,7 +315,6 @@ type VimRegexBuilder
     let mutable _isCollectionOpen = false
     let mutable _includesNewLine = false
     let mutable _matchesVisualSelection = false
-    let mutable _caseSpecifier = CaseSpecifier.None
 
     member x.Pattern = _pattern
 
@@ -337,6 +339,11 @@ type VimRegexBuilder
     member x.CaseSpecifier 
         with get() = _caseSpecifier
         and set value = _caseSpecifier <- value
+
+    /// Whether this is an expression alternate prefixed by '\_'
+    member x.IsAlternate
+        with get() = _isAlternate
+        and set value = _isAlternate <- value
 
     /// Is the match completely broken and should match nothing
     member x.IsBroken = _isBroken
@@ -434,7 +441,8 @@ type VimRegexBuilder
 
 module VimRegexFactory =
 
-    let DotRegex = @"[^\r\n]"
+    let EndOfLineCharacters = @"\r\n"
+    let DotRegex = "[^" + EndOfLineCharacters + "]"
     let DollarRegex = @"(?<!\r)(?=\r?$)"
     let NewLineRegex = @"(?<!\r)\r?\n"
     let MatchStartRegex = "(?<" + VimRegexUtils.StartGroupName + ">)"
@@ -581,6 +589,8 @@ module VimRegexFactory =
     /// Convert the given character as a special character.  This is done independent of any 
     /// magic setting.
     let ConvertCharAsSpecial (data: VimRegexBuilder) c = 
+        let isAlternate = data.IsAlternate
+        data.IsAlternate <- false
         match c with
         | '.' ->
             if data.IsCollectionOpen then
@@ -610,7 +620,15 @@ module VimRegexFactory =
                 data.BeginRange true
         | '}' -> if data.IsRangeOpen then data.EndRange() else data.AppendChar '}'
         | '|' -> data.AppendChar '|'
-        | '^' -> if data.IsStartOfPattern || data.IsStartOfCollection then data.AppendChar '^' else data.AppendEscapedChar '^'
+        | '^' ->
+            if data.IsStartOfPattern then
+                data.AppendChar '^'
+            elif data.IsStartOfCollection then
+                data.AppendChar '^'
+                if not isAlternate then
+                    data.AppendString EndOfLineCharacters
+            else
+                data.AppendEscapedChar '^'
         | '$' -> 
             let isEndOfPattern = 
                 if data.Index >= data.Pattern.Length then true 
@@ -624,14 +642,19 @@ module VimRegexFactory =
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
         | '[' -> 
-            match data.CharAtIndex with
-            | Some ']' -> 
-                data.AppendEscapedChar '['
-                data.AppendEscapedChar ']'
-                data.IncrementIndex 1
-            | _ -> 
-                if data.IsCollectionOpen then ConvertCharAsNormal data '['
-                else data.BeginCollection()
+            if data.IsCollectionOpen then
+                ConvertCharAsNormal data '['
+            else
+                match data.CharAtIndex with
+                | Some ']' -> 
+                    data.AppendEscapedChar '['
+                    data.AppendEscapedChar ']'
+                    data.IncrementIndex 1
+                | Some '^' -> data.BeginCollection()
+                | _ -> 
+                    data.BeginCollection()
+                    if isAlternate then
+                        data.AppendString EndOfLineCharacters
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
@@ -761,6 +784,9 @@ module VimRegexFactory =
                 | '.' ->
                     data.AppendString (CombineAlternatives DotRegex NewLineRegex)
                     data.IncludesNewLine <- true
+                | '[' ->
+                    data.DecrementIndex 1
+                    data.IsAlternate <- true
                 | _ -> data.Break()
         | 'v' -> ConvertCharAsSpecial data c
         | 'V' -> ConvertCharAsSpecial data c
