@@ -84,6 +84,13 @@ namespace Vim.UnitTest
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
         }
 
+        private T WithLastNormalCommand<T>(Func<NormalCommand, T> function)
+        {
+            Assert.True(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
+            var storedNormalCommand = (StoredCommand.NormalCommand)_vimData.LastCommand.Value;
+            return function(storedNormalCommand.NormalCommand);
+        }
+
         public override void Dispose()
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
@@ -9456,6 +9463,28 @@ namespace Vim.UnitTest
                 Assert.Equal("https://github.com/VsVim/VsVim", link);
                 Assert.Equal(point, _textView.GetCaretPoint());
                 Assert.Equal(0, _vimHost.GoToDefinitionCount);
+            }
+
+            [WpfFact]
+            public void MouseDoesNotAffectLastCommand()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _vimBuffer.ProcessNotation("yyp");
+                var point = _textView.GetPointInLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(point, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
+                Assert.True(WithLastNormalCommand(x => x.IsPutAfterCaret));
+                _vimBuffer.ProcessNotation("<C-LeftRelease>");
+                Assert.True(WithLastNormalCommand(x => x.IsPutAfterCaret));
             }
         }
 
