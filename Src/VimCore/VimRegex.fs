@@ -580,19 +580,28 @@ module VimRegexFactory =
         else
             false
 
+    /// Clear state related to previous parsing
+    let clearState (data: VimRegexBuilder) =
+        let isStartOfPattern = data.IsStartOfPattern
+        let isStartOfCollection = data.IsStartOfCollection
+        let isAlternate = data.IsAlternate
+        data.IsStartOfPattern <- false
+        data.IsStartOfCollection <- false
+        data.IsAlternate <- false
+        isStartOfPattern, isStartOfCollection, isAlternate
+
     /// Convert a normal unescaped char. This still needs to consider open patterns.
     let ConvertCharAsNormal (data: VimRegexBuilder) c = 
         if not (TryAppendNamedCollection data c) then
             data.AppendEscapedChar c
-        data.IsStartOfPattern <- false
+        clearState data |> ignore
 
     /// Convert the given character as a special character.  This is done independent of any 
     /// magic setting.
     let ConvertCharAsSpecial (data: VimRegexBuilder) c = 
-        let isStartOfPattern = data.IsStartOfPattern
-        data.IsStartOfPattern <- false
-        let isAlternate = data.IsAlternate
-        data.IsAlternate <- false
+
+        let isStartOfPattern, isStartOfCollection, isAlternate =
+            clearState data
 
         match c with
         | '.' ->
@@ -626,10 +635,12 @@ module VimRegexFactory =
         | '^' ->
             if isStartOfPattern then
                 data.AppendChar '^'
-            elif data.IsStartOfCollection then
+            elif isStartOfCollection then
                 data.AppendChar '^'
                 if not isAlternate then
                     data.AppendString EndOfLineCharacters
+                else
+                    data.IncludesNewLine <- true
             else
                 data.AppendEscapedChar '^'
         | '$' -> 
@@ -660,6 +671,7 @@ module VimRegexFactory =
                     data.BeginCollection()
                     if isAlternate then
                         data.AppendString EndOfLineCharacters
+                        data.IncludesNewLine <- true
         | ']' -> if data.IsCollectionOpen then data.EndCollection() else data.AppendEscapedChar(']')
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
@@ -870,18 +882,12 @@ module VimRegexFactory =
                 match data.CharAtIndex with
                 | None -> CreateVimRegex data 
                 | Some '\\' -> 
-                    let wasStartOfCollection = data.IsStartOfCollection
                     data.IncrementIndex 1
                     match data.CharAtIndex with 
                     | None -> ConvertCore data '\\' false
                     | Some c -> 
                         data.IncrementIndex 1
                         ConvertCore data c true
-
-                    // If we were at the start of a collection before processing this 
-                    // char then we no longer are afterwards
-                    if wasStartOfCollection then 
-                        data.IsStartOfCollection <- false
                     inner ()
                 | Some c -> 
                     data.IncrementIndex 1
