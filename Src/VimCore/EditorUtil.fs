@@ -3000,7 +3000,9 @@ module TextViewUtil =
                 else
                     None
             with 
-            | _ -> None
+            | :? InvalidOperationException as ex ->
+                VimTrace.TraceError ex
+                None
 
     /// Get the text view line relative to the specified point
     let GetTextViewLineRelativeToPoint textView offset point =
@@ -3031,6 +3033,11 @@ module TextViewUtil =
     /// Get the text view line containing the specified point
     let GetTextViewLineContainingPoint textView point =
         GetTextViewLineRelativeToPoint textView 0 point
+
+    /// Get the text view line containing the specified point
+    let GetTextViewLineContainingCaret textView =
+        GetCaretPoint textView
+        |> GetTextViewLineRelativeToPoint textView 0
 
     /// Get the count of Visible lines in the ITextView
     let GetVisibleLineCount textView = 
