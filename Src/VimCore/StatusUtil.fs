@@ -13,9 +13,9 @@ type internal StatusUtil() =
         with get () = _vimBuffer
         and set value = _vimBuffer <- value
 
-    member x.DoWithBuffer label func (msg: string) = 
+    member x.DoWithBuffer (label: string) func (msg: string) = 
         VimTrace.TraceError("{0} Start{1}{2}", label, System.Environment.NewLine, msg)
-        VimTrace.TraceError("{1} End")
+        VimTrace.TraceError("{1} End", label)
         match _vimBuffer with
         | None -> ()
         | Some buffer -> msg |> func buffer
