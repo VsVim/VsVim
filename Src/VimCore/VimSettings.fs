@@ -517,6 +517,7 @@ type internal LocalSettings
             (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
             (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
             (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
+            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
             (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
             (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
             (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
@@ -597,6 +598,9 @@ type internal LocalSettings
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
             and set value = _map.TrySetValue NumberFormatsName (SettingValue.String value) |> ignore
+        member x.RelativeNumber
+            with get() = _map.GetBoolValue RelativeNumberName
+            and set value = _map.TrySetValue RelativeNumberName (SettingValue.Toggle value) |> ignore
         member x.SoftTabStop  
             with get() = _map.GetNumberValue SoftTabStopName
             and set value = _map.TrySetValue SoftTabStopName (SettingValue.Number value) |> ignore
@@ -739,13 +743,22 @@ type internal EditorToSettingSynchronizer
                 GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
                 IsLocal = true
             })
-           
+
         _settingList.Add(
             {
                 EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
                 VimSettingName = LocalSettingNames.NumberName
                 GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
+                IsLocal = true
+            })
+
+        _settingList.Add(
+            {
+                EditorOptionKey = LineNumbersMarginOptions.LineNumbersMarginOptionName 
+                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.LineNumbersMarginOptionId
+                VimSettingName = LocalSettingNames.RelativeNumberName
+                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.RelativeNumberName true
                 IsLocal = true
             })
 
