@@ -2260,7 +2260,8 @@ type VimInterpreter
         try
             while not parser.IsDone do
                 let lineCommand = parser.ParseNextCommand()
-                _statusUtil.ContextLineNumber <- Some parser.ContextLineNumber
+                if lines.Length <> 1 then
+                    _statusUtil.ContextLineNumber <- Some parser.ContextLineNumber
                 x.RunLineCommand lineCommand |> ignore
         finally
             _statusUtil.ContextLineNumber <- None
