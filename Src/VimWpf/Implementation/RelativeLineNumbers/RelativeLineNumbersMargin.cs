@@ -10,16 +10,16 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     internal sealed class RelativeLineNumbersMargin : VerticalCanvasMargin
     {
+        private static readonly ICollection<Line> s_empty = new Line[0];
+
         private readonly IWpfTextView _textView;
         private readonly ILineFormatTracker _formatTracker;
         private readonly IVimLocalSettings _localSettings;
         private readonly IWpfTextViewMargin _marginContainer;
-        private readonly IJoinableTaskFactoryProvider _joinableTaskFactoryProvider;
         private readonly IProtectedOperations _protectedOperations;
 
         private readonly LineNumbersTracker _linesTracker;
         private readonly LineNumberDrawer _lineNumberDrawer;
-        private readonly SafeRefreshLock _refreshLock;
         private readonly LineNumbersCalculator _lineNumbersCalculator;
 
         private double _width = double.NaN;
@@ -34,7 +34,6 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             ILineFormatTracker formatTracker,
             IVimLocalSettings localSettings,
             IWpfTextViewMargin marginContainer,
-            IJoinableTaskFactoryProvider joinableTaskFactoryProvider,
             IProtectedOperations protectedOperations)
             : base(LineNumbersMarginOptions.LineNumbersMarginOptionName)
         {
@@ -50,29 +49,18 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             _marginContainer = marginContainer
                 ?? throw new ArgumentNullException(nameof(marginContainer));
 
-            _joinableTaskFactoryProvider = joinableTaskFactoryProvider
-                ?? throw new ArgumentNullException(nameof(joinableTaskFactoryProvider));
-
             _protectedOperations = protectedOperations
                 ?? throw new ArgumentNullException(nameof(protectedOperations));
 
             _lineNumbersCalculator = new LineNumbersCalculator(_textView, _localSettings);
 
-            _refreshLock = new SafeRefreshLock();
-
             _lineNumberDrawer = new LineNumberDrawer(Canvas, _formatTracker);
 
             _linesTracker = new LineNumbersTracker(_textView);
 
-#if USE_ASYNC_LINE_NUMBER_MARGIN
-            _linesTracker.LineNumbersChanged += async (x, y) => await RedrawLinesAsync().ConfigureAwait(true);
-            _localSettings.SettingChanged += async (s, e) => await UpdateVimNumberSettingsAsync(e).ConfigureAwait(true);
-            _textView.Options.OptionChanged += async (s, e) => await OnEditorOptionsChangedAsync(e).ConfigureAwait(true);
-#else
             _linesTracker.LineNumbersChanged += (x, y) => RedrawLines();
             _localSettings.SettingChanged += (s, e) => UpdateVimNumberSettings(e);
             _textView.Options.OptionChanged += (s, e) => OnEditorOptionsChanged(e);
-#endif
 
             SetVisualStudioMarginVisibility(Visibility.Hidden);
             if (_textView.VisualElement.IsLoaded)
@@ -143,45 +131,6 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             }
         }
 
-        private async Task UpdateVimNumberSettingsAsync(SettingEventArgs eventArgs)
-        {
-            if (_localSettings.RelativeNumber)
-            {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
-                await RedrawLinesAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
-            }
-        }
-
-        private async Task OnEditorOptionsChangedAsync(EditorOptionChangedEventArgs eventArgs)
-        {
-            if (Enabled)
-            {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
-                await RedrawLinesAsync().ConfigureAwait(true);
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
-            }
-        }
-
-        private async Task RedrawLinesAsync()
-        {
-            await _refreshLock.ExecuteInLockAsync(RedrawLinesInternalAsync)
-                .ConfigureAwait(true);
-
-            async Task RedrawLinesInternalAsync()
-            {
-                var newLineNumbers = GetNewLineNumbers();
-                await _joinableTaskFactoryProvider.JoinableTaskFactory.SwitchToMainThreadAsync();
-                UpdateLines(newLineNumbers);
-            }
-        }
-
         private ICollection<Line> GetNewLineNumbers()
         {
             // Avoid hard crashing when async as it will bring down all of
@@ -196,10 +145,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
                 var message = $"Unable to get new line numbers: {ex.Message}";
                 var exception = new Exception(message, ex);
                 _protectedOperations.Report(exception);
-                return new Line[0];
+                return s_empty;
             }
         }
-
 
         private void UpdateLines(ICollection<Line> newLineNumbers)
         {
