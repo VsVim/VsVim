@@ -94,6 +94,22 @@ type internal CommonOperations
             let yCoordinate = position.Y + _textView.ViewportTop
             let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
 
+            // Use the last line when clicking below the end of the buffer.
+            let textViewLine =
+                if textViewLine = null then
+                    let lastLineNumber =
+                        TextViewUtil.GetSnapshot _textView
+                        |> SnapshotUtil.GetLastLineNumber
+                    let lastVisibleLine = textViewLines.LastVisibleLine
+                    let lastVisibleLineNumber =
+                        lastVisibleLine.Start.GetContainingLine().LineNumber
+                    if lastVisibleLineNumber = lastLineNumber then
+                        lastVisibleLine
+                    else
+                        textViewLine
+                else
+                    textViewLine
+
             // Avoid the phantom line.
             let textViewLine =
                 if textViewLine <> null then

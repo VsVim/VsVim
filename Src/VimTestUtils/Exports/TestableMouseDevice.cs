@@ -14,6 +14,7 @@ namespace Vim.UnitTest.Exports
         public bool IsRightButtonPressed { get; set; }
         public bool InDragOperationImpl { get; set; }
         public SnapshotPoint? Point { get; set; }
+        public int YOffset { get; set; }
 
         bool IMouseDevice.IsLeftButtonPressed
         {
@@ -43,7 +44,7 @@ namespace Vim.UnitTest.Exports
                 var bounds = textViewLine.GetCharacterBounds(point);
                 var xCoordinate = bounds.Left - textView.ViewportLeft;
                 var yCoordinate = (textViewLine.Top + textViewLine.Bottom) / 2 - textView.ViewportTop;
-                return new VimPoint(xCoordinate, yCoordinate);
+                return new VimPoint(xCoordinate, yCoordinate + YOffset);
             }
             return null;
         }
