@@ -4,13 +4,14 @@ using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
-
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     internal sealed class LineNumbersCalculator
     {
+        private static readonly ICollection<ITextViewLine> s_empty = new ITextViewLine[0];
+
         private readonly IWpfTextView _textView;
         private readonly IVimLocalSettings _localSettings;
 
@@ -29,20 +30,34 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             var result = GetLinesWithNumbers()
                 .Select((line, idx) =>
-                        {
-                            var distanceToCaret = Math.Abs(idx - caretIndex);
-                            return MakeLine(line, distanceToCaret, hasValidCaret);
-                        })
+                {
+                    var distanceToCaret = Math.Abs(idx - caretIndex);
+                    return MakeLine(line, distanceToCaret, hasValidCaret);
+                })
                 .ToList();
 
             return result;
         }
 
+        private ICollection<ITextViewLine> TextViewLines
+        {
+            get
+            {
+                if (!_textView.IsClosed && !_textView.InLayout)
+                {
+                    var textViewLines = _textView.TextViewLines;
+                    if (textViewLines != null && textViewLines.IsValid)
+                    {
+                        return textViewLines;
+                    }
+                }
+                return s_empty;
+            }
+        }
+
         private IEnumerable<ITextViewLine> GetLinesWithNumbers()
         {
-            var allLines = _textView.TextViewLines;
-
-            return allLines.Where(x => x.IsFirstTextViewLineForSnapshotLine);
+            return TextViewLines.Where(x => x.IsValid && x.IsFirstTextViewLineForSnapshotLine);
         }
 
         private bool TryGetCaretIndex(out int caretIndex)
@@ -50,9 +65,10 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             var caretLine = _textView.Caret.Position.BufferPosition.GetContainingLine();
 
             var firstVisibleLine =
-                _textView.TextViewLines.First(x => x.IsFirstTextViewLineForSnapshotLine);
+                TextViewLines.FirstOrDefault(x => x.IsValid && x.IsFirstTextViewLineForSnapshotLine);
 
-            if (TryGetVisualLineNumber(caretLine.Start, out int caretVisualLineNumber) &&
+            if (firstVisibleLine != null &&
+                TryGetVisualLineNumber(caretLine.Start, out int caretVisualLineNumber) &&
                 TryGetVisualLineNumber(firstVisibleLine.Start, out int referenceVisualLineNumber))
             {
                 caretIndex = caretVisualLineNumber - referenceVisualLineNumber;
