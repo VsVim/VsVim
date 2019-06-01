@@ -13,7 +13,8 @@ namespace Vim.UnitTest
         public ExpressionInterpreterTest()
         {
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _interpreter = new ExpressionInterpreter(_statusUtil.Object, null, null, new Dictionary<string, VariableValue>(), null);
+            var interpreterStatusUtil = new InterpreterStatusUtil(_statusUtil.Object);
+            _interpreter = new ExpressionInterpreter(interpreterStatusUtil, null, null, new Dictionary<string, VariableValue>(), null);
         }
 
         private VariableValue Run(string expr)

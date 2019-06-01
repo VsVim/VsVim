@@ -310,7 +310,12 @@ autocmd BufEnter *.html set ts=12
 
                 var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Errors;
                 Assert.Single(errorArray);
-                Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
+                var expectedLine = 1; // empty lines removed
+                var expectedVariable = "foo";
+                var embeddedError = Resources.Interpreter_UnknownOption(expectedVariable);
+                var lineNumber = Resources.Parser_OnLine(expectedLine);
+                var expectedError = $"{lineNumber}: {embeddedError}";
+                Assert.Equal(expectedError, errorArray[0]);
             }
 
             [WpfFact]
