@@ -38,8 +38,6 @@ type InterpreterStatusUtil
 
     member x.OnStatus message = _statusUtil.OnStatus message
 
-    member x.OnStatusLong messages = _statusUtil.OnStatusLong messages
-
     member x.OnError message =
         message
         |> x.NotateMessage
@@ -50,11 +48,19 @@ type InterpreterStatusUtil
         |> x.NotateMessage
         |> _statusUtil.OnWarning
 
+    member x.OnStatusLong messages = _statusUtil.OnStatusLong messages
+
+    interface IStatusUtil with
+        member x.OnStatus message = x.OnStatus message
+        member x.OnError message = x.OnError message
+        member x.OnWarning message = x.OnWarning message
+        member x.OnStatusLong messages = x.OnStatusLong messages
+
 [<Sealed>]
 [<Class>]
 type VariableValueUtil
     (
-        _statusUtil: InterpreterStatusUtil
+        _statusUtil: IStatusUtil
     ) =
 
     member x.ConvertToNumber value = 
@@ -123,7 +129,7 @@ type BuiltinFunctionCaller
 type VimScriptFunctionCaller
     (
         _builtinCaller: BuiltinFunctionCaller,
-        _statusUtil: InterpreterStatusUtil
+        _statusUtil: IStatusUtil
     ) =
     let _getValue = VariableValueUtil(_statusUtil)
     member x.Call (name: VariableName) (args: VariableValue list) =
@@ -170,7 +176,7 @@ type VimScriptFunctionCaller
 [<Class>]
 type ExpressionInterpreter
     (
-        _statusUtil: InterpreterStatusUtil,
+        _statusUtil: IStatusUtil,
         _localSettings: IVimSettings,
         _windowSettings: IVimSettings,
         _variableMap: Dictionary<string, VariableValue>,
@@ -1403,8 +1409,9 @@ type VimInterpreter
     member x.RunNoHighlightSearch() = 
         _vimData.SuspendDisplayPattern()
 
+    /// Report a parse error that has already been line number annotated
     member x.RunParseError msg =
-        _statusUtil.OnError msg
+        _vimBufferData.StatusUtil.OnError msg
 
     /// Print out the contents of the specified range
     member x.RunDisplayLines lineRange lineCommandFlags =
@@ -2259,9 +2266,9 @@ type VimInterpreter
         let parser = Parser(_globalSettings, _vimData, lines)
         try
             while not parser.IsDone do
-                let lineCommand = parser.ParseNextCommand()
                 if lines.Length <> 1 then
                     _statusUtil.ContextLineNumber <- Some parser.ContextLineNumber
+                let lineCommand = parser.ParseNextCommand()
                 x.RunLineCommand lineCommand |> ignore
         finally
             _statusUtil.ContextLineNumber <- None
