@@ -169,7 +169,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var message = string.Empty;
             if (_isFirstCommandMargin)
             {
-                if (_vimBuffer.Vim.VimRcState is VimRcState.LoadSucceeded rcState && rcState.Errors.Length != 0)
+                if (_vimBuffer.Vim.VimRcState is VimRcState.LoadSucceeded rcState &&
+                        rcState.VimRcPath.VimRcKind != VimRcKind.VimRc &&
+                        rcState.Errors.Length != 0)
                 {
                     message = string.Join(Environment.NewLine, rcState.Errors);
                 }
