@@ -512,8 +512,11 @@ and [<Sealed>] Parser
 
     /// Create a line number annotated parse error
     member x.ParseError message =
-        let lineMessage = _lineIndex + 1 |> Resources.Parser_OnLine
-        sprintf "%s: %s" lineMessage message
+        if _lines.Length <> 1 then
+            let lineMessage = _lineIndex + 1 |> Resources.Parser_OnLine
+            sprintf "%s: %s" lineMessage message
+        else
+            message
         |> LineCommand.ParseError
 
     /// Parse out the mapclear variants. 
