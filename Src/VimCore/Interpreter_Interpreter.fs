@@ -1917,7 +1917,25 @@ type VimInterpreter
             let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.Common_CouldNotOpenFile filePath)
-            | Some lines -> x.RunScript lines
+            | Some lines ->
+                let bag = new DisposableBag()
+                let errorList = List<string>()
+                try
+                    _vimBuffer.ErrorMessage
+                    |> Observable.subscribe (fun e -> errorList.Add(e.Message))
+                    |> bag.Add
+                    x.RunScript lines
+                finally
+                    bag.DisposeAll()
+                if errorList.Count <> 0 then
+                    seq {
+                        let message =
+                            Resources.Interpreter_ErrorsSourcing filePath
+                            |> _statusUtil.NotateMessage
+                        yield message
+                        yield! errorList
+                    }
+                    |> _vimBufferData.StatusUtil.OnStatusLong
 
     /// Run the :stopinsert command
     member x.RunStopInsert () =
