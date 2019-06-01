@@ -342,6 +342,8 @@ and [<Sealed>] Parser
 
     member x.IsDone = _tokenizer.IsAtEndOfLine && _lineIndex  + 1 >= _lines.Length
 
+    member x.ContextLineNumber = _lineIndex
+
     /// Parse out the token stream so long as it matches the input.  If everything matches
     /// the tokens will be consumed and 'true' will be returned.  Else 'false' will be 
     /// returned and the token stream will be unchanged

@@ -16,9 +16,45 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
-type VariableValueUtil
+type InterpreterStatusUtil
     (
         _statusUtil: IStatusUtil
+    ) =
+
+    let mutable _contextLineNumber: int option = None
+
+    member x.ContextLineNumber
+        with get() = _contextLineNumber
+        and set value = _contextLineNumber <- value
+
+    /// Create a line number annotated interpreter error
+    member x.NotateMessage message =
+        match x.ContextLineNumber with
+        | Some lineNumber ->
+            let lineMessage = lineNumber + 1 |> Resources.Parser_OnLine
+            sprintf "%s: %s" lineMessage message
+        | None ->
+            message
+
+    member x.OnStatus message = _statusUtil.OnStatus message
+
+    member x.OnStatusLong messages = _statusUtil.OnStatusLong messages
+
+    member x.OnError message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnError
+
+    member x.OnWarning message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnWarning
+
+[<Sealed>]
+[<Class>]
+type VariableValueUtil
+    (
+        _statusUtil: InterpreterStatusUtil
     ) =
 
     member x.ConvertToNumber value = 
@@ -87,7 +123,7 @@ type BuiltinFunctionCaller
 type VimScriptFunctionCaller
     (
         _builtinCaller: BuiltinFunctionCaller,
-        _statusUtil: IStatusUtil
+        _statusUtil: InterpreterStatusUtil
     ) =
     let _getValue = VariableValueUtil(_statusUtil)
     member x.Call (name: VariableName) (args: VariableValue list) =
@@ -134,7 +170,7 @@ type VimScriptFunctionCaller
 [<Class>]
 type ExpressionInterpreter
     (
-        _statusUtil: IStatusUtil,
+        _statusUtil: InterpreterStatusUtil,
         _localSettings: IVimSettings,
         _windowSettings: IVimSettings,
         _variableMap: Dictionary<string, VariableValue>,
@@ -285,7 +321,7 @@ type VimInterpreter
     let _textView = _vimBufferData.TextView
     let _markMap = _vim.MarkMap
     let _keyMap = _vim.KeyMap
-    let _statusUtil = _vimBufferData.StatusUtil
+    let _statusUtil = InterpreterStatusUtil(_vimBufferData.StatusUtil)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
@@ -2221,9 +2257,13 @@ type VimInterpreter
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
         let parser = Parser(_globalSettings, _vimData, lines)
-        while not parser.IsDone do
-            let lineCommand = parser.ParseNextCommand()
-            x.RunLineCommand lineCommand |> ignore
+        try
+            while not parser.IsDone do
+                let lineCommand = parser.ParseNextCommand()
+                _statusUtil.ContextLineNumber <- Some parser.ContextLineNumber
+                x.RunLineCommand lineCommand |> ignore
+        finally
+            _statusUtil.ContextLineNumber <- None
    
     member x.InterpretSymbolicPath (symbolicPath: SymbolicPath) =
         let rec inner (sb:System.Text.StringBuilder) sp =

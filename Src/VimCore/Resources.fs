@@ -61,7 +61,6 @@ module internal Resources =
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
     let CommandMode_NotSupported_KeyMapping lhs rhs = sprintf "The key mapping %s -> %s is not currently supported" lhs rhs
-    let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command

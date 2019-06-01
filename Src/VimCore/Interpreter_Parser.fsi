@@ -18,6 +18,8 @@ type Parser =
 
     member IsDone: bool
 
+    member ContextLineNumber: int
+
     /// Parse the next complete command from the source.  Command pairs like :func and :endfunc
     /// will be returned as a single Function command.  
     member ParseNextCommand: unit -> LineCommand
