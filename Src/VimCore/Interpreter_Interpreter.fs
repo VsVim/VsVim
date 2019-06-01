@@ -2264,14 +2264,19 @@ type VimInterpreter
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
         let parser = Parser(_globalSettings, _vimData, lines)
+        let previousContextLineNumber = _statusUtil.ContextLineNumber
         try
             while not parser.IsDone do
-                if lines.Length <> 1 then
-                    _statusUtil.ContextLineNumber <- Some parser.ContextLineNumber
+                let contextLineNumber = parser.ContextLineNumber
                 let lineCommand = parser.ParseNextCommand()
+                _statusUtil.ContextLineNumber <-
+                    if lines.Length <> 1 then
+                        Some contextLineNumber
+                    else
+                        None
                 x.RunLineCommand lineCommand |> ignore
         finally
-            _statusUtil.ContextLineNumber <- None
+            _statusUtil.ContextLineNumber <- previousContextLineNumber
    
     member x.InterpretSymbolicPath (symbolicPath: SymbolicPath) =
         let rec inner (sb:System.Text.StringBuilder) sp =
