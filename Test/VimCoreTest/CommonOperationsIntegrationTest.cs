@@ -254,7 +254,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-#if VSVIM_DEV_2017
+#if VSVIM_DEV_2017 || VSVIM_DEV_2015
             // https://github.com/VsVim/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave

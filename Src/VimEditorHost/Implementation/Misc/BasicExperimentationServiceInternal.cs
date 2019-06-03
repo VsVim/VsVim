@@ -23,7 +23,7 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
-#elif VSVIM_DEV_2017
+#elif VSVIM_DEV_2017 || VSVIM_DEV_2015
 #else
 #error Unsupported configuration
 #endif

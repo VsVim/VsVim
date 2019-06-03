@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.Telemetry;
+﻿#if VSVIM_DEV_2015
+#else
+using Microsoft.VisualStudio.Telemetry;
 using Microsoft.VisualStudio.Text.Utilities;
 using System;
 using System.Collections.Generic;
@@ -90,3 +92,5 @@ namespace Vim.EditorHost.Implementation.Misc
 #endif
     }
 }
+
+#endif
