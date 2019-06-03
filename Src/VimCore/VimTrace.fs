@@ -27,6 +27,11 @@ type VimTrace() =
 
     static member TraceSwitch = _traceSwitch
 
+    [<Conditional("DEBUG")>]
+    static member BreakInDebug () =
+        if System.Diagnostics.Debugger.IsAttached then
+            System.Diagnostics.Debugger.Break()
+
     [<Conditional("TRACE")>]
     static member TraceInfo(msg: string) = 
         let msg = _prefixInfo + msg
@@ -45,12 +50,14 @@ type VimTrace() =
         let msg = ex.Message + Environment.NewLine + ex.StackTrace
         VimTrace.TraceError(msg)
         VimTrace.Raise msg VimTraceKind.Error
+        VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]
     static member TraceError(msg: string) = 
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
+        VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]
     static member TraceError(format: string, [<ParamArrayAttribute>] args: obj []) = 
@@ -58,6 +65,7 @@ type VimTrace() =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
+        VimTrace.BreakInDebug()
 
     [<Conditional("DEBUG")>]
     static member TraceDebug(msg: string) = 
