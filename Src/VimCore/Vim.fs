@@ -745,6 +745,10 @@ type internal Vim
                 _vimRcLocalSettings <- LocalSettings.Copy vimBuffer.LocalSettings
                 _vimRcWindowSettings <- WindowSettings.Copy vimBuffer.WindowSettings
                 _vimRcState <- VimRcState.LoadSucceeded (vimRcPath, errorList.ToArray())
+
+                if errorList.Count <> 0 then
+                    VimTrace.TraceError("Errors loading rc file: {0}", vimRcPath.FilePath)
+                    VimTrace.TraceError(String.Join(Environment.NewLine, errorList))
             finally
                 // Remove the event handlers
                 bag.DisposeAll()
@@ -783,6 +787,7 @@ type internal Vim
             if not (_vimHost.ShouldIncludeRcFile vimRcPath) then
                 None
             else
+                VimTrace.TraceInfo("Trying rc file: {0}", vimRcPath.FilePath)
                 _fileSystem.ReadAllLines vimRcPath.FilePath
                 |> Option.map (fun lines -> (vimRcPath, lines)))
 
