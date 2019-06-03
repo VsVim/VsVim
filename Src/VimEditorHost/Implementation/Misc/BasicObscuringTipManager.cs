@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
+using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -20,3 +21,7 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
+#elif VS_SPECIFIC_2015
+#else
+#error Unsupported configuration
+#endif
