@@ -57,7 +57,6 @@ type VimTrace() =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
-        VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]
     static member TraceError(format: string, [<ParamArrayAttribute>] args: obj []) = 
@@ -65,7 +64,6 @@ type VimTrace() =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
-        VimTrace.BreakInDebug()
 
     [<Conditional("DEBUG")>]
     static member TraceDebug(msg: string) = 
