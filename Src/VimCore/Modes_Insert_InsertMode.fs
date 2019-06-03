@@ -826,7 +826,11 @@ type internal InsertMode
             | _ ->  false
         _sessionData <- { _sessionData with SuppressBreakUndoSequence = false }
 
-        if isEdit || isMovement && _globalSettings.AtomicInsert || suppressBreakUndoSequence then
+        if
+            isEdit
+            || isMovement && _globalSettings.AtomicInsert
+            || suppressBreakUndoSequence
+        then
 
             // If it is context sensitive (e.g. <Tab> or <Return>), or not an
             // edit (e.g. an arrow key), then cancel using the effective
@@ -842,7 +846,7 @@ type internal InsertMode
                 | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             x.ChangeCombinedEditCommand (Some command)
 
-        elif not suppressBreakUndoSequence then
+        else
 
             // Not an edit command.  If there is an existing edit command then
             // go ahead and flush it out before raising this command
