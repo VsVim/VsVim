@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Vim.EditorHost;
 using Vim.UnitTest.Utilities;
@@ -117,6 +118,11 @@ namespace Vim.UnitTest
         {
             if (IsDisposed)
             {
+                while (true)
+                {
+                    Console.WriteLine("Here");
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                }
                 throw new InvalidOperationException("Object is disposed");
             }
         }

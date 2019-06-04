@@ -187,8 +187,14 @@ namespace Vim.VisualStudio.UnitTest
 
         public void Dispose()
         {
-            _synchronizationContext.RunAll();
-            _synchronizationContext.Dispose();
+            try
+            {
+                _synchronizationContext.RunAll();
+            }
+            finally
+            {
+                _synchronizationContext.Dispose();
+            }
         }
 
         private void RunGarbageCollector()
