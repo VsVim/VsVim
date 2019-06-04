@@ -1063,6 +1063,9 @@ type internal InsertMode
     /// Process the second key of an special sequence.  
     member x.ProcessSpecial keyInput = 
 
+        // Reset the special sequence.
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+
         // Handle the next key.
         if keyInput = KeyInputUtil.CharToKeyInput 'u' then
             x.BreakUndoSequence "Break undo sequence"
@@ -1076,8 +1079,6 @@ type internal InsertMode
             x.BreakUndoSequence "Line down to insert start column"
             if _operations.MoveCaretWithArrow CaretMovement.Down then
                 x.MoveToInsertStartColumn()
-
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
