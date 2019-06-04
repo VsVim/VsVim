@@ -1067,18 +1067,39 @@ type internal InsertMode
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
         // Handle the next key.
-        if keyInput = KeyInputUtil.CharToKeyInput 'u' then
+        match keyInput with
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'u' ->
+
+            // See ':vimhelp i_CTRL-G_u'.
             x.BreakUndoSequence "Break undo sequence"
-        elif keyInput = KeyInputUtil.CharToKeyInput 'U' then
+
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'U' ->
+
+            // See ':vimhelp i_CTRL-G_U'.
             _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
-        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Up then
-            x.BreakUndoSequence "Line up to insert start column"
-            if _operations.MoveCaretWithArrow CaretMovement.Up then
-                x.MoveToInsertStartColumn()
-        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Down then
-            x.BreakUndoSequence "Line down to insert start column"
-            if _operations.MoveCaretWithArrow CaretMovement.Down then
-                x.MoveToInsertStartColumn()
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Up
+            || keyInput = KeyInputUtil.CharToKeyInput 'k'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'k' ->
+
+                // See ':vimhelp i_CTRL-G_<Up>'.
+                x.BreakUndoSequence "Line up to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Up then
+                    x.MoveToInsertStartColumn()
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Down
+            || keyInput = KeyInputUtil.CharToKeyInput 'j'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'j' ->
+
+                // See ':vimhelp i_CTRL-G_<Down>'.
+                x.BreakUndoSequence "Line down to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Down then
+                    x.MoveToInsertStartColumn()
+
+        | _ ->
+            _operations.Beep()
 
         ProcessResult.Handled ModeSwitch.NoSwitch
 
