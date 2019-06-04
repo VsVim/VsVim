@@ -6,6 +6,7 @@
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
+    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />

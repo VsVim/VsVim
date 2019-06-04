@@ -120,7 +120,7 @@ namespace Vim.UnitTest.Exports
 
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
-#if VSVIM_DEV_2019
+#if VS_SPECIFIC_2019
             // https://github.com/VsVim/VsVim/issues/2463
             // Working around several bugs thrown during core MEF composition
             if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService") ||
@@ -131,7 +131,7 @@ namespace Vim.UnitTest.Exports
             }
 
 
-#elif VSVIM_DEV_2017 || VSVIM_DEV_2015
+#elif VS_SPECIFIC_2017 || VS_SPECIFIC_2015
 #else
 #error Unsupported configuration
 #endif
