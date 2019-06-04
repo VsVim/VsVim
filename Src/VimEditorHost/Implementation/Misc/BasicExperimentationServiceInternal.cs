@@ -1,4 +1,4 @@
-﻿#if VSVIM_DEV_2019
+﻿#if VS_SPECIFIC_2019
 using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
@@ -23,7 +23,7 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
-#elif VSVIM_DEV_2017 || VSVIM_DEV_2015
+#elif VS_SPECIFIC_2017 || VS_SPECIFIC_2015
 #else
 #error Unsupported configuration
 #endif
