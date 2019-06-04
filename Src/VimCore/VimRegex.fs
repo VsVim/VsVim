@@ -581,7 +581,7 @@ module VimRegexFactory =
             false
 
     /// Clear state related to previous parsing
-    let clearState (data: VimRegexBuilder) =
+    let ClearState (data: VimRegexBuilder) =
         let isStartOfPattern = data.IsStartOfPattern
         let isStartOfCollection = data.IsStartOfCollection
         let isAlternate = data.IsAlternate
@@ -594,14 +594,14 @@ module VimRegexFactory =
     let ConvertCharAsNormal (data: VimRegexBuilder) c = 
         if not (TryAppendNamedCollection data c) then
             data.AppendEscapedChar c
-        clearState data |> ignore
+        ClearState data |> ignore
 
     /// Convert the given character as a special character.  This is done independent of any 
     /// magic setting.
     let ConvertCharAsSpecial (data: VimRegexBuilder) c = 
 
         let isStartOfPattern, isStartOfCollection, isAlternate =
-            clearState data
+            ClearState data
 
         match c with
         | '.' ->
