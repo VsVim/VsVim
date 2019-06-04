@@ -3349,7 +3349,7 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class InsertStartColumn : InsertModeIntegrationTest
+        public sealed class InsertStartColumnTest : InsertModeIntegrationTest
         {
             [WpfTheory]
             [InlineData("<Up>")]
