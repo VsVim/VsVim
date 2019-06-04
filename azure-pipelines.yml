@@ -13,8 +13,11 @@ jobs:
     vmImage: 'vs2017-win2016'
 
   strategy:
-    maxParallel: 2
+    maxParallel: 3
     matrix:
+      Vs2015:
+        _testConfig: 14.0
+        _name: Vs2015
       Vs2017:
         _testConfig: 15.0
         _name: Vs2017
