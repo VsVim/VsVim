@@ -4568,6 +4568,24 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation(@"1G/bat\ndog", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
                 }
+
+                [WpfFact]
+                public void InvertedCollection_NoMatchEndOfLine()
+                {
+                    // Reported in issue #1471.
+                    Create("Hello", "World", "");
+                    _assertOnErrorMessage = false;
+                    _vimBuffer.ProcessNotation(@"/o[^o]\+W", enter: true);
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                }
+
+                [WpfFact]
+                public void InvertedCollection_MatchEndOfLine()
+                {
+                    Create("Hello", "World", "");
+                    _vimBuffer.ProcessNotation(@"/o\_[^o]\+W", enter: true);
+                    Assert.Equal(_textView.GetPointInLine(0, 4), _textView.GetCaretPoint());
+                }
             }
 
             public sealed class OffsetTest : IncrementalSearchTest
