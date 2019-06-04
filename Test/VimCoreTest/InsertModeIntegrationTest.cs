@@ -3349,6 +3349,32 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class InsertStartPointTests : InsertModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData("<Up>")]
+            [InlineData("k")]
+            [InlineData("<C-k>")]
+            public void LineUp(string key)
+            {
+                Create("abc def", "ghi jkl", "");
+                _textView.MoveCaretToLine(1, 4);
+                _vimBuffer.ProcessNotation($"foo <C-g>{key}bar <Esc>");
+                Assert.Equal(new[] { "abc bar def", "ghi foo jkl", "" }, _textBuffer.GetLines());
+            }
+            [WpfTheory]
+            [InlineData("<Down>")]
+            [InlineData("j")]
+            [InlineData("<C-j>")]
+            public void LineDown(string key)
+            {
+                Create("abc def", "ghi jkl", "");
+                _textView.MoveCaretToLine(0, 4);
+                _vimBuffer.ProcessNotation($"foo <C-g>{key}bar <Esc>");
+                Assert.Equal(new[] { "abc foo def", "ghi bar jkl", "" }, _textBuffer.GetLines());
+            }
+        }
+
         public sealed class InsertLiteralTests : InsertModeIntegrationTest
         {
             /// <summary>

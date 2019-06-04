@@ -1060,7 +1060,7 @@ type internal InsertMode
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
 
-    /// Process the second key of a special sequence.  
+    /// Process the second key of a special sequence.
     member x.ProcessSpecial keyInput = 
 
         // Reset the special sequence.
