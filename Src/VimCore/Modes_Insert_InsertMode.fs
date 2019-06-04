@@ -181,8 +181,8 @@ type ActiveEditItem =
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
 
-    /// In the middle of an undo operation.  Waiting for the next key
-    | Undo 
+    /// In the middle of an special sequence.  Waiting for the next key
+    | Special 
 
     /// In the middle of a digraph operation. Wait for the first digraph key
     | Digraph1
@@ -351,7 +351,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
+                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessSpecialStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
@@ -447,7 +447,7 @@ type internal InsertMode
         | ActiveEditItem.None -> None
         | ActiveEditItem.OverwriteReplace -> None
         | ActiveEditItem.WordCompletion _ -> None
-        | ActiveEditItem.Undo _ -> None
+        | ActiveEditItem.Special _ -> None
 
     member x.IsInPaste = x.PasteCharacter.IsSome
 
@@ -1017,10 +1017,10 @@ type internal InsertMode
         x.CancelWordCompletionSession()
         x.ProcessLiteral KeyInputSet.Empty
 
-    /// Start a undo session in insert mode
-    member x.ProcessUndoStart keyInput =
+    /// Start a special sequence in insert mode
+    member x.ProcessSpecialStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Special }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Toggle the use of typing language characters
@@ -1059,8 +1059,8 @@ type internal InsertMode
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
 
-    /// Process the second key of an undo operation.  
-    member x.ProcessUndo keyInput = 
+    /// Process the second key of an special sequence.  
+    member x.ProcessSpecial keyInput = 
 
         // Handle the next key.
         if keyInput = KeyInputUtil.CharToKeyInput 'u' then
@@ -1256,8 +1256,8 @@ type internal InsertMode
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> ProcessResult.NotHandled
 
-        | ActiveEditItem.Undo ->
-            x.ProcessUndo keyInput
+        | ActiveEditItem.Special ->
+            x.ProcessSpecial keyInput
         | ActiveEditItem.Digraph1 ->
             x.ProcessDigraph1 keyInput
         | ActiveEditItem.Digraph2 _ ->
