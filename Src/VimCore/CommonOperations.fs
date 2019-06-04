@@ -106,7 +106,7 @@ type internal CommonOperations
                     if lastVisibleLineNumber = lastLineNumber then
                         lastVisibleLine
                     else
-                        textViewLine
+                        null
                 else
                     textViewLine
 
