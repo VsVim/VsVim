@@ -305,6 +305,7 @@ type internal InsertMode
     let _bag = DisposableBag()
     let _textView = _vimBuffer.TextView
     let _textBuffer = _vimBuffer.TextBuffer
+    let _localSettings = _vimBuffer.LocalSettings
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
@@ -1067,10 +1068,28 @@ type internal InsertMode
             x.BreakUndoSequence "Break undo sequence"
         elif keyInput = KeyInputUtil.CharToKeyInput 'U' then
             _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
+        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Up then
+            x.BreakUndoSequence "Line up to insert start column"
+            if _operations.MoveCaretWithArrow CaretMovement.Up then
+                x.MoveToInsertStartColumn()
+        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Down then
+            x.BreakUndoSequence "Line down to insert start column"
+            if _operations.MoveCaretWithArrow CaretMovement.Down then
+                x.MoveToInsertStartColumn()
 
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
         ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Move to the insert start column
+    member x.MoveToInsertStartColumn () =
+        match _vimBuffer.VimTextBuffer.InsertStartPoint with
+        | Some startPoint ->
+            let spaces = SnapshotColumn(startPoint).GetSpacesToColumn _localSettings.TabStop
+            let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spaces, _localSettings.TabStop)
+            _operations.MoveCaretToColumn column ViewFlags.Standard
+        | None ->
+            ()
 
     /// Process the second key of a digraph command
     member x.ProcessDigraph1 firstKeyInput = 
