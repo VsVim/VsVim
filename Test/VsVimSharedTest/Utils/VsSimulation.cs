@@ -16,6 +16,7 @@ using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
 using Vim.VisualStudio.Implementation.ReSharper;
+using System.Windows.Threading;
 
 namespace Vim.VisualStudio.UnitTest.Utils
 {
@@ -426,11 +427,8 @@ namespace Vim.VisualStudio.UnitTest.Utils
         /// </summary>
         internal void Run(KeyInput keyInput)
         {
-            using (var context = new TestableSynchronizationContext())
-            {
-                _vsKeyboardInputSimulation.Run(keyInput);
-                context.RunAll();
-            }
+            _vsKeyboardInputSimulation.Run(keyInput);
+            Dispatcher.CurrentDispatcher.DoEvents();
         }
 
         /// <summary>

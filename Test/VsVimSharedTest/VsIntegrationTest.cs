@@ -7,6 +7,7 @@ using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
 using Vim.VisualStudio.UnitTest.Utils;
 using Xunit;
+using EnvDTE80;
 
 namespace Vim.VisualStudio.UnitTest
 {
