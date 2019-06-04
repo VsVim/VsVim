@@ -181,7 +181,7 @@ type ActiveEditItem =
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
 
-    /// In the middle of an special sequence.  Waiting for the next key
+    /// In the middle of a special sequence.  Waiting for the next key
     | Special 
 
     /// In the middle of a digraph operation. Wait for the first digraph key
@@ -1060,7 +1060,7 @@ type internal InsertMode
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
 
-    /// Process the second key of an special sequence.  
+    /// Process the second key of a special sequence.  
     member x.ProcessSpecial keyInput = 
 
         // Reset the special sequence.
