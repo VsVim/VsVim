@@ -47,9 +47,12 @@ type VimTrace() =
 
     [<Conditional("TRACE")>]
     static member TraceError(ex: Exception) = 
-        let msg = ex.Message + Environment.NewLine + ex.StackTrace
+        let msg =
+            ex.GetType().Name + ": " + ex.Message + Environment.NewLine
+            + ex.StackTrace + Environment.NewLine
+            + "---" + Environment.NewLine
+            + (StackTrace(1, true).ToString())
         VimTrace.TraceError(msg)
-        VimTrace.Raise msg VimTraceKind.Error
         VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]

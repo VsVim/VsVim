@@ -16,9 +16,16 @@ namespace Vim.UnitTest
         {
             var buffer = CreateTextBuffer("foo", "bar");
             var factory = new MockRepository(MockBehavior.Strict);
+            var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2);
+
             var caret = MockObjectFactory.CreateCaret(factory: factory);
+            var caretPosition = new CaretPosition(
+                point,
+                factory.Create<IMappingPoint>().Object,
+                PositionAffinity.Predecessor);
             caret.Setup(x => x.EnsureVisible()).Verifiable();
-            caret.SetupGet(x => x.Position).Returns(new CaretPosition());
+            caret.SetupGet(x => x.Position).Returns(caretPosition).Verifiable();
+            caret.Setup(x => x.MoveTo(point)).Returns(caretPosition).Verifiable();
 
             var selection = MockObjectFactory.CreateSelection(factory: factory);
             selection.Setup(x => x.Clear()).Verifiable();
@@ -40,9 +47,8 @@ namespace Vim.UnitTest
             lines.Setup(x => x.GetTextViewLineContainingBufferPosition(It.IsAny<SnapshotPoint>())).Returns(line.Object).Verifiable();
             line.SetupGet(x => x.IsValid).Returns(true).Verifiable();
             line.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible).Verifiable();
-
-            var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2);
-            caret.Setup(x => x.MoveTo(point)).Returns(new CaretPosition()).Verifiable();
+            var span = new SnapshotSpan(buffer.CurrentSnapshot, 0, buffer.CurrentSnapshot.Length);
+            lines.SetupGet(x => x.FormattedSpan).Returns(span).Verifiable();
 
             TextViewUtil.MoveCaretToVirtualPoint(textView.Object, point);
             factory.Verify();

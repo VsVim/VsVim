@@ -371,7 +371,8 @@ namespace Vim.VisualStudio
 
                 VimTrace.Trace += (_, e) =>
                 {
-                    if (_vimApplicationSettings.EnableOutputWindow)
+                    if (e.TraceKind == VimTraceKind.Error ||
+                        _vimApplicationSettings.EnableOutputWindow)
                     {
                         outputPane.OutputString(e.Message + Environment.NewLine);
                     }

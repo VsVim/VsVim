@@ -1254,7 +1254,7 @@ type internal MotionUtil
     /// First non blank character on the display line
     member x.DisplayLineFirstNonBlank () = 
         if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
+            match TextViewUtil.GetTextViewLineContainingCaret _textView with
             | Some caretLine ->
                 x.FirstNonBlankCore caretLine.Extent
             | None ->
@@ -1265,7 +1265,7 @@ type internal MotionUtil
     /// Start of the display line 
     member x.DisplayLineStart () =
         if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
+            match TextViewUtil.GetTextViewLineContainingCaret _textView with
             | Some caretLine ->
                 let point = 
                     match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportLeft) with
@@ -1280,7 +1280,7 @@ type internal MotionUtil
     /// End of the display line 
     member x.DisplayLineEnd () =
         if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
+            match TextViewUtil.GetTextViewLineContainingCaret _textView with
             | Some caretLine ->
                 let point = 
                     match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportRight) with
@@ -1301,7 +1301,7 @@ type internal MotionUtil
             let span = SnapshotSpan(startPoint, endPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
-        match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
             let middle = _textView.ViewportWidth / 2.0
             match caretLine.GetBufferPositionFromXCoordinate(middle) with

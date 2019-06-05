@@ -3191,16 +3191,17 @@ type internal CommandUtil
                     let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                     _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
+        let textViewLines = TextViewUtil.GetTextViewLines _textView
+        let caretTextViewLine = TextViewUtil.GetTextViewLineContainingCaret _textView
+        match textViewLines, caretTextViewLine with
+        | Some textViewLines, Some caretTextViewLine ->
 
             // Limit the amount of scrolling to the size of the window.
             let maxCount = x.GetWindowLineCount textViewLines
             let count = min count maxCount
 
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
-            let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
+            let caretIndex = textViewLines.GetIndexOfTextLine(caretTextViewLine)
 
             // How many visual lines is the caret offset from the first visible line
             let lineOffset = max 0 (caretIndex - firstIndex)
@@ -3247,6 +3248,7 @@ type internal CommandUtil
             // proper line.  Need to adjust the caret within the line to the
             // appropriate column.
             _commonOperations.RestoreSpacesToCaret spacesToCaret true
+        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3349,10 +3351,10 @@ type internal CommandUtil
 
                         // As a special case when scrolling up, if the caret
                         // line is already visible on the screen, use that line.
-                        let caretLine = _textView.Caret.ContainingTextViewLine
-                        if caretLine.VisibilityState = VisibilityState.FullyVisible then
+                        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+                        | Some caretLine when caretLine.VisibilityState = VisibilityState.FullyVisible ->
                             caretLine
-                        else
+                        | _ ->
                             getLastFullyVisibleLine textViewLines
 
                     else

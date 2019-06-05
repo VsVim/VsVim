@@ -236,7 +236,7 @@ namespace Vim.UI.Wpf
             void doAction()
             {
                 // Perform action if the text view is still open.
-                if (!textView.IsClosed)
+                if (!textView.IsClosed && !textView.InLayout)
                 {
                     action.Invoke(null);
                 }
@@ -250,7 +250,14 @@ namespace Vim.UI.Wpf
                 }
 
                 // Then do the action.
-                doAction();
+                try
+                {
+                    doAction();
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceError(ex);
+                }
             }
 
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
