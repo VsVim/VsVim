@@ -740,8 +740,9 @@ type SnapshotColumn =
         let mutable count = columnNumber
         let mutable isGood = true
         while count > 0 && isGood do
-            column <- column.Add 1
-            count <- count - 1
+            if not column.IsEndColumn then
+                column <- column.Add 1
+                count <- count - 1
             if 
                 column.IsEndColumn || 
                 column.LineNumber <> line.LineNumber ||
