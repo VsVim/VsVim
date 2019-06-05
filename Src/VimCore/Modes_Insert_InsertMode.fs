@@ -609,10 +609,8 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
 
         // If applicable, use the effective change for the combined edit.
-        if
-            not _globalSettings.AtomicInsert
-            && _textChangeTracker.IsEffectiveChangeInsert
-        then
+        if _textChangeTracker.IsEffectiveChangeInsert then
+
             match _textChangeTracker.EffectiveChange with
             | Some span when span.Length <> 0 ->
 
@@ -791,27 +789,31 @@ type internal InsertMode
     /// Run the insert command with the given information
     member x.RunInsertCommand (command: InsertCommand) (keyInputSet: KeyInputSet) commandFlags: ProcessResult =
 
-        // Dismiss the completion when running an explicit insert commend
+        // Dismiss the completion when running an explicit insert commend.
         x.CancelWordCompletionSession()
 
-        // When running an explicit command then we need to go ahead and complete the previous 
-        // extra text change.  It needs to be completed now so that it happens before the 
-        // command we are about to run
+        // When running an explicit command then we need to go ahead and
+        // complete the previous  extra text change.  It needs to be completed
+        // now so that it happens before the  command we are about to run
         _textChangeTracker.CompleteChange()
 
         let result = 
             try
-                // We don't want the edits which are executed as part of the command to be tracked through 
-                // an external / extra text change so disable tracking while executing the command
+
+                // We don't want the edits which are executed as part of the
+                // command to be tracked through  an external / extra text
+                // change so disable tracking while executing the command
                 _textChangeTracker.TrackCurrentChange <- false
                 _insertUtil.RunInsertCommand command
+
             finally
                 _textChangeTracker.TrackCurrentChange <- true
 
         x.OnAfterRunInsertCommand command
 
-        // Now we need to decided how the external world sees this edit.  If it links with an
-        // existing edit then we save it and send it out as a batch later.
+        // Now we need to decided how the external world sees this edit.  If it
+        // links with an existing edit then we save it and send it out as a
+        // batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
         let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
@@ -824,23 +826,30 @@ type internal InsertMode
             | _ ->  false
         _sessionData <- { _sessionData with SuppressBreakUndoSequence = false }
 
-        if isContextSensitive then
-            _textChangeTracker.StopTrackingEffectiveChange()
+        if
+            isEdit
+            || isMovement && _globalSettings.AtomicInsert
+            || suppressBreakUndoSequence
+        then
 
-        if isEdit || (isMovement && _globalSettings.AtomicInsert) then
+            // If it is context sensitive (e.g. <Tab> or <Return>), or not an
+            // edit (e.g. an arrow key), then cancel using the effective
+            // change.
+            if isContextSensitive || not isEdit then
+                _textChangeTracker.StopTrackingEffectiveChange()
 
-            // If it's an edit then combine it with the existing command and batch them 
-            // together.  Don't raise the event yet
+            // If it's an edit then combine it with the existing command and
+            // batch them  together.  Don't raise the event yet
             let command = 
                 match _sessionData.CombinedEditCommand with
                 | None -> command
                 | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             x.ChangeCombinedEditCommand (Some command)
 
-        elif not suppressBreakUndoSequence then
+        else
 
-            // Not an edit command.  If there is an existing edit command then go ahead and flush
-            // it out before raising this command
+            // Not an edit command.  If there is an existing edit command then
+            // go ahead and flush it out before raising this command
             x.CompleteCombinedEditCommand()
 
             let data = {
@@ -1276,62 +1285,29 @@ type internal InsertMode
     /// Raised when the caret position changes
     member x.OnCaretPositionChanged args = 
 
-        // Because this is invoked only when are active but not processing a command, it means
-        // that some other component (e.g. a language service, ReSharper or Visual Assist)
-        // changed the caret position programmatically.
+        // Because this is invoked only when are active but not processing a
+        // command, it means that some other component (e.g. a language
+        // service, ReSharper or Visual Assist) changed the caret position
+        // programmatically.
         _textChangeTracker.CompleteChange()
-        if _globalSettings.AtomicInsert then
-            // Create a combined movement command that goes from the old position to the new position
-            // And combine it with the input command
-            let rec movement command current next = 
-                let combine left right = 
-                    match left with
-                    | None -> Some right
-                    | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
-                let currentY, currentX = current
-                let nextY, nextX = next
-                // First move to the beginning of the line, since the source and target lines might contain
-                // different amount of characters and/or tabs
-                if currentX > 0 && currentY <> nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (currentY, currentX - 1) next
-                elif currentY < nextY  then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Down)
-                    movement command (currentY + 1, currentX) next
-                elif currentY > nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Up)
-                    movement command (currentY - 1, currentX) next
-                elif currentX > nextX && currentY = nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (currentY, currentX - 1) next
-                elif currentX < nextX then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Right)
-                    movement command (currentY, currentX + 1) next
-                else
-                    command
-            let oldPosition = SnapshotPointUtil.GetLineNumberAndOffset args.OldPosition.BufferPosition
-            let newPosition = SnapshotPointUtil.GetLineNumberAndOffset args.NewPosition.BufferPosition
-            let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
-            x.ChangeCombinedEditCommand command
-        else
 
-            // Don't break the undo sequence if the caret was moved within the
-            // active insertion region of the effective change. This allows code
-            // assistants to perform a variety of edits without breaking the undo
-            // sequence. With a little more work we could allow edits completely
-            // outside the active insertion region without breaking the undo
-            // sequence, and this would allow code assistants to e.g. automatically
-            // add usings and have the command still be repeatable.
-            let breakUndoSequence =
-                match _textChangeTracker.EffectiveChange with
-                | Some span ->
-                    span.Contains(args.NewPosition.BufferPosition) |> not
-                | None ->
-                    true
+        // Don't break the undo sequence if the caret was moved within the
+        // active insertion region of the effective change. This allows code
+        // assistants to perform a variety of edits without breaking the undo
+        // sequence. With a little more work we could allow edits completely
+        // outside the active insertion region without breaking the undo
+        // sequence, and this would allow code assistants to e.g. automatically
+        // add usings and have the command still be repeatable.
+        let breakUndoSequence =
+            match _textChangeTracker.EffectiveChange with
+            | Some span ->
+                span.Contains(args.NewPosition.BufferPosition) |> not
+            | None ->
+                true
 
-            if breakUndoSequence then
-                x.BreakUndoSequence "Insert after motion"
-                x.ChangeCombinedEditCommand None
+        if breakUndoSequence then
+            x.BreakUndoSequence "Insert after motion"
+            x.ChangeCombinedEditCommand None
 
         // This is now a separate insert.
         x.ResetInsertPoint()
