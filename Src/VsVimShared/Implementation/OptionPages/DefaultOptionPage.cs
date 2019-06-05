@@ -170,6 +170,7 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private const string CategoryGeneral = "General";
         private const string CategoryColors = "Item Colors";
         private const string CategoryEditing = "Vim Edit Behavior";
+        private const string CategoryVsVim = "VsVim";
 
         private static readonly ColorKey s_incrementalSearchColorKey = ColorKey.Background(VimConstants.IncrementalSearchTagName);
         private static readonly ColorKey s_highlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
@@ -324,6 +325,11 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             set { SetColor(s_commandMarginBackgroundColorKey, value); }
         }
 
+        [DisplayName("Disable VsVim")]
+        [Description("Disable VsVim temporarily and let Visual Studio handle keystrokes and mouse events.  By default it can also be toggled using Ctrl+Shift+F12")]
+        [Category(CategoryVsVim)]
+        public bool DisableVsVim { get; set; }
+
         public DefaultOptionPage()
         {
             foreach (var colorKey in s_colorKeyList)
@@ -335,6 +341,12 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         protected override void OnActivate(CancelEventArgs e)
         {
             base.OnActivate(e);
+
+            var vim = GetVim();
+            if (vim != null)
+            {
+                DisableVsVim = vim.IsDisabled;
+            }
 
             var vimApplicationSettings = GetVimApplicationSettings();
             if (vimApplicationSettings != null)
@@ -361,6 +373,12 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         protected override void OnApply(PageApplyEventArgs e)
         {
             base.OnApply(e);
+
+            var vim = GetVim();
+            if (vim != null)
+            {
+                vim.IsDisabled = DisableVsVim;
+            }
 
             var vimApplicationSettings = GetVimApplicationSettings();
             if (vimApplicationSettings != null)
@@ -393,6 +411,17 @@ namespace Vim.VisualStudio.Implementation.OptionPages
 
             var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
             return componentModel.DefaultExportProvider.GetExportedValue<IVimApplicationSettings>();
+        }
+
+        private IVim GetVim()
+        {
+            if (Site == null)
+            {
+                return null;
+            }
+
+            var componentModel = (IComponentModel)(Site.GetService(typeof(SComponentModel)));
+            return componentModel.DefaultExportProvider.GetExportedValue<IVim>();
         }
 
         private Color GetColor(ColorKey colorKey)
