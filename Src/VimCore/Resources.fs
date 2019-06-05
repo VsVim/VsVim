@@ -124,6 +124,7 @@ module internal Resources =
     let Interpreter_DivByZero = "Attempt to divide by zero. Not supported."
     let Interpreter_ModByZero = "Attempt to mod by zero. Not supported."
     let Interpreter_ErrorsSourcing path = sprintf "Errors sourcing \"%s\":" path
+    let Interpreter_ErrorSettingEnvironmentVariable lhs rhs = sprintf "Error setting environment variable '%s' = '%s'" lhs rhs
 
     let Regex_Unknown = "Unknown error building regex"
     let Regex_UnmatchedParen = "Unmatched ("

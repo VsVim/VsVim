@@ -1471,6 +1471,23 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LHSCanBeEnvironmentVariable()
+            {
+                Create("");
+                var variable = "magic";
+                var value = "xyzzy";
+                try
+                {
+                    ParseAndRun($"let ${variable} = '{value}'");
+                    Assert.Equal(value, System.Environment.GetEnvironmentVariable(variable));
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(variable, null);
+                }
+            }
+
+            [WpfFact]
             public void LHSCanBeRegisterName()
             {
                 Create("");

@@ -1370,6 +1370,18 @@ type VimInterpreter
         | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
         | value -> _variableMap.[name.Name] <- value
 
+    /// Run the let environment variable command
+    member x.RunLetEnvironment (name: string) expr =
+        match x.RunExpression expr with
+        | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
+        | value ->
+            try
+                System.Environment.SetEnvironmentVariable(name, value.StringValue)
+            with
+            | _ ->
+                Resources.Interpreter_ErrorSettingEnvironmentVariable name value.StringValue
+                |> _statusUtil.OnError
+
     /// Run the let command for registers
     member x.RunLetRegister (name: RegisterName) expr =
         let setRegister (value: string) =
@@ -2191,6 +2203,7 @@ type VimInterpreter
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine lineRange -> x.RunJumpToLastLine lineRange
         | LineCommand.Let (name, value) -> x.RunLet name value
+        | LineCommand.LetEnvironment (name, value) -> x.RunLetEnvironment name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
