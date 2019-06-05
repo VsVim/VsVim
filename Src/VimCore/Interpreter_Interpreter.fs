@@ -16,6 +16,48 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
+type InterpreterStatusUtil
+    (
+        _statusUtil: IStatusUtil
+    ) =
+
+    let mutable _contextLineNumber: int option = None
+
+    member x.ContextLineNumber
+        with get() = _contextLineNumber
+        and set value = _contextLineNumber <- value
+
+    /// Create a line number annotated interpreter error
+    member x.NotateMessage message =
+        match x.ContextLineNumber with
+        | Some lineNumber ->
+            let lineMessage = lineNumber + 1 |> Resources.Parser_OnLine
+            sprintf "%s: %s" lineMessage message
+        | None ->
+            message
+
+    member x.OnStatus message = _statusUtil.OnStatus message
+
+    member x.OnError message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnError
+
+    member x.OnWarning message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnWarning
+
+    member x.OnStatusLong messages = _statusUtil.OnStatusLong messages
+
+    interface IStatusUtil with
+        member x.OnStatus message = x.OnStatus message
+        member x.OnError message = x.OnError message
+        member x.OnWarning message = x.OnWarning message
+        member x.OnStatusLong messages = x.OnStatusLong messages
+
+[<Sealed>]
+[<Class>]
 type VariableValueUtil
     (
         _statusUtil: IStatusUtil
@@ -285,7 +327,7 @@ type VimInterpreter
     let _textView = _vimBufferData.TextView
     let _markMap = _vim.MarkMap
     let _keyMap = _vim.KeyMap
-    let _statusUtil = _vimBufferData.StatusUtil
+    let _statusUtil = InterpreterStatusUtil(_vimBufferData.StatusUtil)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
@@ -1367,8 +1409,9 @@ type VimInterpreter
     member x.RunNoHighlightSearch() = 
         _vimData.SuspendDisplayPattern()
 
+    /// Report a parse error that has already been line number annotated
     member x.RunParseError msg =
-        _statusUtil.OnError msg
+        _vimBufferData.StatusUtil.OnError msg
 
     /// Print out the contents of the specified range
     member x.RunDisplayLines lineRange lineCommandFlags =
@@ -1874,7 +1917,25 @@ type VimInterpreter
             let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
             | None -> _statusUtil.OnError (Resources.Common_CouldNotOpenFile filePath)
-            | Some lines -> x.RunScript lines
+            | Some lines ->
+                let bag = new DisposableBag()
+                let errorList = List<string>()
+                try
+                    _vimBuffer.ErrorMessage
+                    |> Observable.subscribe (fun e -> errorList.Add(e.Message))
+                    |> bag.Add
+                    x.RunScript lines
+                finally
+                    bag.DisposeAll()
+                if errorList.Count <> 0 then
+                    seq {
+                        let message =
+                            Resources.Interpreter_ErrorsSourcing filePath
+                            |> _statusUtil.NotateMessage
+                        yield message
+                        yield! errorList
+                    }
+                    |> _vimBufferData.StatusUtil.OnStatusLong
 
     /// Run the :stopinsert command
     member x.RunStopInsert () =
@@ -2221,9 +2282,19 @@ type VimInterpreter
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
         let parser = Parser(_globalSettings, _vimData, lines)
-        while not parser.IsDone do
-            let lineCommand = parser.ParseNextCommand()
-            x.RunLineCommand lineCommand |> ignore
+        let previousContextLineNumber = _statusUtil.ContextLineNumber
+        try
+            while not parser.IsDone do
+                let contextLineNumber = parser.ContextLineNumber
+                let lineCommand = parser.ParseNextCommand()
+                _statusUtil.ContextLineNumber <-
+                    if lines.Length <> 1 then
+                        Some contextLineNumber
+                    else
+                        None
+                x.RunLineCommand lineCommand |> ignore
+        finally
+            _statusUtil.ContextLineNumber <- previousContextLineNumber
    
     member x.InterpretSymbolicPath (symbolicPath: SymbolicPath) =
         let rec inner (sb:System.Text.StringBuilder) sp =

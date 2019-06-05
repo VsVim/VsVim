@@ -342,6 +342,8 @@ and [<Sealed>] Parser
 
     member x.IsDone = _tokenizer.IsAtEndOfLine && _lineIndex  + 1 >= _lines.Length
 
+    member x.ContextLineNumber = _lineIndex
+
     /// Parse out the token stream so long as it matches the input.  If everything matches
     /// the tokens will be consumed and 'true' will be returned.  Else 'false' will be 
     /// returned and the token stream will be unchanged
@@ -510,8 +512,11 @@ and [<Sealed>] Parser
 
     /// Create a line number annotated parse error
     member x.ParseError message =
-        let lineMessage = _lineIndex + 1 |> Resources.Parser_OnLine
-        sprintf "%s: %s" lineMessage message
+        if _lines.Length <> 1 then
+            let lineMessage = _lineIndex + 1 |> Resources.Parser_OnLine
+            sprintf "%s: %s" lineMessage message
+        else
+            message
         |> LineCommand.ParseError
 
     /// Parse out the mapclear variants. 

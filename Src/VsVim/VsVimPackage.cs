@@ -15,9 +15,12 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using Task = System.Threading.Tasks.Task;
 
 namespace Vim.VisualStudio
 {
@@ -27,7 +30,7 @@ namespace Vim.VisualStudio
     [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.DefaultOptionPage), categoryName: "VsVim", pageName: "Defaults", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
     [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage), categoryName: "VsVim", pageName: "Keyboard", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
     [Guid(GuidList.VsVimPackageString)]
-    public sealed class VsVimPackage : Package, IOleCommandTarget
+    public sealed class VsVimPackage : AsyncPackage, IOleCommandTarget
     {
         private IComponentModel _componentModel;
         private ExportProvider _exportProvider;
@@ -38,11 +41,21 @@ namespace Vim.VisualStudio
         {
         }
 
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            base.Initialize();
+            object componentModel = await GetServiceAsync(typeof(SComponentModel));
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            _componentModel = (IComponentModel)GetService(typeof(SComponentModel));
+            // The cast to IComponentModel MUST occur after the call to SwitchToMainThreadAsync. The 
+            // call to GetServiceAsync can occur on any thread but the cast to the actual service 
+            // implementation must occur on the UI thread (for STA services at least). The implementation
+            // can go through QueryService if the object is a CCW and that must be done on the appropriate
+            // thread.
+            //
+            // For the services we use here they are likely to be managed objects and hence not really 
+            // applicable to this rule. But this is the best practice and should be followed in either
+            // case.
+            _componentModel = (IComponentModel)componentModel;
             _exportProvider = _componentModel.DefaultExportProvider;
             _vim = _exportProvider.GetExportedValue<IVim>();
             _vsAdapter = _exportProvider.GetExportedValue<IVsAdapter>();

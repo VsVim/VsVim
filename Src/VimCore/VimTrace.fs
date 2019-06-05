@@ -27,6 +27,11 @@ type VimTrace() =
 
     static member TraceSwitch = _traceSwitch
 
+    [<Conditional("DEBUG")>]
+    static member BreakInDebug () =
+        if System.Diagnostics.Debugger.IsAttached then
+            System.Diagnostics.Debugger.Break()
+
     [<Conditional("TRACE")>]
     static member TraceInfo(msg: string) = 
         let msg = _prefixInfo + msg
@@ -48,6 +53,7 @@ type VimTrace() =
             + "---" + Environment.NewLine
             + (StackTrace(1, true).ToString())
         VimTrace.TraceError(msg)
+        VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]
     static member TraceError(msg: string) = 

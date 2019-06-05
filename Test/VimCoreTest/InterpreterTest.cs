@@ -952,7 +952,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.LocalSettings.ExpandTab = false;
                 ParseAndRun(@"set blah?");
-                Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+                Assert.Equal(Resources.Interpreter_UnknownOption("blah"), _statusUtil.LastError);
             }
 
             [WpfFact]
