@@ -3006,9 +3006,12 @@ module TextViewUtil =
                 None
 
     /// Get the text view line relative to the specified point
-    let GetTextViewLineRelativeToPoint textView offset point =
+    let GetTextViewLineRelativeToPoint textView offset (point: SnapshotPoint) =
+
+        // Try to get the text view lines for the same snapshot as point.
         match GetTextViewLines textView with
-        | Some textViewLines ->
+        | Some textViewLines when
+            textViewLines.FormattedSpan.Snapshot = point.Snapshot ->
 
             // Protect against GetTextViewLineContainingBufferPosition
             // returning null.
@@ -3029,7 +3032,7 @@ module TextViewUtil =
                     else
                         None
             | _ -> None
-        | None -> None
+        | _ -> None
 
     /// Get the text view line containing the specified point
     let GetTextViewLineContainingPoint textView point =
