@@ -931,18 +931,27 @@ type VimInterpreter
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
 
-    member x.RunDisplayLets (names: VariableName list) = 
-        let list = List<string>()
-        for name in names do
-            let found, value = _variableMap.TryGetValue name.Name
-            let msg =  
-                if found then
-                    sprintf "%s %O" name.Name value
-                else
-                    Resources.Interpreter_UndefinedVariable name.Name
+    /// Display the value of the specified (or all) variables
+    member x.RunDisplayLet (names: VariableName list) = 
+        let names =
+            if names.IsEmpty then
+                _variableMap.Keys
+                |> Seq.sortBy id
+                |> Seq.map (fun key -> { NameScope = NameScope.Global; Name = key })
+                |> Seq.toList
+            else
+                names
+        seq {
+            for name in names do
+                let found, value = _variableMap.TryGetValue name.Name
+                yield
+                    if found then
+                        sprintf "%s %O" name.Name value
+                    else
+                        Resources.Interpreter_UndefinedVariable name.Name
                 
-            list.Add(msg)
-        _statusUtil.OnStatusLong list
+        }
+        |> _statusUtil.OnStatusLong
 
     /// Display the specified marks
     member x.RunDisplayMarks (marks: Mark list) =
@@ -1379,7 +1388,9 @@ type VimInterpreter
                 System.Environment.SetEnvironmentVariable(name, value.StringValue)
             with
             | _ ->
-                Resources.Interpreter_ErrorSettingEnvironmentVariable name value.StringValue
+                value
+                |> string
+                |> Resources.Interpreter_ErrorSettingEnvironmentVariable name
                 |> _statusUtil.OnError
 
     /// Run the let command for registers
@@ -2183,7 +2194,7 @@ type VimInterpreter
         | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
-        | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
+        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange

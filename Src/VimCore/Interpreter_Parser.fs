@@ -2071,7 +2071,10 @@ and [<Sealed>] Parser
                 parseAssignment variableName (fun lhs rhs -> LineCommand.LetEnvironment (lhs, rhs))
             | ParseResult.Succeeded (Expression.RegisterName registerName) ->
                 parseAssignment registerName (fun lhs rhs -> LineCommand.LetRegister (lhs, rhs))
-            | _ -> x.ParseError Resources.Parser_Error
+            | ParseResult.Failed msg ->
+                x.ParseError msg
+            | _ ->
+                x.ParseError Resources.Parser_Error
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
