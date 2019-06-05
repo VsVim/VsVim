@@ -6,6 +6,7 @@
     <AssemblyName>Vim.VisualStudio.Shared.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
+    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />

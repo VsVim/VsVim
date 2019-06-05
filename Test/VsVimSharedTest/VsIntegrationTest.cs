@@ -8,6 +8,7 @@ using Vim.VisualStudio.Implementation.Misc;
 using Vim.VisualStudio.UnitTest.Utils;
 using Xunit;
 using EnvDTE80;
+using EnvDTE;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -289,6 +290,7 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ModeKind.Replace, _vimBuffer.ModeKind);
             }
 
+#if !VS_SPECIFIC_2015
             /// <summary>
             /// Make sure that we allow keys like down to make it directly to Insert mode when there is
             /// an active IWordCompletionSession
@@ -303,6 +305,7 @@ namespace Vim.VisualStudio.UnitTest
                 _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<Down>"));
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
+#endif
 
             /// <summary>
             /// When there is an active IWordCompletionSession we want to let even direct input go directly

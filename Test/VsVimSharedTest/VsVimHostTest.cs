@@ -48,7 +48,7 @@ namespace Vim.VisualStudio.UnitTest
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOperationsFactoryService = _factory.Create<IEditorOperationsFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
-            _uiVSShell = _factory.Create<IVsUIShell>();
+            _uiVSShell = _factory.Create<IVsUIShell>(MockBehavior.Strict);
             _vsShell = _factory.Create<IVsShell>(MockBehavior.Loose);
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);

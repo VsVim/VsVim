@@ -297,6 +297,11 @@ namespace Vim.VisualStudio.UnitTest.Utils
             get { return _vsCommandTarget; }
         }
 
+        internal IWpfTextView WpfTextView
+        {
+            get { return _wpfTextView; }
+        }
+
         internal VsSimulation(IVimBufferCoordinator bufferCoordinator, bool simulateResharper, bool simulateStandardKeyMappings, IEditorOperationsFactoryService editorOperationsFactoryService, IKeyUtil keyUtil)
         {
             _keyUtil = keyUtil;
