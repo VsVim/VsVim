@@ -177,8 +177,6 @@ type internal NormalMode
                 yield ("gqq", CommandFlags.Repeatable, NormalCommand.FormatTextLines false)
                 yield ("gwgw", CommandFlags.Repeatable, NormalCommand.FormatTextLines true)
                 yield ("gww", CommandFlags.Repeatable, NormalCommand.FormatTextLines true)
-                yield ("zs", CommandFlags.Movement, NormalCommand.ScrollHorizontallyToEdgeOfScreen false)
-                yield ("ze", CommandFlags.Movement, NormalCommand.ScrollHorizontallyToEdgeOfScreen true)
                 yield ("!!", CommandFlags.Repeatable, NormalCommand.FilterLines)
                 yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, ModeArgument.None))
                 yield ("<C-^>", CommandFlags.None, NormalCommand.GoToRecentView)

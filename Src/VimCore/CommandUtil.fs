@@ -3008,13 +3008,14 @@ type internal CommandUtil
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunAtCommand char -> x.RunAtCommand char data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
-        | NormalCommand.ScrollHorizontallyToEdgeOfScreen scrollToEnd -> x.ScrollHorizontallyToEdgeOfScreen scrollToEnd
         | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
         | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault
         | NormalCommand.ScrollWindow direction -> x.ScrollWindow direction count
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.ScrollCaretColumnToLeft -> x.ScrollCaretColumnToLeft()
+        | NormalCommand.ScrollCaretColumnToRight -> x.ScrollCaretColumnToRight()
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
@@ -3147,22 +3148,31 @@ type internal CommandUtil
             let pixels = float(sign * count) * _textView.LineHeight
             _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
 
-    /// Scroll the window horizontally so the caret is at the edge of the screen
-    member x.ScrollHorizontallyToEdgeOfScreen scrollToEnd =
-        match TextViewUtil.GetTextViewLineContainingCaret _textView with
-        | Some textViewLine ->
+    /// Scroll the window horizontally so the caret is at the left edge of the screen
+    member x.ScrollCaretColumnToLeft () =
+        match _windowSettings.Wrap, TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | false, Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
             let pixels =
-                let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
-                if not scrollToEnd then
-                    let xStart = _textView.ViewportLeft
-                    let xCaret = caretBounds.Left
-                    xCaret - xStart
-                else
-                    let xEnd = _textView.ViewportRight
-                    let xCaret = caretBounds.Right
-                    xCaret - xEnd
+                let xStart = _textView.ViewportLeft
+                let xCaret = caretBounds.Left
+                xCaret - xStart
             _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
-        | None ->
+        | _ ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally so the caret is at the right edge of the screen
+    member x.ScrollCaretColumnToRight () =
+        match _windowSettings.Wrap, TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | false, Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let pixels =
+                let xEnd = _textView.ViewportRight
+                let xCaret = caretBounds.Right
+                xCaret - xEnd
+            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
+        | _ ->
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
 

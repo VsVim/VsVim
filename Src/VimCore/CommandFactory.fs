@@ -33,6 +33,8 @@ type internal CommandFactory
             yield ("zz", CommandFlags.Movement, NormalCommand.ScrollCaretLineToMiddle true)
             yield ("z-", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom false)
             yield ("zb", CommandFlags.Movement, NormalCommand.ScrollCaretLineToBottom true)
+            yield ("zs", CommandFlags.Movement, NormalCommand.ScrollCaretColumnToLeft)
+            yield ("ze", CommandFlags.Movement, NormalCommand.ScrollCaretColumnToRight)
             yield ("<C-b>", CommandFlags.Movement, NormalCommand.ScrollPages ScrollDirection.Up)
             yield ("<C-d>", CommandFlags.Movement, NormalCommand.ScrollLines (ScrollDirection.Down, true))
             yield ("<C-e>", CommandFlags.Movement, NormalCommand.ScrollWindow ScrollDirection.Down)

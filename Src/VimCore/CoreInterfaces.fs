@@ -3017,9 +3017,6 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of Character: char
 
-    /// Scroll the window horizontally so the caret is at the edge of the screen
-    | ScrollHorizontallyToEdgeOfScreen of ScrollToEnd: bool
-
     /// Scroll the caret in the specified direciton.  The bool is whether to use
     /// the 'scroll' option or 'count'
     | ScrollLines of ScrollDirection: ScrollDirection * UseScrollOption: bool
@@ -3041,6 +3038,12 @@ type NormalCommand =
     /// Scroll the caret line to the bottom of the ITextView.  The bool is whether or not
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
+
+    /// Scroll the window horizontally so the caret is at the left edge of the screen
+    | ScrollCaretColumnToLeft
+
+    /// Scroll the window horizontally so the caret is at the right edge of the screen
+    | ScrollCaretColumnToRight
 
     /// Select the current block
     | SelectBlock
@@ -3205,6 +3208,8 @@ type NormalCommand =
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.ScrollCaretColumnToLeft -> None
+        | NormalCommand.ScrollCaretColumnToRight -> None
         | NormalCommand.SelectBlock -> None
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None
