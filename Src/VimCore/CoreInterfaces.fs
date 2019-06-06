@@ -3134,6 +3134,7 @@ type NormalCommand =
 
         // Non-motion commands
         | NormalCommand.AddToWord _ -> None
+        | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
         | NormalCommand.ChangeCaseCaretPoint _ -> None
         | NormalCommand.ChangeLines -> None
