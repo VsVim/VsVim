@@ -84,9 +84,9 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             }
         }
 
-        private void OnModeChange(object sender, EventArgs e)
+        private void OnModeChange(object sender, SwitchModeEventArgs args)
         {
-            if (_inRename && _roslynRenameUtil.IsRenameActive)
+            if (_inRename && _roslynRenameUtil.IsRenameActive && args.ModeArgument.IsCancelOperation)
             {
                 _roslynRenameUtil.Cancel();
             }

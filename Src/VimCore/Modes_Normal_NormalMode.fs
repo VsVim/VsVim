@@ -111,6 +111,7 @@ type internal NormalMode
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
+                yield ("<C-c>", CommandFlags.Repeatable, NormalCommand.CancelOperation)
                 yield ("<C-g>", CommandFlags.Special, NormalCommand.PrintFileInformation)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)

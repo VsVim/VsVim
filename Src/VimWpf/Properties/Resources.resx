@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ExternalEditBanner" xml:space="preserve">
-    <value>External edit detected (hit &lt;ESC&gt;to return to Insert mode)</value>
+    <value>External edit detected (hit &lt;Esc&gt; to return to previous mode, &lt;C-c&gt; to cancel external edit)</value>
   </data>
   <data name="InsertBanner" xml:space="preserve">
     <value>-- INSERT --</value>

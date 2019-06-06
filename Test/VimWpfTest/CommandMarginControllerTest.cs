@@ -158,7 +158,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var mode = new Mock<INormalMode>();
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
                 _vimBuffer.NormalModeImpl = mode.Object;
-                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, _vimBuffer.NormalModeImpl));
+                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, _vimBuffer.NormalModeImpl, ModeArgument.None));
                 Assert.Equal(string.Empty, _marginControl.CommandLineTextBox.Text);
             }
 
@@ -170,7 +170,7 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 var mode = new Mock<IMode>();
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object));
+                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object, ModeArgument.None));
                 Assert.Equal(Resources.InsertBanner, _marginControl.CommandLineTextBox.Text);
             }
 
@@ -184,7 +184,7 @@ namespace Vim.UI.Wpf.UnitTest
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
                 _marginControl.CommandLineTextBox.Text = string.Empty;
                 _vimBuffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
-                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object));
+                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object, ModeArgument.None));
                 Assert.Equal(string.Empty, _marginControl.CommandLineTextBox.Text);
             }
 
@@ -199,7 +199,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var ki = KeyInputUtil.CharToKeyInput('c');
                 _marginControl.CommandLineTextBox.Text = string.Empty;
                 _vimBuffer.RaiseKeyInputStart(ki);
-                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object));
+                _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object, ModeArgument.None));
                 Assert.Equal(string.Empty, _marginControl.CommandLineTextBox.Text);
                 _vimBuffer.RaiseKeyInputEnd(ki);
                 Assert.Equal(Resources.InsertBanner, _marginControl.CommandLineTextBox.Text);
