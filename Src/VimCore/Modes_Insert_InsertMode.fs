@@ -181,8 +181,8 @@ type ActiveEditItem =
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
 
-    /// In the middle of an undo operation.  Waiting for the next key
-    | Undo 
+    /// In the middle of a special sequence.  Waiting for the next key
+    | Special 
 
     /// In the middle of a digraph operation. Wait for the first digraph key
     | Digraph1
@@ -305,6 +305,7 @@ type internal InsertMode
     let _bag = DisposableBag()
     let _textView = _vimBuffer.TextView
     let _textBuffer = _vimBuffer.TextBuffer
+    let _localSettings = _vimBuffer.LocalSettings
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
@@ -351,7 +352,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
+                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessSpecialStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
@@ -447,7 +448,7 @@ type internal InsertMode
         | ActiveEditItem.None -> None
         | ActiveEditItem.OverwriteReplace -> None
         | ActiveEditItem.WordCompletion _ -> None
-        | ActiveEditItem.Undo _ -> None
+        | ActiveEditItem.Special _ -> None
 
     member x.IsInPaste = x.PasteCharacter.IsSome
 
@@ -1026,10 +1027,10 @@ type internal InsertMode
         x.CancelWordCompletionSession()
         x.ProcessLiteral KeyInputSet.Empty
 
-    /// Start a undo session in insert mode
-    member x.ProcessUndoStart keyInput =
+    /// Start a special sequence in insert mode
+    member x.ProcessSpecialStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Special }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Toggle the use of typing language characters
@@ -1068,18 +1069,58 @@ type internal InsertMode
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
 
-    /// Process the second key of an undo operation.  
-    member x.ProcessUndo keyInput = 
+    /// Process the second key of a special sequence.
+    member x.ProcessSpecial keyInput = 
 
-        // Handle the next key.
-        if keyInput = KeyInputUtil.CharToKeyInput 'u' then
-            x.BreakUndoSequence "Break undo sequence"
-        elif keyInput = KeyInputUtil.CharToKeyInput 'U' then
-            _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
-
+        // Reset the special sequence.
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
+        // Handle the next key.
+        match keyInput with
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'u' ->
+
+            // See ':vimhelp i_CTRL-G_u'.
+            x.BreakUndoSequence "Break undo sequence"
+
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'U' ->
+
+            // See ':vimhelp i_CTRL-G_U'.
+            _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Up
+            || keyInput = KeyInputUtil.CharToKeyInput 'k'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'k' ->
+
+                // See ':vimhelp i_CTRL-G_<Up>'.
+                x.BreakUndoSequence "Line up to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Up then
+                    x.MoveToInsertStartColumn()
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Down
+            || keyInput = KeyInputUtil.CharToKeyInput 'j'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'j' ->
+
+                // See ':vimhelp i_CTRL-G_<Down>'.
+                x.BreakUndoSequence "Line down to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Down then
+                    x.MoveToInsertStartColumn()
+
+        | _ ->
+            _operations.Beep()
+
         ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Move to the insert start column
+    member x.MoveToInsertStartColumn () =
+        match _vimBuffer.VimTextBuffer.InsertStartPoint with
+        | Some startPoint ->
+            let spaces = SnapshotColumn(startPoint).GetSpacesToColumn _localSettings.TabStop
+            let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spaces, _localSettings.TabStop)
+            _operations.MoveCaretToColumn column ViewFlags.Standard
+        | None ->
+            ()
 
     /// Process the second key of a digraph command
     member x.ProcessDigraph1 firstKeyInput = 
@@ -1265,8 +1306,8 @@ type internal InsertMode
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> ProcessResult.NotHandled
 
-        | ActiveEditItem.Undo ->
-            x.ProcessUndo keyInput
+        | ActiveEditItem.Special ->
+            x.ProcessSpecial keyInput
         | ActiveEditItem.Digraph1 ->
             x.ProcessDigraph1 keyInput
         | ActiveEditItem.Digraph2 _ ->
