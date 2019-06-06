@@ -3017,6 +3017,9 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of Character: char
 
+    /// Scroll the window horizontally so the caret is at the edge of the screen
+    | ScrollHorizontallyToEdgeOfScreen of ScrollToEnd: bool
+
     /// Scroll the caret in the specified direciton.  The bool is whether to use
     /// the 'scroll' option or 'count'
     | ScrollLines of ScrollDirection: ScrollDirection * UseScrollOption: bool

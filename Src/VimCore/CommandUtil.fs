@@ -3008,6 +3008,7 @@ type internal CommandUtil
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.RunAtCommand char -> x.RunAtCommand char data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
+        | NormalCommand.ScrollHorizontallyToEdgeOfScreen scrollToEnd -> x.ScrollHorizontallyToEdgeOfScreen scrollToEnd
         | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
         | NormalCommand.ScrollPages direction -> x.ScrollPages direction data.CountOrDefault
         | NormalCommand.ScrollWindow direction -> x.ScrollWindow direction count
@@ -3145,6 +3146,25 @@ type internal CommandUtil
             let sign = if scrollDirection = ScrollDirection.Up then 1 else -1
             let pixels = float(sign * count) * _textView.LineHeight
             _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
+
+    /// Scroll the window horizontally so the caret is at the edge of the screen
+    member x.ScrollHorizontallyToEdgeOfScreen scrollToEnd =
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some textViewLine ->
+            let pixels =
+                let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+                if not scrollToEnd then
+                    let xStart = _textView.ViewportLeft
+                    let xCaret = caretBounds.Left
+                    xCaret - xStart
+                else
+                    let xEnd = _textView.ViewportRight
+                    let xCaret = caretBounds.Right
+                    xCaret - xEnd
+            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
