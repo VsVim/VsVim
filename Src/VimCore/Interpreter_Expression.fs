@@ -624,6 +624,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     // Let command.  The first item is the name and the second is the value
     | Let of VariableName: VariableName * Expression: Expression
 
+    // Let command applied to an environment variable. The first item is the name and the second is the value
+    | LetEnvironment of EnvironmentVariableName: string * Expression: Expression
+
     // Let command applied to a register. The first item is the name and the second is the value
     | LetRegister of RegisterName: RegisterName * Expression: Expression
 

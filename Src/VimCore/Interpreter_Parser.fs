@@ -840,6 +840,7 @@ and [<Sealed>] Parser
             | LineCommand.Join (_, joinKind) -> LineCommand.Join (lineRange, joinKind)
             | LineCommand.JumpToLastLine _ -> LineCommand.JumpToLastLine lineRange
             | LineCommand.Let _ -> noRangeCommand
+            | LineCommand.LetEnvironment _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
             | LineCommand.MapKeys _ -> noRangeCommand
@@ -2032,6 +2033,16 @@ and [<Sealed>] Parser
     member x.ParseLet () = 
         use flags = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.SkipBlanks
 
+        // Parse an assignment of lhs to '= rhs'.
+        let parseAssignment (lhs: 'T) (assign: 'T -> Expression -> LineCommand) =
+            if _tokenizer.CurrentChar = '=' then
+                _tokenizer.MoveNextToken()
+                match x.ParseExpressionCore() with
+                | ParseResult.Succeeded rhs -> assign lhs rhs
+                | ParseResult.Failed msg -> x.ParseError msg
+            else
+                x.ParseError Resources.Parser_Error
+
         // Handle the case where let is being used for display.  
         //  let x y z 
         let parseDisplayLet firstName = 
@@ -2047,32 +2058,23 @@ and [<Sealed>] Parser
                 let names = firstName :: rest
                 LineCommand.DisplayLet names)
 
-        match _tokenizer.CurrentTokenKind with
-        | TokenKind.Character '@' ->
-            _tokenizer.MoveNextToken()
-            match x.ParseRegisterName ParseRegisterName.All with
-            | Some registerName ->
+        if _tokenizer.CurrentTokenKind = TokenKind.EndOfLine then
+            LineCommand.DisplayLet []
+        else
+            match x.ParseExpressionCore() with
+            | ParseResult.Succeeded (Expression.VariableName variableName) ->
                 if _tokenizer.CurrentChar = '=' then
-                    _tokenizer.MoveNextToken()
-                    match x.ParseExpressionCore() with
-                    | ParseResult.Succeeded expr -> LineCommand.LetRegister (registerName, expr)
-                    | ParseResult.Failed msg -> x.ParseError msg
+                    parseAssignment variableName (fun lhs rhs -> LineCommand.Let (lhs, rhs))
                 else
-                    x.ParseError Resources.Parser_Error
-            | None -> x.ParseError "Invalid register name"
-        | TokenKind.Word name ->
-            match x.ParseVariableName() with
-            | ParseResult.Succeeded name ->
-                if _tokenizer.CurrentChar = '=' then
-                    _tokenizer.MoveNextToken()
-                    match x.ParseExpressionCore() with
-                    | ParseResult.Succeeded expr -> LineCommand.Let (name, expr)
-                    | ParseResult.Failed msg -> x.ParseError msg
-                else
-                    parseDisplayLet name
-            | ParseResult.Failed msg -> x.ParseError msg
-        | TokenKind.EndOfLine -> LineCommand.DisplayLet []
-        | _ -> x.ParseError "Error"
+                    parseDisplayLet variableName
+            | ParseResult.Succeeded (Expression.EnvironmentVariableName variableName) ->
+                parseAssignment variableName (fun lhs rhs -> LineCommand.LetEnvironment (lhs, rhs))
+            | ParseResult.Succeeded (Expression.RegisterName registerName) ->
+                parseAssignment registerName (fun lhs rhs -> LineCommand.LetRegister (lhs, rhs))
+            | ParseResult.Failed msg ->
+                x.ParseError msg
+            | _ ->
+                x.ParseError Resources.Parser_Error
 
     /// Parse out the :make command.  The arguments here other than ! are undefined.  Just
     /// get the text blob and let the interpreter / host deal with it 
