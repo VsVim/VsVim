@@ -207,7 +207,6 @@ namespace Vim.VisualStudio.UnitTest
                 GC.WaitForPendingFinalizers();
                 GC.Collect(2, GCCollectionMode.Forced);
                 GC.Collect();
-                Thread.Yield();
             }
         }
 
