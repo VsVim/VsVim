@@ -3045,6 +3045,9 @@ type NormalCommand =
     /// Scroll the window horizontally so the caret is at the right edge of the screen
     | ScrollCaretColumnToRight
 
+    /// Scroll the window horizontally in the specified direction
+    | ScrollColumns of Direction: Direction
+
     /// Select the current block
     | SelectBlock
 
@@ -3202,6 +3205,7 @@ type NormalCommand =
         | NormalCommand.ReplaceChar _ -> None
         | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
+        | NormalCommand.ScrollColumns _ -> None
         | NormalCommand.ScrollLines _ -> None
         | NormalCommand.ScrollPages _ -> None
         | NormalCommand.ScrollWindow _ -> None
