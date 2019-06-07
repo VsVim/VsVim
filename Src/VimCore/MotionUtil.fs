@@ -1255,7 +1255,7 @@ type internal MotionUtil
     member x.DisplayLineFirstNonBlank () = 
         match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
-            TextViewUtil.VisibleSpan _textView caretLine
+            TextViewUtil.GetVisibleSpan _textView caretLine
             |> x.FirstNonBlankCore
         | None ->
             x.FirstNonBlankOnCurrentLine()
@@ -1265,7 +1265,7 @@ type internal MotionUtil
         match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
             let span =
-                TextViewUtil.VisibleSpan _textView caretLine
+                TextViewUtil.GetVisibleSpan _textView caretLine
                 |> SnapshotSpanUtil.GetStartPoint
                 |> (fun point -> SnapshotSpan(point, x.CaretPoint))
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
@@ -1277,7 +1277,7 @@ type internal MotionUtil
         match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
             let span =
-                TextViewUtil.VisibleSpan _textView caretLine
+                TextViewUtil.GetVisibleSpan _textView caretLine
                 |> SnapshotSpanUtil.GetEndPoint
                 |> (fun point -> SnapshotSpan(x.CaretPoint, point))
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some

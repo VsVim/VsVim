@@ -3306,7 +3306,7 @@ module TextViewUtil =
             textBuffer.Delete(span.Span) |> ignore
 
     /// Get the visible span for the specified text view line
-    let VisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
+    let GetVisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
 
         // Whether the specified point is to the right the left edge of the
         // viewport.

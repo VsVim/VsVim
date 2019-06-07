@@ -3039,10 +3039,12 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
-    /// Scroll the window horizontally so the caret is at the left edge of the screen
+    /// Scroll the window horizontally so that the caret is at the left edge
+    /// of the screen
     | ScrollCaretColumnToLeft
 
-    /// Scroll the window horizontally so the caret is at the right edge of the screen
+    /// Scroll the window horizontally so that the caret is at the right edge
+    /// of the screen
     | ScrollCaretColumnToRight
 
     /// Scroll the window horizontally in the specified direction

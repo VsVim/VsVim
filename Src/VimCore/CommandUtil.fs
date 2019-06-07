@@ -3176,19 +3176,19 @@ type internal CommandUtil
                 x.CaretVirtualPoint
                 |> textViewLine.GetCharacterBounds
             if caretBounds.Left < _textView.ViewportLeft then
-                TextViewUtil.VisibleSpan _textView textViewLine
+                TextViewUtil.GetVisibleSpan _textView textViewLine
                 |> SnapshotSpanUtil.GetStartPoint
                 |> moveCaretToPoint
             elif caretBounds.Right > _textView.ViewportRight then
-                TextViewUtil.VisibleSpan _textView textViewLine
+                TextViewUtil.GetVisibleSpan _textView textViewLine
                 |> SnapshotSpanUtil.GetEndPoint
                 |> moveCaretToPoint
 
         | None ->
             ()
 
-    /// Scroll the window horizontally so the caret is at the left edge of the
-    /// screen
+    /// Scroll the window horizontally so that the caret is at the left edge
+    /// of the screen
     member x.ScrollCaretColumnToLeft () =
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
@@ -3201,8 +3201,8 @@ type internal CommandUtil
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the window horizontally so the caret is at the right edge of
-    /// the screen
+    /// Scroll the window horizontally so that the caret is at the right edge
+    /// of the screen
     member x.ScrollCaretColumnToRight () =
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
