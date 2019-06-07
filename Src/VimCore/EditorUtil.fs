@@ -3308,13 +3308,13 @@ module TextViewUtil =
     /// Get the visible span for the specified text view line
     let GetVisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
 
-        // Whether the specified point is to the right the left edge of the
+        // Whether the specified point is to the right of the left edge of the
         // viewport.
         let isRightOfViewportLeft (point: SnapshotPoint) =
             let bounds = textViewLine.GetCharacterBounds(point)
             bounds.Left >= textView.ViewportLeft
 
-        // Whether the specified point is to the left the right edge of the
+        // Whether the specified point is to the left of the right edge of the
         // viewport.
         let isLeftOfViewportRight (point: SnapshotPoint) =
             let bounds = textViewLine.GetCharacterBounds(point)
