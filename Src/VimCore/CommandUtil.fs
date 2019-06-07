@@ -3162,43 +3162,33 @@ type internal CommandUtil
 
     /// Move the caret horizontally into the viewport
     member x.MoveCaretHorizontallyIntoViewport () =
+
+        // Move the caret without checking visibility.
+        let moveCaretToPoint (point: SnapshotPoint) =
+            _textView.Caret.MoveTo(point)
+            |> ignore
+
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
 
-            // Whether the specified point is to the right the left edge of
-            // the viewport.
-            let isRightOfViewportLeft (point: SnapshotPoint) =
-                let bounds = textViewLine.GetCharacterBounds(point)
-                bounds.Left >= _textView.ViewportLeft
-
-            // Whether the specified point is to the left the right edge of
-            // the viewport.
-            let isLeftOfViewportRight (point: SnapshotPoint) =
-                let bounds = textViewLine.GetCharacterBounds(point)
-                bounds.Right <= _textView.ViewportRight
-
             // Check whether the caret is within the viewport.
-            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let caretBounds =
+                x.CaretVirtualPoint
+                |> textViewLine.GetCharacterBounds
             if caretBounds.Left < _textView.ViewportLeft then
-
-                // Scan forward from the caret to the end of the line.
-                SnapshotSpan(x.CaretPoint, textViewLine.End)
-                |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.tryFind isRightOfViewportLeft
-                |> Option.iter (fun point -> _textView.Caret.MoveTo(point) |> ignore)
-
+                TextViewUtil.VisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetStartPoint
+                |> moveCaretToPoint
             elif caretBounds.Right > _textView.ViewportRight then
-
-                // Scan backward from the caret to the beginning of the line.
-                SnapshotSpan(textViewLine.Start, x.CaretPoint)
-                |> SnapshotSpanUtil.GetPoints SearchPath.Backward
-                |> Seq.tryFind isLeftOfViewportRight
-                |> Option.iter (fun point -> _textView.Caret.MoveTo(point) |> ignore)
+                TextViewUtil.VisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetEndPoint
+                |> moveCaretToPoint
 
         | None ->
             ()
 
-    /// Scroll the window horizontally so the caret is at the left edge of the screen
+    /// Scroll the window horizontally so the caret is at the left edge of the
+    /// screen
     member x.ScrollCaretColumnToLeft () =
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
@@ -3211,7 +3201,8 @@ type internal CommandUtil
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the window horizontally so the caret is at the right edge of the screen
+    /// Scroll the window horizontally so the caret is at the right edge of
+    /// the screen
     member x.ScrollCaretColumnToRight () =
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->

@@ -16,6 +16,7 @@ open StringBuilderExtensions
 open System.Linq
 open System.Drawing
 open System.Globalization
+open Microsoft.VisualStudio.Text.Formatting
 
 [<RequireQualifiedAccess>]
 type CodePointInfo = 
@@ -3303,6 +3304,39 @@ module TextViewUtil =
             let lastLine = SnapshotUtil.GetLastNormalizedLine snapshot
             let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
             textBuffer.Delete(span.Span) |> ignore
+
+    /// Get the visible span for the specified text view line
+    let VisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
+
+        // Whether the specified point is to the right the left edge of the
+        // viewport.
+        let isRightOfViewportLeft (point: SnapshotPoint) =
+            let bounds = textViewLine.GetCharacterBounds(point)
+            bounds.Left >= textView.ViewportLeft
+
+        // Whether the specified point is to the left the right edge of the
+        // viewport.
+        let isLeftOfViewportRight (point: SnapshotPoint) =
+            let bounds = textViewLine.GetCharacterBounds(point)
+            bounds.Right <= textView.ViewportRight
+
+        let firstPoint =
+
+            // Scan forward from the caret to the end of the line.
+            SnapshotSpan(textViewLine.Start, textViewLine.End)
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind isRightOfViewportLeft
+            |> Option.defaultValue textViewLine.Start
+
+        let lastPoint =
+
+            // Scan backward from the caret to the beginning of the line.
+            SnapshotSpan(textViewLine.Start, textViewLine.End)
+            |> SnapshotSpanUtil.GetPoints SearchPath.Backward
+            |> Seq.tryFind isLeftOfViewportRight
+            |> Option.defaultValue textViewLine.End
+
+        SnapshotSpan(firstPoint, lastPoint)
 
 module TextSelectionUtil = 
 
