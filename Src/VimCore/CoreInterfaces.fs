@@ -3050,7 +3050,7 @@ type NormalCommand =
     /// Scroll the window horizontally in the specified direction
     | ScrollColumns of Direction: Direction
 
-    /// Scroll the window horizontally in the specified direction
+    /// Scroll half the width of the window in the specified direction
     | ScrollHalfWidth of Direction: Direction
 
     /// Select the current block
