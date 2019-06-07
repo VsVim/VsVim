@@ -1675,7 +1675,6 @@ module SnapshotSpanUtil =
     /// but will return line breaks
     let GetPoints path span =
         let startPoint = GetStartPoint span
-        let endPoint = GetEndPoint span
         let positions =
             let offset = startPoint.Position
             match path with 

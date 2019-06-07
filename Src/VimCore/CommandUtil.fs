@@ -3164,22 +3164,36 @@ type internal CommandUtil
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
 
-            // Whether the specified point is completely in the viewport.
-            let isInViewport (point: SnapshotPoint) =
+            // Whether the specified point is to the right the left edge of
+            // the viewport.
+            let isRightOfViewportLeft (point: SnapshotPoint) =
                 let bounds = textViewLine.GetCharacterBounds(point)
-                bounds.Left >= _textView.ViewportLeft && bounds.Right <= _textView.ViewportRight
+                bounds.Left >= _textView.ViewportLeft
 
+            // Whether the specified point is to the left the right edge of
+            // the viewport.
+            let isLeftOfViewportRight (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Right <= _textView.ViewportRight
+
+            // Check whether the caret is within the viewport.
             let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
             if caretBounds.Left < _textView.ViewportLeft then
+
+                // Scan forward from the caret to the end of the line.
                 SnapshotSpan(x.CaretPoint, textViewLine.End)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> Seq.tryFind isInViewport
+                |> Seq.tryFind isRightOfViewportLeft
                 |> Option.iter (fun point -> _textView.Caret.MoveTo(point) |> ignore)
+
             elif caretBounds.Right > _textView.ViewportRight then
+
+                // Scan backward from the caret to the beginning of the line.
                 SnapshotSpan(textViewLine.Start, x.CaretPoint)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Backward
-                |> Seq.tryFind isInViewport
+                |> Seq.tryFind isLeftOfViewportRight
                 |> Option.iter (fun point -> _textView.Caret.MoveTo(point) |> ignore)
+
         | None ->
             ()
 
