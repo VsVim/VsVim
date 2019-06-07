@@ -3017,6 +3017,7 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretColumnToLeft -> x.ScrollCaretColumnToLeft()
         | NormalCommand.ScrollCaretColumnToRight -> x.ScrollCaretColumnToRight()
         | NormalCommand.ScrollColumns direction -> x.ScrollColumns direction count
+        | NormalCommand.ScrollHalfWidth direction -> x.ScrollHalfWidth direction
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
@@ -3239,6 +3240,17 @@ type internal CommandUtil
         | None ->
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally in the specified direction
+    member x.ScrollHalfWidth direction =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let spaceWidth = textViewLine.VirtualSpaceWidth
+            let columns = _textView.ViewportWidth / spaceWidth
+            let count = int(round(columns / 2.0))
+            x.ScrollColumns direction count
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'

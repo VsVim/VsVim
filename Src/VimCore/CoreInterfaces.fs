@@ -3048,6 +3048,9 @@ type NormalCommand =
     /// Scroll the window horizontally in the specified direction
     | ScrollColumns of Direction: Direction
 
+    /// Scroll the window horizontally in the specified direction
+    | ScrollHalfWidth of Direction: Direction
+
     /// Select the current block
     | SelectBlock
 
@@ -3206,6 +3209,7 @@ type NormalCommand =
         | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
         | NormalCommand.ScrollColumns _ -> None
+        | NormalCommand.ScrollHalfWidth _ -> None
         | NormalCommand.ScrollLines _ -> None
         | NormalCommand.ScrollPages _ -> None
         | NormalCommand.ScrollWindow _ -> None
