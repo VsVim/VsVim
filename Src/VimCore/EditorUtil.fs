@@ -3308,30 +3308,30 @@ module TextViewUtil =
     /// Get the visible span for the specified text view line
     let GetVisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
 
-        // Whether the specified point is to the right of the left edge of the
-        // viewport.
-        let isRightOfViewportLeft (point: SnapshotPoint) =
-            let bounds = textViewLine.GetCharacterBounds(point)
-            bounds.Left >= textView.ViewportLeft
-
-        // Whether the specified point is to the left of the right edge of the
-        // viewport.
-        let isLeftOfViewportRight (point: SnapshotPoint) =
-            let bounds = textViewLine.GetCharacterBounds(point)
-            bounds.Right <= textView.ViewportRight
-
         let firstPoint =
 
-            // Scan forward from the caret to the end of the line.
-            SnapshotSpan(textViewLine.Start, textViewLine.End)
+            // Whether the specified point is to the right of the left edge of
+            // the viewport.
+            let isRightOfViewportLeft (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Left >= textView.ViewportLeft
+
+            // Scan forward looking for a visible point.
+            textViewLine.Extent
             |> SnapshotSpanUtil.GetPoints SearchPath.Forward
             |> Seq.tryFind isRightOfViewportLeft
             |> Option.defaultValue textViewLine.Start
 
         let lastPoint =
 
-            // Scan backward from the caret to the beginning of the line.
-            SnapshotSpan(textViewLine.Start, textViewLine.End)
+            // Whether the specified point is to the left of the right edge of
+            // the viewport.
+            let isLeftOfViewportRight (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Right <= textView.ViewportRight
+
+            // Scan backward looking for a visible point.
+            textViewLine.Extent
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> Seq.tryFind isLeftOfViewportRight
             |> Option.defaultValue textViewLine.End
