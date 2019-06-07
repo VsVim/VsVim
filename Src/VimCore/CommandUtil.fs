@@ -3232,7 +3232,7 @@ type internal CommandUtil
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Scroll the window horizontally in the specified direction
+    /// Scroll half the width of the window in the specified direction
     member x.ScrollHalfWidth direction =
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
