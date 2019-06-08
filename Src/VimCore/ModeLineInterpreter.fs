@@ -94,6 +94,7 @@ type internal ModeLineInterpreter
                 _insecureWindowSettingNames
                 |> Seq.contains windowSetting.Value.Name
                 |> not
+
             else
                 false
 
@@ -209,10 +210,11 @@ type internal ModeLineInterpreter
             with
             | ex ->
 
-                // Empirically, exceptions may be silently caught by some caller
-                // in the call stack. As a result, we catch any exceptions here so
-                // they are at least reported in the debugger, and so that this
-                // can be a convenient place to put a breakpoint.
+                // Empirically, exceptions may be silently caught by some
+                // caller in the call stack. As a result, we catch any
+                // exceptions here so they are at least reported in the
+                // debugger, and so that this can be a convenient place to put
+                // a breakpoint.
                 VimTrace.TraceError(ex)
                 None, None
         finally
