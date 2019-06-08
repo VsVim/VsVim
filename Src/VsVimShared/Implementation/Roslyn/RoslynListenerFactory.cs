@@ -67,12 +67,6 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         private void OnIsRenameActiveChanged(object sender, EventArgs e)
         {
-            // Respect the user's edit monitoring settting.
-            if (!_vimApplicationSettings.EnableExternalEditMonitoring)
-            {
-                return;
-            }
-
             if (_inRename && !_roslynRenameUtil.IsRenameActive)
             {
                 _inRename = false;
@@ -90,7 +84,11 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 _inRename = true;
                 foreach (var vimBuffer in _vimBufferList)
                 {
-                    vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                    // Respect the user's edit monitoring setting.
+                    if (!_vimApplicationSettings.EnableExternalEditMonitoring)
+                    {
+                        vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+                    }
                     vimBuffer.SwitchedMode += OnModeChange;
                 }
             }
