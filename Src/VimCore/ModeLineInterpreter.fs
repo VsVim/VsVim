@@ -22,11 +22,20 @@ type internal ModeLineInterpreter
     static let _assignmentRegex = new Regex(@"^" + _settingPattern + @"=(.*)$", RegexOptions.Compiled)
     static let _settingNameRegex = new Regex(@"^" + _settingPattern + "$", RegexOptions.Compiled)
 
+    let mutable _wasBufferChecked = false
+
     let _globalSettings = _localSettings.GlobalSettings
 
     /// List of insecure local setting names that could be used in a file with
     /// a malicious modeline to cause risk or harm to the user
     static let _insecureLocalSettingNames =
+        Seq.empty
+        |> Seq.toArray
+        :> string seq
+
+    /// List of insecure window setting names that could be used in a file with
+    /// a malicious modeline to cause risk or harm to the user
+    static let _insecureWindowSettingNames =
         Seq.empty
         |> Seq.toArray
         :> string seq
@@ -44,6 +53,7 @@ type internal ModeLineInterpreter
             // many settings and failing on the first unsupported setting would
             // prevent the remainder of the settings from being applied.
             let localSetting = _localSettings.GetSetting settingName
+            let windowSetting = windowSettings.GetSetting settingName
             if settingName = "" then
 
                 // Ignore an empty setting.
@@ -52,7 +62,7 @@ type internal ModeLineInterpreter
 
                 // Don't ignore illegal setting names.
                 false
-            elif Option.isNone localSetting then
+            elif Option.isNone localSetting && Option.isNone windowSetting then
 
                 // Ignore unsupported settings.
                 true
@@ -65,16 +75,37 @@ type internal ModeLineInterpreter
             // For security reasons, we disallow certain local settings.
             let globalSetting = _globalSettings.GetSetting settingName
             let localSetting = _localSettings.GetSetting settingName
+            let windowSetting = windowSettings.GetSetting settingName
             if Option.isSome globalSetting then
 
                 // Disallow all global settings.
                 false
+
             elif Option.isSome localSetting then
 
                 // Allow any local setting that isn't insecure.
                 _insecureLocalSettingNames
                 |> Seq.contains localSetting.Value.Name
                 |> not
+
+            elif Option.isSome  windowSetting then
+
+                // Allow any local setting that isn't insecure.
+                _insecureWindowSettingNames
+                |> Seq.contains windowSetting.Value.Name
+                |> not
+            else
+                false
+
+        // Apply the 
+        let setSetting settingName settingValue =
+            if _localSettings.GetSetting settingName |> Option.isSome then
+                if not _wasBufferChecked then
+                    _localSettings.TrySetValueFromString settingName settingValue
+                else
+                    true
+            elif windowSettings.GetSetting settingName |> Option.isSome then
+                windowSettings.TrySetValueFromString settingName settingValue
             else
                 false
 
@@ -83,35 +114,30 @@ type internal ModeLineInterpreter
             let option = option.Trim()
 
             // Determine what kind of option this is.
-            let settingName, setter =
+            let settingName, settingValue =
                 let m = _assignmentRegex.Match(option)
                 if m.Success then
 
                     // The option is an assigned setting.
                     let settingName = m.Groups.[1].Value
-                    let strValue = m.Groups.[2].Value
-                    let setter = fun () -> _localSettings.TrySetValueFromString settingName strValue
-                    settingName, setter
+                    let settingValue = m.Groups.[2].Value
+                    settingName, settingValue
                 elif option.StartsWith("no") then
 
                     // The option toggles the setting off.
                     let settingName = option.Substring(2)
-                    let toggleOff = (SettingValue.Toggle false)
-                    let setter = fun () ->_localSettings.TrySetValue settingName toggleOff
-                    settingName, setter
+                    settingName, "False"
                 else
 
                     // The option toggles the setting on.
                     let settingName = option
-                    let toggleOn = (SettingValue.Toggle true)
-                    let setter = fun () -> _localSettings.TrySetValue settingName toggleOn
-                    settingName, setter
+                    settingName, "True"
 
-            // Check whether we should apply the setter.
+            // Check whether we should apply the setting.
             if shouldIgnoreSetting settingName then
                 true
             elif shouldAllowSetting settingName then
-                setter()
+                setSetting settingName settingValue
             else
                 false
 
@@ -170,17 +196,20 @@ type internal ModeLineInterpreter
 
         // Apply any applicable modelines.
         try
-            let modeLines = _globalSettings.ModeLines
-            if _globalSettings.ModeLine && modeLines > 0 then
-                tryProcessModeLines modeLines
-            else
-                None, None
-        with
-        | ex ->
+            try
+                let modeLines = _globalSettings.ModeLines
+                if _globalSettings.ModeLine && modeLines > 0 then
+                    tryProcessModeLines modeLines
+                else
+                    None, None
+            with
+            | ex ->
 
-            // Empirically, exceptions may be silently caught by some caller
-            // in the call stack. As a result, we catch any exceptions here so
-            // they are at least reported in the debugger, and so that this
-            // can be a convenient place to put a breakpoint.
-            VimTrace.TraceError(ex)
-            None, None
+                // Empirically, exceptions may be silently caught by some caller
+                // in the call stack. As a result, we catch any exceptions here so
+                // they are at least reported in the debugger, and so that this
+                // can be a convenient place to put a breakpoint.
+                VimTrace.TraceError(ex)
+                None, None
+        finally
+            _wasBufferChecked <- true
