@@ -85,7 +85,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 foreach (var vimBuffer in _vimBufferList)
                 {
                     // Respect the user's edit monitoring setting.
-                    if (!_vimApplicationSettings.EnableExternalEditMonitoring)
+                    if (_vimApplicationSettings.EnableExternalEditMonitoring)
                     {
                         vimBuffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
                     }
