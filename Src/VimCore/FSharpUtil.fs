@@ -671,9 +671,6 @@ module internal CharCodes =
     /// <BS> 
     let Backspace = '\b'
 
-    /// <FF>
-    let FormFeed = '\f'
-
 module internal StringBuilderExtensions =
 
     type StringBuilder with

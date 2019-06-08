@@ -321,6 +321,13 @@ namespace Vim.UnitTest
                     new[] { "<NL>", "<C-B>" },
                     keyInputSet.KeyInputs.Select(KeyNotationUtil.GetDisplayName));
             }
+
+            [Fact]
+            public void FormFeed()
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet("<C-l>");
+                Assert.Equal("<C-L>", KeyNotationUtil.GetDisplayName(keyInputSet.FirstKeyInput.Value));
+            }
         }
 
         public sealed class CharLiteralTest : KeyNotationUtilTest

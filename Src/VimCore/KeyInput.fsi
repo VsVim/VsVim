@@ -67,9 +67,6 @@ module KeyInputUtil =
     /// The LineFeed key: VimKey.LineFeed
     val LineFeedKey: KeyInput
 
-    /// The FormFeed key: VimKey.FormFeed
-    val FormFeedKey: KeyInput
-
     /// The Enter Key: VimKey.Enter
     val EnterKey: KeyInput
 

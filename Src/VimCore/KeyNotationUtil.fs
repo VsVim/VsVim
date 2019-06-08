@@ -14,7 +14,6 @@ module KeyNotationUtil =
             ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
             ("<Tab>",KeyInputUtil.TabKey)
             ("<NL>", KeyInputUtil.LineFeedKey)
-            ("<FF>", KeyInputUtil.VimKeyToKeyInput VimKey.FormFeed)
             ("<CR>", KeyInputUtil.EnterKey)
             ("<Return>", KeyInputUtil.EnterKey)
             ("<Enter>", KeyInputUtil.EnterKey)
