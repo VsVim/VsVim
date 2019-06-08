@@ -17,6 +17,8 @@ namespace Vim.VisualStudio.Implementation.Roslyn
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class RoslynListenerFactory : VimExtensionAdapter, IVimBufferCreationListener
     {
+        private readonly IVimApplicationSettings _vimApplicationSettings;
+
         private IRoslynRenameUtil _roslynRenameUtil;
         private bool _inRename;
         private List<IVimBuffer> _vimBufferList = new List<IVimBuffer>();
@@ -51,8 +53,12 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         internal bool IsActive => _roslynRenameUtil != null && _roslynRenameUtil.IsRenameActive;
 
         [ImportingConstructor]
-        internal RoslynListenerFactory(SVsServiceProvider vsServiceProvider)
+        internal RoslynListenerFactory(
+            IVimApplicationSettings vimApplicationSettings,
+            SVsServiceProvider vsServiceProvider)
         {
+            _vimApplicationSettings = vimApplicationSettings;
+
             if (RoslynRenameUtil.TryCreate(vsServiceProvider, out IRoslynRenameUtil renameUtil))
             {
                 RenameUtil = renameUtil;
@@ -61,6 +67,12 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         private void OnIsRenameActiveChanged(object sender, EventArgs e)
         {
+            // Respect the user's edit monitoring settting.
+            if (!_vimApplicationSettings.EnableExternalEditMonitoring)
+            {
+                return;
+            }
+
             if (_inRename && !_roslynRenameUtil.IsRenameActive)
             {
                 _inRename = false;

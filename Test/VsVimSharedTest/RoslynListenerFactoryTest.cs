@@ -21,7 +21,12 @@ namespace Vim.VisualStudio.UnitTest
         protected RoslynListenerFactoryTest()
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _roslynListenerFactory = new RoslynListenerFactory(_factory.Create<SVsServiceProvider>().Object);
+            var vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
+            vimApplicationSettings.SetupGet(x => x.EnableExternalEditMonitoring).Returns(true);
+            var serviceProvider = _factory.Create<SVsServiceProvider>();
+            _roslynListenerFactory = new RoslynListenerFactory(
+                vimApplicationSettings.Object,
+                serviceProvider.Object);
             _vimBuffer = CreateVimBufferWithContentType(VsVimConstants.CSharpContentType);
         }
 

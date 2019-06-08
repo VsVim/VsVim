@@ -250,8 +250,9 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// If we run the check and there are no more external edit tags we should transition 
-            /// out of external edit mode and back into insert
+            /// If we run the check and there are no more external edit tags
+            /// we should transition  out of external edit mode and back to
+            /// the previous mode
             /// </summary>
             [WpfFact]
             public void TagsNoMoreExternalEdits()
@@ -263,7 +264,7 @@ namespace Vim.VisualStudio.UnitTest
                 _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
                 CreateTags();
                 _monitor.PerformCheck(ExternalEditMonitor.CheckKind.All);
-                Assert.Equal(ModeKind.Insert, _buffer.ModeKind);
+                Assert.Equal(ModeKind.Normal, _buffer.ModeKind);
             }
 
             [WpfFact]
