@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Xunit;
 using Vim.Extensions;
 using System.Linq;
+using Moq;
 
 namespace Vim.UnitTest
 {
@@ -157,13 +158,24 @@ namespace Vim.UnitTest
 
         public sealed class ModeLineTest : VimTextBufferTest
         {
+            public readonly MockRepository _factory;
+            public readonly Mock<IVimWindowSettings> _windowSettingsRaw;
+            public readonly IVimWindowSettings _windowSettings;
+
+            public ModeLineTest()
+            {
+                _factory = new MockRepository(MockBehavior.Strict);
+                _windowSettingsRaw = _factory.Create<IVimWindowSettings>();
+                _windowSettings = _windowSettingsRaw.Object;
+            }
+
             [WpfFact]
             public void FirstForm()
             {
                 var modeLine = " vim:ts=8:";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsNone());
                 Assert.Equal(8, _localSettings.TabStop);
@@ -175,7 +187,7 @@ namespace Vim.UnitTest
                 var modeLine = "/* vim: set ts=8 : */";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsNone());
                 Assert.Equal(8, _localSettings.TabStop);
@@ -187,7 +199,7 @@ namespace Vim.UnitTest
                 var modeLine = " vim:ts=8";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
             }
@@ -198,7 +210,7 @@ namespace Vim.UnitTest
                 var modeLine = " vim: ts=8 :";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
             }
@@ -210,7 +222,7 @@ namespace Vim.UnitTest
                 Create(modeLine);
                 _localSettings.TabStop = 4;
                 _localSettings.ShiftWidth = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.Equal(8, _localSettings.ShiftWidth);
@@ -223,7 +235,7 @@ namespace Vim.UnitTest
                 Create(modeLine);
                 _localSettings.TabStop = 4;
                 _localSettings.Comments = "";
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.Equal(":*,://,:#,:;", _localSettings.Comments);
@@ -236,7 +248,7 @@ namespace Vim.UnitTest
                 Create(modeLine);
                 _localSettings.TabStop = 4;
                 _localSettings.Comments = "";
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.Equal(@"\:\x", _localSettings.Comments);
@@ -247,7 +259,7 @@ namespace Vim.UnitTest
             {
                 var modeLine = " vim::";
                 Create(modeLine);
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsNone());
             }
@@ -257,7 +269,7 @@ namespace Vim.UnitTest
             {
                 var modeLine = " vim:answer=42:";
                 Create(modeLine);
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsNone());
             }
@@ -267,7 +279,7 @@ namespace Vim.UnitTest
             {
                 var modeLine = " vim:virtualedit=all:";
                 Create(modeLine);
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsSome());
             }
@@ -277,7 +289,7 @@ namespace Vim.UnitTest
             {
                 var modeLine = " vim:*foo*:";
                 Create(modeLine);
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsSome());
             }
@@ -287,7 +299,7 @@ namespace Vim.UnitTest
             {
                 var modeLine = " vim:ts=invalid:";
                 Create(modeLine);
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsSome());
             }
@@ -298,7 +310,7 @@ namespace Vim.UnitTest
                 var modeLine = " vim:*foo*:ts=8:*bar*:";
                 Create(modeLine);
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.True(result.Item2.IsSome());
                 Assert.Equal("*foo*", result.Item2.Value);
@@ -312,7 +324,7 @@ namespace Vim.UnitTest
                 Create(modeLine);
                 _globalSettings.ModeLine = false;
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.False(result.Item1.IsSome());
                 Assert.Equal(4, _localSettings.TabStop);
             }
@@ -324,7 +336,7 @@ namespace Vim.UnitTest
                 Create(modeLine);
                 _globalSettings.ModeLines = 0;
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.False(result.Item1.IsSome());
                 Assert.Equal(4, _localSettings.TabStop);
             }
@@ -335,7 +347,7 @@ namespace Vim.UnitTest
                 var modeLine = " vim:ts=8:";
                 Create(Enumerable.Repeat("", 100).Concat(new[] { modeLine }).Concat(Enumerable.Repeat("", 100)).ToArray());
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.False(result.Item1.IsSome());
                 Assert.Equal(4, _localSettings.TabStop);
             }
@@ -346,7 +358,7 @@ namespace Vim.UnitTest
                 var modeLine = " vim:ts=8:";
                 Create(Enumerable.Repeat("", 100).Concat(new[] { modeLine }).ToArray());
                 _localSettings.TabStop = 4;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.True(result.Item1.IsSome());
                 Assert.Equal(8, _localSettings.TabStop);
             }
@@ -359,7 +371,7 @@ namespace Vim.UnitTest
                 _localSettings.TextWidth = 132;
                 _localSettings.TabStop = 4;
                 _localSettings.ExpandTab = true;
-                var result = _vimTextBuffer.CheckModeLine();
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
                 Assert.Equal(modeLine, result.Item1.Value);
                 Assert.True(result.Item2.IsNone());
                 Assert.Equal(78, _localSettings.TextWidth);

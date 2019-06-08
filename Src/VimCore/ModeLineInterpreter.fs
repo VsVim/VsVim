@@ -34,7 +34,7 @@ type internal ModeLineInterpreter
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    member x.CheckModeLine () =
+    member x.CheckModeLine (windowSettings: IVimWindowSettings) =
 
         // Whether we should ignore the setting
         let shouldIgnoreSetting settingName =
@@ -182,5 +182,5 @@ type internal ModeLineInterpreter
             // in the call stack. As a result, we catch any exceptions here so
             // they are at least reported in the debugger, and so that this
             // can be a convenient place to put a breakpoint.
-            VimTrace.TraceError("Exception processing the modeline: {0}", ex.Message)
+            VimTrace.TraceError(ex)
             None, None
