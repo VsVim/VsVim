@@ -2472,7 +2472,7 @@ and [<Sealed>] Parser
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
-                | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+                | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.OperatorPending])
                 | "mapclear" -> noRange (fun () -> x.ParseMapClear true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending])
                 | "move" -> x.ParseMoveTo lineRange 
                 | "nmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Normal])
@@ -2481,7 +2481,7 @@ and [<Sealed>] Parser
                 | "number" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
                 | "nunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Normal])
                 | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch)
-                | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+                | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.OperatorPending])
                 | "omap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.OperatorPending])
                 | "omapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.OperatorPending])
                 | "only" -> noRange (fun () -> LineCommand.Only)
@@ -2522,15 +2522,15 @@ and [<Sealed>] Parser
                 | "tabprevious" -> noRange x.ParseTabPrevious
                 | "undo" -> noRange (fun () -> LineCommand.Undo)
                 | "unlet" -> noRange x.ParseUnlet
-                | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+                | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.OperatorPending])
                 | "version" -> noRange (fun () -> LineCommand.Version)
                 | "vglobal" -> x.ParseGlobalCore lineRange false
-                | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual;KeyRemapMode.Select])
+                | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vscmd" -> x.ParseHostCommand()
                 | "vsplit" -> x.ParseSplit LineCommand.VerticalSplit lineRange
-                | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual;KeyRemapMode.Select])
-                | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual;KeyRemapMode.Select])
+                | "vnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Visual; KeyRemapMode.Select])
+                | "vunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "wall" -> noRange (fun () -> x.ParseWriteAll false)
                 | "wqall" -> noRange (fun () -> x.ParseWriteAll true)
                 | "write" -> x.ParseWrite lineRange
