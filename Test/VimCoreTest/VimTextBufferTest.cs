@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Xunit;
 using Vim.Extensions;
 using System.Linq;
-using Moq;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest
 {
@@ -15,7 +15,7 @@ namespace Vim.UnitTest
         protected IVimGlobalSettings _globalSettings;
         protected LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
 
-        private void Create(params string[] lines)
+        protected virtual void Create(params string[] lines)
         {
             _vimTextBuffer = CreateVimTextBuffer(lines);
             _textBuffer = _vimTextBuffer.TextBuffer;
@@ -158,15 +158,12 @@ namespace Vim.UnitTest
 
         public sealed class ModeLineTest : VimTextBufferTest
         {
-            public readonly MockRepository _factory;
-            public readonly Mock<IVimWindowSettings> _windowSettingsRaw;
-            public readonly IVimWindowSettings _windowSettings;
+            private IVimWindowSettings _windowSettings;
 
-            public ModeLineTest()
+            protected override void Create(params string[] lines)
             {
-                _factory = new MockRepository(MockBehavior.Strict);
-                _windowSettingsRaw = _factory.Create<IVimWindowSettings>();
-                _windowSettings = _windowSettingsRaw.Object;
+                base.Create(lines);
+                _windowSettings = new WindowSettings(_globalSettings);
             }
 
             [WpfFact]
@@ -377,6 +374,39 @@ namespace Vim.UnitTest
                 Assert.Equal(78, _localSettings.TextWidth);
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.False(_localSettings.ExpandTab);
+            }
+
+            [WpfFact]
+            public void WindowSetting()
+            {
+                var modeLine = " vim:nowrap:";
+                Create(modeLine);
+                _windowSettings.Wrap = true;
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
+                Assert.True(result.Item1.IsSome());
+                Assert.False(_windowSettings.Wrap);
+            }
+
+            [WpfFact]
+            public void SecondWindow()
+            {
+                var modeLine = " vim:ts=8:nowrap:";
+                Create(modeLine);
+                _localSettings.TabStop = 4;
+                _windowSettings.Wrap = true;
+                var result = _vimTextBuffer.CheckModeLine(_windowSettings);
+                Assert.True(result.Item1.IsSome());
+                Assert.Equal(8, _localSettings.TabStop);
+                Assert.False(_windowSettings.Wrap);
+
+                // Simulate second window.
+                var otherWindowSettings = new WindowSettings(_globalSettings) as IVimWindowSettings;
+                otherWindowSettings.Wrap = true;
+                var otherResult = _vimTextBuffer.CheckModeLine(_windowSettings);
+                _localSettings.TabStop = 4;
+                Assert.True(otherResult.Item1.IsSome());
+                Assert.Equal(4, _localSettings.TabStop); // tabstop is not reset
+                Assert.False(_windowSettings.Wrap);
             }
         }
     }
