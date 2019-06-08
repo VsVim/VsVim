@@ -2915,7 +2915,7 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
-                /// Normalization doesn't affect vim keys with raw char euqivalents
+                /// Normalization doesn't affect vim keys with raw char equivalents
                 /// </summary>
                 [WpfFact]
                 public void NormalizedRightHandSide_DoesntAffectDelete()
