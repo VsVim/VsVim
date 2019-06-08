@@ -72,7 +72,7 @@ type internal ModeLineInterpreter
         // Whether we should allow the setting
         let shouldAllowSetting settingName =
 
-            // For security reasons, we disallow certain local settings.
+            // For security reasons, we disallow certain settings.
             let globalSetting = _globalSettings.GetSetting settingName
             let localSetting = _localSettings.GetSetting settingName
             let windowSetting = windowSettings.GetSetting settingName
@@ -90,20 +90,24 @@ type internal ModeLineInterpreter
 
             elif Option.isSome  windowSetting then
 
-                // Allow any local setting that isn't insecure.
+                // Allow any window setting that isn't insecure.
                 _insecureWindowSettingNames
                 |> Seq.contains windowSetting.Value.Name
                 |> not
             else
                 false
 
-        // Apply the 
+        // Set the setting if applicable
         let setSetting settingName settingValue =
             if _localSettings.GetSetting settingName |> Option.isSome then
+
+                // Only set local settings the first time the buffer is
+                // checked.
                 if not _wasBufferChecked then
                     _localSettings.TrySetValueFromString settingName settingValue
                 else
                     true
+
             elif windowSettings.GetSetting settingName |> Option.isSome then
                 windowSettings.TrySetValueFromString settingName settingValue
             else
