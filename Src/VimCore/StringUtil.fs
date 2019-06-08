@@ -161,7 +161,7 @@ module StringUtil =
         let builder = new System.Text.StringBuilder()
         for i = 0 to arg.Length - 1 do
             match arg.[i] with
-            | '\u007f' ->
+            | c when int(c) = 127 ->
                 builder.AppendString "^?"
             | c when Char.IsControl(c) ->
                 builder.AppendChar '^'
