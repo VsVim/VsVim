@@ -160,11 +160,13 @@ module StringUtil =
     let GetDisplayString (arg: string) =
         let builder = new System.Text.StringBuilder()
         for i = 0 to arg.Length - 1 do
-            let c = arg.[i]
-            if Char.IsControl(c) then
+            match arg.[i] with
+            | '\u007f' ->
+                builder.AppendString "^?"
+            | c when Char.IsControl(c) ->
                 builder.AppendChar '^'
                 builder.AppendChar (char(c + '@'))
-            else
+            | c ->
                 builder.AppendChar c
         builder.ToString()
 
