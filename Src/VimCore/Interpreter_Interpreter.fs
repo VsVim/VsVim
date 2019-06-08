@@ -840,53 +840,52 @@ type VimInterpreter
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
-        // Get the printable info for the set of modes
-        let getModeLine modes =
-            if ListUtil.contains KeyRemapMode.Normal modes 
-                && ListUtil.contains KeyRemapMode.OperatorPending modes
-                && ListUtil.contains KeyRemapMode.Visual modes then
-                " "
-            elif ListUtil.contains KeyRemapMode.Command modes 
-                && ListUtil.contains KeyRemapMode.Insert modes then
-                "!"
-            elif ListUtil.contains KeyRemapMode.Visual modes 
-                && ListUtil.contains KeyRemapMode.Select modes then
-                "v"
-            elif List.length modes <> 1 then 
-                "?"
-            else 
-                match List.head modes with
-                | KeyRemapMode.None -> ""
-                | KeyRemapMode.Normal -> "n"
-                | KeyRemapMode.Visual -> "x"
-                | KeyRemapMode.Select -> "s"
-                | KeyRemapMode.OperatorPending -> "o"
-                | KeyRemapMode.Command -> "c"
-                | KeyRemapMode.Language -> "l"
-                | KeyRemapMode.Insert -> "i"
+        let keyRemapModes = keyRemapModes |> Seq.toList
 
-        // Get the printable format for the KeyInputSet 
+        // Get the printable info for the set of modes.
+        let getModeLine mode =
+            match mode with
+            | KeyRemapMode.None -> ""
+            | KeyRemapMode.Normal -> "n"
+            | KeyRemapMode.Visual -> "v"
+            | KeyRemapMode.Select -> "s"
+            | KeyRemapMode.OperatorPending -> "o"
+            | KeyRemapMode.Command -> "c"
+            | KeyRemapMode.Language -> "l"
+            | KeyRemapMode.Insert -> "i"
+
+        // Get the printable format for the KeyInputSet .
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
             KeyNotationUtil.KeyInputSetToString keyInputSet
 
         // Get the printable line for the provided mode, left and right side
-        let getLine modes lhs rhs = 
-            sprintf "%-5s%s %s" (getModeLine modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
+        let getLine mode lhs rhs = 
+            sprintf "%-3s%-10s %s" (getModeLine mode) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
-        let lines = 
-            keyRemapModes
-            |> Seq.map (fun mode -> 
-                mode
-                |> _keyMap.GetKeyMappingsForMode 
-                |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
-            |> Seq.concat
-            |> Seq.groupBy (fun (mode,lhs,rhs) -> lhs)
-            |> Seq.map (fun (lhs, all) ->
-                let modes = all |> Seq.map (fun (mode, _, _) -> mode) |> List.ofSeq
-                let rhs = all |> Seq.map (fun (_, _, rhs) -> rhs) |> Seq.head
-                getLine modes lhs rhs)
+        keyRemapModes
+        |> Seq.collect (fun mode ->
 
-        _statusUtil.OnStatusLong lines
+            // Generate a mode / lhs / rhs tuple for all mappings in the
+            // specified mode.
+            mode
+            |> _keyMap.GetKeyMappingsForMode
+            |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
+
+        |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
+        |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
+        |> Seq.collect (fun mappings ->
+
+            // Replace any group included in all the remap modes with a single
+            // entry assigned to key remap mode none.
+            if mappings.Length = keyRemapModes.Length then
+                let _, lhs, rhs = mappings.Head
+                [KeyRemapMode.None, lhs, rhs]
+            else
+                mappings)
+
+        |> Seq.sortBy (fun (mode, lhs, _) -> lhs, mode)
+        |> Seq.map (fun (mode, lhs, rhs) -> getLine mode lhs rhs)
+        |> _statusUtil.OnStatusLong
 
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =
