@@ -399,16 +399,18 @@ namespace Vim.UnitTest
                 Assert.Equal(8, _localSettings.TabStop);
                 Assert.False(_windowSettings.Wrap);
 
-                // Subsequent local setting change in the first window.
+                // Subsequent local setting changes in the first window.
                 _localSettings.TabStop = 2;
+                _windowSettings.Wrap = true;
 
                 // Simulate second window.
                 var otherWindowSettings = new WindowSettings(_globalSettings) as IVimWindowSettings;
                 otherWindowSettings.Wrap = true;
-                var otherResult = _vimTextBuffer.CheckModeLine(_windowSettings);
+                var otherResult = _vimTextBuffer.CheckModeLine(otherWindowSettings);
                 Assert.True(otherResult.Item1.IsSome());
-                Assert.Equal(2, _localSettings.TabStop); // tabstop is not reset
-                Assert.False(_windowSettings.Wrap);
+                Assert.Equal(2, _localSettings.TabStop); // shared local setting is not affected
+                Assert.True(_windowSettings.Wrap); // first window's setting is not affected
+                Assert.False(otherWindowSettings.Wrap); // second window's setting is set
             }
         }
     }
