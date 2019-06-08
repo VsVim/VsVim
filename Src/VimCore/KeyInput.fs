@@ -441,11 +441,11 @@ module KeyInputUtil =
         ApplyKeyModifiers keyInput modifiers
 
     let NormalizeKeyModifiers (keyInput: KeyInput) =
-        match keyInput.RawChar with
-        | Some c ->
+        match  keyInput.Key, keyInput.RawChar with
+        | VimKey.RawCharacter, Some c ->
             ApplyKeyModifiersToChar c keyInput.KeyModifiers
-        | None ->
-            ApplyKeyModifiersToKey keyInput.Key keyInput.KeyModifiers
+        | key, _ ->
+            ApplyKeyModifiersToKey key keyInput.KeyModifiers
 
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  

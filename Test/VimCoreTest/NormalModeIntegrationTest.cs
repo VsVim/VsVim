@@ -2915,6 +2915,19 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
+                /// Normalization doesn't affect vim keys with raw char euqivalents
+                /// </summary>
+                [WpfFact]
+                public void NormalizedRightHandSide_DoesntAffectDelete()
+                {
+                    // Reported in issue #2608.
+                    Create("cat", "dog", "");
+                    _vimBuffer.Process(":nnoremap <C-l> <Del>", enter: true);
+                    _vimBuffer.ProcessNotation("<C-l>");
+                    Assert.Equal("at", _textBuffer.GetLine(0).GetText());
+                }
+
+                /// <summary>
                 /// Only commands typed interactively enter the command history
                 /// </summary>
                 [WpfFact]
