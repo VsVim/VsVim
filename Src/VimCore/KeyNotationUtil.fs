@@ -306,17 +306,19 @@ module KeyNotationUtil =
         // Check to see if this is one of the keys shifted by control for which we provide a better
         // display
         let checkForSpecialControl () = 
-            match keyInput.RawChar with
-            | None -> inner "" keyInput.KeyModifiers false
-            | Some c ->
-                let value = int c;
-                if value >= 1 && value <= 26 then
-                    let baseCode = value - 1 
-                    let name = char ((int 'A') + baseCode) |> StringUtil.OfChar
+            match keyInput.Key, keyInput.RawChar with
+            | VimKey.RawCharacter, Some c ->
+                match int c with
+                | value when value >= 0 && value <= 31 ->
+                    let name = char ((int '@') + value) |> StringUtil.OfChar
                     let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
                     inner name keyModifiers false
-                else
+                | 127 ->
+                    let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
+                    inner "?" keyModifiers false
+                | _ ->
                     inner (c |> StringUtil.OfChar) keyInput.KeyModifiers false
+            | _ -> inner "" keyInput.KeyModifiers false
 
         match TryGetSpecialKeyName keyInput with 
         | Some (name, modifiers) -> inner name modifiers true
