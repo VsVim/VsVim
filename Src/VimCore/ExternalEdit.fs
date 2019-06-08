@@ -18,17 +18,18 @@ type internal ExternalEditMode(_vimBufferData: IVimBufferData) =
             keyInput = KeyInputUtil.EscapeKey 
             || keyInput = KeyInputUtil.CharWithControlToKeyInput 'c'
         member x.Process keyInputData = 
-            if keyInputData.KeyInput = KeyInputUtil.EscapeKey then
+            match keyInputData.KeyInput with
+            | keyInput when keyInput = KeyInputUtil.EscapeKey ->
                 x.ClearSelection()
                 ModeKind.Normal
                 |> ModeSwitch.SwitchMode
                 |> ProcessResult.Handled
-            elif keyInputData.KeyInput = KeyInputUtil.CharWithControlToKeyInput 'c' then
+            | keyInput when keyInput = KeyInputUtil.CharWithControlToKeyInput 'c' ->
                 x.ClearSelection()
                 (ModeKind.Normal, ModeArgument.CancelOperation)
                 |> ModeSwitch.SwitchModeWithArgument
                 |> ProcessResult.Handled
-            else
+            | _ ->
                 ProcessResult.NotHandled
         member x.OnEnter _  = ()
         member x.OnLeave() = ()
