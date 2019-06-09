@@ -18,7 +18,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning disable 169, IDE0044
         [Export(typeof(AdornmentLayerDefinition))]
         [Name(BlockCaretAdornmentLayerName)]
-        [Order(After = PredefinedAdornmentLayers.Text)]
+        [Order(After = PredefinedAdornmentLayers.Caret)]
         private AdornmentLayerDefinition _blockCaretAdornmentLayerDefinition;
 #pragma warning restore 169
 
