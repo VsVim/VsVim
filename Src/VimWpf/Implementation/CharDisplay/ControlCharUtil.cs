@@ -53,13 +53,12 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                 return false;
             }
 
-            return TryGetDisplayText(i, out text);
+            return TryGetDisplayTextCore(c, out text);
         }
 
-        internal static bool TryGetDisplayText(int i, out string text)
+        internal static bool TryGetDisplayTextCore(char c, out string text)
         {
             text = null;
-            var c = (char)i;
             if (char.IsControl(c))
             {
                 text = StringUtil.GetDisplayString(c.ToString());
