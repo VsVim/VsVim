@@ -316,7 +316,29 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private Point GetRealCaretVisualPoint()
         {
-            return new Point(_textView.Caret.Left, _textView.Caret.Top);
+            // Default screen position is the same as that of the native caret.
+            var caret = _textView.Caret;
+            var left = caret.Left;
+            var top = caret.Top;
+
+            if (_caretDisplay == CaretDisplay.Block ||
+                _caretDisplay == CaretDisplay.HalfBlock ||
+                _caretDisplay == CaretDisplay.QuarterBlock)
+            {
+                var point = caret.Position.BufferPosition;
+                if (point < _textView.TextSnapshot.Length && point.GetChar() == '\t')
+                {
+                    // Any kind of block caret situated on a tab floats over
+                    // the last space occupied by the tab.
+                    var textViewLine = TextViewLineContainingCaret;
+                    var width = textViewLine.GetCharacterBounds(point).Width;
+                    var defaultWidth = FormattedText.Width;
+                    var offset = Math.Max(0, width - defaultWidth);
+                    left += offset;
+                }
+            }
+
+            return new Point(left, top);
         }
 
         private void MoveCaretElementToCaret(CaretData caretData)
@@ -352,14 +374,15 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 if (point.Position < _textView.TextSnapshot.Length)
                 {
                     var pointCharacter = point.GetChar();
-                    if (_controlCharUtil.TryGetDisplayText(pointCharacter, out caretCharacter))
+                    if (_controlCharUtil.TryGetDisplayText(pointCharacter, out string caretString))
                     {
                         // Handle control character notation.
+                        caretCharacter = caretString;
                         width = line.GetCharacterBounds(point).Width;
                     }
-                    else if (Char.IsHighSurrogate(pointCharacter)
-                        && point.Position < _textView.TextSnapshot.Length - 1
-                        && Char.IsLowSurrogate(point.Add(1).GetChar()))
+                    else if (Char.IsHighSurrogate(pointCharacter) &&
+                        point.Position < _textView.TextSnapshot.Length - 1 &&
+                        Char.IsLowSurrogate(point.Add(1).GetChar()))
                     {
                         // Handle surrogate pairs.
                         caretCharacter = new SnapshotSpan(point, 2).GetText();
@@ -367,7 +390,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     }
                     else if (pointCharacter == '\t')
                     {
-                        // Handle tab as no character and default width.
+                        // Handle tab as no character and default width,
+                        // except no wider than the tab's screen width.
                         caretCharacter = "";
                         width = Math.Min(defaultWidth, line.GetCharacterBounds(point).Width);
                     }
