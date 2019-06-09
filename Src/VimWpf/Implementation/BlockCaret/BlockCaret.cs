@@ -338,39 +338,43 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private Size CalculateCaretSize(out string caretCharacter)
         {
             caretCharacter = "";
-            var defaultWidth = FormattedText.Width;
 
+            var defaultWidth = FormattedText.Width;
             var width = defaultWidth;
             var height = _textView.LineHeight;
 
             if (IsRealCaretVisible)
             {
-                // Get the size of the character to which we need to paint
-                // the caret.  Special case tab here because it's too big.
-                // When there is a tab we use the default height and width.
+                // Get the caret string and caret width.
                 var line = TextViewLineContainingCaret;
-                height = line.Height;
+                height = _textView.LineHeight;
                 var point = _textView.Caret.Position.BufferPosition;
                 if (point.Position < _textView.TextSnapshot.Length)
                 {
                     var pointCharacter = point.GetChar();
-                    if (pointCharacter != '\t')
+                    if (_controlCharUtil.TryGetDisplayText(pointCharacter, out caretCharacter))
                     {
-                        if (_controlCharUtil.IsDisplayControlChar(pointCharacter))
-                        {
-                            caretCharacter = StringUtil.GetDisplayString(pointCharacter.ToString());
-                        }
-                        else if (Char.IsHighSurrogate(pointCharacter)
-                            && point.Position < _textView.TextSnapshot.Length - 1
-                            && Char.IsLowSurrogate(point.Add(1).GetChar()))
-                        {
-                            // Handle surrogate pairs.
-                            caretCharacter = new SnapshotSpan(point, 2).GetText();
-                        }
-                        else
-                        {
-                            caretCharacter = pointCharacter.ToString();
-                        }
+                        // Handle control character notation.
+                        width = line.GetCharacterBounds(point).Width;
+                    }
+                    else if (Char.IsHighSurrogate(pointCharacter)
+                        && point.Position < _textView.TextSnapshot.Length - 1
+                        && Char.IsLowSurrogate(point.Add(1).GetChar()))
+                    {
+                        // Handle surrogate pairs.
+                        caretCharacter = new SnapshotSpan(point, 2).GetText();
+                        width = line.GetCharacterBounds(point).Width;
+                    }
+                    else if (pointCharacter == '\t')
+                    {
+                        // Handle tab as no character and default width.
+                        caretCharacter = "";
+                        width = Math.Min(defaultWidth, line.GetCharacterBounds(point).Width);
+                    }
+                    else
+                    {
+                        // Handle ordinary UTF16 character or linebreak.
+                        caretCharacter = pointCharacter.ToString();
                         width = line.GetCharacterBounds(point).Width;
                     }
                 }
