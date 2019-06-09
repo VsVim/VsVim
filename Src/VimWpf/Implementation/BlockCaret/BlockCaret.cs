@@ -354,14 +354,17 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 if (point.Position < _textView.TextSnapshot.Length)
                 {
                     var pointCharacter = point.GetChar();
-                    if (pointCharacter != '\t'
-                        && !_controlCharUtil.IsDisplayControlChar(pointCharacter))
+                    if (pointCharacter != '\t')
                     {
-                        // Handle surrogate pairs.
-                        if (Char.IsHighSurrogate(pointCharacter)
+                        if (_controlCharUtil.IsDisplayControlChar(pointCharacter))
+                        {
+                            caretCharacter = StringUtil.GetDisplayString(pointCharacter.ToString());
+                        }
+                        else if (Char.IsHighSurrogate(pointCharacter)
                             && point.Position < _textView.TextSnapshot.Length - 1
                             && Char.IsLowSurrogate(point.Add(1).GetChar()))
                         {
+                            // Handle surrogate pairs.
                             caretCharacter = new SnapshotSpan(point, 2).GetText();
                         }
                         else
