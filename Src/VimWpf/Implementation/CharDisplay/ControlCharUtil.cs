@@ -28,37 +28,25 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
         internal static bool IsDisplayControlChar(char c)
         {
             var i = (int)c;
-            return IsRelevant(i);
-        }
 
-        internal static bool IsRelevant(int i)
-        {
-            return i <= 31;
+            // Don't use control character notation for ASCII TAB / LF / CR.
+            if (i == 9 || i == 10 || i == 13)
+            {
+                return false;
+            }
+
+            return i >= 0 && i <= 31;
         }
 
         internal static bool TryGetDisplayText(char c, out string text)
         {
-            var i = (int)c;
-            if (!IsRelevant(i))
-            {
-                text = null;
-                return false;
-            }
-
-            // There is an intentional gap here from 9 - 13 inclusive.  These represent characters like tab, newline,
-            // etc ...  which shouldn't be special cased in display by VsVim
-            if (i >= 9 && i <= 13)
-            {
-                text = null;
-                return false;
-            }
-
-            return TryGetDisplayTextCore(c, out text);
-        }
-
-        internal static bool TryGetDisplayTextCore(char c, out string text)
-        {
             text = null;
+
+            if (!IsDisplayControlChar(c))
+            {
+                return false;
+            }
+
             if (char.IsControl(c))
             {
                 text = StringUtil.GetDisplayString(c.ToString());
