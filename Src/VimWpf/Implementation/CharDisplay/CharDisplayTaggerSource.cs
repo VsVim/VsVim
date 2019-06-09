@@ -122,8 +122,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                         FontSize = fontSize,
                         Height = textHeight,
                         LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                        LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                        BaselineOffset = 0,
+                        LineStackingStrategy = LineStackingStrategy.MaxHeight,
+                        BaselineOffset = double.NaN,
                     };
                     textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     adornment = textBlock;

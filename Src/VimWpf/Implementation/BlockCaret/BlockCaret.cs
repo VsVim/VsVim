@@ -455,8 +455,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 Width = width,
                 Height = textHeight,
                 LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                BaselineOffset = 0,
+                LineStackingStrategy = LineStackingStrategy.MaxHeight,
+                BaselineOffset = double.NaN,
             };
 
             var element = new Canvas
