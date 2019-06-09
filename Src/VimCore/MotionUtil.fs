@@ -1287,6 +1287,7 @@ type internal MotionUtil
     /// Get the point in the middle of the screen.  This looks at the entire
     /// screen not just  the width of the current line
     member x.DisplayLineMiddleOfScreen() =
+
         let createForPoint (point: SnapshotPoint) = 
             let isForward = x.CaretPoint.Position <= point.Position
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
@@ -1295,16 +1296,18 @@ type internal MotionUtil
 
         match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
-            let middle = _textView.ViewportWidth / 2.0
-            match caretLine.GetBufferPositionFromXCoordinate(middle) with
-            | NullableUtil.Null -> 
-                // If the point is beyond the width of the line then the motion should go to the 
-                // end of the line 
-                if middle >= caretLine.Width then
-                    createForPoint caretLine.End
-                else    
-                    None
-            | NullableUtil.HasValue point -> createForPoint point
+
+            // Whether the specified point contains the center of the viewport.
+            let containsCenterOfViewport (point: SnapshotPoint) =
+                let viewportCenter = _textView.ViewportLeft + _textView.ViewportWidth / 2.0
+                let bounds = caretLine.GetCharacterBounds(point)
+                bounds.Left <= viewportCenter && viewportCenter <= bounds.Right
+
+            caretLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind containsCenterOfViewport
+            |> Option.defaultValue caretLine.End
+            |> createForPoint
         | None -> None
 
     /// Get the caret column of the specified line based on the 'startofline' option
