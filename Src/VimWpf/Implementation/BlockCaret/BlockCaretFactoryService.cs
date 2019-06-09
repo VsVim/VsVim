@@ -23,7 +23,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
+        internal BlockCaretFactoryService(
+            IClassificationFormatMapService classificationFormatMapService,
+            IEditorFormatMapService formatMapService,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations)
         {
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
@@ -34,8 +38,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private IBlockCaret CreateBlockCaret(IWpfTextView textView)
         {
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
-            var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName, classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
+            var editorFormatMap = _formatMapService.GetEditorFormatMap(textView);
+            return new BlockCaret(
+                textView,
+                BlockCaretAdornmentLayerName,
+                classificationFormaptMap,
+                editorFormatMap,
+                _controlCharUtil,
+                _protectedOperations);
         }
 
         #region IVimBufferCreationListener

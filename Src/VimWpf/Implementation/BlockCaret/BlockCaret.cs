@@ -141,7 +141,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
+        internal BlockCaret(
+            ITextView textView,
+            IClassificationFormatMap classificationFormatMap,
+            IEditorFormatMap formatMap,
+            IAdornmentLayer layer,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations)
         {
             _textView = textView;
             _editorFormatMap = formatMap;
@@ -159,8 +165,20 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
         }
 
-        internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
-            this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations)
+        internal BlockCaret(
+            IWpfTextView textView,
+            string adornmentLayerName,
+            IClassificationFormatMap classificationFormatMap,
+            IEditorFormatMap formatMap,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations) :
+            this(
+                textView,
+                classificationFormatMap,
+                formatMap,
+                textView.GetAdornmentLayer(adornmentLayerName),
+                controlCharUtil,
+                protectedOperations)
         {
         }
 
