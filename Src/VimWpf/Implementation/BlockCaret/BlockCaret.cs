@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
@@ -387,7 +388,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 // Get the caret string and caret width.
                 var line = TextViewLineContainingCaret;
-                height = _textView.LineHeight;
+                height = line.Height;
                 var point = _textView.Caret.Position.BufferPosition;
                 if (point.Position < _textView.TextSnapshot.Length)
                 {
@@ -423,6 +424,17 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
 
             return new Size(width, height);
+        }
+
+        private double CalculateBaselineOffset()
+        {
+            var offset = 0.0;
+            if (IsRealCaretVisible)
+            {
+                var line = TextViewLineContainingCaret;
+                offset = line.Baseline - FormattedText.Baseline;
+            }
+            return offset;
         }
 
         private Tuple<Rect, double, string> CalculateCaretRectAndDisplayOffset()
@@ -469,6 +481,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             var color = TryCalculateCaretColor();
             var tuple = CalculateCaretRectAndDisplayOffset();
+            var baselineOffset = CalculateBaselineOffset();
             var rect = tuple.Item1;
             var width = rect.Size.Width;
             var height = rect.Size.Height;
@@ -482,6 +495,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
             var textHeight = offset + height;
+            var lineHeight = _textView.LineHeight;
 
             if (_caretOpacity < 1.0 && backgroundBrush is SolidColorBrush solidBrush)
             {
@@ -490,6 +504,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 var newColor = Color.FromArgb(alpha, oldColor.R, oldColor.G, oldColor.B);
                 backgroundBrush = new SolidColorBrush(newColor);
             }
+
+            var rectangle = new Rectangle
+            {
+                Width = width,
+                Height = baselineOffset,
+                Fill = backgroundBrush,
+            };
 
             var textBlock = new TextBlock
             {
@@ -503,9 +524,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 FontSize = fontSize,
                 Width = width,
                 Height = textHeight,
-                LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                LineStackingStrategy = LineStackingStrategy.MaxHeight,
-                BaselineOffset = double.NaN,
+                LineHeight = lineHeight,
             };
 
             var element = new Canvas
@@ -513,10 +532,17 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 Width = width,
                 Height = height,
                 ClipToBounds = true,
+                Children =
+                {
+                    rectangle,
+                    textBlock,
+                },
             };
 
-            element.Children.Add(textBlock);
-            Canvas.SetTop(textBlock, -offset);
+            Canvas.SetTop(rectangle, -offset);
+            Canvas.SetLeft(textBlock, 0);
+
+            Canvas.SetTop(textBlock, -offset + baselineOffset);
             Canvas.SetLeft(textBlock, 0);
 
             return new CaretData(_caretDisplay, _caretOpacity, element, color, rect.Size, offset, caretCharacter);

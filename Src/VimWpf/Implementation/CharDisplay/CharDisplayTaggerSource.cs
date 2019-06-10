@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using Microsoft.VisualStudio.Text.Classification;
 using System.Windows.Media;
 using Vim.Extensions;
+using System.Globalization;
 
 namespace Vim.UI.Wpf.Implementation.CharDisplay
 {
@@ -109,7 +110,16 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                     var textRunProperties = _classificationFormatMap.DefaultTextProperties;
                     var typeface = textRunProperties.Typeface;
                     var fontSize = textRunProperties.FontRenderingEmSize;
-                    var textHeight = _textView.LineHeight;
+                    var lineHeight = _textView.LineHeight;
+                    var formattedText = new FormattedText(
+                        text,
+                        CultureInfo.CurrentUICulture,
+                        FlowDirection.LeftToRight,
+                        typeface,
+                        fontSize,
+                        Brushes.Black);
+                    var width = formattedText.Width;
+                    var height = formattedText.Height;
                     var textBlock = new TextBlock
                     {
                         Text = text,
@@ -120,13 +130,13 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                         FontWeight = typeface.Weight,
                         FontStyle = typeface.Style,
                         FontSize = fontSize,
-                        Height = textHeight,
-                        LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                        LineStackingStrategy = LineStackingStrategy.MaxHeight,
-                        BaselineOffset = double.NaN,
+                        Height = height,
+                        Width = width,
+                        LineHeight = lineHeight,
                     };
                     textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     adornment = textBlock;
+
                     _adornmentCache.Insert(cacheIndex, new AdornmentData(position, adornment));
                 }
 

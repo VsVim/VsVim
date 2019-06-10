@@ -91,7 +91,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
-            var height = _textView.Caret.Height;
+            var lineHeight = _textView.LineHeight;
             var formattedText = new FormattedText(
                 pasteCharacter,
                 CultureInfo.CurrentUICulture,
@@ -100,7 +100,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 fontSize,
                 Brushes.Black);
             var width = formattedText.Width;
-            var textHeight = formattedText.Height;
+            var height = formattedText.Height;
 
             var textBlock = new TextBlock
             {
@@ -114,9 +114,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 FontSize = fontSize,
                 Width = width,
                 Height = height,
-                LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                LineStackingStrategy = LineStackingStrategy.MaxHeight,
-                BaselineOffset = double.NaN,
+                LineHeight = lineHeight,
             };
 
             var border = new Border
