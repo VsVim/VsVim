@@ -1875,6 +1875,9 @@ and [<Sealed>] Parser
         | None -> x.ParseError Resources.Parser_Error
         | Some command ->
             x.SkipBlanks()
+            /// we want to do: vsc Edit.FindinFiles "foo bar" /lookin:"Current Project"
+            /// so we need to allow double quotes and parse them into argument
+            _tokenizer.TokenizerFlags <- _tokenizer.TokenizerFlags ||| TokenizerFlags.AllowDoubleQuote
             let argument = x.ParseRestOfLine()
             LineCommand.HostCommand (hasBang, command, argument)
 
