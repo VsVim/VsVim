@@ -23,9 +23,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             internal readonly Color? Color;
             internal readonly Size Size;
             internal readonly double YDisplayOffset;
+            internal readonly double BaselineOffset;
             internal readonly string CaretCharacter;
 
-            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, UIElement element, Color? color, Size size, double displayOffset, string caretCharacter)
+            internal CaretData(
+                CaretDisplay caretDisplay,
+                double caretOpacity,
+                UIElement element,
+                Color? color,
+                Size size,
+                double displayOffset,
+                double baselineOffset,
+                string caretCharacter)
             {
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
@@ -33,6 +42,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 Color = color;
                 Size = size;
                 YDisplayOffset = displayOffset;
+                BaselineOffset = baselineOffset;
                 CaretCharacter = caretCharacter;
             }
         }
@@ -81,19 +91,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     _caretOpacity = value;
                     UpdateCaret();
                 }
-            }
-        }
-
-        public FormattedText FormattedText
-        {
-            get
-            {
-                if (_formattedText == null)
-                {
-                    _formattedText = CreateFormattedText();
-                }
-
-                return _formattedText;
             }
         }
 
@@ -351,7 +348,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     // the last space occupied by the tab.
                     var textViewLine = TextViewLineContainingCaret;
                     var width = textViewLine.GetCharacterBounds(point).Width;
-                    var defaultWidth = FormattedText.Width;
+                    var defaultWidth = _formattedText.Width;
                     var offset = Math.Max(0, width - defaultWidth);
                     left += offset;
                 }
@@ -380,7 +377,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             caretCharacter = "";
 
-            var defaultWidth = FormattedText.Width;
+            var defaultWidth = _formattedText.Width;
             var width = defaultWidth;
             var height = _textView.LineHeight;
 
@@ -432,7 +429,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             if (IsRealCaretVisible)
             {
                 var line = TextViewLineContainingCaret;
-                offset = line.Baseline - FormattedText.Baseline;
+                offset = Math.Max(0.0, line.Baseline - _formattedText.Baseline);
             }
             return offset;
         }
@@ -479,6 +476,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private CaretData CreateCaretData()
         {
+            _formattedText = CreateFormattedText();
             var color = TryCalculateCaretColor();
             var tuple = CalculateCaretRectAndDisplayOffset();
             var baselineOffset = CalculateBaselineOffset();
@@ -545,7 +543,15 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             Canvas.SetTop(textBlock, -offset + baselineOffset);
             Canvas.SetLeft(textBlock, 0);
 
-            return new CaretData(_caretDisplay, _caretOpacity, element, color, rect.Size, offset, caretCharacter);
+            return new CaretData(
+                _caretDisplay,
+                _caretOpacity,
+                element,
+                color,
+                rect.Size,
+                offset,
+                baselineOffset,
+                caretCharacter);
         }
 
         /// <summary>
