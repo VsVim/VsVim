@@ -2550,6 +2550,21 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<CR>");
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
+            
+            /// <summary>
+            /// Simple word completion that is committed with space
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Simple_Async_Commit_Space()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<Space>");
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            }
+
 
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
