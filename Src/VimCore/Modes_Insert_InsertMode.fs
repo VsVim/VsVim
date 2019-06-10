@@ -17,6 +17,9 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
+    /// here we list keys that should commit a completionSession and be consumed
+    /// (= not beeing entered in the file)
+    /// therefore Enter and Tab, but not Space
     static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey]
 
     /// The set of KeyInput value that should commit a session
