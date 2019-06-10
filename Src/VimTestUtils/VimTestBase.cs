@@ -516,6 +516,18 @@ namespace Vim.UnitTest
             return WordUtil.CreateTextStructureNavigator(kind, textBuffer.ContentType);
         }
 
+        protected WpfTextViewDisplay CreateTextViewDisplay(IWpfTextView textView, bool setFocus = true, bool show = true)
+        {
+            var host = TextEditorFactoryService.CreateTextViewHost(textView, setFocus);
+            var display = new WpfTextViewDisplay(host);
+            if (show)
+            {
+                display.Show();
+            }
+
+            return display;
+        }
+
         internal CommandUtil CreateCommandUtil(
             IVimBufferData vimBufferData,
             IMotionUtil motionUtil = null,

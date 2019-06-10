@@ -19,7 +19,7 @@ namespace Vim.VisualStudio.UnitTest
     {
         private VsSimulation _vsSimulation;
         private ITextBuffer _textBuffer;
-        private ITextView _textView;
+        private IWpfTextView _textView;
         private IVimBuffer _vimBuffer;
         private IVimBufferCoordinator _bufferCoordinator;
 
@@ -290,7 +290,6 @@ namespace Vim.VisualStudio.UnitTest
                 Assert.Equal(ModeKind.Replace, _vimBuffer.ModeKind);
             }
 
-#if !VS_SPECIFIC_2015
             /// <summary>
             /// Make sure that we allow keys like down to make it directly to Insert mode when there is
             /// an active IWordCompletionSession
@@ -299,13 +298,15 @@ namespace Vim.VisualStudio.UnitTest
             public void WordCompletion_Down()
             {
                 Create("c dog", "cat copter");
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _textView.MoveCaretTo(1);
-                _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
-                _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<Down>"));
-                Assert.Equal("copter dog", _textView.GetLine(0).GetText());
+                using (CreateTextViewDisplay(_textView))
+                {
+                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _textView.MoveCaretTo(1);
+                    _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
+                    _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<Down>"));
+                    Assert.Equal("copter dog", _textView.GetLine(0).GetText());
+                }
             }
-#endif
 
             /// <summary>
             /// When there is an active IWordCompletionSession we want to let even direct input go directly

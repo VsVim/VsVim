@@ -432,10 +432,8 @@ namespace Vim.VisualStudio.UnitTest.Utils
         /// </summary>
         internal void Run(KeyInput keyInput)
         {
-            using (var context = new TestableSynchronizationContext())
-            {
-                _vsKeyboardInputSimulation.Run(keyInput);
-            }
+            _vsKeyboardInputSimulation.Run(keyInput);
+            Dispatcher.CurrentDispatcher.DoEvents();
         }
 
         /// <summary>
