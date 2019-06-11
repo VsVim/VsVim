@@ -841,7 +841,7 @@ type VimInterpreter
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes prefixFilter = 
 
-        // Define the mode groups used to group identical mappings
+        // Define the mode groups used to group identical mappings.
         let nvoGroup = [
             KeyRemapMode.Normal
             KeyRemapMode.Visual
@@ -857,7 +857,7 @@ type VimInterpreter
             KeyRemapMode.Command
         ]
 
-        // Separate out complete subsets of a mode group from a list of modes
+        // Separate out complete subsets of a mode group from a list of modes.
         let separateOutGroup (modeGroup: KeyRemapMode list) (modes: KeyRemapMode list) =
             let matches =
                 modes |> List.filter (fun mode -> modeGroup |> Seq.contains mode)
@@ -869,7 +869,7 @@ type VimInterpreter
                 List.Empty, modes
 
         // Replace any standard group included in all the remap modes with a
-        // single entry assigned to combined remap mode.
+        // single entry assigned to the combined remap mode.
         let combineByGroup (mappings: (KeyRemapMode * KeyInputSet * KeyInputSet) list) =
             let modes = mappings |> Seq.map (fun (mode, _, _) -> mode) |> Seq.toList
             let _, lhs, rhs = mappings.Head
@@ -887,11 +887,11 @@ type VimInterpreter
 
         // Whether the specified key input set starts with another key input
         // set.
-        let startsWith (lhs: KeyInputSet) (prefix: KeyInputSet) =
-            if prefix.Length > lhs.Length then
+        let startsWith (keyInputSet: KeyInputSet) (prefix: KeyInputSet) =
+            if prefix.Length > keyInputSet.Length then
                 false
             else
-                lhs.KeyInputs
+                keyInputSet.KeyInputs
                 |> Seq.take prefix.Length
                 |> KeyInputSetUtil.OfSeq
                 |> (fun subset -> subset = prefix)
