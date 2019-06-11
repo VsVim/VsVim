@@ -252,7 +252,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.PreviewTextInput += OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
             _parentVisualElement.GotKeyboardFocus += OnParentVisualElementGotKeyboardFocus;
@@ -277,7 +276,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.PreviewTextInput -= OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged -= OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged -= OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown -= OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
             _parentVisualElement.GotKeyboardFocus -= OnParentVisualElementGotKeyboardFocus;
@@ -976,14 +974,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (GetPrefixChar(kind).HasValue && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
             {
                 textBox.SelectionStart = 1;
-            }
-        }
-
-        private void OnCommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            if (!_changingFocus)
-            {
-                //ChangeEditKind(EditKind.None);
             }
         }
 
