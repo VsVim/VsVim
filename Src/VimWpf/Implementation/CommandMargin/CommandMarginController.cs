@@ -205,12 +205,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 switch (editKind)
                 {
                     case EditKind.None:
+
                         // Make sure that the editor has focus 
-                        if (ParentVisualElement != null)
-                        {
-                            ParentVisualElement.Focus();
-                        }
-                        //_margin.IsEditReadOnly = true;
+                        _parentVisualElement.Focus();
+                        _margin.IsEditReadOnly = true;
 
                         if (updateCommandLine)
                         {
@@ -248,7 +246,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
-            _parentVisualElement.GotKeyboardFocus += OnParentVisualElementGotKeyboardFocus;
             _margin.Loaded += OnCommandMarginLoaded;
             _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
@@ -258,35 +255,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
-
-            if (_vimBuffer.TextView is IWpfTextView wpfTextView)
-            {
-                wpfTextView.VisualElement.IsKeyboardFocusedChanged += VisualElement_IsKeyboardFocusedChanged;
-            }
-            _margin.CommandLineTextBox.IsKeyboardFocusedChanged += CommandLineTextBox_IsKeyboardFocusedChanged;
-        }
-
-        private void OnParentVisualElementGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            if (CalculateCommandLineEditKind() != EditKind.None && !_changingFocus)
-            {
-                WpfKeyboard.Focus(_margin.CommandLineTextBox);
-            }
-        }
-
-        private void CommandLineTextBox_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            var isKeyboardFocused = _margin.CommandLineTextBox.IsKeyboardFocused;
-            VimTrace.TraceDebug($"TextBox: IsKeyboardFocused = {isKeyboardFocused}");
-        }
-
-        private void VisualElement_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            if (_vimBuffer.TextView is IWpfTextView wpfTextView)
-            {
-                var isKeyboardFocused = wpfTextView.VisualElement.IsKeyboardFocused;
-                VimTrace.TraceDebug($"TextView: IsKeyboardFocused = {isKeyboardFocused}");
-            }
+            _parentVisualElement.GotKeyboardFocus += OnParentVisualElementGotKeyboardFocus;
         }
 
         internal void Disconnect()
@@ -311,6 +280,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown -= OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
+            _parentVisualElement.GotKeyboardFocus -= OnParentVisualElementGotKeyboardFocus;
         }
 
         internal void Reset()
@@ -1036,6 +1006,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             ChangeEditKind(commandLineEditKind);
             _margin.UpdateCaretPosition(EditPosition.End);
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// Forward focus to the margin if it should have the focus
+        /// </summary>
+        private void OnParentVisualElementGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (CalculateCommandLineEditKind() != EditKind.None && !_changingFocus)
+            {
+                WpfKeyboard.Focus(_margin.CommandLineTextBox);
+            }
         }
 
         /// <summary>
