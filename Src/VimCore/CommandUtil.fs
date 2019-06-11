@@ -3151,7 +3151,7 @@ type internal CommandUtil
             _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
 
     /// Scroll the window horizontally by the specified number of pixels
-    member x.ScrollHorizontally pixels =
+    member x.ScrollHorizontallyByPixels pixels =
         _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
 
     /// Get the caret text view line unless line wrap is enabled
@@ -3196,7 +3196,7 @@ type internal CommandUtil
             let xStart = _textView.ViewportLeft
             let xCaret = caretBounds.Left
             xCaret - xStart
-            |> x.ScrollHorizontally
+            |> x.ScrollHorizontallyByPixels
         | None ->
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3210,7 +3210,7 @@ type internal CommandUtil
             let xEnd = _textView.ViewportRight
             let xCaret = caretBounds.Right
             xCaret - xEnd
-            |> x.ScrollHorizontally
+            |> x.ScrollHorizontallyByPixels
         | None ->
             ()
         CommandResult.Completed ModeSwitch.NoSwitch
@@ -3226,7 +3226,7 @@ type internal CommandUtil
                 | Direction.Left -> -pixels
                 | Direction.Right -> pixels
                 | _ -> 0.0
-            x.ScrollHorizontally pixels
+            x.ScrollHorizontallyByPixels pixels
             x.MoveCaretHorizontallyIntoViewport()
         | None ->
             ()
