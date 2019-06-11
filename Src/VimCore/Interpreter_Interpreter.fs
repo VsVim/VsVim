@@ -839,8 +839,7 @@ type VimInterpreter
             DigraphUtil.AddToMap _vimBuffer.Vim.DigraphMap digraphList
 
     /// Display the given map modes
-    member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
-        let keyRemapModes = keyRemapModes |> Seq.toList
+    member x.RunDisplayKeyMap keyRemapModes prefixFilter = 
 
         // Define the mode groups used to group identical mappings
         let nvoGroup = [
@@ -870,7 +869,7 @@ type VimInterpreter
                 List.Empty, modes
 
         // Replace any standard group included in all the remap modes with a
-        // single entry assigned to combined remap mode
+        // single entry assigned to combined remap mode.
         let combineByGroup (mappings: (KeyRemapMode * KeyInputSet * KeyInputSet) list) =
             let modes = mappings |> Seq.map (fun (mode, _, _) -> mode) |> Seq.toList
             let _, lhs, rhs = mappings.Head
@@ -885,6 +884,31 @@ type VimInterpreter
                 yield! rest |> Seq.map (fun mode -> [mode])
             }
             |> Seq.map (fun modes -> modes, lhs, rhs)
+
+        // Whether the specified key input set starts with another key input
+        // set.
+        let startsWith (lhs: KeyInputSet) (prefix: KeyInputSet) =
+            if prefix.Length > lhs.Length then
+                false
+            else
+                lhs.KeyInputs
+                |> Seq.take prefix.Length
+                |> KeyInputSetUtil.OfSeq
+                |> (fun subset -> subset = prefix)
+
+        // If provided, filter the list to those whose left hand side starts
+        // with the specified prefix.
+        let filterByPrefix sequence =
+            match prefixFilter with
+            | Some prefixNotation ->
+                match KeyNotationUtil.TryStringToKeyInputSet prefixNotation with
+                | Some prefix ->
+                    sequence
+                    |> Seq.filter (fun (_, lhs, _) -> startsWith lhs prefix)
+                | None ->
+                    sequence
+            | None ->
+                sequence
 
         // Get the label for the set of modes.
         let getModeLabel modes =
@@ -918,6 +942,7 @@ type VimInterpreter
             |> _keyMap.GetKeyMappingsForMode
             |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
 
+        |> filterByPrefix
         |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
         |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
         |> Seq.collect combineByGroup
