@@ -12,6 +12,7 @@ using System.Text;
 using System.Diagnostics;
 using WpfKeyboard = System.Windows.Input.Keyboard;
 using WpfTextChangedEventArgs = System.Windows.Controls.TextChangedEventArgs;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -83,6 +84,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private bool _inCommandLineUpdate;
         private EditKind _editKind;
         private bool _processingVirtualKeyInputs;
+        private bool _changingFocus;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
@@ -196,31 +198,40 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             _editKind = editKind;
-            switch (editKind)
+
+            try
             {
-                case EditKind.None:
-                    // Make sure that the editor has focus 
-                    if (ParentVisualElement != null)
-                    {
-                        ParentVisualElement.Focus();
-                    }
-                    _margin.IsEditReadOnly = true;
+                _changingFocus = true;
+                switch (editKind)
+                {
+                    case EditKind.None:
+                        // Make sure that the editor has focus 
+                        if (ParentVisualElement != null)
+                        {
+                            ParentVisualElement.Focus();
+                        }
+                        //_margin.IsEditReadOnly = true;
 
-                    if (updateCommandLine)
-                    {
-                        UpdateCommandLineForNoEvent();
-                    }
+                        if (updateCommandLine)
+                        {
+                            UpdateCommandLineForNoEvent();
+                        }
 
-                    break;
-                case EditKind.Command:
-                case EditKind.SearchForward:
-                case EditKind.SearchBackward:
-                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
-                    _margin.IsEditReadOnly = false;
-                    break;
-                default:
-                    Contract.FailEnumValue(editKind);
-                    break;
+                        break;
+                    case EditKind.Command:
+                    case EditKind.SearchForward:
+                    case EditKind.SearchBackward:
+                        WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                        _margin.IsEditReadOnly = false;
+                        break;
+                    default:
+                        Contract.FailEnumValue(editKind);
+                        break;
+                }
+            }
+            finally
+            {
+                _changingFocus = false;
             }
         }
 
@@ -237,6 +248,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _vimBuffer.TextView.GotAggregateFocus += OnGotAggregateFocus;
             _vimBuffer.Vim.MacroRecorder.RecordingStarted += OnRecordingStarted;
             _vimBuffer.Vim.MacroRecorder.RecordingStopped += OnRecordingStopped;
+            _parentVisualElement.GotKeyboardFocus += OnParentVisualElementGotKeyboardFocus;
             _margin.Loaded += OnCommandMarginLoaded;
             _margin.Unloaded += OnCommandMarginUnloaded;
             _margin.CommandLineTextBox.PreviewKeyDown += OnCommandLineTextBoxPreviewKeyDown;
@@ -246,6 +258,35 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+
+            if (_vimBuffer.TextView is IWpfTextView wpfTextView)
+            {
+                wpfTextView.VisualElement.IsKeyboardFocusedChanged += VisualElement_IsKeyboardFocusedChanged;
+            }
+            _margin.CommandLineTextBox.IsKeyboardFocusedChanged += CommandLineTextBox_IsKeyboardFocusedChanged;
+        }
+
+        private void OnParentVisualElementGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (CalculateCommandLineEditKind() != EditKind.None && !_changingFocus)
+            {
+                WpfKeyboard.Focus(_margin.CommandLineTextBox);
+            }
+        }
+
+        private void CommandLineTextBox_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            var isKeyboardFocused = _margin.CommandLineTextBox.IsKeyboardFocused;
+            VimTrace.TraceDebug($"TextBox: IsKeyboardFocused = {isKeyboardFocused}");
+        }
+
+        private void VisualElement_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (_vimBuffer.TextView is IWpfTextView wpfTextView)
+            {
+                var isKeyboardFocused = wpfTextView.VisualElement.IsKeyboardFocused;
+                VimTrace.TraceDebug($"TextView: IsKeyboardFocused = {isKeyboardFocused}");
+            }
         }
 
         internal void Disconnect()
@@ -718,9 +759,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // When processing virtual key input events, we
             // mark them as handled so they don't get processed
             // by the mode of the buffer.
-            _processingVirtualKeyInputs = true;
             try
             {
+                _processingVirtualKeyInputs = true;
                 foreach (var c in command)
                 {
                     _vimBuffer.Process(KeyInputUtil.CharToKeyInput(c));
@@ -970,7 +1011,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
         private void OnCommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            ChangeEditKind(EditKind.None);
+            if (!_changingFocus)
+            {
+                //ChangeEditKind(EditKind.None);
+            }
         }
 
         /// <summary>
