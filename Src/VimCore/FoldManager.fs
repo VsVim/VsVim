@@ -203,14 +203,17 @@ type internal FoldManager
     /// Toggle the fold which corresponds to the given SnapshotPoint
     member x.ToggleAllFolds (span: SnapshotSpan) =
         x.DoWithOutliningManager (fun outliningManager -> 
-           let currentRegions = outliningManager.GetAllRegions(span)
-                                   |> List.ofSeq
-                                   |> List.rev
 
-           if (currentRegions.First().IsCollapsed) then
-               x.OpenAllFolds span
-           else
-               x.CloseAllFolds span)
+            let currentRegions =
+                outliningManager.GetAllRegions(span)
+                |> List.ofSeq
+                |> List.rev
+
+            if not currentRegions.IsEmpty then
+               if (currentRegions.First().IsCollapsed) then
+                   x.OpenAllFolds span
+               else
+                   x.CloseAllFolds span)
 
     interface IFoldManager with
         member x.TextView = _textView
