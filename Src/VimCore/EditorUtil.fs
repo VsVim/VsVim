@@ -16,6 +16,7 @@ open StringBuilderExtensions
 open System.Linq
 open System.Drawing
 open System.Globalization
+open Microsoft.VisualStudio.Text.Formatting
 
 [<RequireQualifiedAccess>]
 type CodePointInfo = 
@@ -1675,7 +1676,6 @@ module SnapshotSpanUtil =
     /// but will return line breaks
     let GetPoints path span =
         let startPoint = GetStartPoint span
-        let endPoint = GetEndPoint span
         let positions =
             let offset = startPoint.Position
             match path with 
@@ -3304,6 +3304,39 @@ module TextViewUtil =
             let lastLine = SnapshotUtil.GetLastNormalizedLine snapshot
             let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
             textBuffer.Delete(span.Span) |> ignore
+
+    /// Get the visible span for the specified text view line
+    let GetVisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
+
+        let firstPoint =
+
+            // Whether the specified point is to the right of the left edge of
+            // the viewport.
+            let isRightOfViewportLeft (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Left >= textView.ViewportLeft
+
+            // Scan forward looking for a visible point.
+            textViewLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind isRightOfViewportLeft
+            |> Option.defaultValue textViewLine.Start
+
+        let lastPoint =
+
+            // Whether the specified point is to the left of the right edge of
+            // the viewport.
+            let isLeftOfViewportRight (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Right <= textView.ViewportRight
+
+            // Scan backward looking for a visible point.
+            textViewLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Backward
+            |> Seq.tryFind isLeftOfViewportRight
+            |> Option.defaultValue textViewLine.End
+
+        SnapshotSpan(firstPoint, lastPoint)
 
 module TextSelectionUtil = 
 

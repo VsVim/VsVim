@@ -1253,48 +1253,41 @@ type internal MotionUtil
 
     /// First non blank character on the display line
     member x.DisplayLineFirstNonBlank () = 
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingCaret _textView with
-            | Some caretLine ->
-                x.FirstNonBlankCore caretLine.Extent
-            | None ->
-                x.FirstNonBlankOnCurrentLine()
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            TextViewUtil.GetVisibleSpan _textView caretLine
+            |> x.FirstNonBlankCore
+        | None ->
             x.FirstNonBlankOnCurrentLine()
 
     /// Start of the display line 
     member x.DisplayLineStart () =
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingCaret _textView with
-            | Some caretLine ->
-                let point = 
-                    match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportLeft) with
-                    | NullableUtil.Null -> caretLine.Start
-                    | NullableUtil.HasValue point -> point
-                let span = SnapshotSpan(point, x.CaretPoint)
-                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
-            | None -> None
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            let span =
+                TextViewUtil.GetVisibleSpan _textView caretLine
+                |> SnapshotSpanUtil.GetStartPoint
+                |> (fun point -> SnapshotSpan(point, x.CaretPoint))
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
+        | None ->
             x.BeginingOfLine() |> Some
 
     /// End of the display line 
     member x.DisplayLineEnd () =
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingCaret _textView with
-            | Some caretLine ->
-                let point = 
-                    match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportRight) with
-                    | NullableUtil.Null -> SnapshotPointUtil.SubtractOneOrCurrent caretLine.End
-                    | NullableUtil.HasValue point -> point
-                let span = SnapshotSpan(x.CaretPoint, point)
-                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
-            | None -> None
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            let span =
+                TextViewUtil.GetVisibleSpan _textView caretLine
+                |> SnapshotSpanUtil.GetEndPoint
+                |> (fun point -> SnapshotSpan(x.CaretPoint, point))
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
+        | None ->
             x.EndOfLine 1 |> Some
 
     /// Get the point in the middle of the screen.  This looks at the entire
     /// screen not just  the width of the current line
     member x.DisplayLineMiddleOfScreen() =
+
         let createForPoint (point: SnapshotPoint) = 
             let isForward = x.CaretPoint.Position <= point.Position
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
@@ -1303,16 +1296,18 @@ type internal MotionUtil
 
         match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
-            let middle = _textView.ViewportWidth / 2.0
-            match caretLine.GetBufferPositionFromXCoordinate(middle) with
-            | NullableUtil.Null -> 
-                // If the point is beyond the width of the line then the motion should go to the 
-                // end of the line 
-                if middle >= caretLine.Width then
-                    createForPoint caretLine.End
-                else    
-                    None
-            | NullableUtil.HasValue point -> createForPoint point
+
+            // Whether the specified point contains the center of the viewport.
+            let containsCenterOfViewport (point: SnapshotPoint) =
+                let viewportCenter = _textView.ViewportLeft + _textView.ViewportWidth / 2.0
+                let bounds = caretLine.GetCharacterBounds(point)
+                bounds.Left <= viewportCenter && viewportCenter <= bounds.Right
+
+            caretLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind containsCenterOfViewport
+            |> Option.defaultValue caretLine.End
+            |> createForPoint
         | None -> None
 
     /// Get the caret column of the specified line based on the 'startofline' option

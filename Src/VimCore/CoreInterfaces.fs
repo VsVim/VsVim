@@ -3039,6 +3039,20 @@ type NormalCommand =
     /// to leave the caret in the same column
     | ScrollCaretLineToBottom of MaintainCaretColumn: bool
 
+    /// Scroll the window horizontally so that the caret is at the left edge
+    /// of the screen
+    | ScrollCaretColumnToLeft
+
+    /// Scroll the window horizontally so that the caret is at the right edge
+    /// of the screen
+    | ScrollCaretColumnToRight
+
+    /// Scroll the window horizontally in the specified direction
+    | ScrollColumns of Direction: Direction
+
+    /// Scroll half the width of the window in the specified direction
+    | ScrollHalfWidth of Direction: Direction
+
     /// Select the current block
     | SelectBlock
 
@@ -3196,12 +3210,16 @@ type NormalCommand =
         | NormalCommand.ReplaceChar _ -> None
         | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
+        | NormalCommand.ScrollColumns _ -> None
+        | NormalCommand.ScrollHalfWidth _ -> None
         | NormalCommand.ScrollLines _ -> None
         | NormalCommand.ScrollPages _ -> None
         | NormalCommand.ScrollWindow _ -> None
         | NormalCommand.ScrollCaretLineToTop _ -> None
         | NormalCommand.ScrollCaretLineToMiddle _ -> None
         | NormalCommand.ScrollCaretLineToBottom _ -> None
+        | NormalCommand.ScrollCaretColumnToLeft -> None
+        | NormalCommand.ScrollCaretColumnToRight -> None
         | NormalCommand.SelectBlock -> None
         | NormalCommand.SelectLine -> None
         | NormalCommand.SelectNextMatch _ -> None

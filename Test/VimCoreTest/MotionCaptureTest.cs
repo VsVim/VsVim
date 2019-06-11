@@ -37,12 +37,13 @@ namespace Vim.UnitTest
 
         internal BindResult<Motion> Process(string input, bool enter = false)
         {
-            var res = _capture.GetMotionAndCount(KeyInputUtil.CharToKeyInput(input[0]));
-            foreach (var cur in input.Skip(1))
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(input);
+            var res = _capture.GetMotionAndCount(keyInputSet.FirstKeyInput.Value);
+            foreach (var keyInput in keyInputSet.Rest.KeyInputs)
             {
                 Assert.True(res.IsNeedMoreInput);
                 var needMore = res.AsNeedMoreInput();
-                res = needMore.BindData.BindFunction.Invoke(KeyInputUtil.CharToKeyInput(cur));
+                res = needMore.BindData.BindFunction.Invoke(keyInput);
             }
 
             if (enter)
@@ -213,6 +214,48 @@ namespace Vim.UnitTest
         public void LineOrFirstToFirstNonBlank()
         {
             AssertMotion("gg", Motion.LineOrFirstToFirstNonBlank);
+        }
+
+        [WpfFact]
+        public void DisplayLineDown()
+        {
+            AssertMotion("gj", Motion.DisplayLineDown);
+        }
+
+        [WpfFact]
+        public void DisplayLineUp()
+        {
+            AssertMotion("gk", Motion.DisplayLineUp);
+        }
+
+        [WpfFact]
+        public void DisplayLineStart()
+        {
+            AssertMotion("g0", Motion.DisplayLineStart);
+        }
+
+        [WpfFact]
+        public void DisplayLineFirstNonBlank()
+        {
+            AssertMotion("g^", Motion.DisplayLineFirstNonBlank);
+        }
+
+        [WpfFact]
+        public void DisplayLineEnd()
+        {
+            AssertMotion("g$", Motion.DisplayLineEnd);
+        }
+
+        [WpfFact]
+        public void DisplayLineStart_Home()
+        {
+            AssertMotion("g<Home>", Motion.DisplayLineStart);
+        }
+
+        [WpfFact]
+        public void DisplayLineEnd_End()
+        {
+            AssertMotion("g<End>", Motion.DisplayLineEnd);
         }
 
         [WpfFact]

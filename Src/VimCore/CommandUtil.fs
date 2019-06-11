@@ -3014,6 +3014,10 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.ScrollCaretColumnToLeft -> x.ScrollCaretColumnToLeft()
+        | NormalCommand.ScrollCaretColumnToRight -> x.ScrollCaretColumnToRight()
+        | NormalCommand.ScrollColumns direction -> x.ScrollColumns direction count
+        | NormalCommand.ScrollHalfWidth direction -> x.ScrollHalfWidth direction
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
@@ -3145,6 +3149,99 @@ type internal CommandUtil
             let sign = if scrollDirection = ScrollDirection.Up then 1 else -1
             let pixels = float(sign * count) * _textView.LineHeight
             _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
+
+    /// Scroll the window horizontally by the specified number of pixels
+    member x.ScrollHorizontallyByPixels pixels =
+        _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
+
+    /// Get the caret text view line unless line wrap is enabled
+    member x.CaretTextViewLineUnlessWrap () =
+        match TextViewUtil.IsWordWrapEnabled _textView with
+        | false -> TextViewUtil.GetTextViewLineContainingCaret _textView
+        | true -> None
+
+    /// Move the caret horizontally into the viewport
+    member x.MoveCaretHorizontallyIntoViewport () =
+
+        // Move the caret without checking visibility.
+        let moveCaretToPoint (point: SnapshotPoint) =
+            _textView.Caret.MoveTo(point)
+            |> ignore
+
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+
+            // Check whether the caret is within the viewport.
+            let caretBounds =
+                x.CaretVirtualPoint
+                |> textViewLine.GetCharacterBounds
+            if caretBounds.Left < _textView.ViewportLeft then
+                TextViewUtil.GetVisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetStartPoint
+                |> moveCaretToPoint
+            elif caretBounds.Right > _textView.ViewportRight then
+                TextViewUtil.GetVisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetEndPoint
+                |> moveCaretToPoint
+
+        | None ->
+            ()
+
+    /// Scroll the window horizontally so that the caret is at the left edge
+    /// of the screen
+    member x.ScrollCaretColumnToLeft () =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let xStart = _textView.ViewportLeft
+            let xCaret = caretBounds.Left
+            xCaret - xStart
+            |> x.ScrollHorizontallyByPixels
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally so that the caret is at the right edge
+    /// of the screen
+    member x.ScrollCaretColumnToRight () =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let xEnd = _textView.ViewportRight
+            let xCaret = caretBounds.Right
+            xCaret - xEnd
+            |> x.ScrollHorizontallyByPixels
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally in the specified direction
+    member x.ScrollColumns direction count =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let spaceWidth = textViewLine.VirtualSpaceWidth
+            let pixels = double(count) * spaceWidth
+            let pixels =
+                match direction with
+                | Direction.Left -> -pixels
+                | Direction.Right -> pixels
+                | _ -> 0.0
+            x.ScrollHorizontallyByPixels pixels
+            x.MoveCaretHorizontallyIntoViewport()
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll half the width of the window in the specified direction
+    member x.ScrollHalfWidth direction =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let spaceWidth = textViewLine.VirtualSpaceWidth
+            let columns = _textView.ViewportWidth / spaceWidth
+            let count = int(round(columns / 2.0))
+            x.ScrollColumns direction count
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
@@ -3383,7 +3480,7 @@ type internal CommandUtil
         // Count the number of rows we need to scroll to move count
         // lines off the screen in the specified direction.
         let rowCount =
-            if not _windowSettings.Wrap then
+            if not (TextViewUtil.IsWordWrapEnabled _textView) then
                 count
             else
 
