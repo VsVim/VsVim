@@ -199,37 +199,45 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
 
             _editKind = editKind;
 
-            try
+            if (!_changingFocus)
             {
-                _changingFocus = true;
-                switch (editKind)
+                try
                 {
-                    case EditKind.None:
-
-                        // Make sure that the editor has focus 
-                        _parentVisualElement.Focus();
-                        _margin.IsEditReadOnly = true;
-
-                        if (updateCommandLine)
-                        {
-                            UpdateCommandLineForNoEvent();
-                        }
-
-                        break;
-                    case EditKind.Command:
-                    case EditKind.SearchForward:
-                    case EditKind.SearchBackward:
-                        WpfKeyboard.Focus(_margin.CommandLineTextBox);
-                        _margin.IsEditReadOnly = false;
-                        break;
-                    default:
-                        Contract.FailEnumValue(editKind);
-                        break;
+                    _changingFocus = true;
+                    ChangeEditKindCore(editKind, updateCommandLine);
+                }
+                finally
+                {
+                    _changingFocus = false;
                 }
             }
-            finally
+        }
+
+        private void ChangeEditKindCore(EditKind editKind, bool updateCommandLine)
+        {
+            switch (editKind)
             {
-                _changingFocus = false;
+                case EditKind.None:
+
+                    // Make sure that the editor has focus 
+                    _parentVisualElement.Focus();
+                    _margin.IsEditReadOnly = true;
+
+                    if (updateCommandLine)
+                    {
+                        UpdateCommandLineForNoEvent();
+                    }
+
+                    break;
+                case EditKind.Command:
+                case EditKind.SearchForward:
+                case EditKind.SearchBackward:
+                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                    _margin.IsEditReadOnly = false;
+                    break;
+                default:
+                    Contract.FailEnumValue(editKind);
+                    break;
             }
         }
 
@@ -1005,7 +1013,15 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             if (CalculateCommandLineEditKind() != EditKind.None && !_changingFocus)
             {
-                WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                try
+                {
+                    _changingFocus = true;
+                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                }
+                finally
+                {
+                    _changingFocus = false;
+                }
             }
         }
 
