@@ -2555,7 +2555,7 @@ namespace Vim.UnitTest
             /// Simple word completion that is committed with space
             /// </summary>
             [LegacyCompletionWpfFact]
-            public void WordCompletion_Simple_Legacy()
+            public void WordCompletion_Legacy_Commit_Space()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
@@ -2565,7 +2565,7 @@ namespace Vim.UnitTest
             }
             
             [AsyncCompletionWpfFact]
-            public void WordCompletion_Simple_Async_Commit_Space()
+            public void WordCompletion_Async_Commit_Space()
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
