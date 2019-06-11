@@ -75,6 +75,7 @@ namespace Vim.UnitTest
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
 
             // Many of the operations operate on both the visual and edit / text snapshot
             // simultaneously.  Ensure that our setup code is producing a proper IElisionSnapshot
@@ -82,6 +83,13 @@ namespace Vim.UnitTest
             // the two
             Assert.True(_textView.VisualSnapshot is IElisionSnapshot);
             Assert.True(_textView.VisualSnapshot != _textView.TextSnapshot);
+        }
+
+        private T WithLastNormalCommand<T>(Func<NormalCommand, T> function)
+        {
+            Assert.True(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
+            var storedNormalCommand = (StoredCommand.NormalCommand)_vimData.LastCommand.Value;
+            return function(storedNormalCommand.NormalCommand);
         }
 
         public override void Dispose()
@@ -134,20 +142,55 @@ namespace Vim.UnitTest
             [WpfFact]
             public void PhantomLine()
             {
-                Create("cat", "");
-                _testableMouseDevice.Point = _textView.GetPointInLine(1, 0); // phantom line
+                Create("dog", "cat", "");
+                _textView.SetVisibleLineCount(3);
+                _textView.MoveCaretToLine(0);
+                DoEvents();
+                _testableMouseDevice.Point = _textView.GetPointInLine(2, 0); // phantom line
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
-                Assert.Equal(0, _textView.GetCaretPoint().Position); // 'c' in 'cat'
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint()); // 'c' in 'cat'
             }
 
             [WpfFact]
             public void NonPhantomLine()
             {
                 Create("cat", "dog");
+                _textView.SetVisibleLineCount(2);
+                _textView.MoveCaretToLine(0);
+                DoEvents();
                 var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
-                Assert.Equal(point.Position, _textView.GetCaretPoint().Position);
+                Assert.Equal(point, _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
+            public void BelowPhantomLine()
+            {
+                // Reported in issue #2586.
+                Create("dog", "cat", "");
+                _textView.SetVisibleLineCount(3);
+                _textView.MoveCaretToLine(0);
+                DoEvents();
+                _testableMouseDevice.Point = _textView.GetPointInLine(2, 0); // phantom line
+                _testableMouseDevice.YOffset = 50; // below phantom line
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint()); // 'c' in 'cat'
+            }
+
+            [WpfFact]
+            public void BelowNonPhantomLine()
+            {
+                // Reported in issue #2586.
+                Create("cat", "dog");
+                _textView.SetVisibleLineCount(2);
+                _textView.MoveCaretToLine(0);
+                DoEvents();
+                var point = _textView.GetPointInLine(1, 0); // 'd' in 'dog'
+                _testableMouseDevice.Point = point;
+                _testableMouseDevice.YOffset = 50; // below last line
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(point, _textView.GetCaretPoint());
             }
 
             [WpfFact]
@@ -1134,6 +1177,24 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("%");
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
+
+            [WpfFact]
+            public void StrayApostropheOnSameLine()
+            {
+                // Reported in issue #2566.
+                Create(
+                    "if (done)",
+                    "{ // we're done",
+                    "    Done();",
+                    "}",
+                    ""
+                    );
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(3, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("%");
+                Assert.Equal(_textView.GetPointInLine(1, 0), _textView.GetCaretPoint());
+            }
         }
 
         public sealed class UnmatchedTokenTest : NormalModeIntegrationTest
@@ -2059,7 +2120,7 @@ namespace Vim.UnitTest
                         _name = name;
                         _line = line;
                         _column = column;
-                        return true;
+                        return FSharpOption<ITextView>.None;
                     };
             }
 
@@ -2851,6 +2912,30 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(":map nn <S-$>", enter: true);
                     _vimBuffer.Process("nn");
                     Assert.Equal(2, _textView.GetCaretPoint().Position);
+                }
+
+                /// <summary>
+                /// Only commands typed interactively enter the command history
+                /// </summary>
+                [WpfFact]
+                public void MappedCommandsDontEnterHistory()
+                {
+                    // Reported in issue #2318.
+                    Create("cat", "dog", "");
+                    _localSettings.TabStop = 4;
+                    _vimBuffer.Process(":nnoremap x :set ts=8<CR>");
+                    _vimBuffer.ProcessNotation("<CR>");
+                    var lastCommand = "echo 'hello'";
+                    _vimBuffer.ProcessNotation($":{lastCommand}<CR>");
+                    Assert.Equal(4, _localSettings.TabStop);
+                    _vimBuffer.Process("x");
+                    Assert.Equal(8, _localSettings.TabStop);
+                    var vimData = _vimBuffer.Vim.VimData;
+                    Assert.Equal(lastCommand, vimData.CommandHistory.Items[0]);
+                    Assert.Equal(lastCommand, vimData.LastCommandLine);
+                    Assert.True(vimData.LastLineCommand.IsSome());
+                    Assert.True(vimData.LastLineCommand.Value.IsEcho);
+                    Assert.Equal(new[] { "cat", "dog", "", }, _textBuffer.GetLines());
                 }
             }
         }
@@ -4518,6 +4603,24 @@ namespace Vim.UnitTest
                     Create("cat", "bat", "dog", "");
                     _vimBuffer.ProcessNotation(@"1G/bat\ndog", enter: true);
                     Assert.Equal(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
+                }
+
+                [WpfFact]
+                public void InvertedCollection_NoMatchEndOfLine()
+                {
+                    // Reported in issue #1471.
+                    Create("Hello", "World", "");
+                    _assertOnErrorMessage = false;
+                    _vimBuffer.ProcessNotation(@"/o[^o]\+W", enter: true);
+                    Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                }
+
+                [WpfFact]
+                public void InvertedCollection_MatchEndOfLine()
+                {
+                    Create("Hello", "World", "");
+                    _vimBuffer.ProcessNotation(@"/o\_[^o]\+W", enter: true);
+                    Assert.Equal(_textView.GetPointInLine(0, 4), _textView.GetCaretPoint());
                 }
             }
 
@@ -9414,6 +9517,28 @@ namespace Vim.UnitTest
                 Assert.Equal("https://github.com/VsVim/VsVim", link);
                 Assert.Equal(point, _textView.GetCaretPoint());
                 Assert.Equal(0, _vimHost.GoToDefinitionCount);
+            }
+
+            [WpfFact]
+            public void MouseDoesNotAffectLastCommand()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                _vimBuffer.ProcessNotation("yyp");
+                var point = _textView.GetPointInLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                    {
+                        link = arg;
+                        return true;
+                    };
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(point, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
+                Assert.True(WithLastNormalCommand(x => x.IsPutAfterCaret));
+                _vimBuffer.ProcessNotation("<C-LeftRelease>");
+                Assert.True(WithLastNormalCommand(x => x.IsPutAfterCaret));
             }
         }
 

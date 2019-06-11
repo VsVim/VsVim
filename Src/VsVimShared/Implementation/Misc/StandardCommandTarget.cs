@@ -74,9 +74,9 @@ namespace Vim.VisualStudio.Implementation.Misc
                 return false;
             }
 
-            if (result.IsMapped)
+            if (result.IsMapped || result.IsUnmapped)
             {
-                var set = ((KeyMappingResult.Mapped)result).KeyInputSet;
+                var set = result.IsMapped ? ((KeyMappingResult.Mapped)result).KeyInputSet : ((KeyMappingResult.Unmapped)result).KeyInputSet;
                 if (set.Length != 1)
                 {
                     mapped = null;

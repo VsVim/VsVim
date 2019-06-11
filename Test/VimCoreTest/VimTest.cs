@@ -13,6 +13,7 @@ using Vim.Interpreter;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace Vim.UnitTest
 {
@@ -63,6 +64,8 @@ namespace Vim.UnitTest
             _vimHost.Setup(x => x.GetName(It.IsAny<ITextBuffer>())).Returns("VimTest.cs");
             _vimHost.Setup(x => x.EnsurePackageLoaded());
             _vimHost.SetupGet(x => x.DefaultSettings).Returns(DefaultSettings.GVim74);
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             if (createVim)
             {
                 CreateVim();
@@ -91,7 +94,9 @@ namespace Vim.UnitTest
                 _factory.Create<IBulkOperations>().Object,
                 _variableMap,
                 new EditorToSettingSynchronizer(),
-                new StatusUtilFactory());
+                new StatusUtilFactory(),
+                CommonOperationsFactory,
+                MouseDevice);
             _vim = _vimRaw;
             _vim.AutoLoadDigraphs = false;
             _vim.AutoLoadVimRc = false;

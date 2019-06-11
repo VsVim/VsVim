@@ -16,6 +16,48 @@ type DefaultLineRange =
 
 [<Sealed>]
 [<Class>]
+type InterpreterStatusUtil
+    (
+        _statusUtil: IStatusUtil
+    ) =
+
+    let mutable _contextLineNumber: int option = None
+
+    member x.ContextLineNumber
+        with get() = _contextLineNumber
+        and set value = _contextLineNumber <- value
+
+    /// Create a line number annotated interpreter error
+    member x.NotateMessage message =
+        match x.ContextLineNumber with
+        | Some lineNumber ->
+            let lineMessage = lineNumber + 1 |> Resources.Parser_OnLine
+            sprintf "%s: %s" lineMessage message
+        | None ->
+            message
+
+    member x.OnStatus message = _statusUtil.OnStatus message
+
+    member x.OnError message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnError
+
+    member x.OnWarning message =
+        message
+        |> x.NotateMessage
+        |> _statusUtil.OnWarning
+
+    member x.OnStatusLong messages = _statusUtil.OnStatusLong messages
+
+    interface IStatusUtil with
+        member x.OnStatus message = x.OnStatus message
+        member x.OnError message = x.OnError message
+        member x.OnWarning message = x.OnWarning message
+        member x.OnStatusLong messages = x.OnStatusLong messages
+
+[<Sealed>]
+[<Class>]
 type VariableValueUtil
     (
         _statusUtil: IStatusUtil
@@ -285,7 +327,7 @@ type VimInterpreter
     let _textView = _vimBufferData.TextView
     let _markMap = _vim.MarkMap
     let _keyMap = _vim.KeyMap
-    let _statusUtil = _vimBufferData.StatusUtil
+    let _statusUtil = InterpreterStatusUtil(_vimBufferData.StatusUtil)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _localSettings = _vimBufferData.LocalSettings
@@ -889,18 +931,27 @@ type VimInterpreter
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
 
-    member x.RunDisplayLets (names: VariableName list) = 
-        let list = List<string>()
-        for name in names do
-            let found, value = _variableMap.TryGetValue name.Name
-            let msg =  
-                if found then
-                    sprintf "%s %O" name.Name value
-                else
-                    Resources.Interpreter_UndefinedVariable name.Name
+    /// Display the value of the specified (or all) variables
+    member x.RunDisplayLet (names: VariableName list) = 
+        let names =
+            if names.IsEmpty then
+                _variableMap.Keys
+                |> Seq.sortBy id
+                |> Seq.map (fun key -> { NameScope = NameScope.Global; Name = key })
+                |> Seq.toList
+            else
+                names
+        seq {
+            for name in names do
+                let found, value = _variableMap.TryGetValue name.Name
+                yield
+                    if found then
+                        sprintf "%s %O" name.Name value
+                    else
+                        Resources.Interpreter_UndefinedVariable name.Name
                 
-            list.Add(msg)
-        _statusUtil.OnStatusLong list
+        }
+        |> _statusUtil.OnStatusLong
 
     /// Display the specified marks
     member x.RunDisplayMarks (marks: Mark list) =
@@ -1248,7 +1299,7 @@ type VimInterpreter
         // Load the default help
         let loadDefaultHelp vimDoc =
             let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
-            _vimHost.LoadFileIntoNewWindow helpFile None None |> ignore
+            _commonOperations.LoadFileIntoNewWindow helpFile (Some 0) None |> ignore
 
         match vimFolder with
         | Some vimFolder ->
@@ -1328,6 +1379,20 @@ type VimInterpreter
         | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
         | value -> _variableMap.[name.Name] <- value
 
+    /// Run the let environment variable command
+    member x.RunLetEnvironment (name: string) expr =
+        match x.RunExpression expr with
+        | VariableValue.Error -> _statusUtil.OnError Resources.Interpreter_Error
+        | value ->
+            try
+                System.Environment.SetEnvironmentVariable(name, value.StringValue)
+            with
+            | _ ->
+                value
+                |> string
+                |> Resources.Interpreter_ErrorSettingEnvironmentVariable name
+                |> _statusUtil.OnError
+
     /// Run the let command for registers
     member x.RunLetRegister (name: RegisterName) expr =
         let setRegister (value: string) =
@@ -1367,8 +1432,9 @@ type VimInterpreter
     member x.RunNoHighlightSearch() = 
         _vimData.SuspendDisplayPattern()
 
+    /// Report a parse error that has already been line number annotated
     member x.RunParseError msg =
-        _statusUtil.OnError msg
+        _vimBufferData.StatusUtil.OnError msg
 
     /// Print out the contents of the specified range
     member x.RunDisplayLines lineRange lineCommandFlags =
@@ -1873,8 +1939,26 @@ type VimInterpreter
         else
             let filePath = x.ResolveVimPath filePath
             match _fileSystem.ReadAllLines filePath with
-            | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile filePath)
-            | Some lines -> x.RunScript lines
+            | None -> _statusUtil.OnError (Resources.Common_CouldNotOpenFile filePath)
+            | Some lines ->
+                let bag = new DisposableBag()
+                let errorList = List<string>()
+                try
+                    _vimBuffer.ErrorMessage
+                    |> Observable.subscribe (fun e -> errorList.Add(e.Message))
+                    |> bag.Add
+                    x.RunScript lines
+                finally
+                    bag.DisposeAll()
+                if errorList.Count <> 0 then
+                    seq {
+                        let message =
+                            Resources.Interpreter_ErrorsSourcing filePath
+                            |> _statusUtil.NotateMessage
+                        yield message
+                        yield! errorList
+                    }
+                    |> _vimBufferData.StatusUtil.OnStatusLong
 
     /// Run the :stopinsert command
     member x.RunStopInsert () =
@@ -1960,7 +2044,7 @@ type VimInterpreter
     member x.RunTabNew symbolicPath = 
         let filePath = x.InterpretSymbolicPath symbolicPath
         let resolvedFilePath = x.ResolveVimPath filePath
-        _vimHost.LoadFileIntoNewWindow resolvedFilePath (Some 0) None |> ignore
+        _commonOperations.LoadFileIntoNewWindow resolvedFilePath (Some 0) None |> ignore
 
     member x.RunOnly() =
         _vimHost.CloseAllOtherWindows _textView
@@ -2110,7 +2194,7 @@ type VimInterpreter
         | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
         | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
         | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
-        | LineCommand.DisplayLet variables -> x.RunDisplayLets variables
+        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
         | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
@@ -2130,6 +2214,7 @@ type VimInterpreter
         | LineCommand.Join (lineRange, joinKind) -> x.RunJoin lineRange joinKind
         | LineCommand.JumpToLastLine lineRange -> x.RunJumpToLastLine lineRange
         | LineCommand.Let (name, value) -> x.RunLet name value
+        | LineCommand.LetEnvironment (name, value) -> x.RunLetEnvironment name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
@@ -2221,9 +2306,19 @@ type VimInterpreter
     // Actually parse and run all of the commands which are included in the script
     member x.RunScript lines = 
         let parser = Parser(_globalSettings, _vimData, lines)
-        while not parser.IsDone do
-            let lineCommand = parser.ParseNextCommand()
-            x.RunLineCommand lineCommand |> ignore
+        let previousContextLineNumber = _statusUtil.ContextLineNumber
+        try
+            while not parser.IsDone do
+                let contextLineNumber = parser.ContextLineNumber
+                let lineCommand = parser.ParseNextCommand()
+                _statusUtil.ContextLineNumber <-
+                    if lines.Length <> 1 then
+                        Some contextLineNumber
+                    else
+                        None
+                x.RunLineCommand lineCommand |> ignore
+        finally
+            _statusUtil.ContextLineNumber <- previousContextLineNumber
    
     member x.InterpretSymbolicPath (symbolicPath: SymbolicPath) =
         let rec inner (sb:System.Text.StringBuilder) sp =

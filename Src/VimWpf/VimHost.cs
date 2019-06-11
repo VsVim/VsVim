@@ -224,6 +224,57 @@ namespace Vim.UI.Wpf
             return false;
         }
 
+
+        /// <summary>
+        /// Perform the specified action when the specified text view is ready
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <param name="action"></param>
+        public virtual void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
+        {
+            // Local functions to do the action.
+            void doAction()
+            {
+                // Perform action if the text view is still open.
+                if (!textView.IsClosed && !textView.InLayout)
+                {
+                    action.Invoke(null);
+                }
+            }
+            void doActionHandler(object sender, RoutedEventArgs e)
+            {
+                // Unsubscribe.
+                if (sender is FrameworkElement element)
+                {
+                    element.Loaded -= doActionHandler;
+                }
+
+                // Then do the action.
+                try
+                {
+                    doAction();
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceError(ex);
+                }
+            }
+
+            if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
+            {
+                // FrameworkElement.Loaded Event:
+                //
+                // Occurs when a FrameworkElement has been constructed and
+                // added to the object tree, and is ready for interaction.
+                wpfTextView.VisualElement.Loaded += doActionHandler;
+            }
+            else
+            {
+                // If the element is already loaded, do the action immediately.
+                doAction();
+            }
+        }
+
         /// <summary>
         /// Default to seeing if the entire text buffer area is read only
         /// </summary>
@@ -255,7 +306,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool LoadFileIntoExistingWindow(string filePath, ITextView textView);
 
-        public abstract bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
+        public abstract FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column);
 
         public abstract void Make(bool jumpToFirstError, string arguments);
 
@@ -703,6 +754,11 @@ namespace Vim.UI.Wpf
             return IsDirty(textBuffer);
         }
 
+        void IVimHost.DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
+        {
+            DoActionWhenTextViewReady(action, textView);
+        }
+
         bool IVimHost.IsReadOnly(ITextBuffer textBuffer)
         {
             return IsReadOnly(textBuffer);
@@ -713,7 +769,7 @@ namespace Vim.UI.Wpf
             return LoadFileIntoExistingWindow(filePath, textView);
         }
 
-        bool IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             return LoadFileIntoNewWindow(filePath, line, column);
         }

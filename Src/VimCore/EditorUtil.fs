@@ -740,8 +740,9 @@ type SnapshotColumn =
         let mutable count = columnNumber
         let mutable isGood = true
         while count > 0 && isGood do
-            column <- column.Add 1
-            count <- count - 1
+            if not column.IsEndColumn then
+                column <- column.Add 1
+                count <- count - 1
             if 
                 column.IsEndColumn || 
                 column.LineNumber <> line.LineNumber ||
@@ -3000,12 +3001,17 @@ module TextViewUtil =
                 else
                     None
             with 
-            | _ -> None
+            | :? InvalidOperationException as ex ->
+                VimTrace.TraceError ex
+                None
 
     /// Get the text view line relative to the specified point
-    let GetTextViewLineRelativeToPoint textView offset point =
+    let GetTextViewLineRelativeToPoint textView offset (point: SnapshotPoint) =
+
+        // Try to get the text view lines for the same snapshot as point.
         match GetTextViewLines textView with
-        | Some textViewLines ->
+        | Some textViewLines when
+            textViewLines.FormattedSpan.Snapshot = point.Snapshot ->
 
             // Protect against GetTextViewLineContainingBufferPosition
             // returning null.
@@ -3026,11 +3032,16 @@ module TextViewUtil =
                     else
                         None
             | _ -> None
-        | None -> None
+        | _ -> None
 
     /// Get the text view line containing the specified point
     let GetTextViewLineContainingPoint textView point =
         GetTextViewLineRelativeToPoint textView 0 point
+
+    /// Get the text view line containing the specified point
+    let GetTextViewLineContainingCaret textView =
+        GetCaretPoint textView
+        |> GetTextViewLineRelativeToPoint textView 0
 
     /// Get the count of Visible lines in the ITextView
     let GetVisibleLineCount textView = 

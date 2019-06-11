@@ -97,6 +97,12 @@ namespace Vim.VisualStudio
                 return;
             }
 
+            // There is no UI to adjust the default for relative line numbers so
+            // push the current setting.
+            vimBuffer.TextView.Options.SetOptionValue(
+                LineNumbersMarginOptions.LineNumbersMarginOptionId,
+                vimBuffer.LocalSettings.RelativeNumber);
+
             // Vim doesn't consider folding an undo operation, and neither does VsVim (issue #2184).
             vimBuffer.TextView.Options.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false);
 

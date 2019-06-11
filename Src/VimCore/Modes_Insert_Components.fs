@@ -129,14 +129,12 @@ type internal TextChangeTracker
 
     /// Start tracking the effective change
     member x.StartTrackingEffectiveChange() =
-        let snapshot = _textView.TextBuffer.CurrentSnapshot
-        let caretPosition = _textView.Caret.Position
-        let position = caretPosition.BufferPosition.Position
+        let caretPoint = TextViewUtil.GetCaretPoint _textView
         _effectiveChangeData <-
             Some {
-                Snapshot = snapshot
-                LeftEdge = position
-                RightEdge = position
+                Snapshot = caretPoint.Snapshot
+                LeftEdge = caretPoint.Position
+                RightEdge = caretPoint.Position
                 LeftDeletions = 0
                 RightDeletions = 0
             }
@@ -299,16 +297,17 @@ type internal TextChangeTracker
     member x.UpdateEffectiveChange (args: TextContentChangedEventArgs) =
 
         VimTrace.TraceInfo("OnTextChange: {0}", args.Changes.Count)
+        VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition.Position)
         for i = 0 to args.Changes.Count - 1 do
             VimTrace.TraceInfo("OnTextChange: change {0}", i)
             let change = args.Changes.[i]
             VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", StringUtil.GetDisplayString(change.OldText), StringUtil.GetDisplayString(change.NewText))
             VimTrace.TraceInfo("OnTextChange: old = '{0}', new = '{1}'", change.OldSpan, change.NewSpan)
-            VimTrace.TraceInfo("OnTextChange: caret position = {0}", _textView.Caret.Position.BufferPosition.Position)
 
         match _effectiveChangeData with
         | Some data when data.Snapshot = args.Before ->
 
+            let snapshot = args.After
             let caretPosition = _textView.Caret.Position
             let virtualSpaces = caretPosition.VirtualSpaces
             let mutable leftEdge = data.LeftEdge
@@ -377,20 +376,23 @@ type internal TextChangeTracker
                         rightEdge <- rightEdge + change.Delta
 
             // Update the effective change data.
-            if leftEdge >= 0 && rightEdge <= args.After.Length then
-                _effectiveChangeData <-
+            _effectiveChangeData <-
+                if leftEdge >= 0 && leftEdge <= rightEdge && rightEdge <= snapshot.Length then
                     Some {
-                        Snapshot = args.After
+                        Snapshot = snapshot
                         LeftEdge = leftEdge
                         RightEdge = rightEdge
                         LeftDeletions = leftDeletions
                         RightDeletions = rightDeletions
                     }
-            else
+                else
 
-                // Something went wrong.
-                VimTrace.TraceError("OnTextChange: active area inconsistent with buffer")
-                _effectiveChangeData <- None
+                    // Something went wrong.
+                    VimTrace.TraceError("OnTextChange: Effective change corrupted:")
+                    let message = "LeftEdge = {0}, RightEdge = {1}, Length = {2}"
+                    VimTrace.TraceError(message, leftEdge, rightEdge, snapshot.Length)
+
+                    None
 
         | _ ->
             ()

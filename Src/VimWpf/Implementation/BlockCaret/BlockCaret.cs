@@ -96,6 +96,35 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
+        private ITextViewLine TextViewLineContainingCaret
+        {
+            get
+            {
+                try
+                {
+                    if (!_textView.IsClosed && !_textView.InLayout)
+                    {
+                        var caretPoint = _textView.Caret.Position.BufferPosition;
+                        var textViewLines = _textView.TextViewLines;
+                        if (textViewLines != null && textViewLines.IsValid)
+                        {
+                            var line = textViewLines.GetTextViewLineContainingBufferPosition(caretPoint);
+                            if (line != null && line.IsValid)
+                            {
+                                return line;
+                            }
+
+                        }
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    VimTrace.TraceError(ex);
+                }
+                return null;
+            }
+        }
+
         /// <summary>
         /// Is the real caret visible in some way?
         /// </summary>
@@ -103,20 +132,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             get
             {
-                try
+                if (_textView.HasAggregateFocus)
                 {
-                    if (!_textView.IsClosed)
-                    {
-                        var caret = _textView.Caret;
-                        var line = caret.ContainingTextViewLine;
-                        return line.VisibilityState != VisibilityState.Unattached && _textView.HasAggregateFocus;
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    // InvalidOperationException is thrown when we ask for ContainingTextViewLine and the view
-                    // is not yet completely rendered.  It's safe to say at this point that the caret is not 
-                    // visible
+                    var line = TextViewLineContainingCaret;
+                    return line != null && line.VisibilityState != VisibilityState.Unattached;
                 }
                 return false;
             }
@@ -321,17 +340,17 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             caretCharacter = "";
             var defaultWidth = FormattedText.Width;
 
-            var caret = _textView.Caret;
-            var line = caret.ContainingTextViewLine;
             var width = defaultWidth;
-            var height = line.TextHeight;
+            var height = _textView.LineHeight;
 
             if (IsRealCaretVisible)
             {
                 // Get the size of the character to which we need to paint
                 // the caret.  Special case tab here because it's too big.
                 // When there is a tab we use the default height and width.
-                var point = caret.Position.BufferPosition;
+                var line = TextViewLineContainingCaret;
+                height = line.Height;
+                var point = _textView.Caret.Position.BufferPosition;
                 if (point.Position < _textView.TextSnapshot.Length)
                 {
                     var pointCharacter = point.GetChar();

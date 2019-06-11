@@ -699,6 +699,12 @@ namespace Vim.UnitTest
             return (KeyMappingResult.Mapped)res;
         }
 
+        public static KeyMappingResult.Unmapped AsUnmapped(this KeyMappingResult res)
+        {
+            Assert.True(res.IsUnmapped);
+            return (KeyMappingResult.Unmapped)res;
+        }
+
         public static KeyMappingResult.PartiallyMapped AsPartiallyMapped(this KeyMappingResult res)
         {
             Assert.True(res.IsPartiallyMapped);
@@ -710,6 +716,11 @@ namespace Vim.UnitTest
             if (res.IsMapped)
             {
                 return res.AsMapped().KeyInputSet;
+            }
+
+            if (res.IsUnmapped)
+            {
+                return res.AsUnmapped().KeyInputSet;
             }
 
             var partialMap = res.AsPartiallyMapped();
@@ -745,6 +756,11 @@ namespace Vim.UnitTest
         public static bool CanProcess(this IMode mode, VimKey key)
         {
             return mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(key));
+        }
+
+        public static ProcessResult Process(this IMode mode, KeyInput keyInput)
+        {
+            return mode.Process(KeyInputData.Create(keyInput, false));
         }
 
         public static ProcessResult Process(this IMode mode, VimKey key)

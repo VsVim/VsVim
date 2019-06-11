@@ -304,13 +304,20 @@ autocmd BufEnter *.html set ts=12
             public void Errors()
             {
                 var text = @"
+    set hlsearch
     set foo=1
 ";
                 Run(text);
+                Assert.True(_globalSettings.HighlightSearch);
 
                 var errorArray = ((VimRcState.LoadSucceeded)_vim.VimRcState).Errors;
                 Assert.Single(errorArray);
-                Assert.Equal(Resources.Interpreter_UnknownOption("foo"), errorArray[0]);
+                var expectedLine = 2; // empty lines removed
+                var expectedVariable = "foo";
+                var embeddedError = Resources.Interpreter_UnknownOption(expectedVariable);
+                var lineNumber = Resources.Parser_OnLine(expectedLine);
+                var expectedError = $"{lineNumber}: {embeddedError}";
+                Assert.Equal(expectedError, errorArray[0]);
             }
 
             [WpfFact]

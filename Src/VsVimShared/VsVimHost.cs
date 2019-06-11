@@ -371,7 +371,8 @@ namespace Vim.VisualStudio
 
                 VimTrace.Trace += (_, e) =>
                 {
-                    if (_vimApplicationSettings.EnableOutputWindow)
+                    if (e.TraceKind == VimTraceKind.Error ||
+                        _vimApplicationSettings.EnableOutputWindow)
                     {
                         outputPane.OutputString(e.Message + Environment.NewLine);
                     }
@@ -501,7 +502,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
@@ -509,14 +510,14 @@ namespace Vim.VisualStudio
                 VsShellUtilities.OpenDocument(_vsAdapter.ServiceProvider, filePath, VSConstants.LOGVIEWID_Primary,
                     out IVsUIHierarchy hierarchy, out uint itemID, out IVsWindowFrame windowFrame);
 
+                // Get the VS text view for the window.
+                var vsTextView = VsShellUtilities.GetTextView(windowFrame);
+
+                // Get the WPF text view for the VS text view.
+                var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+
                 if (line.IsSome())
                 {
-                    // Get the VS text view for the window.
-                    var vsTextView = VsShellUtilities.GetTextView(windowFrame);
-
-                    // Get the WPF text view for the VS text view.
-                    var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
-
                     // Move the caret to its initial position.
                     var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line.Value);
                     var point = snapshotLine.Start;
@@ -534,12 +535,12 @@ namespace Vim.VisualStudio
                     }
                 }
 
-                return true;
+                return FSharpOption.Create<ITextView>(wpfTextView);
             }
             catch (Exception e)
             {
                 _vim.ActiveStatusUtil.OnError(e.Message);
-                return false;
+                return FSharpOption<ITextView>.None;
             }
         }
 

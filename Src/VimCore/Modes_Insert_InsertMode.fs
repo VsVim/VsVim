@@ -184,8 +184,8 @@ type ActiveEditItem =
     /// In Replace mode, will overwrite using the selected Register
     | OverwriteReplace
 
-    /// In the middle of an undo operation.  Waiting for the next key
-    | Undo 
+    /// In the middle of a special sequence.  Waiting for the next key
+    | Special 
 
     /// In the middle of a digraph operation. Wait for the first digraph key
     | Digraph1
@@ -308,6 +308,7 @@ type internal InsertMode
     let _bag = DisposableBag()
     let _textView = _vimBuffer.TextView
     let _textBuffer = _vimBuffer.TextBuffer
+    let _localSettings = _vimBuffer.LocalSettings
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
@@ -354,7 +355,7 @@ type internal InsertMode
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
-                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessUndoStart)
+                ("<C-g>", RawInsertCommand.CustomCommand this.ProcessSpecialStart)
                 ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
@@ -450,7 +451,7 @@ type internal InsertMode
         | ActiveEditItem.None -> None
         | ActiveEditItem.OverwriteReplace -> None
         | ActiveEditItem.WordCompletion _ -> None
-        | ActiveEditItem.Undo _ -> None
+        | ActiveEditItem.Special _ -> None
 
     member x.IsInPaste = x.PasteCharacter.IsSome
 
@@ -612,10 +613,8 @@ type internal InsertMode
         _textChangeTracker.CompleteChange()
 
         // If applicable, use the effective change for the combined edit.
-        if
-            not _globalSettings.AtomicInsert
-            && _textChangeTracker.IsEffectiveChangeInsert
-        then
+        if _textChangeTracker.IsEffectiveChangeInsert then
+
             match _textChangeTracker.EffectiveChange with
             | Some span when span.Length <> 0 ->
 
@@ -794,27 +793,31 @@ type internal InsertMode
     /// Run the insert command with the given information
     member x.RunInsertCommand (command: InsertCommand) (keyInputSet: KeyInputSet) commandFlags: ProcessResult =
 
-        // Dismiss the completion when running an explicit insert commend
+        // Dismiss the completion when running an explicit insert commend.
         x.CancelWordCompletionSession()
 
-        // When running an explicit command then we need to go ahead and complete the previous 
-        // extra text change.  It needs to be completed now so that it happens before the 
-        // command we are about to run
+        // When running an explicit command then we need to go ahead and
+        // complete the previous  extra text change.  It needs to be completed
+        // now so that it happens before the  command we are about to run
         _textChangeTracker.CompleteChange()
 
         let result = 
             try
-                // We don't want the edits which are executed as part of the command to be tracked through 
-                // an external / extra text change so disable tracking while executing the command
+
+                // We don't want the edits which are executed as part of the
+                // command to be tracked through  an external / extra text
+                // change so disable tracking while executing the command
                 _textChangeTracker.TrackCurrentChange <- false
                 _insertUtil.RunInsertCommand command
+
             finally
                 _textChangeTracker.TrackCurrentChange <- true
 
         x.OnAfterRunInsertCommand command
 
-        // Now we need to decided how the external world sees this edit.  If it links with an
-        // existing edit then we save it and send it out as a batch later.
+        // Now we need to decided how the external world sees this edit.  If it
+        // links with an existing edit then we save it and send it out as a
+        // batch later.
         let isEdit = Util.IsFlagSet commandFlags CommandFlags.InsertEdit
         let isMovement = Util.IsFlagSet commandFlags CommandFlags.Movement
         let isContextSensitive = Util.IsFlagSet commandFlags CommandFlags.ContextSensitive
@@ -827,23 +830,30 @@ type internal InsertMode
             | _ ->  false
         _sessionData <- { _sessionData with SuppressBreakUndoSequence = false }
 
-        if isContextSensitive then
-            _textChangeTracker.StopTrackingEffectiveChange()
+        if
+            isEdit
+            || isMovement && _globalSettings.AtomicInsert
+            || suppressBreakUndoSequence
+        then
 
-        if isEdit || (isMovement && _globalSettings.AtomicInsert) then
+            // If it is context sensitive (e.g. <Tab> or <Return>), or not an
+            // edit (e.g. an arrow key), then cancel using the effective
+            // change.
+            if isContextSensitive || not isEdit then
+                _textChangeTracker.StopTrackingEffectiveChange()
 
-            // If it's an edit then combine it with the existing command and batch them 
-            // together.  Don't raise the event yet
+            // If it's an edit then combine it with the existing command and
+            // batch them  together.  Don't raise the event yet
             let command = 
                 match _sessionData.CombinedEditCommand with
                 | None -> command
                 | Some previousCommand -> InsertMode.CreateCombinedEditCommand previousCommand command
             x.ChangeCombinedEditCommand (Some command)
 
-        elif not suppressBreakUndoSequence then
+        else
 
-            // Not an edit command.  If there is an existing edit command then go ahead and flush
-            // it out before raising this command
+            // Not an edit command.  If there is an existing edit command then
+            // go ahead and flush it out before raising this command
             x.CompleteCombinedEditCommand()
 
             let data = {
@@ -1020,10 +1030,10 @@ type internal InsertMode
         x.CancelWordCompletionSession()
         x.ProcessLiteral KeyInputSet.Empty
 
-    /// Start a undo session in insert mode
-    member x.ProcessUndoStart keyInput =
+    /// Start a special sequence in insert mode
+    member x.ProcessSpecialStart keyInput =
         x.CancelWordCompletionSession()
-        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Undo }
+        _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.Special }
         ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Toggle the use of typing language characters
@@ -1062,18 +1072,58 @@ type internal InsertMode
             let flags = PasteFlags.Formatting ||| PasteFlags.Indent ||| PasteFlags.TextAsTyped
             x.Paste keyInput flags
 
-    /// Process the second key of an undo operation.  
-    member x.ProcessUndo keyInput = 
+    /// Process the second key of a special sequence.
+    member x.ProcessSpecial keyInput = 
 
-        // Handle the next key.
-        if keyInput = KeyInputUtil.CharToKeyInput 'u' then
-            x.BreakUndoSequence "Break undo sequence"
-        elif keyInput = KeyInputUtil.CharToKeyInput 'U' then
-            _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
-
+        // Reset the special sequence.
         _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
 
+        // Handle the next key.
+        match keyInput with
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'u' ->
+
+            // See ':vimhelp i_CTRL-G_u'.
+            x.BreakUndoSequence "Break undo sequence"
+
+        | keyInput when keyInput = KeyInputUtil.CharToKeyInput 'U' ->
+
+            // See ':vimhelp i_CTRL-G_U'.
+            _sessionData <- { _sessionData with SuppressBreakUndoSequence = true }
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Up
+            || keyInput = KeyInputUtil.CharToKeyInput 'k'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'k' ->
+
+                // See ':vimhelp i_CTRL-G_<Up>'.
+                x.BreakUndoSequence "Line up to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Up then
+                    x.MoveToInsertStartColumn()
+
+        | keyInput when
+            keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Down
+            || keyInput = KeyInputUtil.CharToKeyInput 'j'
+            || keyInput = KeyInputUtil.CharWithControlToKeyInput 'j' ->
+
+                // See ':vimhelp i_CTRL-G_<Down>'.
+                x.BreakUndoSequence "Line down to insert start column"
+                if _operations.MoveCaretWithArrow CaretMovement.Down then
+                    x.MoveToInsertStartColumn()
+
+        | _ ->
+            _operations.Beep()
+
         ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Move to the insert start column
+    member x.MoveToInsertStartColumn () =
+        match _vimBuffer.VimTextBuffer.InsertStartPoint with
+        | Some startPoint ->
+            let spaces = SnapshotColumn(startPoint).GetSpacesToColumn _localSettings.TabStop
+            let column = SnapshotColumn.GetColumnForSpacesOrEnd(x.CaretLine, spaces, _localSettings.TabStop)
+            _operations.MoveCaretToColumn column ViewFlags.Standard
+        | None ->
+            ()
 
     /// Process the second key of a digraph command
     member x.ProcessDigraph1 firstKeyInput = 
@@ -1223,7 +1273,8 @@ type internal InsertMode
             None
 
     /// Process the KeyInput value
-    member x.Process keyInput = 
+    member x.Process (keyInputData: KeyInputData) = 
+        let keyInput = keyInputData.KeyInput
         _isInProcess <- true
         try
             let result = x.ProcessCore keyInput
@@ -1258,8 +1309,8 @@ type internal InsertMode
                     | RawInsertCommand.InsertCommand (keyInputSet, insertCommand, commandFlags) -> x.RunInsertCommand insertCommand keyInputSet commandFlags
                 | None -> ProcessResult.NotHandled
 
-        | ActiveEditItem.Undo ->
-            x.ProcessUndo keyInput
+        | ActiveEditItem.Special ->
+            x.ProcessSpecial keyInput
         | ActiveEditItem.Digraph1 ->
             x.ProcessDigraph1 keyInput
         | ActiveEditItem.Digraph2 _ ->
@@ -1278,62 +1329,29 @@ type internal InsertMode
     /// Raised when the caret position changes
     member x.OnCaretPositionChanged args = 
 
-        // Because this is invoked only when are active but not processing a command, it means
-        // that some other component (e.g. a language service, ReSharper or Visual Assist)
-        // changed the caret position programmatically.
+        // Because this is invoked only when are active but not processing a
+        // command, it means that some other component (e.g. a language
+        // service, ReSharper or Visual Assist) changed the caret position
+        // programmatically.
         _textChangeTracker.CompleteChange()
-        if _globalSettings.AtomicInsert then
-            // Create a combined movement command that goes from the old position to the new position
-            // And combine it with the input command
-            let rec movement command current next = 
-                let combine left right = 
-                    match left with
-                    | None -> Some right
-                    | Some left -> Some (InsertMode.CreateCombinedEditCommand left right)
-                let currentY, currentX = current
-                let nextY, nextX = next
-                // First move to the beginning of the line, since the source and target lines might contain
-                // different amount of characters and/or tabs
-                if currentX > 0 && currentY <> nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (currentY, currentX - 1) next
-                elif currentY < nextY  then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Down)
-                    movement command (currentY + 1, currentX) next
-                elif currentY > nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Up)
-                    movement command (currentY - 1, currentX) next
-                elif currentX > nextX && currentY = nextY then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Left)
-                    movement command (currentY, currentX - 1) next
-                elif currentX < nextX then
-                    let command = combine command (InsertCommand.MoveCaret Direction.Right)
-                    movement command (currentY, currentX + 1) next
-                else
-                    command
-            let oldPosition = SnapshotPointUtil.GetLineNumberAndOffset args.OldPosition.BufferPosition
-            let newPosition = SnapshotPointUtil.GetLineNumberAndOffset args.NewPosition.BufferPosition
-            let command = movement _sessionData.CombinedEditCommand oldPosition newPosition 
-            x.ChangeCombinedEditCommand command
-        else
 
-            // Don't break the undo sequence if the caret was moved within the
-            // active insertion region of the effective change. This allows code
-            // assistants to perform a variety of edits without breaking the undo
-            // sequence. With a little more work we could allow edits completely
-            // outside the active insertion region without breaking the undo
-            // sequence, and this would allow code assistants to e.g. automatically
-            // add usings and have the command still be repeatable.
-            let breakUndoSequence =
-                match _textChangeTracker.EffectiveChange with
-                | Some span ->
-                    span.Contains(args.NewPosition.BufferPosition) |> not
-                | None ->
-                    true
+        // Don't break the undo sequence if the caret was moved within the
+        // active insertion region of the effective change. This allows code
+        // assistants to perform a variety of edits without breaking the undo
+        // sequence. With a little more work we could allow edits completely
+        // outside the active insertion region without breaking the undo
+        // sequence, and this would allow code assistants to e.g. automatically
+        // add usings and have the command still be repeatable.
+        let breakUndoSequence =
+            match _textChangeTracker.EffectiveChange with
+            | Some span ->
+                span.Contains(args.NewPosition.BufferPosition) |> not
+            | None ->
+                true
 
-            if breakUndoSequence then
-                x.BreakUndoSequence "Insert after motion"
-                x.ChangeCombinedEditCommand None
+        if breakUndoSequence then
+            x.BreakUndoSequence "Insert after motion"
+            x.ChangeCombinedEditCommand None
 
         // This is now a separate insert.
         x.ResetInsertPoint()
@@ -1536,7 +1554,7 @@ type internal InsertMode
         member x.ModeKind = x.ModeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
         member x.IsDirectInsert keyInput = x.IsDirectInsert keyInput
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = x.OnLeave ()
         member x.OnClose() = x.OnClose ()

@@ -1815,14 +1815,14 @@ type internal CommandUtil
                 match markMap.GetMarkInfo mark _vimBufferData with
                 | None -> markNotSet()
                 | Some markInfo ->
-                    let vimHost = _vimBufferData.Vim.VimHost
                     let name = markInfo.Name
                     let line = Some markInfo.Line
                     let column = if exact then Some markInfo.Column else None
-                    if vimHost.LoadFileIntoNewWindow name line column then
+                    match _commonOperations.LoadFileIntoNewWindow name line column with
+                    | Result.Succeeded ->
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    else
-                        _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+                    | Result.Failed message ->
+                        _statusUtil.OnError message
                         CommandResult.Error
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then
@@ -2109,6 +2109,10 @@ type internal CommandUtil
             |> CommandResult.Completed
         else
             CommandResult.Error
+
+    /// Perform no operation
+    member x.NoOperation () =
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
@@ -2983,6 +2987,7 @@ type internal CommandUtil
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
+        | NormalCommand.NoOperation -> x.NoOperation()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenLinkUnderCaret -> x.OpenLinkUnderCaret()
@@ -3186,16 +3191,17 @@ type internal CommandUtil
                     let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                     _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
+        let textViewLines = TextViewUtil.GetTextViewLines _textView
+        let caretTextViewLine = TextViewUtil.GetTextViewLineContainingCaret _textView
+        match textViewLines, caretTextViewLine with
+        | Some textViewLines, Some caretTextViewLine ->
 
             // Limit the amount of scrolling to the size of the window.
             let maxCount = x.GetWindowLineCount textViewLines
             let count = min count maxCount
 
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
-            let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
+            let caretIndex = textViewLines.GetIndexOfTextLine(caretTextViewLine)
 
             // How many visual lines is the caret offset from the first visible line
             let lineOffset = max 0 (caretIndex - firstIndex)
@@ -3242,6 +3248,7 @@ type internal CommandUtil
             // proper line.  Need to adjust the caret within the line to the
             // appropriate column.
             _commonOperations.RestoreSpacesToCaret spacesToCaret true
+        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3344,10 +3351,10 @@ type internal CommandUtil
 
                         // As a special case when scrolling up, if the caret
                         // line is already visible on the screen, use that line.
-                        let caretLine = _textView.Caret.ContainingTextViewLine
-                        if caretLine.VisibilityState = VisibilityState.FullyVisible then
+                        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+                        | Some caretLine when caretLine.VisibilityState = VisibilityState.FullyVisible ->
                             caretLine
-                        else
+                        | _ ->
                             getLastFullyVisibleLine textViewLines
 
                     else

@@ -364,6 +364,12 @@ type ICommonOperations =
     /// This operation is performed against the visual buffer.  
     abstract DeleteLines: startLine: ITextSnapshotLine -> maxCount: int -> registerName: RegisterName option -> unit
 
+    /// Perform the specified action asynchronously using the scheduler
+    abstract DoActionAsync: action: (unit -> unit) -> unit
+
+    /// Perform the specified action when the text view is ready
+    abstract DoActionWhenReady: action: (unit -> unit) -> unit
+
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 
@@ -454,6 +460,10 @@ type ICommonOperations =
 
     /// Joins the lines in the range
     abstract Join: SnapshotLineRange -> JoinKind -> unit
+
+    /// Load a file into a new window, optionally moving the caret to the first
+    /// non-blank on a specific line or to a specific line and column
+    abstract LoadFileIntoNewWindow: file: string -> lineNumber: int option -> columnNumber: int option -> Result
 
     /// Move the caret in the specified direction
     abstract MoveCaret: caretMovement: CaretMovement -> bool
