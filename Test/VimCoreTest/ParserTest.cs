@@ -1448,7 +1448,7 @@ let x = 42
             [Fact]
             public void Default()
             {
-                var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
+                var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
                 AssertMap("noremap l h", "l", "h", modes);
                 AssertMap("nore l h", "l", "h", modes);
                 AssertMap("no l h", "l", "h", modes);
@@ -1578,7 +1578,7 @@ let x = 42
             [Fact]
             public void RemapStandard()
             {
-                AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
+                AssertMapWithRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
             }
 
             [Fact]
