@@ -867,7 +867,7 @@ type VimInterpreter
             if matches.Length = modeGroup.Length then
                 [modeGroup], nonMatches
             else
-                [], modes
+                List.Empty, modes
 
         // Replace any standard group included in all the remap modes with a
         // single entry assigned to combined remap mode
@@ -886,10 +886,10 @@ type VimInterpreter
             }
             |> Seq.map (fun modes -> modes, lhs, rhs)
 
-        // Get the printable info for the set of modes.
-        let getModeLine modes =
+        // Get the label for the set of modes.
+        let getModeLabel modes =
             match modes with
-            | modes when modes = nvoGroup -> ""
+            | modes when modes = nvoGroup -> " "
             | modes when modes = vGroup -> "v"
             | modes when modes = bangGroup -> "!"
             | [KeyRemapMode.Normal] -> "n"
@@ -901,13 +901,13 @@ type VimInterpreter
             | [KeyRemapMode.Insert] -> "i"
             | _ -> "?"
 
-        // Get the printable format for the KeyInputSet .
+        // Get a printable string for a key input set.
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
             KeyNotationUtil.KeyInputSetToString keyInputSet
 
-        // Get the printable line for the provided mode, left and right side
+        // Get a printable line for the specified mode list, left and right side.
         let getLine modes lhs rhs = 
-            sprintf "%-3s%-10s %s" (getModeLine modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
+            sprintf "%-3s%-10s %s" (getModeLabel modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
         keyRemapModes
         |> Seq.collect (fun mode ->
