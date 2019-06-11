@@ -2561,7 +2561,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Space>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
             
             [AsyncCompletionWpfFact]
@@ -2571,7 +2571,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N><Space>");
                 Dispatcher.DoEvents();
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
 
 
