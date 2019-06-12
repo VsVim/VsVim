@@ -37,7 +37,7 @@ function Print-Usage() {
   Write-Host "Settings:"
   Write-Host "  -ci                       True when running in CI"
   Write-Host "  -config <value>           Build configuration: 'Debug' or 'Release'"
-  Write-Host "  -testConfig <value>       VS version to build tests for: 15.0 or 16.0"
+  Write-Host "  -testConfig <value>       VS version to build tests for: 14.0, 15.0 or 16.0"
 }
 
 function Process-Arguments() {

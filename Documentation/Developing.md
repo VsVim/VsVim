@@ -27,13 +27,11 @@ By default VsVim will run unit tests against the version of Visual Studio that
 is being used to edit the source code. This can be configured though by doing
 the following:
 
-- Setting `%VsVimTargetVersion%` to 15.0 or 16.0
-- Running `Build.cmd -testConfig <value>` with 15.0 or 16.0
+- Setting `%VsVimTargetVersion%` to 14.0, 15.0 or 16.0
+- Running `Build.cmd -testConfig <value>` with 14.0, 15.0 or 16.0
 
 The version of Visual Studio being targetted for testing does **not** need to
 be installed on the machine. 
-
-Note: testing 2015 editor is not currently supported 
 
 ## VimApp
 The VimApp project in the solution is a light weight host of the VS WPF editor.
