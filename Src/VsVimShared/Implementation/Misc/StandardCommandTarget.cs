@@ -130,6 +130,18 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         private bool TryProcessWithBuffer(KeyInput keyInput)
         {
+            // If, for some reason, keyboard input is being routed to the text
+            // view but it isn't focused, focus it here.
+            void CheckFocus()
+            {
+                if (_vimBuffer.TextView is IWpfTextView wpfTextView &&
+                    !wpfTextView.VisualElement.IsFocused)
+                {
+                    VimTrace.TraceError("forcing focus back to text view");
+                    wpfTextView.VisualElement.Focus();
+                }
+            }
+
             // If the IVimBuffer can't process it then it doesn't matter
             if (!_vimBuffer.CanProcess(keyInput))
             {
@@ -213,17 +225,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
 
             return handled;
-        }
-
-        private void CheckFocus()
-        {
-            // If, for some reason, keyboard input is being routed to the
-            // text view but it isn't focused, focus it here.
-            if (_vimBuffer.TextView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsFocused)
-            {
-                VimTrace.TraceError("forcing focus back to text view");
-                wpfTextView.VisualElement.Focus();
-            }
         }
 
         /// <summary>
