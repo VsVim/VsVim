@@ -5,6 +5,7 @@ using System.Linq;
 using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 
@@ -79,6 +80,19 @@ namespace Vim.VisualStudio.UnitTest.Mock
             dte.SetupGet(x => x.Commands).Returns(commands.Object);
             return dte;
         }
+
+        public static Mock<IVsUIShell> CreateVsUIShell(MockBehavior behavior = MockBehavior.Strict)
+        {
+            var mock = new Mock<IVsUIShell>(behavior);
+
+            IEnumWindowFrames enumWindowFrames = null;
+            mock.Setup(x => x.GetDocumentWindowEnum(out enumWindowFrames)).Returns(VSConstants.E_FAIL);
+
+            return mock;
+        }
+
+        public static Mock<IVsUIShell4> CreateVsUIShell4(MockBehavior behavior = MockBehavior.Strict) =>
+            CreateVsUIShell(behavior).As<IVsUIShell4>();
 
         public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(
             TextSpan span,

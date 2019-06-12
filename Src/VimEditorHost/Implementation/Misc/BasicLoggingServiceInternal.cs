@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.Telemetry;
+﻿#if VS_SPECIFIC_2015
+#else
+using Microsoft.VisualStudio.Telemetry;
 using Microsoft.VisualStudio.Text.Utilities;
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ namespace Vim.EditorHost.Implementation.Misc
     [Export(typeof(ILoggingServiceInternal))]
     internal sealed class BasicLoggingServiceInternal : ILoggingServiceInternal
     {
-#if VSVIM_DEV_2017
+#if VS_SPECIFIC_2017
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {
@@ -42,7 +44,7 @@ namespace Vim.EditorHost.Implementation.Misc
         {
         }
 
-#elif VSVIM_DEV_2019
+#elif VS_SPECIFIC_2019
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {
@@ -90,3 +92,5 @@ namespace Vim.EditorHost.Implementation.Misc
 #endif
     }
 }
+
+#endif

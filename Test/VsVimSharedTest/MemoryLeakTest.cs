@@ -66,7 +66,7 @@ namespace Vim.VisualStudio.UnitTest
                 _serviceMap[typeof(SVsShell)] = _factory.Create<IVsShell>().Object;
                 _serviceMap[typeof(SVsTextManager)] = _factory.Create<IVsTextManager>().Object;
                 _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
-                _serviceMap[typeof(SVsUIShell)] = _factory.Create<IVsUIShell>().As<IVsUIShell4>().Object;
+                _serviceMap[typeof(SVsUIShell)] = MockObjectFactory.CreateVsUIShell4(MockBehavior.Strict).Object;
                 _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
                 _serviceMap[typeof(IVsExtensibility)] = _factory.Create<IVsExtensibility>().Object;
                 var dte = MockObjectFactory.CreateDteWithCommands();
@@ -155,7 +155,7 @@ namespace Vim.VisualStudio.UnitTest
 
             public IVsTextView GetViewAdapter(ITextView textView)
             {
-                throw new NotImplementedException();
+                return null;
             }
 
             public IWpfTextView GetWpfTextView(IVsTextView viewAdapter)
@@ -187,8 +187,14 @@ namespace Vim.VisualStudio.UnitTest
 
         public void Dispose()
         {
-            _synchronizationContext.RunAll();
-            _synchronizationContext.Dispose();
+            try
+            {
+                _synchronizationContext.RunAll();
+            }
+            finally
+            {
+                _synchronizationContext.Dispose();
+            }
         }
 
         private void RunGarbageCollector()
@@ -196,6 +202,7 @@ namespace Vim.VisualStudio.UnitTest
             for (var i = 0; i < 15; i++)
             {
                 Dispatcher.CurrentDispatcher.DoEvents();
+                _synchronizationContext.RunAll(); 
                 GC.Collect(2, GCCollectionMode.Forced);
                 GC.WaitForPendingFinalizers();
                 GC.Collect(2, GCCollectionMode.Forced);
@@ -231,10 +238,20 @@ namespace Vim.VisualStudio.UnitTest
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }
 
-        private IVimBuffer CreateVimBuffer()
+        private IVimBuffer CreateVimBuffer(string[] roles = null)
         {
             var factory = _vimEditorHost.CompositionContainer.GetExport<ITextEditorFactoryService>().Value;
-            var textView = factory.CreateTextView();
+            ITextView textView;
+            if (roles is null)
+            {
+                textView = factory.CreateTextView();
+            }
+            else
+            {
+                var bufferFactory = _vimEditorHost.CompositionContainer.GetExport<ITextBufferFactoryService>().Value;
+                var textViewRoles = factory.CreateTextViewRoleSet(roles);
+                textView = factory.CreateTextView(bufferFactory.CreateTextBuffer(), textViewRoles);
+            }
 
             // Verify we actually created the IVimBuffer instance 
             var vimBuffer = _vimEditorHost.Vim.GetOrCreateVimBuffer(textView);
@@ -420,7 +437,18 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void SearchCacheDoesntHoldTheBuffer()
         {
+#if VS_SPECIFIC_2015
+            // Using explicit roles here to avoid the default set which includes analyzable. In VS2015
+            // the LightBulbController type uses an explicitly delayed task (think Thread.Sleep) in 
+            // order to refresh state. That task holds a strong reference to ITextView which creates
+            // the appearance of a memory leak. 
+            //
+            // There is no way to easily wait for this operation to complete. Instead create an ITextBuffer
+            // without the analyzer role to avoid the problem.
+            var vimBuffer = CreateVimBuffer(new[] { PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Document, PredefinedTextViewRoles.PrimaryDocument });
+#else
             var vimBuffer = CreateVimBuffer();
+#endif
             vimBuffer.TextBuffer.SetText("hello world");
             vimBuffer.Process("/world", enter: true);
 

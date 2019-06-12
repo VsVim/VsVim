@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using Vim.EditorHost;
 using Vim.UnitTest.Utilities;

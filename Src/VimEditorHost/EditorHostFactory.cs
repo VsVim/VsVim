@@ -14,12 +14,18 @@ namespace Vim.EditorHost
 {
     public sealed partial class EditorHostFactory
     {
-#if VSVIM_DEV_2017
+#if VS_SPECIFIC_2015
+        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
+        internal static Version VisualStudioVersion => new Version(14, 0, 0, 0);
+        internal static Version VisualStudioThreadingVersion => new Version(14, 0, 0, 0);
+#elif VS_SPECIFIC_2017
         internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
         internal static Version VisualStudioVersion => new Version(15, 0, 0, 0);
-#elif VSVIM_DEV_2019
+        internal static Version VisualStudioThreadingVersion => new Version(15, 3, 0, 0);
+#elif VS_SPECIFIC_2019
         internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2019;
         internal static Version VisualStudioVersion => new Version(16, 0, 0, 0);
+        internal static Version VisualStudioThreadingVersion => new Version(16, 0, 0, 0);
 #else
 #error Unsupported configuration
 #endif
@@ -32,7 +38,7 @@ namespace Vim.EditorHost
                 "Microsoft.VisualStudio.Text.Logic.dll",
                 "Microsoft.VisualStudio.Text.UI.dll",
                 "Microsoft.VisualStudio.Text.UI.Wpf.dll",
-#if VSVIM_DEV_2019
+#if VS_SPECIFIC_2019
                 "Microsoft.VisualStudio.Language.dll",
 #endif
             };
@@ -70,15 +76,7 @@ namespace Vim.EditorHost
         {
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
-
-#if VSVIM_DEV_2017
-            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
-#elif VSVIM_DEV_2019
-            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(16, 0));
-#else
-#error Unsupported configuration
-#endif
-
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
             _exportProviderList.Add(new JoinableTaskContextExportProvider());
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
         }
