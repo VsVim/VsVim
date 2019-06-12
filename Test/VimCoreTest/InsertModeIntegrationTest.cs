@@ -2569,8 +2569,9 @@ namespace Vim.UnitTest
             {
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
-                _vimBuffer.ProcessNotation("<C-N><Space>");
+                _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<Space>");
                 Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
 
