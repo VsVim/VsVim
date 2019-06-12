@@ -347,7 +347,7 @@ type internal InsertMode
             [|
                 ("<Esc>", RawInsertCommand.CustomCommand this.ProcessEscape)
                 ("<Insert>", RawInsertCommand.CustomCommand this.ProcessInsert)
-                ("<C-c>", RawInsertCommand.CustomCommand this.ProcessEscape)
+                ("<C-c>", RawInsertCommand.CustomCommand this.ProcessCancel)
                 ("<C-n>", RawInsertCommand.CustomCommand this.ProcessWordCompletionNext)
                 ("<C-o>", RawInsertCommand.CustomCommand this.ProcessNormalModeOneCommand)
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
@@ -677,6 +677,11 @@ type internal InsertMode
 
     member x.ProcessEscape _ =
         ProcessResult.OfModeKind ModeKind.Normal
+
+    member x.ProcessCancel _ =
+        (ModeKind.Normal, ModeArgument.CancelOperation)
+        |> ModeSwitch.SwitchModeWithArgument
+        |> ProcessResult.Handled
 
     member x.StopInsert _ =
 

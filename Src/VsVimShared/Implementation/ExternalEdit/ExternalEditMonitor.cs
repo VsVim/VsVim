@@ -252,13 +252,14 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
             var externalEditSpans = GetExternalEditSpans(CheckKind.All);
             if (externalEditSpans.Count == 0)
             {
-                // If we're in an external edit and all of the markers leave then transition back to
-                // insert mode.  Make sure to mark we are doing this so that we avoid double
-                // caching certain values
+                // If we're in an external edit and all of the markers leave
+                // then transition back to the previous mode.  Make sure to
+                // mark we are doing this so that we avoid double caching
+                // certain values.
                 _leavingExternalEdit = true;
                 try
                 {
-                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    _vimBuffer.SwitchPreviousMode();
                 }
                 finally
                 {

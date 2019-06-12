@@ -1,27 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.VisualStudio.Shell;
 using Moq;
-using Vim;
-using Vim.VisualStudio;
 using Vim.UnitTest;
 using Xunit;
-using Vim.VisualStudio.Implementation.Roslyn;
+using Vim.VisualStudio.Implementation.InlineRename;
 
 namespace Vim.VisualStudio.UnitTest
 {
-    public abstract class RoslynListenerFactoryTest : VimTestBase
+    public abstract class InlineRenameListenerFactoryTest : VimTestBase
     {
         private readonly MockRepository _factory;
         private readonly IVimBuffer _vimBuffer;
-        private readonly RoslynListenerFactory _roslynListenerFactory;
+        private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
 
-        protected RoslynListenerFactoryTest()
+        protected InlineRenameListenerFactoryTest()
         {
             _factory = new MockRepository(MockBehavior.Strict);
-            _roslynListenerFactory = new RoslynListenerFactory(_factory.Create<SVsServiceProvider>().Object);
+            var vimApplicationSettings = _factory.Create<IVimApplicationSettings>();
+            vimApplicationSettings.SetupGet(x => x.EnableExternalEditMonitoring).Returns(true);
+            var serviceProvider = _factory.Create<SVsServiceProvider>();
+            _inlineRenameListenerFactory = new InlineRenameListenerFactory(
+                vimApplicationSettings.Object,
+                serviceProvider.Object);
             _vimBuffer = CreateVimBufferWithContentType(VsVimConstants.CSharpContentType);
         }
 
@@ -31,19 +31,19 @@ namespace Vim.VisualStudio.UnitTest
             var textView = CreateTextView(contentType);
             var vimBufferData = CreateVimBufferData(textView);
             var vimBuffer =  CreateVimBuffer(vimBufferData);
-            _roslynListenerFactory.OnVimBufferCreated(vimBuffer);
+            _inlineRenameListenerFactory.OnVimBufferCreated(vimBuffer);
             return vimBuffer;
         }
 
-        public sealed class RenameTest : RoslynListenerFactoryTest
+        public sealed class RenameTest : InlineRenameListenerFactoryTest
         {
-            private readonly Mock<IRoslynRenameUtil> _renameUtil;
+            private readonly Mock<IInlineRenameUtil> _renameUtil;
 
             public RenameTest()
             {
-                _renameUtil = _factory.Create<IRoslynRenameUtil>();
+                _renameUtil = _factory.Create<IInlineRenameUtil>();
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(false);
-                _roslynListenerFactory.RenameUtil = _renameUtil.Object;
+                _inlineRenameListenerFactory.RenameUtil = _renameUtil.Object;
             }
 
             [WpfFact]
@@ -62,10 +62,11 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// The roslyn controller shouldn't be tracknig non-roslyn buffers
+            /// The inline rename controller shouldn't be tracknig non-inline
+            /// rename buffers
             /// </summary>
             [WpfFact]
-            public void RaiseWithRenameOnNonRoslynBuffer()
+            public void RaiseWithRenameOnNonInlineRenameBuffer()
             {
                 var textVimBuffer = CreateVimBufferWithContentType("text");
                 _renameUtil.SetupGet(x => x.IsRenameActive).Returns(true);
@@ -75,8 +76,8 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// When we leave rename move all of the external edits back into the previous 
-            /// mode 
+            /// When we leave rename move all of the external edits back into
+            /// the previous  mode
             /// </summary>
             [WpfFact]
             public void RenameLeft()
@@ -89,8 +90,8 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// When leaving rename mode don't change buffers that were already out of external
-            /// edit mode 
+            /// When leaving rename mode don't change buffers that were already
+            /// out of external edit mode
             /// </summary>
             [WpfFact]
             public void RenameLeftDontChangeNonExternalEdits()

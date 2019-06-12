@@ -2612,6 +2612,9 @@ type ModeArgument =
     /// Enter command mode with a partially entered command and then return to normal mode
     | PartialCommand of Command: string
 
+    /// Cancel any operation that is in-progress, such as refactoring
+    | CancelOperation
+
 with
 
     // Running linked commands will throw away the ModeSwitch value.  This can contain
@@ -2627,6 +2630,7 @@ with
         | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
         | ModeArgument.Substitute _ -> ()
         | ModeArgument.PartialCommand _ -> ()
+        | ModeArgument.CancelOperation _ -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2776,6 +2780,9 @@ type NormalCommand =
 
     /// Add 'count' to the word close to the caret
     | AddToWord
+
+    /// Cancel any in-progress operation such as external edit
+    | CancelOperation
 
     /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
     /// command
@@ -3141,6 +3148,7 @@ type NormalCommand =
 
         // Non-motion commands
         | NormalCommand.AddToWord _ -> None
+        | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
         | NormalCommand.ChangeCaseCaretPoint _ -> None
         | NormalCommand.ChangeLines -> None
@@ -3257,6 +3265,9 @@ type VisualCommand =
 
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
+
+    /// Cancel any in-progress operation
+    | CancelOperation
 
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind: ChangeCharacterKind
@@ -5113,7 +5124,8 @@ and SwitchModeKindEventArgs
 and SwitchModeEventArgs 
     (
         _previousMode: IMode,
-        _currentMode: IMode
+        _currentMode: IMode,
+        _modeArgument: ModeArgument
     ) = 
 
     inherit System.EventArgs()
@@ -5121,9 +5133,11 @@ and SwitchModeEventArgs
     /// Current IMode 
     member x.CurrentMode = _currentMode
 
-    /// Previous IMode.  Expressed as an Option because the first mode switch
-    /// has no previous one
+    /// Previous IMode
     member x.PreviousMode = _previousMode
+
+    /// Mode argument for the current mode
+    member x.ModeArgument = _modeArgument
 
 and IMarkMap =
 

@@ -147,7 +147,7 @@ type internal ModeMap
             finally
                 _isSwitchingMode <-false
 
-        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(oldMode, newMode))
+        _modeSwitchedEvent.Trigger x (SwitchModeEventArgs(oldMode, newMode, arg))
         newMode
 
     member x.GetMode kind = Map.find kind _modeMap

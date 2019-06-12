@@ -329,6 +329,14 @@ type internal CommandUtil
         if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.BigDelete then RegisterOperation.BigDelete
         else RegisterOperation.Delete
 
+    member x.CancelOperation () =
+        match _vimBufferData.Vim.GetVimBuffer _textView with
+        | None -> _commonOperations.Beep()
+        | Some vimBuffer ->
+            vimBuffer.SwitchMode ModeKind.Normal ModeArgument.CancelOperation
+            |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan: EditSpan) =
 
@@ -2936,6 +2944,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddToWord -> x.AddToWord count
+        | NormalCommand.CancelOperation -> x.CancelOperation()
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion registerName)
         | NormalCommand.ChangeCaseCaretLine kind -> x.ChangeCaseCaretLine kind
         | NormalCommand.ChangeCaseCaretPoint kind -> x.ChangeCaseCaretPoint kind count
@@ -3060,6 +3069,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
+        | VisualCommand.CancelOperation -> x.CancelOperation()
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection registerName visualSpan
         | VisualCommand.CloseAllFoldsInSelection -> x.CloseAllFoldsInSelection visualSpan
