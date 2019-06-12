@@ -13,11 +13,13 @@ using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
 using Vim.Interpreter;
+using System.Windows.Threading;
 
 namespace Vim.UI.Wpf
 {
     public abstract class VimHost : IVimHost, IWpfTextViewCreationListener
     {
+        private readonly IProtectedOperations _protectedOperations;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
         private readonly ITextEditorFactoryService _textEditorFactoryService;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
@@ -83,11 +85,13 @@ namespace Vim.UI.Wpf
         }
 
         protected VimHost(
+            IProtectedOperations protectedOperations,
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService)
         {
+            _protectedOperations = protectedOperations;
             _textBufferFactoryService = textBufferFactoryService;
             _textEditorFactoryService = textEditorFactoryService;
             _textDocumentFactoryService = textDocumentFactoryService;
@@ -249,15 +253,8 @@ namespace Vim.UI.Wpf
                     element.Loaded -= doActionHandler;
                 }
 
-                // Then do the action.
-                try
-                {
-                    doAction();
-                }
-                catch (Exception ex)
-                {
-                    VimTrace.TraceError(ex);
-                }
+                // Then schedule the action.
+                _protectedOperations.BeginInvoke(doAction, DispatcherPriority.Loaded);
             }
 
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
@@ -270,8 +267,9 @@ namespace Vim.UI.Wpf
             }
             else
             {
-                // If the element is already loaded, do the action immediately.
-                doAction();
+                // If the element is already loaded, schedule the action when
+                // the application is idle.
+                _protectedOperations.BeginInvoke(doAction, DispatcherPriority.ApplicationIdle);
             }
         }
 

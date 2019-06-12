@@ -173,7 +173,7 @@ type internal CommonOperations
         // instance will null this out in certain WPF designer scenarios.
         let context = System.Threading.SynchronizationContext.Current
         if context <> null then
-            context.Post((fun _ -> action()), null)
+            context.Post((fun _ -> x.DoActionWhenReady action), null)
         else
             action()
 
