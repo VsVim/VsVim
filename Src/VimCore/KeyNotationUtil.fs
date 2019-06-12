@@ -14,7 +14,6 @@ module KeyNotationUtil =
             ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
             ("<Tab>",KeyInputUtil.TabKey)
             ("<NL>", KeyInputUtil.LineFeedKey)
-            ("<FF>", KeyInputUtil.VimKeyToKeyInput VimKey.FormFeed)
             ("<CR>", KeyInputUtil.EnterKey)
             ("<Return>", KeyInputUtil.EnterKey)
             ("<Enter>", KeyInputUtil.EnterKey)
@@ -303,20 +302,22 @@ module KeyNotationUtil =
             else
                 sprintf "<%s%s>" prefix name
 
-        // Check to see if this is one of the keys shifted by control for which we provide a better
-        // display
+        // Check to see whether this is one of the keys shifted by control for
+        // which we provide a better display
         let checkForSpecialControl () = 
-            match keyInput.RawChar with
-            | None -> inner "" keyInput.KeyModifiers false
-            | Some c ->
-                let value = int c;
-                if value >= 1 && value <= 26 then
-                    let baseCode = value - 1 
-                    let name = char ((int 'A') + baseCode) |> StringUtil.OfChar
+            match keyInput.Key, keyInput.RawChar with
+            | VimKey.RawCharacter, Some c ->
+                match c with
+                | c when int(c) = 127 ->
+                    let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
+                    inner "?" keyModifiers false
+                | c when Char.IsControl(c) ->
+                    let name = string(char((int('@')) + int(c)))
                     let keyModifiers = keyInput.KeyModifiers ||| VimKeyModifiers.Control
                     inner name keyModifiers false
-                else
-                    inner (c |> StringUtil.OfChar) keyInput.KeyModifiers false
+                | c ->
+                    inner (string(c)) keyInput.KeyModifiers false
+            | _ -> inner "" keyInput.KeyModifiers false
 
         match TryGetSpecialKeyName keyInput with 
         | Some (name, modifiers) -> inner name modifiers true

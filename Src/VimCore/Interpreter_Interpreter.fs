@@ -839,54 +839,116 @@ type VimInterpreter
             DigraphUtil.AddToMap _vimBuffer.Vim.DigraphMap digraphList
 
     /// Display the given map modes
-    member x.RunDisplayKeyMap keyRemapModes keyNotationOption = 
-        // Get the printable info for the set of modes
-        let getModeLine modes =
-            if ListUtil.contains KeyRemapMode.Normal modes 
-                && ListUtil.contains KeyRemapMode.OperatorPending modes
-                && ListUtil.contains KeyRemapMode.Visual modes then
-                " "
-            elif ListUtil.contains KeyRemapMode.Command modes 
-                && ListUtil.contains KeyRemapMode.Insert modes then
-                "!"
-            elif ListUtil.contains KeyRemapMode.Visual modes 
-                && ListUtil.contains KeyRemapMode.Select modes then
-                "v"
-            elif List.length modes <> 1 then 
-                "?"
-            else 
-                match List.head modes with
-                | KeyRemapMode.None -> ""
-                | KeyRemapMode.Normal -> "n"
-                | KeyRemapMode.Visual -> "x"
-                | KeyRemapMode.Select -> "s"
-                | KeyRemapMode.OperatorPending -> "o"
-                | KeyRemapMode.Command -> "c"
-                | KeyRemapMode.Language -> "l"
-                | KeyRemapMode.Insert -> "i"
+    member x.RunDisplayKeyMap keyRemapModes prefixFilter = 
 
-        // Get the printable format for the KeyInputSet 
+        // Define the mode groups used to group identical mappings.
+        let nvoGroup = [
+            KeyRemapMode.Normal
+            KeyRemapMode.Visual
+            KeyRemapMode.Select
+            KeyRemapMode.OperatorPending
+        ]
+        let vGroup = [
+            KeyRemapMode.Visual
+            KeyRemapMode.Select
+        ]
+        let bangGroup = [
+            KeyRemapMode.Insert
+            KeyRemapMode.Command
+        ]
+
+        // Separate out complete subsets of a mode group from a list of modes.
+        let separateOutGroup (modeGroup: KeyRemapMode list) (modes: KeyRemapMode list) =
+            let matches =
+                modes |> List.filter (fun mode -> modeGroup |> Seq.contains mode)
+            let nonMatches =
+                modes |> List.filter (fun mode -> modeGroup |> Seq.contains mode |> not)
+            if matches.Length = modeGroup.Length then
+                [modeGroup], nonMatches
+            else
+                List.Empty, modes
+
+        // Replace any standard group included in all the remap modes with a
+        // single entry assigned to the combined remap mode.
+        let combineByGroup (mappings: (KeyRemapMode * KeyInputSet * KeyInputSet) list) =
+            let modes = mappings |> Seq.map (fun (mode, _, _) -> mode) |> Seq.toList
+            let _, lhs, rhs = mappings.Head
+            let rest = modes
+            let group1, rest = rest |> separateOutGroup nvoGroup
+            let group2, rest = rest |> separateOutGroup vGroup
+            let group3, rest = rest |> separateOutGroup bangGroup
+            seq {
+                yield! group1
+                yield! group2
+                yield! group3
+                yield! rest |> Seq.map (fun mode -> [mode])
+            }
+            |> Seq.map (fun modes -> modes, lhs, rhs)
+
+        // Whether the specified key input set starts with another key input
+        // set.
+        let startsWith (keyInputSet: KeyInputSet) (prefix: KeyInputSet) =
+            if prefix.Length > keyInputSet.Length then
+                false
+            else
+                keyInputSet.KeyInputs
+                |> Seq.take prefix.Length
+                |> KeyInputSetUtil.OfSeq
+                |> (fun subset -> subset = prefix)
+
+        // If provided, filter the list to those whose left hand side starts
+        // with the specified prefix.
+        let filterByPrefix sequence =
+            match prefixFilter with
+            | Some prefixNotation ->
+                match KeyNotationUtil.TryStringToKeyInputSet prefixNotation with
+                | Some prefix ->
+                    sequence
+                    |> Seq.filter (fun (_, lhs, _) -> startsWith lhs prefix)
+                | None ->
+                    sequence
+            | None ->
+                sequence
+
+        // Get the label for the set of modes.
+        let getModeLabel modes =
+            match modes with
+            | modes when modes = nvoGroup -> " "
+            | modes when modes = vGroup -> "v"
+            | modes when modes = bangGroup -> "!"
+            | [KeyRemapMode.Normal] -> "n"
+            | [KeyRemapMode.Visual] -> "x"
+            | [KeyRemapMode.Select] -> "s"
+            | [KeyRemapMode.OperatorPending] -> "o"
+            | [KeyRemapMode.Command] -> "c"
+            | [KeyRemapMode.Language] -> "l"
+            | [KeyRemapMode.Insert] -> "i"
+            | _ -> "?"
+
+        // Get a printable string for a key input set.
         let getKeyInputSetLine (keyInputSet: KeyInputSet) = 
             KeyNotationUtil.KeyInputSetToString keyInputSet
 
-        // Get the printable line for the provided mode, left and right side
+        // Get a printable line for the specified mode list, left and right side.
         let getLine modes lhs rhs = 
-            sprintf "%-5s%s %s" (getModeLine modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
+            sprintf "%-3s%-10s %s" (getModeLabel modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
-        let lines = 
-            keyRemapModes
-            |> Seq.map (fun mode -> 
-                mode
-                |> _keyMap.GetKeyMappingsForMode 
-                |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
-            |> Seq.concat
-            |> Seq.groupBy (fun (mode,lhs,rhs) -> lhs)
-            |> Seq.map (fun (lhs, all) ->
-                let modes = all |> Seq.map (fun (mode, _, _) -> mode) |> List.ofSeq
-                let rhs = all |> Seq.map (fun (_, _, rhs) -> rhs) |> Seq.head
-                getLine modes lhs rhs)
+        keyRemapModes
+        |> Seq.collect (fun mode ->
 
-        _statusUtil.OnStatusLong lines
+            // Generate a mode / lhs / rhs tuple for all mappings in the
+            // specified mode.
+            mode
+            |> _keyMap.GetKeyMappingsForMode
+            |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
+
+        |> filterByPrefix
+        |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
+        |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
+        |> Seq.collect combineByGroup
+        |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
+        |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs)
+        |> _statusUtil.OnStatusLong
 
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =

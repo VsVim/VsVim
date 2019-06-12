@@ -111,7 +111,6 @@ module KeyInputUtil =
     /// Mapping of all VimKey instances with their associated char if one exists.  
     let VimKeyRawData = [
         (VimKey.Back, Some CharCodes.Backspace)
-        (VimKey.FormFeed, Some CharCodes.FormFeed)
         (VimKey.Enter, Some CharCodes.Enter)
         (VimKey.Escape, Some CharCodes.Escape)
         (VimKey.Left, None)
@@ -193,7 +192,6 @@ module KeyInputUtil =
                     let vimKey = 
                         match letter with
                         | 'j' -> VimKey.LineFeed
-                        | 'l' -> VimKey.FormFeed
                         | 'm' -> VimKey.Enter
                         | 'i' -> VimKey.Tab
                         | _ -> VimKey.RawCharacter
@@ -316,7 +314,6 @@ module KeyInputUtil =
 
     let NullKey = VimKeyToKeyInput VimKey.Null
     let LineFeedKey = VimKeyToKeyInput VimKey.LineFeed
-    let FormFeedKey = VimKeyToKeyInput VimKey.FormFeed
     let EscapeKey = VimKeyToKeyInput VimKey.Escape
     let EnterKey = VimKeyToKeyInput VimKey.Enter
     let TabKey = CharToKeyInput '\t'
@@ -441,11 +438,11 @@ module KeyInputUtil =
         ApplyKeyModifiers keyInput modifiers
 
     let NormalizeKeyModifiers (keyInput: KeyInput) =
-        match keyInput.RawChar with
-        | Some c ->
+        match  keyInput.Key, keyInput.RawChar with
+        | VimKey.RawCharacter, Some c ->
             ApplyKeyModifiersToChar c keyInput.KeyModifiers
-        | None ->
-            ApplyKeyModifiersToKey keyInput.Key keyInput.KeyModifiers
+        | key, _ ->
+            ApplyKeyModifiersToKey key keyInput.KeyModifiers
 
     let CharWithControlToKeyInput ch = 
         let keyInput = ch |> CharToKeyInput  

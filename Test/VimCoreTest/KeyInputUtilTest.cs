@@ -24,7 +24,6 @@ namespace Vim.UnitTest
                 @"<Nul>&<C-@>&0",
                 @"<Tab>&<C-I>&9",
                 @"<NL>&<C-J>&10",
-                @"<FF>&<C-L>&12",
                 @"<CR>&<C-M>&13",
                 @"<Enter>&<C-M>&13",
                 @"<Return>&<C-M>&13",
@@ -180,7 +179,6 @@ namespace Vim.UnitTest
                     "Nul-0",
                     "Tab-9",
                     "NL-10",
-                    "FF-12",
                     "CR-13",
                     "Return-13",
                     "Enter-13",
@@ -188,7 +186,7 @@ namespace Vim.UnitTest
                     "Space-32",
                     "lt-60",
                     "Bslash-92",
-                    "Bar-124"
+                    "Bar-124",
                 };
 
                 foreach (var entry in list)
@@ -240,7 +238,7 @@ namespace Vim.UnitTest
             [Fact]
             public void ControlAlphaSpecial()
             {
-                var list = new[] { 'j', 'l', 'm', 'i' };
+                var list = new[] { 'j', 'm', 'i' };
                 foreach (var current in list)
                 {
                     var c = (char)(0x1 + (current - 'a'));
