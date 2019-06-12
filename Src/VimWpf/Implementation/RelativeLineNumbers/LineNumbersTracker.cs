@@ -96,10 +96,11 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
+            bool newOrReformatted = e.NewOrReformattedLines.Count > 0;
             bool linesMoved = e.TranslatedLines.Count > 0;
             bool scroll = e.VerticalTranslation;
 
-            if (linesMoved || scroll || _bufferChanged || _heightChanged || _zoomChanged)
+            if (newOrReformatted || linesMoved || scroll || _bufferChanged || _heightChanged || _zoomChanged)
             {
                 _bufferChanged = false;
                 _zoomChanged = false;
