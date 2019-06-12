@@ -175,7 +175,7 @@ type internal CommonOperations
         if context <> null then
             context.Post((fun _ -> x.DoActionWhenReady action), null)
         else
-            action()
+            x.DoActionWhenReady action
 
     /// Perform the specified action when the text view is ready
     member x.DoActionWhenReady (action: unit -> unit) =
