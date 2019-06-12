@@ -1,15 +1,11 @@
 ﻿using Microsoft.VisualStudio.ComponentModelHost;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using Microsoft.VisualStudio.Shell;
 
-namespace Vim.VisualStudio.Implementation.Roslyn
+namespace Vim.VisualStudio.Implementation.InlineRename
 {
-    internal sealed class RoslynRenameUtil : IRoslynRenameUtil
+    internal sealed class InlineRenameUtil : IInlineRenameUtil
     {
         private readonly object _inlineRenameService;
         private readonly PropertyInfo _activeSessionPropertyInfo;
@@ -31,7 +27,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         internal event EventHandler IsRenameActiveChanged;
 
-        private RoslynRenameUtil(object inlineRenameService, PropertyInfo activeSessionPropertyInfo)
+        private InlineRenameUtil(object inlineRenameService, PropertyInfo activeSessionPropertyInfo)
         {
             _inlineRenameService = inlineRenameService;
             _activeSessionPropertyInfo = activeSessionPropertyInfo;
@@ -60,20 +56,21 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             }
         }
 
-        internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IRoslynRenameUtil roslynRenameUtil)
+        internal static bool TryCreate(SVsServiceProvider vsServiceProvider, out IInlineRenameUtil InlineRenameUtil)
         {
-            var ret = TryCreateCore(vsServiceProvider, out RoslynRenameUtil util);
-            roslynRenameUtil = util;
+            var ret = TryCreateCore(vsServiceProvider, out InlineRenameUtil util);
+            InlineRenameUtil = util;
             return ret;
         }
 
-        internal static bool TryCreateCore(SVsServiceProvider vsServiceProvider, out RoslynRenameUtil roslynRenameUtil)
+        internal static bool TryCreateCore(SVsServiceProvider vsServiceProvider, out InlineRenameUtil InlineRenameUtil)
         {
             Type getActiveSessionChangedEventArgsType(string versionNumber)
             {
                 var typeName = "ActiveSessionChangedEventArgs";
 
-                // This type moved between DLLS in newer versions of Visual Studio. Accept it in any of the locations.
+                // This type moved between DLLS in newer versions of Visual
+                // Studio. Accept it in any of the locations.
                 var all = new[]
                 {
                     "Microsoft.CodeAnalysis.EditorFeatures",
@@ -107,16 +104,16 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                 var inlineRenameServiceType = inlineRenameService.GetType();
                 var activeSessionPropertyInfo = inlineRenameServiceType.GetProperty("ActiveSession", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-                roslynRenameUtil = new RoslynRenameUtil(inlineRenameService, activeSessionPropertyInfo);
+                InlineRenameUtil = new InlineRenameUtil(inlineRenameService, activeSessionPropertyInfo);
 
-                // Subscribe to the event
+                // Subscribe to the event.
                 var version = GetRoslynVersionNumber(inlineRenameService.GetType().Assembly);
                 var activeSessionChangedEventInfo = inlineRenameServiceType.GetEvent("ActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
                 var eventArgsTypeArgument = getActiveSessionChangedEventArgsType(version);
                 var openType = typeof(EventHandler<>);
                 var delegateType = openType.MakeGenericType(eventArgsTypeArgument);
-                var methodInfo = roslynRenameUtil.GetType().GetMethod("OnActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic);
-                var delegateInstance = Delegate.CreateDelegate(delegateType, roslynRenameUtil, methodInfo);
+                var methodInfo = InlineRenameUtil.GetType().GetMethod("OnActiveSessionChanged", BindingFlags.Instance | BindingFlags.NonPublic);
+                var delegateInstance = Delegate.CreateDelegate(delegateType, InlineRenameUtil, methodInfo);
 
                 var addMethodInfo = activeSessionChangedEventInfo.GetAddMethod(nonPublic: true);
                 addMethodInfo.Invoke(inlineRenameService, new[] { delegateInstance });
@@ -125,9 +122,9 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             }
             catch (Exception)
             {
-                // If type load fails that is not a problem.  It is expected to happen in cases where
-                // Roslyn is not available
-                roslynRenameUtil = null;
+                // If type load fails that is not a problem.  It is expected to
+                // happen in cases where Roslyn is not available
+                InlineRenameUtil = null;
                 return false;
             }
         }
@@ -137,25 +134,24 @@ namespace Vim.VisualStudio.Implementation.Roslyn
             return assembly.GetName().Version.ToString();
         }
 
-        #region IRoslynRenameUtil
+        #region IInlineRenameUtil
 
-        bool IRoslynRenameUtil.IsRenameActive
+        bool IInlineRenameUtil.IsRenameActive
         {
             get { return IsRenameActive; }
         }
 
-        event EventHandler IRoslynRenameUtil.IsRenameActiveChanged
+        event EventHandler IInlineRenameUtil.IsRenameActiveChanged
         {
             add { IsRenameActiveChanged += value; }
             remove { IsRenameActiveChanged -= value; }
         }
 
-        void IRoslynRenameUtil.Cancel()
+        void IInlineRenameUtil.Cancel()
         {
             Cancel();
         }
 
         #endregion
-
     }
 }

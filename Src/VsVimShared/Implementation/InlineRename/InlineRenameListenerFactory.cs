@@ -1,65 +1,61 @@
-﻿using Microsoft.VisualStudio.ComponentModelHost;
-using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
-using Vim;
 
-namespace Vim.VisualStudio.Implementation.Roslyn
+namespace Vim.VisualStudio.Implementation.InlineRename
 {
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IExtensionAdapter))]
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class RoslynListenerFactory : VimExtensionAdapter, IVimBufferCreationListener
+    internal sealed class InlineRenameListenerFactory : VimExtensionAdapter, IVimBufferCreationListener
     {
         private readonly IVimApplicationSettings _vimApplicationSettings;
 
-        private IRoslynRenameUtil _roslynRenameUtil;
+        private IInlineRenameUtil _inlineRenameUtil;
         private bool _inRename;
         private List<IVimBuffer> _vimBufferList = new List<IVimBuffer>();
 
-        // Undo-redo is expected when the Roslyn Rename window is active.
+        // Undo-redo is expected when the inline rename window is active.
         protected override bool IsUndoRedoExpected =>
             IsActive;
 
-        internal IRoslynRenameUtil RenameUtil
+        internal IInlineRenameUtil RenameUtil
         {
-            get { return _roslynRenameUtil; }
+            get { return _inlineRenameUtil; }
             set
             {
-                if (_roslynRenameUtil != null)
+                if (_inlineRenameUtil != null)
                 {
-                    _roslynRenameUtil.IsRenameActiveChanged -= OnIsRenameActiveChanged;
+                    _inlineRenameUtil.IsRenameActiveChanged -= OnIsRenameActiveChanged;
                 }
 
-                _roslynRenameUtil = value;
-                if (_roslynRenameUtil != null)
+                _inlineRenameUtil = value;
+                if (_inlineRenameUtil != null)
                 {
-                    _roslynRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
+                    _inlineRenameUtil.IsRenameActiveChanged += OnIsRenameActiveChanged;
                 }
             }
         }
 
         /// <summary>
-        /// The Roslyn rename utility manipulates the undo / redo buffer directly during a 
-        /// rename.  Need to register this as expected so the undo implementation doesn't
-        /// raise any errors.
+        /// The inline rename utility manipulates the undo / redo buffer
+        /// directly during a  rename.  Need to register this as expected so
+        /// the undo implementation doesn't raise any errors.
         /// </summary>
-        internal bool IsActive => _roslynRenameUtil != null && _roslynRenameUtil.IsRenameActive;
+        internal bool IsActive => _inlineRenameUtil != null && _inlineRenameUtil.IsRenameActive;
 
         [ImportingConstructor]
-        internal RoslynListenerFactory(
+        internal InlineRenameListenerFactory(
             IVimApplicationSettings vimApplicationSettings,
             SVsServiceProvider vsServiceProvider)
         {
             _vimApplicationSettings = vimApplicationSettings;
 
-            if (RoslynRenameUtil.TryCreate(vsServiceProvider, out IRoslynRenameUtil renameUtil))
+            if (InlineRenameUtil.TryCreate(vsServiceProvider, out IInlineRenameUtil renameUtil))
             {
                 RenameUtil = renameUtil;
             }
@@ -67,7 +63,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         private void OnIsRenameActiveChanged(object sender, EventArgs e)
         {
-            if (_inRename && !_roslynRenameUtil.IsRenameActive)
+            if (_inRename && !_inlineRenameUtil.IsRenameActive)
             {
                 _inRename = false;
                 foreach (var vimBuffer in _vimBufferList)
@@ -79,7 +75,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
                     }
                 }
             }
-            else if (!_inRename && _roslynRenameUtil.IsRenameActive)
+            else if (!_inRename && _inlineRenameUtil.IsRenameActive)
             {
                 _inRename = true;
                 foreach (var vimBuffer in _vimBufferList)
@@ -96,13 +92,13 @@ namespace Vim.VisualStudio.Implementation.Roslyn
 
         private void OnModeChange(object sender, SwitchModeEventArgs args)
         {
-            if (_inRename && _roslynRenameUtil.IsRenameActive && args.ModeArgument.IsCancelOperation)
+            if (_inRename && _inlineRenameUtil.IsRenameActive && args.ModeArgument.IsCancelOperation)
             {
-                _roslynRenameUtil.Cancel();
+                _inlineRenameUtil.Cancel();
             }
         }
 
-        internal static bool IsRoslynContentType(IContentType contentType)
+        internal static bool IsInlineRenameContentType(IContentType contentType)
         {
             return
                 contentType.IsCSharp() ||
@@ -113,7 +109,7 @@ namespace Vim.VisualStudio.Implementation.Roslyn
         internal void OnVimBufferCreated(IVimBuffer vimBuffer)
         {
             var contentType = vimBuffer.TextBuffer.ContentType;
-            if (IsRoslynContentType(contentType))
+            if (IsInlineRenameContentType(contentType))
             {
                 _vimBufferList.Add(vimBuffer);
                 vimBuffer.Closed += delegate { _vimBufferList.Remove(vimBuffer); };
