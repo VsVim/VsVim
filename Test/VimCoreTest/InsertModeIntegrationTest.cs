@@ -3584,6 +3584,57 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class AbbreviationTests : InsertModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData(" ")]
+            [InlineData("#")]
+            [InlineData("$")]
+            public void Simple(string keyNotation)
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cc");
+                Assert.Equal("cc", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation(keyNotation);
+                Assert.Equal($"comment this{keyNotation}", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void ReplaceMustBeComplete()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cco");
+                Assert.Equal("cco", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void ExplicitCancelOfReplace()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cc<C-v> ");
+                Assert.Equal("cc ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void LhsMustBeTypedOut()
+            {
+                Create("cc");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
+                _vimBuffer.ProcessNotation("A ");
+                Assert.Equal("cc ", _textBuffer.GetLineText(0));
+            }
+        }
+
         public sealed class AtomicInsertTests : InsertModeIntegrationTest
         {
             protected override void Create(ModeArgument argument, params string[] lines)
