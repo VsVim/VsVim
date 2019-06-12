@@ -387,7 +387,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 var line = TextViewLineContainingCaret;
                 height = line.Height;
                 var point = _textView.Caret.Position.BufferPosition;
-                if (point.Position < _textView.TextSnapshot.Length)
+                var codePointInfo = new SnapshotCodePoint(point).CodePointInfo;
+                if (point.Position < point.Snapshot.Length)
                 {
                     var pointCharacter = point.GetChar();
                     if (_controlCharUtil.TryGetDisplayText(pointCharacter, out string caretString))
@@ -396,9 +397,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         caretCharacter = caretString;
                         width = line.GetCharacterBounds(point).Width;
                     }
-                    else if (Char.IsHighSurrogate(pointCharacter) &&
-                        point.Position < _textView.TextSnapshot.Length - 1 &&
-                        Char.IsLowSurrogate(point.Add(1).GetChar()))
+                    else if (codePointInfo == CodePointInfo.SurrogatePairHighCharacter)
                     {
                         // Handle surrogate pairs.
                         caretCharacter = new SnapshotSpan(point, 2).GetText();
@@ -411,9 +410,15 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         caretCharacter = "";
                         width = Math.Min(defaultWidth, line.GetCharacterBounds(point).Width);
                     }
+                    else if (pointCharacter == '\r' || pointCharacter == '\n')
+                    {
+                        // Handle linebreak.
+                        caretCharacter = "";
+                        width = line.GetCharacterBounds(point).Width;
+                    }
                     else
                     {
-                        // Handle ordinary UTF16 character or linebreak.
+                        // Handle ordinary UTF16 character.
                         caretCharacter = pointCharacter.ToString();
                         width = line.GetCharacterBounds(point).Width;
                     }
