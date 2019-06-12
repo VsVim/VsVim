@@ -18,11 +18,17 @@ namespace Vim.UI.Wpf.UnitTest
         private sealed class VimHostImpl : VimHost
         {
             internal VimHostImpl(
+                IProtectedOperations protectedOperations,
                 ITextBufferFactoryService textBufferFactoryService,
                 ITextEditorFactoryService textEditorFactoryService,
                 ITextDocumentFactoryService textDocumentFactoryService,
                 IEditorOperationsFactoryService editorOperationsFactoryService) :
-                base(textBufferFactoryService, textEditorFactoryService, textDocumentFactoryService, editorOperationsFactoryService)
+                base(
+                    protectedOperations,
+                    textBufferFactoryService,
+                    textEditorFactoryService,
+                    textDocumentFactoryService,
+                    editorOperationsFactoryService)
             {
             }
 
@@ -146,6 +152,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _textDocumentFactoryService = CompositionContainer.GetExportedValue<ITextDocumentFactoryService>();
             _vimHost = new VimHostImpl(
+                ProtectedOperations,
                 TextBufferFactoryService,
                 TextEditorFactoryService,
                 _textDocumentFactoryService,

@@ -25,6 +25,7 @@ namespace VimApp
         private const string ErrorUnsupported = "Could not find the associated IVimViewInfo";
         private const string ErrorInvalidDirection = "Invalid direction";
 
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
@@ -52,18 +53,22 @@ namespace VimApp
 
         [ImportingConstructor]
         internal VimAppHost(
+            IProtectedOperations protectedOperations,
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IContentTypeRegistryService contentTypeRegistryService,
             IFileSystem fileSystem,
-            IDirectoryUtil directoryUtil) : base(
-            textBufferFactoryService,
-            textEditorFactoryService,
-            textDocumentFactoryService,
-            editorOperationsFactoryService)
+            IDirectoryUtil directoryUtil) :
+            base(
+                protectedOperations,
+                textBufferFactoryService,
+                textEditorFactoryService,
+                textDocumentFactoryService,
+                editorOperationsFactoryService)
         {
+            _protectedOperations = protectedOperations;
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;

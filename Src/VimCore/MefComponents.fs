@@ -471,6 +471,7 @@ type internal ProtectedOperations =
     /// against them for Exceptions as we are still on the dispatcher loop here and exceptions would be
     /// fatal
     member x.AlertAll e = 
+        VimTrace.TraceError(e)
         for handler in x._errorHandlers do
             try
                 handler.Value.HandleError(x, e)
