@@ -471,6 +471,21 @@ namespace Vim.UnitTest
                 var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(4));
                 Assert.Equal(_textBuffer.GetSpan(3, 11), span);
             }
+
+            [WpfFact]
+            public void TwoStringsAroundParenthesis()
+            {
+                // Reported in issue #2632.
+                // Example text: "foo" ("", true)
+                Create("\"foo\" (\"\", true)");
+                var first = 6;
+                var last = 15;
+                for (var contextPosition = first; contextPosition <= last; contextPosition++)
+                {
+                    var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(contextPosition));
+                    Assert.Equal(_textBuffer.GetSpan(first, last - first + 1), span);
+                }
+            }
         }
 
         public sealed class AllBlockTest : MotionUtilTest
