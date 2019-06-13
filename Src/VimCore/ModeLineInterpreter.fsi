@@ -14,4 +14,4 @@ type internal ModeLineInterpreter =
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    member CheckModeLine: unit -> string option * string option
+    member CheckModeLine: IVimWindowSettings -> string option * string option

@@ -204,8 +204,8 @@ type internal VimTextBuffer
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    member x.CheckModeLine () =
-        _modeLineInterpreter.CheckModeLine()
+    member x.CheckModeLine windowSettings =
+        _modeLineInterpreter.CheckModeLine windowSettings
 
     /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
     member x.Clear() =
@@ -331,7 +331,7 @@ type internal VimTextBuffer
         member x.Vim = _vim
         member x.WordNavigator = _wordNavigator
         member x.UseVirtualSpace = x.UseVirtualSpace
-        member x.CheckModeLine() = x.CheckModeLine()
+        member x.CheckModeLine windowSettings = x.CheckModeLine windowSettings
         member x.Clear() = x.Clear()
         member x.GetLocalMark localMark = x.GetLocalMark localMark
         member x.SetLocalMark localMark lineNumber offset = x.SetLocalMark localMark lineNumber offset

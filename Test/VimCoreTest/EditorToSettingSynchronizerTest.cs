@@ -38,7 +38,9 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.TextView).Returns(textView);
             _vimBuffer.SetupGet(x => x.Vim).Returns(vim.Object);
             _vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
-            _vimTextBuffer.Setup(x => x.CheckModeLine()).Returns(Tuple.Create(FSharpOption<string>.None, FSharpOption<string>.None));
+            _vimTextBuffer
+                .Setup(x => x.CheckModeLine(It.IsAny<IVimWindowSettings>()))
+                .Returns(Tuple.Create(FSharpOption<string>.None, FSharpOption<string>.None));
             _vimBuffer.SetupGet(x => x.Vim).Returns(vim.Object);
             _vimBuffer.SetupGet(x => x.VimTextBuffer).Returns(_vimTextBuffer.Object);
         }
