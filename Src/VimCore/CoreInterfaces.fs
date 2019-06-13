@@ -4236,6 +4236,30 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
+/// The different types of abbreviations as described in `:help abbreviations`
+type AbbreviateKind = 
+    | FullId
+    | EndId
+    | NonId
+
+    with 
+
+    static member OfString (str: string) =
+        if StringUtil.IsNullOrEmpty str || Seq.exists TextUtil.IsNonWordChar str then
+            None
+        elif Seq.forall TextUtil.IsKeywordChar str then
+            Some AbbreviateKind.FullId
+        else
+            let isLastKeyword = TextUtil.IsKeywordChar str.[str.Length - 1]
+            let isNonKeywordChar c = not (TextUtil.IsKeywordChar c)
+            let rest = Seq.take (str.Length - 1) str
+            if isLastKeyword && Seq.forall isNonKeywordChar rest then
+                Some AbbreviateKind.EndId
+            elif not isLastKeyword then
+                Some AbbreviateKind.NonId
+            else
+                None
+
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()
 
