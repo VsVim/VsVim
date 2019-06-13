@@ -1631,13 +1631,18 @@ type CharacterSpan =
 
     /// The last virtual point included in the CharacterSpan
     member x.VirtualLast =
-        let endPoint: VirtualSnapshotPoint = x.VirtualEnd
-        if endPoint = x.VirtualStart then
+        let startPoint = x.VirtualStart
+        let endPoint = x.VirtualEnd
+        if endPoint = startPoint then
             None
         else
-            endPoint
-            |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
-            |> Some
+            let point =
+                endPoint
+                |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            if point.Position.Position < startPoint.Position.Position then
+                None
+            else
+                Some point
 
     /// Get the End point of the Character Span.
     member x.End: SnapshotPoint =
