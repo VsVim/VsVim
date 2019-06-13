@@ -181,6 +181,31 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         /// <summary>
+        /// Snap the specifed value to whole device pixels, optionally ensuring
+        /// that the value is positive
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="ensurePositive"></param>
+        /// <returns></returns>
+        private double SnapToWholeDevicePixels(double value, bool ensurePositive)
+        {
+            if (_textView is IWpfTextView wpfTextView)
+            {
+                var visualElement = wpfTextView.VisualElement;
+                var presentationSource = PresentationSource.FromVisual(visualElement);
+                var matrix = presentationSource.CompositionTarget.TransformToDevice;
+                var dpiFactor = 1.0 / matrix.M11;
+                var wholePixels = Math.Round(value / dpiFactor);
+                if (ensurePositive && wholePixels < 1.0)
+                {
+                    wholePixels = 1.0;
+                }
+                return wholePixels * dpiFactor;
+            }
+            return value;
+        }
+
+        /// <summary>
         /// Get the number of milliseconds for the caret blink time.  Null is returned if the 
         /// caret should not blink
         /// </summary>
@@ -360,6 +385,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private void MoveCaretElementToCaret(CaretData caretData)
         {
             var point = GetRealCaretVisualPoint();
+            if (caretData.CaretDisplay == CaretDisplay.Select)
+            {
+                point = new Point(SnapToWholeDevicePixels(point.X, ensurePositive: false), point.Y);
+            }
             Canvas.SetLeft(caretData.Element, point.X);
             Canvas.SetTop(caretData.Element, point.Y + caretData.YDisplayOffset);
         }
@@ -462,7 +491,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
                 case CaretDisplay.Select:
                     caretCharacter = null;
-                    size = new Size(_textView.Caret.Width, _textView.Caret.Height);
+                    var width = SnapToWholeDevicePixels(_textView.Caret.Width, ensurePositive: true);
+                    var height = _textView.Caret.Height;
+
+                    size = new Size(width, height);
                     break;
 
                 case CaretDisplay.Invisible:
