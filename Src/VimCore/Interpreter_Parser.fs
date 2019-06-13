@@ -124,11 +124,13 @@ and [<Sealed>] Parser
         ("behave", "be")
         ("call", "cal")
         ("cd", "cd")
+        ("cfirst", "cfir")
         ("chdir", "chd")
         ("close", "clo")
         ("cnext", "cn")
         ("copy", "co")
         ("cprevious", "cp")
+        ("crewind", "cr")
         ("csx", "cs")
         ("csxe", "csxe")
         ("cwindow", "cw")
@@ -856,6 +858,7 @@ and [<Sealed>] Parser
             | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
             | LineCommand.QuickFixNext _ -> noRangeCommand
             | LineCommand.QuickFixPrevious _ -> noRangeCommand
+            | LineCommand.QuickFixRewind _ -> noRangeCommand
             | LineCommand.QuickFixWindow -> noRangeCommand
             | LineCommand.Quit _ -> noRangeCommand
             | LineCommand.QuitAll _ -> noRangeCommand
@@ -1806,6 +1809,12 @@ and [<Sealed>] Parser
         let hasBang = x.ParseBang()
         LineCommand.QuickFixPrevious (count, hasBang)
 
+    member x.ParseQuickFixRewind() =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let number = x.ParseNumber()
+        LineCommand.QuickFixRewind (number, hasBang)
+
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
         let hasBang = x.ParseBang()
@@ -2427,14 +2436,16 @@ and [<Sealed>] Parser
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
+                | "cfirst" -> noRange x.ParseQuickFixRewind
                 | "chdir" -> noRange x.ParseChangeDirectory
                 | "close" -> noRange x.ParseClose
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
                 | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
                 | "cnext" -> handleCount x.ParseQuickFixNext
-                | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
+                | "cprevious" -> handleCount x.ParseQuickFixPrevious
+                | "crewind" -> noRange x.ParseQuickFixRewind
                 | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
                 | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])

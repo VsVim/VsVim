@@ -683,19 +683,60 @@ namespace Vim.VisualStudio
 
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
-            // This implementation could be much more riguorous but for next a simple navigation
-            // of the next and previous error will suffice
-            var command = quickFix.IsNext
-                ? "View.NextError"
-                : "View.PreviousError";
-            for (var i = 0; i < count; i++)
+            var result = true;
+
+            switch (quickFix)
             {
-                SafeExecuteCommand(null, command);
+                case var value when value == QuickFix.Next:
+                    for (var i = 0; result && i < count; i++)
+                    {
+                        result = SafeExecuteCommand(null, "View.NextError");
+                    }
+                    break;
+                case var value when value == QuickFix.Previous:
+                    for (var i = 0; result && i < count; i++)
+                    {
+                        result = SafeExecuteCommand(null, "View.PreviousError");
+                    }
+                    break;
+                case var value when value == QuickFix.Number:
+                    result = GoToQuickFix(count - 1);
+                    break;
+                default:
+                    Contract.Assert(false);
+                    result = false;
+                    break;
             }
 
-            return true;
+            return result;
         }
 
+        private bool GoToQuickFix(int index)
+        {
+            try
+            {
+                if (_dte is DTE2 dte2)
+                {
+                    if (dte2.ToolWindows.ErrorList is IErrorList errorList)
+                    {
+                        var tableControl = errorList.TableControl;
+                        var entries = tableControl.Entries.ToArray();
+                        if (index < entries.Length)
+                        {
+                            var desiredEntry = entries[index];
+                            tableControl.SelectedEntries = new[] { desiredEntry };
+                            return desiredEntry.NavigateTo(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
+            }
+            return false;
+
+        }
         public override void Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand(null, "Build.BuildSolution");

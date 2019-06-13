@@ -671,6 +671,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Previous error in the quick fix list.  int is for count and bool is for the bang option
     | QuickFixPrevious of Count: int option * HasBang: bool
 
+    /// Go to error in the quick fix list.  int is for number and bool is for the bang option
+    | QuickFixRewind of Number: int option * HasBang: bool
+
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
     | Quit of HasBang: bool

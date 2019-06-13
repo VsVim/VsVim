@@ -1584,11 +1584,19 @@ type VimInterpreter
 
     member x.RunQuickFixNext count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
+        x.GoToQuickFix QuickFix.Next count hasBang
 
     member x.RunQuickFixPrevious count hasBang =
         let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Previous count hasBang |> ignore
+        x.GoToQuickFix QuickFix.Previous count hasBang
+
+    member x.RunQuickFixRewind count hasBang =
+        let count = OptionUtil.getOrDefault 1 count 
+        x.GoToQuickFix QuickFix.Number count hasBang
+
+    member x.GoToQuickFix quickFix count hasBang =
+        if _vimHost.GoToQuickFix quickFix count hasBang |> not then
+            _commonOperations.Beep()
 
     /// Run the quit command
     member x.RunQuit hasBang =
@@ -2293,6 +2301,7 @@ type VimInterpreter
         | LineCommand.QuickFixWindow -> x.RunOpenQuickFixWindow()
         | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
         | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
+        | LineCommand.QuickFixRewind (count, hasBang) -> x.RunQuickFixRewind count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath

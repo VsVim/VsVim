@@ -4677,6 +4677,7 @@ type IVimData =
 type QuickFix =
     | Next
     | Previous
+    | Number
 
 type TextViewChangedEventArgs
     (
