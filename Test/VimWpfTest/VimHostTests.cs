@@ -77,7 +77,17 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
+            public override void OpenLocationWindow()
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+            {
+                return false;
+            }
+
+            public override bool GoToLocation(QuickFix quickFix, int count, bool hasBang)
             {
                 return false;
             }

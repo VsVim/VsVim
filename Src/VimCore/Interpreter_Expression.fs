@@ -662,17 +662,29 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
-    /// Display the quick fix window
+    /// Display the quickfix window
     | QuickFixWindow
 
-    /// Next error in the quick fix list.  int is for count and bool is for the bang option
+    /// Next item in the quickfix list
     | QuickFixNext of Count: int option * HasBang: bool
 
-    /// Previous error in the quick fix list.  int is for count and bool is for the bang option
+    /// Previous item in the quickfix list
     | QuickFixPrevious of Count: int option * HasBang: bool
 
-    /// Go to error in the quick fix list.  int is for number and bool is for the bang option
-    | QuickFixRewind of Number: int option * HasBang: bool
+    /// Go to item in the quickfix list
+    | QuickFixRewind of Number: int option * DefaultToLast: bool * HasBang: bool
+
+    /// Display the location window
+    | LocationWindow
+
+    /// Next item in the location list
+    | LocationNext of Count: int option * HasBang: bool
+
+    /// Previous item in the location list
+    | LocationPrevious of Count: int option * HasBang: bool
+
+    /// Go to item in the location list
+    | LocationRewind of Number: int option * DefaultToLast: bool * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window

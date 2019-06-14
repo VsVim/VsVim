@@ -52,7 +52,9 @@ namespace Vim.UnitTest.Mock
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
         public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
+        public Action<QuickFix, int, bool> RunLocationFunc { get; set; }
         public Action OpenQuickFixWindowFunc { get; set; }
+        public Action OpenLocationWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
@@ -112,6 +114,7 @@ namespace Vim.UnitTest.Mock
             LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
             RunQuickFixFunc = delegate { throw new NotImplementedException(); };
             OpenQuickFixWindowFunc = delegate { throw new NotImplementedException(); };
+            OpenLocationWindowFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
@@ -391,9 +394,20 @@ namespace Vim.UnitTest.Mock
             return OpenLinkFunc(link);
         }
 
+        void IVimHost.OpenLocationWindow()
+        {
+            OpenLocationWindowFunc();
+        }
+
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             RunQuickFixFunc(quickFix, count, hasBang);
+            return false;
+        }
+
+        bool IVimHost.GoToLocation(QuickFix quickFix, int count, bool hasBang)
+        {
+            RunLocationFunc(quickFix, count, hasBang);
             return false;
         }
 

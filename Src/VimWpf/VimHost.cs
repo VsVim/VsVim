@@ -191,6 +191,8 @@ namespace Vim.UI.Wpf
 
         public abstract void OpenQuickFixWindow();
 
+        public abstract void OpenLocationWindow();
+
         public bool OpenLink(string link)
         {
             try
@@ -205,6 +207,8 @@ namespace Vim.UI.Wpf
         }
 
         public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
+
+        public abstract bool GoToLocation(QuickFix quickFix, int count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
         {
@@ -745,6 +749,11 @@ namespace Vim.UI.Wpf
         bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             return GoToQuickFix(quickFix, count, hasBang);
+        }
+
+        bool IVimHost.GoToLocation(QuickFix quickFix, int count, bool hasBang)
+        {
+            return GoToLocation(quickFix, count, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)

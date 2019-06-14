@@ -329,10 +329,18 @@ namespace VimApp
 
         public override void OpenQuickFixWindow()
         {
+        }
 
+        public override void OpenLocationWindow()
+        {
         }
 
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            return false;
+        }
+
+        public override bool GoToLocation(QuickFix quickFix, int count, bool hasBang)
         {
             return false;
         }

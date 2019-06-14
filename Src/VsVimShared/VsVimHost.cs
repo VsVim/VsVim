@@ -676,12 +676,13 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
-        public override void OpenQuickFixWindow()
-        {
-            SafeExecuteCommand(null, "View.ErrorList");
-        }
-
-        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        private bool NavigateToItem(
+            QuickFix quickFix,
+            int count,
+            bool hasBang,
+            string next,
+            string prev,
+            Func<int, bool> goToItem)
         {
             var result = true;
 
@@ -690,17 +691,17 @@ namespace Vim.VisualStudio
                 case var value when value == QuickFix.Next:
                     for (var i = 0; result && i < count; i++)
                     {
-                        result = SafeExecuteCommand(null, "View.NextError");
+                        result = SafeExecuteCommand(null, next);
                     }
                     break;
                 case var value when value == QuickFix.Previous:
                     for (var i = 0; result && i < count; i++)
                     {
-                        result = SafeExecuteCommand(null, "View.PreviousError");
+                        result = SafeExecuteCommand(null, prev);
                     }
                     break;
                 case var value when value == QuickFix.Number:
-                    result = GoToQuickFix(count - 1);
+                    result = goToItem(count);
                     break;
                 default:
                     Contract.Assert(false);
@@ -711,7 +712,23 @@ namespace Vim.VisualStudio
             return result;
         }
 
-        private bool GoToQuickFix(int index)
+        public override void OpenQuickFixWindow()
+        {
+            SafeExecuteCommand(null, "View.ErrorList");
+        }
+
+        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        {
+            return NavigateToItem(
+                quickFix,
+                count,
+                hasBang,
+                "View.NextError",
+                "View.PreviousError",
+                GoToError);
+        }
+
+        private bool GoToError(int number)
         {
             try
             {
@@ -721,7 +738,8 @@ namespace Vim.VisualStudio
                     {
                         var tableControl = errorList.TableControl;
                         var entries = tableControl.Entries.ToArray();
-                        if (index < entries.Length)
+                        var index = number == -1 ? entries.Length - 1 : number - 1;
+                        if (index >= 0 && index < entries.Length)
                         {
                             var desiredEntry = entries[index];
                             tableControl.SelectedEntries = new[] { desiredEntry };
@@ -735,8 +753,51 @@ namespace Vim.VisualStudio
                 _protectedOperations.Report(ex);
             }
             return false;
+        }
+
+        public override void OpenLocationWindow()
+        {
+            SafeExecuteCommand(null, "View.FindResults1");
+        }
+
+        public override bool GoToLocation(QuickFix quickFix, int count, bool hasBang)
+        {
+            return NavigateToItem(
+                quickFix,
+                count,
+                hasBang,
+                "Edit.GoToFindResults1NextLocation",
+                "Edit.GoToFindResults1PrevLocation",
+                GoToFindResult);
+        }
+
+        private bool GoToFindResult(int number)
+        {
+            try
+            {
+                var windowGuid = EnvDTE.Constants.vsWindowKindFindResults1;
+                var findWindow = _dte.Windows.Item(windowGuid);
+                if (findWindow != null && findWindow.Selection is EnvDTE.TextSelection textSelection)
+                {
+                    var textDocument = textSelection.Parent;
+                    var lines = textDocument.EndPoint.Line - 1;
+                    var adjustedLine = number == -1 ? lines - 1 : number + 1;
+                    if (adjustedLine >= 2 && adjustedLine < lines)
+                    {
+                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                        return SafeExecuteCommand(null, "Edit.GoToFindResults1Location");
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
+            }
+            return false;
 
         }
+
         public override void Make(bool jumpToFirstError, string arguments)
         {
             SafeExecuteCommand(null, "Build.BuildSolution");

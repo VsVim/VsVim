@@ -4823,8 +4823,11 @@ type IVimHost =
     /// values which is not a standard 0 based index
     abstract GoToTab: index: int -> unit
 
-    /// Go to the specified entry in the quick fix list
+    /// Go to the specified entry in the quickfix list
     abstract GoToQuickFix: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
+
+    /// Go to the specified entry in the location list
+    abstract GoToLocation: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
 
     /// Get the name of the given ITextBuffer
     abstract GetName: textBuffer: ITextBuffer -> string
@@ -4856,11 +4859,14 @@ type IVimHost =
 
     abstract NavigateTo: point: VirtualSnapshotPoint -> bool
 
-    // Open the quick fix window (:cwindow)
+    // Open the quickfix window (:cwindow)
     abstract OpenQuickFixWindow: unit -> unit
 
     /// Open the the specified link
     abstract OpenLink: link: string -> bool
+
+    // Open the location window (:lwindow)
+    abstract OpenLocationWindow: unit -> unit
 
     /// Quit the application
     abstract Quit: unit -> unit

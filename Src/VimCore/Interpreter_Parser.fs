@@ -124,16 +124,11 @@ and [<Sealed>] Parser
         ("behave", "be")
         ("call", "cal")
         ("cd", "cd")
-        ("cfirst", "cfir")
         ("chdir", "chd")
         ("close", "clo")
-        ("cnext", "cn")
         ("copy", "co")
-        ("cprevious", "cp")
-        ("crewind", "cr")
         ("csx", "cs")
         ("csxe", "csxe")
-        ("cwindow", "cw")
         ("delete","d")
         ("delmarks", "delm")
         ("digraphs", "dig")
@@ -250,6 +245,20 @@ and [<Sealed>] Parser
         ("inoremap", "ino")
         ("lnoremap", "ln")
         ("cnoremap", "cno")
+        ("cwindow", "cw")
+        ("cfirst", "cfir")
+        ("clast", "cla")
+        ("cnext", "cn")
+        ("cNext", "cN")
+        ("cprevious", "cp")
+        ("crewind", "cr")
+        ("lwindow", "lw")
+        ("lfirst", "lfir")
+        ("llast", "lla")
+        ("lnext", "lne")
+        ("lprevious", "lp")
+        ("lNext", "lN")
+        ("lrewind", "lr")
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -844,6 +853,10 @@ and [<Sealed>] Parser
             | LineCommand.Let _ -> noRangeCommand
             | LineCommand.LetEnvironment _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
+            | LineCommand.LocationNext _ -> noRangeCommand
+            | LineCommand.LocationPrevious _ -> noRangeCommand
+            | LineCommand.LocationRewind _ -> noRangeCommand
+            | LineCommand.LocationWindow -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
             | LineCommand.MapKeys _ -> noRangeCommand
             | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
@@ -1797,23 +1810,41 @@ and [<Sealed>] Parser
             | _ -> x.ParseError "Error"
         getNames (fun x -> x)
 
-    member x.ParseQuickFixNext count =
-        let hasBang = x.ParseBang()
-        LineCommand.QuickFixNext (count, hasBang)
-
     member x.ParseQuickFixWindow _ =
         _tokenizer.MoveToEndOfLine()
         LineCommand.QuickFixWindow
+
+    member x.ParseQuickFixNext count =
+        let hasBang = x.ParseBang()
+        LineCommand.QuickFixNext (count, hasBang)
 
     member x.ParseQuickFixPrevious count =
         let hasBang = x.ParseBang()
         LineCommand.QuickFixPrevious (count, hasBang)
 
-    member x.ParseQuickFixRewind() =
+    member x.ParseQuickFixRewind defaultToLast =
         let hasBang = x.ParseBang()
         x.SkipBlanks()
         let number = x.ParseNumber()
-        LineCommand.QuickFixRewind (number, hasBang)
+        LineCommand.QuickFixRewind (number, defaultToLast, hasBang)
+
+    member x.ParseLocationWindow _ =
+        _tokenizer.MoveToEndOfLine()
+        LineCommand.LocationWindow
+
+    member x.ParseLocationNext count =
+        let hasBang = x.ParseBang()
+        LineCommand.LocationNext (count, hasBang)
+
+    member x.ParseLocationPrevious count =
+        let hasBang = x.ParseBang()
+        LineCommand.LocationPrevious (count, hasBang)
+
+    member x.ParseLocationRewind defaultToLast =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks()
+        let number = x.ParseNumber()
+        LineCommand.LocationRewind (number, defaultToLast, hasBang)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -2436,16 +2467,18 @@ and [<Sealed>] Parser
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
-                | "cfirst" -> noRange x.ParseQuickFixRewind
+                | "cfirst" -> noRange (fun () -> x.ParseQuickFixRewind false)
                 | "chdir" -> noRange x.ParseChangeDirectory
+                | "clast" -> noRange (fun () -> x.ParseQuickFixRewind true)
                 | "close" -> noRange x.ParseClose
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
-                | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
                 | "cnext" -> handleCount x.ParseQuickFixNext
+                | "cNext" -> handleCount x.ParseQuickFixPrevious
+                | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
                 | "copy" -> x.ParseCopyTo lineRange 
                 | "cprevious" -> handleCount x.ParseQuickFixPrevious
-                | "crewind" -> noRange x.ParseQuickFixRewind
+                | "crewind" -> noRange (fun () -> x.ParseQuickFixRewind false)
                 | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
                 | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
@@ -2479,11 +2512,18 @@ and [<Sealed>] Parser
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
+                | "lfirst" -> noRange (fun () -> x.ParseLocationRewind false)
                 | "list" -> x.ParseDisplayLines lineRange LineCommandFlags.List
+                | "llast" -> noRange (fun () -> x.ParseLocationRewind true)
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+                | "lnext" -> handleCount x.ParseLocationNext
+                | "lNext" -> handleCount x.ParseLocationPrevious
+                | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
+                | "lprevious" -> handleCount x.ParseLocationPrevious
+                | "lrewind" -> noRange (fun () -> x.ParseLocationRewind false)
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
-                | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
+                | "lwindow" -> noRange x.ParseLocationWindow
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
                 | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
