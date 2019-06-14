@@ -55,6 +55,7 @@ namespace CleanVsix
                     case "envdte80":
                     case "stdole":
                     case "system.collections.immutable":
+                    case "system.threading.tasks.extensions":
                     case "microsoft.codeanalysis.scripting":
                     case "microsoft.codeanalysis":
                     case "microsoft.codeanalysis.csharp.scripting":

@@ -321,7 +321,7 @@ namespace Vim.UnitTest
                     .Setup(x => x.ReadAllLines(filePath))
                     .Returns(FSharpOption<string[]>.None);
                 ParseAndRun($":source {filePath}");
-                Assert.Equal(Resources.CommandMode_CouldNotOpenFile(filePath), _statusUtil.LastError);
+                Assert.Equal(Resources.Common_CouldNotOpenFile(filePath), _statusUtil.LastError);
             }
         }
 
@@ -952,7 +952,7 @@ namespace Vim.UnitTest
                 Create("");
                 _vimBuffer.LocalSettings.ExpandTab = false;
                 ParseAndRun(@"set blah?");
-                Assert.Equal(Resources.CommandMode_UnknownOption("blah"), _statusUtil.LastError);
+                Assert.Equal(Resources.Interpreter_UnknownOption("blah"), _statusUtil.LastError);
             }
 
             [WpfFact]
@@ -1333,9 +1333,12 @@ namespace Vim.UnitTest
             [WpfFact]
             public void RHSCanBeEnvironmentVariable()
             {
+                // Note this test cannot be run in parallel due to
+                // the manipulation of global state.
                 Create("");
                 var variable = "magic";
                 var value = "xyzzy";
+                var oldValue = Environment.GetEnvironmentVariable(variable);
                 try
                 {
                     Environment.SetEnvironmentVariable(variable, value);
@@ -1344,7 +1347,7 @@ namespace Vim.UnitTest
                 }
                 finally
                 {
-                    Environment.SetEnvironmentVariable(variable, null);
+                    Environment.SetEnvironmentVariable(variable, oldValue);
                 }
             }
 
@@ -1468,6 +1471,27 @@ namespace Vim.UnitTest
                 Create("");
                 ParseAndRun("let x='foo'!='bar'");
                 AssertValue("x", 1);
+            }
+
+            [WpfFact]
+            public void LHSCanBeEnvironmentVariable()
+            {
+                // Note this test cannot be run in parallel due to
+                // manipulating global state.
+                Create("");
+                var variable = "magic";
+                var value = "xyzzy";
+                var oldValue = Environment.GetEnvironmentVariable(variable);
+                try
+                {
+                    Environment.SetEnvironmentVariable(variable, "some other value");
+                    ParseAndRun($"let ${variable} = '{value}'");
+                    Assert.Equal(value, System.Environment.GetEnvironmentVariable(variable));
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(variable, oldValue);
+                }
             }
 
             [WpfFact]

@@ -10,11 +10,13 @@ using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
+using System.Threading;
 
 namespace Vim.UnitTest
 {
     public class CommonOperationsTest : VimTestBase
     {
+        private TestableSynchronizationContext _context;
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private IFoldManager _foldManager;
@@ -34,6 +36,7 @@ namespace Vim.UnitTest
 
         protected void Create(params string[] lines)
         {
+            _context = new TestableSynchronizationContext();
             _textView = CreateTextView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _textBuffer = _textView.TextBuffer;
@@ -43,6 +46,8 @@ namespace Vim.UnitTest
             // Create the Vim instance with our Mock'd services
             _registerMap = Vim.RegisterMap;
             _vimHost = _factory.Create<IVimHost>();
+            _vimHost.Setup(x => x.DoActionWhenTextViewReady(It.IsAny<FSharpFunc<Unit, Unit>>(), It.IsAny<ITextView>()))
+                .Callback((FSharpFunc<Unit, Unit> action, ITextView textView) => action.Invoke(null));
             var globalSettings = Vim.GlobalSettings;
             globalSettings.Magic = true;
             globalSettings.SmartCase = false;
@@ -91,12 +96,15 @@ namespace Vim.UnitTest
                 .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
                 .Returns<IEnumerable<ICollapsible>>(null);
 
+            var commonOperationsFactory = _factory.Create<ICommonOperationsFactory>();
             _operationsRaw = new CommonOperations(
+                commonOperationsFactory.Object,
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
                 FSharpOption.Create(_outlining.Object),
                 MouseDevice);
             _operations = _operationsRaw;
+            commonOperationsFactory.Setup(x => x.GetCommonOperations(vimBufferData)).Returns(_operations);
         }
 
         private static string CreateLinesWithLineBreak(params string[] lines)
@@ -1516,6 +1524,44 @@ namespace Vim.UnitTest
                 _vimHost.Setup(x => x.GetNewLineIndent(_textView, It.IsAny<ITextSnapshotLine>(), It.IsAny<ITextSnapshotLine>(), It.IsAny<IVimLocalSettings>())).Returns(FSharpOption<int>.None);
                 var indent = _operations.GetNewLineIndent(_textView.GetLine(1), _textView.GetLine(2));
                 Assert.Equal(2, indent.Value);
+            }
+
+            /// <summary>
+            /// Make sure that we handle the case where the synchronization
+            /// context isn't  set
+            /// </summary>
+            [WpfFact]
+            public void BadSynchronizationContext()
+            {
+                // Install testable synchronization context.
+                Create("cat", "dog", "");
+
+                // Define a testable callback.
+                var count = 0;
+                Unit action(Unit arg)
+                {
+                    count += 1;
+                    return null;
+                }
+
+                var oldContext = (TestableSynchronizationContext)SynchronizationContext.Current;
+                try
+                {
+                    // Temporarily null out the current synchronization
+                    // context.
+                    SynchronizationContext.SetSynchronizationContext(null);
+
+                    _operations.DoActionAsync(FSharpFuncUtil.Create<Unit, Unit>(action));
+
+                    // The old context should not be accessible, but the
+                    // function should still have been called.
+                    Assert.True(oldContext.IsEmpty);
+                    Assert.Equal(1, count);
+                }
+                finally
+                {
+                    SynchronizationContext.SetSynchronizationContext(oldContext);
+                }
             }
         }
 

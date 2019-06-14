@@ -6,7 +6,7 @@ namespace Vim
 type VimKey =
     | None = 0
     | Back = 1
-    | FormFeed = 2
+    // Intentionally missing 'FormFeed = 2' which is not a vim key
     | Enter = 3
     | Escape = 4
     | Left = 5

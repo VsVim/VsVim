@@ -10,6 +10,7 @@
     test hosting: VimApp or VimTestUtils
     -->
   <PropertyGroup Condition="'$(VsVimSpecificTestHost)' == 'true'">
+    <DefineConstants Condition="'$(VsVimTargetVersion)' == '14.0'">$(DefineConstants);VS_SPECIFIC_2015;VIM_SPECIFIC_TEST_HOST</DefineConstants>
     <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
     <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
   </PropertyGroup>

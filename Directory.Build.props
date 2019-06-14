@@ -35,16 +35,19 @@
     <LanguageTargets>$(MSBuildToolsPath)\Microsoft.CSharp.targets</LanguageTargets>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
+    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</VsRunnablePropsFilePath>
+  </PropertyGroup>
+
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '15.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</VsVimAppConfig>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</VsRunnablePropsFilePath>
-    <DefineConstants>$(DefineConstants);VSVIM_DEV_2017</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '16.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2019\App.config</VsVimAppConfig>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2019\Runnable.props</VsRunnablePropsFilePath>
-    <DefineConstants>$(DefineConstants);VSVIM_DEV_2019</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup> 

@@ -111,6 +111,7 @@ type internal NormalMode
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
+                yield ("<C-c>", CommandFlags.Repeatable, NormalCommand.CancelOperation)
                 yield ("<C-g>", CommandFlags.Special, NormalCommand.PrintFileInformation)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
@@ -161,6 +162,7 @@ type internal NormalMode
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
+                yield ("<C-LeftRelease>", CommandFlags.Special, NormalCommand.NoOperation)
                 yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
@@ -360,9 +362,10 @@ type internal NormalMode
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         || _runner.DoesCommandStartWith keyInput
     
-    member x.Process (keyInput: KeyInput) = 
+    member x.Process (keyInputData: KeyInputData) = 
 
         // Update the text of the command so long as this isn't a control character 
+        let keyInput = keyInputData.KeyInput
         if not (CharUtil.IsControl keyInput.Char) then
             let command = _data.Command + keyInput.Char.ToString()
             _data <- { _data with Command = command }
@@ -402,7 +405,7 @@ type internal NormalMode
         member x.CommandNames = x.CommandNames
         member x.ModeKind = ModeKind.Normal
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInput = x.Process keyInput
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
         member x.OnLeave () = ()
         member x.OnClose() = _eventHandlers.DisposeAll()

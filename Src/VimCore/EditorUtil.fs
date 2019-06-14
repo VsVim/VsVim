@@ -16,6 +16,7 @@ open StringBuilderExtensions
 open System.Linq
 open System.Drawing
 open System.Globalization
+open Microsoft.VisualStudio.Text.Formatting
 
 [<RequireQualifiedAccess>]
 type CodePointInfo = 
@@ -740,8 +741,9 @@ type SnapshotColumn =
         let mutable count = columnNumber
         let mutable isGood = true
         while count > 0 && isGood do
-            column <- column.Add 1
-            count <- count - 1
+            if not column.IsEndColumn then
+                column <- column.Add 1
+                count <- count - 1
             if 
                 column.IsEndColumn || 
                 column.LineNumber <> line.LineNumber ||
@@ -1674,7 +1676,6 @@ module SnapshotSpanUtil =
     /// but will return line breaks
     let GetPoints path span =
         let startPoint = GetStartPoint span
-        let endPoint = GetEndPoint span
         let positions =
             let offset = startPoint.Position
             match path with 
@@ -3000,12 +3001,17 @@ module TextViewUtil =
                 else
                     None
             with 
-            | _ -> None
+            | :? InvalidOperationException as ex ->
+                VimTrace.TraceError ex
+                None
 
     /// Get the text view line relative to the specified point
-    let GetTextViewLineRelativeToPoint textView offset point =
+    let GetTextViewLineRelativeToPoint textView offset (point: SnapshotPoint) =
+
+        // Try to get the text view lines for the same snapshot as point.
         match GetTextViewLines textView with
-        | Some textViewLines ->
+        | Some textViewLines when
+            textViewLines.FormattedSpan.Snapshot = point.Snapshot ->
 
             // Protect against GetTextViewLineContainingBufferPosition
             // returning null.
@@ -3026,11 +3032,16 @@ module TextViewUtil =
                     else
                         None
             | _ -> None
-        | None -> None
+        | _ -> None
 
     /// Get the text view line containing the specified point
     let GetTextViewLineContainingPoint textView point =
         GetTextViewLineRelativeToPoint textView 0 point
+
+    /// Get the text view line containing the specified point
+    let GetTextViewLineContainingCaret textView =
+        GetCaretPoint textView
+        |> GetTextViewLineRelativeToPoint textView 0
 
     /// Get the count of Visible lines in the ITextView
     let GetVisibleLineCount textView = 
@@ -3293,6 +3304,39 @@ module TextViewUtil =
             let lastLine = SnapshotUtil.GetLastNormalizedLine snapshot
             let span = SnapshotSpan(lastLine.End, lastLine.EndIncludingLineBreak)
             textBuffer.Delete(span.Span) |> ignore
+
+    /// Get the visible span for the specified text view line
+    let GetVisibleSpan (textView: ITextView) (textViewLine: ITextViewLine) =
+
+        let firstPoint =
+
+            // Whether the specified point is to the right of the left edge of
+            // the viewport.
+            let isRightOfViewportLeft (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Left >= textView.ViewportLeft
+
+            // Scan forward looking for a visible point.
+            textViewLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind isRightOfViewportLeft
+            |> Option.defaultValue textViewLine.Start
+
+        let lastPoint =
+
+            // Whether the specified point is to the left of the right edge of
+            // the viewport.
+            let isLeftOfViewportRight (point: SnapshotPoint) =
+                let bounds = textViewLine.GetCharacterBounds(point)
+                bounds.Right <= textView.ViewportRight
+
+            // Scan backward looking for a visible point.
+            textViewLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Backward
+            |> Seq.tryFind isLeftOfViewportRight
+            |> Option.defaultValue textViewLine.End
+
+        SnapshotSpan(firstPoint, lastPoint)
 
 module TextSelectionUtil = 
 

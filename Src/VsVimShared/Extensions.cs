@@ -219,23 +219,18 @@ namespace Vim.VisualStudio
         /// </summary>
         public static string GetFileName(this IVsTextLines lines)
         {
-            try
+            // GUID_VsBufferMoniker
+            var monikerId = VsVimConstants.VsUserDataFileNameMoniker;
+            if (lines is IVsUserData userData && 
+                VSConstants.S_OK == userData.GetData(ref monikerId, out object data))
             {
-                // GUID_VsBufferMoniker
-                var monikerId = VsVimConstants.VsUserDataFileNameMoniker;
-                var userData = (IVsUserData)lines;
-                if (VSConstants.S_OK != userData.GetData(ref monikerId, out object data)
-                    || string.IsNullOrEmpty(data as string))
-                {
-                    return string.Empty;
-                }
+                var strData = data as string;
+                return !string.IsNullOrEmpty(strData)
+                    ? strData
+                    : string.Empty;
+            }
 
-                return (string)data;
-            }
-            catch (InvalidCastException)
-            {
-                return string.Empty;
-            }
+            return string.Empty;
         }
 
         public static Result<IVsEnumLineMarkers> GetLineMarkersEnum(this IVsTextLines lines, TextSpan span)
@@ -720,6 +715,11 @@ namespace Vim.VisualStudio
         public static bool IsCSharp(this IContentType contentType)
         {
             return contentType.IsOfType(VsVimConstants.CSharpContentType);
+        }
+
+        public static bool IsFSharp(this IContentType contentType)
+        {
+            return contentType.IsOfType("F#");
         }
 
         public static bool IsVisualBasic(this IContentType contentType)

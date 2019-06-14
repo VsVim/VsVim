@@ -63,6 +63,7 @@ module LocalSettingNames =
     let ExpandTabName = "expandtab"
     let NumberName = "number"
     let NumberFormatsName = "nrformats"
+    let RelativeNumberName = "relativenumber"
     let SoftTabStopName = "softtabstop"
     let ShiftWidthName = "shiftwidth"
     let TabStopName = "tabstop"
@@ -563,6 +564,9 @@ and IVimLocalSettings =
 
     /// Formats that vim considers a number for CTRL-A and CTRL-X
     abstract NumberFormats: string with get, set
+
+    /// Whether or not to put relative line numbers on the left column of the display
+    abstract RelativeNumber: bool with get, set
 
     /// The number of spaces a << or >> command will shift by 
     abstract ShiftWidth: int with get, set

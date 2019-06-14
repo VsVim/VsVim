@@ -3,9 +3,6 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
-open Microsoft.VisualStudio.Text.Operations
-open Microsoft.VisualStudio.Text.Outlining
-open Microsoft.VisualStudio.Text.Classification
 open System.Collections.Generic
 open System.ComponentModel.Composition
 
@@ -16,21 +13,21 @@ type internal StatusUtil() =
         with get () = _vimBuffer
         and set value = _vimBuffer <- value
 
-    member x.DoWithBuffer func (msg: string) = 
-        VimTrace.TraceInfo("Status Start{0}{1}", System.Environment.NewLine, msg)
-        VimTrace.TraceInfo("Status End")
+    member x.DoWithBuffer (label: string) func (msg: string) = 
+        VimTrace.TraceError("{0} Start{1}{2}", label, System.Environment.NewLine, msg)
+        VimTrace.TraceError("{0} End", label)
         match _vimBuffer with
         | None -> ()
         | Some buffer -> msg |> func buffer
 
     interface IStatusUtil with
-        member x.OnStatus msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage)
-        member x.OnError msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage)
-        member x.OnWarning msg = msg |> x.DoWithBuffer (fun buffer -> buffer.RaiseWarningMessage)
+        member x.OnStatus msg = msg |> x.DoWithBuffer "Status" (fun buffer -> buffer.RaiseStatusMessage)
+        member x.OnError msg = msg |> x.DoWithBuffer "Error" (fun buffer -> buffer.RaiseErrorMessage)
+        member x.OnWarning msg = msg |> x.DoWithBuffer "Warning" (fun buffer -> buffer.RaiseWarningMessage)
         member x.OnStatusLong msgSeq =
             msgSeq
             |> StringUtil.CombineWith System.Environment.NewLine
-            |> x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage)
+            |> x.DoWithBuffer "StatusLong" (fun buffer -> buffer.RaiseStatusMessage)
 
 type internal PropagatingStatusUtil() = 
     let _statusUtilList = List<IStatusUtil>()

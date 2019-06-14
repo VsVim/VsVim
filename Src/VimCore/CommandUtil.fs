@@ -329,6 +329,14 @@ type internal CommandUtil
         if Util.IsFlagSet result.MotionResultFlags MotionResultFlags.BigDelete then RegisterOperation.BigDelete
         else RegisterOperation.Delete
 
+    member x.CancelOperation () =
+        match _vimBufferData.Vim.GetVimBuffer _textView with
+        | None -> _commonOperations.Beep()
+        | Some vimBuffer ->
+            vimBuffer.SwitchMode ModeKind.Normal ModeArgument.CancelOperation
+            |> ignore
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Change the characters in the given span via the specified change kind
     member x.ChangeCaseSpanCore kind (editSpan: EditSpan) =
 
@@ -1815,14 +1823,14 @@ type internal CommandUtil
                 match markMap.GetMarkInfo mark _vimBufferData with
                 | None -> markNotSet()
                 | Some markInfo ->
-                    let vimHost = _vimBufferData.Vim.VimHost
                     let name = markInfo.Name
                     let line = Some markInfo.Line
                     let column = if exact then Some markInfo.Column else None
-                    if vimHost.LoadFileIntoNewWindow name line column then
+                    match _commonOperations.LoadFileIntoNewWindow name line column with
+                    | Result.Succeeded ->
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    else
-                        _statusUtil.OnError (Resources.NormalMode_CantFindFile name)
+                    | Result.Failed message ->
+                        _statusUtil.OnError message
                         CommandResult.Error
             | Some virtualPoint ->
                 if virtualPoint.Position.Snapshot.TextBuffer = _textBuffer then
@@ -2109,6 +2117,10 @@ type internal CommandUtil
             |> CommandResult.Completed
         else
             CommandResult.Error
+
+    /// Perform no operation
+    member x.NoOperation () =
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Open a fold in visual mode.  In Visual Mode a single fold level is opened for every
     /// line in the selection
@@ -2932,6 +2944,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddToWord -> x.AddToWord count
+        | NormalCommand.CancelOperation -> x.CancelOperation()
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion registerName)
         | NormalCommand.ChangeCaseCaretLine kind -> x.ChangeCaseCaretLine kind
         | NormalCommand.ChangeCaseCaretPoint kind -> x.ChangeCaseCaretPoint kind count
@@ -2983,6 +2996,7 @@ type internal CommandUtil
         | NormalCommand.JumpToNewerPosition -> x.JumpToNewerPosition count
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
+        | NormalCommand.NoOperation -> x.NoOperation()
         | NormalCommand.OpenAllFolds -> x.OpenAllFolds()
         | NormalCommand.OpenAllFoldsUnderCaret -> x.OpenAllFoldsUnderCaret()
         | NormalCommand.OpenLinkUnderCaret -> x.OpenLinkUnderCaret()
@@ -3009,6 +3023,10 @@ type internal CommandUtil
         | NormalCommand.ScrollCaretLineToTop keepCaretColumn -> x.ScrollCaretLineToTop keepCaretColumn
         | NormalCommand.ScrollCaretLineToMiddle keepCaretColumn -> x.ScrollCaretLineToMiddle keepCaretColumn
         | NormalCommand.ScrollCaretLineToBottom keepCaretColumn -> x.ScrollCaretLineToBottom keepCaretColumn
+        | NormalCommand.ScrollCaretColumnToLeft -> x.ScrollCaretColumnToLeft()
+        | NormalCommand.ScrollCaretColumnToRight -> x.ScrollCaretColumnToRight()
+        | NormalCommand.ScrollColumns direction -> x.ScrollColumns direction count
+        | NormalCommand.ScrollHalfWidth direction -> x.ScrollHalfWidth direction
         | NormalCommand.SelectBlock -> x.SelectBlock()
         | NormalCommand.SelectLine -> x.SelectLine()
         | NormalCommand.SelectNextMatch searchPath -> x.SelectNextMatch searchPath data.Count
@@ -3051,6 +3069,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
+        | VisualCommand.CancelOperation -> x.CancelOperation()
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection registerName visualSpan
         | VisualCommand.CloseAllFoldsInSelection -> x.CloseAllFoldsInSelection visualSpan
@@ -3141,6 +3160,99 @@ type internal CommandUtil
             let pixels = float(sign * count) * _textView.LineHeight
             _textView.ViewScroller.ScrollViewportVerticallyByPixels(pixels)
 
+    /// Scroll the window horizontally by the specified number of pixels
+    member x.ScrollHorizontallyByPixels pixels =
+        _textView.ViewScroller.ScrollViewportHorizontallyByPixels(pixels)
+
+    /// Get the caret text view line unless line wrap is enabled
+    member x.CaretTextViewLineUnlessWrap () =
+        match TextViewUtil.IsWordWrapEnabled _textView with
+        | false -> TextViewUtil.GetTextViewLineContainingCaret _textView
+        | true -> None
+
+    /// Move the caret horizontally into the viewport
+    member x.MoveCaretHorizontallyIntoViewport () =
+
+        // Move the caret without checking visibility.
+        let moveCaretToPoint (point: SnapshotPoint) =
+            _textView.Caret.MoveTo(point)
+            |> ignore
+
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+
+            // Check whether the caret is within the viewport.
+            let caretBounds =
+                x.CaretVirtualPoint
+                |> textViewLine.GetCharacterBounds
+            if caretBounds.Left < _textView.ViewportLeft then
+                TextViewUtil.GetVisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetStartPoint
+                |> moveCaretToPoint
+            elif caretBounds.Right > _textView.ViewportRight then
+                TextViewUtil.GetVisibleSpan _textView textViewLine
+                |> SnapshotSpanUtil.GetEndPoint
+                |> moveCaretToPoint
+
+        | None ->
+            ()
+
+    /// Scroll the window horizontally so that the caret is at the left edge
+    /// of the screen
+    member x.ScrollCaretColumnToLeft () =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let xStart = _textView.ViewportLeft
+            let xCaret = caretBounds.Left
+            xCaret - xStart
+            |> x.ScrollHorizontallyByPixels
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally so that the caret is at the right edge
+    /// of the screen
+    member x.ScrollCaretColumnToRight () =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let caretBounds = textViewLine.GetCharacterBounds(x.CaretVirtualPoint)
+            let xEnd = _textView.ViewportRight
+            let xCaret = caretBounds.Right
+            xCaret - xEnd
+            |> x.ScrollHorizontallyByPixels
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll the window horizontally in the specified direction
+    member x.ScrollColumns direction count =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let spaceWidth = textViewLine.VirtualSpaceWidth
+            let pixels = double(count) * spaceWidth
+            let pixels =
+                match direction with
+                | Direction.Left -> -pixels
+                | Direction.Right -> pixels
+                | _ -> 0.0
+            x.ScrollHorizontallyByPixels pixels
+            x.MoveCaretHorizontallyIntoViewport()
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Scroll half the width of the window in the specified direction
+    member x.ScrollHalfWidth direction =
+        match x.CaretTextViewLineUnlessWrap() with
+        | Some textViewLine ->
+            let spaceWidth = textViewLine.VirtualSpaceWidth
+            let columns = _textView.ViewportWidth / spaceWidth
+            let count = int(round(columns / 2.0))
+            x.ScrollColumns direction count
+        | None ->
+            CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Scroll the window up / down a specified number of lines.  If a count is provided
     /// that will always be used.  Else we may choose one or the value of the 'scroll'
     /// option
@@ -3186,16 +3298,17 @@ type internal CommandUtil
                     let snapshotLine = SnapshotPointUtil.GetContainingLine textViewLine.Start
                     _commonOperations.MoveCaretToPoint snapshotLine.Start ViewFlags.Standard
 
-        match TextViewUtil.GetTextViewLines _textView with
-        | None -> ()
-        | Some textViewLines ->
+        let textViewLines = TextViewUtil.GetTextViewLines _textView
+        let caretTextViewLine = TextViewUtil.GetTextViewLineContainingCaret _textView
+        match textViewLines, caretTextViewLine with
+        | Some textViewLines, Some caretTextViewLine ->
 
             // Limit the amount of scrolling to the size of the window.
             let maxCount = x.GetWindowLineCount textViewLines
             let count = min count maxCount
 
             let firstIndex = textViewLines.GetIndexOfTextLine(textViewLines.FirstVisibleLine)
-            let caretIndex = textViewLines.GetIndexOfTextLine(_textView.Caret.ContainingTextViewLine)
+            let caretIndex = textViewLines.GetIndexOfTextLine(caretTextViewLine)
 
             // How many visual lines is the caret offset from the first visible line
             let lineOffset = max 0 (caretIndex - firstIndex)
@@ -3242,6 +3355,7 @@ type internal CommandUtil
             // proper line.  Need to adjust the caret within the line to the
             // appropriate column.
             _commonOperations.RestoreSpacesToCaret spacesToCaret true
+        | _ -> ()
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3344,10 +3458,10 @@ type internal CommandUtil
 
                         // As a special case when scrolling up, if the caret
                         // line is already visible on the screen, use that line.
-                        let caretLine = _textView.Caret.ContainingTextViewLine
-                        if caretLine.VisibilityState = VisibilityState.FullyVisible then
+                        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+                        | Some caretLine when caretLine.VisibilityState = VisibilityState.FullyVisible ->
                             caretLine
-                        else
+                        | _ ->
                             getLastFullyVisibleLine textViewLines
 
                     else
@@ -3376,7 +3490,7 @@ type internal CommandUtil
         // Count the number of rows we need to scroll to move count
         // lines off the screen in the specified direction.
         let rowCount =
-            if not _windowSettings.Wrap then
+            if not (TextViewUtil.IsWordWrapEnabled _textView) then
                 count
             else
 

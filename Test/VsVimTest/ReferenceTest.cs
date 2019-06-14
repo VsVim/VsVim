@@ -190,9 +190,11 @@ namespace Vim.VisualStudio.UnitTest
                     case "Microsoft.VisualStudio.Shell.10.0":
                     case "Microsoft.VisualStudio.Shell.11.0":
                     case "Microsoft.VisualStudio.Shell.12.0":
+                    case "Microsoft.VisualStudio.Shell.14.0":
                     case "Microsoft.VisualStudio.Shell.Immutable.10.0":
                     case "Microsoft.VisualStudio.Shell.ViewManager":
                     case "Microsoft.VisualStudio.Utilities":
+                    case "Microsoft.VisualStudio.Threading":
                         return new ReferenceData(assemblyName, ReferenceKind.ShellVersioned, getVersionFromVersionNumber());
 
                     case "Microsoft.VisualStudio.Platform.WindowManagement":

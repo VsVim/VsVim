@@ -178,9 +178,9 @@ namespace Vim.UnitTest.Mock
             get { return GlobalSettingsImpl; }
         }
 
-        public void RaiseSwitchedMode(IMode mode)
+        public void RaiseSwitchedMode(IMode mode, ModeArgument arg = null)
         {
-            RaiseSwitchedMode(new SwitchModeEventArgs(mode, mode));
+            RaiseSwitchedMode(new SwitchModeEventArgs(mode, mode, arg ?? ModeArgument.None));
         }
 
         public void RaiseSwitchedMode(SwitchModeEventArgs args)

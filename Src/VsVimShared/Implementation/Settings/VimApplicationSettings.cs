@@ -98,7 +98,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         private ReadOnlyCollection<CommandKeyBinding> GetRemovedBindings()
         {
-            var text = GetString(RemovedBindingsName, string.Empty);
+            var text = GetString(RemovedBindingsName, string.Empty) ?? "";
             var list = SettingSerializer.ConvertToCommandKeyBindings(text);
             return list.ToReadOnlyCollectionShallow();
         }

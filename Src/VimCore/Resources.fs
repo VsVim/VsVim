@@ -38,6 +38,8 @@ module internal Resources =
     let Common_LinesDeleted lines = sprintf "%d lines deleted" lines
     let Common_LinesChanged lines = sprintf "%d lines changed" lines
     let Common_LinesYanked lines = sprintf "%d lines yanked" lines
+    let Common_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
+    let Common_CouldNotFindTag ident = sprintf "Could not open tag \"%s\"" ident
     let Common_InvalidModeLineSetting setting modeLine = sprintf "Invalid setting '%s' in '%s'" setting modeLine
 
     let Undo_ChainBroken = "Undo chain broken. Falling back to Visual Studio undo"
@@ -59,11 +61,9 @@ module internal Resources =
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
     let CommandMode_NotSupported_KeyMapping lhs rhs = sprintf "The key mapping %s -> %s is not currently supported" lhs rhs
-    let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
-    let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
     let CommandMode_TrailingCharacters = "Trailing characters"
     let CommandMode_NoPreviousSubstitute =  "No previous substitute regular expression"
@@ -123,6 +123,8 @@ module internal Resources =
     let Interpreter_InvalidConversionToString t = sprintf "Using %s as a String" t
     let Interpreter_DivByZero = "Attempt to divide by zero. Not supported."
     let Interpreter_ModByZero = "Attempt to mod by zero. Not supported."
+    let Interpreter_ErrorsSourcing path = sprintf "Errors sourcing \"%s\":" path
+    let Interpreter_ErrorSettingEnvironmentVariable lhs rhs = sprintf "Error setting environment variable '%s' = %s" lhs rhs
 
     let Regex_Unknown = "Unknown error building regex"
     let Regex_UnmatchedParen = "Unmatched ("

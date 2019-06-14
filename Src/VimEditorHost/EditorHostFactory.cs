@@ -14,11 +14,18 @@ namespace Vim.EditorHost
 {
     public sealed partial class EditorHostFactory
     {
-        internal static EditorVersion DefaultEditorVersion =>
-#if VSVIM_DEV_2017
-            EditorVersion.Vs2017;
-#elif VSVIM_DEV_2019
-            EditorVersion.Vs2019;
+#if VS_SPECIFIC_2015
+        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
+        internal static Version VisualStudioVersion => new Version(14, 0, 0, 0);
+        internal static Version VisualStudioThreadingVersion => new Version(14, 0, 0, 0);
+#elif VS_SPECIFIC_2017
+        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
+        internal static Version VisualStudioVersion => new Version(15, 0, 0, 0);
+        internal static Version VisualStudioThreadingVersion => new Version(15, 3, 0, 0);
+#elif VS_SPECIFIC_2019
+        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2019;
+        internal static Version VisualStudioVersion => new Version(16, 0, 0, 0);
+        internal static Version VisualStudioThreadingVersion => new Version(16, 0, 0, 0);
 #else
 #error Unsupported configuration
 #endif
@@ -31,7 +38,7 @@ namespace Vim.EditorHost
                 "Microsoft.VisualStudio.Text.Logic.dll",
                 "Microsoft.VisualStudio.Text.UI.dll",
                 "Microsoft.VisualStudio.Text.UI.Wpf.dll",
-#if VSVIM_DEV_2019
+#if VS_SPECIFIC_2019
                 "Microsoft.VisualStudio.Language.dll",
 #endif
             };
@@ -39,9 +46,9 @@ namespace Vim.EditorHost
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
         private readonly List<ExportProvider> _exportProviderList = new List<ExportProvider>();
 
-        public EditorHostFactory(EditorVersion? editorVersion = null)
+        public EditorHostFactory()
         {
-            BuildCatalog(editorVersion ?? DefaultEditorVersion);
+            BuildCatalog();
         }
 
         public void Add(ComposablePartCatalog composablePartCatalog)
@@ -65,73 +72,13 @@ namespace Vim.EditorHost
             return new EditorHost(CreateCompositionContainer());
         }
 
-        private void BuildCatalog(EditorVersion editorVersion)
+        private void BuildCatalog()
         {
-            GetEditorInfoAndHookResolve(editorVersion, out Version vsVersion);
-            BuildCatalog(vsVersion);
-        }
-
-        private void BuildCatalog(Version vsVersion)
-        {
-            var editorAssemblyVersion = new Version(vsVersion.Major, 0);
+            var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
-
-#if VSVIM_DEV_2017
-            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(15, 3));
-#elif VSVIM_DEV_2019
-            AppendEditorAssembly("Microsoft.VisualStudio.Threading", new Version(16, 0));
-#else
-#error Unsupported configuration
-#endif
-
+            AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
             _exportProviderList.Add(new JoinableTaskContextExportProvider());
             _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
-        }
-
-        private static void GetEditorInfoAndHookResolve(EditorVersion editorVersion, out Version vsVersion)
-        {
-            if (!EditorLocatorUtil.TryGetEditorInfo(editorVersion, out vsVersion, out string vsInstallDirectory))
-            {
-                throw new Exception("Unable to calculate the version of Visual Studio installed on the machine");
-            }
-
-            if (vsVersion.Major <= 14)
-            {
-                HookResolve(vsInstallDirectory);
-            }
-        }
-
-        /// <summary>
-        /// Need to hook <see cref="AppDomain.AssemblyResolve" /> so that we can load the editor assemblies from the 
-        /// desired location for this AppDomain.
-        /// </summary>
-        private static void HookResolve(string installDirectory)
-        {
-            var dirList = new List<string>
-            {
-                Path.Combine(installDirectory, "PrivateAssemblies"),
-
-                // Before 15.0 all of the editor assemblies were located in the GAC.  Hence no resolve needs to be done
-                // because they will be discovered automatically when we load by the qualified name.  Starting in 15.0 
-                // though the assemblies are not GAC'd and we need to load from the extension directory. 
-                Path.Combine(installDirectory, @"CommonExtensions\Microsoft\Editor")
-            };
-
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, e) =>
-                {
-                    var assemblyName = new AssemblyName(e.Name);
-                    var name = $"{assemblyName.Name}.dll";
-                    foreach (var dir in dirList)
-                    {
-                        var fullName = Path.Combine(dir, name);
-                        if (File.Exists(fullName))
-                        {
-                            return Assembly.LoadFrom(fullName);
-                        }
-                    }
-
-                    return null;
-                };
         }
 
         private void AppendEditorAssemblies(Version editorAssemblyVersion)

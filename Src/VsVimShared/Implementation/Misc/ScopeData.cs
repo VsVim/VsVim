@@ -106,6 +106,11 @@ namespace Vim.VisualStudio.Implementation.Misc
             {
                 using (var rootKey = VSRegistry.RegistryRoot(__VsLocalRegistryType.RegType_Configuration, writable: false))
                 {
+                    if (rootKey is null)
+                    {
+                        return false;
+                    }
+
                     using (var keyBindingsKey = rootKey.OpenSubKey("KeyBindingTables"))
                     {
                         // For "Global".  The id in the registry here is incorrect for Vs 2010+

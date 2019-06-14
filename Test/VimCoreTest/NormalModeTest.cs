@@ -183,6 +183,18 @@ namespace Vim.UnitTest
             Assert.False(_mode.CanProcess(KeyInputUtil.CharToKeyInput('´')));
         }
 
+        /// <summary>
+        /// Verify that normal mode can process both C-LeftMouse and C-LeftRelease
+        /// </summary>
+        [WpfFact]
+        public void CanProcess_ControlClickAndRelease()
+        {
+            // Reported in issue #2580.
+            Create(s_defaultLines);
+            Assert.True(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.LeftMouse), VimKeyModifiers.Control)));
+            Assert.True(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.VimKeyToKeyInput(VimKey.LeftRelease), VimKeyModifiers.Control)));
+        }
+
         #endregion
 
         #region Movement
@@ -531,6 +543,78 @@ namespace Vim.UnitTest
             Create("");
             _commandUtil.SetupCommandNormal(NormalCommand.NewSelectNextMatch(SearchPath.Backward));
             _mode.Process("gN");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollCaretLeft()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.ScrollCaretColumnToLeft);
+            _mode.Process("zs");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollCaretRight()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.ScrollCaretColumnToRight);
+            _mode.Process("ze");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollColumns_Left()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollColumns(Direction.Left));
+            _mode.Process("zh");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollColumns_Right()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollColumns(Direction.Right));
+            _mode.Process("zl");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollColumns_LeftArrow()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollColumns(Direction.Left));
+            _mode.ProcessNotation("z<Left>");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollColumns_RightArrow()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollColumns(Direction.Right));
+            _mode.ProcessNotation("z<Right>");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollHalfWidth_Left()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollHalfWidth(Direction.Left));
+            _mode.Process("zH");
+            _commandUtil.Verify();
+        }
+
+        [WpfFact]
+        public void Bind_ScrollHalfWidth_Right()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewScrollHalfWidth(Direction.Right));
+            _mode.Process("zL");
             _commandUtil.Verify();
         }
 

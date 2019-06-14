@@ -348,12 +348,122 @@ type MatchingTokenKind =
     /// A C style block comment
     | Comment
 
-    // Parens
+    // Parentheses
     | Parens
 
+    // Square brackets
     | Brackets
 
+    // Curly braces
     | Braces
+
+/// Determine whether a given point is in a string literal by parsing forward
+/// from the beginning of the containing line
+type internal StringLiteralTestPoint
+    (
+        _point: SnapshotPoint,
+        _line: ITextSnapshotLine,
+        _isInStringLiteral: bool []
+    ) =
+
+    /// Create a StringLiteralTestPoint for the specified point
+    static member CreateFromPoint (point: SnapshotPoint) =
+        let line = SnapshotPointUtil.GetContainingLine point
+        let isInStringLiteral = Array.create line.LengthIncludingLineBreak false
+        let result = StringLiteralTestPoint(point, line, isInStringLiteral)
+        result.FindLiterals()
+        result
+
+    /// Get a StringLiteralTestPoint for the specified point reusing the
+    /// cached snapshot line and boolean array where possible
+    member x.FromPoint (point: SnapshotPoint) =
+        if _line.ExtentIncludingLineBreak.Contains(point) then
+            StringLiteralTestPoint(point, _line, _isInStringLiteral)
+        else
+            StringLiteralTestPoint.CreateFromPoint point
+
+    /// Whether the character at the snapshot point associated with this
+    /// test point is part of a string literal
+    member x.IsInStringLiteral =
+        _isInStringLiteral.[_point.Position - _line.Start.Position]
+
+    /// Process the specified point in context detecting literal strings
+    member private x.FindLiterals () =
+
+        // Produce a sequence of the points in the current line.
+        let points =
+            _line
+            |> SnapshotLineUtil.GetExtentIncludingLineBreak
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+
+        // Get the character after point
+        let getNextChar point =
+            point
+            |> SnapshotPointUtil.AddOne
+            |> SnapshotPointUtil.GetChar
+
+        // Populate the 'is literal' array of booleans with true for any
+        // embedded syntactically-complete literals.
+        let mutable startOffset = 0
+        let mutable verbatim = false
+        let mutable quote = None
+        let mutable escape = false
+        for point in points do
+            let c = SnapshotPointUtil.GetChar point
+            let offset = point.Position - _line.Start.Position
+            match quote with
+            | Some quoteChar ->
+                if escape then
+
+                    // The current character is escaped.
+                    escape <- false
+
+                elif
+                    verbatim
+                    && c = quoteChar
+                    && point.Position + 1 < _line.EndIncludingLineBreak.Position
+                    && getNextChar point = quoteChar
+                then
+
+                    // Encountered first of two adjacent quote characters.
+                    escape <- true
+
+                elif c = quoteChar then
+
+                    // Found the terminating quote character. Mark all the
+                    // characters between startOffset and offset inclusive as
+                    // part of a string literal.
+                    for offset in startOffset .. offset do
+                        _isInStringLiteral.[offset] <- true
+
+                    quote <- None
+                    verbatim <- false
+
+                elif not verbatim && c = '\\' then
+
+                    // Backslash quotes the following character unless
+                    // verbatim.
+                    escape <- true
+
+            | None ->
+                if c = '@' then
+
+                    // The next character, if a quote, will start a verbatim
+                    // string literal.
+                    verbatim <- true
+
+                elif c = '\'' || c = '\"' then
+
+                    // Found the start of a new (possibly verbatim) string
+                    // literal.
+                    startOffset <- offset
+                    quote <- Some c
+
+                else
+
+                    // An '@' only modifies an immediately following quote
+                    // character.
+                    verbatim <- false
 
 type internal BlockUtil() =
 
@@ -376,7 +486,7 @@ type internal BlockUtil() =
         // to allow valid blocks in, say, a regular expression in
         // a string, as well as valid syntactic expression blocks.
 
-        // Likewise, unbalances parentheses or stray quote marks in
+        // Likewise, unbalanced parentheses or stray quote marks in
         // comments can also be problematic, but vim does very little
         // to accomodate those cases.
 
@@ -389,7 +499,8 @@ type internal BlockUtil() =
         // Our "univeral string" (covering common cases in C, C++, C#,
         // F#, Python and Java, etc.) is text surrounded with single
         // or double quotes and using backslash to escape the quote
-        // character.
+        // character. We also support, as an extension to vim,
+        // verbatim strings in C# and F#.
 
         // A more robust solution would be to use an abstract syntax
         // tree supplied by a language service appropriate for the
@@ -399,21 +510,24 @@ type internal BlockUtil() =
 
         let startChar, endChar = blockKind.Characters
 
-        // Is the char at the given point escaped?
+        // Whether the char at the specified point is escaped
         let isEscaped point =
             match SnapshotPointUtil.TrySubtractOne point with
             | None -> false
             | Some point -> SnapshotPointUtil.GetChar point = '\\'
 
-        // Is the char at the given point double escaped?
+        // Whether the char at the specified point is double escaped
         let isDoubleEscaped point =
-            match SnapshotPointUtil.TrySubtract point 2, SnapshotPointUtil.TrySubtract point 2 with
-            | None, _
-            | _, None -> false
-            | Some point1, Some point2 -> SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+            match SnapshotPointUtil.TrySubtract point 1, SnapshotPointUtil.TrySubtract point 2 with
+            | Some point1, Some point2 ->
+                SnapshotPointUtil.GetChar point1 = '\\' && SnapshotPointUtil.GetChar point2 = '\\'
+            | _ -> false
 
-        // Is the char at the given point unescaped and equal to the specified character?
-        let isChar c point = SnapshotPointUtil.GetChar point = c && (not (isEscaped point) || isDoubleEscaped point)
+        // Is the char at the given point unescaped and equal to the specified
+        // character?
+        let isChar c point =
+            SnapshotPointUtil.GetChar point = c
+            && (not (isEscaped point) || isDoubleEscaped point)
 
         // Given the specified block start and end characters, return a
         // function that transform a tuple of a point and the current nesting
@@ -430,132 +544,114 @@ type internal BlockUtil() =
                 count = 0, count
             inner
 
-        let snapshot = SnapshotPointUtil.GetSnapshot contextPoint
-
-        // Compute a tuple of three quantities:
-        // - Whether the target point is inside a string literal
-        // - The start point of the string, as long as it there
-        //   is no unmatched start character in string literals
-        //   before the target
-        // - The quote character used to delineate the string
+        // Compute two quantities:
+        //
+        // Whether the target point is inside a string literal
+        //
+        // The starting point of that string, but only if it there is no
+        // unmatched start character in the string literals before the target
         let isInStringLiteral (target: SnapshotPoint) (sequence: SnapshotPoint seq) =
-            let mutable escape = false
-            let mutable quote = None
+            let mutable testPoint = StringLiteralTestPoint.CreateFromPoint target
+            let mutable wasInStringLiteral = false
             let mutable start = None
             let mutable depth = 0
-            let mutable result = false, None, None
+            let mutable result = false, None
 
             for point in sequence do
-                let c = SnapshotUtil.GetChar point.Position snapshot
-                if quote <> None then
-                    if escape then
-                        escape <- false
-                    else
-                        if c = '\\' then
-                            escape <- true
-                        else
-                            match quote with
-                            | Some quoteChar when c = '\n' || c = quoteChar -> quote <- None
-                            | Some _ when c = '\\' -> escape <- true
-                            | _ -> ()
+                let c = SnapshotPointUtil.GetChar point
+                testPoint <- testPoint.FromPoint point
+                let isInStringLiteral = testPoint.IsInStringLiteral
+                if isInStringLiteral then
+                    if not wasInStringLiteral then
+                        start <- Some point
                     if point = target then
                         if depth <= 0 then
-                            result <- true, start, quote
+                            result <- true, start
                         else
-                            result <- true, None, quote
-                    elif c = startChar then
+                            result <- true, None
+                    if c = startChar then
                         depth <- depth + 1
                     elif c = endChar then
                         depth <- depth - 1
-                elif c = '\'' || c = '\"' then
-                    quote <- Some c
-                    start <- Some point
+                    wasInStringLiteral <- isInStringLiteral
 
             result
 
-        // Choose a starting point within the block.
-        let endPoint =
+        // Choose a reference point within the block. This is the context point
+        // unless but it needs to be moved inside the block because vim treats
+        // the character under the cusor as the context point.
+        let referencePoint =
             if isChar startChar contextPoint then
                 SnapshotPointUtil.AddOneOrCurrent contextPoint
             else
                 contextPoint
 
-        // Go to the beginning of the line and then scan forward to
-        // the beginning of the containing string literal, if any.
-        let endPoint, endPointIsInStringLiteral, endPointQuote =
+        // We now have to decide whether we are searching inside string
+        // literals or outside of them.  As a special case, if we are inside a
+        // string literal but there, say, no parentheses in the string literal,
+        // we want to treat the block that contains the string literal rather
+        // than fail to find a block within the string literal.
+        //
+        // Example, if we in the string "bar" and type 'vat('
+        //
+        // foo(arg1, "bar", arg3)
+        //
+        // we want to select the parenthesized block. To handle this, we move
+        // the reference point to outside of the string (the beginning).
+        //
+        // Do this by going to the beginning of the line and then scanning
+        // forward to the beginning of the containing string literal, if any.
+        let referencePoint, referencePointIsInStringLiteral =
             match
-                SnapshotPointUtil.GetContainingLine endPoint
+                SnapshotPointUtil.GetContainingLine referencePoint
                 |> SnapshotLineUtil.GetExtent
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> isInStringLiteral endPoint
+                |> isInStringLiteral referencePoint
                 with
-                | true, Some adjustedEndPoint, _ -> adjustedEndPoint, false, None
-                | true, None, Some quoteChar -> endPoint, true, Some quoteChar
-                | _ -> endPoint, false, None
+                | true, Some adjustedReferencePoint -> adjustedReferencePoint, false
+                | true, None _ -> referencePoint, true
+                | _ -> referencePoint, false
 
-        // Parse backward skipping non-string literals
-        // if the context is a string literal and skipping
-        // string literals otherwise.
-        let filterToContextBackward endPointQuote (sequence: SnapshotPoint seq) =
-            let mutable quote: char option = endPointQuote
+        // A literal point can answer whether a snapshot point is part of a
+        // string literal, even when scanning backwards. It does this by
+        // parsing forward from the beginning of the containing line.
+        let referenceTestPoint = StringLiteralTestPoint.CreateFromPoint referencePoint
+
+        // Process points skipping points that are not in string literals if
+        // the context is a string literal and skipping string literals
+        // otherwise.
+        let rec filterToContext (sequence: SnapshotPoint seq) =
+            let mutable testPoint = referenceTestPoint
             seq {
                 for point in sequence do
-                    let c = SnapshotUtil.GetChar point.Position snapshot
-                    if quote <> None then
-                        match quote with
-                        | Some quoteChar when c = '\n' || isChar quoteChar point -> quote <- None
-                        | _ -> ()
-                        if endPointIsInStringLiteral then yield point
-                    elif c = '\'' || c = '\"' then
-                        quote <- Some c
-                    else
-                        if not endPointIsInStringLiteral then yield point
-            }
 
-        // Parse forward skipping non-string literals
-        // if the context is a string literal and skipping
-        // string literals otherwise.
-        let filterToContextForward endPointQuote (sequence: SnapshotPoint seq) =
-            let mutable escape = false
-            let mutable quote: char option = endPointQuote
-            seq {
-                for point in sequence do
-                    let c = SnapshotUtil.GetChar point.Position snapshot
-                    if quote <> None then
-                        if escape then
-                            escape <- false
-                        else
-                            match quote with
-                            | Some quoteChar when c = '\n' || c = quoteChar -> quote <- None
-                            | Some _ when c = '\\' -> escape <- true
-                            | _ -> ()
-                            if endPointIsInStringLiteral then yield point
-                    elif c = '\'' || c = '\"' then
-                        quote <- Some c
-                    else
-                        if not endPointIsInStringLiteral then yield point
+                    // Computing a literal point is not expensive except when
+                    // switching to a new line, even when scanning backwards.
+                    testPoint <- testPoint.FromPoint point
+                    if testPoint.IsInStringLiteral = referencePointIsInStringLiteral then
+                        yield point
             }
 
         // Search backward for the character that starts this block.
         let startPoint =
-            SnapshotSpan(SnapshotPoint(snapshot, 0), endPoint)
+            SnapshotSpan(SnapshotUtil.GetStartPoint referencePoint.Snapshot, referencePoint)
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
-            |> filterToContextBackward endPointQuote
+            |> filterToContext
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
 
         // Then search forward for the character that ends this block.
-        let lastPoint =
+        let endPoint =
             match startPoint with
             | None -> None
             | Some startPoint ->
-                SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint snapshot)
+                SnapshotSpan(startPoint, SnapshotUtil.GetEndPoint referencePoint.Snapshot)
                 |> SnapshotSpanUtil.GetPoints SearchPath.Forward
-                |> filterToContextForward endPointQuote
+                |> filterToContext
                 |> SeqUtil.tryFind 0 (findMatched startChar endChar)
 
-        // Return the span from the block start to block end.
-        match startPoint, lastPoint with
-        | Some startPoint, Some lastPoint -> Some (startPoint, lastPoint)
+        // Return the span from the start of the block to the end of the block.
+        match startPoint, endPoint with
+        | Some startPoint, Some endPoint -> Some (startPoint, endPoint)
         | _ -> None
 
 
@@ -1157,66 +1253,61 @@ type internal MotionUtil
 
     /// First non blank character on the display line
     member x.DisplayLineFirstNonBlank () = 
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
-            | Some caretLine ->
-                x.FirstNonBlankCore caretLine.Extent
-            | None ->
-                x.FirstNonBlankOnCurrentLine()
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            TextViewUtil.GetVisibleSpan _textView caretLine
+            |> x.FirstNonBlankCore
+        | None ->
             x.FirstNonBlankOnCurrentLine()
 
     /// Start of the display line 
     member x.DisplayLineStart () =
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
-            | Some caretLine ->
-                let point = 
-                    match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportLeft) with
-                    | NullableUtil.Null -> caretLine.Start
-                    | NullableUtil.HasValue point -> point
-                let span = SnapshotSpan(point, x.CaretPoint)
-                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
-            | None -> None
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            let span =
+                TextViewUtil.GetVisibleSpan _textView caretLine
+                |> SnapshotSpanUtil.GetStartPoint
+                |> (fun point -> SnapshotSpan(point, x.CaretPoint))
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = false) |> Some
+        | None ->
             x.BeginingOfLine() |> Some
 
     /// End of the display line 
     member x.DisplayLineEnd () =
-        if TextViewUtil.IsWordWrapEnabled _textView then
-            match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
-            | Some caretLine ->
-                let point = 
-                    match caretLine.GetBufferPositionFromXCoordinate(_textView.ViewportRight) with
-                    | NullableUtil.Null -> SnapshotPointUtil.SubtractOneOrCurrent caretLine.End
-                    | NullableUtil.HasValue point -> point
-                let span = SnapshotSpan(x.CaretPoint, point)
-                MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
-            | None -> None
-        else
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
+        | Some caretLine ->
+            let span =
+                TextViewUtil.GetVisibleSpan _textView caretLine
+                |> SnapshotSpanUtil.GetEndPoint
+                |> (fun point -> SnapshotSpan(x.CaretPoint, point))
+            MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward = true) |> Some
+        | None ->
             x.EndOfLine 1 |> Some
 
     /// Get the point in the middle of the screen.  This looks at the entire
     /// screen not just  the width of the current line
     member x.DisplayLineMiddleOfScreen() =
+
         let createForPoint (point: SnapshotPoint) = 
             let isForward = x.CaretPoint.Position <= point.Position
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending x.CaretPoint point
             let span = SnapshotSpan(startPoint, endPoint)
             MotionResult.Create(span, MotionKind.CharacterWiseExclusive, isForward) |> Some
 
-        match TextViewUtil.GetTextViewLineContainingPoint _textView x.CaretPoint with
+        match TextViewUtil.GetTextViewLineContainingCaret _textView with
         | Some caretLine ->
-            let middle = _textView.ViewportWidth / 2.0
-            match caretLine.GetBufferPositionFromXCoordinate(middle) with
-            | NullableUtil.Null -> 
-                // If the point is beyond the width of the line then the motion should go to the 
-                // end of the line 
-                if middle >= caretLine.Width then
-                    createForPoint caretLine.End
-                else    
-                    None
-            | NullableUtil.HasValue point -> createForPoint point
+
+            // Whether the specified point contains the center of the viewport.
+            let containsCenterOfViewport (point: SnapshotPoint) =
+                let viewportCenter = _textView.ViewportLeft + _textView.ViewportWidth / 2.0
+                let bounds = caretLine.GetCharacterBounds(point)
+                bounds.Left <= viewportCenter && viewportCenter <= bounds.Right
+
+            caretLine.Extent
+            |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+            |> Seq.tryFind containsCenterOfViewport
+            |> Option.defaultValue caretLine.End
+            |> createForPoint
         | None -> None
 
     /// Get the caret column of the specified line based on the 'startofline' option

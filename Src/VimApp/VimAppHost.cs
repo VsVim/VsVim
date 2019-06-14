@@ -25,6 +25,7 @@ namespace VimApp
         private const string ErrorUnsupported = "Could not find the associated IVimViewInfo";
         private const string ErrorInvalidDirection = "Invalid direction";
 
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
@@ -52,18 +53,22 @@ namespace VimApp
 
         [ImportingConstructor]
         internal VimAppHost(
+            IProtectedOperations protectedOperations,
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IContentTypeRegistryService contentTypeRegistryService,
             IFileSystem fileSystem,
-            IDirectoryUtil directoryUtil) : base(
-            textBufferFactoryService,
-            textEditorFactoryService,
-            textDocumentFactoryService,
-            editorOperationsFactoryService)
+            IDirectoryUtil directoryUtil) :
+            base(
+                protectedOperations,
+                textBufferFactoryService,
+                textEditorFactoryService,
+                textDocumentFactoryService,
+                editorOperationsFactoryService)
         {
+            _protectedOperations = protectedOperations;
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;
@@ -160,7 +165,7 @@ namespace VimApp
             }
         }
 
-        public override bool LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             try
             {
@@ -188,12 +193,12 @@ namespace VimApp
                 var point = wpfTextView.Caret.Position.VirtualBufferPosition;
                 NavigateTo(point);
 
-                return true;
+                return FSharpOption.Create<ITextView>(wpfTextView);
             }
             catch (Exception ex)
             {
                 _vim.ActiveStatusUtil.OnError(ex.Message);
-                return false;
+                return FSharpOption<ITextView>.None;
             }
         }
 

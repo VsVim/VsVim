@@ -133,7 +133,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 
         void IWordCompletionSession.Commit()
         {
-            throw new NotImplementedException();
+            _completionSession.Commit();
         }
 
         #endregion
