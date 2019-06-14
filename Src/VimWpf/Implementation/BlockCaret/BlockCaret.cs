@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
@@ -22,9 +23,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             internal readonly Color? Color;
             internal readonly Size Size;
             internal readonly double YDisplayOffset;
+            internal readonly double BaselineOffset;
             internal readonly string CaretCharacter;
 
-            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, UIElement element, Color? color, Size size, double displayOffset, string caretCharacter)
+            internal CaretData(
+                CaretDisplay caretDisplay,
+                double caretOpacity,
+                UIElement element,
+                Color? color,
+                Size size,
+                double displayOffset,
+                double baselineOffset,
+                string caretCharacter)
             {
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
@@ -32,6 +42,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 Color = color;
                 Size = size;
                 YDisplayOffset = displayOffset;
+                BaselineOffset = baselineOffset;
                 CaretCharacter = caretCharacter;
             }
         }
@@ -83,19 +94,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        public FormattedText FormattedText
-        {
-            get
-            {
-                if (_formattedText == null)
-                {
-                    _formattedText = CreateFormattedText();
-                }
-
-                return _formattedText;
-            }
-        }
-
         private ITextViewLine TextViewLineContainingCaret
         {
             get
@@ -141,7 +139,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        internal BlockCaret(ITextView textView, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IAdornmentLayer layer, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
+        internal BlockCaret(
+            ITextView textView,
+            IClassificationFormatMap classificationFormatMap,
+            IEditorFormatMap formatMap,
+            IAdornmentLayer layer,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations)
         {
             _textView = textView;
             _editorFormatMap = formatMap;
@@ -159,9 +163,46 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
         }
 
-        internal BlockCaret(IWpfTextView textView, string adornmentLayerName, IClassificationFormatMap classificationFormatMap, IEditorFormatMap formatMap, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations) :
-            this(textView, classificationFormatMap, formatMap, textView.GetAdornmentLayer(adornmentLayerName), controlCharUtil, protectedOperations)
+        internal BlockCaret(
+            IWpfTextView textView,
+            string adornmentLayerName,
+            IClassificationFormatMap classificationFormatMap,
+            IEditorFormatMap formatMap,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations) :
+            this(
+                textView,
+                classificationFormatMap,
+                formatMap,
+                textView.GetAdornmentLayer(adornmentLayerName),
+                controlCharUtil,
+                protectedOperations)
         {
+        }
+
+        /// <summary>
+        /// Snap the specifed value to whole device pixels, optionally ensuring
+        /// that the value is positive
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="ensurePositive"></param>
+        /// <returns></returns>
+        private double SnapToWholeDevicePixels(double value, bool ensurePositive)
+        {
+            if (_textView is IWpfTextView wpfTextView)
+            {
+                var visualElement = wpfTextView.VisualElement;
+                var presentationSource = PresentationSource.FromVisual(visualElement);
+                var matrix = presentationSource.CompositionTarget.TransformToDevice;
+                var dpiFactor = 1.0 / matrix.M11;
+                var wholePixels = Math.Round(value / dpiFactor);
+                if (ensurePositive && wholePixels < 1.0)
+                {
+                    wholePixels = 1.0;
+                }
+                return wholePixels * dpiFactor;
+            }
+            return value;
         }
 
         /// <summary>
@@ -316,12 +357,38 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private Point GetRealCaretVisualPoint()
         {
-            return new Point(_textView.Caret.Left, _textView.Caret.Top);
+            // Default screen position is the same as that of the native caret.
+            var caret = _textView.Caret;
+            var left = caret.Left;
+            var top = caret.Top;
+
+            if (_caretDisplay == CaretDisplay.Block ||
+                _caretDisplay == CaretDisplay.HalfBlock ||
+                _caretDisplay == CaretDisplay.QuarterBlock)
+            {
+                var point = caret.Position.BufferPosition;
+                if (point < _textView.TextSnapshot.Length && point.GetChar() == '\t')
+                {
+                    // Any kind of block caret situated on a tab floats over
+                    // the last space occupied by the tab.
+                    var textViewLine = TextViewLineContainingCaret;
+                    var width = textViewLine.GetCharacterBounds(point).Width;
+                    var defaultWidth = _formattedText.Width;
+                    var offset = Math.Max(0, width - defaultWidth);
+                    left += offset;
+                }
+            }
+
+            return new Point(left, top);
         }
 
         private void MoveCaretElementToCaret(CaretData caretData)
         {
             var point = GetRealCaretVisualPoint();
+            if (caretData.CaretDisplay == CaretDisplay.Select)
+            {
+                point = new Point(SnapToWholeDevicePixels(point.X, ensurePositive: false), point.Y);
+            }
             Canvas.SetLeft(caretData.Element, point.X);
             Canvas.SetTop(caretData.Element, point.Y + caretData.YDisplayOffset);
         }
@@ -338,42 +405,67 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private Size CalculateCaretSize(out string caretCharacter)
         {
             caretCharacter = "";
-            var defaultWidth = FormattedText.Width;
 
+            var defaultWidth = _formattedText.Width;
             var width = defaultWidth;
             var height = _textView.LineHeight;
 
             if (IsRealCaretVisible)
             {
-                // Get the size of the character to which we need to paint
-                // the caret.  Special case tab here because it's too big.
-                // When there is a tab we use the default height and width.
+                // Get the caret string and caret width.
                 var line = TextViewLineContainingCaret;
                 height = line.Height;
                 var point = _textView.Caret.Position.BufferPosition;
-                if (point.Position < _textView.TextSnapshot.Length)
+                var codePointInfo = new SnapshotCodePoint(point).CodePointInfo;
+                if (point.Position < point.Snapshot.Length)
                 {
                     var pointCharacter = point.GetChar();
-                    if (pointCharacter != '\t'
-                        && !_controlCharUtil.IsDisplayControlChar(pointCharacter))
+                    if (_controlCharUtil.TryGetDisplayText(pointCharacter, out string caretString))
+                    {
+                        // Handle control character notation.
+                        caretCharacter = caretString;
+                        width = line.GetCharacterBounds(point).Width;
+                    }
+                    else if (codePointInfo == CodePointInfo.SurrogatePairHighCharacter)
                     {
                         // Handle surrogate pairs.
-                        if (Char.IsHighSurrogate(pointCharacter)
-                            && point.Position < _textView.TextSnapshot.Length - 1
-                            && Char.IsLowSurrogate(point.Add(1).GetChar()))
-                        {
-                            caretCharacter = new SnapshotSpan(point, 2).GetText();
-                        }
-                        else
-                        {
-                            caretCharacter = pointCharacter.ToString();
-                        }
+                        caretCharacter = new SnapshotSpan(point, 2).GetText();
+                        width = line.GetCharacterBounds(point).Width;
+                    }
+                    else if (pointCharacter == '\t')
+                    {
+                        // Handle tab as no character and default width,
+                        // except no wider than the tab's screen width.
+                        caretCharacter = "";
+                        width = Math.Min(defaultWidth, line.GetCharacterBounds(point).Width);
+                    }
+                    else if (pointCharacter == '\r' || pointCharacter == '\n')
+                    {
+                        // Handle linebreak.
+                        caretCharacter = "";
+                        width = line.GetCharacterBounds(point).Width;
+                    }
+                    else
+                    {
+                        // Handle ordinary UTF16 character.
+                        caretCharacter = pointCharacter.ToString();
                         width = line.GetCharacterBounds(point).Width;
                     }
                 }
             }
 
             return new Size(width, height);
+        }
+
+        private double CalculateBaselineOffset()
+        {
+            var offset = 0.0;
+            if (IsRealCaretVisible)
+            {
+                var line = TextViewLineContainingCaret;
+                offset = Math.Max(0.0, line.Baseline - _formattedText.Baseline);
+            }
+            return offset;
         }
 
         private Tuple<Rect, double, string> CalculateCaretRectAndDisplayOffset()
@@ -399,7 +491,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
                 case CaretDisplay.Select:
                     caretCharacter = null;
-                    size = new Size(_textView.Caret.Width, _textView.Caret.Height);
+                    var width = SnapToWholeDevicePixels(_textView.Caret.Width, ensurePositive: true);
+                    var height = _textView.Caret.Height;
+
+                    size = new Size(width, height);
                     break;
 
                 case CaretDisplay.Invisible:
@@ -418,8 +513,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private CaretData CreateCaretData()
         {
+            _formattedText = CreateFormattedText();
             var color = TryCalculateCaretColor();
             var tuple = CalculateCaretRectAndDisplayOffset();
+            var baselineOffset = CalculateBaselineOffset();
             var rect = tuple.Item1;
             var width = rect.Size.Width;
             var height = rect.Size.Height;
@@ -433,6 +530,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var typeface = textRunProperties.Typeface;
             var fontSize = textRunProperties.FontRenderingEmSize;
             var textHeight = offset + height;
+            var lineHeight = _textView.LineHeight;
 
             if (_caretOpacity < 1.0 && backgroundBrush is SolidColorBrush solidBrush)
             {
@@ -441,6 +539,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 var newColor = Color.FromArgb(alpha, oldColor.R, oldColor.G, oldColor.B);
                 backgroundBrush = new SolidColorBrush(newColor);
             }
+
+            var rectangle = new Rectangle
+            {
+                Width = width,
+                Height = baselineOffset,
+                Fill = backgroundBrush,
+            };
 
             var textBlock = new TextBlock
             {
@@ -454,9 +559,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 FontSize = fontSize,
                 Width = width,
                 Height = textHeight,
-                LineHeight = textHeight != 0 ? textHeight : double.NaN,
-                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                BaselineOffset = 0,
+                LineHeight = lineHeight,
             };
 
             var element = new Canvas
@@ -464,13 +567,28 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 Width = width,
                 Height = height,
                 ClipToBounds = true,
+                Children =
+                {
+                    rectangle,
+                    textBlock,
+                },
             };
 
-            element.Children.Add(textBlock);
-            Canvas.SetTop(textBlock, -offset);
+            Canvas.SetTop(rectangle, -offset);
             Canvas.SetLeft(textBlock, 0);
 
-            return new CaretData(_caretDisplay, _caretOpacity, element, color, rect.Size, offset, caretCharacter);
+            Canvas.SetTop(textBlock, -offset + baselineOffset);
+            Canvas.SetLeft(textBlock, 0);
+
+            return new CaretData(
+                _caretDisplay,
+                _caretOpacity,
+                element,
+                color,
+                rect.Size,
+                offset,
+                baselineOffset,
+                caretCharacter);
         }
 
         /// <summary>
