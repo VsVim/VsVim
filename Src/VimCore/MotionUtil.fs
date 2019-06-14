@@ -573,7 +573,7 @@ type internal BlockUtil() =
                         depth <- depth + 1
                     elif c = endChar then
                         depth <- depth - 1
-                    wasInStringLiteral <- isInStringLiteral
+                wasInStringLiteral <- isInStringLiteral
 
             result
 
