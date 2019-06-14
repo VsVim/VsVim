@@ -456,6 +456,27 @@ namespace Vim.VisualStudio
             }
         }
 
+        public override void FindInFiles(string pattern, bool ignoreCase)
+        {
+            try
+            {
+                var find = _dte.Find;
+                find.Action = vsFindAction.vsFindActionFindAll;
+                find.FindWhat = pattern;
+                find.Target = vsFindTarget.vsFindTargetSolution;
+                find.MatchCase = !ignoreCase;
+                find.MatchWholeWord = false;
+                find.PatternSyntax = vsFindPatternSyntax.vsFindPatternSyntaxRegExpr;
+                find.FilesOfType = "";
+                find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
+                find.Execute();
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
+            }
+        }
+
         /// <summary>
         /// Format the specified line range.  There is no inherent operation to do this
         /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful

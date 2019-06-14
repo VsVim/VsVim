@@ -1317,7 +1317,15 @@ type VimInterpreter
         _vimHost.OpenLink link |> ignore
         _statusUtil.OnStatus "For help on Vim, use :vimhelp"
 
-    /// Show Vim help on the specified subject
+    member x.RunVimGrep hasBang pattern oneMatchPerFile jumpToFirst =
+        match VimRegexFactory.Create pattern VimRegexOptions.Default with
+        | Some regex ->
+            let pattern = regex.RegexPattern
+            let ignoreCase = regex.CaseSpecifier = CaseSpecifier.IgnoreCase
+            _vimHost.FindInFiles pattern ignoreCase
+        | None ->
+            _commonOperations.Beep()
+
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
@@ -2291,7 +2299,6 @@ type VimInterpreter
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.Help subject -> x.RunHelp subject
-        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()
@@ -2353,6 +2360,8 @@ type VimInterpreter
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
+        | LineCommand.VimGrep (hasBang, pattern, oneMatchPerFile, jumpToFirst) -> x.RunVimGrep hasBang pattern oneMatchPerFile jumpToFirst
+        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll (hasBang, andQuit) -> x.RunWriteAll hasBang andQuit
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank registerName lineRange count

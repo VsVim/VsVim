@@ -4792,6 +4792,9 @@ type IVimHost =
     abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
 
     /// Format the provided lines
+    abstract FindInFiles: pattern: string -> ignoreCase: bool -> unit
+
+    /// Format the provided lines
     abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit
 
     /// Get the ITextView which currently has keyboard focus

@@ -259,6 +259,8 @@ and [<Sealed>] Parser
         ("lprevious", "lp")
         ("lNext", "lN")
         ("lrewind", "lr")
+        ("vimgrep", "vim")
+        ("lvimgrep", "lv")
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -841,7 +843,6 @@ and [<Sealed>] Parser
             | LineCommand.GoToNextTab _ -> noRangeCommand
             | LineCommand.GoToPreviousTab _ -> noRangeCommand
             | LineCommand.Help _ -> noRangeCommand
-            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.History -> noRangeCommand
             | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
             | LineCommand.HostCommand _ -> noRangeCommand
@@ -899,6 +900,8 @@ and [<Sealed>] Parser
             | LineCommand.UnmapKeys _ -> noRangeCommand
             | LineCommand.Version -> noRangeCommand
             | LineCommand.VerticalSplit (_, fileOptions, commandOptions) -> LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.VimGrep _ -> noRangeCommand
+            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> LineCommand.Write (lineRange, hasBang, fileOptionList, filePath)
             | LineCommand.WriteAll _ -> noRangeCommand
             | LineCommand.Yank (_, registerName, count) -> LineCommand.Yank (lineRange, registerName, count)
@@ -1981,16 +1984,23 @@ and [<Sealed>] Parser
         LineCommand.Normal (lineRange, List.ofSeq inputs)
 
     /// Parse out the :help command
-    member x.ParseHelp() =
+    member x.ParseHelp () =
         x.SkipBlanks ()
         let subject = x.ParseRestOfLine()
         LineCommand.Help subject
 
     /// Parse out the :vimhelp command
-    member x.ParseVimHelp() =
+    member x.ParseVimHelp () =
         x.SkipBlanks ()
         let subject = x.ParseRestOfLine()
         LineCommand.VimHelp subject
+
+    /// Parse out the :vimhelp command
+    member x.ParseVimGrep () =
+        let hasBang = x.ParseBang()
+        x.SkipBlanks ()
+        let pattern = x.ParseRestOfLine()
+        LineCommand.VimGrep (hasBang, pattern, false, false)
 
     /// Parse out the :history command
     member x.ParseHistory() =
@@ -2501,7 +2511,6 @@ and [<Sealed>] Parser
                 | "global" -> x.ParseGlobal lineRange
                 | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
-                | "vimhelp" -> noRange x.ParseVimHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
@@ -2523,6 +2532,7 @@ and [<Sealed>] Parser
                 | "lrewind" -> noRange (fun () -> x.ParseLocationRewind false)
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
+                | "lvimgrep" -> noRange x.ParseVimGrep
                 | "lwindow" -> noRange x.ParseLocationWindow
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
@@ -2578,6 +2588,8 @@ and [<Sealed>] Parser
                 | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
                 | "version" -> noRange (fun () -> LineCommand.Version)
+                | "vimhelp" -> noRange x.ParseVimHelp
+                | "vimgrep" -> noRange x.ParseVimGrep
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])

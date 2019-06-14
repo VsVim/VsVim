@@ -29,6 +29,7 @@ namespace Vim.UnitTest.Mock
         public int BeepCount { get; set; }
         public bool ClosedOtherWindows { get; private set; }
         public bool ClosedOtherTabs { get; private set; }
+        public Action<string, bool> FindInFilesFunc { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -220,6 +221,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.GoToLocalDeclaration(ITextView value, string target)
         {
             return GoToLocalDeclarationFunc(value, target);
+        }
+
+        void IVimHost.FindInFiles(string pattern, bool ignoreCase)
+        {
+            FindInFilesFunc(pattern, ignoreCase);
         }
 
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)

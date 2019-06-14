@@ -159,6 +159,11 @@ namespace Vim.UI.Wpf
             }
         }
 
+        public virtual void FindInFiles(string pattern, bool ignoreCase)
+        {
+            // Host specific decision on how to respond
+        }
+
         public abstract void FormatLines(ITextView textView, SnapshotLineRange range);
 
         public virtual FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
@@ -687,6 +692,11 @@ namespace Vim.UI.Wpf
         void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)
         {
             EnsureVisible(textView, point);
+        }
+
+        void IVimHost.FindInFiles(string pattern, bool ignoreCase)
+        {
+            FindInFiles(pattern, ignoreCase);
         }
 
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)

@@ -762,6 +762,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The version command
     | Version
 
+    /// The version command
+    | VimGrep of HasBang: bool * Pattern: string * OneMatchPerFile: bool * JumpToFirst: bool
+
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * CommandOption: CommandOption option
 
