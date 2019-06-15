@@ -114,6 +114,17 @@ type SubstituteFlags =
     /// Perform a literal replacement (not expanding special characters)
     | LiteralReplacement = 0x2000
 
+/// Flags for the vimgrep command
+[<System.Flags>]
+type VimGrepFlags = 
+    | None = 0
+
+    /// AllMatchesPerFile [g]
+    | AllMatchesPerFile = 0x1
+
+    /// NoJumpToFirst [j]
+    | NoJumpToFirst = 0x2
+
 type SubstituteData = {
     SearchPattern: string
     Substitute: string

@@ -1317,12 +1317,13 @@ type VimInterpreter
         _vimHost.OpenLink link |> ignore
         _statusUtil.OnStatus "For help on Vim, use :vimhelp"
 
-    member x.RunVimGrep hasBang pattern oneMatchPerFile jumpToFirst filePattern =
+    member x.RunVimGrep count hasBang pattern flags filePattern =
         match VimRegexFactory.Create pattern VimRegexOptions.Default with
         | Some regex ->
             let pattern = regex.RegexPattern
             let matchCase = regex.CaseSpecifier <> CaseSpecifier.IgnoreCase
             let filesOfType = filePattern
+            let jumpToFirst = Util.IsFlagSet flags VimGrepFlags.NoJumpToFirst |> not
             _vimHost.FindInFiles pattern matchCase filesOfType jumpToFirst
         | None ->
             _commonOperations.Beep()
@@ -2361,7 +2362,7 @@ type VimInterpreter
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
-        | LineCommand.VimGrep (hasBang, pattern, oneMatchPerFile, jumpToFirst, filePattern) -> x.RunVimGrep hasBang pattern oneMatchPerFile jumpToFirst filePattern
+        | LineCommand.VimGrep (count, hasBang, pattern, flags, filePattern) -> x.RunVimGrep count hasBang pattern flags filePattern
         | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll (hasBang, andQuit) -> x.RunWriteAll hasBang andQuit

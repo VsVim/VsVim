@@ -763,7 +763,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | Version
 
     /// Search for pattern in the specified files
-    | VimGrep of HasBang: bool * Pattern: string * OneMatchPerFile: bool * JumpToFirst: bool * FilePattern: string
+    | VimGrep of Count: int option * HasBang: bool * Pattern: string * Flags: VimGrepFlags * FilePattern: string
 
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * CommandOption: CommandOption option

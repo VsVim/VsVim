@@ -787,6 +787,33 @@ and [<Sealed>] Parser
         | None -> ParseResult.Succeeded flags
         | Some p -> p
 
+    /// Used to parse out the flags for the vimgrep commands
+    member x.ParseVimGrepFlags () =
+
+        // Get the string which we are parsing for flags
+        let flagString = x.ParseWhile (fun token -> 
+            match token.TokenKind with
+            | TokenKind.Word _ -> true
+            | _ -> false)
+        let flagString = OptionUtil.getOrDefault "" flagString
+
+        let mutable parseResult: ParseResult<VimGrepFlags> option = None
+        let mutable flags = VimGrepFlags.None
+        let mutable index = 0
+        while index < flagString.Length && Option.isNone parseResult do
+            match flagString.[index] with
+            | 'g' -> flags <- flags ||| VimGrepFlags.AllMatchesPerFile
+            | 'j' -> flags <- flags ||| VimGrepFlags.NoJumpToFirst
+            | _  -> 
+                // Illegal character in the flags string 
+                parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
+
+            index <- index + 1
+
+        match parseResult with
+        | None -> ParseResult.Succeeded flags
+        | Some p -> p
+
     /// Parse out an '@' command
     member x.ParseAtCommand lineRange =
         x.SkipBlanks()
@@ -1995,15 +2022,48 @@ and [<Sealed>] Parser
         let subject = x.ParseRestOfLine()
         LineCommand.VimHelp subject
 
-    /// Parse out the :vimhelp command
-    member x.ParseVimGrep () =
+    /// Parse out the :vimgrep command
+    member x.ParseVimGrep count =
         let hasBang = x.ParseBang()
-        x.SkipBlanks ()
-        let pattern = x.ParseRestOfLine()
-        let oneMatchPerFile = false
-        let jumpToFirst = true
-        let filePattern = ""
-        LineCommand.VimGrep (hasBang, pattern, oneMatchPerFile, jumpToFirst, filePattern)
+
+        // Given a pattern and flags, parse the file pattern.
+        let parseFilePattern pattern flags =
+            x.SkipBlanks()
+            use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+            let filePattern = x.ParseRestOfLine()
+            LineCommand.VimGrep (count, hasBang, pattern, flags, filePattern)
+
+        // Check the first character of the pattern.
+        x.SkipBlanks()
+        let delimiter = _tokenizer.CurrentChar
+        if _tokenizer.IsAtEndOfLine then
+            x.ParseError Resources.Parser_Error
+        elif CharUtil.IsIdent delimiter then
+
+            // Parse out a blank separated word.
+            use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+            match x.ParseWhile (fun token -> token.TokenKind <> TokenKind.Blank) with
+            | Some pattern ->
+                parseFilePattern pattern VimGrepFlags.None
+            | None ->
+                x.ParseError Resources.Parser_Error
+        else
+
+            // Parse out a delimited pattern.
+            _tokenizer.MoveNextChar()
+            let pattern, foundDelimiter = x.ParsePattern delimiter
+            if foundDelimiter then
+
+                // Found the trailing delimiter, e.g. '/pattern/'.
+                match x.ParseVimGrepFlags() with
+                | ParseResult.Failed message ->
+                    x.ParseError message
+                | ParseResult.Succeeded flags ->
+                    parseFilePattern pattern flags
+            else
+
+                // Reached the end of line, e.g. '/pattern'.
+                parseFilePattern pattern VimGrepFlags.None
 
     /// Parse out the :history command
     member x.ParseHistory() =
@@ -2535,7 +2595,7 @@ and [<Sealed>] Parser
                 | "lrewind" -> noRange (fun () -> x.ParseLocationRewind false)
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
-                | "lvimgrep" -> noRange x.ParseVimGrep
+                | "lvimgrep" -> handleCount x.ParseVimGrep
                 | "lwindow" -> noRange x.ParseLocationWindow
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
@@ -2592,7 +2652,7 @@ and [<Sealed>] Parser
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
                 | "version" -> noRange (fun () -> LineCommand.Version)
                 | "vimhelp" -> noRange x.ParseVimHelp
-                | "vimgrep" -> noRange x.ParseVimGrep
+                | "vimgrep" -> handleCount x.ParseVimGrep
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])
