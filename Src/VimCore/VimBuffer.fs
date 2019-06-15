@@ -17,7 +17,7 @@ type VimBufferData
         _windowSettings: IVimWindowSettings,
         _jumpList: IJumpList,
         _statusUtil: IStatusUtil,
-        _wordUtil: IWordUtil
+        _wordUtil: WordUtil
     ) = 
 
     let mutable _currentDirectory: string option = None

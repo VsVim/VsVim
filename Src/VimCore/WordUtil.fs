@@ -8,16 +8,17 @@ open System.ComponentModel.Composition
 
 [<UsedInBackgroundThread()>]
 [<Sealed>]
-[<Export(typeof<IWordUtil>)>]
-type internal WordUtil() = 
+[<Class>]
+type WordUtilSnapshot(_keywordChars: string) = 
+
+    member x.KeywordChars = _keywordChars
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
     ///
-    /// This can be called from a background thread via ITextSearchService.  The member is 
-    /// static to promote safety
+    /// This can be called from a background thread via ITextSearchService.
     [<UsedInBackgroundThread()>]
-    static member GetWords kind path point = 
+    member x.GetWords kind path point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let line = SnapshotPointUtil.GetContainingLine point
@@ -45,11 +46,10 @@ type internal WordUtil() =
 
     /// Get the SnapshotSpan for the full word span which crosses the given SanpshotPoint
     ///
-    /// This can be called from a background thread via ITextSearchService.  The member is 
-    /// static to promote safety
+    /// This can be called from a background thread via ITextSearchService.
     [<UsedInBackgroundThread()>]
-    static member GetFullWordSpan wordKind point = 
-        let word = WordUtil.GetWords wordKind SearchPath.Forward point |> SeqUtil.tryHeadOnly
+    member x.GetFullWordSpan wordKind point = 
+        let word = x.GetWords wordKind SearchPath.Forward point |> SeqUtil.tryHeadOnly
         match word with 
         | None -> 
             // No more words forward then no word at the given SnapshotPoint
@@ -68,28 +68,41 @@ type internal WordUtil() =
     ///
     /// Note: This interface can be invoked from any thread via ITextSearhService
     [<UsedInBackgroundThread()>]
-    static member CreateTextStructureNavigator wordKind contentType = 
+    member x.CreateTextStructureNavigator wordKind contentType = 
 
         { new ITextStructureNavigator with 
-            member x.ContentType = contentType
-            member x.GetExtentOfWord point = 
-                match WordUtil.GetFullWordSpan wordKind point with
+            member __.ContentType = contentType
+            member __.GetExtentOfWord point = 
+                match x.GetFullWordSpan wordKind point with
                 | Some span -> TextExtent(span, true)
                 | None -> TextExtent(SnapshotSpan(point,1),false)
-            member x.GetSpanOfEnclosing span = 
-                match WordUtil.GetFullWordSpan wordKind span.Start with
+            member __.GetSpanOfEnclosing span = 
+                match x.GetFullWordSpan wordKind span.Start with
                 | Some span -> span
                 | None -> span
-            member x.GetSpanOfFirstChild span = 
+            member __.GetSpanOfFirstChild span = 
                 SnapshotSpan(span.End, 0)
-            member x.GetSpanOfNextSibling span = 
+            member __.GetSpanOfNextSibling span = 
                 SnapshotSpan(span.End, 0)
-            member x.GetSpanOfPreviousSibling span = 
+            member __.GetSpanOfPreviousSibling span = 
                 let before = SnapshotPointUtil.SubtractOneOrCurrent span.Start
                 SnapshotSpan(before, 0) }
 
-    interface IWordUtil with 
-        member x.GetFullWordSpan wordKind point = WordUtil.GetFullWordSpan wordKind point
-        member x.GetWords wordKind path point = WordUtil.GetWords wordKind path point
-        member x.CreateTextStructureNavigator wordKind contentType = WordUtil.CreateTextStructureNavigator wordKind contentType
+[<Sealed>]
+[<Class>]
+type WordUtil() =
+
+    // KTODO: need to take this as a constructor argument
+    let mutable _snapshot = WordUtilSnapshot("")
+
+    member x.KeywordChars
+        with get() = _snapshot.KeywordChars
+        and set value = _snapshot <- WordUtilSnapshot(value)
+
+    member x.Snapshot = _snapshot
+
+    member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
+    member x.GetWords wordKind path point = x.Snapshot.GetWords wordKind path point
+
+
 

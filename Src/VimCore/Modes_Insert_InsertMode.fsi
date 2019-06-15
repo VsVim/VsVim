@@ -7,4 +7,5 @@ open Vim
 
 type internal InsertMode =
     interface IInsertMode
-    new: IVimBuffer * ICommonOperations * IDisplayWindowBroker * IEditorOptions * IUndoRedoOperations * ITextChangeTracker * IInsertUtil * IMotionUtil * ICommandUtil * IMotionCapture * bool * IKeyboardDevice * IMouseDevice * IWordUtil * IWordCompletionSessionFactoryService -> InsertMode
+    // KTODO: delete the WordUtil parameter here and get it from IVimBuffer
+    new: IVimBuffer * ICommonOperations * IDisplayWindowBroker * IEditorOptions * IUndoRedoOperations * ITextChangeTracker * IInsertUtil * IMotionUtil * ICommandUtil * IMotionCapture * bool * IKeyboardDevice * IMouseDevice * WordUtil * IWordCompletionSessionFactoryService -> InsertMode

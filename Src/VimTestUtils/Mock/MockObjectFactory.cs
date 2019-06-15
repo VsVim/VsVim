@@ -219,13 +219,13 @@ namespace Vim.UnitTest.Mock
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
             IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null,
+            WordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
-            wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
+            wordUtil = wordUtil ?? new WordUtil();
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             return new VimBufferData(
                 vimTextBuffer,

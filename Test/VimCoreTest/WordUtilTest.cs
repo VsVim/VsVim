@@ -11,8 +11,7 @@ namespace Vim.UnitTest
     {
         private ITextBuffer _textBuffer;
         private ITextView _textView;
-        private IWordUtil _wordUtil;
-        private WordUtil _wordUtilRaw;
+        private WordUtil _wordUtil;
 
         private void Create(params string[] lines)
         {
@@ -23,8 +22,7 @@ namespace Vim.UnitTest
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
-            _wordUtilRaw = new WordUtil();
-            _wordUtil = _wordUtilRaw;
+            _wordUtil = new WordUtil();
         }
 
         /// <summary>

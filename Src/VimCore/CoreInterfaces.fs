@@ -128,22 +128,6 @@ type IFileSystem =
 
     abstract Write: filePath: string -> stream: Stream -> bool
 
-/// Utility function for searching for Word values.  This is a MEF importable
-/// component
-[<UsedInBackgroundThread>]
-type IWordUtil = 
-
-    /// Get the full word span for the word value which crosses the given SnapshotPoint
-    abstract GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
-
-    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
-    /// in the middle of a word the span of the entire word will be returned
-    abstract GetWords: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
-
-    /// Create an ITextStructureNavigator where the extent of words is calculated for
-    /// the specified WordKind value
-    abstract CreateTextStructureNavigator: wordKind: WordKind -> contentType: IContentType -> ITextStructureNavigator
-
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
@@ -4981,7 +4965,7 @@ and IVimBufferData =
     abstract WindowSettings: IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
-    abstract WordUtil: IWordUtil
+    abstract WordUtil: WordUtil
 
     /// The IVimLocalSettings associated with the ITextBuffer
     abstract LocalSettings: IVimLocalSettings

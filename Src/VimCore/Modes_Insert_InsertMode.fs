@@ -13,7 +13,7 @@ open System.Collections.Generic
 type WordCompletionUtil
     (
         _vim: IVim,
-        _wordUtil: IWordUtil
+        _wordUtil: WordUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
@@ -254,7 +254,7 @@ type internal InsertMode
         _isReplace: bool,
         _keyboard: IKeyboardDevice,
         _mouse: IMouseDevice,
-        _wordUtil: IWordUtil,
+        _wordUtil: WordUtil,
         _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService
     ) as this =
 

@@ -206,7 +206,6 @@ type internal VimBufferFactory
         _outliningManagerService: IOutliningManagerService,
         _completionWindowBrokerFactoryService: IDisplayWindowBrokerFactoryService,
         _commonOperationsFactory: ICommonOperationsFactory,
-        _wordUtil: IWordUtil,
         _lineChangeTrackerFactory: ILineChangeTrackerFactory,
         _textSearchService: ITextSearchService,
         _bufferTrackingService: IBufferTrackingService,
@@ -219,10 +218,14 @@ type internal VimBufferFactory
         _bulkOperations: IBulkOperations
     ) =
 
+    let _wordUtil = WordUtil()
+
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let wordNavigator = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
+        // KTODO: need to think this through becaues the ITextStructureNavigator here 
+        // is based on a snapshot which is probably wrong
+        let wordNavigator = _wordUtil.Snapshot.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 
@@ -252,7 +255,8 @@ type internal VimBufferFactory
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
         let wordUtil = vimBufferData.WordUtil
 
-        let wordNav = _wordUtil.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
+        // KTODO: think about this one too
+        let wordNav = _wordUtil.Snapshot.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
