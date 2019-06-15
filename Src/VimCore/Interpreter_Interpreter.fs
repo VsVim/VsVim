@@ -1602,6 +1602,7 @@ type VimInterpreter
                     let itemNumber = listItem.ItemNumber
                     let listLength = listItem.ListLength
                     let message = StringUtil.GetDisplayString listItem.Message
+                    let message = message.Substring(0, min message.Length 50)
                     sprintf "(%d of %d): %s" itemNumber listLength message
                     |> statusUtil.OnStatus
                 | _ ->
@@ -1609,7 +1610,7 @@ type VimInterpreter
             | None ->
                 ()
         | None ->
-            _commonOperations.Beep()
+            _statusUtil.OnStatus Resources.Interpreter_NoMoreItems
 
     /// Run the quit command
     member x.RunQuit hasBang =

@@ -831,11 +831,17 @@ namespace Vim.VisualStudio
                         {
                             textSelection.MoveToLineAndOffset(adjustedLine, 1);
                             textSelection.SelectLine();
-                            var message = textSelection.Text.TrimEnd();
+                            var message = textSelection.Text;
+                            var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
+                            var colon = message.IndexOf(':', start);
+                            if (colon != -1)
+                            {
+                                message = message.Substring(colon + 1);
+                            }
+                            message = message.Trim();
                             textSelection.MoveToLineAndOffset(adjustedLine, 1);
                             if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
                             {
-
                                 return FSharpOption.Create(new ListItem(index + 1, length, message));
                             }
                         }
