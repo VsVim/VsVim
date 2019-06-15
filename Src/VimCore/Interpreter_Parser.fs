@@ -2000,7 +2000,10 @@ and [<Sealed>] Parser
         let hasBang = x.ParseBang()
         x.SkipBlanks ()
         let pattern = x.ParseRestOfLine()
-        LineCommand.VimGrep (hasBang, pattern, false, false)
+        let oneMatchPerFile = false
+        let jumpToFirst = true
+        let filePattern = ""
+        LineCommand.VimGrep (hasBang, pattern, oneMatchPerFile, jumpToFirst, filePattern)
 
     /// Parse out the :history command
     member x.ParseHistory() =

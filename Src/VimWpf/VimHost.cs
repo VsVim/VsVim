@@ -159,7 +159,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public virtual void FindInFiles(string pattern, bool ignoreCase)
+        public virtual void FindInFiles(string pattern, bool matchCase, string filesOfType, bool jumpToFirst)
         {
             // Host specific decision on how to respond
         }
@@ -694,9 +694,9 @@ namespace Vim.UI.Wpf
             EnsureVisible(textView, point);
         }
 
-        void IVimHost.FindInFiles(string pattern, bool ignoreCase)
+        void IVimHost.FindInFiles(string pattern, bool matchCase, string filesOfType, bool jumpToFirst)
         {
-            FindInFiles(pattern, ignoreCase);
+            FindInFiles(pattern, matchCase, filesOfType, jumpToFirst);
         }
 
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)

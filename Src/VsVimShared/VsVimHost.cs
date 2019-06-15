@@ -456,19 +456,47 @@ namespace Vim.VisualStudio
             }
         }
 
-        public override void FindInFiles(string pattern, bool ignoreCase)
+        /// <summary>
+        /// Perform the 'find in files' operation using the specified parameters
+        /// </summary>
+        /// <param name="pattern">BCL regular expression pattern</param>
+        /// <param name="matchCase">whether to match case</param>
+        /// <param name="filesOfType">which files to search</param>
+        /// <param name="jumpToFirst">whether to jump to the first match</param>
+        public override void FindInFiles(string pattern, bool matchCase, string filesOfType, bool jumpToFirst)
         {
+            void onFindDone(vsFindResult result, bool cancelled)
+            {
+                try
+                {
+                    _dte.Events.FindEvents.FindDone -= onFindDone;
+
+                    if (!cancelled && result == vsFindResult.vsFindResultFound)
+                    {
+                        SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _protectedOperations.Report(ex);
+                }
+            }
+
             try
             {
                 var find = _dte.Find;
                 find.Action = vsFindAction.vsFindActionFindAll;
                 find.FindWhat = pattern;
                 find.Target = vsFindTarget.vsFindTargetSolution;
-                find.MatchCase = !ignoreCase;
+                find.MatchCase = matchCase;
                 find.MatchWholeWord = false;
                 find.PatternSyntax = vsFindPatternSyntax.vsFindPatternSyntaxRegExpr;
-                find.FilesOfType = "";
+                find.FilesOfType = filesOfType;
                 find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
+                if (jumpToFirst)
+                {
+                    _dte.Events.FindEvents.FindDone += onFindDone;
+                }
                 find.Execute();
             }
             catch (Exception ex)
@@ -700,7 +728,6 @@ namespace Vim.VisualStudio
         private bool NavigateToItem(
             QuickFix quickFix,
             int count,
-            bool hasBang,
             string next,
             string prev,
             Func<int, bool> goToItem)
@@ -743,7 +770,6 @@ namespace Vim.VisualStudio
             return NavigateToItem(
                 quickFix,
                 count,
-                hasBang,
                 "View.NextError",
                 "View.PreviousError",
                 GoToError);
@@ -786,7 +812,6 @@ namespace Vim.VisualStudio
             return NavigateToItem(
                 quickFix,
                 count,
-                hasBang,
                 "Edit.GoToFindResults1NextLocation",
                 "Edit.GoToFindResults1PrevLocation",
                 GoToFindResult);

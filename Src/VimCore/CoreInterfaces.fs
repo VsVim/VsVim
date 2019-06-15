@@ -4791,8 +4791,8 @@ type IVimHost =
     /// Ensure that the given point is visible
     abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
 
-    /// Format the provided lines
-    abstract FindInFiles: pattern: string -> ignoreCase: bool -> unit
+    /// Perform the "find in files" operation
+    abstract FindInFiles: pattern: string -> matchCase: bool -> filesOfType: string -> jumpToFirst: bool -> unit
 
     /// Format the provided lines
     abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit
