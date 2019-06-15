@@ -463,41 +463,43 @@ namespace Vim.VisualStudio
         /// <param name="matchCase">whether to match case</param>
         /// <param name="filesOfType">which files to search</param>
         /// <param name="jumpToFirst">whether to jump to the first match</param>
-        public override void FindInFiles(string pattern, bool matchCase, string filesOfType, bool jumpToFirst)
+        public override void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
         {
             void onFindDone(vsFindResult result, bool cancelled)
             {
-                try
-                {
-                    _dte.Events.FindEvents.FindDone -= onFindDone;
+                _dte.Events.FindEvents.FindDone -= onFindDone;
 
-                    if (!cancelled && result == vsFindResult.vsFindResultFound)
-                    {
-                        SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation");
-                    }
-                }
-                catch (Exception ex)
+                if (!cancelled && result == vsFindResult.vsFindResultFound)
                 {
-                    _protectedOperations.Report(ex);
+                    SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation");
                 }
             }
 
             try
             {
-                var find = _dte.Find;
-                find.Action = vsFindAction.vsFindActionFindAll;
-                find.FindWhat = pattern;
-                find.Target = vsFindTarget.vsFindTargetSolution;
-                find.MatchCase = matchCase;
-                find.MatchWholeWord = false;
-                find.PatternSyntax = vsFindPatternSyntax.vsFindPatternSyntaxRegExpr;
-                find.FilesOfType = filesOfType;
-                find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
-                if (jumpToFirst)
+                // Because 'find all' is asynchronous, we need to use an event
+                // to support 'jump to first'. However, this doesn't appear to
+                // work reliably.
+                var jumpToFirst = !flags.HasFlag(VimGrepFlags.NoJumpToFirst);
+                jumpToFirst = false;
+
+                if (_dte.Find is EnvDTE80.Find2 find)
                 {
-                    _dte.Events.FindEvents.FindDone += onFindDone;
+                    find.Action = vsFindAction.vsFindActionFindAll;
+                    find.FindWhat = pattern;
+                    find.Target = vsFindTarget.vsFindTargetSolution;
+                    find.MatchCase = matchCase;
+                    find.MatchWholeWord = false;
+                    find.PatternSyntax = vsFindPatternSyntax.vsFindPatternSyntaxRegExpr;
+                    find.FilesOfType = filesOfType;
+                    find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
+                    find.WaitForFindToComplete = false;
+                    if (jumpToFirst)
+                    {
+                        _dte.Events.FindEvents.FindDone += onFindDone;
+                    }
+                    find.Execute();
                 }
-                find.Execute();
             }
             catch (Exception ex)
             {
@@ -1280,7 +1282,7 @@ namespace Vim.VisualStudio
             }
         }
 
-        #region IVsSelectionEvents
+#region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -1379,6 +1381,6 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-        #endregion
+#endregion
     }
 }

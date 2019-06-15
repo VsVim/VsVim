@@ -197,6 +197,14 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// LineCommand as VimGrep
+        /// </summary>
+        public static LineCommand.VimGrep AsVimGrep(this LineCommand lineCommand)
+        {
+            return (LineCommand.VimGrep)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as Write
         /// </summary>
         public static LineCommand.Write AsWrite(this LineCommand lineCommand)

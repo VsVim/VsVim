@@ -4792,7 +4792,7 @@ type IVimHost =
     abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
 
     /// Perform the "find in files" operation
-    abstract FindInFiles: pattern: string -> matchCase: bool -> filesOfType: string -> jumpToFirst: bool -> unit
+    abstract FindInFiles: pattern: string -> matchCase: bool -> filesOfType: string -> flags: VimGrepFlags -> unit
 
     /// Format the provided lines
     abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit

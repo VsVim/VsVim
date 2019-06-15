@@ -72,7 +72,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Parse and run the specified command
         /// </summary>
-        private void ParseAndRun(string command)
+        private LineCommand ParseAndRun(string command)
         {
             if (command.Length > 0 && command[0] == ':')
             {
@@ -81,6 +81,7 @@ namespace Vim.UnitTest
 
             var lineCommand = VimUtil.ParseLineCommand(command);
             _interpreter.RunLineCommand(lineCommand);
+            return lineCommand;
         }
 
         public sealed class CallTest : InterpreterTest
@@ -1954,6 +1955,112 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun("if 1!=0", "set ts=13", "elseif 2>2", "set ts=12", "endif");
                 Assert.Equal(13, _localSettings.TabStop);
+            }
+        }
+
+        public sealed class VimGrep : InterpreterTest
+        {
+            private bool _didRun;
+            private string _pattern;
+            private bool _matchCase;
+            private string _filesOfType;
+            private VimGrepFlags _flags;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                VimHost.FindInFilesFunc =
+                    (pattern, matchCase, filesOfType, flags) =>
+                    {
+                        _didRun = true;
+                        _pattern = pattern;
+                        _matchCase = matchCase;
+                        _filesOfType = filesOfType;
+                        _flags = flags;
+                    };
+                _didRun = false;
+                _pattern = null;
+                _matchCase = false;
+                _filesOfType = null;
+                _flags = VimGrepFlags.None;
+            }
+
+            [WpfFact]
+            public void IdentSearch()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep pattern").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+            }
+
+            [WpfFact]
+            public void DelimiterSearch()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep /pattern/").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+            }
+
+            [WpfFact]
+            public void NoJumpFlag()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep /pattern/j").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.NoJumpToFirst, lineCommand.Flags);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.NoJumpToFirst, _flags);
+            }
+
+            [WpfFact]
+            public void AllMatchesFlag()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep /pattern/g").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, _flags);
+            }
+
+            [WpfFact]
+            public void FilePattern()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep /pattern/g *.cs").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
+                Assert.Equal("*.cs", lineCommand.FilePattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, _flags);
+                Assert.Equal("*.cs", _filesOfType);
+            }
+
+            [WpfFact]
+            public void IdentPatternWithQuote()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep cat\"dog").AsVimGrep();
+                Assert.Equal("cat\"dog", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("cat\"dog", _pattern);
+            }
+
+            [WpfFact]
+            public void DelimitedPatternWithQuote()
+            {
+                Create("");
+                var lineCommand = ParseAndRun(":vimgrep /cat\"dog/").AsVimGrep();
+                Assert.Equal("cat\"dog", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("cat\"dog", _pattern);
             }
         }
 

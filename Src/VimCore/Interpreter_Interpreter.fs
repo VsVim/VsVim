@@ -1323,8 +1323,7 @@ type VimInterpreter
             let pattern = regex.RegexPattern
             let matchCase = regex.CaseSpecifier <> CaseSpecifier.IgnoreCase
             let filesOfType = filePattern
-            let jumpToFirst = Util.IsFlagSet flags VimGrepFlags.NoJumpToFirst |> not
-            _vimHost.FindInFiles pattern matchCase filesOfType jumpToFirst
+            _vimHost.FindInFiles pattern matchCase filesOfType flags
         | None ->
             _commonOperations.Beep()
 
