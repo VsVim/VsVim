@@ -663,28 +663,10 @@ and [<RequireQualifiedAccess>] LineCommand =
     | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
     /// Display the quickfix window
-    | QuickFixWindow
+    | OpenListWindow of ListKind: ListKind
 
-    /// Next item in the quickfix list
-    | QuickFixNext of Count: int option * HasBang: bool
-
-    /// Previous item in the quickfix list
-    | QuickFixPrevious of Count: int option * HasBang: bool
-
-    /// Go to item in the quickfix list
-    | QuickFixRewind of Number: int option * DefaultToLast: bool * HasBang: bool
-
-    /// Display the location window
-    | LocationWindow
-
-    /// Next item in the location list
-    | LocationNext of Count: int option * HasBang: bool
-
-    /// Previous item in the location list
-    | LocationPrevious of Count: int option * HasBang: bool
-
-    /// Go to item in the location list
-    | LocationRewind of Number: int option * DefaultToLast: bool * HasBang: bool
+    /// Navigate to the specified item in the specified list
+    | NavigateToListItem of ListKind: ListKind * NavigationKind: NavigationKind * Count: int option * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window

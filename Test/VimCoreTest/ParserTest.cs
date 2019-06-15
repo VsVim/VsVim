@@ -775,33 +775,33 @@ let x = 42
             [Fact]
             public void NextSimple()
             {
-                var quickFix = ParseLineCommand("cn").AsQuickFixNext();
-                Assert.True(quickFix.Count.IsNone());
-                Assert.False(quickFix.HasBang);
+                var navigationKind = ParseLineCommand("cn").AsNavigateToListItem();
+                Assert.True(navigationKind.Count.IsNone());
+                Assert.False(navigationKind.HasBang);
             }
 
             [Fact]
             public void NextWithArgs()
             {
-                var quickFix = ParseLineCommand("2cn!").AsQuickFixNext();
-                Assert.Equal(2, quickFix.Count.Value);
-                Assert.True(quickFix.HasBang);
+                var navigationKind = ParseLineCommand("2cn!").AsNavigateToListItem();
+                Assert.Equal(2, navigationKind.Count.Value);
+                Assert.True(navigationKind.HasBang);
             }
 
             [Fact]
             public void PreviousSimple()
             {
-                var quickFix = ParseLineCommand("cp").AsQuickFixPrevious();
-                Assert.True(quickFix.Count.IsNone());
-                Assert.False(quickFix.HasBang);
+                var navigationKind = ParseLineCommand("cp").AsNavigateToListItem();
+                Assert.True(navigationKind.Count.IsNone());
+                Assert.False(navigationKind.HasBang);
             }
 
             [Fact]
             public void PreviousWithArgs()
             {
-                var quickFix = ParseLineCommand("2cp!").AsQuickFixPrevious();
-                Assert.Equal(2, quickFix.Count.Value);
-                Assert.True(quickFix.HasBang);
+                var navigationKind = ParseLineCommand("2cp!").AsNavigateToListItem();
+                Assert.Equal(2, navigationKind.Count.Value);
+                Assert.True(navigationKind.HasBang);
             }
         }
 
@@ -1994,9 +1994,15 @@ let x = 42
             }
 
             [Fact]
-            public void QuickFixWindow()
+            public void ErrorWindow()
             {
-                Assert.Equal(LineCommand.QuickFixWindow, ParseLineCommand("cwindow"));
+                Assert.Equal(new LineCommand.OpenListWindow(ListKind.Error), ParseLineCommand("cwindow"));
+            }
+
+            [Fact]
+            public void LocationWindow()
+            {
+                Assert.Equal(new LineCommand.OpenListWindow(ListKind.Location), ParseLineCommand("lwindow"));
             }
         }
     }

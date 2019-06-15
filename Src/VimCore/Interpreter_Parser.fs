@@ -881,10 +881,8 @@ and [<Sealed>] Parser
             | LineCommand.Let _ -> noRangeCommand
             | LineCommand.LetEnvironment _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
-            | LineCommand.LocationNext _ -> noRangeCommand
-            | LineCommand.LocationPrevious _ -> noRangeCommand
-            | LineCommand.LocationRewind _ -> noRangeCommand
-            | LineCommand.LocationWindow -> noRangeCommand
+            | LineCommand.OpenListWindow _ -> noRangeCommand
+            | LineCommand.NavigateToListItem _ -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
             | LineCommand.MapKeys _ -> noRangeCommand
             | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
@@ -897,10 +895,6 @@ and [<Sealed>] Parser
             | LineCommand.PrintCurrentDirectory -> noRangeCommand
             | LineCommand.PutAfter (_, registerName) -> LineCommand.PutAfter (lineRange, registerName)
             | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
-            | LineCommand.QuickFixNext _ -> noRangeCommand
-            | LineCommand.QuickFixPrevious _ -> noRangeCommand
-            | LineCommand.QuickFixRewind _ -> noRangeCommand
-            | LineCommand.QuickFixWindow -> noRangeCommand
             | LineCommand.Quit _ -> noRangeCommand
             | LineCommand.QuitAll _ -> noRangeCommand
             | LineCommand.QuitWithWrite (_, hasBang, fileOptions, filePath) -> LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath)
@@ -1840,41 +1834,31 @@ and [<Sealed>] Parser
             | _ -> x.ParseError "Error"
         getNames (fun x -> x)
 
-    member x.ParseQuickFixWindow _ =
+    member x.ParseOpenListWindow listKind =
         _tokenizer.MoveToEndOfLine()
-        LineCommand.QuickFixWindow
+        LineCommand.OpenListWindow listKind
 
-    member x.ParseQuickFixNext count =
+    member x.ParseNavigateToListItem lineRange listKind navigationKind =
         let hasBang = x.ParseBang()
-        LineCommand.QuickFixNext (count, hasBang)
 
-    member x.ParseQuickFixPrevious count =
-        let hasBang = x.ParseBang()
-        LineCommand.QuickFixPrevious (count, hasBang)
+        // Optionally take count from line range specifier.
+        let count =
+            match lineRange with
+            | LineRangeSpecifier.SingleLine lineSpecifier ->
+                match lineSpecifier with
+                | LineSpecifier.Number count -> Some count
+                | _ -> None
+            | _ -> None
 
-    member x.ParseQuickFixRewind defaultToLast =
-        let hasBang = x.ParseBang()
-        x.SkipBlanks()
-        let number = x.ParseNumber()
-        LineCommand.QuickFixRewind (number, defaultToLast, hasBang)
+        // Optionally take count as first argument.
+        let count =
+            match count with
+            | Some count -> Some count
+            | None ->
+                x.SkipBlanks()
+                x.ParseNumber()
 
-    member x.ParseLocationWindow _ =
-        _tokenizer.MoveToEndOfLine()
-        LineCommand.LocationWindow
-
-    member x.ParseLocationNext count =
-        let hasBang = x.ParseBang()
-        LineCommand.LocationNext (count, hasBang)
-
-    member x.ParseLocationPrevious count =
-        let hasBang = x.ParseBang()
-        LineCommand.LocationPrevious (count, hasBang)
-
-    member x.ParseLocationRewind defaultToLast =
-        let hasBang = x.ParseBang()
-        x.SkipBlanks()
-        let number = x.ParseNumber()
-        LineCommand.LocationRewind (number, defaultToLast, hasBang)
+        LineCommand.NavigateToListItem (listKind, navigationKind, count, hasBang)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -2540,22 +2524,22 @@ and [<Sealed>] Parser
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
-                | "cfirst" -> noRange (fun () -> x.ParseQuickFixRewind false)
+                | "cfirst" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "chdir" -> noRange x.ParseChangeDirectory
-                | "clast" -> noRange (fun () -> x.ParseQuickFixRewind true)
+                | "clast" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Last
                 | "close" -> noRange x.ParseClose
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
-                | "cnext" -> handleCount x.ParseQuickFixNext
-                | "cNext" -> handleCount x.ParseQuickFixPrevious
+                | "cnext" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Next
+                | "cNext" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Previous
                 | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
                 | "copy" -> x.ParseCopyTo lineRange 
-                | "cprevious" -> handleCount x.ParseQuickFixPrevious
-                | "crewind" -> noRange (fun () -> x.ParseQuickFixRewind false)
+                | "cprevious" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Previous
+                | "crewind" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
                 | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
-                | "cwindow" -> noRange x.ParseQuickFixWindow
+                | "cwindow" -> noRange (fun () -> x.ParseOpenListWindow ListKind.Error)
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "digraphs" -> noRange x.ParseDigraphs
@@ -2584,19 +2568,19 @@ and [<Sealed>] Parser
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
-                | "lfirst" -> noRange (fun () -> x.ParseLocationRewind false)
+                | "lfirst" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.First
                 | "list" -> x.ParseDisplayLines lineRange LineCommandFlags.List
-                | "llast" -> noRange (fun () -> x.ParseLocationRewind true)
+                | "llast" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Last
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
-                | "lnext" -> handleCount x.ParseLocationNext
-                | "lNext" -> handleCount x.ParseLocationPrevious
+                | "lnext" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Next
+                | "lNext" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Previous
                 | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
-                | "lprevious" -> handleCount x.ParseLocationPrevious
-                | "lrewind" -> noRange (fun () -> x.ParseLocationRewind false)
+                | "lprevious" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Previous
+                | "lrewind" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.First
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
                 | "lvimgrep" -> handleCount x.ParseVimGrep
-                | "lwindow" -> noRange x.ParseLocationWindow
+                | "lwindow" -> noRange (fun () -> x.ParseOpenListWindow ListKind.Location)
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
                 | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])

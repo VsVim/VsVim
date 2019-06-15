@@ -4672,13 +4672,6 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>
 
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-type QuickFix =
-    | Next
-    | Previous
-    | Number
-
 type TextViewChangedEventArgs
     (
         _oldTextView: ITextView option,
@@ -4826,11 +4819,8 @@ type IVimHost =
     /// values which is not a standard 0 based index
     abstract GoToTab: index: int -> unit
 
-    /// Go to the specified entry in the quickfix list
-    abstract GoToQuickFix: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
-
-    /// Go to the specified entry in the location list
-    abstract GoToLocation: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
+    /// Go to the specified item in the specified list
+    abstract NavigateToListItem: listKind: ListKind -> navigationKind: NavigationKind -> count: int option -> hasBang: bool -> ListItem option
 
     /// Get the name of the given ITextBuffer
     abstract GetName: textBuffer: ITextBuffer -> string
@@ -4862,16 +4852,12 @@ type IVimHost =
 
     abstract NavigateTo: point: VirtualSnapshotPoint -> bool
 
-    // Open the quickfix window (:cwindow)
-    abstract OpenQuickFixWindow: unit -> unit
+    // Open the specified kind of list window (:cwindow, :lwindow)
+    abstract OpenListWindow: listKind: ListKind -> unit
 
     /// Open the the specified link
     abstract OpenLink: link: string -> bool
 
-    // Open the location window (:lwindow)
-    abstract OpenLocationWindow: unit -> unit
-
-    /// Quit the application
     abstract Quit: unit -> unit
 
     /// Reload the contents of the ITextView discarding any changes

@@ -1670,18 +1670,27 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class QuickFixTest : InterpreterTest
+        public sealed class ListNavigationTest : InterpreterTest
         {
-            private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
+            private void AssertListNavigation(string command, ListKind listKind, NavigationKind navigationKind, int? count, bool hasBang)
             {
                 var didRun = false;
-                VimHost.RunQuickFixFunc =
-                    (qf, c, h) =>
+                VimHost.NavigateToListItemFunc =
+                    (lk, nk, c, h) =>
                     {
-                        Assert.Equal(quickFix, qf);
-                        Assert.Equal(count, c);
+                        Assert.Equal(listKind, lk);
+                        Assert.Equal(navigationKind, nk);
+                        if (count.HasValue)
+                        {
+                            Assert.Equal(count.Value, c.Value);
+                        }
+                        else
+                        {
+                            Assert.Equal(FSharpOption<int>.None, c);
+                        }
                         Assert.Equal(hasBang, h);
                         didRun = true;
+                        return FSharpOption<ListItem>.None;
                     };
                 Create("");
                 ParseAndRun(command);
@@ -1691,19 +1700,19 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Next()
             {
-                AssertQuickFix("cn", QuickFix.Next, 1, hasBang: false);
-                AssertQuickFix("1cn", QuickFix.Next, 1, hasBang: false);
-                AssertQuickFix("2cn", QuickFix.Next, 2, hasBang: false);
-                AssertQuickFix("2cn!", QuickFix.Next, 2, hasBang: true);
+                AssertListNavigation("cn", ListKind.Error, NavigationKind.Next, null, hasBang: false);
+                AssertListNavigation("1cn", ListKind.Error, NavigationKind.Next, 1, hasBang: false);
+                AssertListNavigation("2cn", ListKind.Error, NavigationKind.Next, 2, hasBang: false);
+                AssertListNavigation("2cn!", ListKind.Error, NavigationKind.Next, 2, hasBang: true);
             }
 
             [WpfFact]
             public void Previous()
             {
-                AssertQuickFix("cp", QuickFix.Previous, 1, hasBang: false);
-                AssertQuickFix("1cp", QuickFix.Previous, 1, hasBang: false);
-                AssertQuickFix("2cp", QuickFix.Previous, 2, hasBang: false);
-                AssertQuickFix("2cp!", QuickFix.Previous, 2, hasBang: true);
+                AssertListNavigation("cp", ListKind.Error, NavigationKind.Previous, null, hasBang: false);
+                AssertListNavigation("1cp", ListKind.Error, NavigationKind.Previous, 1, hasBang: false);
+                AssertListNavigation("2cp", ListKind.Error, NavigationKind.Previous, 2, hasBang: false);
+                AssertListNavigation("2cp!", ListKind.Error, NavigationKind.Previous, 2, hasBang: true);
             }
         }
 

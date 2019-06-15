@@ -194,9 +194,7 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToTab(int index);
 
-        public abstract void OpenQuickFixWindow();
-
-        public abstract void OpenLocationWindow();
+        public abstract void OpenListWindow(ListKind listKind);
 
         public bool OpenLink(string link)
         {
@@ -211,9 +209,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
-
-        public abstract bool GoToLocation(QuickFix quickFix, int count, bool hasBang);
+        public abstract FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
         {
@@ -756,14 +752,9 @@ namespace Vim.UI.Wpf
             GoToTab(index);
         }
 
-        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
         {
-            return GoToQuickFix(quickFix, count, hasBang);
-        }
-
-        bool IVimHost.GoToLocation(QuickFix quickFix, int count, bool hasBang)
-        {
-            return GoToLocation(quickFix, count, hasBang);
+            return NavigateToListItem(listKind, navigationKind, count, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)
@@ -801,9 +792,9 @@ namespace Vim.UI.Wpf
             GoToWindow(textView, windowKind, count);
         }
 
-        void IVimHost.OpenQuickFixWindow()
+        void IVimHost.OpenListWindow(ListKind listKind)
         {
-            OpenQuickFixWindow();
+            OpenListWindow(listKind);
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)

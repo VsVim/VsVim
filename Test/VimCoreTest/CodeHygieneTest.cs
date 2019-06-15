@@ -168,7 +168,7 @@ namespace Vim.UnitTest
                     Run(NumberFormat.Alpha, NumberFormat.Decimal);
                     Run(NumberValue.NewAlpha('c'), NumberValue.NewDecimal(1));
                     Run(OperationKind.CharacterWise, OperationKind.LineWise);
-                    Run(QuickFix.Next, QuickFix.Previous);
+                    Run(NavigationKind.Next, NavigationKind.Previous);
                     Run(RegisterOperation.Delete, RegisterOperation.Yank);
                     Run(SectionKind.Default, SectionKind.OnCloseBrace);
                     Run(SentenceKind.Default, SentenceKind.NoTrailingCharacters);

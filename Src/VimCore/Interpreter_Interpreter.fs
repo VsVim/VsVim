@@ -1588,44 +1588,27 @@ type VimInterpreter
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit))
 
-    member x.RunOpenQuickFixWindow () =
-        _vimHost.OpenQuickFixWindow()
+    member x.RunOpenListWindow listKind =
+        _vimHost.OpenListWindow listKind
 
-    member x.RunQuickFixNext count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        x.GoToQuickFix QuickFix.Next count hasBang
-
-    member x.RunQuickFixPrevious count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        x.GoToQuickFix QuickFix.Previous count hasBang
-
-    member x.RunQuickFixRewind number defaultToLast hasBang =
-        let defaultNumber = if defaultToLast then -1 else 1
-        let number = OptionUtil.getOrDefault defaultNumber number 
-        x.GoToQuickFix QuickFix.Number number hasBang
-
-    member x.GoToQuickFix quickFix count hasBang =
-        if _vimHost.GoToQuickFix quickFix count hasBang |> not then
-            _commonOperations.Beep()
-
-    member x.RunOpenLocationWindow () =
-        _vimHost.OpenLocationWindow()
-
-    member x.RunLocationNext count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        x.GoToLocation QuickFix.Next count hasBang
-
-    member x.RunLocationPrevious count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        x.GoToLocation QuickFix.Previous count hasBang
-
-    member x.RunLocationRewind number defaultToLast hasBang =
-        let defaultNumber = if defaultToLast then -1 else 1
-        let number = OptionUtil.getOrDefault defaultNumber number 
-        x.GoToLocation QuickFix.Number number hasBang
-
-    member x.GoToLocation quickFix count hasBang =
-        if _vimHost.GoToLocation quickFix count hasBang |> not then
+    member x.RunNavigateToListItem listKind navigationKind count hasBang =
+        match _vimHost.NavigateToListItem listKind navigationKind count hasBang with
+        | Some listItem ->
+            match _vimHost.GetFocusedTextView() with
+            | Some textView ->
+                match _vimBuffer.Vim.TryGetVimBuffer textView with
+                | true, vimBuffer ->
+                    let statusUtil = vimBuffer.VimBufferData.StatusUtil
+                    let message = listItem.Message
+                    let position = listItem.Index + 1
+                    let count = listItem.Count
+                    sprintf "(%d of %d): %s" position count message
+                    |> statusUtil.OnStatus
+                | _ ->
+                    ()
+            | None ->
+                ()
+        | None ->
             _commonOperations.Beep()
 
     /// Run the quit command
@@ -2315,10 +2298,8 @@ type VimInterpreter
         | LineCommand.Let (name, value) -> x.RunLet name value
         | LineCommand.LetEnvironment (name, value) -> x.RunLetEnvironment name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
-        | LineCommand.LocationWindow -> x.RunOpenLocationWindow()
-        | LineCommand.LocationNext (count, hasBang) -> x.RunLocationNext count hasBang
-        | LineCommand.LocationPrevious (count, hasBang) -> x.RunLocationPrevious count hasBang
-        | LineCommand.LocationRewind (count, defaultToLast, hasBang) -> x.RunLocationRewind count defaultToLast hasBang
+        | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
+        | LineCommand.NavigateToListItem (listKind, navigationKind, count, hasBang) -> x.RunNavigateToListItem listKind navigationKind count hasBang
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
@@ -2331,10 +2312,6 @@ type VimInterpreter
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
-        | LineCommand.QuickFixWindow -> x.RunOpenQuickFixWindow()
-        | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
-        | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
-        | LineCommand.QuickFixRewind (count, defaultToLast, hasBang) -> x.RunQuickFixRewind count defaultToLast hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath

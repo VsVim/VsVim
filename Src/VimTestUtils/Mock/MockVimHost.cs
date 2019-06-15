@@ -52,10 +52,8 @@ namespace Vim.UnitTest.Mock
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
-        public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
-        public Action<QuickFix, int, bool> RunLocationFunc { get; set; }
-        public Action OpenQuickFixWindowFunc { get; set; }
-        public Action OpenLocationWindowFunc { get; set; }
+        public Func<ListKind, NavigationKind, FSharpOption<int>, bool, FSharpOption<ListItem>> NavigateToListItemFunc { get; set; }
+        public Action<ListKind> OpenListWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
@@ -113,9 +111,8 @@ namespace Vim.UnitTest.Mock
             RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
-            RunQuickFixFunc = delegate { throw new NotImplementedException(); };
-            OpenQuickFixWindowFunc = delegate { throw new NotImplementedException(); };
-            OpenLocationWindowFunc = delegate { throw new NotImplementedException(); };
+            OpenListWindowFunc = delegate { throw new NotImplementedException(); };
+            NavigateToListItemFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
@@ -390,9 +387,9 @@ namespace Vim.UnitTest.Mock
             return ShouldIncludeRcFile;
         }
 
-        void IVimHost.OpenQuickFixWindow()
+        void IVimHost.OpenListWindow(ListKind listKind)
         {
-            OpenQuickFixWindowFunc();
+            OpenListWindowFunc(listKind);
         }
 
         bool IVimHost.OpenLink(string link)
@@ -400,21 +397,9 @@ namespace Vim.UnitTest.Mock
             return OpenLinkFunc(link);
         }
 
-        void IVimHost.OpenLocationWindow()
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
         {
-            OpenLocationWindowFunc();
-        }
-
-        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
-        {
-            RunQuickFixFunc(quickFix, count, hasBang);
-            return false;
-        }
-
-        bool IVimHost.GoToLocation(QuickFix quickFix, int count, bool hasBang)
-        {
-            RunLocationFunc(quickFix, count, hasBang);
-            return false;
+            return NavigateToListItemFunc(listKind, navigationKind, count, hasBang);
         }
 
         void IVimHost.VimCreated(IVim vim)

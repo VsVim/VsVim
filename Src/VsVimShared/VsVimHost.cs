@@ -727,31 +727,46 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
-        private bool NavigateToItem(
-            QuickFix quickFix,
-            int count,
+        private FSharpOption<ListItem> NavigateToItem(
+            NavigationKind navigationKind,
+            FSharpOption<int> countOption,
             string next,
             string prev,
             Func<int, bool> goToItem)
         {
             var result = true;
 
-            switch (quickFix)
+            switch (navigationKind)
             {
-                case var value when value == QuickFix.Next:
-                    for (var i = 0; result && i < count; i++)
+                case var value when value == NavigationKind.Next:
                     {
-                        result = SafeExecuteCommand(null, next);
+                        var count = countOption.IsSome() ? countOption.Value : 1;
+                        for (var i = 0; result && i < count; i++)
+                        {
+                            result = SafeExecuteCommand(null, next);
+                        }
                     }
                     break;
-                case var value when value == QuickFix.Previous:
-                    for (var i = 0; result && i < count; i++)
+                case var value when value == NavigationKind.Previous:
                     {
-                        result = SafeExecuteCommand(null, prev);
+                        var count = countOption.IsSome() ? countOption.Value : 1;
+                        for (var i = 0; result && i < count; i++)
+                        {
+                            result = SafeExecuteCommand(null, prev);
+                        }
                     }
                     break;
-                case var value when value == QuickFix.Number:
-                    result = goToItem(count);
+                case var value when value == NavigationKind.First:
+                    {
+                        var count = countOption.IsSome() ? countOption.Value : 1;
+                        result = goToItem(count);
+                    }
+                    break;
+                case var value when value == NavigationKind.First:
+                    {
+                        var count = countOption.IsSome() ? countOption.Value : -1;
+                        result = goToItem(count);
+                    }
                     break;
                 default:
                     Contract.Assert(false);
@@ -759,22 +774,49 @@ namespace Vim.VisualStudio
                     break;
             }
 
-            return result;
+            return result ?
+                FSharpOption.Create(new ListItem("message", 7, 10)) :
+                FSharpOption<ListItem>.None;
         }
 
-        public override void OpenQuickFixWindow()
+        public override void OpenListWindow(ListKind listKind)
         {
-            SafeExecuteCommand(null, "View.ErrorList");
+            switch (listKind)
+            {
+                case var value when value == ListKind.Error:
+                    SafeExecuteCommand(null, "View.ErrorList");
+                    break;
+                case var value when value == ListKind.Location:
+                    SafeExecuteCommand(null, "View.FindResults1");
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
+            }
         }
 
-        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        public override FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
         {
-            return NavigateToItem(
-                quickFix,
-                count,
-                "View.NextError",
-                "View.PreviousError",
-                GoToError);
+            switch (listKind)
+            {
+                case var value when value == ListKind.Error:
+                    return NavigateToItem(
+                        navigationKind,
+                        count,
+                        "View.NextError",
+                        "View.PreviousError",
+                        GoToError);
+                case var value when value == ListKind.Location:
+                    return NavigateToItem(
+                        navigationKind,
+                        count,
+                        "Edit.GoToFindResults1NextLocation",
+                        "Edit.GoToFindResults1PrevLocation",
+                        GoToFindResult);
+                default:
+                    Contract.Assert(false);
+                    return FSharpOption<ListItem>.None;
+            }
         }
 
         private bool GoToError(int number)
@@ -802,21 +844,6 @@ namespace Vim.VisualStudio
                 _protectedOperations.Report(ex);
             }
             return false;
-        }
-
-        public override void OpenLocationWindow()
-        {
-            SafeExecuteCommand(null, "View.FindResults1");
-        }
-
-        public override bool GoToLocation(QuickFix quickFix, int count, bool hasBang)
-        {
-            return NavigateToItem(
-                quickFix,
-                count,
-                "Edit.GoToFindResults1NextLocation",
-                "Edit.GoToFindResults1PrevLocation",
-                GoToFindResult);
         }
 
         private bool GoToFindResult(int number)

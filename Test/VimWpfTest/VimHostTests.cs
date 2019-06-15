@@ -72,24 +72,14 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override void OpenQuickFixWindow()
+            public override void OpenListWindow(ListKind listKind)
             {
                 throw new NotImplementedException();
             }
 
-            public override void OpenLocationWindow()
+            public override FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
             {
-                throw new NotImplementedException();
-            }
-
-            public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
-            {
-                return false;
-            }
-
-            public override bool GoToLocation(QuickFix quickFix, int count, bool hasBang)
-            {
-                return false;
+                return FSharpOption<ListItem>.None;
             }
 
             public override bool LoadFileIntoExistingWindow(string filePath, ITextView textView)

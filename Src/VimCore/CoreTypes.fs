@@ -52,6 +52,30 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type NavigationKind =
+    | First
+    | Last
+    | Next
+    | Previous
+
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type ListKind =
+    | Error
+    | Location
+
+type ListItem
+    (
+        _message: string,
+        _index: int,
+        _count: int
+    ) =
+    member x.Message = _message
+    member x.Index = _index
+    member x.Count = _count
+
 /// Flags for the sort command
 [<System.Flags>]
 type SortFlags = 
