@@ -666,7 +666,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     | OpenListWindow of ListKind: ListKind
 
     /// Navigate to the specified item in the specified list
-    | NavigateToListItem of ListKind: ListKind * NavigationKind: NavigationKind * Count: int option * HasBang: bool
+    | NavigateToListItem of ListKind: ListKind * NavigationKind: NavigationKind * Argument: int option * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window

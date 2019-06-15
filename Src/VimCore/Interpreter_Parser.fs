@@ -1841,24 +1841,24 @@ and [<Sealed>] Parser
     member x.ParseNavigateToListItem lineRange listKind navigationKind =
         let hasBang = x.ParseBang()
 
-        // Optionally take count from line range specifier.
-        let count =
+        // Optionally take argument from line range specifier.
+        let argument =
             match lineRange with
             | LineRangeSpecifier.SingleLine lineSpecifier ->
                 match lineSpecifier with
-                | LineSpecifier.Number count -> Some count
+                | LineSpecifier.Number argument -> Some argument
                 | _ -> None
             | _ -> None
 
-        // Optionally take count as first argument.
-        let count =
-            match count with
-            | Some count -> Some count
+        // Optionally take argument as first argument.
+        let argument =
+            match argument with
+            | Some argument -> Some argument
             | None ->
                 x.SkipBlanks()
                 x.ParseNumber()
 
-        LineCommand.NavigateToListItem (listKind, navigationKind, count, hasBang)
+        LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 

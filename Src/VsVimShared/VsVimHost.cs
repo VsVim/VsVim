@@ -727,58 +727,6 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
-        private FSharpOption<ListItem> NavigateToItem(
-            NavigationKind navigationKind,
-            FSharpOption<int> countOption,
-            string next,
-            string prev,
-            Func<int, bool> goToItem)
-        {
-            var result = true;
-
-            switch (navigationKind)
-            {
-                case var value when value == NavigationKind.Next:
-                    {
-                        var count = countOption.IsSome() ? countOption.Value : 1;
-                        for (var i = 0; result && i < count; i++)
-                        {
-                            result = SafeExecuteCommand(null, next);
-                        }
-                    }
-                    break;
-                case var value when value == NavigationKind.Previous:
-                    {
-                        var count = countOption.IsSome() ? countOption.Value : 1;
-                        for (var i = 0; result && i < count; i++)
-                        {
-                            result = SafeExecuteCommand(null, prev);
-                        }
-                    }
-                    break;
-                case var value when value == NavigationKind.First:
-                    {
-                        var count = countOption.IsSome() ? countOption.Value : 1;
-                        result = goToItem(count);
-                    }
-                    break;
-                case var value when value == NavigationKind.First:
-                    {
-                        var count = countOption.IsSome() ? countOption.Value : -1;
-                        result = goToItem(count);
-                    }
-                    break;
-                default:
-                    Contract.Assert(false);
-                    result = false;
-                    break;
-            }
-
-            return result ?
-                FSharpOption.Create(new ListItem("message", 7, 10)) :
-                FSharpOption<ListItem>.None;
-        }
-
         public override void OpenListWindow(ListKind listKind)
         {
             switch (listKind)
@@ -795,31 +743,26 @@ namespace Vim.VisualStudio
             }
         }
 
-        public override FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
+        public override FSharpOption<ListItem> NavigateToListItem(
+            ListKind listKind,
+            NavigationKind navigationKind,
+            FSharpOption<int> argumentOption,
+            bool hasBang)
         {
+            var argument = argumentOption.IsSome() ? new int?(argumentOption.Value) : null;
             switch (listKind)
             {
                 case var value when value == ListKind.Error:
-                    return NavigateToItem(
-                        navigationKind,
-                        count,
-                        "View.NextError",
-                        "View.PreviousError",
-                        GoToError);
+                    return NavigateToError(navigationKind, argument, hasBang);
                 case var value when value == ListKind.Location:
-                    return NavigateToItem(
-                        navigationKind,
-                        count,
-                        "Edit.GoToFindResults1NextLocation",
-                        "Edit.GoToFindResults1PrevLocation",
-                        GoToFindResult);
+                    return NavigateToLocation(navigationKind, argument, hasBang);
                 default:
                     Contract.Assert(false);
                     return FSharpOption<ListItem>.None;
             }
         }
 
-        private bool GoToError(int number)
+        private FSharpOption<ListItem> NavigateToError(NavigationKind navigationKind, int? argument, bool hasBang)
         {
             try
             {
@@ -828,13 +771,27 @@ namespace Vim.VisualStudio
                     if (dte2.ToolWindows.ErrorList is IErrorList errorList)
                     {
                         var tableControl = errorList.TableControl;
-                        var entries = tableControl.Entries.ToArray();
-                        var index = number == -1 ? entries.Length - 1 : number - 1;
-                        if (index >= 0 && index < entries.Length)
+                        var entries = tableControl.Entries.ToList();
+                        var selectedEntry = tableControl.SelectedEntry;
+                        var indexOf = entries.IndexOf(selectedEntry);
+                        var current = indexOf != -1 ? new int?(indexOf) : null;
+                        var length = entries.Count;
+                        var indexResult = GetListItemIndex(navigationKind, argument, current, length);
+                        if (indexResult.HasValue)
                         {
-                            var desiredEntry = entries[index];
-                            tableControl.SelectedEntries = new[] { desiredEntry };
-                            return desiredEntry.NavigateTo(false);
+                            var index = indexResult.Value;
+                            if (index >= 0 && index < length)
+                            {
+                                var desiredEntry = entries[index];
+                                tableControl.SelectedEntries = new[] { desiredEntry };
+                                var message = "";
+                                if (desiredEntry.TryGetValue("text", out object content) && content is string text)
+                                {
+                                    message = text;
+                                }
+                                desiredEntry.NavigateTo(false);
+                                return FSharpOption.Create(new ListItem(index + 1, length, message));
+                            }
                         }
                     }
                 }
@@ -843,10 +800,10 @@ namespace Vim.VisualStudio
             {
                 _protectedOperations.Report(ex);
             }
-            return false;
+            return FSharpOption<ListItem>.None;
         }
 
-        private bool GoToFindResult(int number)
+        private FSharpOption<ListItem> NavigateToLocation(NavigationKind navigationKind, int? argument, bool relative)
         {
             try
             {
@@ -855,12 +812,33 @@ namespace Vim.VisualStudio
                 if (findWindow != null && findWindow.Selection is EnvDTE.TextSelection textSelection)
                 {
                     var textDocument = textSelection.Parent;
-                    var lines = textDocument.EndPoint.Line - 1;
-                    var adjustedLine = number == -1 ? lines - 1 : number + 1;
-                    if (adjustedLine >= 2 && adjustedLine < lines)
+                    var startOffset = 1;
+                    var endOffset = 1;
+                    var rawLength = textDocument.EndPoint.Line - 1;
+                    var length = rawLength - startOffset - endOffset;
+                    var currentLine = textSelection.CurrentLine;
+                    var current = new int?();
+                    if (currentLine >= 1 + startOffset && currentLine <= rawLength - endOffset)
                     {
-                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
-                        return SafeExecuteCommand(null, "Edit.GoToFindResults1Location");
+                        current = currentLine - startOffset - 1;
+                    }
+                    var indexResult = GetListItemIndex(navigationKind, argument, current, length);
+                    if (indexResult.HasValue)
+                    {
+                        var index = indexResult.Value;
+                        var adjustedLine = index + startOffset + 1;
+                        if (adjustedLine >= 1 + startOffset && adjustedLine <= rawLength - endOffset)
+                        {
+                            textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                            textSelection.SelectLine();
+                            var message = textSelection.Text.TrimEnd();
+                            textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                            if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
+                            {
+
+                                return FSharpOption.Create(new ListItem(index + 1, length, message));
+                            }
+                        }
                     }
                 }
 
@@ -869,8 +847,40 @@ namespace Vim.VisualStudio
             {
                 _protectedOperations.Report(ex);
             }
-            return false;
+            return FSharpOption<ListItem>.None;
 
+        }
+
+        private static int? GetListItemIndex(NavigationKind navigationKind, int? argument, int? current, int length)
+        {
+            var argumentOffset = argument.HasValue ? argument.Value : 1;
+            var currentIndex = current.HasValue ? current.Value : -1;
+            var newIndex = -1;
+
+            switch (navigationKind)
+            {
+                case var value when value == NavigationKind.Next:
+                    newIndex = currentIndex + argumentOffset;
+                    break;
+                case var value when value == NavigationKind.Previous:
+                    newIndex = currentIndex - argumentOffset;
+                    break;
+                case var value when value == NavigationKind.First:
+                    newIndex = argument.HasValue ? argument.Value - 1 : 0;
+                    break;
+                case var value when value == NavigationKind.Last:
+                    newIndex = argument.HasValue ? argument.Value - 1 : length - 1;
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
+            }
+
+            if (newIndex >= 0 && newIndex < length)
+            {
+                return newIndex;
+            }
+            return null;
         }
 
         public override void Make(bool jumpToFirstError, string arguments)

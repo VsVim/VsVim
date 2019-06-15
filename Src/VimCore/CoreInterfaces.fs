@@ -4820,7 +4820,7 @@ type IVimHost =
     abstract GoToTab: index: int -> unit
 
     /// Go to the specified item in the specified list
-    abstract NavigateToListItem: listKind: ListKind -> navigationKind: NavigationKind -> count: int option -> hasBang: bool -> ListItem option
+    abstract NavigateToListItem: listKind: ListKind -> navigationKind: NavigationKind -> argument: int option -> hasBang: bool -> ListItem option
 
     /// Get the name of the given ITextBuffer
     abstract GetName: textBuffer: ITextBuffer -> string

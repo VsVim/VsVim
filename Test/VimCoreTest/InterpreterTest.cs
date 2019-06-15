@@ -1672,21 +1672,21 @@ namespace Vim.UnitTest
 
         public sealed class ListNavigationTest : InterpreterTest
         {
-            private void AssertListNavigation(string command, ListKind listKind, NavigationKind navigationKind, int? count, bool hasBang)
+            private void AssertListNavigation(string command, ListKind listKind, NavigationKind navigationKind, int? argument, bool hasBang)
             {
                 var didRun = false;
                 VimHost.NavigateToListItemFunc =
-                    (lk, nk, c, h) =>
+                    (lk, nk, a, h) =>
                     {
                         Assert.Equal(listKind, lk);
                         Assert.Equal(navigationKind, nk);
-                        if (count.HasValue)
+                        if (argument.HasValue)
                         {
-                            Assert.Equal(count.Value, c.Value);
+                            Assert.Equal(argument.Value, a.Value);
                         }
                         else
                         {
-                            Assert.Equal(FSharpOption<int>.None, c);
+                            Assert.Equal(FSharpOption<int>.None, a);
                         }
                         Assert.Equal(hasBang, h);
                         didRun = true;

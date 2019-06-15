@@ -1591,18 +1591,18 @@ type VimInterpreter
     member x.RunOpenListWindow listKind =
         _vimHost.OpenListWindow listKind
 
-    member x.RunNavigateToListItem listKind navigationKind count hasBang =
-        match _vimHost.NavigateToListItem listKind navigationKind count hasBang with
+    member x.RunNavigateToListItem listKind navigationKind argument hasBang =
+        match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
         | Some listItem ->
             match _vimHost.GetFocusedTextView() with
             | Some textView ->
                 match _vimBuffer.Vim.TryGetVimBuffer textView with
                 | true, vimBuffer ->
                     let statusUtil = vimBuffer.VimBufferData.StatusUtil
-                    let message = listItem.Message
-                    let position = listItem.Index + 1
-                    let count = listItem.Count
-                    sprintf "(%d of %d): %s" position count message
+                    let itemNumber = listItem.ItemNumber
+                    let listLength = listItem.ListLength
+                    let message = StringUtil.GetDisplayString listItem.Message
+                    sprintf "(%d of %d): %s" itemNumber listLength message
                     |> statusUtil.OnStatus
                 | _ ->
                     ()
@@ -2299,7 +2299,7 @@ type VimInterpreter
         | LineCommand.LetEnvironment (name, value) -> x.RunLetEnvironment name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
         | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
-        | LineCommand.NavigateToListItem (listKind, navigationKind, count, hasBang) -> x.RunNavigateToListItem listKind navigationKind count hasBang
+        | LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang) -> x.RunNavigateToListItem listKind navigationKind argument hasBang
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count

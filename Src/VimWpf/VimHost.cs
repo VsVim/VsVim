@@ -209,7 +209,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang);
+        public abstract FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
         {
@@ -752,9 +752,9 @@ namespace Vim.UI.Wpf
             GoToTab(index);
         }
 
-        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            return NavigateToListItem(listKind, navigationKind, count, hasBang);
+            return NavigateToListItem(listKind, navigationKind, argument, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)

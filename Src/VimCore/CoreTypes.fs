@@ -66,15 +66,16 @@ type ListKind =
     | Error
     | Location
 
+/// One-based list item
 type ListItem
     (
-        _message: string,
-        _index: int,
-        _count: int
+        _itemNumber: int,
+        _listLength: int,
+        _message: string
     ) =
+    member x.ItemNumber = _itemNumber
+    member x.ListLength = _listLength
     member x.Message = _message
-    member x.Index = _index
-    member x.Count = _count
 
 /// Flags for the sort command
 [<System.Flags>]
