@@ -3,13 +3,6 @@ namespace Vim
 open System
 open Microsoft.VisualStudio.Text
 
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-[<NoEquality>]
-type internal TextDirection =
-    | Left 
-    | Right
-
 module TextUtil =
 
     let IsBigWordChar c = not (Char.IsWhiteSpace(c))
@@ -68,11 +61,11 @@ module TextUtil =
         | SearchPath.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
 
 
-    let rec private GetNormalWordPredicate text index dir = 
+    let rec private GetNormalWordPredicate text index searchPath = 
         let nextIndex index = 
-            match dir with
-            | TextDirection.Left -> index - 1
-            | TextDirection.Right -> index + 1
+            match searchPath with
+            | SearchPath.Backward -> index - 1
+            | SearchPath.Forward -> index + 1
 
         match StringUtil.CharAtOption index text with 
             | None -> IsNormalWordChar
@@ -82,7 +75,7 @@ module TextUtil =
                 else if IsNormalWordOtherChar  c then
                     IsNormalWordOtherChar
                 else
-                    GetNormalWordPredicate text (nextIndex index) dir
+                    GetNormalWordPredicate text (nextIndex index) searchPath
 
     // Get the predicate function for matching the particular WordKind value 
     // that is passed in as the first parameter
@@ -155,8 +148,8 @@ module TextUtil =
             
     let GetCurrentWordSpan kind text index = 
         let f = FindCurrentSpanCore
-        FindSpanCore f kind text index TextDirection.Right
-    let GetFullWordSpan kind text index = FindSpanCore FindFullSpanCore kind text index TextDirection.Right
-    let GetPreviousWordSpan kind text index = FindSpanCore FindPreviousSpanCore kind text index TextDirection.Left
-    let GetNextWordSpan kind text index = FindSpanCore FindNextSpanCore kind text index TextDirection.Right
+        FindSpanCore f kind text index SearchPath.Forward
+    let GetFullWordSpan kind text index = FindSpanCore FindFullSpanCore kind text index SearchPath.Forward
+    let GetPreviousWordSpan kind text index = FindSpanCore FindPreviousSpanCore kind text index SearchPath.Backward
+    let GetNextWordSpan kind text index = FindSpanCore FindNextSpanCore kind text index SearchPath.Forward
 
