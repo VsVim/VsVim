@@ -1121,7 +1121,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var caretIndex = textBox.SelectionStart;
             if (caretIndex < 2)
                 return;
-            var wordSpan = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, textBox.Text, caretIndex - 1);
+            var wordSpan = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, textBox.Text, caretIndex - 1);
             if (wordSpan == null)
                 return;
             var text = textBox.Text[0] +

@@ -10,30 +10,30 @@ namespace Vim.UnitTest
     /// </summary>
     public class TextUtilTest
     {
-        private void AssertWordSpans(string input, WordKind kind, params string[] expected)
+        private void AssertWordSpans(string text, WordKind kind, params string[] expected)
         {
-            var wordsForward = TextUtil.GetWordSpans(kind, SearchPath.Forward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            var wordsForward = TextUtil.GetWordSpans(kind, SearchPath.Forward, text).Select(x => text.Substring(x.Start, x.Length)).ToList();
             Assert.Equal(
                 expected,
                 wordsForward);
-            var wordsBackward = TextUtil.GetWordSpans(kind, SearchPath.Backward, input).Select(x => input.Substring(x.Start, x.Length)).ToList();
+            var wordsBackward = TextUtil.GetWordSpans(kind, SearchPath.Backward, text).Select(x => text.Substring(x.Start, x.Length)).ToList();
             Assert.Equal(
                 expected.Reverse(),
                 wordsBackward);
         }
 
-        private string FindCurrentNormalWord(string input, int index)
+        private string GetCurrentNormalWord(string text, int index)
         {
-            var span = TextUtil.FindCurrentWordSpan(WordKind.NormalWord, input, index);
+            var span = TextUtil.GetCurrentWordSpan(WordKind.NormalWord, text, index);
             Assert.True(span.IsSome());
-            return input.Substring(span.Value.Start, span.Value.Length);
+            return text.Substring(span.Value.Start, span.Value.Length);
         }
 
-        private string FindCurrentBigWord(string input, int index)
+        private string GetCurrentBigWord(string text, int index)
         {
-            var span = TextUtil.FindCurrentWordSpan(WordKind.BigWord, input, index);
+            var span = TextUtil.GetCurrentWordSpan(WordKind.BigWord, text, index);
             Assert.True(span.IsSome());
-            return input.Substring(span.Value.Start, span.Value.Length);
+            return text.Substring(span.Value.Start, span.Value.Length);
         }
 
         /// <summary>
@@ -82,34 +82,34 @@ namespace Vim.UnitTest
         /// Basic tests
         /// </summary>
         [Fact]
-        public void FindWord1()
+        public void GetWord1()
         {
-            Assert.Equal("foo", FindCurrentNormalWord("foo ", 0));
-            Assert.Equal("foo_123", FindCurrentNormalWord("foo_123", 0));
+            Assert.Equal("foo", GetCurrentNormalWord("foo ", 0));
+            Assert.Equal("foo_123", GetCurrentNormalWord("foo_123", 0));
         }
 
         /// <summary>
         /// Non-zero index tests
         /// </summary>
         [Fact]
-        public void FindWord2()
+        public void GetWord2()
         {
-            Assert.Equal("oo", FindCurrentNormalWord("foo", 1));
-            Assert.Equal("oo123", FindCurrentNormalWord("foo123", 1));
+            Assert.Equal("oo", GetCurrentNormalWord("foo", 1));
+            Assert.Equal("oo123", GetCurrentNormalWord("foo123", 1));
         }
 
         /// <summary>
         /// Limits
         /// </summary>
         [Fact]
-        public void FindWord3()
+        public void GetWord3()
         {
-            var span = TextUtil.FindCurrentWordSpan(WordKind.NormalWord, " foo", 0);
+            var span = TextUtil.GetCurrentWordSpan(WordKind.NormalWord, " foo", 0);
             Assert.True(span.IsNone());
 
-            Assert.Equal("oo_", FindCurrentNormalWord("foo_", 1));
+            Assert.Equal("oo_", GetCurrentNormalWord("foo_", 1));
 
-            span = TextUtil.FindCurrentWordSpan(WordKind.NormalWord, "foo", 23);
+            span = TextUtil.GetCurrentWordSpan(WordKind.NormalWord, "foo", 23);
             Assert.True(span.IsNone());
         }
 
@@ -117,104 +117,104 @@ namespace Vim.UnitTest
         /// Non-keyword words
         /// </summary>
         [Fact]
-        public void FindWord4()
+        public void GetWord4()
         {
-            Assert.Equal("!@#$", FindCurrentNormalWord("!@#$", 0));
-            Assert.Equal("!!!", FindCurrentNormalWord("foo!!!", 3));
+            Assert.Equal("!@#$", GetCurrentNormalWord("!@#$", 0));
+            Assert.Equal("!!!", GetCurrentNormalWord("foo!!!", 3));
         }
 
         /// <summary>
         /// Mix of keyword and non-keyword strings
         /// </summary>
         [Fact]
-        public void FindWord5()
+        public void GetWord5()
         {
-            Assert.Equal("#$", FindCurrentNormalWord("#$foo", 0));
-            Assert.Equal("foo", FindCurrentNormalWord("foo!@#$", 0));
+            Assert.Equal("#$", GetCurrentNormalWord("#$foo", 0));
+            Assert.Equal("foo", GetCurrentNormalWord("foo!@#$", 0));
         }
 
         [Fact]
-        public void FindBigWord1()
+        public void GetBigWord1()
         {
-            Assert.Equal("foo!@#$", FindCurrentBigWord("foo!@#$", 0));
-            Assert.Equal("!foo!", FindCurrentBigWord("!foo!", 0));
+            Assert.Equal("foo!@#$", GetCurrentBigWord("foo!@#$", 0));
+            Assert.Equal("!foo!", GetCurrentBigWord("!foo!", 0));
         }
 
         /// <summary>
-        /// Make sure that FindFullWordSpan words the span for any index into the
+        /// Make sure that GetFullWordSpan words the span for any index into the
         /// word
         /// </summary>
         [Fact]
-        public void FindFullWordSpan_Normal_FromAllParts()
+        public void GetFullWordSpan_Normal_FromAllParts()
         {
             var word = "foo";
             for (var i = 0; i < word.Length; i++)
             {
-                var span = TextUtil.FindFullWordSpan(WordKind.NormalWord, word, i);
+                var span = TextUtil.GetFullWordSpan(WordKind.NormalWord, word, i);
                 Assert.True(span.IsSome());
                 Assert.Equal(new Span(0, 3), span.Value);
             }
         }
 
         /// <summary>
-        /// Make sure that FindFullWordSpan words the span for any index into the
+        /// Make sure that GetFullWordSpan words the span for any index into the
         /// word on big words
         /// </summary>
         [Fact]
-        public void FindFullWordSpan_Big_FromAllParts()
+        public void GetFullWordSpan_Big_FromAllParts()
         {
             var word = "foo_123";
             var text = word + " and some extra";
             for (var i = 0; i < word.Length; i++)
             {
-                var span = TextUtil.FindFullWordSpan(WordKind.NormalWord, text, i);
+                var span = TextUtil.GetFullWordSpan(WordKind.NormalWord, text, i);
                 Assert.True(span.IsSome());
                 Assert.Equal(word, text.Substring(span.Value.Start, span.Value.Length));
             }
         }
 
         /// <summary>
-        /// Another test to ensure that FindFullWordSpan works with words that are 
+        /// Another test to ensure that GetFullWordSpan works with words that are 
         /// entirely composed of symbols
         /// </summary>
         [Fact]
-        public void FindFullBigWord_Big_FromAllParts2()
+        public void GetFullBigWord_Big_FromAllParts2()
         {
             var word = "!@#";
             for (var i = 0; i < word.Length; i++)
             {
-                var span = TextUtil.FindFullWordSpan(WordKind.NormalWord, word, i);
+                var span = TextUtil.GetFullWordSpan(WordKind.NormalWord, word, i);
                 Assert.True(span.IsSome());
                 Assert.Equal(new Span(0, 3), span.Value);
             }
         }
 
         /// <summary>
-        /// Ensure that FindFullWordSpan works from the middle of the string 
+        /// Ensure that GetFullWordSpan works from the middle of the string 
         /// </summary>
         [Fact]
-        public void FindFullWordSpan_Normal_MiddleOfString()
+        public void GetFullWordSpan_Normal_MiddleOfString()
         {
             var text = "cat dog";
-            var span = TextUtil.FindFullWordSpan(WordKind.NormalWord, text, 5);
+            var span = TextUtil.GetFullWordSpan(WordKind.NormalWord, text, 5);
             Assert.True(span.IsSome());
             Assert.Equal("dog", text.Substring(span.Value.Start, span.Value.Length));
         }
 
         [Fact]
-        public void FindPreviousWordSpan1()
+        public void GetPreviousWordSpan1()
         {
-            Assert.Equal(0, TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo", 1).Value.Start);
-            Assert.Equal(0, TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo", 2).Value.Start);
+            Assert.Equal(0, TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo", 1).Value.Start);
+            Assert.Equal(0, TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo", 2).Value.Start);
         }
 
         /// <summary>
         /// Move back accross a blank
         /// </summary>
         [Fact]
-        public void FindPreviousWordSpan_FromBlank()
+        public void GetPreviousWordSpan_FromBlank()
         {
-            var span = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo bar", 3);
+            var span = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo bar", 3);
             Assert.True(span.IsSome());
             Assert.Equal(new Span(0, 3), span.Value);
         }
@@ -223,9 +223,9 @@ namespace Vim.UnitTest
         /// Move back accross a blank
         /// </summary>
         [Fact]
-        public void FindPreviousWordSpan_FromSecondBlank()
+        public void GetPreviousWordSpan_FromSecondBlank()
         {
-            var span = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo bar baz", 7);
+            var span = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo bar baz", 7);
             Assert.True(span.IsSome());
             Assert.Equal(new Span(4, 3), span.Value);
         }
@@ -234,9 +234,9 @@ namespace Vim.UnitTest
         /// Move back when starting at a word.  Shouldd go to the start of the previous word
         /// </summary>
         [Fact]
-        public void FindPreviousWordSpan_FromStartOfWord()
+        public void GetPreviousWordSpan_FromStartOfWord()
         {
-            var span = TextUtil.FindPreviousWordSpan(WordKind.BigWord, "foo bar", 4);
+            var span = TextUtil.GetPreviousWordSpan(WordKind.BigWord, "foo bar", 4);
             Assert.True(span.IsSome());
             Assert.Equal(new Span(0, 3), span.Value);
         }
@@ -245,40 +245,40 @@ namespace Vim.UnitTest
         /// At the start of a line there is no previous word 
         /// </summary>
         [Fact]
-        public void FindPreviousWordSpan_NoPreviousWord()
+        public void GetPreviousWordSpan_NoPreviousWord()
         {
-            Assert.True(TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo", 0).IsNone());
-            Assert.True(TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "   foo", 1).IsNone());
-            Assert.True(TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "   foo", 3).IsNone());
+            Assert.True(TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo", 0).IsNone());
+            Assert.True(TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "   foo", 1).IsNone());
+            Assert.True(TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "   foo", 3).IsNone());
         }
 
         /// <summary>
         /// Mix of word and WORD characters
         /// </summary>
         [Fact]
-        public void FindPreviousWordSpan_MixedSymbols()
+        public void GetPreviousWordSpan_MixedSymbols()
         {
-            var span = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo#$", 4);
+            var span = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo#$", 4);
             Assert.True(span.IsSome());
             Assert.Equal(new Span(3, 2), span.Value);
 
-            span = TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo #$", 5);
+            span = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, "foo #$", 5);
             Assert.True(span.IsSome());
             Assert.Equal(new Span(4, 2), span.Value);
         }
 
         /// <summary>
-        /// Simple test to jump past the curret word and find the next word in the 
+        /// Simple test to jump past the curret word and Get the next word in the 
         /// provided strinrg.  Verify this is correct for every index in the preceeding
         /// word
         /// </summary>
         [Fact]
-        public void FindNextWordSpan_Simple()
+        public void GetNextWordSpan_Simple()
         {
             var text = "cat dog";
             for (var i = 0; i < 3; i++)
             {
-                var span = TextUtil.FindNextWordSpan(WordKind.NormalWord, text, i);
+                var span = TextUtil.GetNextWordSpan(WordKind.NormalWord, text, i);
                 Assert.True(span.IsSome());
                 Assert.Equal("dog", text.Substring(span.Value.Start, span.Value.Length));
             }

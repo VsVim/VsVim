@@ -7,7 +7,6 @@ open Microsoft.VisualStudio.Text
 [<NoComparison>]
 [<NoEquality>]
 type internal TextDirection =
-    | Neither
     | Left 
     | Right
 
@@ -74,7 +73,6 @@ module TextUtil =
             match dir with
             | TextDirection.Left -> index - 1
             | TextDirection.Right -> index + 1
-            | TextDirection.Neither -> -1
 
         match StringUtil.CharAtOption index text with 
             | None -> IsNormalWordChar
@@ -155,10 +153,10 @@ module TextUtil =
         let pred = GetWordPred kind text index dir 
         spanFunc text index pred 
             
-    let FindCurrentWordSpan kind text index = 
+    let GetCurrentWordSpan kind text index = 
         let f = FindCurrentSpanCore
         FindSpanCore f kind text index TextDirection.Right
-    let FindFullWordSpan kind text index = FindSpanCore FindFullSpanCore kind text index TextDirection.Right
-    let FindPreviousWordSpan kind text index = FindSpanCore FindPreviousSpanCore kind text index TextDirection.Left
-    let FindNextWordSpan kind text index = FindSpanCore FindNextSpanCore kind text index TextDirection.Right
+    let GetFullWordSpan kind text index = FindSpanCore FindFullSpanCore kind text index TextDirection.Right
+    let GetPreviousWordSpan kind text index = FindSpanCore FindPreviousSpanCore kind text index TextDirection.Left
+    let GetNextWordSpan kind text index = FindSpanCore FindNextSpanCore kind text index TextDirection.Right
 
