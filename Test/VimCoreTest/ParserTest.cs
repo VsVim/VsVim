@@ -770,13 +770,13 @@ let x = 42
             }
         }
 
-        public sealed class QuickFixTest : ParserTest
+        public sealed class ErrorListTest : ParserTest
         {
             [Fact]
             public void NextSimple()
             {
                 var navigationKind = ParseLineCommand("cn").AsNavigateToListItem();
-                Assert.True(navigationKind.Count.IsNone());
+                Assert.True(navigationKind.Argument.IsNone());
                 Assert.False(navigationKind.HasBang);
             }
 
@@ -784,7 +784,7 @@ let x = 42
             public void NextWithArgs()
             {
                 var navigationKind = ParseLineCommand("2cn!").AsNavigateToListItem();
-                Assert.Equal(2, navigationKind.Count.Value);
+                Assert.Equal(2, navigationKind.Argument.Value);
                 Assert.True(navigationKind.HasBang);
             }
 
@@ -792,7 +792,7 @@ let x = 42
             public void PreviousSimple()
             {
                 var navigationKind = ParseLineCommand("cp").AsNavigateToListItem();
-                Assert.True(navigationKind.Count.IsNone());
+                Assert.True(navigationKind.Argument.IsNone());
                 Assert.False(navigationKind.HasBang);
             }
 
@@ -800,7 +800,7 @@ let x = 42
             public void PreviousWithArgs()
             {
                 var navigationKind = ParseLineCommand("2cp!").AsNavigateToListItem();
-                Assert.Equal(2, navigationKind.Count.Value);
+                Assert.Equal(2, navigationKind.Argument.Value);
                 Assert.True(navigationKind.HasBang);
             }
         }
