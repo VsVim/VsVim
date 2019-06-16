@@ -108,7 +108,7 @@ function Upload-Vsix() {
 
 function Get-MSBuildPath() {
   $vsWhere = Join-Path $toolsDir "vswhere.exe"
-  $vsInfo = Exec-Command $vsWhere "-latest -format json -requires Microsoft.Component.MSBuild" | ConvertFrom-Json
+  $vsInfo = Exec-Command $vsWhere "-latest -format json -requires Microsoft.Component.MSBuild" | Out-String | ConvertFrom-Json
 
   # use first matching instance
   $vsInfo = $vsInfo[0]
