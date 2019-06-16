@@ -1317,6 +1317,7 @@ type VimInterpreter
         _vimHost.OpenLink link |> ignore
         _statusUtil.OnStatus "For help on Vim, use :vimhelp"
 
+    /// Run 'find in files' using the specified vim regular expression
     member x.RunVimGrep count hasBang pattern flags filePattern =
         match VimRegexFactory.Create pattern VimRegexOptions.Default with
         | Some regex ->
@@ -1327,6 +1328,7 @@ type VimInterpreter
         | None ->
             _commonOperations.Beep()
 
+    /// Show Vim help on the specified subject
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
@@ -2309,15 +2311,15 @@ type VimInterpreter
         | LineCommand.Let (name, value) -> x.RunLet name value
         | LineCommand.LetEnvironment (name, value) -> x.RunLetEnvironment name value
         | LineCommand.LetRegister (name, value) -> x.RunLetRegister name value
-        | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
-        | LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang) -> x.RunNavigateToListItem listKind navigationKind argument hasBang
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
+        | LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang) -> x.RunNavigateToListItem listKind navigationKind argument hasBang
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
         | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
+        | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()

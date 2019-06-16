@@ -881,15 +881,15 @@ and [<Sealed>] Parser
             | LineCommand.Let _ -> noRangeCommand
             | LineCommand.LetEnvironment _ -> noRangeCommand
             | LineCommand.LetRegister _ -> noRangeCommand
-            | LineCommand.OpenListWindow _ -> noRangeCommand
-            | LineCommand.NavigateToListItem _ -> noRangeCommand
             | LineCommand.Make _ -> noRangeCommand
             | LineCommand.MapKeys _ -> noRangeCommand
             | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
+            | LineCommand.NavigateToListItem _ -> noRangeCommand
             | LineCommand.NoHighlightSearch -> noRangeCommand
             | LineCommand.Nop -> noRangeCommand
             | LineCommand.Normal (_, command) -> LineCommand.Normal (lineRange, command)
             | LineCommand.Only -> noRangeCommand
+            | LineCommand.OpenListWindow _ -> noRangeCommand
             | LineCommand.ParseError _ -> noRangeCommand
             | LineCommand.DisplayLines (_, lineCommandFlags)-> LineCommand.DisplayLines (lineRange, lineCommandFlags)
             | LineCommand.PrintCurrentDirectory -> noRangeCommand
