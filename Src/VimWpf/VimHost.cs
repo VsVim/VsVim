@@ -267,9 +267,8 @@ namespace Vim.UI.Wpf
             }
             else
             {
-                // If the element is already loaded, schedule the action when
-                // the application is idle.
-                _protectedOperations.BeginInvoke(doAction, DispatcherPriority.ApplicationIdle);
+                // If the element is already loaded, do the action immediately.
+                doAction();
             }
         }
 
