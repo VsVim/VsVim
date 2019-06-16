@@ -130,6 +130,18 @@ namespace Vim.VisualStudio.Implementation.Misc
         /// </summary>
         private bool TryProcessWithBuffer(KeyInput keyInput)
         {
+            // If, for some reason, keyboard input is being routed to the text
+            // view but it isn't focused, focus it here.
+            void CheckFocus()
+            {
+                if (_vimBuffer.TextView is IWpfTextView wpfTextView &&
+                    !wpfTextView.VisualElement.IsFocused)
+                {
+                    VimTrace.TraceError("forcing focus back to text view");
+                    wpfTextView.VisualElement.Focus();
+                }
+            }
+
             // If the IVimBuffer can't process it then it doesn't matter
             if (!_vimBuffer.CanProcess(keyInput))
             {
@@ -174,6 +186,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // experience for those features
             if (!_broker.IsAnyDisplayActive())
             {
+                CheckFocus();
                 return _vimBuffer.Process(keyInput).IsAnyHandled;
             }
 
@@ -196,6 +209,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             }
             else
             {
+                CheckFocus();
                 // Intentionally using keyInput here and not mapped.  Process will do mapping on the
                 // provided input hence we should be using the original keyInput here not mapped
                 handled = _vimBuffer.Process(keyInput).IsAnyHandled;

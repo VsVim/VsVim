@@ -12,6 +12,7 @@ using System.Text;
 using System.Diagnostics;
 using WpfKeyboard = System.Windows.Input.Keyboard;
 using WpfTextChangedEventArgs = System.Windows.Controls.TextChangedEventArgs;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -83,6 +84,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private bool _inCommandLineUpdate;
         private EditKind _editKind;
         private bool _processingVirtualKeyInputs;
+        private bool _changingFocus;
 
         /// <summary>
         /// We need to hold a reference to Text Editor visual element.
@@ -196,31 +198,46 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             _editKind = editKind;
-            switch (editKind)
+
+            ChangeFocus(editKind, updateCommandLine);
+        }
+
+        private void ChangeFocus(EditKind editKind, bool updateCommandLine)
+        {
+            if (!_changingFocus)
             {
-                case EditKind.None:
-                    // Make sure that the editor has focus 
-                    if (ParentVisualElement != null)
+                try
+                {
+                    _changingFocus = true;
+                    switch (editKind)
                     {
-                        ParentVisualElement.Focus();
-                    }
-                    _margin.IsEditReadOnly = true;
+                        case EditKind.None:
 
-                    if (updateCommandLine)
-                    {
-                        UpdateCommandLineForNoEvent();
-                    }
+                            // Make sure that the editor has focus 
+                            _parentVisualElement.Focus();
+                            _margin.IsEditReadOnly = true;
 
-                    break;
-                case EditKind.Command:
-                case EditKind.SearchForward:
-                case EditKind.SearchBackward:
-                    WpfKeyboard.Focus(_margin.CommandLineTextBox);
-                    _margin.IsEditReadOnly = false;
-                    break;
-                default:
-                    Contract.FailEnumValue(editKind);
-                    break;
+                            if (updateCommandLine)
+                            {
+                                UpdateCommandLineForNoEvent();
+                            }
+
+                            break;
+                        case EditKind.Command:
+                        case EditKind.SearchForward:
+                        case EditKind.SearchBackward:
+                            WpfKeyboard.Focus(_margin.CommandLineTextBox);
+                            _margin.IsEditReadOnly = false;
+                            break;
+                        default:
+                            Contract.FailEnumValue(editKind);
+                            break;
+                    }
+                }
+                finally
+                {
+                    _changingFocus = false;
+                }
             }
         }
 
@@ -243,9 +260,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.PreviewTextInput += OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged += OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged += OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus += OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown += OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged += OnFormatMappingChanged;
+            _parentVisualElement.GotKeyboardFocus += OnParentVisualElementGotKeyboardFocus;
         }
 
         internal void Disconnect()
@@ -267,9 +284,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             _margin.CommandLineTextBox.PreviewTextInput -= OnCommandLineTextBoxPreviewTextInput;
             _margin.CommandLineTextBox.TextChanged -= OnCommandLineTextBoxTextChanged;
             _margin.CommandLineTextBox.SelectionChanged -= OnCommandLineTextBoxSelectionChanged;
-            _margin.CommandLineTextBox.LostKeyboardFocus -= OnCommandLineTextBoxLostKeyboardFocus;
             _margin.CommandLineTextBox.PreviewMouseDown -= OnCommandLineTextBoxPreviewMouseDown;
             _editorFormatMap.FormatMappingChanged -= OnFormatMappingChanged;
+            _parentVisualElement.GotKeyboardFocus -= OnParentVisualElementGotKeyboardFocus;
         }
 
         internal void Reset()
@@ -718,9 +735,9 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             // When processing virtual key input events, we
             // mark them as handled so they don't get processed
             // by the mode of the buffer.
-            _processingVirtualKeyInputs = true;
             try
             {
+                _processingVirtualKeyInputs = true;
                 foreach (var c in command)
                 {
                     _vimBuffer.Process(KeyInputUtil.CharToKeyInput(c));
@@ -968,11 +985,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
         }
 
-        private void OnCommandLineTextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            ChangeEditKind(EditKind.None);
-        }
-
         /// <summary>
         /// If the user clicks on the edit box then consider switching to edit mode
         /// </summary>
@@ -992,6 +1004,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             ChangeEditKind(commandLineEditKind);
             _margin.UpdateCaretPosition(EditPosition.End);
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// Forward focus to the margin if it should have the focus
+        /// </summary>
+        private void OnParentVisualElementGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (_editKind != EditKind.None)
+            {
+                ChangeFocus(_editKind, false);
+            }
         }
 
         /// <summary>
