@@ -662,7 +662,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
-    /// Display the quickfix window
+    /// Open the specified list window
     | OpenListWindow of ListKind: ListKind
 
     /// Navigate to the specified item in the specified list

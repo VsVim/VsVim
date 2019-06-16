@@ -465,6 +465,7 @@ namespace Vim.VisualStudio
         /// <param name="flags">flags controlling the find operation</param>
         public override void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
         {
+            // Callback to navigate to the first error.
             void onFindDone(vsFindResult result, bool cancelled)
             {
                 _dte.Events.FindEvents.FindDone -= onFindDone;
@@ -785,6 +786,7 @@ namespace Vim.VisualStudio
         {
             try
             {
+                // Use the 'IErrorList' interface to manipulate the error list.
                 if (_dte is DTE2 dte2 && dte2.ToolWindows.ErrorList is IErrorList errorList)
                 {
                     var tableControl = errorList.TableControl;
@@ -793,6 +795,10 @@ namespace Vim.VisualStudio
                     var indexOf = entries.IndexOf(selectedEntry);
                     var current = indexOf != -1 ? new int?(indexOf) : null;
                     var length = entries.Count;
+
+                    // Now that we know the current item (if any) and the list
+                    // length, convert the navigation kind and its argument
+                    // into the index of the desired list item.
                     var indexResult = GetListItemIndex(navigationKind, argument, current, length);
                     if (indexResult.HasValue)
                     {
@@ -808,6 +814,8 @@ namespace Vim.VisualStudio
                         {
                             message = text;
                         }
+
+                        // Item number is one-based.
                         return new ListItem(index + 1, length, message);
                     }
                 }
@@ -830,10 +838,15 @@ namespace Vim.VisualStudio
         {
             try
             {
+                // Use the text contents of the 'Find Results 1' window to
+                // manipulate the location list.
                 var windowGuid = EnvDTE.Constants.vsWindowKindFindResults1;
                 var findWindow = _dte.Windows.Item(windowGuid);
                 if (findWindow != null && findWindow.Selection is EnvDTE.TextSelection textSelection)
                 {
+                    // Note that the text document and text selection APIs are
+                    // one-based but 'GetListItemIndex' returns a zero-based
+                    // value.
                     var textDocument = textSelection.Parent;
                     var startOffset = 1;
                     var endOffset = 1;
@@ -861,6 +874,10 @@ namespace Vim.VisualStudio
                             }
                         }
                     }
+
+                    // Now that we know the current item (if any) and the list
+                    // length, convert the navigation kind and its argument
+                    // into the index of the desired list item.
                     var indexResult = GetListItemIndex(navigationKind, argument, current, length);
                     if (indexResult.HasValue)
                     {
@@ -896,12 +913,22 @@ namespace Vim.VisualStudio
 
         }
 
+        /// <summary>
+        /// Convert the specified navigation instructions into an index for the
+        /// new list item
+        /// </summary>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argument">an optional argument for the navigation</param>
+        /// <param name="current">the zero-base index of the current list item</param>
+        /// <param name="length">the length of the list</param>
+        /// <returns>a zero-based index into the list</returns>
         private static int? GetListItemIndex(NavigationKind navigationKind, int? argument, int? current, int length)
         {
             var argumentOffset = argument.HasValue ? argument.Value : 1;
             var currentIndex = current.HasValue ? current.Value : -1;
             var newIndex = -1;
 
+            // The 'first' and 'next' navigation kinds are one-based.
             switch (navigationKind)
             {
                 case NavigationKind.First:

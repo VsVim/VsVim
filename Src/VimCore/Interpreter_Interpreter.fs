@@ -1599,12 +1599,18 @@ type VimInterpreter
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit))
 
+    /// Run the 'open list window' command, e.g. ':cwindow'
     member x.RunOpenListWindow listKind =
         _vimHost.OpenListWindow listKind
 
+    /// Run the 'navigate to list item' command, e.g. ':cnext'
     member x.RunNavigateToListItem listKind navigationKind argument hasBang =
         match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
         | Some listItem ->
+
+            // Show the status in the command margin of the window that we
+            // navigated to rather than the window that the navigation command
+            // was issued on.
             match _vimHost.GetFocusedTextView() with
             | Some textView ->
                 match _vimBuffer.Vim.TryGetVimBuffer textView with
@@ -1613,6 +1619,11 @@ type VimInterpreter
                     let itemNumber = listItem.ItemNumber
                     let listLength = listItem.ListLength
                     let message = StringUtil.GetDisplayString listItem.Message
+
+                    // Try to clip the message to fit into the command margin
+                    // without wrapping. This doesn't need to be exact but
+                    // ideally the command margin should display as much as
+                    // possible without showing a horizontal scroll bar.
                     let textView = vimBuffer.TextView
                     let spaceWidth =
                         match TextViewUtil.GetTextViewLineContainingCaret textView with
@@ -1624,13 +1635,18 @@ type VimInterpreter
                     let columns = int(textView.ViewportWidth / spaceWidth)
                     let columns = max 0 (columns - prefix.Length - 5)
                     let message = message.Substring(0, min message.Length columns)
+
                     prefix + message
                     |> statusUtil.OnStatus
                 | _ ->
                     ()
             | None ->
                 ()
+
         | None ->
+
+            // We reached the beginning or end of the list, or something else
+            // went wrong.
             _statusUtil.OnStatus Resources.Interpreter_NoMoreItems
 
     /// Run the quit command
