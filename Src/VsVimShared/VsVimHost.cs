@@ -773,33 +773,30 @@ namespace Vim.VisualStudio
         {
             try
             {
-                if (_dte is DTE2 dte2)
+                if (_dte is DTE2 dte2 && dte2.ToolWindows.ErrorList is IErrorList errorList)
                 {
-                    if (dte2.ToolWindows.ErrorList is IErrorList errorList)
+                    var tableControl = errorList.TableControl;
+                    var entries = tableControl.Entries.ToList();
+                    var selectedEntry = tableControl.SelectedEntry;
+                    var indexOf = entries.IndexOf(selectedEntry);
+                    var current = indexOf != -1 ? new int?(indexOf) : null;
+                    var length = entries.Count;
+                    var indexResult = GetListItemIndex(navigationKind, argument, current, length);
+                    if (indexResult.HasValue)
                     {
-                        var tableControl = errorList.TableControl;
-                        var entries = tableControl.Entries.ToList();
-                        var selectedEntry = tableControl.SelectedEntry;
-                        var indexOf = entries.IndexOf(selectedEntry);
-                        var current = indexOf != -1 ? new int?(indexOf) : null;
-                        var length = entries.Count;
-                        var indexResult = GetListItemIndex(navigationKind, argument, current, length);
-                        if (indexResult.HasValue)
+                        var index = indexResult.Value;
+                        var desiredEntry = entries[index];
+                        tableControl.SelectedEntries = new[] { desiredEntry };
+                        desiredEntry.NavigateTo(false);
+
+                        // Get the error text from the appropriate table
+                        // column.
+                        var message = "";
+                        if (desiredEntry.TryGetValue("text", out object content) && content is string text)
                         {
-                            var index = indexResult.Value;
-                            if (index >= 0 && index < length)
-                            {
-                                var desiredEntry = entries[index];
-                                tableControl.SelectedEntries = new[] { desiredEntry };
-                                var message = "";
-                                if (desiredEntry.TryGetValue("text", out object content) && content is string text)
-                                {
-                                    message = text;
-                                }
-                                desiredEntry.NavigateTo(false);
-                                return FSharpOption.Create(new ListItem(index + 1, length, message));
-                            }
+                            message = text;
                         }
+                        return new ListItem(index + 1, length, message);
                     }
                 }
             }
@@ -875,7 +872,7 @@ namespace Vim.VisualStudio
                                     message = message.Substring(colon + 1).Trim();
                                 }
 
-                                return FSharpOption.Create(new ListItem(index + 1, length, message));
+                                return new ListItem(index + 1, length, message);
                             }
                         }
                     }
