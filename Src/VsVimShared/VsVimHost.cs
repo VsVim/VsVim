@@ -465,7 +465,7 @@ namespace Vim.VisualStudio
         /// <param name="flags">flags controlling the find operation</param>
         public override void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
         {
-            // Callback to navigate to the first error.
+            // Callback to navigate to the first find result.
             void onFindDone(vsFindResult result, bool cancelled)
             {
                 _dte.Events.FindEvents.FindDone -= onFindDone;
@@ -917,7 +917,7 @@ namespace Vim.VisualStudio
         /// </summary>
         /// <param name="navigationKind">the kind of navigation</param>
         /// <param name="argument">an optional argument for the navigation</param>
-        /// <param name="current">the zero-base index of the current list item</param>
+        /// <param name="current">the zero-based index of the current list item</param>
         /// <param name="length">the length of the list</param>
         /// <returns>a zero-based index into the list</returns>
         private static int? GetListItemIndex(NavigationKind navigationKind, int? argument, int? current, int length)
@@ -926,7 +926,7 @@ namespace Vim.VisualStudio
             var currentIndex = current.HasValue ? current.Value : -1;
             var newIndex = -1;
 
-            // The 'first' and 'next' navigation kinds are one-based.
+            // The 'first' and 'last' navigation kinds are one-based.
             switch (navigationKind)
             {
                 case NavigationKind.First:

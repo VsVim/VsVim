@@ -1838,6 +1838,7 @@ and [<Sealed>] Parser
         _tokenizer.MoveToEndOfLine()
         LineCommand.OpenListWindow listKind
 
+    /// Parse out a 'navigate to list item', e.g. ':cnext'
     member x.ParseNavigateToListItem lineRange listKind navigationKind =
         let hasBang = x.ParseBang()
 
