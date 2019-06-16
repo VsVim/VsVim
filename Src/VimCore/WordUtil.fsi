@@ -4,8 +4,8 @@ open Microsoft.VisualStudio.Utilities
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 
-/// Utility function for searching for Word values. This value is immutable and hence 
-/// safe to use from background threads.
+/// Utility function for searching for Word values within an ITextSnapshot. This value 
+/// is immutable and hence safe to use from background threads.
 ///
 /// This uses a fixed vaule of the `iskeyword` option. This means it can get out of sync
 /// with the current value. Components which are not on the background thread should 
