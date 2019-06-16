@@ -397,9 +397,9 @@ namespace Vim.UnitTest.Mock
             return OpenLinkFunc(link);
         }
 
-        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> count, bool hasBang)
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            return NavigateToListItemFunc(listKind, navigationKind, count, hasBang);
+            return NavigateToListItemFunc(listKind, navigationKind, argument, hasBang);
         }
 
         void IVimHost.VimCreated(IVim vim)

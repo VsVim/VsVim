@@ -735,10 +735,10 @@ namespace Vim.VisualStudio
         {
             switch (listKind)
             {
-                case var value when value == ListKind.Error:
+                case ListKind.Error:
                     SafeExecuteCommand(null, "View.ErrorList");
                     break;
-                case var value when value == ListKind.Location:
+                case ListKind.Location:
                     SafeExecuteCommand(null, "View.FindResults1");
                     break;
                 default:
@@ -764,9 +764,9 @@ namespace Vim.VisualStudio
             var argument = argumentOption.IsSome() ? new int?(argumentOption.Value) : null;
             switch (listKind)
             {
-                case var value when value == ListKind.Error:
+                case ListKind.Error:
                     return NavigateToError(navigationKind, argument, hasBang);
-                case var value when value == ListKind.Location:
+                case ListKind.Location:
                     return NavigateToLocation(navigationKind, argument, hasBang);
                 default:
                     Contract.Assert(false);
@@ -904,17 +904,17 @@ namespace Vim.VisualStudio
 
             switch (navigationKind)
             {
-                case var value when value == NavigationKind.Next:
-                    newIndex = currentIndex + argumentOffset;
-                    break;
-                case var value when value == NavigationKind.Previous:
-                    newIndex = currentIndex - argumentOffset;
-                    break;
-                case var value when value == NavigationKind.First:
+                case NavigationKind.First:
                     newIndex = argument.HasValue ? argument.Value - 1 : 0;
                     break;
-                case var value when value == NavigationKind.Last:
+                case NavigationKind.Last:
                     newIndex = argument.HasValue ? argument.Value - 1 : length - 1;
+                    break;
+                case NavigationKind.Next:
+                    newIndex = currentIndex + argumentOffset;
+                    break;
+                case NavigationKind.Previous:
+                    newIndex = currentIndex - argumentOffset;
                     break;
                 default:
                     Contract.Assert(false);

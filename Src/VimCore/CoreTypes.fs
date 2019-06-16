@@ -52,19 +52,15 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
-[<RequireQualifiedAccess>]
-[<NoComparison>]
 type NavigationKind =
-    | First
-    | Last
-    | Next
-    | Previous
+    | First = 1
+    | Last = 2
+    | Next = 3
+    | Previous = 4
 
-[<RequireQualifiedAccess>]
-[<NoComparison>]
 type ListKind =
-    | Error
-    | Location
+    | Error = 1
+    | Location = 2
 
 /// One-based list item
 type ListItem

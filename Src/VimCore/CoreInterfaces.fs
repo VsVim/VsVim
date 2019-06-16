@@ -4858,6 +4858,7 @@ type IVimHost =
     /// Open the the specified link
     abstract OpenLink: link: string -> bool
 
+    /// Quit the application
     abstract Quit: unit -> unit
 
     /// Reload the contents of the ITextView discarding any changes
