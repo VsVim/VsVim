@@ -527,6 +527,8 @@ type internal LocalSettings
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
             (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
+            // KTODO: get the right default value here
+            (IsKeywordName, "isk", SettingValue.String "", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -628,6 +630,9 @@ type internal LocalSettings
         member x.Comments
             with get() = _map.GetStringValue CommentsName
             and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
+        member x.KeywordCharacters
+            with get() = _map.GetStringValue IsKeywordName
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

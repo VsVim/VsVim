@@ -5236,6 +5236,9 @@ and IVimTextBuffer =
     /// The associated IVim instance
     abstract Vim: IVim
 
+    /// The WordUtil for this IVimTextBuffer
+    abstract WordUtil: WordUtil
+
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator
 

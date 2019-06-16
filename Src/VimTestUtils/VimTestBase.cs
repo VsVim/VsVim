@@ -435,16 +435,14 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null,
-            WordUtil wordUtil = null)
+            IVimWindowSettings windowSettings = null)
         {
             return CreateVimBufferData(
                 Vim.GetOrCreateVimTextBuffer(textView.TextBuffer),
                 textView,
                 statusUtil,
                 jumpList,
-                windowSettings,
-                wordUtil);
+                windowSettings);
         }
 
         /// <summary>
@@ -456,21 +454,18 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null,
-            WordUtil wordUtil = null)
+            IVimWindowSettings windowSettings = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             // KTODO: revisit this. Not sure if this is needed at all.
-            wordUtil = wordUtil ?? new WordUtil();
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil,
-                wordUtil);
+                statusUtil);
         }
 
         /// <summary>
@@ -505,13 +500,6 @@ namespace Vim.UnitTest
             var textView = CreateTextView(lines);
             textView.TextBuffer.Properties[MockVimHost.FileNameKey] = fileName;
             return Vim.CreateVimBuffer(textView);
-        }
-
-        protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
-        {
-            // KTODO: think about this 
-            var wordUtil = new WordUtil();
-            return wordUtil.Snapshot.CreateTextStructureNavigator(kind, textBuffer.ContentType);
         }
 
         protected WpfTextViewDisplay CreateTextViewDisplay(IWpfTextView textView, bool setFocus = true, bool show = true)

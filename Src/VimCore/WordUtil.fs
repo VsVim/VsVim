@@ -9,9 +9,9 @@ open System.ComponentModel.Composition
 [<UsedInBackgroundThread()>]
 [<Sealed>]
 [<Class>]
-type WordUtilSnapshot(_keywordChars: string) = 
+type WordUtilSnapshot(_keywordCharacters: string) = 
 
-    member x.KeywordChars = _keywordChars
+    member x.KeywordCharacters = _keywordCharacters
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
@@ -90,16 +90,17 @@ type WordUtilSnapshot(_keywordChars: string) =
 
 [<Sealed>]
 [<Class>]
-type WordUtil() =
+type WordUtil(_localSettings: IVimLocalSettings) =
 
-    // KTODO: need to take this as a constructor argument
-    let mutable _snapshot = WordUtilSnapshot("")
+    // KTODO: need to pass iskeyword option here
+    let mutable _snapshot = WordUtilSnapshot(_localSettings.KeywordCharacters)
 
-    member x.KeywordChars
-        with get() = _snapshot.KeywordChars
-        and set value = _snapshot <- WordUtilSnapshot(value)
+    member x.KeywordCharacters = _localSettings.KeywordCharacters
 
-    member x.Snapshot = _snapshot
+    member x.Snapshot =
+        if _snapshot.KeywordCharacters <> _localSettings.KeywordCharacters then
+            _snapshot <- WordUtilSnapshot(_localSettings.KeywordCharacters)
+        _snapshot
 
     member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
     member x.GetWords wordKind path point = x.Snapshot.GetWords wordKind path point

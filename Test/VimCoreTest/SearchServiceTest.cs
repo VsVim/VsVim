@@ -12,6 +12,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private ITextStructureNavigator _wordNavigator;
         private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private ITextSearchService _textSearch;
         private SearchService _searchRaw;
         private ISearchService _search;
@@ -24,11 +25,15 @@ namespace Vim.UnitTest
         public virtual void Create(ITextSearchService textSearchService, params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
-            _wordNavigator = (new WordUtil()).Snapshot.CreateTextStructureNavigator(WordKind.NormalWord, _textBuffer.ContentType);
             _globalSettings = Vim.GlobalSettings;
             _globalSettings.Magic = true;
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
+            _localSettings = new LocalSettings(_globalSettings);
+            var wordUtil = new WordUtil(_localSettings);
+
+            // KTODO: think about this one too
+            _wordNavigator = wordUtil.Snapshot.CreateTextStructureNavigator(WordKind.NormalWord, _textBuffer.ContentType);
 
             _textSearch = textSearchService;
             _searchRaw = new SearchService(_textSearch, _globalSettings);

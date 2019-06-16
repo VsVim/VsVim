@@ -21,7 +21,7 @@ namespace Vim.UnitTest
 
         public WordCompletionUtilTest()
         {
-            _util = new WordCompletionUtil(Vim, new WordUtil());
+            _util = new WordCompletionUtil(Vim, new WordUtil(new LocalSettings(Vim.GlobalSettings)));
             _textBuffer = CreateTextBuffer();
         }
 

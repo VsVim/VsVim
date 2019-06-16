@@ -15,11 +15,11 @@ open Microsoft.VisualStudio.Text.Operations
 [<Sealed>]
 type WordUtilSnapshot = 
 
-    new: keywordChars: string -> WordUtilSnapshot
+    new: keywordCharacters: string -> WordUtilSnapshot
 
     /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
     /// the same value of KeywordChars have identical functionality
-    member KeywordChars: string
+    member KeywordCharacters: string
 
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
@@ -36,11 +36,11 @@ type WordUtilSnapshot =
 [<Sealed>]
 type WordUtil = 
 
-    new: unit -> WordUtil
+    new: localSettings: IVimLocalSettings -> WordUtil
 
     /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
     /// the same value of KeywordChars have identical functionality
-    member KeywordChars: string with get, set
+    member KeywordCharacters: string
 
     member Snapshot: WordUtilSnapshot
 

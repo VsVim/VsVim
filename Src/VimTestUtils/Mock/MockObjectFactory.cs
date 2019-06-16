@@ -219,21 +219,18 @@ namespace Vim.UnitTest.Mock
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
             IVimWindowSettings windowSettings = null,
-            WordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
-            wordUtil = wordUtil ?? new WordUtil();
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil,
-                wordUtil);
+                statusUtil);
         }
 
         public static Mock<ITextCaret> CreateCaret(MockRepository factory = null)

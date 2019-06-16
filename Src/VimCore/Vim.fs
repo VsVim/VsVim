@@ -218,14 +218,10 @@ type internal VimBufferFactory
         _bulkOperations: IBulkOperations
     ) =
 
-    let _wordUtil = WordUtil()
-
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        // KTODO: need to think this through becaues the ITextStructureNavigator here 
-        // is based on a snapshot which is probably wrong
-        let wordNavigator = _wordUtil.Snapshot.CreateTextStructureNavigator WordKind.NormalWord textBuffer.ContentType
+        let wordUtil = WordUtil(localSettings)
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 
@@ -234,7 +230,7 @@ type internal VimBufferFactory
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
-        VimTextBuffer(textBuffer, localSettings, wordNavigator, _bufferTrackingService, undoRedoOperations, vim)
+        VimTextBuffer(textBuffer, localSettings, _bufferTrackingService, undoRedoOperations, wordUtil, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
@@ -247,16 +243,12 @@ type internal VimBufferFactory
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, _wordUtil) :> IVimBufferData
+        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData: IVimBufferData) = 
         let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
-        let wordUtil = vimBufferData.WordUtil
-
-        // KTODO: think about this one too
-        let wordNav = _wordUtil.Snapshot.CreateTextStructureNavigator WordKind.NormalWord vimBufferData.TextBuffer.ContentType
         let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
@@ -267,7 +259,7 @@ type internal VimBufferFactory
         let insertUtil = InsertUtil(vimBufferData, motionUtil, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, lineChangeTracker) :> ICommandUtil
 
-        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, wordNav, vimBufferData.WindowSettings, commandUtil)
+        let bufferRaw = VimBuffer(vimBufferData, incrementalSearch, motionUtil, vimBufferData.VimTextBuffer.WordNavigator, vimBufferData.WindowSettings, commandUtil)
         let buffer = bufferRaw :> IVimBuffer
 
         let vim = vimBufferData.Vim
@@ -302,8 +294,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(vimBufferData, commonOperations, motionUtil, createCommandRunner VisualKind.Character KeyRemapMode.Normal, capture, incrementalSearch)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commonOperations)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker :> Modes.Insert.ITextChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, true, _keyboardDevice, _mouseDevice, wordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker :> Modes.Insert.ITextChangeTracker, insertUtil, motionUtil, commandUtil, capture, false, _keyboardDevice, _mouseDevice, vimBufferData.WordUtil, _wordCompletionSessionFactoryService)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, textChangeTracker, insertUtil, motionUtil, commandUtil, capture, true, _keyboardDevice, _mouseDevice, vimBufferData.WordUtil, _wordCompletionSessionFactoryService)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(vimBufferData, commonOperations) :> IMode))
                 (DisabledMode(vimBufferData) :> IMode)
                 (ExternalEditMode(vimBufferData) :> IMode)

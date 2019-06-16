@@ -16,8 +16,7 @@ type VimBufferData
         _textView: ITextView,
         _windowSettings: IVimWindowSettings,
         _jumpList: IJumpList,
-        _statusUtil: IStatusUtil,
-        _wordUtil: WordUtil
+        _statusUtil: IStatusUtil
     ) = 
 
     let mutable _currentDirectory: string option = None
@@ -59,7 +58,7 @@ type VimBufferData
         member x.UndoRedoOperations = _vimTextBuffer.UndoRedoOperations
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
-        member x.WordUtil = _wordUtil
+        member x.WordUtil = _vimTextBuffer.WordUtil
         member x.LocalSettings = _vimTextBuffer.LocalSettings
         member x.Vim = _vimTextBuffer.Vim
 
