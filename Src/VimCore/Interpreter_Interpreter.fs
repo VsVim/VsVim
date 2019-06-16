@@ -1602,8 +1602,18 @@ type VimInterpreter
                     let itemNumber = listItem.ItemNumber
                     let listLength = listItem.ListLength
                     let message = StringUtil.GetDisplayString listItem.Message
-                    let message = message.Substring(0, min message.Length 50)
-                    sprintf "(%d of %d): %s" itemNumber listLength message
+                    let textView = vimBuffer.TextView
+                    let spaceWidth =
+                        match TextViewUtil.GetTextViewLineContainingCaret textView with
+                        | Some textViewLine ->
+                            textViewLine.VirtualSpaceWidth
+                        | None ->
+                            textView.LineHeight * 0.5
+                    let prefix = sprintf "(%d of %d): " itemNumber listLength
+                    let columns = int(textView.ViewportWidth / spaceWidth)
+                    let columns = max 0 (columns - prefix.Length - 5)
+                    let message = message.Substring(0, min message.Length columns)
+                    prefix + message
                     |> statusUtil.OnStatus
                 | _ ->
                     ()

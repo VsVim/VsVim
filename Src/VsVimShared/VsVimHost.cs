@@ -762,6 +762,13 @@ namespace Vim.VisualStudio
             }
         }
 
+        /// <summary>
+        /// Navigate to the specified error
+        /// </summary>
+        /// <param name="navigationKind">what kind of navigation</param>
+        /// <param name="argument">optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang format was used</param>
+        /// <returns>the list item for the error navigated to</returns>
         private FSharpOption<ListItem> NavigateToError(NavigationKind navigationKind, int? argument, bool hasBang)
         {
             try
@@ -803,7 +810,14 @@ namespace Vim.VisualStudio
             return FSharpOption<ListItem>.None;
         }
 
-        private FSharpOption<ListItem> NavigateToLocation(NavigationKind navigationKind, int? argument, bool relative)
+        /// <summary>
+        /// Navigate to the specified find result
+        /// </summary>
+        /// <param name="navigationKind">what kind of navigation</param>
+        /// <param name="argument">optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang format was used</param>
+        /// <returns>the list item for the find result navigated to</returns>
+        private FSharpOption<ListItem> NavigateToLocation(NavigationKind navigationKind, int? argument, bool hasBang)
         {
             try
             {
@@ -821,6 +835,22 @@ namespace Vim.VisualStudio
                     if (currentLine >= 1 + startOffset && currentLine <= rawLength - endOffset)
                     {
                         current = currentLine - startOffset - 1;
+                        if (current == 0 && navigationKind == NavigationKind.Next && length > 0)
+                        {
+                            // If we are on the first line, we can't tell
+                            // whether we've naviated to the first list item
+                            // yet. To handle this, we use automation to go to
+                            // the next search result. If the line number
+                            // doesn't change, we haven't yet performed the
+                            // first navigation.
+                            if (SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation"))
+                            {
+                                if (textSelection.CurrentLine == currentLine)
+                                {
+                                    current = null;
+                                }
+                            }
+                        }
                     }
                     var indexResult = GetListItemIndex(navigationKind, argument, current, length);
                     if (indexResult.HasValue)
@@ -832,16 +862,19 @@ namespace Vim.VisualStudio
                             textSelection.MoveToLineAndOffset(adjustedLine, 1);
                             textSelection.SelectLine();
                             var message = textSelection.Text;
-                            var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
-                            var colon = message.IndexOf(':', start);
-                            if (colon != -1)
-                            {
-                                message = message.Substring(colon + 1);
-                            }
-                            message = message.Trim();
                             textSelection.MoveToLineAndOffset(adjustedLine, 1);
                             if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
                             {
+                                // Try to extract just the matching portion of
+                                // the line.
+                                message = message.Trim();
+                                var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
+                                var colon = message.IndexOf(':', start);
+                                if (colon != -1)
+                                {
+                                    message = message.Substring(colon + 1).Trim();
+                                }
+
                                 return FSharpOption.Create(new ListItem(index + 1, length, message));
                             }
                         }
