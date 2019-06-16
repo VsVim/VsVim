@@ -1819,7 +1819,7 @@ type internal MotionUtil
 
         // Get all of the words on this line going forward
         let all = 
-            _wordUtil.GetWords kind SearchPath.Forward contextPoint
+            _wordUtil.GetWordSpans kind SearchPath.Forward contextPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1873,7 +1873,7 @@ type internal MotionUtil
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
-                        _wordUtil.GetWords kind SearchPath.Backward span.Start
+                        _wordUtil.GetWordSpans kind SearchPath.Backward span.Start
                         |> Seq.filter isOnSameLine
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault span.Start
@@ -2001,7 +2001,7 @@ type internal MotionUtil
                 count
 
         let endPoint = 
-            _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint
+            _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2040,7 +2040,7 @@ type internal MotionUtil
     member x.WordBackward kind count =
 
         let startPoint = 
-            _wordUtil.GetWords kind SearchPath.Backward x.CaretPoint
+            _wordUtil.GetWordSpans kind SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2053,11 +2053,11 @@ type internal MotionUtil
         // If the caret is currently at the end of the word then we start searching one character
         // back from that point 
         let searchPoint = 
-            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> x.CaretPoint
             | Some span -> span.Start
 
-        let words = _wordUtil.GetWords kind SearchPath.Backward searchPoint 
+        let words = _wordUtil.GetWordSpans kind SearchPath.Backward searchPoint 
         let startPoint = 
             match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
             | None -> SnapshotPoint(x.CurrentSnapshot, 0)
@@ -2074,7 +2074,7 @@ type internal MotionUtil
         // on the last point inside a word then we calculate the next word starting at
         // the end of the first word.
         let searchPoint = 
-            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> 
                 x.CaretPoint
             | Some span -> 
@@ -2085,7 +2085,7 @@ type internal MotionUtil
 
         let endPoint = 
             searchPoint
-            |> _wordUtil.GetWords kind SearchPath.Forward
+            |> _wordUtil.GetWordSpans kind SearchPath.Forward
             |> Seq.filter (fun span ->
                 // The typical word motion includes blank lines as part of the word. The one 
                 // exception is end of word which doesn't count blank lines as words.  Filter
@@ -2304,7 +2304,7 @@ type internal MotionUtil
             // number of words at 'count'.  Since the 'count' includes the white space between
             // the words 'count' is a definite max on the number of words we need to consider
             let words = 
-                _wordUtil.GetWords wordKind SearchPath.Forward point
+                _wordUtil.GetWordSpans wordKind SearchPath.Forward point
                 |> Seq.truncate count
                 |> List.ofSeq
 

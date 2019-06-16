@@ -27,9 +27,17 @@ type WordUtilSnapshot =
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
 
+    /// Get the full word span for the word value which crosses the given index. This will not
+    /// consider empty lines as words
+    member GetFullWordSpanInText: wordKind: WordKind -> text: string -> index: int -> Span option
+
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
-    member GetWords: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+    member GetWordSpans: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+
+    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
+    /// in the middle of a word the span of the entire word will be returned
+    member GetWordSpansInText: wordKind: WordKind -> searchPath: SearchPath -> text: string -> Span seq
 
     /// Create an ITextStructureNavigator where the extent of words is calculated for
     /// the specified WordKind value
@@ -52,6 +60,12 @@ type WordUtil =
     /// <see cref="WordUtilSnapshot.GetFullWordSpan" />
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
 
-    /// <see cref="WordUtilSnapshot.GetWords" />
-    member GetWords: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+    /// <see cref="WordUtilSnapshot.GetFullWordSpanInText" />
+    member GetFullWordSpanInText: wordKind: WordKind -> text: string -> index: int -> Span option
+
+    /// <see cref="WordUtilSnapshot.GetWordSpans" />
+    member GetWordSpans: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
+
+    /// <see cref="WordUtilSnapshot.GetWordSpansInText" />
+    member GetWordSpansInText: wordKind: WordKind -> searchPath: SearchPath -> text: string -> Span seq
 

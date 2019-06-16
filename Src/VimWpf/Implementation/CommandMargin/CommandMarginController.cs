@@ -1121,14 +1121,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             var caretIndex = textBox.SelectionStart;
             if (caretIndex < 2)
                 return;
-            var wordSpan = TextUtil.GetPreviousWordSpan(WordKind.NormalWord, textBox.Text, caretIndex - 1);
-            if (wordSpan == null)
+
+            var wordSpan = _vimBuffer.VimTextBuffer.WordUtil
+                .GetWordSpansInText(WordKind.NormalWord, SearchPath.Forward, textBox.Text)
+                .LastOrDefault(x => x.End <= caretIndex);
+            if (wordSpan == default)
                 return;
             var text = textBox.Text[0] +
-                          textBox.Text.Substring(1, Math.Max(0, wordSpan.Value.Start - 1)) +
+                          textBox.Text.Substring(1, Math.Max(0, wordSpan.Start - 1)) +
                           textBox.Text.Substring(caretIndex);
             textBox.Text = text;
-            textBox.Select(Math.Max(1, wordSpan.Value.Start), 0);
+            textBox.Select(Math.Max(1, wordSpan.Start), 0);
         }
 
         private void HandleKeyEventInPasteWait(KeyEventArgs e)

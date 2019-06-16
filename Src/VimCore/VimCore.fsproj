@@ -28,8 +28,6 @@
     <Compile Include="LineNumbersMarginOptions.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="TaggingInterfaces.fs" />
-    <Compile Include="TextUtil.fsi" />
-    <Compile Include="TextUtil.fs" />
     <Compile Include="WordUtil.fsi" />
     <Compile Include="WordUtil.fs" />
     <Compile Include="CoreInterfaces.fs" />
