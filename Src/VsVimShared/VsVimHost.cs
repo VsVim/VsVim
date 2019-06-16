@@ -903,14 +903,12 @@ namespace Vim.VisualStudio
                         }
                     }
                 }
-
             }
             catch (Exception ex)
             {
                 _protectedOperations.Report(ex);
             }
             return FSharpOption<ListItem>.None;
-
         }
 
         /// <summary>
@@ -1391,7 +1389,7 @@ namespace Vim.VisualStudio
             }
         }
 
-#region IVsSelectionEvents
+        #region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -1490,6 +1488,6 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-#endregion
+        #endregion
     }
 }

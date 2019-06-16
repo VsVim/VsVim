@@ -507,10 +507,10 @@ type ICommonOperations =
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
     /// Display a status message and fit it to the size of the window
-    abstract OnStatusFitToWindow: text: string -> unit
+    abstract OnStatusFitToWindow: message: string -> unit
 
     /// Display a status message in the command margin of the focused window
-    abstract OnStatusFocusedWindow: text: string -> unit
+    abstract OnStatusFocusedWindow: message: string -> unit
 
     /// Open link under caret
     abstract OpenLinkUnderCaret: unit -> Result
