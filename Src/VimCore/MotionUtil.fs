@@ -3144,7 +3144,7 @@ type internal MotionUtil
             let points = SnapshotPointUtil.GetPointsOnLineForward x.CaretPoint
             let isWordPoint point = 
                 let c = SnapshotPointUtil.GetChar point 
-                TextUtil.IsWordChar WordKind.NormalWord c
+                _wordUtil.IsWordChar WordKind.NormalWord c
 
             match points |> Seq.filter isWordPoint |> SeqUtil.tryHeadOnly with
             | Some point -> point
@@ -3163,7 +3163,7 @@ type internal MotionUtil
             // Can only do whole words on actual words.  If it's not an actual word then
             // we revert back to non-whole word match
             let isWholeWord = 
-                let isWord = word |> Seq.forall (TextUtil.IsWordChar WordKind.NormalWord)
+                let isWord = word |> Seq.forall (_wordUtil.IsWordChar WordKind.NormalWord)
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word

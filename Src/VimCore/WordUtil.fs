@@ -12,6 +12,9 @@ open System.ComponentModel.Composition
 type WordUtilSnapshot(_keywordCharacters: string) = 
 
     member x.KeywordCharacters = _keywordCharacters
+    
+    [<UsedInBackgroundThread()>]
+    member x.IsWordChar wordKind c = TextUtil.IsWordChar wordKind c
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
@@ -102,6 +105,7 @@ type WordUtil(_localSettings: IVimLocalSettings) =
             _snapshot <- WordUtilSnapshot(_localSettings.KeywordCharacters)
         _snapshot
 
+    member x.IsWordChar wordKind c = x.Snapshot.IsWordChar wordKind c
     member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
     member x.GetWords wordKind path point = x.Snapshot.GetWords wordKind path point
 

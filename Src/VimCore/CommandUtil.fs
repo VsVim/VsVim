@@ -79,6 +79,7 @@ type internal CommandUtil
     ) =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
+    let _wordUtil = _vimBufferData.WordUtil
     let _wordNavigator = _vimTextBuffer.WordNavigator
     let _textView = _vimBufferData.TextView
     let _textBuffer = _textView.TextBuffer
@@ -1168,8 +1169,8 @@ type internal CommandUtil
                     |> SnapshotPointUtil.GetChar
                 let isWhite = CharUtil.IsWhiteSpace pointChar
                 let wasWhite = CharUtil.IsWhiteSpace previousPointChar
-                let isWord = TextUtil.IsWordChar WordKind.NormalWord pointChar
-                let wasWord = TextUtil.IsWordChar WordKind.NormalWord previousPointChar
+                let isWord = _wordUtil.IsWordChar WordKind.NormalWord pointChar
+                let wasWord = _wordUtil.IsWordChar WordKind.NormalWord previousPointChar
                 let isEmptyLine = SnapshotPointUtil.IsEmptyLine point
                 isWhite <> wasWhite || isWord <> wasWord || isEmptyLine
 
@@ -3710,7 +3711,7 @@ type internal CommandUtil
             |> SnapshotPointUtil.GetCharacterSpan
             |> SnapshotSpanUtil.GetText
         let result, isToken =
-            let isWord = text.Length = 1 && TextUtil.IsWordChar WordKind.NormalWord text.[0]
+            let isWord = text.Length = 1 && _wordUtil.IsWordChar WordKind.NormalWord text.[0]
             let argument = MotionArgument(MotionContext.Movement)
             let motion = Motion.MatchingTokenOrDocumentPercent
             match isWord, _motionUtil.GetMotion motion argument with

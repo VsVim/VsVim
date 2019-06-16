@@ -15,11 +15,14 @@ open Microsoft.VisualStudio.Text.Operations
 [<Sealed>]
 type WordUtilSnapshot = 
 
+    // KTODO: Characters vs. Char in the name here
     new: keywordCharacters: string -> WordUtilSnapshot
 
     /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
     /// the same value of KeywordChars have identical functionality
     member KeywordCharacters: string
+
+    member IsWordChar: wordKind: WordKind -> c: char -> bool
 
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
@@ -43,6 +46,8 @@ type WordUtil =
     member KeywordCharacters: string
 
     member Snapshot: WordUtilSnapshot
+
+    member IsWordChar: wordKind: WordKind -> c: char -> bool
 
     /// <see cref="WordUtilSnapshot.GetFullWordSpan" />
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
