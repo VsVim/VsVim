@@ -1320,7 +1320,7 @@ type VimInterpreter
     /// Run 'find in files' using the specified vim regular expression
     member x.RunVimGrep count hasBang pattern flags filePattern =
 
-        // Convert the vim regex to a BCL regex for use with 'find in files'
+        // Convert the vim regex to a BCL regex for use with 'find in files'.
         match VimRegexFactory.Create pattern VimRegexOptions.Default with
         | Some regex ->
             let pattern = regex.RegexPattern
@@ -1608,40 +1608,12 @@ type VimInterpreter
         match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
         | Some listItem ->
 
-            // Show the status in the command margin of the window that we
-            // navigated to rather than the window that the navigation command
-            // was issued on.
-            match _vimHost.GetFocusedTextView() with
-            | Some textView ->
-                match _vimBuffer.Vim.TryGetVimBuffer textView with
-                | true, vimBuffer ->
-                    let statusUtil = vimBuffer.VimBufferData.StatusUtil
-                    let itemNumber = listItem.ItemNumber
-                    let listLength = listItem.ListLength
-                    let message = StringUtil.GetDisplayString listItem.Message
-
-                    // Try to clip the message to fit into the command margin
-                    // without wrapping. This doesn't need to be exact but
-                    // ideally the command margin should display as much as
-                    // possible without showing a horizontal scroll bar.
-                    let textView = vimBuffer.TextView
-                    let spaceWidth =
-                        match TextViewUtil.GetTextViewLineContainingCaret textView with
-                        | Some textViewLine ->
-                            textViewLine.VirtualSpaceWidth
-                        | None ->
-                            textView.LineHeight * 0.5
-                    let prefix = sprintf "(%d of %d): " itemNumber listLength
-                    let columns = int(textView.ViewportWidth / spaceWidth)
-                    let columns = max 0 (columns - prefix.Length - 5)
-                    let message = message.Substring(0, min message.Length columns)
-
-                    prefix + message
-                    |> statusUtil.OnStatus
-                | _ ->
-                    ()
-            | None ->
-                ()
+            // Display the list item in the window navigated to.
+            let itemNumber = listItem.ItemNumber
+            let listLength = listItem.ListLength
+            let message = StringUtil.GetDisplayString listItem.Message
+            sprintf "(%d of %d): %s" itemNumber listLength message
+            |> _commonOperations.OnStatusFocusedWindow
 
         | None ->
 

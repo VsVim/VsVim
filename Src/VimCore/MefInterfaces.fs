@@ -506,6 +506,12 @@ type ICommonOperations =
     /// Normalize the set of spaces and tabs into spaces
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
+    /// Display a status message and fit it to the size of the window
+    abstract OnStatusFitToWindow: text: string -> unit
+
+    /// Display a status message in the command margin of the focused window
+    abstract OnStatusFocusedWindow: text: string -> unit
+
     /// Open link under caret
     abstract OpenLinkUnderCaret: unit -> Result
 

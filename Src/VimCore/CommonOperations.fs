@@ -160,6 +160,18 @@ type internal CommonOperations
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
 
+    /// Get the common operations for the specified text view
+    member x.GetCommonOperationsForTextView textView =
+        _vim.GetOrCreateVimBuffer textView
+        |> (fun vimBuffer -> vimBuffer.VimBufferData)
+        |> _commonOperationsFactory.GetCommonOperations
+
+    /// Get the common operations for the focused window
+    member x.GetCommonOperationsForFocusedWindow () =
+        _vimHost.GetFocusedTextView()
+        |> Option.defaultValue _textView
+        |> x.GetCommonOperationsForTextView
+
     member x.CloseWindowUnlessDirty() = 
         if _vimHost.IsDirty _textView.TextBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
@@ -1399,6 +1411,29 @@ type internal CommonOperations
                 let remainder = text.Substring(index)
                 gapText + x.NormalizeBlanks remainder 0
 
+    /// Display a status message and fit it to the window
+    member x.OnStatusFitToWindow (message: string) =
+
+        // Try to clip the message to fit into the command margin without
+        // wrapping. This doesn't need to be exact but ideally the command
+        // margin should display as much as possible without showing a
+        // horizontal scroll bar.
+        let spaceWidth =
+            match TextViewUtil.GetTextViewLineContainingCaret _textView with
+            | Some textViewLine ->
+                textViewLine.VirtualSpaceWidth
+            | None ->
+                _textView.LineHeight * 0.5
+        let columns = int(_textView.ViewportWidth / spaceWidth)
+        let columns = max 0 (columns - 5)
+        let message = message.Substring(0, min message.Length columns)
+        _statusUtil.OnStatus message
+
+    /// Display a status message in the command margin of the focused window
+    member x.OnStatusFocusedWindow (message: string) =
+        let focusedCommonOperations = x.GetCommonOperationsForFocusedWindow()
+        focusedCommonOperations.OnStatusFitToWindow message
+
     /// Open link under caret
     member x.OpenLinkUnderCaret () =
         match x.WordUnderCursorOrEmpty with
@@ -1994,10 +2029,8 @@ type internal CommonOperations
         | Some textView ->
 
             // Ensure that our view flags are enforced in the new window.
-            _vim.GetOrCreateVimBuffer textView
-            |> (fun vimBuffer -> vimBuffer.VimBufferData)
-            |> _commonOperationsFactory.GetCommonOperations
-            |> (fun otherCommonOperations -> otherCommonOperations.EnsureAtCaret ViewFlags.Standard)
+            let newCommonOperations = x.GetCommonOperationsForTextView textView
+            newCommonOperations.EnsureAtCaret ViewFlags.Standard
             Result.Succeeded
 
         | None ->
@@ -2408,6 +2441,8 @@ type internal CommonOperations
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
+        member x.OnStatusFitToWindow message = x.OnStatusFitToWindow message
+        member x.OnStatusFocusedWindow message = x.OnStatusFocusedWindow message
         member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
