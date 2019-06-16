@@ -1998,7 +1998,7 @@ namespace Vim.UnitTest
             public void IdentSearch()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep pattern").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep pattern").AsVimGrep();
                 Assert.Equal("pattern", lineCommand.Pattern);
                 Assert.True(_didRun);
                 Assert.Equal("pattern", _pattern);
@@ -2008,7 +2008,7 @@ namespace Vim.UnitTest
             public void DelimiterSearch()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep /pattern/").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep /pattern/").AsVimGrep();
                 Assert.Equal("pattern", lineCommand.Pattern);
                 Assert.True(_didRun);
                 Assert.Equal("pattern", _pattern);
@@ -2018,7 +2018,7 @@ namespace Vim.UnitTest
             public void NoJumpFlag()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep /pattern/j").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep /pattern/j").AsVimGrep();
                 Assert.Equal("pattern", lineCommand.Pattern);
                 Assert.Equal(VimGrepFlags.NoJumpToFirst, lineCommand.Flags);
                 Assert.True(_didRun);
@@ -2030,7 +2030,7 @@ namespace Vim.UnitTest
             public void AllMatchesFlag()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep /pattern/g").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep /pattern/g").AsVimGrep();
                 Assert.Equal("pattern", lineCommand.Pattern);
                 Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
                 Assert.True(_didRun);
@@ -2042,7 +2042,7 @@ namespace Vim.UnitTest
             public void FilePattern()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep /pattern/g *.cs").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep /pattern/g *.cs").AsVimGrep();
                 Assert.Equal("pattern", lineCommand.Pattern);
                 Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
                 Assert.Equal("*.cs", lineCommand.FilePattern);
@@ -2056,7 +2056,7 @@ namespace Vim.UnitTest
             public void IdentPatternWithQuote()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep cat\"dog").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep cat\"dog").AsVimGrep();
                 Assert.Equal("cat\"dog", lineCommand.Pattern);
                 Assert.True(_didRun);
                 Assert.Equal("cat\"dog", _pattern);
@@ -2066,10 +2066,50 @@ namespace Vim.UnitTest
             public void DelimitedPatternWithQuote()
             {
                 Create("");
-                var lineCommand = ParseAndRun(":vimgrep /cat\"dog/").AsVimGrep();
+                var lineCommand = ParseAndRun("vimgrep /cat\"dog/").AsVimGrep();
                 Assert.Equal("cat\"dog", lineCommand.Pattern);
                 Assert.True(_didRun);
                 Assert.Equal("cat\"dog", _pattern);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseSet()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = true;
+                ParseAndRun("vimgrep /pattern/");
+                Assert.True(_didRun);
+                Assert.False(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseUnset()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = false;
+                ParseAndRun("vimgrep /pattern/");
+                Assert.True(_didRun);
+                Assert.True(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseSet_Override()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = true;
+                ParseAndRun(@"vimgrep /\Cpattern/");
+                Assert.True(_didRun);
+                Assert.True(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseUnset_Override()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = false;
+                ParseAndRun(@"vimgrep /\cpattern/");
+                Assert.True(_didRun);
+                Assert.False(_matchCase);
             }
         }
 

@@ -1319,10 +1319,19 @@ type VimInterpreter
 
     /// Run 'find in files' using the specified vim regular expression
     member x.RunVimGrep count hasBang pattern flags filePattern =
+
+        // Convert the vim regex to a BCL regex for use with 'find in files'
         match VimRegexFactory.Create pattern VimRegexOptions.Default with
         | Some regex ->
             let pattern = regex.RegexPattern
-            let matchCase = regex.CaseSpecifier <> CaseSpecifier.IgnoreCase
+            let matchCase =
+                match regex.CaseSpecifier with
+                | CaseSpecifier.IgnoreCase ->
+                    false
+                | CaseSpecifier.OrdinalCase ->
+                    true
+                | CaseSpecifier.None ->
+                    not _globalSettings.IgnoreCase
             let filesOfType = filePattern
             _vimHost.FindInFiles pattern matchCase filesOfType flags
         | None ->

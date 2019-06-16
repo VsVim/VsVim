@@ -462,7 +462,7 @@ namespace Vim.VisualStudio
         /// <param name="pattern">BCL regular expression pattern</param>
         /// <param name="matchCase">whether to match case</param>
         /// <param name="filesOfType">which files to search</param>
-        /// <param name="jumpToFirst">whether to jump to the first match</param>
+        /// <param name="flags">flags controlling the find operation</param>
         public override void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
         {
             void onFindDone(vsFindResult result, bool cancelled)
@@ -727,6 +727,10 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
+        /// <summary>
+        /// Open the window for the specified list
+        /// </summary>
+        /// <param name="listKind">the kind of list</param>
         public override void OpenListWindow(ListKind listKind)
         {
             switch (listKind)
@@ -743,6 +747,14 @@ namespace Vim.VisualStudio
             }
         }
 
+        /// <summary>
+        /// Navigate to the specified list item in the specified list
+        /// </summary>
+        /// <param name="listKind">the kind of list</param>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argumentOption">an optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang command format was used</param>
+        /// <returns>the list item navigated to</returns>
         public override FSharpOption<ListItem> NavigateToListItem(
             ListKind listKind,
             NavigationKind navigationKind,
@@ -765,9 +777,9 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Navigate to the specified error
         /// </summary>
-        /// <param name="navigationKind">what kind of navigation</param>
-        /// <param name="argument">optional argument for the navigation</param>
-        /// <param name="hasBang">whether the bang format was used</param>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argument">an optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang command format was used</param>
         /// <returns>the list item for the error navigated to</returns>
         private FSharpOption<ListItem> NavigateToError(NavigationKind navigationKind, int? argument, bool hasBang)
         {
@@ -854,26 +866,23 @@ namespace Vim.VisualStudio
                     {
                         var index = indexResult.Value;
                         var adjustedLine = index + startOffset + 1;
-                        if (adjustedLine >= 1 + startOffset && adjustedLine <= rawLength - endOffset)
+                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                        textSelection.SelectLine();
+                        var message = textSelection.Text;
+                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                        if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
                         {
-                            textSelection.MoveToLineAndOffset(adjustedLine, 1);
-                            textSelection.SelectLine();
-                            var message = textSelection.Text;
-                            textSelection.MoveToLineAndOffset(adjustedLine, 1);
-                            if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
+                            // Try to extract just the matching portion of
+                            // the line.
+                            message = message.Trim();
+                            var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
+                            var colon = message.IndexOf(':', start);
+                            if (colon != -1)
                             {
-                                // Try to extract just the matching portion of
-                                // the line.
-                                message = message.Trim();
-                                var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
-                                var colon = message.IndexOf(':', start);
-                                if (colon != -1)
-                                {
-                                    message = message.Substring(colon + 1).Trim();
-                                }
-
-                                return new ListItem(index + 1, length, message);
+                                message = message.Substring(colon + 1).Trim();
                             }
+
+                            return new ListItem(index + 1, length, message);
                         }
                     }
                 }
