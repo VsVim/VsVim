@@ -161,16 +161,14 @@ type internal CommonOperations
         and set value = _maintainCaretColumn <- value
 
     /// Get the common operations for the specified text view
-    member x.GetCommonOperationsForTextView textView =
-        _vim.GetOrCreateVimBuffer textView
-        |> (fun vimBuffer -> vimBuffer.VimBufferData)
-        |> _commonOperationsFactory.GetCommonOperations
-
-    /// Get the common operations for the focused window
-    member x.GetCommonOperationsForFocusedWindow () =
-        _vimHost.GetFocusedTextView()
-        |> Option.defaultValue _textView
-        |> x.GetCommonOperationsForTextView
+    member x.TryGetCommonOperationsForTextView textView =
+        match _vim.TryGetOrCreateVimBufferForHost textView with
+        | true, vimBuffer ->
+            vimBuffer.VimBufferData
+            |> _commonOperationsFactory.GetCommonOperations
+            |> Some
+        | _ ->
+            None
 
     member x.CloseWindowUnlessDirty() = 
         if _vimHost.IsDirty _textView.TextBuffer then
@@ -1431,8 +1429,15 @@ type internal CommonOperations
 
     /// Display a status message in the command margin of the focused window
     member x.OnStatusFocusedWindow (message: string) =
-        let focusedCommonOperations = x.GetCommonOperationsForFocusedWindow()
-        focusedCommonOperations.OnStatusFitToWindow message
+        match _vimHost.GetFocusedTextView() with
+        | Some textView ->
+            match x.TryGetCommonOperationsForTextView textView with
+            | Some commonOperations ->
+                commonOperations.OnStatusFitToWindow message
+            | None ->
+                ()
+        | None ->
+            ()
 
     /// Open link under caret
     member x.OpenLinkUnderCaret () =
@@ -2028,9 +2033,13 @@ type internal CommonOperations
         match _vimHost.LoadFileIntoNewWindow file lineNumber columnNumber with
         | Some textView ->
 
-            // Ensure that our view flags are enforced in the new window.
-            let newCommonOperations = x.GetCommonOperationsForTextView textView
-            newCommonOperations.EnsureAtCaret ViewFlags.Standard
+            // Try to ensure that our view flags are enforced in the new window.
+            match x.TryGetCommonOperationsForTextView textView with
+            | Some commonOperations ->
+                commonOperations.EnsureAtCaret ViewFlags.Standard
+            | None ->
+                ()
+
             Result.Succeeded
 
         | None ->
