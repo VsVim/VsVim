@@ -1631,13 +1631,18 @@ type CharacterSpan =
 
     /// The last virtual point included in the CharacterSpan
     member x.VirtualLast =
-        let endPoint: VirtualSnapshotPoint = x.VirtualEnd
-        if endPoint = x.VirtualStart then
+        let startPoint = x.VirtualStart
+        let endPoint = x.VirtualEnd
+        if endPoint = startPoint then
             None
         else
-            endPoint
-            |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
-            |> Some
+            let point =
+                endPoint
+                |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            if point.Position.Position < startPoint.Position.Position then
+                None
+            else
+                Some point
 
     /// Get the End point of the Character Span.
     member x.End: SnapshotPoint =
@@ -2093,8 +2098,8 @@ type VisualSpan =
             Character characterSpan
         | VisualKind.Line ->
 
-            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let startLine = SnapshotPointUtil.GetContainingLine startPoint.Position
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint.Position activePoint.Position
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
 
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
             // one line too big.  Go back on point to ensure we don't expand the span
@@ -2102,7 +2107,7 @@ type VisualSpan =
                 if startPoint = endPoint then
                     startLine
                 else
-                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint.Position
+                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
                     SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
