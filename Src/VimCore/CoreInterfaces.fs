@@ -1253,6 +1253,13 @@ and IMotionUtil =
     abstract GetExpandedTagBlock: startPoint: SnapshotPoint -> endPoint: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
 
 type ModeKind = 
+
+    /// Initial mode for an IVimBuffer.  It will maintain this mode until the
+    /// underlying ITextView completes it's initialization and allows the
+    /// IVimBuffer to properly  transition to the mode matching it's
+    /// underlying IVimTextBuffer
+    | Uninitialized = 0
+
     | Normal = 1
     | Insert = 2
     | Command = 3
@@ -1266,13 +1273,8 @@ type ModeKind =
     | SelectBlock = 11
     | ExternalEdit = 12
 
-    /// Initial mode for an IVimBuffer.  It will maintain this mode until the underlying
-    /// ITextView completes it's initialization and allows the IVimBuffer to properly 
-    /// transition to the mode matching it's underlying IVimTextBuffer
-    | Uninitialized = 13
-
-    /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
-    /// as selection changes
+    /// Mode when Vim is disabled.  It won't interact with events it otherwise
+    /// would such as selection changes
     | Disabled = 42
 
 [<RequireQualifiedAccess>]

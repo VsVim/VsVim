@@ -53,14 +53,14 @@ type JoinKind =
     | KeepEmptySpaces
 
 type NavigationKind =
-    | First = 1
-    | Last = 2
-    | Next = 3
-    | Previous = 4
+    | First = 0
+    | Last = 1
+    | Next = 2
+    | Previous = 3
 
 type ListKind =
-    | Error = 1
-    | Location = 2
+    | Error = 0
+    | Location = 1
 
 /// One-based list item
 type ListItem
@@ -440,25 +440,25 @@ type Mark =
             LocalMark.OfChar c |> Option.map LocalMark
 
 type Direction =
-    | Up        = 1
-    | Down      = 2
-    | Left      = 3
-    | Right     = 4
+    | Up        = 0
+    | Down      = 1
+    | Left      = 2
+    | Right     = 3
 
 type WindowKind =
-    | Up           = 1
-    | Down         = 2
-    | Left         = 3
-    | Right        = 4
-    | FarUp        = 5
-    | FarDown      = 6
-    | FarLeft      = 7
-    | FarRight     = 8
-    | Next         = 9
-    | Previous     = 10
-    | Recent       = 11
-    | Top          = 12
-    | Bottom       = 13
+    | Up           = 0
+    | Down         = 1
+    | Left         = 2
+    | Right        = 3
+    | FarUp        = 4
+    | FarDown      = 5
+    | FarLeft      = 6
+    | FarRight     = 7
+    | Next         = 8
+    | Previous     = 9
+    | Recent       = 10
+    | Top          = 11
+    | Bottom       = 12
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
