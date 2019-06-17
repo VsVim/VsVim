@@ -159,7 +159,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public virtual void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
+        public virtual void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
         {
             // Host specific decision on how to respond
         }
@@ -690,9 +690,9 @@ namespace Vim.UI.Wpf
             EnsureVisible(textView, point);
         }
 
-        void IVimHost.FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
+        void IVimHost.FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
         {
-            FindInFiles(pattern, matchCase, filesOfType, flags);
+            FindInFiles(pattern, matchCase, filesOfType, flags, action);
         }
 
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)

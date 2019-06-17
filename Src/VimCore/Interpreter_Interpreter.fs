@@ -1320,6 +1320,13 @@ type VimInterpreter
     /// Run 'find in files' using the specified vim regular expression
     member x.RunVimGrep count hasBang pattern flags filePattern =
 
+        // Action to perform when completing the operation.
+        let onFindDone () =
+            if Util.IsFlagSet flags VimGrepFlags.NoJumpToFirst |> not then
+                let listKind = ListKind.Location
+                let navigationKind = NavigationKind.First
+                x.RunNavigateToListItem listKind navigationKind None false
+
         // Convert the vim regex to a BCL regex for use with 'find in files'.
         match VimRegexFactory.Create pattern VimRegexOptions.Default with
         | Some regex ->
@@ -1333,7 +1340,7 @@ type VimInterpreter
                 | CaseSpecifier.None ->
                     not _globalSettings.IgnoreCase
             let filesOfType = filePattern
-            _vimHost.FindInFiles pattern matchCase filesOfType flags
+            _vimHost.FindInFiles pattern matchCase filesOfType flags onFindDone
         | None ->
             _commonOperations.Beep()
 

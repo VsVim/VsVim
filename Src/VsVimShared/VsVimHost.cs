@@ -253,7 +253,9 @@ namespace Vim.VisualStudio
         private readonly IProtectedOperations _protectedOperations;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly SettingsSync _settingsSync;
+
         private IVim _vim;
+        private FindEvents _findEvents;
 
         internal _DTE DTE
         {
@@ -463,29 +465,32 @@ namespace Vim.VisualStudio
         /// <param name="matchCase">whether to match case</param>
         /// <param name="filesOfType">which files to search</param>
         /// <param name="flags">flags controlling the find operation</param>
-        public override void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags)
+        /// <param name="action">action to perform when the operation completes</param>
+        public override void FindInFiles(
+            string pattern,
+            bool matchCase,
+            string filesOfType,
+            VimGrepFlags flags,
+            FSharpFunc<Unit, Unit> action)
         {
-            // Callback to navigate to the first find result.
+            // Perform the action when the find operation completes.
             void onFindDone(vsFindResult result, bool cancelled)
             {
-                _dte.Events.FindEvents.FindDone -= onFindDone;
+                // Unsubscribe.
+                _findEvents.FindDone -= onFindDone;
+                _findEvents = null;
 
-                if (!cancelled && result == vsFindResult.vsFindResultFound)
-                {
-                    SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation");
-                }
+                // Perform the action.
+                var protectedAction =
+                    _protectedOperations.GetProtectedAction(() => action.Invoke(null));
+                protectedAction();
             }
 
             try
             {
-                // Because 'find all' is asynchronous, we need to use an event
-                // to support 'jump to first'. However, this doesn't appear to
-                // work reliably.
-                var jumpToFirst = !flags.HasFlag(VimGrepFlags.NoJumpToFirst);
-                jumpToFirst = false;
-
-                if (_dte.Find is EnvDTE80.Find2 find)
+                if (_dte.Find is Find2 find)
                 {
+                    // Configure the find operation.
                     find.Action = vsFindAction.vsFindActionFindAll;
                     find.FindWhat = pattern;
                     find.Target = vsFindTarget.vsFindTargetSolution;
@@ -495,10 +500,12 @@ namespace Vim.VisualStudio
                     find.FilesOfType = filesOfType;
                     find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
                     find.WaitForFindToComplete = false;
-                    if (jumpToFirst)
-                    {
-                        _dte.Events.FindEvents.FindDone += onFindDone;
-                    }
+
+                    // Register the callback.
+                    _findEvents = _dte.Events.FindEvents;
+                    _findEvents.FindDone += onFindDone;
+
+                    // Start the find operation.
                     find.Execute();
                 }
             }

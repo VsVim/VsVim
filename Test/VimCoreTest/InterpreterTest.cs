@@ -1979,7 +1979,7 @@ namespace Vim.UnitTest
             {
                 base.Create(lines);
                 VimHost.FindInFilesFunc =
-                    (pattern, matchCase, filesOfType, flags) =>
+                    (pattern, matchCase, filesOfType, flags, action) =>
                     {
                         _didRun = true;
                         _pattern = pattern;
