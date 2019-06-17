@@ -2944,7 +2944,7 @@ type internal MotionUtil
         // The search operation should also update the search history
         _vimData.SearchHistory.Add searchData.Pattern
 
-        let searchResult = _search.FindNextPattern searchPoint searchData _wordNavigator count
+        let searchResult = _search.FindNextPattern searchPoint searchData _wordUtil.SnapshotWordNavigator count
 
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
@@ -3102,7 +3102,7 @@ type internal MotionUtil
             // All search operations update the jump list.
             _jumpList.Add x.CaretVirtualPoint
 
-            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
+            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordUtil.SnapshotWordNavigator count
 
             // Raise the messages that go with this given result.
             CommonUtil.RaiseSearchResultMessage _statusUtil searchResult

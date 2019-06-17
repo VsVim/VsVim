@@ -9,19 +9,19 @@ using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
-    public sealed class WordUtilTest : VimTestBase
+    public sealed class SnapshotWordUtilTest : VimTestBase
     {
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly WordUtil _wordUtil;
         private readonly IVimLocalSettings _localSettings;
 
-        public WordUtilTest()
+        public SnapshotWordUtilTest()
         {
             _textView = CreateTextView();
             _textBuffer = _textView.TextBuffer;
             _localSettings = new LocalSettings(Vim.GlobalSettings);
-            _wordUtil = new WordUtil(_localSettings);
+            _wordUtil = new WordUtil(_textBuffer, _localSettings);
         }
 
         private IEnumerable<string> GetWordsInText(WordKind wordKind, SearchPath searchPath, string text) =>

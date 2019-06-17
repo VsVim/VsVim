@@ -459,7 +459,6 @@ namespace Vim.UnitTest
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
-            // KTODO: revisit this. Not sure if this is needed at all.
             return new VimBufferData(
                 vimTextBuffer,
                 textView,

@@ -1,5 +1,6 @@
 ﻿#light
 namespace Vim
+open Microsoft.VisualStudio.Utilities
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open System
@@ -8,7 +9,7 @@ open System.Diagnostics
 [<UsedInBackgroundThread()>]
 [<Sealed>]
 [<Class>]
-type WordUtilSnapshot(_keywordCharacters: string) = 
+type SnapshotWordUtil(_keywordCharacters: string) = 
 
     member x.KeywordCharacters = _keywordCharacters
     member x.IsBigWordChar c = not (Char.IsWhiteSpace(c))
@@ -130,21 +131,83 @@ type WordUtilSnapshot(_keywordCharacters: string) =
             else 
                 None
 
-    /// Create an ITextStructure navigator for the ITextBuffer where the GetWordExtent function 
-    /// considers word values of the given WordKind.  Use the base ITextStructureNavigator of the
-    /// ITextBuffer for the rest of the functions
-    ///
-    /// Note: This interface can be invoked from any thread via ITextSearhService
-    member x.CreateTextStructureNavigator wordKind contentType = 
+/// ITextStructure navigator where the GetWordExtent function uses a fixed definition
+/// of word
+[<UsedInBackgroundThread>]
+[<Class>]
+[<Sealed>]
+type SnapshotWordNavigator
+    (
+        _wordUtil: SnapshotWordUtil,
+        _contentType: IContentType
+    ) =
 
+    member x.WordUtil = _wordUtil
+    member x.ContentType = _contentType
+
+    interface ITextStructureNavigator with 
+        member __.ContentType = _contentType
+        member __.GetExtentOfWord point = 
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord point with
+            | Some span -> TextExtent(span, true)
+            | None -> TextExtent(SnapshotSpan(point, 1), false)
+        member __.GetSpanOfEnclosing span = 
+            match _wordUtil.GetFullWordSpan WordKind.NormalWord span.Start with
+            | Some span -> span
+            | None -> span
+        member __.GetSpanOfFirstChild span = 
+            SnapshotSpan(span.End, 0)
+        member __.GetSpanOfNextSibling span = 
+            SnapshotSpan(span.End, 0)
+        member __.GetSpanOfPreviousSibling span = 
+            let before = SnapshotPointUtil.SubtractOneOrCurrent span.Start
+            SnapshotSpan(before, 0) 
+
+[<Sealed>]
+[<Class>]
+type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as this =
+
+    // KTODO: need to pass iskeyword option here
+    let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.KeywordCharacters)
+    let mutable _snapshotWordNavigator = Unchecked.defaultof<SnapshotWordNavigator>
+    let mutable _wordNavigator = Unchecked.defaultof<ITextStructureNavigator>
+
+    do
+        let createNavigators() =
+            _snapshotWordNavigator <- SnapshotWordNavigator(_snapshotWordUtil, _textBuffer.ContentType) 
+            _wordNavigator <- this.CreateTextStructureNavigator()
+        _textBuffer.ContentTypeChanged
+        |> Observable.add (fun _ -> createNavigators())
+
+        _localSettings.SettingChanged
+        |> Observable.add (fun e ->
+            if e.Setting.Name = LocalSettingNames.IsKeywordName then
+                _snapshotWordUtil <- SnapshotWordUtil(_localSettings.KeywordCharacters)
+                createNavigators()
+        )
+
+        createNavigators()
+
+    member x.KeywordCharacters = _localSettings.KeywordCharacters
+
+    member x.Snapshot = _snapshotWordUtil
+    member x.SnapshotWordNavigator = _snapshotWordNavigator
+    member x.WordNavigator = _wordNavigator
+    member x.IsWordChar wordKind c = x.Snapshot.IsWordChar wordKind c
+    member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
+    member x.GetFullWordSpanInText wordKind text index = x.Snapshot.GetFullWordSpanInText wordKind text index
+    member x.GetWordSpans wordKind path point = x.Snapshot.GetWordSpans wordKind path point
+    member x.GetWordSpansInText wordKind searchPath text = x.Snapshot.GetWordSpansInText wordKind searchPath text
+
+    member x.CreateTextStructureNavigator() =
         { new ITextStructureNavigator with 
-            member __.ContentType = contentType
+            member __.ContentType = _textBuffer.ContentType
             member __.GetExtentOfWord point = 
-                match x.GetFullWordSpan wordKind point with
+                match x.GetFullWordSpan WordKind.NormalWord point with
                 | Some span -> TextExtent(span, true)
                 | None -> TextExtent(SnapshotSpan(point,1),false)
             member __.GetSpanOfEnclosing span = 
-                match x.GetFullWordSpan wordKind span.Start with
+                match x.GetFullWordSpan WordKind.NormalWord span.Start with
                 | Some span -> span
                 | None -> span
             member __.GetSpanOfFirstChild span = 
@@ -154,26 +217,6 @@ type WordUtilSnapshot(_keywordCharacters: string) =
             member __.GetSpanOfPreviousSibling span = 
                 let before = SnapshotPointUtil.SubtractOneOrCurrent span.Start
                 SnapshotSpan(before, 0) }
-
-[<Sealed>]
-[<Class>]
-type WordUtil(_localSettings: IVimLocalSettings) =
-
-    // KTODO: need to pass iskeyword option here
-    let mutable _snapshot = WordUtilSnapshot(_localSettings.KeywordCharacters)
-
-    member x.KeywordCharacters = _localSettings.KeywordCharacters
-
-    member x.Snapshot =
-        if _snapshot.KeywordCharacters <> _localSettings.KeywordCharacters then
-            _snapshot <- WordUtilSnapshot(_localSettings.KeywordCharacters)
-        _snapshot
-
-    member x.IsWordChar wordKind c = x.Snapshot.IsWordChar wordKind c
-    member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
-    member x.GetFullWordSpanInText wordKind text index = x.Snapshot.GetFullWordSpanInText wordKind text index
-    member x.GetWordSpans wordKind path point = x.Snapshot.GetWordSpans wordKind path point
-    member x.GetWordSpansInText wordKind searchPath text = x.Snapshot.GetWordSpansInText wordKind searchPath text
 
 
 

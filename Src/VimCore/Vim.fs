@@ -221,7 +221,7 @@ type internal VimBufferFactory
     /// Create an IVimTextBuffer instance for the provided ITextBuffer
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
-        let wordUtil = WordUtil(localSettings)
+        let wordUtil = WordUtil(textBuffer, localSettings)
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 

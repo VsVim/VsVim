@@ -461,7 +461,7 @@ type VimInterpreter
                     currentLine |> SnapshotLineUtil.GetStart
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
             _vimData.LastSearchData <- searchData
-            let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
+            let wordNavigator = _vimBufferData.VimTextBuffer.WordUtil.SnapshotWordNavigator
             let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
             match result with
             | SearchResult.Found (_, span, _, _) ->
@@ -1764,7 +1764,7 @@ type VimInterpreter
                     lineRange.Start
 
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
-            let result = _searchService.FindNextPattern startPoint searchData _vimBufferData.VimTextBuffer.WordNavigator 1
+            let result = _searchService.FindNextPattern startPoint searchData _vimTextBuffer.WordUtil.SnapshotWordNavigator 1
             _commonOperations.RaiseSearchResultMessage(result)
     
             match result with

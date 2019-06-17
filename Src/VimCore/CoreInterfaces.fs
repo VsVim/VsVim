@@ -688,11 +688,11 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: ITextStructureNavigator -> SearchResult
+    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: SnapshotWordNavigator -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: ITextStructureNavigator -> count: int -> SearchResult
+    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: SnapshotWordNavigator -> count: int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]

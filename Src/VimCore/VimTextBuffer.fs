@@ -22,10 +22,7 @@ type internal VimTextBuffer
     let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
-
-    // KTODO: need to think this through becaues the ITextStructureNavigator here 
-    // is based on a snapshot which is probably wrong
-    let _wordNavigator = _wordUtil.Snapshot.CreateTextStructureNavigator WordKind.NormalWord _textBuffer.ContentType
+    let _wordNavigator = _wordUtil.WordNavigator
 
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None

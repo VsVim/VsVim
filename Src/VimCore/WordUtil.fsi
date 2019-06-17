@@ -10,13 +10,14 @@ open Microsoft.VisualStudio.Text.Operations
 /// This uses a fixed vaule of the `iskeyword` option. This means it can get out of sync
 /// with the current value. Components which are not on the background thread should 
 /// prefer WordUtil as it will always be in sync
+/// KTODO: the ITextSnapshot and string versions below should be unified in the implementation
 [<UsedInBackgroundThread>]
 [<Class>]
 [<Sealed>]
-type WordUtilSnapshot = 
+type SnapshotWordUtil = 
 
     // KTODO: Characters vs. Char in the name here
-    new: keywordCharacters: string -> WordUtilSnapshot
+    new: keywordCharacters: string -> SnapshotWordUtil
 
     /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
     /// the same value of KeywordChars have identical functionality
@@ -39,33 +40,32 @@ type WordUtilSnapshot =
     /// in the middle of a word the span of the entire word will be returned
     member GetWordSpansInText: wordKind: WordKind -> searchPath: SearchPath -> text: string -> Span seq
 
-    /// Create an ITextStructureNavigator where the extent of words is calculated for
-    /// the specified WordKind value
-    member CreateTextStructureNavigator: wordKind: WordKind -> contentType: IContentType -> ITextStructureNavigator
+[<UsedInBackgroundThread>] [<Class>] [<Sealed>] 
+type SnapshotWordNavigator =
+    member ContentType: IContentType
+    member WordUtil: SnapshotWordUtil
+    interface ITextStructureNavigator
 
 [<Class>]
 [<Sealed>]
 type WordUtil = 
 
-    new: localSettings: IVimLocalSettings -> WordUtil
+    new: textBuffer: ITextBuffer * localSettings: IVimLocalSettings -> WordUtil
 
-    /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
-    /// the same value of KeywordChars have identical functionality
     member KeywordCharacters: string
-
-    member Snapshot: WordUtilSnapshot
-
+    member Snapshot: SnapshotWordUtil
+    member SnapshotWordNavigator: SnapshotWordNavigator
+    member WordNavigator: ITextStructureNavigator
     member IsWordChar: wordKind: WordKind -> c: char -> bool
 
-    /// <see cref="WordUtilSnapshot.GetFullWordSpan" />
+    /// <see cref="SnapshotWordUtil.GetFullWordSpan" />
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
 
-    /// <see cref="WordUtilSnapshot.GetFullWordSpanInText" />
+    /// <see cref="SnapshotWordUtil.GetFullWordSpanInText" />
     member GetFullWordSpanInText: wordKind: WordKind -> text: string -> index: int -> Span option
 
-    /// <see cref="WordUtilSnapshot.GetWordSpans" />
+    /// <see cref="SnapshotWordUtil.GetWordSpans" />
     member GetWordSpans: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
 
-    /// <see cref="WordUtilSnapshot.GetWordSpansInText" />
+    /// <see cref="SnapshotWordUtil.GetWordSpansInText" />
     member GetWordSpansInText: wordKind: WordKind -> searchPath: SearchPath -> text: string -> Span seq
-
