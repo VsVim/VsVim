@@ -1397,7 +1397,7 @@ type VimInterpreter
             let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
             if StringUtil.IsNullOrEmpty subject then
                 loadDefaultHelp vimDoc
-                _statusUtil.OnStatus "For help on VsVim, use :help"
+                _commonOperations.OnStatusFocusedWindow "For help on VsVim, use :help"
             else
 
                 // Try to navigate to the tag.
@@ -1409,7 +1409,7 @@ type VimInterpreter
 
                     // Load the default help and report the error.
                     loadDefaultHelp vimDoc
-                    _statusUtil.OnError message
+                    _commonOperations.OnStatusFocusedWindow message
 
         | None ->
 
