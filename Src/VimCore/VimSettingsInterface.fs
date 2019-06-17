@@ -567,7 +567,10 @@ and IVimLocalSettings =
     abstract NumberFormats: string with get, set
 
     /// The characters which represent a keyword / WordKind.NormalWord
-    abstract KeywordChars: string with get, set
+    abstract IsKeyword: string with get, set
+
+    /// Type safe representation of IsKeyword
+    abstract IsKeywordCharSet: VimCharSet with get, set
 
     /// Whether or not to put relative line numbers on the left column of the display
     abstract RelativeNumber: bool with get, set

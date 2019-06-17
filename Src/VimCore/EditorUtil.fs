@@ -3482,6 +3482,8 @@ module EditUtil =
             if c = char 0x85 then 1
             else 0
 
+    let IsInsideLineBreak (str: string) index = GetLineBreakLength str index > 0
+
     /// Get the length of the line break at the end of the string
     let GetLineBreakLengthAtEnd (str: string) =
         if System.String.IsNullOrEmpty str then 

@@ -9,18 +9,16 @@ open Microsoft.VisualStudio.Text.Operations
 ///
 /// This uses a fixed vaule of the `iskeyword` option. This means it can get out of sync
 /// with the current value. Components which are not on the background thread should 
-/// prefer WordUtil as it will always be in sync
-/// KTODO: the ITextSnapshot and string versions below should be unified in the implementation
+/// prefer WordUtil as it will always be in sync but is limited to foreground thread
 [<UsedInBackgroundThread>]
 [<Class>]
 [<Sealed>]
 type SnapshotWordUtil = 
 
-    new: keywordChars: string -> SnapshotWordUtil
+    new: keywordCharSet: VimCharSet -> SnapshotWordUtil
 
-    /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
-    /// the same value of KeywordChars have identical functionality
-    member KeywordChars: string
+    /// The set of keyword chars this snapshot is using. 
+    member KeywordCharSet: VimCharSet
 
     member IsWordChar: wordKind: WordKind -> c: char -> bool
 
@@ -50,7 +48,7 @@ type WordUtil =
 
     new: textBuffer: ITextBuffer * localSettings: IVimLocalSettings -> WordUtil
 
-    member KeywordChars: string
+    member KeywordCharSet: VimCharSet
     member Snapshot: SnapshotWordUtil
     member SnapshotWordNavigator: SnapshotWordNavigator
     member WordNavigator: ITextStructureNavigator

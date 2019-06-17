@@ -549,7 +549,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _searchCount);
                 FindNext("dog", position: 0);
                 Assert.Equal(2, _searchCount);
-                _localSettings.KeywordChars = "temp";
+                _localSettings.IsKeyword = "t,e,m,p";
                 FindNext("dog", position: 0);
                 Assert.Equal(4, _searchCount);
             }

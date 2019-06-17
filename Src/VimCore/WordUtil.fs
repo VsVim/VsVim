@@ -9,11 +9,11 @@ open System.Diagnostics
 [<UsedInBackgroundThread()>]
 [<Sealed>]
 [<Class>]
-type SnapshotWordUtil(_keywordChars: string) = 
+type SnapshotWordUtil(_keywordCharSet: VimCharSet) = 
 
-    member x.KeywordChars = _keywordChars
+    member x.KeywordCharSet = _keywordCharSet
     member x.IsBigWordChar c = not (Char.IsWhiteSpace(c))
-    member x.IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'
+    member x.IsNormalWordChar c = _keywordCharSet.Contains c
     member x.IsBigWordOnlyChar c = (not (x.IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
 
     member x.IsWordChar wordKind c =
@@ -36,7 +36,6 @@ type SnapshotWordUtil(_keywordChars: string) =
         else x.GetWordPredicateNonWhitespace wordKind c |> Some
 
     /// Get the word spans on the text in the given direction
-    /// KTODO: the basic usage for GetWordSpansInText doesn't line up with GetWordSpans. Consider unifying
     member x.GetWordSpansInText wordKind path (text: string) =
         // Build up a sequence to get the words in the line
         let wordsForward = 
@@ -44,7 +43,7 @@ type SnapshotWordUtil(_keywordChars: string) =
             |> Seq.unfold (fun index ->
                 // Get the start index of the word and the predicate to keep matching
                 // the word
-                let rec getWord index startOfLine = 
+                let rec getWord index = 
                     if index < text.Length then
                         let lineBreakLength = EditUtil.GetLineBreakLength text index
                         if lineBreakLength = 0 then
@@ -56,15 +55,16 @@ type SnapshotWordUtil(_keywordChars: string) =
                                 Some (Span.FromBounds(index, endIndex), endIndex)
                             | None -> 
                                 // Go to the next index
-                                getWord (index + 1) false
-                        elif startOfLine then
+                                getWord (index + 1)
+                        elif index > 0 && EditUtil.IsInsideLineBreak text (index - 1) then
+                            // Empty line is a word
                             let endIndex = index + lineBreakLength
                             Some (Span.FromBounds(index, endIndex), endIndex)
                         else
-                            getWord (index + lineBreakLength) true
+                            getWord (index + lineBreakLength)
                     else
                         None
-                getWord index false)
+                getWord index)
 
         // Now return the actual sequence 
         match path with
@@ -170,8 +170,7 @@ type SnapshotWordNavigator
 [<Class>]
 type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as this =
 
-    // KTODO: need to pass iskeyword option here
-    let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.KeywordChars)
+    let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.IsKeywordCharSet)
     let mutable _snapshotWordNavigator = Unchecked.defaultof<SnapshotWordNavigator>
     let mutable _wordNavigator = Unchecked.defaultof<ITextStructureNavigator>
 
@@ -185,14 +184,13 @@ type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as th
         _localSettings.SettingChanged
         |> Observable.add (fun e ->
             if e.Setting.Name = LocalSettingNames.IsKeywordName then
-                _snapshotWordUtil <- SnapshotWordUtil(_localSettings.KeywordChars)
+                _snapshotWordUtil <- SnapshotWordUtil(_localSettings.IsKeywordCharSet)
                 createNavigators()
         )
 
         createNavigators()
 
-    member x.KeywordChars = _localSettings.KeywordChars
-
+    member x.KeywordCharSet = _snapshotWordUtil.KeywordCharSet
     member x.Snapshot = _snapshotWordUtil
     member x.SnapshotWordNavigator = _snapshotWordNavigator
     member x.WordNavigator = _wordNavigator
