@@ -81,6 +81,8 @@
     <Compile Include="TaggerUtil.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
+    <Compile Include="CaretChangeTracker.fsi" />
+    <Compile Include="CaretChangeTracker.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fsi" />

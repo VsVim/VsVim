@@ -603,11 +603,6 @@ type internal Vim
         |> Observable.subscribe (fun _ -> x.OnFocus vimBuffer)
         |> eventBag.Add
 
-        // Ensure view properties after external caret events.
-        vimBuffer.TextView.Caret.PositionChanged 
-        |> Observable.subscribe (fun _ -> x.OnPositionChanged vimBuffer)
-        |> eventBag.Add
-
         let vimInterpreter = _interpreterFactory.CreateVimInterpreter vimBuffer _fileSystem
         _vimBufferMap.Add(textView, (vimBuffer, vimInterpreter, eventBag))
 
@@ -627,37 +622,6 @@ type internal Vim
         _recentBufferStack <- vimBuffer :: _recentBufferStack
         let name = _vimHost.GetName vimBuffer.TextBuffer
         _vimData.FileHistory.Add name
-
-    /// React to external caret position changes by ensuring that our view
-    /// properties are met, such as the caret being visible and 'scrolloff'
-    /// being taken into account
-    member x.OnPositionChanged vimBuffer = 
-
-        // If we are processing input then the mode is responsible for
-        // controlling the window, so let the mode handle it.
-        if
-            not vimBuffer.IsProcessingInput
-            && not _mouseDevice.IsRightButtonPressed
-        then
-            let commonOperations =
-                vimBuffer.VimBufferData
-                |> _commonOperationsFactory.GetCommonOperations
-
-            // Delay the update to give whoever changed the caret position the
-            // opportunity to scroll the view according to their own needs. If
-            // another extension moves the caret far offscreen and then
-            // centers it if the caret is not onscreen, then reacting too
-            // early to the caret position will defeat their offscreen
-            // handling. An example is double-clicking on a test in an
-            // unopened document in "Test Explorer".
-            let doUpdate () =
-
-                // Proceed cautiously because the window might have been closed
-                // in the meantime.
-                if not vimBuffer.TextView.IsClosed then
-                    commonOperations.EnsureAtCaret ViewFlags.Standard
-
-            commonOperations.DoActionAsync doUpdate
 
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
     /// the IVimBufferCreationListener collection about it
