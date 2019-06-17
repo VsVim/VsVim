@@ -1021,3 +1021,13 @@ module internal HashUtil =
         let hash = (hash * 31) + hash2
         let hash = (hash * 31) + hash3
         hash
+
+type internal OptionBuilder() =
+    member x.Bind (value, cont) = 
+        match value with 
+        | None -> None
+        | Some value -> cont value
+
+    member x.Return value = Some value
+    member x.ReturnFrom o = o
+    member x.Zero () = None

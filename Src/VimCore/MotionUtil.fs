@@ -11,16 +11,6 @@ open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
-type OptionBuilder() =
-    member x.Bind (value, cont) = 
-        match value with 
-        | None -> None
-        | Some value -> cont value
-
-    member x.Return value = Some value
-    member x.ReturnFrom o = o
-    member x.Zero () = None
-
 type CachedParsedItem<'T> = { 
     Version: int
     Items: List<'T>
