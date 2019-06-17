@@ -37,31 +37,34 @@ type SnapshotWordUtil(_keywordChars: string) =
 
     /// Get the word spans on the text in the given direction
     /// KTODO: the basic usage for GetWordSpansInText doesn't line up with GetWordSpans. Consider unifying
-    member x.GetWordSpansInText wordKind path text =
+    member x.GetWordSpansInText wordKind path (text: string) =
         // Build up a sequence to get the words in the line
-        let limit = (StringUtil.Length text) - 1
         let wordsForward = 
             0
-            |> Seq.unfold (fun index -> 
+            |> Seq.unfold (fun index ->
                 // Get the start index of the word and the predicate to keep matching
                 // the word
-                let rec getWord index = 
-                    if index <= limit then
-                        match x.GetWordPredicate wordKind text.[index] with
-                        | Some predicate -> 
-                            // Now to find the end of the word
-                            let endIndex = 
-                                let rec inner index = 
-                                    if index > limit || not (predicate text.[index]) then index
-                                    else inner (index + 1)
-                                inner (index + 1)
+                let rec getWord index startOfLine = 
+                    if index < text.Length then
+                        let lineBreakLength = EditUtil.GetLineBreakLength text index
+                        if lineBreakLength = 0 then
+                            match x.GetWordPredicate wordKind text.[index] with
+                            | Some predicate -> 
+                                let mutable endIndex = index + 1
+                                while endIndex < text.Length && predicate text.[endIndex] do
+                                    endIndex <- endIndex + 1
+                                Some (Span.FromBounds(index, endIndex), endIndex)
+                            | None -> 
+                                // Go to the next index
+                                getWord (index + 1) false
+                        elif startOfLine then
+                            let endIndex = index + lineBreakLength
                             Some (Span.FromBounds(index, endIndex), endIndex)
-                        | None -> 
-                            // Go to the next index
-                            getWord (index + 1)
+                        else
+                            getWord (index + lineBreakLength) true
                     else
                         None
-                getWord index)
+                getWord index false)
 
         // Now return the actual sequence 
         match path with

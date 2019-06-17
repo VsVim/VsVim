@@ -27,8 +27,7 @@ type SnapshotWordUtil =
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
 
-    /// Get the full word span for the word value which crosses the given index. This will not
-    /// consider empty lines as words
+    /// Get the full word span for the word value which crosses the given index.
     member GetFullWordSpanInText: wordKind: WordKind -> text: string -> index: int -> Span option
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 

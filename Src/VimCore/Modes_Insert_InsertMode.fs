@@ -254,7 +254,6 @@ type internal InsertMode
         _isReplace: bool,
         _keyboard: IKeyboardDevice,
         _mouse: IMouseDevice,
-        _wordUtil: WordUtil,
         _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService
     ) as this =
 
@@ -309,6 +308,7 @@ type internal InsertMode
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
+    let _wordUtil = _vimBuffer.VimTextBuffer.WordUtil
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData

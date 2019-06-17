@@ -38,12 +38,21 @@ namespace Vim.UnitTest
         [InlineData("!@#$ cat!!!", new[] { "!@#$", "cat", "!!!" })]
         [InlineData("!@#$ !!!cat", new[] { "!@#$", "!!!", "cat" })]
         [InlineData("$$$foo$$$", new[] { "$$$", "foo", "$$$" })]
+        [InlineData("cat\ndog", new[] { "cat", "dog" })]
+        [InlineData("cat\n\ndog", new[] { "cat", "\n", "dog" })]
+        [InlineData("cat\n\n\ndog", new[] { "cat", "\n", "\n", "dog" })]
+        [InlineData("cat\r\ndog", new[] { "cat", "dog" })]
         public void GetWordSpans_Normal(string text, string[] expected)
         {
-            var wordsForward = GetWordsInText(WordKind.NormalWord, SearchPath.Forward, text);
-            Assert.Equal(expected, wordsForward);
-            var wordsBackward = GetWordsInText(WordKind.NormalWord, SearchPath.Forward, text).Reverse();
-            Assert.Equal(expected.Reverse(), wordsBackward);
+            var textWordsForward = GetWordsInText(WordKind.NormalWord, SearchPath.Forward, text);
+            Assert.Equal(expected, textWordsForward);
+            var textWordsBackward = GetWordsInText(WordKind.NormalWord, SearchPath.Forward, text).Reverse();
+            Assert.Equal(expected.Reverse(), textWordsBackward);
+            _textBuffer.SetTextContent(text);
+            var bufferWordsForward = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetStartPoint()).Select(x => x.GetText());
+            Assert.Equal(expected, bufferWordsForward);
+            var bufferWordsBackward = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetEndPoint()).Select(x => x.GetText());
+            Assert.Equal(expected.Reverse(), bufferWordsBackward);
         }
 
         [WpfTheory]
@@ -60,6 +69,11 @@ namespace Vim.UnitTest
             Assert.Equal(expected, wordsForward);
             var wordsBackward = GetWordsInText(WordKind.BigWord, SearchPath.Forward, text).Reverse();
             Assert.Equal(expected.Reverse(), wordsBackward);
+            _textBuffer.SetTextContent(text);
+            var bufferWordsForward = _wordUtil.GetWordSpans(WordKind.BigWord, SearchPath.Forward, _textBuffer.GetStartPoint()).Select(x => x.GetText());
+            Assert.Equal(expected, bufferWordsForward);
+            var bufferWordsBackward = _wordUtil.GetWordSpans(WordKind.BigWord, SearchPath.Backward, _textBuffer.GetEndPoint()).Select(x => x.GetText());
+            Assert.Equal(expected.Reverse(), bufferWordsBackward);
         }
 
         [WpfTheory]

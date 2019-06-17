@@ -8,7 +8,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
 type internal VimBufferData = 
-    // KTODO: delete WordUtil and grab it from the IVimTextBuffer instead
     new: IVimTextBuffer * ITextView * IVimWindowSettings * IJumpList * IStatusUtil -> VimBufferData
 
     interface IVimBufferData
