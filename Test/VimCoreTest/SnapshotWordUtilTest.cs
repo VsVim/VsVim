@@ -95,8 +95,19 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class MiscTest : SnapshotWordUtilTest
+        public sealed class GetFullWordSpanTest : SnapshotWordUtilTest
         {
+            private void AssertFullWord(WordKind wordKind, string text, int index, string expected)
+            {
+                var span = _wordUtil.GetFullWordSpanInText(wordKind, text, index).Value;
+                var found = text.Substring(span.Start, span.Length);
+                Assert.Equal(expected, found);
+
+                _textBuffer.SetTextContent(text);
+                var snapshotSpan = _wordUtil.GetFullWordSpan(wordKind, _textBuffer.GetPoint(index)).Value;
+                Assert.Equal(expected, snapshotSpan.GetText());
+            }
+
             [WpfTheory]
             [InlineData("tree", 0, "tree")]
             [InlineData("tree", 1, "tree")]
@@ -108,11 +119,10 @@ namespace Vim.UnitTest
             [InlineData("!@#$", 0, "!@#$")]
             [InlineData("tree_123", 0, "tree_123")]
             [InlineData("tree_123", 1, "tree_123")]
+            [InlineData("tree_123", 4, "tree_123")]
             public void GetFullWordSpan_Normal(string text, int index, string expected)
             {
-                var span = _wordUtil.GetFullWordSpanInText(WordKind.NormalWord, text, index).Value;
-                var found = text.Substring(span.Start, span.Length);
-                Assert.Equal(expected, found);
+                AssertFullWord(WordKind.NormalWord, text, index, expected);
             }
 
             [WpfTheory]
@@ -137,10 +147,12 @@ namespace Vim.UnitTest
             [InlineData("tree_123", 1, "tree_123")]
             public void GetFullWordSpan_Big(string text, int index, string expected)
             {
-                var span = _wordUtil.GetFullWordSpanInText(WordKind.BigWord, text, index).Value;
-                Assert.Equal(expected, text.Substring(span));
+                AssertFullWord(WordKind.BigWord, text, index, expected);
             }
+        }
 
+        public sealed class MiscTest : SnapshotWordUtilTest
+        {
             /// <summary>
             /// Break up the buffer into simple words
             /// </summary>

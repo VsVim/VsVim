@@ -21,8 +21,8 @@ namespace Vim.UnitTest
 
         public WordCompletionUtilTest()
         {
-            _util = new WordCompletionUtil(Vim, new WordUtil(_textBuffer, new LocalSettings(Vim.GlobalSettings)));
             _textBuffer = CreateTextBuffer();
+            _util = new WordCompletionUtil(Vim, new WordUtil(_textBuffer, new LocalSettings(Vim.GlobalSettings)));
         }
 
         [WpfFact]
