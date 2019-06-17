@@ -16,12 +16,11 @@ open Microsoft.VisualStudio.Text.Operations
 [<Sealed>]
 type SnapshotWordUtil = 
 
-    // KTODO: Characters vs. Char in the name here
-    new: keywordCharacters: string -> SnapshotWordUtil
+    new: keywordChars: string -> SnapshotWordUtil
 
     /// The set of keyword chars this snapshot is using. Two instances of IWordSnapshotUtil with 
     /// the same value of KeywordChars have identical functionality
-    member KeywordCharacters: string
+    member KeywordChars: string
 
     member IsWordChar: wordKind: WordKind -> c: char -> bool
 
@@ -52,7 +51,7 @@ type WordUtil =
 
     new: textBuffer: ITextBuffer * localSettings: IVimLocalSettings -> WordUtil
 
-    member KeywordCharacters: string
+    member KeywordChars: string
     member Snapshot: SnapshotWordUtil
     member SnapshotWordNavigator: SnapshotWordNavigator
     member WordNavigator: ITextStructureNavigator

@@ -9,9 +9,9 @@ open System.Diagnostics
 [<UsedInBackgroundThread()>]
 [<Sealed>]
 [<Class>]
-type SnapshotWordUtil(_keywordCharacters: string) = 
+type SnapshotWordUtil(_keywordChars: string) = 
 
-    member x.KeywordCharacters = _keywordCharacters
+    member x.KeywordChars = _keywordChars
     member x.IsBigWordChar c = not (Char.IsWhiteSpace(c))
     member x.IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'
     member x.IsBigWordOnlyChar c = (not (x.IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
@@ -168,7 +168,7 @@ type SnapshotWordNavigator
 type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as this =
 
     // KTODO: need to pass iskeyword option here
-    let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.KeywordCharacters)
+    let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.KeywordChars)
     let mutable _snapshotWordNavigator = Unchecked.defaultof<SnapshotWordNavigator>
     let mutable _wordNavigator = Unchecked.defaultof<ITextStructureNavigator>
 
@@ -182,13 +182,13 @@ type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as th
         _localSettings.SettingChanged
         |> Observable.add (fun e ->
             if e.Setting.Name = LocalSettingNames.IsKeywordName then
-                _snapshotWordUtil <- SnapshotWordUtil(_localSettings.KeywordCharacters)
+                _snapshotWordUtil <- SnapshotWordUtil(_localSettings.KeywordChars)
                 createNavigators()
         )
 
         createNavigators()
 
-    member x.KeywordCharacters = _localSettings.KeywordCharacters
+    member x.KeywordChars = _localSettings.KeywordChars
 
     member x.Snapshot = _snapshotWordUtil
     member x.SnapshotWordNavigator = _snapshotWordNavigator

@@ -630,7 +630,7 @@ type internal LocalSettings
         member x.Comments
             with get() = _map.GetStringValue CommentsName
             and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
-        member x.KeywordCharacters
+        member x.KeywordChars
             with get() = _map.GetStringValue IsKeywordName
             and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
 
