@@ -63,7 +63,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
 
-        private List<VirtualSnapshotPoint> _caretPoints;
+        private List<VirtualSnapshotPoint> _caretPoints = new List<VirtualSnapshotPoint>();
         private Dictionary<int, CaretData> _caretDataMap = new Dictionary<int, CaretData>();
         private CaretDisplay _caretDisplay;
         private FormattedText _formattedText;
@@ -306,8 +306,26 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// line of text.  If the interval between the movement commands is shorter than the blink timer
         /// the caret will always be visible
         /// </summary>
-        private void OnCaretPositionChanged(object sender, EventArgs e)
+        private void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
         {
+            if (_caretPoints.Count > 1)
+            {
+                var delta = e.NewPosition.BufferPosition.Position - e.OldPosition.BufferPosition.Position;
+                _caretPoints[0] = e.NewPosition.VirtualBufferPosition;
+                for (var caretIndex = 1; caretIndex < _caretPoints.Count; caretIndex++)
+                {
+                    var point = _caretPoints[caretIndex].Position;
+                    var position = point.Position;
+                    if (position + delta >= 0 && position + delta <= point.Snapshot.Length)
+                    {
+                        var newCaretPoint =
+                            new VirtualSnapshotPoint(point + delta, 0);
+                        _caretPoints[caretIndex] = newCaretPoint;
+                    }
+                }
+                _vimHost.SetCaretPoints(_textView, _caretPoints);
+            }
+
             RestartBlinkCycle();
 
             UpdateCaret();

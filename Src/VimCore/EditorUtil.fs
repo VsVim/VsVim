@@ -3172,7 +3172,7 @@ module TextViewUtil =
 
     let private MoveCaretToCommon textView flags = 
         if Util.IsFlagSet flags MoveCaretFlags.ClearSelection then
-            ClearSelection textView
+            () // ClearSelection textView
 
         if Util.IsFlagSet flags MoveCaretFlags.EnsureOnScreen then
             let point = GetCaretPoint textView

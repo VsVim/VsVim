@@ -308,7 +308,7 @@ namespace VimApp
             var snapshot = textView.TextBuffer.CurrentSnapshot;
             var lineCount = snapshot.LineCount;
             var broker = textView.GetMultiSelectionBroker();
-            for (var lineNumber = 1; lineNumber < lineCount; lineNumber++)
+            for (var lineNumber = 1; lineNumber < lineCount - 1; lineNumber++)
             {
                 var line = snapshot.GetLineFromLineNumber(lineNumber);
                 broker.AddSelection(new Selection(line.Start));
@@ -361,6 +361,12 @@ namespace VimApp
 
         public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
+            var selections =
+                caretPoints
+                .Select(caretPoint => new Selection(caretPoint))
+                .ToList();
+            var broker = textView.GetMultiSelectionBroker();
+            broker.SetSelectionRange(selections, selections[0]);
         }
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
