@@ -191,8 +191,8 @@ type internal CommonOperations
     member x.DoActionWhenReady (action: unit -> unit) =
         _vimHost.DoActionWhenTextViewReady action _textView
 
-    /// Perform the specified action with the focused window
-    member x.DoWithFocusedWindow (action: (ICommonOperations -> unit)) =
+    /// Forward the specified action to the focused window
+    member x.ForwardToFocusedWindow (action: (ICommonOperations -> unit)) =
         match _vimHost.GetFocusedTextView() with
         | Some textView ->
             match x.TryGetCommonOperationsForTextView textView with
@@ -2411,13 +2411,13 @@ type internal CommonOperations
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
         member x.DoActionAsync action = x.DoActionAsync action
         member x.DoActionWhenReady action = x.DoActionWhenReady action
-        member x.DoWithFocusedWindow action = x.DoWithFocusedWindow action
         member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
         member x.FilterLines range command = x.FilterLines range command
         member x.FormatCodeLines range = x.FormatCodeLines range
         member x.FormatTextLines range preserveCaretPosition = x.FormatTextLines range preserveCaretPosition
+        member x.ForwardToFocusedWindow action = x.ForwardToFocusedWindow action
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine

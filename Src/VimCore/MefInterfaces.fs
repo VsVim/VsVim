@@ -370,9 +370,6 @@ type ICommonOperations =
     /// Perform the specified action when the text view is ready
     abstract DoActionWhenReady: action: (unit -> unit) -> unit
 
-    /// Perform the specified action with the focused window
-    abstract DoWithFocusedWindow: action: (ICommonOperations -> unit) -> unit
-
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 
@@ -387,6 +384,9 @@ type ICommonOperations =
 
     /// Format the specified line range
     abstract FormatTextLines: SnapshotLineRange -> preserveCaretPosition: bool -> unit
+
+    /// Forward the specified action to the focused window
+    abstract ForwardToFocusedWindow: action: (ICommonOperations -> unit) -> unit
 
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText: SnapshotPoint -> string
