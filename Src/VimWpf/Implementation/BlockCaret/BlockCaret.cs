@@ -361,6 +361,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// </summary>
         private Color? TryCalculateCaretColor(int caretIndex)
         {
+            if (caretIndex != 0)
+            {
+                return Colors.Red;
+            }
             const string key = EditorFormatDefinition.ForegroundColorId;
             var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
             if (properties.Contains(key))
@@ -687,6 +691,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         caretData.Element,
                         OnBlockCaretAdornmentRemoved);
                 }
+            }
+            while (_caretDataMap.Count > _caretPoints.Count)
+            {
+                var caretIndex = _caretDataMap.Count - 1;
+                var caretData = _caretDataMap[caretIndex];
+                EnsureAdnormentRemoved(caretData.Tag);
+                _caretDataMap.Remove(caretIndex);
             }
 
             // When the caret display is changed (e.g. from normal to block) we
