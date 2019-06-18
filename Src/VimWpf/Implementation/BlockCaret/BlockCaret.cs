@@ -309,24 +309,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// </summary>
         private void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
         {
-            if (_caretPoints.Count > 1)
-            {
-                var delta = e.NewPosition.BufferPosition.Position - e.OldPosition.BufferPosition.Position;
-                _caretPoints[0] = e.NewPosition.VirtualBufferPosition;
-                for (var caretIndex = 1; caretIndex < _caretPoints.Count; caretIndex++)
-                {
-                    var point = _caretPoints[caretIndex].Position;
-                    var position = point.Position;
-                    if (position + delta >= 0 && position + delta <= point.Snapshot.Length)
-                    {
-                        var newCaretPoint =
-                            new VirtualSnapshotPoint(point + delta, 0);
-                        _caretPoints[caretIndex] = newCaretPoint;
-                    }
-                }
-                _vimHost.SetCaretPoints(_textView, _caretPoints);
-            }
-
             RestartBlinkCycle();
 
             UpdateCaret();

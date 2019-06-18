@@ -21,35 +21,90 @@ type internal MultiCaretTracker
     let mutable _caretPoints = List<VirtualSnapshotPoint>()
 
     do
-        _textView.Caret.PositionChanged
-        |> Observable.subscribe (fun _ -> this.OnPositionChanged())
+        _vimBuffer.KeyInputStart
+        |> Observable.subscribe (fun _ -> this.OnKeyInputStart())
+        |> _bag.Add
+
+        _vimBuffer.KeyInputProcessed
+        |> Observable.subscribe (fun _ -> this.OnKeyInputProcessed())
         |> _bag.Add
 
         _vimBuffer.SwitchedMode
-        |> Observable.subscribe (fun args -> this.OnSwitchMode args)
+        |> Observable.subscribe (fun args -> this.OnSwitchedMode args)
         |> _bag.Add
 
         _vimBuffer.Closed
         |> Observable.subscribe (fun _ -> this.OnBufferClosed())
         |> _bag.Add
 
-    /// Raised when the caret position changes
-    member x.OnPositionChanged () = 
-        let newCaretsPoints = _vimHost.GetCaretPoints(_textView).ToList()
-        _caretPoints <- newCaretsPoints
+   /// The caret points at the start of the most recent key input 
+    member x.CaretPoints 
+        with get () =  _caretPoints
+        and set value = _caretPoints <- value
 
-    member x.OnSwitchMode args =
+    /// Raised when the buffer starts processing input
+    member x.OnKeyInputStart () = 
+        x.CaretPoints <- x.GetCaretPoints()
+
+    /// Raised when the caret position changes
+    member x.OnKeyInputProcessed args = 
+        if
+            _vimBuffer.ModeKind <> ModeKind.Disabled
+            && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
+        then
+            x.RestoreCarets()
+
+    /// Raised when the vim buffer switches modes
+    member x.OnSwitchedMode args =
         match args.ModeArgument with
         | ModeArgument.CancelOperation ->
-            _vimHost.GetCaretPoints _textView
-            |> Seq.take 1
-            |> _vimHost.SetCaretPoints _textView
+            let newCaretPoints =
+                _vimHost.GetCaretPoints _textView
+                |> Seq.take 1
+                |> GenericListUtil.OfSeq
+            _vimHost.SetCaretPoints _textView newCaretPoints
+            x.CaretPoints <- newCaretPoints
         | _ ->
             ()
 
-    /// Raised when the buffer is closed
+    /// Raised when the vim buffer is closed
     member x.OnBufferClosed() = 
         _bag.DisposeAll()
+
+    /// Get all the caret points
+    member x.GetCaretPoints () =
+        _vimHost.GetCaretPoints(_textView).ToList()
+
+    /// Restore carets present at the start of key processing
+    member x.RestoreCarets () =
+        let snapshot = _textView.TextBuffer.CurrentSnapshot
+        let oldCaretPoints = x.CaretPoints
+        let newCaretPoints = x.GetCaretPoints()
+        if oldCaretPoints.Count > 1 then
+            let oldPosition =
+                oldCaretPoints.[0].Position
+                |> _commonOperations.MapPointNegativeToCurrentSnapshot
+            let newPosition = newCaretPoints.[0].Position
+            let delta = newPosition - oldPosition
+            let adjustedCaretPoints =
+                seq {
+                    for caretIndex = 0 to oldCaretPoints.Count - 1 do
+                        let oldPoint =
+                            oldCaretPoints.[caretIndex].Position
+                            |> _commonOperations.MapPointNegativeToCurrentSnapshot
+                        let oldPosition = oldPoint.Position
+                        let newPosition = oldPosition + delta
+                        let newCaretPoint =
+                            if newPosition >= 0 && newPosition <= snapshot.Length then
+                                VirtualSnapshotPoint(snapshot, newPosition)
+                            else
+                                oldCaretPoints.[caretIndex]
+
+                        yield newCaretPoint
+                }
+                |> GenericListUtil.OfSeq
+            _vimHost.SetCaretPoints _textView adjustedCaretPoints
+            x.CaretPoints <- adjustedCaretPoints
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal MultiCaretTrackerFactory
