@@ -10,6 +10,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
     {
         internal const string BlockCaretAdornmentLayerName = "BlockCaretAdornmentLayer";
 
+        private readonly IVimHost _vimHost;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IEditorFormatMapService _formatMapService;
         private readonly IProtectedOperations _protectedOperations;
@@ -24,11 +25,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         [ImportingConstructor]
         internal BlockCaretFactoryService(
+            IVimHost vimHost,
             IClassificationFormatMapService classificationFormatMapService,
             IEditorFormatMapService formatMapService,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations)
         {
+            _vimHost = vimHost;
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
             _controlCharUtil = controlCharUtil;
@@ -40,6 +43,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
             var editorFormatMap = _formatMapService.GetEditorFormatMap(textView);
             return new BlockCaret(
+                _vimHost,
                 textView,
                 BlockCaretAdornmentLayerName,
                 classificationFormaptMap,

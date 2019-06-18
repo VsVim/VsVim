@@ -47,6 +47,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
+        private readonly IVimHost _vimHost;
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _editorFormatMap;
@@ -140,6 +141,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         internal BlockCaret(
+            IVimHost vimHost,
             ITextView textView,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
@@ -147,6 +149,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations)
         {
+            _vimHost = vimHost;
             _textView = textView;
             _editorFormatMap = formatMap;
             _adornmentLayer = layer;
@@ -164,6 +167,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         internal BlockCaret(
+            IVimHost vimHost,
             IWpfTextView textView,
             string adornmentLayerName,
             IClassificationFormatMap classificationFormatMap,
@@ -171,6 +175,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations) :
             this(
+                vimHost,
                 textView,
                 classificationFormatMap,
                 formatMap,
