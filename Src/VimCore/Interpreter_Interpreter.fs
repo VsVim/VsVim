@@ -1390,6 +1390,11 @@ type VimInterpreter
             let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
             _commonOperations.LoadFileIntoNewWindow helpFile (Some 0) None |> ignore
 
+        let onStatusFocusedWindow message =
+            fun (commonOperations: ICommonOperations) ->
+                commonOperations.OnStatusFitToWindow message
+            |> _commonOperations.DoWithFocusedWindow
+
         match vimFolder with
         | Some vimFolder ->
 
@@ -1397,7 +1402,7 @@ type VimInterpreter
             let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
             if StringUtil.IsNullOrEmpty subject then
                 loadDefaultHelp vimDoc
-                _commonOperations.OnStatusFocusedWindow "For help on VsVim, use :help"
+                onStatusFocusedWindow "For help on VsVim, use :help"
             else
 
                 // Try to navigate to the tag.
@@ -1409,7 +1414,7 @@ type VimInterpreter
 
                     // Load the default help and report the error.
                     loadDefaultHelp vimDoc
-                    _commonOperations.OnStatusFocusedWindow message
+                    onStatusFocusedWindow message
 
         | None ->
 
@@ -1612,15 +1617,28 @@ type VimInterpreter
 
     /// Run the 'navigate to list item' command, e.g. ':cnext'
     member x.RunNavigateToListItem listKind navigationKind argument hasBang =
-        match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
-        | Some listItem ->
+
+        // Handle completing navigation to a find result.
+        let onNavigateDone (listItem: ListItem) (commonOperations: ICommonOperations) =
 
             // Display the list item in the window navigated to.
             let itemNumber = listItem.ItemNumber
             let listLength = listItem.ListLength
             let message = StringUtil.GetDisplayString listItem.Message
             sprintf "(%d of %d): %s" itemNumber listLength message
-            |> _commonOperations.OnStatusFocusedWindow
+            |> commonOperations.OnStatusFitToWindow
+
+            // Ensure view properties are met in the new window.
+            commonOperations.EnsureAtCaret ViewFlags.Standard
+
+        // Forward the navigation request to the host.
+        match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
+        | Some listItem ->
+
+            // We navigated to a (possibly new) document window.
+            listItem
+            |> onNavigateDone
+            |> _commonOperations.DoWithFocusedWindow
 
         | None ->
 

@@ -370,6 +370,9 @@ type ICommonOperations =
     /// Perform the specified action when the text view is ready
     abstract DoActionWhenReady: action: (unit -> unit) -> unit
 
+    /// Perform the specified action with the focused window
+    abstract DoWithFocusedWindow: action: (ICommonOperations -> unit) -> unit
+
     /// Ensure the view properties are met at the caret
     abstract EnsureAtCaret: viewFlags: ViewFlags -> unit
 
@@ -508,9 +511,6 @@ type ICommonOperations =
 
     /// Display a status message and fit it to the size of the window
     abstract OnStatusFitToWindow: message: string -> unit
-
-    /// Display a status message in the command margin of the focused window
-    abstract OnStatusFocusedWindow: message: string -> unit
 
     /// Open link under caret
     abstract OpenLinkUnderCaret: unit -> Result

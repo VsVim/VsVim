@@ -191,6 +191,18 @@ type internal CommonOperations
     member x.DoActionWhenReady (action: unit -> unit) =
         _vimHost.DoActionWhenTextViewReady action _textView
 
+    /// Perform the specified action with the focused window
+    member x.DoWithFocusedWindow (action: (ICommonOperations -> unit)) =
+        match _vimHost.GetFocusedTextView() with
+        | Some textView ->
+            match x.TryGetCommonOperationsForTextView textView with
+            | Some commonOperations ->
+                action commonOperations
+            | None ->
+                ()
+        | None ->
+            ()
+
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
     /// end with a new line but we can't always guarantee the text we are working with 
@@ -1427,18 +1439,6 @@ type internal CommonOperations
         let message = message.Substring(0, min message.Length columns)
         _statusUtil.OnStatus message
 
-    /// Display a status message in the command margin of the focused window
-    member x.OnStatusFocusedWindow (message: string) =
-        match _vimHost.GetFocusedTextView() with
-        | Some textView ->
-            match x.TryGetCommonOperationsForTextView textView with
-            | Some commonOperations ->
-                commonOperations.OnStatusFitToWindow message
-            | None ->
-                ()
-        | None ->
-            ()
-
     /// Open link under caret
     member x.OpenLinkUnderCaret () =
         match x.WordUnderCursorOrEmpty with
@@ -2411,6 +2411,7 @@ type internal CommonOperations
         member x.DeleteLines startLine count registerName = x.DeleteLines startLine count registerName
         member x.DoActionAsync action = x.DoActionAsync action
         member x.DoActionWhenReady action = x.DoActionWhenReady action
+        member x.DoWithFocusedWindow action = x.DoWithFocusedWindow action
         member x.EnsureAtCaret viewFlags = x.EnsureAtCaret viewFlags
         member x.EnsureAtPoint point viewFlags = x.EnsureAtPoint point viewFlags
         member x.FillInVirtualSpace() = x.FillInVirtualSpace()
@@ -2451,7 +2452,6 @@ type internal CommonOperations
         member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
         member x.OnStatusFitToWindow message = x.OnStatusFitToWindow message
-        member x.OnStatusFocusedWindow message = x.OnStatusFocusedWindow message
         member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
