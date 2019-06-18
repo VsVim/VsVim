@@ -25,25 +25,23 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         [ImportingConstructor]
         internal BlockCaretFactoryService(
-            IVimHost vimHost,
             IClassificationFormatMapService classificationFormatMapService,
             IEditorFormatMapService formatMapService,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations)
         {
-            _vimHost = vimHost;
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
             _controlCharUtil = controlCharUtil;
             _protectedOperations = protectedOperations;
         }
 
-        private IBlockCaret CreateBlockCaret(IWpfTextView textView)
+        private IBlockCaret CreateBlockCaret(IVimHost vimHost, IWpfTextView textView)
         {
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
             var editorFormatMap = _formatMapService.GetEditorFormatMap(textView);
             return new BlockCaret(
-                _vimHost,
+                vimHost,
                 textView,
                 BlockCaretAdornmentLayerName,
                 classificationFormaptMap,
@@ -63,7 +61,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
 
             // Setup the block caret 
-            var caret = CreateBlockCaret(textView);
+            var caret = CreateBlockCaret(vimBuffer.Vim.VimHost, textView);
             var caretController = new BlockCaretController(vimBuffer, caret);
         }
 
