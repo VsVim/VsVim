@@ -14,6 +14,7 @@ using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace VimApp
 {
@@ -335,6 +336,15 @@ namespace VimApp
         public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
         {
             return false;
+        }
+
+        public override IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        {
+            return
+                textView
+                .GetMultiSelectionBroker()
+                .AllSelections
+                .Select(selection => selection.InsertionPoint);
         }
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)

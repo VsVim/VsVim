@@ -1,6 +1,8 @@
 ﻿using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using System.Collections.Generic;
 using Vim.Interpreter;
 
 namespace Vim.VisualStudio
@@ -54,6 +56,11 @@ namespace Vim.VisualStudio
         /// </summary>
         /// <returns></returns>
         void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
+
+        /// <summary>
+        /// Helper get all the carets for a text view
+        /// </summary>
+        IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView);
     }
 
     /// <summary>

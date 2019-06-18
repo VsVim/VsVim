@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest.Mock
 {
@@ -424,6 +425,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.UseDefaultCaret
         {
             get { return UseDefaultCaret; }
+        }
+
+        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCarets(ITextView textView)
+        {
+            return new[] { textView.Caret.Position.VirtualBufferPosition };
         }
     }
 }

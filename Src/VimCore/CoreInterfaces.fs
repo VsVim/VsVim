@@ -4914,6 +4914,9 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
+    /// Get all the carets for the specified text view
+    abstract GetCarets: textView: ITextView -> IEnumerable<VirtualSnapshotPoint>
+
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged: IDelegateEvent<System.EventHandler<TextViewEventArgs>>

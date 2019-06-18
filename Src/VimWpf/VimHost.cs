@@ -472,6 +472,11 @@ namespace Vim.UI.Wpf
         {
         }
 
+        public virtual IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        {
+            return new[] { textView.Caret.Position.VirtualBufferPosition };
+        }
+
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
         /// no custom processing is done
@@ -884,6 +889,11 @@ namespace Vim.UI.Wpf
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcLoaded(vimRcState, localSettings, windowSettings);
+        }
+
+        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCarets(ITextView textView)
+        {
+            return GetCarets(textView);
         }
 
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged
