@@ -9,14 +9,14 @@ using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
-    public abstract class SnapshotWordUtilTest : VimTestBase
+    public abstract class WordUtilTest : VimTestBase
     {
         private readonly ITextBuffer _textBuffer;
         private readonly ITextView _textView;
         private readonly WordUtil _wordUtil;
         private readonly IVimLocalSettings _localSettings;
 
-        protected SnapshotWordUtilTest()
+        protected WordUtilTest()
         {
             _textView = CreateTextView();
             _textBuffer = _textView.TextBuffer;
@@ -30,7 +30,7 @@ namespace Vim.UnitTest
             .Select(span => text.Substring(span.Start, span.Length))
             .ToArray();
 
-        public sealed class GetWordSpansTest : SnapshotWordUtilTest
+        public sealed class GetWordSpansTest : WordUtilTest
         {
             private void AssertWordSpans(WordKind wordKind, string text, string[] expected)
             {
@@ -58,6 +58,7 @@ namespace Vim.UnitTest
             [InlineData("cat\n\n\ndog", new[] { "cat", "\n", "\n", "dog" })]
             [InlineData("cat\r\n\r\n\r\ndog", new[] { "cat", "\r\n", "\r\n", "dog" })]
             [InlineData("cat\r\ndog", new[] { "cat", "dog" })]
+            [InlineData("dog ca$$t $b", new[] { "dog", "ca", "$$", "t", "$", "b" })]
             public void Normal(string text, string[] expected)
             {
                 AssertWordSpans(WordKind.NormalWord, text, expected);
@@ -93,9 +94,24 @@ namespace Vim.UnitTest
                 _localSettings.IsKeyword = iskeyword;
                 AssertWordSpans(WordKind.BigWord, text, expected);
             }
+
+            [WpfTheory]
+            [InlineData("dog cat", 0, true, new[] { "dog", "cat" })]
+            [InlineData("dog cat", 1, true, new[] { "dog", "cat" })]
+            [InlineData("dog cat", 2, true, new[] { "dog", "cat" })]
+            [InlineData("dog cat", 5, false, new[] { "cat", "dog" })]
+            [InlineData("dog cat", 4, false, new[] { "dog" })]
+            [InlineData("dog\n\ncat", 6, false, new[] { "cat", "\n", "dog" })]
+            public void NormalIndex(string text, int index, bool isForward, string[] expected)
+            {
+                _textBuffer.SetTextContent(text);
+                var searchPath = isForward ? SearchPath.Forward : SearchPath.Backward;
+                var bufferWords = _wordUtil.GetWordSpans(WordKind.NormalWord, searchPath, _textBuffer.GetPoint(index)).Select(x => x.GetText());
+                Assert.Equal(expected, bufferWords);
+            }
         }
 
-        public sealed class GetFullWordSpanTest : SnapshotWordUtilTest
+        public sealed class GetFullWordSpanTest : WordUtilTest
         {
             private void AssertFullWord(WordKind wordKind, string text, int index, string expected)
             {
@@ -148,100 +164,6 @@ namespace Vim.UnitTest
             public void GetFullWordSpan_Big(string text, int index, string expected)
             {
                 AssertFullWord(WordKind.BigWord, text, index, expected);
-            }
-        }
-
-        public sealed class MiscTest : SnapshotWordUtilTest
-        {
-            /// <summary>
-            /// Break up the buffer into simple words
-            /// </summary>
-            [WpfFact]
-            public void GetWords_Normal()
-            {
-                _textBuffer.SetText("dog ca$$t $b");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(0));
-                Assert.Equal(
-                    new[] { "dog", "ca", "$$", "t", "$", "b" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// A blank line should be a word 
-            /// </summary>
-            [WpfFact]
-            public void GetWords_BlankLine()
-            {
-                _textBuffer.SetText("dog cat", "", "bear");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(0));
-                Assert.Equal(
-                    new[] { "dog", "cat", Environment.NewLine, "bear" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// From the middle of a word should return the span of the entire word
-            /// </summary>
-            [WpfFact]
-            public void GetWords_FromMiddleOfWord()
-            {
-                _textBuffer.SetText("dog cat");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(1));
-                Assert.Equal(
-                    new[] { "dog", "cat" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// From the end of a word should return the span of the entire word
-            /// </summary>
-            [WpfFact]
-            public void GetWords_FromEndOfWord()
-            {
-                _textBuffer.SetText("dog cat");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Forward, _textBuffer.GetPoint(2));
-                Assert.Equal(
-                    new[] { "dog", "cat" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// From the middle of a word backward
-            /// </summary>
-            [WpfFact]
-            public void GetWords_BackwardFromMiddle()
-            {
-                _textBuffer.SetText("dog cat");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetPoint(5));
-                Assert.Equal(
-                    new[] { "cat", "dog" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// From the start of a word backward should not include that particular word 
-            /// </summary>
-            [WpfFact]
-            public void GetWords_BackwardFromStart()
-            {
-                _textBuffer.SetText("dog cat");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetPoint(4));
-                Assert.Equal(
-                    new[] { "dog" },
-                    ret.Select(x => x.GetText()).ToList());
-            }
-
-            /// <summary>
-            /// Make sure that blank lines are counted as words when
-            /// </summary>
-            [WpfFact]
-            public void GetWords_BackwardBlankLine()
-            {
-                _textBuffer.SetText("dog", "", "cat");
-                var ret = _wordUtil.GetWordSpans(WordKind.NormalWord, SearchPath.Backward, _textBuffer.GetLine(2).Start.Add(1));
-                Assert.Equal(
-                    new[] { "cat", Environment.NewLine, "dog" },
-                    ret.Select(x => x.GetText()).ToList());
             }
         }
     }
