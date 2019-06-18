@@ -343,8 +343,9 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void EnsureAdnormentsRemoved()
         {
-            foreach (var tag in _tagsInUse.ToArray())
+            while (_tagsInUse.Count > 0)
             {
+                var tag = _tagsInUse.First();
                 EnsureAdnormentRemoved(tag);
             }
         }
@@ -352,6 +353,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private void EnsureAdnormentRemoved(object tag)
         {
             _adornmentLayer.RemoveAdornmentsByTag(tag);
+            Contract.Assert(!_tagsInUse.Contains(tag));
         }
 
         /// <summary>
