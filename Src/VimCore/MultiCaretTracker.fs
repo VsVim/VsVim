@@ -51,6 +51,7 @@ type internal MultiCaretTracker
         if
             _vimBuffer.ModeKind <> ModeKind.Disabled
             && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
+            && not _textView.IsClosed
         then
             x.RestoreCarets()
 

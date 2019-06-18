@@ -362,12 +362,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// </summary>
         private Color? TryCalculateCaretColor(int caretIndex)
         {
-            if (caretIndex != 0)
-            {
-                return Colors.Red;
-            }
+            var formatName =
+                caretIndex == 0
+                ? BlockCaretFormatDefinition.Name
+                : SecondaryCaretFormatDefinition.Name;
             const string key = EditorFormatDefinition.ForegroundColorId;
-            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var properties = _editorFormatMap.GetProperties(formatName);
             if (properties.Contains(key))
             {
                 return (Color)properties[key];
@@ -545,7 +545,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var offset = tuple.Item2;
             var caretCharacter = tuple.Item3;
 
-            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var formatName =
+                caretIndex == 0
+                ? BlockCaretFormatDefinition.Name
+                : SecondaryCaretFormatDefinition.Name;
+            var properties = _editorFormatMap.GetProperties(formatName);
             var foregroundBrush = properties.GetForegroundBrush(SystemColors.WindowBrush);
             var backgroundBrush = properties.GetBackgroundBrush(SystemColors.WindowTextBrush);
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
