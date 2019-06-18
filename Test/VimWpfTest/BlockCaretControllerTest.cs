@@ -11,6 +11,7 @@ namespace Vim.UI.Wpf.UnitTest
     public sealed class BlockCaretControllerTest
     {
         private readonly MockRepository _factory;
+        private readonly Mock<IVimHost> _vimHost;
         private readonly Mock<ITextView> _textView;
         private readonly Mock<IVimBuffer> _buffer;
         private readonly Mock<IBlockCaret> _caret;
@@ -22,6 +23,7 @@ namespace Vim.UI.Wpf.UnitTest
         public BlockCaretControllerTest()
         {
             _factory = new MockRepository(MockBehavior.Loose);
+            _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _textView = _factory.Create<ITextView>(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
             _localSettings = MockObjectFactory.CreateLocalSettings(global: _settings.Object, factory: _factory);
@@ -35,7 +37,7 @@ namespace Vim.UI.Wpf.UnitTest
             _caret = _factory.Create<IBlockCaret>(MockBehavior.Strict);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible);
             _caret.SetupSet(x => x.CaretOpacity = It.IsAny<double>());
-            _controller = new BlockCaretController(_buffer.Object, _caret.Object);
+            _controller = new BlockCaretController(_vimHost.Object, _buffer.Object, _caret.Object);
         }
 
         [Fact]

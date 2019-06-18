@@ -64,7 +64,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             // Setup the block caret 
             var caret = CreateBlockCaret(textView);
-            var caretController = new BlockCaretController(vimBuffer, caret);
+            var caretController = new BlockCaretController(_vimHost, vimBuffer, caret);
         }
 
         #endregion

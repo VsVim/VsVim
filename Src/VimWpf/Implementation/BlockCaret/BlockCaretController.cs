@@ -1,22 +1,28 @@
 ﻿using System;
-using Vim.Extensions;
+using System.Linq;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
     internal sealed class BlockCaretController
     {
+        private readonly IVimHost _vimHost;
         private readonly IVimBuffer _vimBuffer;
         private readonly IBlockCaret _blockCaret;
         private readonly IVimGlobalSettings _globalSettings;
+        private readonly ITextView _textView;
 
         internal BlockCaretController(
+            IVimHost vimHost,
             IVimBuffer vimBuffer,
             IBlockCaret blockCaret)
         {
+            _vimHost = vimHost;
             _vimBuffer = vimBuffer;
             _blockCaret = blockCaret;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
-            _vimBuffer.SwitchedMode += OnCaretRelatedEvent;
+            _textView = _vimBuffer.TextView;
+            _vimBuffer.SwitchedMode += OnSwitchMode;
             _vimBuffer.KeyInputStart += OnCaretRelatedEvent;
             _vimBuffer.KeyInputEnd += OnCaretRelatedEvent;
             _vimBuffer.KeyInputProcessed += OnCaretRelatedEvent;
@@ -24,6 +30,15 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _globalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaretDisplay();
             UpdateCaretOpacity();
+        }
+
+        private void OnSwitchMode(object sender, SwitchModeEventArgs e)
+        {
+            if (e.ModeArgument.IsCancelOperation)
+            {
+                _vimHost.SetCaretPoints(_textView, _vimHost.GetCaretPoints(_textView).Take(1));
+            }
+            UpdateCaretDisplay();
         }
 
         internal void Update()
