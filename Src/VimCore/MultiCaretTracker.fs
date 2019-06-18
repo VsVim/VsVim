@@ -101,6 +101,8 @@ type internal MultiCaretTracker
                                 oldCaretPoints.[caretIndex]
 
                         yield newCaretPoint
+                    for caretIndex = oldCaretPoints.Count to newCaretPoints.Count - 1 do
+                        yield newCaretPoints.[caretIndex]
                 }
                 |> GenericListUtil.OfSeq
             _vimHost.SetCaretPoints _textView adjustedCaretPoints
