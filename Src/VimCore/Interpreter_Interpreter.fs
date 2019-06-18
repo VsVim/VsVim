@@ -1393,7 +1393,7 @@ type VimInterpreter
         let onStatusFocusedWindow message =
             fun (commonOperations: ICommonOperations) ->
                 commonOperations.OnStatusFitToWindow message
-            |> _commonOperations.DoWithFocusedWindow
+            |> _commonOperations.ForwardToFocusedWindow
 
         match vimFolder with
         | Some vimFolder ->
@@ -1638,7 +1638,7 @@ type VimInterpreter
             // We navigated to a (possibly new) document window.
             listItem
             |> onNavigateDone
-            |> _commonOperations.DoWithFocusedWindow
+            |> _commonOperations.ForwardToFocusedWindow
 
         | None ->
 
