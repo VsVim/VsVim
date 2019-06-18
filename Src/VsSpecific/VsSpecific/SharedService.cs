@@ -108,8 +108,7 @@ namespace Vim.VisualStudio.Specific
 
         void ISharedService.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
-            var caretPoint = caretPoints.First();
-            textView.Caret.MoveTo(caretPoint);
+            SetCaretPoints(textView, caretPoints);
         }
 
         #endregion

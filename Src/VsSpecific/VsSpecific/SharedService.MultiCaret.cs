@@ -44,8 +44,12 @@ namespace Vim.VisualStudio.Specific
 
         private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
-            var caretPoint = caretPoints.First();
-            textView.Caret.MoveTo(caretPoint);
+            var selections =
+                caretPoints
+                .Select(caretPoint => new Selection(caretPoint))
+                .ToList();
+            var broker = textView.GetMultiSelectionBroker();
+            broker.SetSelectionRange(selections, selections[0]);
         }
     }
 
