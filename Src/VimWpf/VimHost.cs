@@ -159,6 +159,11 @@ namespace Vim.UI.Wpf
             }
         }
 
+        public virtual void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
+        {
+            // Host specific decision on how to respond
+        }
+
         public abstract void FormatLines(ITextView textView, SnapshotLineRange range);
 
         public virtual FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
@@ -189,7 +194,7 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToTab(int index);
 
-        public abstract void OpenQuickFixWindow();
+        public abstract void OpenListWindow(ListKind listKind);
 
         public bool OpenLink(string link)
         {
@@ -204,7 +209,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        public abstract bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang);
+        public abstract FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang);
 
         public virtual bool IsDirty(ITextBuffer textBuffer)
         {
@@ -684,6 +689,11 @@ namespace Vim.UI.Wpf
             EnsureVisible(textView, point);
         }
 
+        void IVimHost.FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
+        {
+            FindInFiles(pattern, matchCase, filesOfType, flags, action);
+        }
+
         void IVimHost.FormatLines(ITextView textView, SnapshotLineRange range)
         {
             FormatLines(textView, range);
@@ -741,9 +751,9 @@ namespace Vim.UI.Wpf
             GoToTab(index);
         }
 
-        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            return GoToQuickFix(quickFix, count, hasBang);
+            return NavigateToListItem(listKind, navigationKind, argument, hasBang);
         }
 
         bool IVimHost.IsDirty(ITextBuffer textBuffer)
@@ -781,9 +791,9 @@ namespace Vim.UI.Wpf
             GoToWindow(textView, windowKind, count);
         }
 
-        void IVimHost.OpenQuickFixWindow()
+        void IVimHost.OpenListWindow(ListKind listKind)
         {
-            OpenQuickFixWindow();
+            OpenListWindow(listKind);
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)

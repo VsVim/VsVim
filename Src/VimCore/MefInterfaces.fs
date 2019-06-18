@@ -385,6 +385,9 @@ type ICommonOperations =
     /// Format the specified line range
     abstract FormatTextLines: SnapshotLineRange -> preserveCaretPosition: bool -> unit
 
+    /// Forward the specified action to the focused window
+    abstract ForwardToFocusedWindow: action: (ICommonOperations -> unit) -> unit
+
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText: SnapshotPoint -> string
 
@@ -505,6 +508,9 @@ type ICommonOperations =
 
     /// Normalize the set of spaces and tabs into spaces
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
+
+    /// Display a status message and fit it to the size of the window
+    abstract OnStatusFitToWindow: message: string -> unit
 
     /// Open link under caret
     abstract OpenLinkUnderCaret: unit -> Result
