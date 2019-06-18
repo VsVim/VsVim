@@ -1518,9 +1518,8 @@ namespace Vim.UnitTest
             {
                 // Report in issue #2646.
                 Create("");
-                _variableMap["x"] = VariableValue.NewNumber(2);
                 ParseAndRun(@"let x = ""\<Escape>""");
-                AssertValue("x", 2);
+                AssertValue("x", "<Escape>");
             }
         }
 
