@@ -58,9 +58,14 @@ namespace Vim.VisualStudio
         void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
 
         /// <summary>
-        /// Helper get all the carets for a text view
+        /// Get all the carets for a text view
         /// </summary>
-        IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView);
+        IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView);
+
+        /// <summary>
+        /// Set all the carets for a text view
+        /// </summary>
+        void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints);
     }
 
     /// <summary>

@@ -4914,8 +4914,11 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
-    /// Get all the carets for the specified text view
-    abstract GetCarets: textView: ITextView -> IEnumerable<VirtualSnapshotPoint>
+    /// Get all the caret points for the specified text view
+    abstract GetCaretPoints: textView: ITextView -> IEnumerable<VirtualSnapshotPoint>
+
+    /// Set all the caret points for the specified text view
+    abstract SetCaretPoints: textView: ITextView -> IEnumerable<VirtualSnapshotPoint> -> unit
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]

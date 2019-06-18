@@ -1231,9 +1231,14 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-        public override IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
-            return _sharedService.GetCarets(textView);
+            return _sharedService.GetCaretPoints(textView);
+        }
+
+        public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            _sharedService.SetCaretPoints(textView, caretPoints);
         }
 
         #endregion

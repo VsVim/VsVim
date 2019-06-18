@@ -731,7 +731,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void UpdateCaretCore()
         {
-            _caretPoints = _vimHost.GetCarets(_textView).ToList();
+            _caretPoints = _vimHost.GetCaretPoints(_textView).ToList();
 
             if (_caretPoints.Count == 0 || !IsRealCaretVisible(_caretPoints[0]))
             {

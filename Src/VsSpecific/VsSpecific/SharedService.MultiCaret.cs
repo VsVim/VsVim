@@ -17,9 +17,15 @@ namespace Vim.VisualStudio.Specific
 
     internal partial class SharedService
     {
-        private IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        private IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
             return new[] { textView.Caret.Position.VirtualBufferPosition };
+        }
+
+        private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            var caretPoint = caretPoints.First();
+            textView.Caret.MoveTo(caretPoint);
         }
     }
 
@@ -27,13 +33,19 @@ namespace Vim.VisualStudio.Specific
 
     internal partial class SharedService
     {
-        private IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        private IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
             return
                 textView
                 .GetMultiSelectionBroker()
                 .AllSelections
                 .Select(selection => selection.InsertionPoint);
+        }
+
+        private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            var caretPoint = caretPoints.First();
+            textView.Caret.MoveTo(caretPoint);
         }
     }
 

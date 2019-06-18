@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Vim.EditorHost;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -427,9 +428,15 @@ namespace Vim.UnitTest.Mock
             get { return UseDefaultCaret; }
         }
 
-        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCarets(ITextView textView)
+        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCaretPoints(ITextView textView)
         {
             return new[] { textView.Caret.Position.VirtualBufferPosition };
+        }
+
+        void IVimHost.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            var caretPoint = caretPoints.First();
+            textView.Caret.MoveTo(caretPoint);
         }
     }
 }

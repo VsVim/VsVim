@@ -472,9 +472,16 @@ namespace Vim.UI.Wpf
         {
         }
 
-        public virtual IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        public virtual IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
             return new[] { textView.Caret.Position.VirtualBufferPosition };
+        }
+
+
+        public virtual void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            var caretPoint = caretPoints.First();
+            textView.Caret.MoveTo(caretPoint);
         }
 
         /// <summary>
@@ -891,9 +898,14 @@ namespace Vim.UI.Wpf
             VimRcLoaded(vimRcState, localSettings, windowSettings);
         }
 
-        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCarets(ITextView textView)
+        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCaretPoints(ITextView textView)
         {
-            return GetCarets(textView);
+            return GetCaretPoints(textView);
+        }
+
+        void IVimHost.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            SetCaretPoints(textView, caretPoints);
         }
 
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged

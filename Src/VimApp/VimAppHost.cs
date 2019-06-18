@@ -350,13 +350,17 @@ namespace VimApp
             return false;
         }
 
-        public override IEnumerable<VirtualSnapshotPoint> GetCarets(ITextView textView)
+        public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
             return
                 textView
                 .GetMultiSelectionBroker()
                 .AllSelections
                 .Select(selection => selection.InsertionPoint);
+        }
+
+        public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
         }
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)

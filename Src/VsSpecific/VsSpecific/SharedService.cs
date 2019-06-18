@@ -101,9 +101,15 @@ namespace Vim.VisualStudio.Specific
             RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
-        IEnumerable<VirtualSnapshotPoint> ISharedService.GetCarets(ITextView textView)
+        IEnumerable<VirtualSnapshotPoint> ISharedService.GetCaretPoints(ITextView textView)
         {
-            return GetCarets(textView);
+            return GetCaretPoints(textView);
+        }
+
+        void ISharedService.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+        {
+            var caretPoint = caretPoints.First();
+            textView.Caret.MoveTo(caretPoint);
         }
 
         #endregion

@@ -1,4 +1,5 @@
-﻿using Microsoft.FSharp.Core;
+﻿using System.Linq;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -30,9 +31,15 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
             }
 
-            IEnumerable<VirtualSnapshotPoint> ISharedService.GetCarets(ITextView textView)
+            IEnumerable<VirtualSnapshotPoint> ISharedService.GetCaretPoints(ITextView textView)
             {
                 return new[] { textView.Caret.Position.VirtualBufferPosition };
+            }
+
+            void ISharedService.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
+            {
+                var caretPoint = caretPoints.First();
+                textView.Caret.MoveTo(caretPoint);
             }
         }
 
