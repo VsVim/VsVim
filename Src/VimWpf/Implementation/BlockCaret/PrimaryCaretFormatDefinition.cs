@@ -6,20 +6,20 @@ using Microsoft.VisualStudio.Utilities;
 namespace Vim.UI.Wpf.Implementation.BlockCaret
 {
     [Export(typeof(EditorFormatDefinition))]
-    [Name(SecondaryCaretFormatDefinition.Name)]
+    [Name(PrimaryCaretFormatDefinition.Name)]
     [UserVisible(true)]
-    internal sealed class SecondaryCaretFormatDefinition : EditorFormatDefinition
+    internal sealed class PrimaryCaretFormatDefinition : EditorFormatDefinition
     {
         /// <summary>
-        /// Color of a secondary caret
+        /// Color of the primary caret
         /// </summary>
-        internal const string Name = VimWpfConstants.SecondaryCaretFormatDefinitionName;
+        internal const string Name = VimWpfConstants.PrimaryCaretFormatDefinitionName;
 
-        internal SecondaryCaretFormatDefinition()
+        internal PrimaryCaretFormatDefinition()
         {
-            DisplayName = "VsVim Secondary Caret";
+            DisplayName = "VsVim Primary Caret";
             ForegroundColor = Colors.White;
-            BackgroundColor = Colors.DarkBlue;
+            BackgroundColor = Colors.DarkRed;
         }
     }
 }

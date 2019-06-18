@@ -357,16 +357,23 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             Contract.Assert(!_tagsInUse.Contains(tag));
         }
 
+        private string GetFormatName(int caretIndex, int numberOfCarets)
+        {
+            return
+                numberOfCarets == 1
+                ? BlockCaretFormatDefinition.Name
+                : (caretIndex == 0
+                    ? PrimaryCaretFormatDefinition.Name
+                    : SecondaryCaretFormatDefinition.Name);
+        }
+        
         /// <summary>
         /// Attempt to copy the real caret color
         /// </summary>
-        private Color? TryCalculateCaretColor(int caretIndex)
+        private Color? TryCalculateCaretColor(int caretIndex, int numberOfCarets)
         {
-            var formatName =
-                caretIndex == 0
-                ? BlockCaretFormatDefinition.Name
-                : SecondaryCaretFormatDefinition.Name;
-            const string key = EditorFormatDefinition.ForegroundColorId;
+            var formatName = GetFormatName(caretIndex, numberOfCarets);
+            const string key = EditorFormatDefinition.BackgroundColorId;
             var properties = _editorFormatMap.GetProperties(formatName);
             if (properties.Contains(key))
             {
@@ -532,11 +539,11 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return Tuple.Create(rect, offset, caretCharacter);
         }
 
-        private CaretData CreateCaretData(int caretIndex)
+        private CaretData CreateCaretData(int caretIndex, int numberOfCarets)
         {
             var caretPoint = _caretPoints[caretIndex];
             _formattedText = CreateFormattedText();
-            var color = TryCalculateCaretColor(caretIndex);
+            var color = TryCalculateCaretColor(caretIndex, numberOfCarets);
             var tuple = CalculateCaretRectAndDisplayOffset(caretPoint);
             var baselineOffset = CalculateBaselineOffset(caretPoint);
             var rect = tuple.Item1;
@@ -545,10 +552,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var offset = tuple.Item2;
             var caretCharacter = tuple.Item3;
 
-            var formatName =
-                caretIndex == 0
-                ? BlockCaretFormatDefinition.Name
-                : SecondaryCaretFormatDefinition.Name;
+            var formatName = GetFormatName(caretIndex, numberOfCarets);
             var properties = _editorFormatMap.GetProperties(formatName);
             var foregroundBrush = properties.GetForegroundBrush(SystemColors.WindowBrush);
             var backgroundBrush = properties.GetBackgroundBrush(SystemColors.WindowTextBrush);
@@ -622,14 +626,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// This determines if the image which is used to represent the caret is stale and needs
         /// to be recreated.  
         /// </summary>
-        private bool IsAdornmentStale(VirtualSnapshotPoint caretPoint, CaretData caretData)
+        private bool IsAdornmentStale(VirtualSnapshotPoint caretPoint, CaretData caretData, int numberOfCarets)
         {
             // Size is represented in floating point so strict equality comparison will almost 
             // always return false.  Use a simple epsilon to test the difference
 
-            if (caretData.Color != TryCalculateCaretColor(caretData.CaretIndex) ||
-                caretData.CaretDisplay != _caretDisplay ||
-                caretData.CaretOpacity != _caretOpacity)
+            if (caretData.Color != TryCalculateCaretColor(caretData.CaretIndex, numberOfCarets)
+                || caretData.CaretDisplay != _caretDisplay
+                || caretData.CaretOpacity != _caretOpacity)
             {
                 return true;
             }
@@ -666,7 +670,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             _textView.Caret.IsHidden = true;
 
-            for (var caretIndex = 0; caretIndex < _caretPoints.Count; caretIndex++)
+            var numberOfCarets = _caretPoints.Count;
+            for (var caretIndex = 0; caretIndex < numberOfCarets; caretIndex++)
             {
                 if (caretIndex == _tags.Count)
                 {
@@ -677,15 +682,15 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 var caretPoint = _caretPoints[caretIndex];
                 if (_caretDataMap.TryGetValue(caretIndex, out CaretData value))
                 {
-                    if (IsAdornmentStale(caretPoint, value))
+                    if (IsAdornmentStale(caretPoint, value, numberOfCarets))
                     {
                         EnsureAdnormentRemoved(tag);
-                        _caretDataMap[caretIndex] = CreateCaretData(caretIndex);
+                        _caretDataMap[caretIndex] = CreateCaretData(caretIndex, numberOfCarets);
                     }
                 }
                 else
                 {
-                    _caretDataMap[caretIndex] = CreateCaretData(caretIndex);
+                    _caretDataMap[caretIndex] = CreateCaretData(caretIndex, numberOfCarets);
                 }
 
                 var caretData = _caretDataMap[caretIndex];
@@ -702,7 +707,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                         OnBlockCaretAdornmentRemoved);
                 }
             }
-            while (_caretDataMap.Count > _caretPoints.Count)
+            while (_caretDataMap.Count > numberOfCarets)
             {
                 var caretIndex = _caretDataMap.Count - 1;
                 var caretData = _caretDataMap[caretIndex];

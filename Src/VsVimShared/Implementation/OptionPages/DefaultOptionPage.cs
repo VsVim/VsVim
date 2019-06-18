@@ -176,6 +176,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private static readonly ColorKey s_highlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
         private static readonly ColorKey s_blockCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
         private static readonly ColorKey s_blockCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.BlockCaretFormatDefinitionName);
+        private static readonly ColorKey s_primaryCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.PrimaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_primaryCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.PrimaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_secondaryCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.SecondaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_secondaryCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.SecondaryCaretFormatDefinitionName);
         private static readonly ColorKey s_controlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
         private static readonly ColorKey s_commandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
         private static readonly ColorKey s_commandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
@@ -190,6 +194,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 s_highlightIncrementalSearchColorKey,
                 s_blockCaretForegroundColorKey,
                 s_blockCaretBackgroundColorKey,
+                s_primaryCaretForegroundColorKey,
+                s_primaryCaretBackgroundColorKey,
+                s_secondaryCaretForegroundColorKey,
+                s_secondaryCaretBackgroundColorKey,
                 s_controlCharacterColorKey,
                 s_commandMarginForegroundColorKey,
                 s_commandMarginBackgroundColorKey,
