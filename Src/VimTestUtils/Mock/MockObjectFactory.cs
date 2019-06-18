@@ -150,8 +150,8 @@ namespace Vim.UnitTest.Mock
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
-            wordUtil = wordUtil ?? new WordUtil(textView.TextBuffer, localSettings);
             localSettings = localSettings ?? new LocalSettings(vim.GlobalSettings);
+            wordUtil = wordUtil ?? new WordUtil(textView.TextBuffer, localSettings);
             var vimTextBuffer = CreateVimTextBuffer(
                 textView.TextBuffer,
                 localSettings: localSettings,

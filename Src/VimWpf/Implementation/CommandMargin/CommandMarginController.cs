@@ -1122,9 +1122,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (caretIndex < 2)
                 return;
 
-            var wordSpan = _vimBuffer.VimTextBuffer.WordUtil
-                .GetWordSpansInText(WordKind.NormalWord, SearchPath.Forward, textBox.Text)
-                .LastOrDefault(x => x.End <= caretIndex);
+            var wordSpans = _vimBuffer.VimTextBuffer.WordUtil.GetWordSpansInText(WordKind.NormalWord, SearchPath.Backward, textBox.Text);
+            var wordSpan = wordSpans.FirstOrDefault(x => !((caretIndex - 1) < x.Start));
             if (wordSpan == default)
                 return;
             var text = textBox.Text[0] +
