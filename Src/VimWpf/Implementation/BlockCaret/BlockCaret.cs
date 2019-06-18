@@ -20,7 +20,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly struct CaretData
         {
             internal readonly int CaretIndex;
-            internal readonly object Tag;
             internal readonly CaretDisplay CaretDisplay;
             internal readonly double CaretOpacity;
             internal readonly UIElement Element;
@@ -32,7 +31,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             internal CaretData(
                 int caretIndex,
-                object tag,
                 CaretDisplay caretDisplay,
                 double caretOpacity,
                 UIElement element,
@@ -43,7 +41,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 string caretCharacter)
             {
                 CaretIndex = caretIndex;
-                Tag = tag;
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
                 Element = element;
@@ -61,7 +58,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IAdornmentLayer _adornmentLayer;
-        private readonly HashSet<object> _tags = new HashSet<object>();
+        private readonly List<object> _tags = new List<object>();
+        private readonly HashSet<object> _tagsInUse = new HashSet<object>();
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
 
@@ -340,12 +338,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void OnBlockCaretAdornmentRemoved(object tag, UIElement element)
         {
-            _tags.Remove(tag);
+            _tagsInUse.Remove(tag);
         }
 
         private void EnsureAdnormentsRemoved()
         {
-            foreach (var tag in _tags.ToArray())
+            foreach (var tag in _tagsInUse.ToArray())
             {
                 EnsureAdnormentRemoved(tag);
             }
@@ -603,7 +601,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             return new CaretData(
                 caretIndex,
-                new object(),
                 _caretDisplay,
                 _caretOpacity,
                 element,
@@ -664,12 +661,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             for (var caretIndex = 0; caretIndex < _caretPoints.Count; caretIndex++)
             {
+                if (caretIndex == _tags.Count)
+                {
+                    _tags.Add(new object());
+                }
+                var tag = _tags[caretIndex];
+
                 var caretPoint = _caretPoints[caretIndex];
                 if (_caretDataMap.TryGetValue(caretIndex, out CaretData value))
                 {
                     if (IsAdornmentStale(caretPoint, value))
                     {
-                        EnsureAdnormentRemoved(value.Tag);
+                        EnsureAdnormentRemoved(tag);
                         _caretDataMap[caretIndex] = CreateCaretData(caretIndex);
                     }
                 }
@@ -681,13 +684,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 var caretData = _caretDataMap[caretIndex];
 
                 MoveCaretElementToCaret(caretPoint, caretData);
-                if (!_tags.Contains(caretData.Tag))
+                if (!_tagsInUse.Contains(tag))
                 {
-                    _tags.Add(caretData.Tag);
+                    _tagsInUse.Add(tag);
                     _adornmentLayer.AddAdornment(
                         AdornmentPositioningBehavior.TextRelative,
                         new SnapshotSpan(caretPoint.Position, 0),
-                        caretData.Tag,
+                        tag,
                         caretData.Element,
                         OnBlockCaretAdornmentRemoved);
                 }
@@ -696,7 +699,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 var caretIndex = _caretDataMap.Count - 1;
                 var caretData = _caretDataMap[caretIndex];
-                EnsureAdnormentRemoved(caretData.Tag);
+                EnsureAdnormentRemoved(_tags[caretIndex]);
                 _caretDataMap.Remove(caretIndex);
             }
 
