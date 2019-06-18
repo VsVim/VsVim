@@ -134,6 +134,19 @@ type internal CommandUtil
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
+    /// Add a new caret at the mouse point
+    member x.AddCaretAtMousePoint () =
+        match _commonOperations.MousePoint with
+        | Some mousePoint ->
+            seq {
+                yield! _vimHost.GetCaretPoints _textView
+                yield mousePoint
+            }
+            |> _vimHost.SetCaretPoints _textView
+        | None ->
+            ()
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Add count values to the specific word
     member x.AddToWord count =
         match x.AddToWordAtPointInSpan x.CaretPoint x.CaretLine.Extent count with
@@ -2943,6 +2956,7 @@ type internal CommandUtil
         let registerName = data.RegisterName
         let count = data.CountOrDefault
         match command with
+        | NormalCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
         | NormalCommand.AddToWord -> x.AddToWord count
         | NormalCommand.CancelOperation -> x.CancelOperation()
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion registerName)

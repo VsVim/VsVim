@@ -160,6 +160,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
             _textView.LostAggregateFocus += OnCaretEvent;
+            _textView.Selection.SelectionChanged += OnCaretEvent;
             _textView.Caret.PositionChanged += OnCaretPositionChanged;
             _textView.Closed += OnTextViewClosed;
 
@@ -776,6 +777,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 _textView.LayoutChanged -= OnCaretEvent;
                 _textView.GotAggregateFocus -= OnCaretEvent;
                 _textView.LostAggregateFocus -= OnCaretEvent;
+                _textView.Selection.SelectionChanged -= OnCaretEvent;
                 _textView.Caret.PositionChanged -= OnCaretPositionChanged;
                 _textView.Caret.IsHidden = false;
                 _textView.Closed -= OnTextViewClosed;

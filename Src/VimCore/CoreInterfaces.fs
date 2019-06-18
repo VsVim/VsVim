@@ -2778,6 +2778,9 @@ type PingData (_func: CommandData -> CommandResult) =
 [<StructuralEquality>]
 type NormalCommand = 
 
+    /// Add a new caret at the mouse point
+    | AddCaretAtMousePoint
+
     /// Add 'count' to the word close to the caret
     | AddToWord
 
@@ -3147,6 +3150,7 @@ type NormalCommand =
         | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
 
         // Non-motion commands
+        | NormalCommand.AddCaretAtMousePoint -> None
         | NormalCommand.AddToWord _ -> None
         | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None

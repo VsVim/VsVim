@@ -357,6 +357,7 @@ type internal InsertMode
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
+                ("<A-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.AddCaretAtMousePoint))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))

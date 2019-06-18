@@ -304,15 +304,6 @@ namespace VimApp
         {
             var msg = $"Host Command Name='{command}' Argument='{argument}'";
             _vim.ActiveStatusUtil.OnStatus(msg);
-
-            var snapshot = textView.TextBuffer.CurrentSnapshot;
-            var lineCount = snapshot.LineCount;
-            var broker = textView.GetMultiSelectionBroker();
-            for (var lineNumber = 1; lineNumber < lineCount - 1; lineNumber++)
-            {
-                var line = snapshot.GetLineFromLineNumber(lineNumber);
-                broker.AddSelection(new Selection(line.Start));
-            }
         }
 
         public override bool Save(ITextBuffer textBuffer)
