@@ -1516,10 +1516,18 @@ namespace Vim.UnitTest
             [WpfFact]
             public void EmbeddedInvalidKeyNotation()
             {
-                // Report in issue #2646.
+                // Reported in issue #2646.
                 Create("");
                 ParseAndRun(@"let x = ""\<Escape>""");
                 AssertValue("x", "<Escape>");
+            }
+
+            [WpfFact]
+            public void EmbeddedVimKeyNotation()
+            {
+                Create("");
+                ParseAndRun(@"let x = ""\<Left>""");
+                AssertValue("x", "<Left>");
             }
         }
 
