@@ -19,7 +19,10 @@ using System.Collections.Generic;
 namespace VimApp
 {
     [Export(typeof(IVimHost))]
+    [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VimAppHost))]
+    [ContentType(VimConstants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
         private const string ErrorCouldNotFindVimViewInfo = "Could not find the associated IVimViewInfo";
@@ -301,6 +304,15 @@ namespace VimApp
         {
             var msg = $"Host Command Name='{command}' Argument='{argument}'";
             _vim.ActiveStatusUtil.OnStatus(msg);
+
+            var snapshot = textView.TextBuffer.CurrentSnapshot;
+            var lineCount = snapshot.LineCount;
+            var broker = textView.GetMultiSelectionBroker();
+            for (var lineNumber = 1; lineNumber < lineCount; lineNumber++)
+            {
+                var line = snapshot.GetLineFromLineNumber(lineNumber);
+                broker.AddSelection(new Selection(line.Start));
+            }
         }
 
         public override bool Save(ITextBuffer textBuffer)
