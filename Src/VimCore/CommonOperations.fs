@@ -156,9 +156,15 @@ type internal CommonOperations
         | _ ->
             None
 
+    /// The currently maintained caret column
     member x.MaintainCaretColumn 
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
+
+    /// The current virtual caret points
+    member x.CaretPoints
+        with get() = _vimHost.GetCaretPoints _textView
+        and set value = _vimHost.SetCaretPoints _textView value
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
@@ -265,6 +271,8 @@ type internal CommonOperations
     member x.GetVirtualColumnForSpaces line spaces =
         VirtualSnapshotColumn.GetColumnForSpaces(line, spaces, _localSettings.TabStop)
 
+    // Get the appropriate column for spaces on the specified line depending on
+    // whether virtual space is in effect
     member x.GetAppropriateColumnForSpaces line spaces =
         if _vimTextBuffer.UseVirtualSpace then
             x.GetVirtualColumnForSpaces line spaces
@@ -2399,27 +2407,6 @@ type internal CommonOperations
             TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
             |> OptionUtil.getOrDefault (SnapshotPoint(snapshot, min point.Position snapshot.Length))
 
-    /// Get any embedded linked transaction from the specified command result
-    member x.GetLinkedTransaction result =
-        match result with
-        | CommandResult.Completed modeSwitch ->
-            match modeSwitch with
-            | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                match modeArgument with
-                | ModeArgument.InsertWithTransaction linkedTransaction ->
-                    Some linkedTransaction
-                | _ ->
-                    None
-            | _ ->
-                None
-        | _ ->
-            None
-
-    /// The current virtual caret points
-    member x.CaretPoints
-        with get() = _vimHost.GetCaretPoints _textView
-        and set value = _vimHost.SetCaretPoints _textView value
-
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
         seq {
@@ -2475,14 +2462,30 @@ type internal CommonOperations
             ()
 
     /// Run the specified action for all carets
-    member x.RunForAllCarets (action: (unit -> CommandResult)) =
+    member x.RunForAllCarets action =
+
+        /// Get any linked transaction from the specified command result.
+        let getLinkedTransaction result =
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                    match modeArgument with
+                    | ModeArgument.InsertWithTransaction linkedTransaction ->
+                        Some linkedTransaction
+                    | _ ->
+                        None
+                | _ ->
+                    None
+            | _ ->
+                None
 
         // Get the virtual carets from the host.
         let caretPoints = x.CaretPoints |> GenericListUtil.OfSeq
         if caretPoints.Count = 1 then
 
             // In the normal case, perform the action once.
-            action ()
+            action()
 
         else
 
@@ -2507,7 +2510,7 @@ type internal CommonOperations
                         // Run the action once and complete any embedded linked
                         // transaction.
                         let result = action()
-                        match x.GetLinkedTransaction result with
+                        match getLinkedTransaction result with
                         | Some linkedTransaction ->
                             linkedTransaction.Complete()
                         | None ->
@@ -2533,7 +2536,7 @@ type internal CommonOperations
 
             // If the command result ended with a linked transaction,
             // use the overall linked transaction instead.
-            match x.GetLinkedTransaction result with
+            match getLinkedTransaction result with
             | Some _ ->
                 let modeArgument = ModeArgument.InsertWithTransaction transaction
                 ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, modeArgument)
