@@ -294,6 +294,38 @@ namespace Vim.VisualStudio.Implementation.OptionPages
             set { SetColor(s_blockCaretBackgroundColorKey, value); }
         }
 
+        [DisplayName("Primary Caret Foreground")]
+        [Category(CategoryColors)]
+        public Color PrimaryCaretForegroundColor
+        {
+            get { return GetColor(s_primaryCaretForegroundColorKey); }
+            set { SetColor(s_primaryCaretForegroundColorKey, value); }
+        }
+
+        [DisplayName("Primary Caret Background")]
+        [Category(CategoryColors)]
+        public Color PrimaryCaretBackgroundColor
+        {
+            get { return GetColor(s_primaryCaretBackgroundColorKey); }
+            set { SetColor(s_primaryCaretBackgroundColorKey, value); }
+        }
+
+        [DisplayName("Secondary Caret Foreground")]
+        [Category(CategoryColors)]
+        public Color SecondaryCaretForegroundColor
+        {
+            get { return GetColor(s_secondaryCaretForegroundColorKey); }
+            set { SetColor(s_secondaryCaretForegroundColorKey, value); }
+        }
+
+        [DisplayName("Secondary Caret Background")]
+        [Category(CategoryColors)]
+        public Color SecondaryCaretBackgroundColor
+        {
+            get { return GetColor(s_secondaryCaretBackgroundColorKey); }
+            set { SetColor(s_secondaryCaretBackgroundColorKey, value); }
+        }
+
         [DisplayName("Incremental Search")]
         [Category(CategoryColors)]
         public Color IncrementalSearchColor
