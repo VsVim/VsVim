@@ -221,6 +221,10 @@ type internal CommonOperations
     member x.GetSpacesToPoint (point: SnapshotPoint) =
         SnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
 
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    member x.GetSpacesToVirtualPoint (point: VirtualSnapshotPoint) =
+        VirtualSnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
+
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
     member x.GetColumnForSpacesOrEnd line spaces = 
@@ -238,6 +242,13 @@ type internal CommonOperations
     // it goes beyond the last point in the string
     member x.GetVirtualColumnForSpaces line spaces =
         VirtualSnapshotColumn.GetColumnForSpaces(line, spaces, _localSettings.TabStop)
+
+    member x.GetAppropriateColumnForSpaces line spaces =
+        if _vimTextBuffer.UseVirtualSpace then
+            x.GetVirtualColumnForSpaces line spaces
+        else
+            x.GetColumnForSpacesOrEnd line spaces
+            |> VirtualSnapshotColumn
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -991,12 +1002,8 @@ type internal CommonOperations
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
             let caretColumn = 
-                if useVirtualSpace then
-                    let column = x.GetVirtualColumnForSpaces visualLastLine caretColumnSpaces
-                    column.VirtualColumnNumber
-                else
-                    let column = x.GetColumnForSpacesOrEnd visualLastLine caretColumnSpaces
-                    column.ColumnNumber
+                x.GetAppropriateColumnForSpaces visualLastLine caretColumnSpaces
+                |> (fun column -> column.VirtualColumnNumber)
                 |> CaretColumn.InLastLine
             let result = 
                 { result with CaretColumn = caretColumn }
@@ -2366,27 +2373,70 @@ type internal CommonOperations
         | _ ->
             None
 
+    /// The current virtual caret points
+    member x.CaretPoints
+        with get() = _vimHost.GetCaretPoints _textView
+        and set value = _vimHost.SetCaretPoints _textView value
+
     /// Add a new caret at the specified point
-    member x.AddCaret point =
+    member x.AddCaretAtPoint point =
         seq {
-            yield! _vimHost.GetCaretPoints _textView
+            yield! x.CaretPoints
             yield point
         }
-        |> _vimHost.SetCaretPoints _textView
+        |> (fun points -> x.CaretPoints <- points)
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
         match x.MousePoint with
         | Some mousePoint ->
-            x.AddCaret mousePoint
+            x.AddCaretAtPoint mousePoint
         | None ->
+            ()
+
+    /// Add a new caret on an adjacent line in the specified direction
+    member x.AddCaretOnAdjacentLine direction =
+
+        // Get the primary caret and sorted caret points.
+        let caretPoints = x.CaretPoints |> GenericListUtil.OfSeq
+        let primaryCaretPoint = caretPoints.[0]
+        let caretPoints =
+            caretPoints
+            |> Seq.sortBy (fun point -> point.Position.Position)
+            |> GenericListUtil.OfSeq
+
+        // Add a caret on the specified line number in the same column as the
+        // primary caret.
+        let addCaretOnLineNumber lineNumber =
+            let line = SnapshotUtil.GetLine primaryCaretPoint.Position.Snapshot lineNumber
+            let spaces = x.GetSpacesToVirtualPoint primaryCaretPoint
+            x.GetAppropriateColumnForSpaces line spaces
+            |> (fun column -> column.VirtualStartPoint)
+            |> x.AddCaretAtPoint
+
+        // Choose an appropriate line to add the caret on.
+        match direction with
+        | Direction.Up ->
+            let firstLine =
+                caretPoints.[0]
+                |> VirtualSnapshotPointUtil.GetContainingLine
+            if firstLine.LineNumber > 0 then
+                addCaretOnLineNumber (firstLine.LineNumber - 1)
+        | Direction.Down ->
+            let lastLine =
+                caretPoints.[caretPoints.Count - 1]
+                |> VirtualSnapshotPointUtil.GetContainingLine
+            let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber lastLine.Snapshot
+            if lastLine.LineNumber < lastLineNumber then
+                addCaretOnLineNumber (lastLine.LineNumber + 1)
+        | _ ->
             ()
 
     /// Run the specified action for all carets
     member x.RunForAllCarets (action: (unit -> CommandResult)) =
 
         // Get the virtual carets from the host.
-        let caretPoints = _vimHost.GetCaretPoints _textView |> GenericListUtil.OfSeq
+        let caretPoints = x.CaretPoints |> GenericListUtil.OfSeq
         if caretPoints.Count = 1 then
 
             // In the normal case, perform the action once.
@@ -2431,7 +2481,7 @@ type internal CommonOperations
             |> Seq.map (fun (_, point) -> point)
             |> Seq.map x.MapPointNegativeToCurrentSnapshot
             |> Seq.map VirtualSnapshotPointUtil.OfPoint
-            |> _vimHost.SetCaretPoints _textView
+            |> (fun points -> x.CaretPoints <- points)
 
             // Extract the first command result.
             let result =
@@ -2456,12 +2506,16 @@ type internal CommonOperations
         member x.MaintainCaretColumn 
             with get() = x.MaintainCaretColumn
             and set value = x.MaintainCaretColumn <- value
+        member x.CaretPoints 
+            with get() = x.CaretPoints
+            and set value = x.CaretPoints <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint
 
-        member x.AddCaret point = x.AddCaret point
+        member x.AddCaretAtPoint point = x.AddCaretAtPoint point
         member x.AddCaretAtMousePoint() = x.AddCaretAtMousePoint()
+        member x.AddCaretOnAdjacentLine direction = x.AddCaretOnAdjacentLine direction
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()

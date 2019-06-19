@@ -352,17 +352,22 @@ namespace VimApp
 
         public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
-            return
-                textView
-                .GetMultiSelectionBroker()
-                .AllSelections
-                .Select(selection => selection.InsertionPoint);
+            return GetCaretPointsCommon(textView);
         }
 
         public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
             SetCaretPointsCommon(textView, caretPoints.ToArray());
             RaiseCaretPointsSet();
+        }
+
+        private IEnumerable<VirtualSnapshotPoint> GetCaretPointsCommon(ITextView textView)
+        {
+            var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var secondaryCaretPoints = textView.GetMultiSelectionBroker().AllSelections
+                .Select(selection => selection.InsertionPoint)
+                .Where(caretPoint => caretPoint != primaryCaretPoint);
+            return new[] { primaryCaretPoint }.Concat(secondaryCaretPoints);
         }
 
         private void SetCaretPointsCommon(ITextView textView, VirtualSnapshotPoint[] caretPoints)

@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Tagging
 open System
 open System.Configuration
+open System.Collections.Generic
 
 /// Used to determine if a completion window is active for a given view
 type IDisplayWindowBroker =
@@ -328,6 +329,9 @@ type ICommonOperations =
     /// buffer
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
+    /// The current caret points
+    abstract CaretPoints: IEnumerable<VirtualSnapshotPoint> with get, set
+
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
 
@@ -338,10 +342,13 @@ type ICommonOperations =
     abstract VimBufferData: IVimBufferData
 
     /// Add a new caret at the specified point
-    abstract AddCaret: VirtualSnapshotPoint -> unit
+    abstract AddCaretAtPoint: point: VirtualSnapshotPoint -> unit
 
     /// Add a new caret at the mouse point
     abstract AddCaretAtMousePoint: unit -> unit
+
+    /// Add a new caret on an adjacent line in the specified direction
+    abstract AddCaretOnAdjacentLine: direction: Direction -> unit
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes

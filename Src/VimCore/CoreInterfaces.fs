@@ -2781,6 +2781,9 @@ type NormalCommand =
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
 
+    /// Add a new caret on an adjacent line in the specified direction
+    | AddCaretOnAdjacentLine of Direction: Direction
+
     /// Add 'count' to the word close to the caret
     | AddToWord
 
@@ -3151,6 +3154,7 @@ type NormalCommand =
 
         // Non-motion commands
         | NormalCommand.AddCaretAtMousePoint -> None
+        | NormalCommand.AddCaretOnAdjacentLine _ -> None
         | NormalCommand.AddToWord _ -> None
         | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None

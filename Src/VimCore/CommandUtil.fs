@@ -139,6 +139,11 @@ type internal CommandUtil
         _commonOperations.AddCaretAtMousePoint()
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Add a new caret on an adjacent line in the specified direction
+    member x.AddCaretOnAdjacentLine direction =
+        _commonOperations.AddCaretOnAdjacentLine direction
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Add count values to the specific word
     member x.AddToWord count =
         match x.AddToWordAtPointInSpan x.CaretPoint x.CaretLine.Extent count with
@@ -2997,6 +3002,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | NormalCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
+        | NormalCommand.AddCaretOnAdjacentLine direction -> x.AddCaretOnAdjacentLine direction
         | NormalCommand.AddToWord -> x.AddToWord count
         | NormalCommand.CancelOperation -> x.CancelOperation()
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion registerName)

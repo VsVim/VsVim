@@ -68,10 +68,10 @@ type internal MultiCaretTracker
         match args.ModeArgument with
         | ModeArgument.CancelOperation ->
             let newCaretPoints =
-                _vimHost.GetCaretPoints _textView
+                _commonOperations.CaretPoints
                 |> Seq.take 1
                 |> GenericListUtil.OfSeq
-            _vimHost.SetCaretPoints _textView newCaretPoints
+            _commonOperations.CaretPoints <- newCaretPoints
             x.CaretPoints <- newCaretPoints
         | _ ->
             ()
@@ -82,7 +82,7 @@ type internal MultiCaretTracker
 
     /// Get all the caret points
     member x.GetCaretPoints () =
-        _vimHost.GetCaretPoints(_textView).ToList()
+        _commonOperations.CaretPoints |> GenericListUtil.OfSeq
 
     /// Restore carets present at the start of key processing
     member x.RestoreCarets () =
@@ -114,7 +114,7 @@ type internal MultiCaretTracker
                         yield newCaretPoints.[caretIndex]
                 }
                 |> GenericListUtil.OfSeq
-            _vimHost.SetCaretPoints _textView adjustedCaretPoints
+            _commonOperations.CaretPoints <- adjustedCaretPoints
             x.CaretPoints <- adjustedCaretPoints
 
 [<Export(typeof<IVimBufferCreationListener>)>]

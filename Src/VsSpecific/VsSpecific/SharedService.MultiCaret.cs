@@ -35,16 +35,21 @@ namespace Vim.VisualStudio.Specific
     {
         private IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
-            return
-                textView
-                .GetMultiSelectionBroker()
-                .AllSelections
-                .Select(selection => selection.InsertionPoint);
+            return GetCaretPointsCommon(textView);
         }
 
         private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
             SetCaretPointsCommon(textView, caretPoints.ToArray());
+        }
+
+        private IEnumerable<VirtualSnapshotPoint> GetCaretPointsCommon(ITextView textView)
+        {
+            var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var secondaryCaretPoints = textView.GetMultiSelectionBroker().AllSelections
+                .Select(selection => selection.InsertionPoint)
+                .Where(caretPoint => caretPoint != primaryCaretPoint);
+            return new[] { primaryCaretPoint }.Concat(secondaryCaretPoints);
         }
 
         private void SetCaretPointsCommon(ITextView textView, VirtualSnapshotPoint[] caretPoints)

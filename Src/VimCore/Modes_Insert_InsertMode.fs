@@ -358,6 +358,8 @@ type internal InsertMode
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
                 ("<A-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.AddCaretAtMousePoint))
+                ("<C-A-Up>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Up)))
+                ("<C-A-Down>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Down)))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
