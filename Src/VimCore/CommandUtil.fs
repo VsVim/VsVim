@@ -3130,15 +3130,81 @@ type internal CommandUtil
         | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
         | VisualCommand.SelectAll -> x.SelectAll()
 
+    member x.GetLinkedTransaction result =
+        match result with
+        | CommandResult.Completed modeSwitch ->
+            match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                    match modeArgument with
+                    | ModeArgument.InsertWithTransaction linkedTransaction ->
+                        Some linkedTransaction
+                    | _ ->
+                        None
+                | _ ->
+                    None
+            | _ ->
+                None
+        | _ ->
+            None
+
+    member x.RunForAllCaretPoints (action: (unit -> CommandResult)) =
+        let caretPoints = _vimHost.GetCaretPoints _textView |> GenericListUtil.OfSeq
+        if caretPoints.Count = 1 then
+            action ()
+        else
+            let flags = LinkedUndoTransactionFlags.CanBeEmpty
+            let transaction
+                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
+            let results =
+                seq {
+                    for caretPoint in caretPoints do
+                        caretPoint.Position
+                        |> _commonOperations.MapPointNegativeToCurrentSnapshot
+                        |> (fun point -> _textView.Caret.MoveTo(point))
+                        |> ignore
+
+                        let result = action()
+                        match x.GetLinkedTransaction result with
+                        | Some linkedTransaction ->
+                            linkedTransaction.Complete()
+                        | None ->
+                            ()
+
+                        yield result, x.CaretPoint
+                }
+                |> Seq.toList
+
+            results
+            |> Seq.map (fun (_, point) -> point)
+            |> Seq.map _commonOperations.MapPointNegativeToCurrentSnapshot
+            |> Seq.map VirtualSnapshotPointUtil.OfPoint
+            |> _vimHost.SetCaretPoints _textView
+
+            let result =
+                results
+                |> Seq.map (fun (result, _) -> result)
+                |> Seq.head
+
+            match x.GetLinkedTransaction result with
+            | Some _ ->
+                let modeArgument = ModeArgument.InsertWithTransaction transaction
+                ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, modeArgument)
+                |> CommandResult.Completed
+            | None ->
+                transaction.Complete()
+                result
+
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
     member x.RunWithMotion (motion: MotionData) func =
-        match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None ->
-            _commonOperations.Beep()
-            CommandResult.Error
-        | Some data ->
-            func data
+        fun () ->
+            match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
+            | None ->
+                _commonOperations.Beep()
+                CommandResult.Error
+            | Some data ->
+                func data
+        |> x.RunForAllCaretPoints
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c =
