@@ -2951,8 +2951,56 @@ type internal CommandUtil
     member x.RunInsertCommand command =
         _insertUtil.RunInsertCommand command
 
+    /// Whether we should run the specified command for all carets
+    member x.ShouldRunForEachCaret command =
+        match command with
+        | NormalCommand.AddToWord -> true
+        | NormalCommand.ChangeMotion _ -> true
+        | NormalCommand.ChangeCaseCaretLine _ -> true
+        | NormalCommand.ChangeCaseCaretPoint _ -> true
+        | NormalCommand.ChangeCaseMotion _ -> true
+        | NormalCommand.ChangeLines -> true
+        | NormalCommand.ChangeTillEndOfLine -> true
+        | NormalCommand.DeleteCharacterAtCaret -> true
+        | NormalCommand.DeleteCharacterBeforeCaret -> true
+        | NormalCommand.DeleteLines -> true
+        | NormalCommand.DeleteMotion _ -> true
+        | NormalCommand.DeleteTillEndOfLine -> true
+        | NormalCommand.FilterLines -> true
+        | NormalCommand.FilterMotion _ -> true
+        | NormalCommand.FormatCodeLines -> true
+        | NormalCommand.FormatCodeMotion _ -> true
+        | NormalCommand.FormatTextLines _ -> true
+        | NormalCommand.FormatTextMotion _ -> true
+        | NormalCommand.JoinLines _ -> true
+        | NormalCommand.MoveCaretToMotion _ -> true
+        | NormalCommand.PutAfterCaret _ -> true
+        | NormalCommand.PutAfterCaretWithIndent -> true
+        | NormalCommand.PutAfterCaretMouse -> true
+        | NormalCommand.PutBeforeCaret _ -> true
+        | NormalCommand.PutBeforeCaretWithIndent -> true
+        | NormalCommand.RepeatLastCommand -> true
+        | NormalCommand.RepeatLastSubstitute _ -> true
+        | NormalCommand.ReplaceAtCaret -> true
+        | NormalCommand.ReplaceChar _ -> true
+        | NormalCommand.RunAtCommand _ -> true
+        | NormalCommand.SubtractFromWord -> true
+        | NormalCommand.ShiftLinesLeft -> true
+        | NormalCommand.ShiftLinesRight -> true
+        | NormalCommand.ShiftMotionLinesLeft _ -> true
+        | NormalCommand.ShiftMotionLinesRight _ -> true
+        | _ -> false
+
     /// Run a NormalCommand against the buffer
-    member x.RunNormalCommand command (data: CommandData) =
+    member x.RunNormalCommand command data =
+        if x.ShouldRunForEachCaret command then
+            fun () -> x.RunNormalCommandCore command data
+            |> x.RunForAllCaretPoints
+        else
+            x.RunNormalCommandCore command data
+
+    /// Run a NormalCommand against the buffer
+    member x.RunNormalCommandCore command (data: CommandData) =
         let registerName = data.RegisterName
         let count = data.CountOrDefault
         match command with
@@ -3130,6 +3178,7 @@ type internal CommandUtil
         | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
         | VisualCommand.SelectAll -> x.SelectAll()
 
+    /// Get any embedded linked transaction from the specified command result
     member x.GetLinkedTransaction result =
         match result with
         | CommandResult.Completed modeSwitch ->
@@ -3145,22 +3194,38 @@ type internal CommandUtil
         | _ ->
             None
 
+    /// Run the specified action for all carets
     member x.RunForAllCaretPoints (action: (unit -> CommandResult)) =
+
+        // Get the virtual carets from the host.
         let caretPoints = _vimHost.GetCaretPoints _textView |> GenericListUtil.OfSeq
         if caretPoints.Count = 1 then
+
+            // In the normal case, perform the action once.
             action ()
+
         else
+
+            // Create a linked transaction for all carets.
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             let transaction
                 = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
+
+            // Run the action for all carets.
             let results =
                 seq {
+
+                    // Iterate over the virtual carets.
                     for caretPoint in caretPoints do
+
+                        // Temporarily move the real caret.
                         caretPoint.Position
                         |> _commonOperations.MapPointNegativeToCurrentSnapshot
                         |> (fun point -> _textView.Caret.MoveTo(point))
                         |> ignore
 
+                        // Run the action once and complete any embedded linked
+                        // transaction.
                         let result = action()
                         match x.GetLinkedTransaction result with
                         | Some linkedTransaction ->
@@ -3168,21 +3233,26 @@ type internal CommandUtil
                         | None ->
                             ()
 
+                        // Collect the command result and new caret point.
                         yield result, x.CaretPoint
                 }
                 |> Seq.toList
 
+            // Extract the resulting new caret points and set them.
             results
             |> Seq.map (fun (_, point) -> point)
             |> Seq.map _commonOperations.MapPointNegativeToCurrentSnapshot
             |> Seq.map VirtualSnapshotPointUtil.OfPoint
             |> _vimHost.SetCaretPoints _textView
 
+            // Extract the first command result.
             let result =
                 results
                 |> Seq.map (fun (result, _) -> result)
                 |> Seq.head
 
+            // If the command result ended with a linked transaction,
+            // use the overall linked transaction instead.
             match x.GetLinkedTransaction result with
             | Some _ ->
                 let modeArgument = ModeArgument.InsertWithTransaction transaction
@@ -3195,14 +3265,12 @@ type internal CommandUtil
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
     member x.RunWithMotion (motion: MotionData) func =
-        fun () ->
-            match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-            | None ->
-                _commonOperations.Beep()
-                CommandResult.Error
-            | Some data ->
-                func data
-        |> x.RunForAllCaretPoints
+        match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
+        | None ->
+            _commonOperations.Beep()
+            CommandResult.Error
+        | Some data ->
+            func data
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c =
