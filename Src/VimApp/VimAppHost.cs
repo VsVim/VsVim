@@ -341,10 +341,12 @@ namespace VimApp
             return false;
         }
 
-#if VS_SPECIFIC_2015
+#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 
         // Visual Studio 2015 editor assemblies do not support the
-        // multi-selection broker
+        // multi-selection broker. Some versions of the Visual Studio 2017
+        // editor assemblies do support them, but the current VsVim reference
+        // assemblies do not.
 
 #else
 
