@@ -2995,7 +2995,7 @@ type internal CommandUtil
     member x.RunNormalCommand command data =
         if x.ShouldRunForEachCaret command then
             fun () -> x.RunNormalCommandCore command data
-            |> x.RunForAllCaretPoints
+            |> _commonOperations.RunForAllCarets
         else
             x.RunNormalCommandCore command data
 
@@ -3177,90 +3177,6 @@ type internal CommandUtil
         | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
         | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
         | VisualCommand.SelectAll -> x.SelectAll()
-
-    /// Get any embedded linked transaction from the specified command result
-    member x.GetLinkedTransaction result =
-        match result with
-        | CommandResult.Completed modeSwitch ->
-            match modeSwitch with
-            | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                match modeArgument with
-                | ModeArgument.InsertWithTransaction linkedTransaction ->
-                    Some linkedTransaction
-                | _ ->
-                    None
-            | _ ->
-                None
-        | _ ->
-            None
-
-    /// Run the specified action for all carets
-    member x.RunForAllCaretPoints (action: (unit -> CommandResult)) =
-
-        // Get the virtual carets from the host.
-        let caretPoints = _vimHost.GetCaretPoints _textView |> GenericListUtil.OfSeq
-        if caretPoints.Count = 1 then
-
-            // In the normal case, perform the action once.
-            action ()
-
-        else
-
-            // Create a linked transaction for all carets.
-            let flags = LinkedUndoTransactionFlags.CanBeEmpty
-            let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
-
-            // Run the action for all carets.
-            let results =
-                seq {
-
-                    // Iterate over the virtual carets.
-                    for caretPoint in caretPoints do
-
-                        // Temporarily move the real caret.
-                        caretPoint.Position
-                        |> _commonOperations.MapPointNegativeToCurrentSnapshot
-                        |> (fun point -> _textView.Caret.MoveTo(point))
-                        |> ignore
-
-                        // Run the action once and complete any embedded linked
-                        // transaction.
-                        let result = action()
-                        match x.GetLinkedTransaction result with
-                        | Some linkedTransaction ->
-                            linkedTransaction.Complete()
-                        | None ->
-                            ()
-
-                        // Collect the command result and new caret point.
-                        yield result, x.CaretPoint
-                }
-                |> Seq.toList
-
-            // Extract the resulting new caret points and set them.
-            results
-            |> Seq.map (fun (_, point) -> point)
-            |> Seq.map _commonOperations.MapPointNegativeToCurrentSnapshot
-            |> Seq.map VirtualSnapshotPointUtil.OfPoint
-            |> _vimHost.SetCaretPoints _textView
-
-            // Extract the first command result.
-            let result =
-                results
-                |> Seq.map (fun (result, _) -> result)
-                |> Seq.head
-
-            // If the command result ended with a linked transaction,
-            // use the overall linked transaction instead.
-            match x.GetLinkedTransaction result with
-            | Some _ ->
-                let modeArgument = ModeArgument.InsertWithTransaction transaction
-                ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, modeArgument)
-                |> CommandResult.Completed
-            | None ->
-                transaction.Complete()
-                result
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function

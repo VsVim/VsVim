@@ -527,6 +527,9 @@ type ICommonOperations =
     /// Restore spaces to caret, or move to start of line if 'startofline' is set
     abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
+    /// Run the specified action for all carets
+    abstract RunForAllCarets: action: (unit -> CommandResult) -> CommandResult
+
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
 
