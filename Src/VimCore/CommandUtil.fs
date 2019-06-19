@@ -136,15 +136,7 @@ type internal CommandUtil
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
-        match _commonOperations.MousePoint with
-        | Some mousePoint ->
-            seq {
-                yield! _vimHost.GetCaretPoints _textView
-                yield mousePoint
-            }
-            |> _vimHost.SetCaretPoints _textView
-        | None ->
-            ()
+        _commonOperations.AddCaretAtMousePoint()
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Add count values to the specific word

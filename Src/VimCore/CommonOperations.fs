@@ -2366,6 +2366,22 @@ type internal CommonOperations
         | _ ->
             None
 
+    /// Add a new caret at the specified point
+    member x.AddCaret point =
+        seq {
+            yield! _vimHost.GetCaretPoints _textView
+            yield point
+        }
+        |> _vimHost.SetCaretPoints _textView
+
+    /// Add a new caret at the mouse point
+    member x.AddCaretAtMousePoint () =
+        match x.MousePoint with
+        | Some mousePoint ->
+            x.AddCaret mousePoint
+        | None ->
+            ()
+
     /// Run the specified action for all carets
     member x.RunForAllCarets (action: (unit -> CommandResult)) =
 
@@ -2444,6 +2460,8 @@ type internal CommonOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint
 
+        member x.AddCaret point = x.AddCaret point
+        member x.AddCaretAtMousePoint() = x.AddCaretAtMousePoint()
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()

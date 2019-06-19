@@ -337,6 +337,12 @@ type ICommonOperations =
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
 
+    /// Add a new caret at the specified point
+    abstract AddCaret: VirtualSnapshotPoint -> unit
+
+    /// Add a new caret at the mouse point
+    abstract AddCaretAtMousePoint: unit -> unit
+
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
     abstract AdjustTextViewForScrollOffset: unit -> unit
