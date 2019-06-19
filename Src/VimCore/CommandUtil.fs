@@ -3134,12 +3134,10 @@ type internal CommandUtil
         match result with
         | CommandResult.Completed modeSwitch ->
             match modeSwitch with
-                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                    match modeArgument with
-                    | ModeArgument.InsertWithTransaction linkedTransaction ->
-                        Some linkedTransaction
-                    | _ ->
-                        None
+            | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                match modeArgument with
+                | ModeArgument.InsertWithTransaction linkedTransaction ->
+                    Some linkedTransaction
                 | _ ->
                     None
             | _ ->
