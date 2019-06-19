@@ -21,7 +21,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
             _textView = _vimBuffer.TextView;
             _vimHost = _vimBuffer.Vim.VimHost;
-            _vimBuffer.SwitchedMode += OnSwitchMode;
+            _vimBuffer.SwitchedMode += OnCaretRelatedEvent;
             _vimBuffer.KeyInputStart += OnCaretRelatedEvent;
             _vimBuffer.KeyInputEnd += OnCaretRelatedEvent;
             _vimBuffer.KeyInputProcessed += OnCaretRelatedEvent;
@@ -29,15 +29,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _globalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaretDisplay();
             UpdateCaretOpacity();
-        }
-
-        private void OnSwitchMode(object sender, SwitchModeEventArgs e)
-        {
-            if (e.ModeArgument.IsCancelOperation)
-            {
-                _vimHost.SetCaretPoints(_textView, _vimHost.GetCaretPoints(_textView).Take(1));
-            }
-            UpdateCaretDisplay();
         }
 
         internal void Update()
