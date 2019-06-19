@@ -662,14 +662,11 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
-    /// Display the quick fix window
-    | QuickFixWindow
+    /// Open the specified list window
+    | OpenListWindow of ListKind: ListKind
 
-    /// Next error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixNext of Count: int option * HasBang: bool
-
-    /// Previous error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixPrevious of Count: int option * HasBang: bool
+    /// Navigate to the specified item in the specified list
+    | NavigateToListItem of ListKind: ListKind * NavigationKind: NavigationKind * Argument: int option * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
@@ -746,6 +743,9 @@ and [<RequireQualifiedAccess>] LineCommand =
 
     /// The version command
     | Version
+
+    /// Search for pattern in the specified files
+    | VimGrep of Count: int option * HasBang: bool * Pattern: string * Flags: VimGrepFlags * FilePattern: string
 
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * CommandOption: CommandOption option

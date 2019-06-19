@@ -331,14 +331,13 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
-        public override void OpenQuickFixWindow()
+        public override void OpenListWindow(ListKind listKind)
         {
-
         }
 
-        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        public override FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            return false;
+            return FSharpOption<ListItem>.None;
         }
 
 #if VS_SPECIFIC_2015 || VS_SPECIFIC_2017

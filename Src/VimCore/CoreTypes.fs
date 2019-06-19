@@ -52,6 +52,27 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+type NavigationKind =
+    | First = 0
+    | Last = 1
+    | Next = 2
+    | Previous = 3
+
+type ListKind =
+    | Error = 0
+    | Location = 1
+
+/// One-based list item
+type ListItem
+    (
+        _itemNumber: int,
+        _listLength: int,
+        _message: string
+    ) =
+    member x.ItemNumber = _itemNumber
+    member x.ListLength = _listLength
+    member x.Message = _message
+
 /// Flags for the sort command
 [<System.Flags>]
 type SortFlags = 
@@ -113,6 +134,17 @@ type SubstituteFlags =
 
     /// Perform a literal replacement (not expanding special characters)
     | LiteralReplacement = 0x2000
+
+/// Flags for the vimgrep command
+[<System.Flags>]
+type VimGrepFlags = 
+    | None = 0
+
+    /// AllMatchesPerFile [g]
+    | AllMatchesPerFile = 0x1
+
+    /// NoJumpToFirst [j]
+    | NoJumpToFirst = 0x2
 
 type SubstituteData = {
     SearchPattern: string
@@ -408,25 +440,25 @@ type Mark =
             LocalMark.OfChar c |> Option.map LocalMark
 
 type Direction =
-    | Up        = 1
-    | Down      = 2
-    | Left      = 3
-    | Right     = 4
+    | Up        = 0
+    | Down      = 1
+    | Left      = 2
+    | Right     = 3
 
 type WindowKind =
-    | Up           = 1
-    | Down         = 2
-    | Left         = 3
-    | Right        = 4
-    | FarUp        = 5
-    | FarDown      = 6
-    | FarLeft      = 7
-    | FarRight     = 8
-    | Next         = 9
-    | Previous     = 10
-    | Recent       = 11
-    | Top          = 12
-    | Bottom       = 13
+    | Up           = 0
+    | Down         = 1
+    | Left         = 2
+    | Right        = 3
+    | FarUp        = 4
+    | FarDown      = 5
+    | FarLeft      = 6
+    | FarRight     = 7
+    | Next         = 8
+    | Previous     = 9
+    | Recent       = 10
+    | Top          = 11
+    | Bottom       = 12
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]

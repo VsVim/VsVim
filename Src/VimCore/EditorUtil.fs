@@ -2102,7 +2102,7 @@ module SnapshotLineUtil =
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
     let GetOffsetOrEndIncludingLineBreak offset (line: ITextSnapshotLine) = 
-        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        if line.Start.Position + offset > line.End.Position then line.EndIncludingLineBreak
         else line.Start.Add(offset)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not

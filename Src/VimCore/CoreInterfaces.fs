@@ -1253,6 +1253,13 @@ and IMotionUtil =
     abstract GetExpandedTagBlock: startPoint: SnapshotPoint -> endPoint: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
 
 type ModeKind = 
+
+    /// Initial mode for an IVimBuffer.  It will maintain this mode until the
+    /// underlying ITextView completes it's initialization and allows the
+    /// IVimBuffer to properly  transition to the mode matching it's
+    /// underlying IVimTextBuffer
+    | Uninitialized = 0
+
     | Normal = 1
     | Insert = 2
     | Command = 3
@@ -1266,13 +1273,8 @@ type ModeKind =
     | SelectBlock = 11
     | ExternalEdit = 12
 
-    /// Initial mode for an IVimBuffer.  It will maintain this mode until the underlying
-    /// ITextView completes it's initialization and allows the IVimBuffer to properly 
-    /// transition to the mode matching it's underlying IVimTextBuffer
-    | Uninitialized = 13
-
-    /// Mode when Vim is disabled.  It won't interact with events it otherwise would such
-    /// as selection changes
+    /// Mode when Vim is disabled.  It won't interact with events it otherwise
+    /// would such as selection changes
     | Disabled = 42
 
 [<RequireQualifiedAccess>]
@@ -1631,13 +1633,18 @@ type CharacterSpan =
 
     /// The last virtual point included in the CharacterSpan
     member x.VirtualLast =
-        let endPoint: VirtualSnapshotPoint = x.VirtualEnd
-        if endPoint = x.VirtualStart then
+        let startPoint = x.VirtualStart
+        let endPoint = x.VirtualEnd
+        if endPoint = startPoint then
             None
         else
-            endPoint
-            |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
-            |> Some
+            let point =
+                endPoint
+                |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            if point.Position.Position < startPoint.Position.Position then
+                None
+            else
+                Some point
 
     /// Get the End point of the Character Span.
     member x.End: SnapshotPoint =
@@ -2093,8 +2100,8 @@ type VisualSpan =
             Character characterSpan
         | VisualKind.Line ->
 
-            let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
-            let startLine = SnapshotPointUtil.GetContainingLine startPoint.Position
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint.Position activePoint.Position
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
 
             // If endPoint is EndIncludingLineBreak we would get the line after and be 
             // one line too big.  Go back on point to ensure we don't expand the span
@@ -2102,7 +2109,7 @@ type VisualSpan =
                 if startPoint = endPoint then
                     startLine
                 else
-                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint.Position
+                    let endPoint = SnapshotPointUtil.SubtractOneOrCurrent endPoint
                     SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
@@ -4680,12 +4687,6 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>
 
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-type QuickFix =
-    | Next
-    | Previous
-
 type TextViewChangedEventArgs
     (
         _oldTextView: ITextView option,
@@ -4798,6 +4799,9 @@ type IVimHost =
     /// Ensure that the given point is visible
     abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
 
+    /// Perform the "find in files" operation
+    abstract FindInFiles: pattern: string -> matchCase: bool -> filesOfType: string -> flags: VimGrepFlags -> action: (unit -> unit) -> unit
+
     /// Format the provided lines
     abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit
 
@@ -4830,8 +4834,8 @@ type IVimHost =
     /// values which is not a standard 0 based index
     abstract GoToTab: index: int -> unit
 
-    /// Go to the specified entry in the quick fix list
-    abstract GoToQuickFix: quickFix: QuickFix -> count: int -> hasBang: bool -> bool
+    /// Go to the specified item in the specified list
+    abstract NavigateToListItem: listKind: ListKind -> navigationKind: NavigationKind -> argument: int option -> hasBang: bool -> ListItem option
 
     /// Get the name of the given ITextBuffer
     abstract GetName: textBuffer: ITextBuffer -> string
@@ -4863,8 +4867,8 @@ type IVimHost =
 
     abstract NavigateTo: point: VirtualSnapshotPoint -> bool
 
-    // Open the quick fix window (:cwindow)
-    abstract OpenQuickFixWindow: unit -> unit
+    // Open the specified kind of list window (:cwindow, :lwindow)
+    abstract OpenListWindow: listKind: ListKind -> unit
 
     /// Open the the specified link
     abstract OpenLink: link: string -> bool

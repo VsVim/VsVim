@@ -197,6 +197,14 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
+        /// LineCommand as VimGrep
+        /// </summary>
+        public static LineCommand.VimGrep AsVimGrep(this LineCommand lineCommand)
+        {
+            return (LineCommand.VimGrep)lineCommand;
+        }
+
+        /// <summary>
         /// LineCommand as Write
         /// </summary>
         public static LineCommand.Write AsWrite(this LineCommand lineCommand)
@@ -213,19 +221,11 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// LineCommand as QuickFixNext
+        /// LineCommand as NavigateToListItem
         /// </summary>
-        public static LineCommand.QuickFixNext AsQuickFixNext(this LineCommand lineCommand)
+        public static LineCommand.NavigateToListItem AsNavigateToListItem(this LineCommand lineCommand)
         {
-            return (LineCommand.QuickFixNext)lineCommand;
-        }
-
-        /// <summary>
-        /// LineCommand as QuickFixPrevious
-        /// </summary>
-        public static LineCommand.QuickFixPrevious AsQuickFixPrevious(this LineCommand lineCommand)
-        {
-            return (LineCommand.QuickFixPrevious)lineCommand;
+            return (LineCommand.NavigateToListItem)lineCommand;
         }
 
         #endregion

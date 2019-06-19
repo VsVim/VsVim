@@ -253,7 +253,9 @@ namespace Vim.VisualStudio
         private readonly IProtectedOperations _protectedOperations;
         private readonly IClipboardDevice _clipboardDevice;
         private readonly SettingsSync _settingsSync;
+
         private IVim _vim;
+        private FindEvents _findEvents;
 
         internal _DTE DTE
         {
@@ -453,6 +455,63 @@ namespace Vim.VisualStudio
             catch
             {
                 // If automation support isn't present it's not an issue
+            }
+        }
+
+        /// <summary>
+        /// Perform the 'find in files' operation using the specified parameters
+        /// </summary>
+        /// <param name="pattern">BCL regular expression pattern</param>
+        /// <param name="matchCase">whether to match case</param>
+        /// <param name="filesOfType">which files to search</param>
+        /// <param name="flags">flags controlling the find operation</param>
+        /// <param name="action">action to perform when the operation completes</param>
+        public override void FindInFiles(
+            string pattern,
+            bool matchCase,
+            string filesOfType,
+            VimGrepFlags flags,
+            FSharpFunc<Unit, Unit> action)
+        {
+            // Perform the action when the find operation completes.
+            void onFindDone(vsFindResult result, bool cancelled)
+            {
+                // Unsubscribe.
+                _findEvents.FindDone -= onFindDone;
+                _findEvents = null;
+
+                // Perform the action.
+                var protectedAction =
+                    _protectedOperations.GetProtectedAction(() => action.Invoke(null));
+                protectedAction();
+            }
+
+            try
+            {
+                if (_dte.Find is Find2 find)
+                {
+                    // Configure the find operation.
+                    find.Action = vsFindAction.vsFindActionFindAll;
+                    find.FindWhat = pattern;
+                    find.Target = vsFindTarget.vsFindTargetSolution;
+                    find.MatchCase = matchCase;
+                    find.MatchWholeWord = false;
+                    find.PatternSyntax = vsFindPatternSyntax.vsFindPatternSyntaxRegExpr;
+                    find.FilesOfType = filesOfType;
+                    find.ResultsLocation = vsFindResultsLocation.vsFindResults1;
+                    find.WaitForFindToComplete = false;
+
+                    // Register the callback.
+                    _findEvents = _dte.Events.FindEvents;
+                    _findEvents.FindDone += onFindDone;
+
+                    // Start the find operation.
+                    find.Execute();
+                }
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
             }
         }
 
@@ -676,24 +735,229 @@ namespace Vim.VisualStudio
             _sharedService.GoToTab(index);
         }
 
-        public override void OpenQuickFixWindow()
+        /// <summary>
+        /// Open the window for the specified list
+        /// </summary>
+        /// <param name="listKind">the kind of list</param>
+        public override void OpenListWindow(ListKind listKind)
         {
-            SafeExecuteCommand(null, "View.ErrorList");
+            switch (listKind)
+            {
+                case ListKind.Error:
+                    SafeExecuteCommand(null, "View.ErrorList");
+                    break;
+                case ListKind.Location:
+                    SafeExecuteCommand(null, "View.FindResults1");
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
+            }
         }
 
-        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        /// <summary>
+        /// Navigate to the specified list item in the specified list
+        /// </summary>
+        /// <param name="listKind">the kind of list</param>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argumentOption">an optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang command format was used</param>
+        /// <returns>the list item navigated to</returns>
+        public override FSharpOption<ListItem> NavigateToListItem(
+            ListKind listKind,
+            NavigationKind navigationKind,
+            FSharpOption<int> argumentOption,
+            bool hasBang)
         {
-            // This implementation could be much more riguorous but for next a simple navigation
-            // of the next and previous error will suffice
-            var command = quickFix.IsNext
-                ? "View.NextError"
-                : "View.PreviousError";
-            for (var i = 0; i < count; i++)
+            var argument = argumentOption.IsSome() ? new int?(argumentOption.Value) : null;
+            switch (listKind)
             {
-                SafeExecuteCommand(null, command);
+                case ListKind.Error:
+                    return NavigateToError(navigationKind, argument, hasBang);
+                case ListKind.Location:
+                    return NavigateToLocation(navigationKind, argument, hasBang);
+                default:
+                    Contract.Assert(false);
+                    return FSharpOption<ListItem>.None;
+            }
+        }
+
+        /// <summary>
+        /// Navigate to the specified error
+        /// </summary>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argument">an optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang command format was used</param>
+        /// <returns>the list item for the error navigated to</returns>
+        private FSharpOption<ListItem> NavigateToError(NavigationKind navigationKind, int? argument, bool hasBang)
+        {
+            try
+            {
+                // Use the 'IErrorList' interface to manipulate the error list.
+                if (_dte is DTE2 dte2 && dte2.ToolWindows.ErrorList is IErrorList errorList)
+                {
+                    var tableControl = errorList.TableControl;
+                    var entries = tableControl.Entries.ToList();
+                    var selectedEntry = tableControl.SelectedEntry;
+                    var indexOf = entries.IndexOf(selectedEntry);
+                    var current = indexOf != -1 ? new int?(indexOf) : null;
+                    var length = entries.Count;
+
+                    // Now that we know the current item (if any) and the list
+                    // length, convert the navigation kind and its argument
+                    // into the index of the desired list item.
+                    var indexResult = GetListItemIndex(navigationKind, argument, current, length);
+                    if (indexResult.HasValue)
+                    {
+                        var index = indexResult.Value;
+                        var desiredEntry = entries[index];
+                        tableControl.SelectedEntries = new[] { desiredEntry };
+                        desiredEntry.NavigateTo(false);
+
+                        // Get the error text from the appropriate table
+                        // column.
+                        var message = "";
+                        if (desiredEntry.TryGetValue("text", out object content) && content is string text)
+                        {
+                            message = text;
+                        }
+
+                        // Item number is one-based.
+                        return new ListItem(index + 1, length, message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
+            }
+            return FSharpOption<ListItem>.None;
+        }
+
+        /// <summary>
+        /// Navigate to the specified find result
+        /// </summary>
+        /// <param name="navigationKind">what kind of navigation</param>
+        /// <param name="argument">optional argument for the navigation</param>
+        /// <param name="hasBang">whether the bang format was used</param>
+        /// <returns>the list item for the find result navigated to</returns>
+        private FSharpOption<ListItem> NavigateToLocation(NavigationKind navigationKind, int? argument, bool hasBang)
+        {
+            try
+            {
+                // Use the text contents of the 'Find Results 1' window to
+                // manipulate the location list.
+                var windowGuid = EnvDTE.Constants.vsWindowKindFindResults1;
+                var findWindow = _dte.Windows.Item(windowGuid);
+                if (findWindow != null && findWindow.Selection is EnvDTE.TextSelection textSelection)
+                {
+                    // Note that the text document and text selection APIs are
+                    // one-based but 'GetListItemIndex' returns a zero-based
+                    // value.
+                    var textDocument = textSelection.Parent;
+                    var startOffset = 1;
+                    var endOffset = 1;
+                    var rawLength = textDocument.EndPoint.Line - 1;
+                    var length = rawLength - startOffset - endOffset;
+                    var currentLine = textSelection.CurrentLine;
+                    var current = new int?();
+                    if (currentLine >= 1 + startOffset && currentLine <= rawLength - endOffset)
+                    {
+                        current = currentLine - startOffset - 1;
+                        if (current == 0 && navigationKind == NavigationKind.Next && length > 0)
+                        {
+                            // If we are on the first line, we can't tell
+                            // whether we've naviated to the first list item
+                            // yet. To handle this, we use automation to go to
+                            // the next search result. If the line number
+                            // doesn't change, we haven't yet performed the
+                            // first navigation.
+                            if (SafeExecuteCommand(null, "Edit.GoToFindResults1NextLocation"))
+                            {
+                                if (textSelection.CurrentLine == currentLine)
+                                {
+                                    current = null;
+                                }
+                            }
+                        }
+                    }
+
+                    // Now that we know the current item (if any) and the list
+                    // length, convert the navigation kind and its argument
+                    // into the index of the desired list item.
+                    var indexResult = GetListItemIndex(navigationKind, argument, current, length);
+                    if (indexResult.HasValue)
+                    {
+                        var index = indexResult.Value;
+                        var adjustedLine = index + startOffset + 1;
+                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                        textSelection.SelectLine();
+                        var message = textSelection.Text;
+                        textSelection.MoveToLineAndOffset(adjustedLine, 1);
+                        if (SafeExecuteCommand(null, "Edit.GoToFindResults1Location"))
+                        {
+                            // Try to extract just the matching portion of
+                            // the line.
+                            message = message.Trim();
+                            var start = message.Length >= 2 && message[1] == ':' ? 2 : 0;
+                            var colon = message.IndexOf(':', start);
+                            if (colon != -1)
+                            {
+                                message = message.Substring(colon + 1).Trim();
+                            }
+
+                            return new ListItem(index + 1, length, message);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _protectedOperations.Report(ex);
+            }
+            return FSharpOption<ListItem>.None;
+        }
+
+        /// <summary>
+        /// Convert the specified navigation instructions into an index for the
+        /// new list item
+        /// </summary>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argument">an optional argument for the navigation</param>
+        /// <param name="current">the zero-based index of the current list item</param>
+        /// <param name="length">the length of the list</param>
+        /// <returns>a zero-based index into the list</returns>
+        private static int? GetListItemIndex(NavigationKind navigationKind, int? argument, int? current, int length)
+        {
+            var argumentOffset = argument.HasValue ? argument.Value : 1;
+            var currentIndex = current.HasValue ? current.Value : -1;
+            var newIndex = -1;
+
+            // The 'first' and 'last' navigation kinds are one-based.
+            switch (navigationKind)
+            {
+                case NavigationKind.First:
+                    newIndex = argument.HasValue ? argument.Value - 1 : 0;
+                    break;
+                case NavigationKind.Last:
+                    newIndex = argument.HasValue ? argument.Value - 1 : length - 1;
+                    break;
+                case NavigationKind.Next:
+                    newIndex = currentIndex + argumentOffset;
+                    break;
+                case NavigationKind.Previous:
+                    newIndex = currentIndex - argumentOffset;
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
             }
 
-            return true;
+            if (newIndex >= 0 && newIndex < length)
+            {
+                return newIndex;
+            }
+            return null;
         }
 
         public override void Make(bool jumpToFirstError, string arguments)
