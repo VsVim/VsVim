@@ -122,15 +122,33 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
-        _textView.Selection.Clear()
-        _commonOperations.MoveCaretWithArrow caretMovement |> ignore
 
-        if x.ShouldStopSelection keyInput then
+        let leaveSelectWithCaretAtPoint caretPoint =
+            _textView.Selection.Clear()
+            _commonOperations.MoveCaretToVirtualPoint caretPoint ViewFlags.Standard
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+
+        if keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Left then
+
+            // Typing plain left in select mode leaves the caret at the
+            // selection start point.
+            leaveSelectWithCaretAtPoint _textView.Selection.Start
+
+        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Right then
+
+            // Typing plain right in select mode leaves the caret at the
+            // selection end point.
+            leaveSelectWithCaretAtPoint _textView.Selection.End
+
         else
-            // The caret moved so we need to update the selection 
-            _selectionTracker.UpdateSelection()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            _textView.Selection.Clear()
+            _commonOperations.MoveCaretWithArrow caretMovement |> ignore
+            if x.ShouldStopSelection keyInput then
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            else
+                // The caret moved so we need to update the selection 
+                _selectionTracker.UpdateSelection()
+                ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// The user hit an input key.  Need to replace the current selection with the given
     /// text and put the caret just after the insert.  This needs to be a single undo
