@@ -28,6 +28,7 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
+        private event EventHandler _caretPointsSet;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -482,6 +483,7 @@ namespace Vim.UI.Wpf
         {
             var caretPoint = caretPoints.First();
             textView.Caret.MoveTo(caretPoint);
+            RaiseCaretPointsSet();
         }
 
         /// <summary>
@@ -517,6 +519,14 @@ namespace Vim.UI.Wpf
             {
                 var args = new BeforeSaveEventArgs(textBuffer);
                 _beforeSave(this, args);
+            }
+        }
+
+        protected void RaiseCaretPointsSet()
+        {
+            if (_caretPointsSet != null)
+            {
+                _caretPointsSet(this, EventArgs.Empty);
             }
         }
 
@@ -924,6 +934,12 @@ namespace Vim.UI.Wpf
         {
             add { _beforeSave += value; }
             remove { _beforeSave -= value; }
+        }
+
+        event EventHandler IVimHost.CaretPointsSet
+        {
+            add { _caretPointsSet += value; }
+            remove { _caretPointsSet -= value; }
         }
 
         #endregion

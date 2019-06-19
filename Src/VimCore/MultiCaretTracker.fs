@@ -21,6 +21,10 @@ type internal MultiCaretTracker
     let mutable _caretPoints = List<VirtualSnapshotPoint>()
 
     do
+        _vimHost.CaretPointsSet
+        |> Observable.subscribe (fun _ -> this.OnCaretPointsSet())
+        |> _bag.Add
+
         _vimBuffer.KeyInputStart
         |> Observable.subscribe (fun _ -> this.OnKeyInputStart())
         |> _bag.Add
@@ -41,6 +45,10 @@ type internal MultiCaretTracker
     member x.CaretPoints 
         with get () =  _caretPoints
         and set value = _caretPoints <- value
+
+    /// Raised when the caret points are set by the host
+    member x.OnCaretPointsSet () = 
+        x.CaretPoints <- x.GetCaretPoints()
 
     /// Raised when the buffer starts processing input
     member x.OnKeyInputStart () = 

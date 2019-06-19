@@ -1239,6 +1239,7 @@ namespace Vim.VisualStudio
         public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
             _sharedService.SetCaretPoints(textView, caretPoints);
+            RaiseCaretPointsSet();
         }
 
         #endregion

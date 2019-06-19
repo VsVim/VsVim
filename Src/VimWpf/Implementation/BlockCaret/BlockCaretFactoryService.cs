@@ -10,7 +10,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
     {
         internal const string BlockCaretAdornmentLayerName = "BlockCaretAdornmentLayer";
 
-        private readonly IVimHost _vimHost;
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IEditorFormatMapService _formatMapService;
         private readonly IProtectedOperations _protectedOperations;

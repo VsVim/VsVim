@@ -4936,6 +4936,10 @@ type IVimHost =
     [<CLIEvent>]
     abstract BeforeSave: IDelegateEvent<System.EventHandler<BeforeSaveEventArgs>>
 
+    /// Raised when the caret points are set
+    [<CLIEvent>]
+    abstract CaretPointsSet: IDelegateEvent<System.EventHandler>
+
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =

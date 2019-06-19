@@ -358,6 +358,7 @@ namespace VimApp
                 .ToList();
             var broker = textView.GetMultiSelectionBroker();
             broker.SetSelectionRange(selections, selections[0]);
+            RaiseCaretPointsSet();
         }
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
