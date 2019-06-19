@@ -114,7 +114,10 @@ type internal SelectionChangeTracker
             let isSelectModeMouse =
                 Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse 
             let inner = 
-                if _textView.Selection.IsEmpty then 
+                if
+                    _textView.Selection.IsEmpty
+                    || _textView.Selection.StreamSelectionSpan.Length = 0
+                then 
                     if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                         Some ModeKind.Normal
                     else 

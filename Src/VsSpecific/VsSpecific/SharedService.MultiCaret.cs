@@ -44,10 +44,22 @@ namespace Vim.VisualStudio.Specific
 
         private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
-            var selections =
-                caretPoints
-                .Select(caretPoint => new Selection(caretPoint))
-                .ToList();
+            SetCaretPointsCommon(textView, caretPoints.ToArray());
+        }
+
+        private void SetCaretPointsCommon(ITextView textView, VirtualSnapshotPoint[] caretPoints)
+        {
+            if (caretPoints.Length == 1)
+            {
+                textView.Caret.MoveTo(caretPoints[0]);
+                return;
+            }
+
+            var selections = new Microsoft.VisualStudio.Text.Selection[caretPoints.Length];
+            for (var caretIndex = 0; caretIndex < caretPoints.Length; caretIndex++)
+            {
+                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(caretPoints[caretIndex]);
+            }
             var broker = textView.GetMultiSelectionBroker();
             broker.SetSelectionRange(selections, selections[0]);
         }

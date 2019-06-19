@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
@@ -21,6 +22,7 @@ namespace Vim.UnitTest
         private readonly Mock<IMouseDevice> _mouseDevice;
         private readonly TestableSynchronizationContext _context;
         private readonly SelectionChangeTracker _tracker;
+        private readonly VirtualSnapshotSpan _nonEmptySpan;
 
         public SelectionChangeTrackerTest()
         {
@@ -36,6 +38,10 @@ namespace Vim.UnitTest
                 vim: MockObjectFactory.CreateVim(host: _vimHost.Object).Object,
                 factory: _factory);
             _vimBuffer.SetupGet(x => x.IsClosed).Returns(false);
+
+            var snapshot = _factory.Create<ITextSnapshot>();
+            snapshot.SetupGet(x => x.Length).Returns(1);
+            _nonEmptySpan = new VirtualSnapshotSpan(new SnapshotSpan(snapshot.Object, new Span(0, 1)));
 
             _mouseDevice = _factory.Create<IMouseDevice>();
             _selectionOverride = _factory.Create<IVisualModeSelectionOverride>();
@@ -71,6 +77,8 @@ namespace Vim.UnitTest
         {
             var mode = _factory.Create<IVisualMode>();
             mode.Setup(x => x.SyncSelection()).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
             _vimBuffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
@@ -100,6 +108,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.False(_context.IsEmpty);
             _factory.Verify();
@@ -122,6 +131,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.False(_context.IsEmpty);
             _factory.Verify();
@@ -147,6 +157,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
             _vimBuffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.True(_context.IsEmpty);
@@ -156,12 +167,15 @@ namespace Vim.UnitTest
         [Fact]
         public void SelectionChanged6()
         {
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.False(_context.IsEmpty);
             _factory.Verify();
 
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _vimBuffer
                 .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
                 .Returns(_factory.Create<IMode>().Object)
@@ -196,6 +210,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
             _vimBuffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             _factory.Verify();
@@ -213,6 +228,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine).Verifiable();
             _vimBuffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             _factory.Verify();
@@ -228,6 +244,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.IsProcessingInput).Returns(false);
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _selection.SetupGet(x => x.IsEmpty).Returns(false);
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
 
@@ -248,6 +265,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
             _selectionOverride.Setup(x => x.IsInsertModePreferred(_textView.Object)).Returns(true);
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.True(_context.IsEmpty);
         }
@@ -263,6 +281,7 @@ namespace Vim.UnitTest
             _vimBuffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _selectionOverride.Setup(x => x.IsInsertModePreferred(_textView.Object)).Returns(true);
             _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.StreamSelectionSpan).Returns(_nonEmptySpan).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
             Assert.False(_context.IsEmpty);
             _context.RunAll();

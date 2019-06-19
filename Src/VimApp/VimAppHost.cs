@@ -341,6 +341,13 @@ namespace VimApp
             return false;
         }
 
+#if VS_SPECIFIC_2015
+
+        // Visual Studio 2015 editor assemblies do not support the
+        // multi-selection broker
+
+#else
+
         public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
         {
             return
@@ -352,14 +359,28 @@ namespace VimApp
 
         public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
-            var selections =
-                caretPoints
-                .Select(caretPoint => new Selection(caretPoint))
-                .ToList();
-            var broker = textView.GetMultiSelectionBroker();
-            broker.SetSelectionRange(selections, selections[0]);
+            SetCaretPointsCommon(textView, caretPoints.ToArray());
             RaiseCaretPointsSet();
         }
+
+        private void SetCaretPointsCommon(ITextView textView, VirtualSnapshotPoint[] caretPoints)
+        {
+            if (caretPoints.Length == 1)
+            {
+                textView.Caret.MoveTo(caretPoints[0]);
+                return;
+            }
+
+            var selections = new Microsoft.VisualStudio.Text.Selection[caretPoints.Length];
+            for (var caretIndex = 0; caretIndex < caretPoints.Length; caretIndex++)
+            {
+                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(caretPoints[caretIndex]);
+            }
+            var broker = textView.GetMultiSelectionBroker();
+            broker.SetSelectionRange(selections, selections[0]);
+        }
+
+#endif
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
         {
