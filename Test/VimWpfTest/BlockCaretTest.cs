@@ -17,6 +17,7 @@ namespace Vim.UI.Wpf.UnitTest
         private Mock<IVimHost> _vimHost;
         private Mock<ITextView> _textView;
         private Mock<ITextCaret> _caret;
+        private Mock<ITextSelection> _selection;
         private Mock<ITextViewLineCollection> _lines;
         private Mock<ITextViewLine> _caretLine;
         private Mock<IEditorFormatMap> _formatMap;
@@ -28,10 +29,13 @@ namespace Vim.UI.Wpf.UnitTest
         private void Create()
         {
             _vimHost = new Mock<IVimHost>(MockBehavior.Strict);
+            _vimHost.Setup(x => x.GetCaretPoints(It.IsAny<ITextView>())).Returns(new [] { new VirtualSnapshotPoint() });
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _caret.SetupGet(x => x.Position).Returns(new CaretPosition());
+            _selection = new Mock<ITextSelection>(MockBehavior.Strict);
             _textView = new Mock<ITextView>(MockBehavior.Strict);
             _textView.SetupGet(x => x.Caret).Returns(_caret.Object);
+            _textView.SetupGet(x => x.Selection).Returns(_selection.Object);
             _textView.SetupGet(x => x.IsClosed).Returns(false);
             _textView.SetupGet(x => x.InLayout).Returns(false);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
