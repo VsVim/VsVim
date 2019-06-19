@@ -10,7 +10,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly IBlockCaret _blockCaret;
         private readonly IVimGlobalSettings _globalSettings;
         private readonly ITextView _textView;
-        private readonly IVimHost _vimHost;
 
         internal BlockCaretController(
             IVimBuffer vimBuffer,
@@ -20,7 +19,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blockCaret = blockCaret;
             _globalSettings = _vimBuffer.LocalSettings.GlobalSettings;
             _textView = _vimBuffer.TextView;
-            _vimHost = _vimBuffer.Vim.VimHost;
             _vimBuffer.SwitchedMode += OnCaretRelatedEvent;
             _vimBuffer.KeyInputStart += OnCaretRelatedEvent;
             _vimBuffer.KeyInputEnd += OnCaretRelatedEvent;
