@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text;
 
 namespace Vim.VisualStudio.Specific
 {
-#if VS_SPECIFIC_2012 || VS_SPECIFIC_2013 || VS_SPECIFIC_2015
+#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 
     internal partial class SharedService
     {
