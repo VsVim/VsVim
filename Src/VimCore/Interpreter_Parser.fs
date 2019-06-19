@@ -1698,10 +1698,12 @@ and [<Sealed>] Parser
                             | None -> ()
                             | Some notation ->
                                 let notation = "<" + notation + ">"
-                                let keyInput = KeyNotationUtil.StringToKeyInput notation
-                                match keyInput.RawChar with
-                                | None -> ()
-                                | Some rawChar -> builder.AppendChar rawChar
+                                match KeyNotationUtil.TryStringToKeyInput notation with
+                                | None -> builder.AppendString notation
+                                | Some keyInput ->
+                                    match keyInput.RawChar with
+                                    | None -> builder.AppendString notation
+                                    | Some rawChar -> builder.AppendChar rawChar
 
                     | _ -> builder.AppendChar c
                     inner false

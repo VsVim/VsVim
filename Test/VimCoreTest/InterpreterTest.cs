@@ -1512,6 +1512,23 @@ namespace Vim.UnitTest
                 ParseAndRun("let x = &fakeoption");
                 AssertValue("x", 2);
             }
+
+            [WpfFact]
+            public void EmbeddedInvalidKeyNotation()
+            {
+                // Reported in issue #2646.
+                Create("");
+                ParseAndRun(@"let x = ""\<Escape>""");
+                AssertValue("x", "<Escape>");
+            }
+
+            [WpfFact]
+            public void EmbeddedVimKeyNotation()
+            {
+                Create("");
+                ParseAndRun(@"let x = ""\<Left>""");
+                AssertValue("x", "<Left>");
+            }
         }
 
         public sealed class UnletTest : InterpreterTest
