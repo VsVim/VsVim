@@ -2547,7 +2547,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<CR>");
+                _vimBuffer.ProcessNotation("<C-y>");
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
             
@@ -2623,7 +2623,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-N><CR>");
+                _vimBuffer.ProcessNotation("<C-N><C-y>");
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
 
