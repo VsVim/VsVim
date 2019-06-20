@@ -12,7 +12,6 @@ open System.Diagnostics
 open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
-open System.Collections.Generic
 open System.Threading.Tasks
 open Vim.Interpreter
 open System
@@ -611,7 +610,7 @@ type SearchData
 
     override x.Equals(other: obj) = 
         match other with
-        | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
+        | :? SearchData as otherSearchData -> x.Equals(otherSearchData)
         | _ -> false 
 
     override x.GetHashCode() =
@@ -2026,7 +2025,7 @@ type VisualSpan =
             let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
             let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
 
-            textView.Selection.Select(startPoint, endPoint);
+            textView.Selection.Select(startPoint, endPoint)
 
         // Select the given VirtualSnapshotSpan
         let selectVirtualSpan startPoint endPoint =
@@ -2038,7 +2037,7 @@ type VisualSpan =
                 | SearchPath.Forward -> startPoint, endPoint
                 | SearchPath.Backward -> endPoint, startPoint
 
-            textView.Selection.Select(startPoint, endPoint);
+            textView.Selection.Select(startPoint, endPoint)
 
         match x with
         | Character characterSpan ->
@@ -4935,14 +4934,11 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
-    /// Get all the caret points for the specified text view
-    abstract GetCaretPoints: textView: ITextView -> IEnumerable<VirtualSnapshotPoint>
-
-    /// Set all the caret points for the specified text view
-    abstract SetCaretPoints: textView: ITextView -> IEnumerable<VirtualSnapshotPoint> -> unit
+    /// Get all the selected spans for the specified text view
+    abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq
 
     /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: textView: ITextView -> IEnumerable<VirtualSnapshotSpan> -> unit
+    abstract SetSelectedSpans: textView: ITextView -> SelectedSpan seq -> unit
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]

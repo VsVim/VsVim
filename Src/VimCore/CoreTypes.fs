@@ -52,6 +52,42 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString()}")>]
+type SelectedSpan =
+
+    val private _caretPoint: VirtualSnapshotPoint
+    val private _span: VirtualSnapshotSpan
+
+    new (caretPoint: VirtualSnapshotPoint) =
+        {
+            _caretPoint = caretPoint
+            _span = VirtualSnapshotSpan(caretPoint, caretPoint)
+        }
+
+    new (caretPoint: VirtualSnapshotPoint, startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint) =
+        {
+            _caretPoint = caretPoint
+            _span = VirtualSnapshotSpan(startPoint, endPoint)
+        }
+
+    new (caretPoint: VirtualSnapshotPoint, span: VirtualSnapshotSpan) =
+        {
+            _caretPoint = caretPoint
+            _span = span
+        }
+
+    member x.CaretPoint = x._caretPoint
+    member x.StartPoint = x._span.Start
+    member x.EndPoint = x._span.End
+    member x.Span = x._span
+    member x.Length = x._span.Length
+
+    override x.ToString() =
+        System.String.Format("{0}:{1}}", x._caretPoint, x._span)
+
 type NavigationKind =
     | First = 0
     | Last = 1

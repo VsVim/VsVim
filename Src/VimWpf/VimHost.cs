@@ -478,23 +478,22 @@ namespace Vim.UI.Wpf
         {
         }
 
-        public virtual IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
+        public virtual IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
-            return new[] { textView.Caret.Position.VirtualBufferPosition };
+            var caretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var span = textView.Selection.StreamSelectionSpan;
+            return new[] { new SelectedSpan(caretPoint, span) };
         }
 
 
-        public virtual void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            var caretPoint = caretPoints.First();
-            textView.Caret.MoveTo(caretPoint);
-            RaiseCaretPointsSet();
-        }
-
-        public virtual void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        public virtual void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             var selectedSpan = selectedSpans.First();
-            textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            textView.Caret.MoveTo(selectedSpan.CaretPoint);
+            if (selectedSpan.Length != 0)
+            {
+                textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+            }
             RaiseCaretPointsSet();
         }
 
@@ -925,17 +924,12 @@ namespace Vim.UI.Wpf
             VimRcLoaded(vimRcState, localSettings, windowSettings);
         }
 
-        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCaretPoints(ITextView textView)
+        IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
-            return GetCaretPoints(textView);
+            return GetSelectedSpans(textView);
         }
 
-        void IVimHost.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            SetCaretPoints(textView, caretPoints);
-        }
-
-        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             SetSelectedSpans(textView, selectedSpans);
         }

@@ -3828,6 +3828,7 @@ type internal CommandUtil
                         let newSpans =
                             visualSelection.VisualSpan.Spans
                             |> Seq.map VirtualSnapshotSpanUtil.OfSpan
+                            |> Seq.map (fun span -> SelectedSpan(span.End, span))
                         seq {
                             yield! selectedSpans
                             yield! newSpans

@@ -164,14 +164,18 @@ type internal CommonOperations
 
     /// The current virtual caret points
     member x.CaretPoints
-        with get() = _vimHost.GetCaretPoints _textView
-        and set value = _vimHost.SetCaretPoints _textView value
+        with get() =
+            _vimHost.GetSelectedSpans _textView
+            |> Seq.map (fun span -> span.CaretPoint)
+        and set value =
+            value
+            |> Seq.map (fun point -> SelectedSpan(point))
+            |> _vimHost.SetSelectedSpans _textView
 
     /// The current virtual caret points
     member x.SelectedSpans
         with get() =
-            _textView.Selection.VirtualSelectedSpans
-            :> IEnumerable<VirtualSnapshotSpan>
+            _vimHost.GetSelectedSpans _textView
         and set value =
             _vimHost.SetSelectedSpans _textView value
 
@@ -2418,11 +2422,11 @@ type internal CommonOperations
 
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
-        let selectedSpans = x.SelectedSpans |> GenericListUtil.OfSeq
-        if selectedSpans.Count > 0 && selectedSpans.[0].Length <> 0 then
+        let selectedSpans = x.SelectedSpans |> Seq.toList
+        if selectedSpans.Length > 0 && selectedSpans.[0].Length <> 0 then
             seq {
                 yield! x.SelectedSpans
-                yield VirtualSnapshotSpan(point, point)
+                yield SelectedSpan(point)
             }
             |> (fun spans -> x.SelectedSpans <- spans)
         else
@@ -2485,10 +2489,11 @@ type internal CommonOperations
         |> VirtualSnapshotPointUtil.OfPoint
 
     /// Map the specified span to the current snapshot
-    member x.MapVirtualSpanToCurrentSnapshot (span: VirtualSnapshotSpan) =
-        let startPoint = x.MapVirtualPointToCurrentSnapshot span.Start
-        let endPoint = x.MapVirtualPointToCurrentSnapshot span.End
-        VirtualSnapshotSpan(startPoint, endPoint)
+    member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
+        let caretPoint = x.MapVirtualPointToCurrentSnapshot span.CaretPoint
+        let startPoint = x.MapVirtualPointToCurrentSnapshot span.StartPoint
+        let endPoint = x.MapVirtualPointToCurrentSnapshot span.EndPoint
+        SelectedSpan(caretPoint, startPoint, endPoint)
 
     /// Get any linked transaction from the specified command result.
     member x.GetLinkedTransaction result =
@@ -2563,15 +2568,14 @@ type internal CommonOperations
                         let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
-                        yield result, x.CaretPoint
+                        yield result, x.CaretVirtualPoint
                 }
                 |> Seq.toList
 
             // Extract the resulting caret points and set them.
             results
             |> Seq.map (fun (_, point) -> point)
-            |> Seq.map x.MapPointNegativeToCurrentSnapshot
-            |> Seq.map VirtualSnapshotPointUtil.OfPoint
+            |> Seq.map x.MapVirtualPointToCurrentSnapshot
             |> (fun points -> x.CaretPoints <- points)
 
             // Extract the first command result.
@@ -2603,22 +2607,24 @@ type internal CommonOperations
                     for selectedSpan in selectedSpans do
 
                         // Temporarily set the real caret and selection.
-                        let span = x.MapVirtualSpanToCurrentSnapshot selectedSpan
-                        _textView.Caret.MoveTo(span.End) |> ignore
-                        _textView.Selection.Select(span.Start, span.End)
+                        let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
+                        _textView.Caret.MoveTo(span.CaretPoint) |> ignore
+                        _textView.Selection.Select(span.StartPoint, span.EndPoint)
 
                         // Run the action once.
                         let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
-                        yield result, _textView.Selection.StreamSelectionSpan
+                        let caretPoint = x.CaretVirtualPoint
+                        let span = _textView.Selection.StreamSelectionSpan
+                        yield result, SelectedSpan(caretPoint, span)
                 }
                 |> Seq.toList
 
             // Extract the resulting selected spans and set them.
             results
-            |> Seq.map (fun (_, point) -> point)
-            |> Seq.map x.MapVirtualSpanToCurrentSnapshot
+            |> Seq.map (fun (_, span) -> span)
+            |> Seq.map x.MapSelectedSpanToCurrentSnapshot
             |> (fun spans -> x.SelectedSpans <- spans)
 
             // Extract the first command result.

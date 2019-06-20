@@ -330,10 +330,10 @@ type ICommonOperations =
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
     /// The current caret points
-    abstract CaretPoints: IEnumerable<VirtualSnapshotPoint> with get, set
+    abstract CaretPoints: VirtualSnapshotPoint seq with get, set
 
     /// The current selected spans
-    abstract SelectedSpans: IEnumerable<VirtualSnapshotSpan> with get, set
+    abstract SelectedSpans: SelectedSpan seq with get, set
 
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option

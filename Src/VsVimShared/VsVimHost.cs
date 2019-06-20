@@ -1495,18 +1495,12 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-        public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
+        public override IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
-            return _sharedService.GetCaretPoints(textView);
+            return _sharedService.GetSelectedSpans(textView);
         }
 
-        public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            _sharedService.SetCaretPoints(textView, caretPoints);
-            RaiseCaretPointsSet();
-        }
-
-        public override void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             _sharedService.SetSelectedSpans(textView, selectedSpans);
             RaiseCaretPointsSet();

@@ -440,21 +440,21 @@ namespace Vim.UnitTest.Mock
             get { return UseDefaultCaret; }
         }
 
-        IEnumerable<VirtualSnapshotPoint> IVimHost.GetCaretPoints(ITextView textView)
+        IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
-            return new[] { textView.Caret.Position.VirtualBufferPosition };
+            var caretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var span = textView.Selection.StreamSelectionSpan;
+            return new[] { new SelectedSpan(caretPoint, span) };
         }
 
-        void IVimHost.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            var caretPoint = caretPoints.First();
-            textView.Caret.MoveTo(caretPoint);
-        }
-
-        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             var selectedSpan = selectedSpans.First();
-            textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            textView.Caret.MoveTo(selectedSpan.CaretPoint);
+            if (selectedSpan.Length != 0)
+            {
+                textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+            }
         }
     }
 }

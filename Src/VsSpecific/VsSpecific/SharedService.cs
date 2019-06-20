@@ -101,17 +101,12 @@ namespace Vim.VisualStudio.Specific
             RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
-        IEnumerable<VirtualSnapshotPoint> ISharedService.GetCaretPoints(ITextView textView)
+        IEnumerable<SelectedSpan> ISharedService.GetSelectedSpans(ITextView textView)
         {
-            return GetCaretPoints(textView);
+            return GetSelectedSpans(textView);
         }
 
-        void ISharedService.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            SetCaretPoints(textView, caretPoints);
-        }
-
-        void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             SetSelectedSpans(textView, selectedSpans);
         }

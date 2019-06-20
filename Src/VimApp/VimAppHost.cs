@@ -349,64 +349,57 @@ namespace VimApp
 
 #else
 
-        public override IEnumerable<VirtualSnapshotPoint> GetCaretPoints(ITextView textView)
+        public override IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
-            return GetCaretPointsCommon(textView);
+            return GetSelectedSpansCommon(textView);
         }
 
-        public override void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
-        {
-            SetCaretPointsCommon(textView, caretPoints.ToArray());
-            RaiseCaretPointsSet();
-        }
-
-        public override void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             SetSelectedSpansCommon(textView, selectedSpans.ToArray());
             RaiseCaretPointsSet();
         }
 
-        private IEnumerable<VirtualSnapshotPoint> GetCaretPointsCommon(ITextView textView)
+        private IEnumerable<SelectedSpan> GetSelectedSpansCommon(ITextView textView)
         {
-            var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
-            var secondaryCaretPoints = textView.GetMultiSelectionBroker().AllSelections
-                .Select(selection => selection.InsertionPoint)
-                .Where(caretPoint => caretPoint != primaryCaretPoint);
-            return new[] { primaryCaretPoint }.Concat(secondaryCaretPoints);
-        }
-
-        private void SetCaretPointsCommon(ITextView textView, VirtualSnapshotPoint[] caretPoints)
-        {
-            if (caretPoints.Length == 1)
-            {
-                textView.Caret.MoveTo(caretPoints[0]);
-                return;
-            }
-
-            var selections = new Microsoft.VisualStudio.Text.Selection[caretPoints.Length];
-            for (var caretIndex = 0; caretIndex < caretPoints.Length; caretIndex++)
-            {
-                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(caretPoints[caretIndex]);
-            }
             var broker = textView.GetMultiSelectionBroker();
-            broker.SetSelectionRange(selections, selections[0]);
+            var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var secondarySelections = broker.AllSelections
+                .Select(selection => GetSelectedSpan(selection))
+                .Where(span => span.CaretPoint != primaryCaretPoint);
+            return new[] { GetSelectedSpan(broker.PrimarySelection) }.Concat(secondarySelections);
         }
 
-        private void SetSelectedSpansCommon(ITextView textView, VirtualSnapshotSpan[] selectedSpans)
+        private void SetSelectedSpansCommon(ITextView textView, SelectedSpan[] selectedSpans)
         {
             if (selectedSpans.Length == 1)
             {
                 var selectedSpan = selectedSpans[0];
-                textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+                textView.Caret.MoveTo(selectedSpan.CaretPoint);
+                if (selectedSpan.Length != 0)
+                {
+                    textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+                }
+                return;
             }
 
             var selections = new Microsoft.VisualStudio.Text.Selection[selectedSpans.Length];
             for (var caretIndex = 0; caretIndex < selectedSpans.Length; caretIndex++)
             {
-                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(selectedSpans[caretIndex]);
+                selections[caretIndex] = GetSelection(selectedSpans[caretIndex]);
             }
             var broker = textView.GetMultiSelectionBroker();
             broker.SetSelectionRange(selections, selections[0]);
+        }
+
+        private static SelectedSpan GetSelectedSpan(Microsoft.VisualStudio.Text.Selection selection)
+        {
+            return new SelectedSpan(selection.InsertionPoint, selection.Start, selection.End);
+        }
+
+        private static Microsoft.VisualStudio.Text.Selection GetSelection(SelectedSpan span)
+        {
+            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.StartPoint, span.EndPoint);
         }
 
 #endif
