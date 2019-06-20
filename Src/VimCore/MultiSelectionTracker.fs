@@ -71,7 +71,7 @@ type internal MultiSelectionTracker
                 _commonOperations.SelectedSpans
                 |> Seq.take 1
                 |> Seq.toArray
-            _commonOperations.SelectedSpans <- newSelectedSpans
+            _commonOperations.SetSelectedSpans newSelectedSpans
             x.OldSelectedSpans <- newSelectedSpans
         | _ ->
             ()
@@ -121,7 +121,7 @@ type internal MultiSelectionTracker
                 for caretIndex = oldSelectedSpans.Length to newSelectedSpans.Length - 1 do
                     yield newSelectedSpans.[caretIndex]
             }
-            |> (fun spans -> _commonOperations.SelectedSpans <- spans)
+            |> _commonOperations.SetSelectedSpans
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal MultiSelectionTrackerFactory

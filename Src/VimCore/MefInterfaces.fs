@@ -330,10 +330,10 @@ type ICommonOperations =
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
     /// The current caret points
-    abstract CaretPoints: VirtualSnapshotPoint seq with get, set
+    abstract CaretPoints: VirtualSnapshotPoint seq
 
     /// The current selected spans
-    abstract SelectedSpans: SelectedSpan seq with get, set
+    abstract SelectedSpans: SelectedSpan seq
 
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
@@ -557,6 +557,12 @@ type ICommonOperations =
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
+
+    /// Set the current caret points
+    abstract SetCaretPoints: VirtualSnapshotPoint seq -> unit
+
+    /// Set the current selected spans
+    abstract SetSelectedSpans: SelectedSpan seq -> unit
 
     /// Update the register with the specified value
     abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit

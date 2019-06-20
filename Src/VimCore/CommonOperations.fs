@@ -161,22 +161,24 @@ type internal CommonOperations
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
 
-    /// The current virtual caret points
-    member x.CaretPoints
-        with get() =
-            _vimHost.GetSelectedSpans _textView
-            |> Seq.map (fun span -> span.CaretPoint)
-        and set value =
-            value
-            |> Seq.map (fun point -> SelectedSpan(point))
-            |> _vimHost.SetSelectedSpans _textView
+    /// The current caret points
+    member x.CaretPoints =
+        _vimHost.GetSelectedSpans _textView
+        |> Seq.map (fun span -> span.CaretPoint)
+
+    /// Set the current caret points
+    member x.SetCaretPoints points =
+        points
+        |> Seq.map (fun point -> SelectedSpan(point))
+        |> _vimHost.SetSelectedSpans _textView
 
     /// The current virtual caret points
-    member x.SelectedSpans
-        with get() =
-            _vimHost.GetSelectedSpans _textView
-        and set value =
-            _vimHost.SetSelectedSpans _textView value
+    member x.SelectedSpans =
+        _vimHost.GetSelectedSpans _textView
+
+    /// Set the current virtual caret points
+    member x.SetSelectedSpans spans =
+        _vimHost.SetSelectedSpans _textView spans
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
@@ -2427,13 +2429,13 @@ type internal CommonOperations
                 yield! x.SelectedSpans
                 yield SelectedSpan(point)
             }
-            |> (fun spans -> x.SelectedSpans <- spans)
+            |> x.SetSelectedSpans
         else
             seq {
                 yield! x.CaretPoints
                 yield point
             }
-            |> (fun points -> x.CaretPoints <- points)
+            |> x.SetCaretPoints
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
@@ -2558,16 +2560,15 @@ type internal CommonOperations
                     for caretPoint in caretPoints do
 
                         // Temporarily move the real caret.
-                        caretPoint
-                        |> x.MapVirtualPointToCurrentSnapshot
-                        |> (fun point -> _textView.Caret.MoveTo(point))
-                        |> ignore
+                        let point = x.MapVirtualPointToCurrentSnapshot caretPoint
+                        x.SetCaretPoints [point]
 
                         // Run the action once.
                         let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
-                        yield result, x.CaretVirtualPoint
+                        let point = x.CaretPoints |> Seq.head
+                        yield result, point
                 }
                 |> Seq.toList
 
@@ -2575,7 +2576,7 @@ type internal CommonOperations
             results
             |> Seq.map (fun (_, point) -> point)
             |> Seq.map x.MapVirtualPointToCurrentSnapshot
-            |> (fun points -> x.CaretPoints <- points)
+            |> x.SetCaretPoints
 
             // Extract the first command result.
             let result =
@@ -2607,16 +2608,14 @@ type internal CommonOperations
 
                         // Temporarily set the real caret and selection.
                         let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
-                        _textView.Caret.MoveTo(span.CaretPoint) |> ignore
-                        _textView.Selection.Select(span.StartPoint, span.EndPoint)
+                        x.SetSelectedSpans [span]
 
                         // Run the action once.
                         let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
-                        let caretPoint = x.CaretVirtualPoint
-                        let span = _textView.Selection.StreamSelectionSpan
-                        yield result, SelectedSpan(caretPoint, span)
+                        let span = x.SelectedSpans |> Seq.head
+                        yield result, span
                 }
                 |> Seq.toList
 
@@ -2624,7 +2623,7 @@ type internal CommonOperations
             results
             |> Seq.map (fun (_, span) -> span)
             |> Seq.map x.MapSelectedSpanToCurrentSnapshot
-            |> (fun spans -> x.SelectedSpans <- spans)
+            |> x.SetSelectedSpans
 
             // Extract the first command result.
             let result =
@@ -2640,12 +2639,8 @@ type internal CommonOperations
         member x.MaintainCaretColumn 
             with get() = x.MaintainCaretColumn
             and set value = x.MaintainCaretColumn <- value
-        member x.CaretPoints 
-            with get() = x.CaretPoints
-            and set value = x.CaretPoints <- value
-        member x.SelectedSpans 
-            with get() = x.SelectedSpans
-            and set value = x.SelectedSpans <- value
+        member x.CaretPoints = x.CaretPoints
+        member x.SelectedSpans = x.SelectedSpans
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint
@@ -2712,6 +2707,8 @@ type internal CommonOperations
         member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.RunForAllCarets action = x.RunForAllCarets action
         member x.RunForAllSelections action = x.RunForAllSelections action
+        member x.SetCaretPoints points = x.SetCaretPoints points
+        member x.SetSelectedSpans spans = x.SetSelectedSpans spans
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier

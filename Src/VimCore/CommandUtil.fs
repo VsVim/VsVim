@@ -3825,16 +3825,15 @@ type internal CommandUtil
                 | ModeSwitch.SwitchModeWithArgument (_, modeArg) ->
                     match modeArg with
                     | ModeArgument.InitialVisualSelection (visualSelection, _) ->
-                        let newSpans =
-                            visualSelection.VisualSpan.Spans
-                            |> Seq.map VirtualSnapshotSpanUtil.OfSpan
-                            |> Seq.map (fun span -> SelectedSpan(span.End, span))
+                        let newSpan =
+                            _globalSettings.SelectionKind
+                            |> visualSelection.GetPrimarySelectedSpan
                         seq {
                             yield! selectedSpans
-                            yield! newSpans
+                            yield newSpan
                         }
                         |> Seq.filter (fun span -> span.Length <> 0)
-                        |> (fun spans -> _commonOperations.SelectedSpans <- spans)
+                        |> _commonOperations.SetSelectedSpans
                         ModeSwitch.NoSwitch
                         |> CommandResult.Completed
                     | _ ->

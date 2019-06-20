@@ -2335,6 +2335,16 @@ type VisualSelection =
         let virtualCaretPoint = x.GetCaretVirtualPoint selectionKind
         virtualCaretPoint.Position
 
+    /// Get the primary selected span for the visual selection
+    member x.GetPrimarySelectedSpan selectionKind =
+        let caretPoint =
+            x.GetCaretVirtualPoint selectionKind
+        let span =
+            x.VisualSpan.Spans
+            |> Seq.head
+            |> VirtualSnapshotSpanUtil.OfSpan
+        SelectedSpan(caretPoint, span)
+
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =
         let path =
