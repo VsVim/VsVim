@@ -1006,6 +1006,7 @@ type internal InsertMode
                 Some true
             else
                 None
+
         match handled with
         | Some handled -> 
             if handled then 
@@ -1016,7 +1017,7 @@ type internal InsertMode
             // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
             wordCompletionSession.Commit()
-            _sessionData <- { _sessionData with ActiveEditItem = ActiveEditItem.None }
+            x.CancelWordCompletionSession()
             x.ProcessCore keyInput
 
     /// Start a paste session in insert mode
