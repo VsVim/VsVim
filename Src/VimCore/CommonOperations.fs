@@ -2478,16 +2478,16 @@ type internal CommonOperations
         | _ ->
             ()
 
+    /// Map the specified point to the current snapshot
+    member x.MapVirtualPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
+        point.Position
+        |> x.MapPointNegativeToCurrentSnapshot
+        |> VirtualSnapshotPointUtil.OfPoint
+
     /// Map the specified span to the current snapshot
-    member x.MapSpanToCurrentSnapshot (span: VirtualSnapshotSpan) =
-        let startPoint =
-            span.Start.Position
-            |> x.MapPointNegativeToCurrentSnapshot
-            |> VirtualSnapshotPointUtil.OfPoint
-        let endPoint =
-            span.End.Position
-            |> x.MapPointNegativeToCurrentSnapshot
-            |> VirtualSnapshotPointUtil.OfPoint
+    member x.MapVirtualSpanToCurrentSnapshot (span: VirtualSnapshotSpan) =
+        let startPoint = x.MapVirtualPointToCurrentSnapshot span.Start
+        let endPoint = x.MapVirtualPointToCurrentSnapshot span.End
         VirtualSnapshotSpan(startPoint, endPoint)
 
     /// Get any linked transaction from the specified command result.
@@ -2520,7 +2520,7 @@ type internal CommonOperations
             result
 
     /// Run the action and complete any embedded linked transaction
-    member x.RunActionAndCloseTransaction action =
+    member x.RunActionAndCompleteTransaction action =
         let result = action()
         match x.GetLinkedTransaction result with
         | Some linkedTransaction ->
@@ -2529,7 +2529,7 @@ type internal CommonOperations
             ()
         result
 
-/// Run the specified action for all carets
+    /// Run the specified action for all carets
     member x.RunForAllCarets action =
 
         // Get the virtual carets from the host.
@@ -2554,13 +2554,13 @@ type internal CommonOperations
                     for caretPoint in caretPoints do
 
                         // Temporarily move the real caret.
-                        caretPoint.Position
-                        |> x.MapPointNegativeToCurrentSnapshot
+                        caretPoint
+                        |> x.MapVirtualPointToCurrentSnapshot
                         |> (fun point -> _textView.Caret.MoveTo(point))
                         |> ignore
 
                         // Run the action once.
-                        let result = x.RunActionAndCloseTransaction action
+                        let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
                         yield result, x.CaretPoint
@@ -2602,12 +2602,13 @@ type internal CommonOperations
                 seq {
                     for selectedSpan in selectedSpans do
 
-                        // Temporarily set the real selection.
-                        let span = x.MapSpanToCurrentSnapshot selectedSpan
+                        // Temporarily set the real caret and selection.
+                        let span = x.MapVirtualSpanToCurrentSnapshot selectedSpan
+                        _textView.Caret.MoveTo(span.End) |> ignore
                         _textView.Selection.Select(span.Start, span.End)
 
                         // Run the action once.
-                        let result = x.RunActionAndCloseTransaction action
+                        let result = x.RunActionAndCompleteTransaction action
 
                         // Collect the command result and new caret point.
                         yield result, _textView.Selection.StreamSelectionSpan
@@ -2617,7 +2618,7 @@ type internal CommonOperations
             // Extract the resulting selected spans and set them.
             results
             |> Seq.map (fun (_, point) -> point)
-            |> Seq.map x.MapSpanToCurrentSnapshot
+            |> Seq.map x.MapVirtualSpanToCurrentSnapshot
             |> (fun spans -> x.SelectedSpans <- spans)
 
             // Extract the first command result.

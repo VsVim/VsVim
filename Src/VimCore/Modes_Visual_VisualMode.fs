@@ -110,6 +110,7 @@ type internal VisualMode
                 yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken false)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+                yield ("<A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
                 yield ("<A-2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken true)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

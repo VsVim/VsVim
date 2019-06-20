@@ -124,6 +124,17 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
+        let oldSelectedSpans = _commonOperations.SelectedSpans |> Seq.toList
+        let result =
+            fun () ->
+                x.ProcessCaretMovementCore caretMovement keyInput
+                |> ProcessResult.ToCommandResult
+            |> _commonOperations.RunForAllSelections
+            |> ProcessResult.OfCommandResult
+        let newSelectedSpans = _commonOperations.SelectedSpans |> Seq.toList
+        result
+
+    member x.ProcessCaretMovementCore caretMovement keyInput =
         let shouldStopSelection = x.ShouldStopSelection keyInput
         let isInclusive = _globalSettings.IsSelectionInclusive
         let shouldMimicNative = shouldStopSelection && not isInclusive
@@ -146,13 +157,14 @@ type internal SelectMode
             leaveSelectWithCaretAtPoint _textView.Selection.End
 
         else
+            let anchorPoint = _textView.Selection.AnchorPoint
             _textView.Selection.Clear()
             _commonOperations.MoveCaretWithArrow caretMovement |> ignore
             if shouldStopSelection then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
                 // The caret moved so we need to update the selection 
-                _selectionTracker.UpdateSelection()
+                _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
                 ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Overwrite the selection with the specified text
