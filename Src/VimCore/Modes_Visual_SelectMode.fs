@@ -124,15 +124,11 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
-        let oldSelectedSpans = _commonOperations.SelectedSpans |> Seq.toList
-        let result =
-            fun () ->
-                x.ProcessCaretMovementCore caretMovement keyInput
-                |> ProcessResult.ToCommandResult
-            |> _commonOperations.RunForAllSelections
-            |> ProcessResult.OfCommandResult
-        let newSelectedSpans = _commonOperations.SelectedSpans |> Seq.toList
-        result
+        fun () ->
+            x.ProcessCaretMovementCore caretMovement keyInput
+            |> ProcessResult.ToCommandResult
+        |> _commonOperations.RunForAllSelections
+        |> ProcessResult.OfCommandResult
 
     member x.ProcessCaretMovementCore caretMovement keyInput =
         let shouldStopSelection = x.ShouldStopSelection keyInput
