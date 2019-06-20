@@ -12,7 +12,6 @@ open System
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
 open StringBuilderExtensions
-open System.Collections.Generic
 
 module internal CommonUtil = 
 
@@ -2448,12 +2447,12 @@ type internal CommonOperations
     member x.AddCaretOnAdjacentLine direction =
 
         // Get the primary caret and sorted caret points.
-        let caretPoints = x.CaretPoints |> GenericListUtil.OfSeq
-        let primaryCaretPoint = caretPoints.[0]
+        let caretPoints = x.CaretPoints |> Seq.toList
+        let primaryCaretPoint = caretPoints.Head
         let caretPoints =
             caretPoints
             |> Seq.sortBy (fun point -> point.Position.Position)
-            |> GenericListUtil.OfSeq
+            |> Seq.toList
 
         // Add a caret on the specified line number in the same column as the
         // primary caret.
@@ -2474,7 +2473,7 @@ type internal CommonOperations
                 addCaretOnLineNumber (firstLine.LineNumber - 1)
         | Direction.Down ->
             let lastLine =
-                caretPoints.[caretPoints.Count - 1]
+                caretPoints.[caretPoints.Length - 1]
                 |> VirtualSnapshotPointUtil.GetContainingLine
             let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber lastLine.Snapshot
             if lastLine.LineNumber < lastLineNumber then

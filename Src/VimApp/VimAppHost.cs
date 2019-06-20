@@ -357,7 +357,7 @@ namespace VimApp
         public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             SetSelectedSpansCommon(textView, selectedSpans.ToArray());
-            RaiseCaretPointsSet();
+            RaiseSelectedSpansSet();
         }
 
         private IEnumerable<SelectedSpan> GetSelectedSpansCommon(ITextView textView)

@@ -20,7 +20,7 @@ namespace Vim.UnitTest.Mock
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler _caretPointsSet;
+        private event EventHandler _selectedSpansSet;
 #pragma warning restore 67
 
         public bool AutoSynchronizeSettings { get; set; }
@@ -372,10 +372,10 @@ namespace Vim.UnitTest.Mock
             remove { _beforeSave -= value; }
         }
 
-        event EventHandler IVimHost.CaretPointsSet
+        event EventHandler IVimHost.SelectedSpansSet
         {
-            add { _caretPointsSet += value; }
-            remove { _caretPointsSet -= value; }
+            add { _selectedSpansSet += value; }
+            remove { _selectedSpansSet -= value; }
         }
 
         void IVimHost.BeginBulkOperation()

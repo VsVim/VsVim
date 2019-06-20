@@ -83,8 +83,8 @@
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
-    <Compile Include="MultiCaretTracker.fsi" />
-    <Compile Include="MultiCaretTracker.fs" />
+    <Compile Include="MultiSelectionTracker.fsi" />
+    <Compile Include="MultiSelectionTracker.fs" />
     <Compile Include="FoldManager.fsi" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="ModeLineInterpreter.fsi" />

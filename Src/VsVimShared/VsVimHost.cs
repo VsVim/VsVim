@@ -1503,7 +1503,7 @@ namespace Vim.VisualStudio
         public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
             _sharedService.SetSelectedSpans(textView, selectedSpans);
-            RaiseCaretPointsSet();
+            RaiseSelectedSpansSet();
         }
 
         #endregion

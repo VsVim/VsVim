@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler _caretPointsSet;
+        private event EventHandler _selectedSpansSet;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -494,7 +494,7 @@ namespace Vim.UI.Wpf
             {
                 textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
             }
-            RaiseCaretPointsSet();
+            RaiseSelectedSpansSet();
         }
 
         /// <summary>
@@ -533,11 +533,11 @@ namespace Vim.UI.Wpf
             }
         }
 
-        protected void RaiseCaretPointsSet()
+        protected void RaiseSelectedSpansSet()
         {
-            if (_caretPointsSet != null)
+            if (_selectedSpansSet != null)
             {
-                _caretPointsSet(this, EventArgs.Empty);
+                _selectedSpansSet(this, EventArgs.Empty);
             }
         }
 
@@ -952,10 +952,10 @@ namespace Vim.UI.Wpf
             remove { _beforeSave -= value; }
         }
 
-        event EventHandler IVimHost.CaretPointsSet
+        event EventHandler IVimHost.SelectedSpansSet
         {
-            add { _caretPointsSet += value; }
-            remove { _caretPointsSet -= value; }
+            add { _selectedSpansSet += value; }
+            remove { _selectedSpansSet -= value; }
         }
 
         #endregion
