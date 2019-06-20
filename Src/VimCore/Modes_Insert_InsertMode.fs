@@ -17,7 +17,7 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
-    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; ]
+    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
 
     /// The set of KeyInput value that should commit a session
     static member CommitKeyInput = _commitKeyInput
