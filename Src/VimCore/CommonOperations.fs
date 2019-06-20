@@ -2483,17 +2483,17 @@ type internal CommonOperations
         | _ ->
             ()
 
-    /// Map the specified point to the current snapshot
-    member x.MapVirtualPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
+    /// Map the specified caret point to the current snapshot
+    member x.MapCaretPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
         point.Position
         |> x.MapPointNegativeToCurrentSnapshot
         |> VirtualSnapshotPointUtil.OfPoint
 
-    /// Map the specified span to the current snapshot
+    /// Map the specified selected span to the current snapshot
     member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
-        let caretPoint = x.MapVirtualPointToCurrentSnapshot span.CaretPoint
-        let startPoint = x.MapVirtualPointToCurrentSnapshot span.StartPoint
-        let endPoint = x.MapVirtualPointToCurrentSnapshot span.EndPoint
+        let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
+        let startPoint = x.MapCaretPointToCurrentSnapshot span.StartPoint
+        let endPoint = x.MapCaretPointToCurrentSnapshot span.EndPoint
         SelectedSpan(caretPoint, startPoint, endPoint)
 
     /// Get any linked transaction from the specified command result.
@@ -2560,7 +2560,7 @@ type internal CommonOperations
                     for caretPoint in caretPoints do
 
                         // Temporarily move the real caret.
-                        let point = x.MapVirtualPointToCurrentSnapshot caretPoint
+                        let point = x.MapCaretPointToCurrentSnapshot caretPoint
                         x.SetCaretPoints [point]
 
                         // Run the action once.
@@ -2575,7 +2575,7 @@ type internal CommonOperations
             // Extract the resulting caret points and set them.
             results
             |> Seq.map (fun (_, point) -> point)
-            |> Seq.map x.MapVirtualPointToCurrentSnapshot
+            |> Seq.map x.MapCaretPointToCurrentSnapshot
             |> x.SetCaretPoints
 
             // Extract the first command result.
