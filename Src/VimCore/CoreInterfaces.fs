@@ -4962,9 +4962,9 @@ type IVimHost =
     [<CLIEvent>]
     abstract BeforeSave: IDelegateEvent<System.EventHandler<BeforeSaveEventArgs>>
 
-    /// Raised when the selected spans are set
+    /// Raised when the selected spans are changed
     [<CLIEvent>]
-    abstract SelectedSpansSet: IDelegateEvent<System.EventHandler>
+    abstract SelectedSpansChanged: IDelegateEvent<System.EventHandler>
 
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.

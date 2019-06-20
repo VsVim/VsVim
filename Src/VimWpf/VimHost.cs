@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler _selectedSpansSet;
+        private event EventHandler _selectedSpansChanged;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -494,7 +494,6 @@ namespace Vim.UI.Wpf
             {
                 textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
             }
-            RaiseSelectedSpansSet();
         }
 
         /// <summary>
@@ -533,11 +532,11 @@ namespace Vim.UI.Wpf
             }
         }
 
-        protected void RaiseSelectedSpansSet()
+        protected void RaiseSelectedSpansChanged()
         {
-            if (_selectedSpansSet != null)
+            if (_selectedSpansChanged != null)
             {
-                _selectedSpansSet(this, EventArgs.Empty);
+                _selectedSpansChanged(this, EventArgs.Empty);
             }
         }
 
@@ -952,10 +951,10 @@ namespace Vim.UI.Wpf
             remove { _beforeSave -= value; }
         }
 
-        event EventHandler IVimHost.SelectedSpansSet
+        event EventHandler IVimHost.SelectedSpansChanged
         {
-            add { _selectedSpansSet += value; }
-            remove { _selectedSpansSet -= value; }
+            add { _selectedSpansChanged += value; }
+            remove { _selectedSpansChanged -= value; }
         }
 
         #endregion

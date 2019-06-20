@@ -65,6 +65,8 @@ type internal CommonOperations
     let _eventHandlers = new DisposableBag()
     let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
+    let _selectedSpansSetEvent = StandardEvent<EventArgs>()
+
     do
         _textView.Caret.PositionChanged
         |> Observable.subscribe (fun _ -> this.MaintainCaretColumn <- MaintainCaretColumn.None)
@@ -163,14 +165,14 @@ type internal CommonOperations
 
     /// The current caret points
     member x.CaretPoints =
-        _vimHost.GetSelectedSpans _textView
-        |> Seq.map (fun span -> span.CaretPoint)
+        x.SelectedSpans
+        |> Seq.map (fun (span: SelectedSpan) -> span.CaretPoint)
 
     /// Set the current caret points
     member x.SetCaretPoints points =
         points
         |> Seq.map (fun point -> SelectedSpan(point))
-        |> _vimHost.SetSelectedSpans _textView
+        |> x.SetSelectedSpans
 
     /// The current virtual caret points
     member x.SelectedSpans =
@@ -179,6 +181,7 @@ type internal CommonOperations
     /// Set the current virtual caret points
     member x.SetSelectedSpans spans =
         _vimHost.SetSelectedSpans _textView spans
+        _selectedSpansSetEvent.Trigger x EventArgs.Empty
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
@@ -2721,6 +2724,9 @@ type internal CommonOperations
         member x.MapPointNegativeToCurrentSnapshot point = x.MapPointNegativeToCurrentSnapshot point
         member x.MapPointPositiveToCurrentSnapshot point = x.MapPointPositiveToCurrentSnapshot point
         member x.Undo count = x.Undo count
+
+        [<CLIEvent>]
+        member x.SelectedSpansSet = _selectedSpansSetEvent.Publish
 
 [<Export(typeof<ICommonOperationsFactory>)>]
 type CommonOperationsFactory

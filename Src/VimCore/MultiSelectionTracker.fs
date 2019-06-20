@@ -13,13 +13,12 @@ type internal MultiSelectionTracker
 
     let _globalSettings = _vimBuffer.GlobalSettings
     let _textView = _vimBuffer.TextView
-    let _vimHost = _vimBuffer.Vim.VimHost
     let _bag = DisposableBag()
 
     let mutable _oldSelectedSpans: SelectedSpan array = [||]
 
     do
-        _vimHost.SelectedSpansSet
+        _commonOperations.SelectedSpansSet
         |> Observable.subscribe (fun _ -> this.OnSelectedSpansSet())
         |> _bag.Add
 
@@ -44,7 +43,7 @@ type internal MultiSelectionTracker
         with get () =  _oldSelectedSpans
         and set value = _oldSelectedSpans <- value
 
-    /// Raised when the selected spans are set by the host
+    /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
         x.OldSelectedSpans <- x.GetSelectedSpans()
 

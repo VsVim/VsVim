@@ -597,6 +597,10 @@ type ICommonOperations =
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
 
+    /// Raised when the selected spans are set
+    [<CLIEvent>]
+    abstract SelectedSpansSet: IDelegateEvent<System.EventHandler<System.EventArgs>>
+
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
 
