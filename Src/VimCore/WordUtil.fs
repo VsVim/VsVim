@@ -35,8 +35,24 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
         if CharUtil.IsWhiteSpace c then None
         else x.GetWordPredicateNonWhitespace wordKind c |> Some
 
+    member x.GetFullWordSpanInText wordKind (text: string) index =
+        match x.GetWordPredicate wordKind text.[index] with
+        | Some predicate -> x.GetFullWordSpanCore text index predicate |> Some
+        | None -> None
+
+    member private x.GetFullWordSpanCore (text: string) index predicate =
+        Debug.Assert(not (CharUtil.IsWhiteSpace text.[index]))
+        let mutable startIndex = index
+        let mutable index = index
+        while startIndex > 0 && predicate text.[startIndex - 1] do
+            startIndex <- startIndex - 1
+        while index < text.Length && predicate text.[index] do
+            index <- index + 1
+        Span.FromBounds(startIndex, index)
+
     /// Get the word spans on the text in the given direction
     member x.GetWordSpansInText wordKind path (text: string) =
+
         // Build up a sequence to get the words in the line
         let wordsForward = 
             0
@@ -45,7 +61,7 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
                 // the word
                 let rec getWord index = 
                     if index < text.Length then
-                        let lineBreakLength = EditUtil.GetLineBreakLength text index
+                        let lineBreakLength = EditUtil.GetLineBreakLengthAtIndex text index
                         if lineBreakLength = 0 then
                             match x.GetWordPredicate wordKind text.[index] with
                             | Some predicate -> 
@@ -56,7 +72,7 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
                             | None -> 
                                 // Go to the next index
                                 getWord (index + 1)
-                        elif index > 0 && EditUtil.IsInsideLineBreak text (index - 1) then
+                        elif index > 0 && EditUtil.IsInsideLineBreakAtIndex text (index - 1) then
                             // Empty line is a word
                             let endIndex = index + lineBreakLength
                             Some (Span.FromBounds(index, endIndex), endIndex)
@@ -70,22 +86,6 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
         match path with
         | SearchPath.Forward -> wordsForward
         | SearchPath.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
-
-    member private x.GetFullWordSpanCore (text: string) index predicate =
-        Debug.Assert(not (CharUtil.IsWhiteSpace text.[index]))
-        let mutable startIndex = index
-        let mutable index = index
-        while startIndex > 0 && predicate text.[startIndex - 1] do
-            startIndex <- startIndex - 1
-        while index < text.Length && predicate text.[index] do
-            index <- index + 1
-        let span = Span.FromBounds(startIndex, index)
-        span
-
-    member x.GetFullWordSpanInText wordKind (text: string) index =
-        match x.GetWordPredicate wordKind text.[index] with
-        | Some predicate -> x.GetFullWordSpanCore text index predicate |> Some
-        | None -> None
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
@@ -185,8 +185,7 @@ type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as th
         |> Observable.add (fun e ->
             if e.Setting.Name = LocalSettingNames.IsKeywordName then
                 _snapshotWordUtil <- SnapshotWordUtil(_localSettings.IsKeywordCharSet)
-                createNavigators()
-        )
+                createNavigators())
 
         createNavigators()
 

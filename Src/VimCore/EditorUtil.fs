@@ -3465,7 +3465,7 @@ module EditUtil =
             "\t"
 
     /// Get the length of the line break at the given index 
-    let GetLineBreakLength (str: string) index =
+    let GetLineBreakLengthAtIndex (str: string) index =
         match str.Chars(index) with
         | '\r' ->
             if index + 1 < str.Length && '\n' = str.Chars(index + 1) then
@@ -3482,7 +3482,7 @@ module EditUtil =
             if c = char 0x85 then 1
             else 0
 
-    let IsInsideLineBreak (str: string) index = GetLineBreakLength str index > 0
+    let IsInsideLineBreakAtIndex (str: string) index = GetLineBreakLengthAtIndex str index > 0
 
     /// Get the length of the line break at the end of the string
     let GetLineBreakLengthAtEnd (str: string) =
@@ -3493,7 +3493,7 @@ module EditUtil =
             if str.Length > 1 && str.Chars(index - 1) = '\r' && str.Chars(index) = '\n' then
                 2
             else
-                GetLineBreakLength str index
+                GetLineBreakLengthAtIndex str index
 
     /// Get the count of new lines in the string
     let GetLineBreakCount (str: string) =
@@ -3501,7 +3501,7 @@ module EditUtil =
             if index >= str.Length then
                 count
             else
-                let length = GetLineBreakLength str index 
+                let length = GetLineBreakLengthAtIndex str index 
                 if length > 0 then
                     inner (index + length) (count + 1)
                 else
@@ -3522,7 +3522,7 @@ module EditUtil =
     /// Does this text have a new line character inside of it?
     let HasNewLine (text: string) = 
         { 0 .. (text.Length - 1) }
-        |> SeqUtil.any (fun index -> GetLineBreakLength text index > 0)
+        |> SeqUtil.any (fun index -> GetLineBreakLengthAtIndex text index > 0)
 
     /// Remove the NewLine at the beginning of the string.  Returns the original input
     /// if no newline is found
@@ -3530,7 +3530,7 @@ module EditUtil =
         if System.String.IsNullOrEmpty value then
             value
         else
-            let length = GetLineBreakLength value 0
+            let length = GetLineBreakLengthAtIndex value 0
             if 0 = length then
                 value
             else
@@ -3555,7 +3555,7 @@ module EditUtil =
             if index >= text.Length then
                 builder.ToString()
             else
-                let length = GetLineBreakLength text index
+                let length = GetLineBreakLengthAtIndex text index
                 if 0 = length then
                     builder.AppendChar text.[index]
                     inner (index + 1)
@@ -3603,7 +3603,7 @@ type TextLine = {
             if index >= fullText.Length then
                 None
             else
-                let length = EditUtil.GetLineBreakLength fullText index
+                let length = EditUtil.GetLineBreakLengthAtIndex fullText index
                 if length = 0 then
                     getNextNewLine (index + 1)
                 else
