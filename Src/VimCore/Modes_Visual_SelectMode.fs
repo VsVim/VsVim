@@ -124,19 +124,20 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
+        let shouldStopSelection = x.ShouldStopSelection keyInput
 
         let leaveSelectWithCaretAtPoint caretPoint =
             _textView.Selection.Clear()
             _commonOperations.MoveCaretToVirtualPoint caretPoint ViewFlags.Standard
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
 
-        if keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Left then
+        if shouldStopSelection && caretMovement = CaretMovement.Left then
 
             // Typing plain left in select mode leaves the caret at the
             // selection start point.
             leaveSelectWithCaretAtPoint _textView.Selection.Start
 
-        elif keyInput = KeyInputUtil.VimKeyToKeyInput VimKey.Right then
+        elif shouldStopSelection && caretMovement = CaretMovement.Right then
 
             // Typing plain right in select mode leaves the caret at the
             // selection end point.
@@ -145,7 +146,7 @@ type internal SelectMode
         else
             _textView.Selection.Clear()
             _commonOperations.MoveCaretWithArrow caretMovement |> ignore
-            if x.ShouldStopSelection keyInput then
+            if shouldStopSelection then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
                 // The caret moved so we need to update the selection 
