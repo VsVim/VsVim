@@ -86,7 +86,10 @@ type SelectedSpan =
     member x.Length = x._span.Length
 
     override x.ToString() =
-        System.String.Format("{0}:{1}}", x._caretPoint, x._span)
+        System.String.Format("{0}: [{1}-{2})",
+            x._caretPoint.Position.Position,
+            x._span.Start.Position.Position,
+            x._span.End.Position.Position)
 
 type NavigationKind =
     | First = 0

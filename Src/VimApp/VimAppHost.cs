@@ -375,7 +375,11 @@ namespace VimApp
             {
                 var selectedSpan = selectedSpans[0];
                 textView.Caret.MoveTo(selectedSpan.CaretPoint);
-                if (selectedSpan.Length != 0)
+                if (selectedSpan.Length == 0)
+                {
+                    textView.Selection.Clear();
+                }
+                else
                 {
                     textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
                 }
