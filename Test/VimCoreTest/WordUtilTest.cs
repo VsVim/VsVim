@@ -136,6 +136,9 @@ namespace Vim.UnitTest
             [InlineData("tree_123", 0, "tree_123")]
             [InlineData("tree_123", 1, "tree_123")]
             [InlineData("tree_123", 4, "tree_123")]
+            [InlineData("\n\n", 1, "\n")]
+            [InlineData("\r\n\r\n", 2, "\r\n")]
+            [InlineData("\r\n\r\n", 3, "\r\n")]
             public void GetFullWordSpan_Normal(string text, int index, string expected)
             {
                 AssertFullWord(WordKind.NormalWord, text, index, expected);

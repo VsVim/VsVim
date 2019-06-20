@@ -3484,6 +3484,14 @@ module EditUtil =
 
     let IsInsideLineBreakAtIndex (str: string) index = GetLineBreakLengthAtIndex str index > 0
 
+    let GetFullLineBreakSpanAtIndex (str: string) index =
+        if str.Chars(index) = '\n' && index > 0 && str.Chars(index - 1) = '\r' then
+            Some (Span(index - 1, 2))
+        else
+            let length = GetLineBreakLengthAtIndex str index
+            if length = 0 then None
+            else Some (Span(index, length))
+
     /// Get the length of the line break at the end of the string
     let GetLineBreakLengthAtEnd (str: string) =
         if System.String.IsNullOrEmpty str then 

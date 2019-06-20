@@ -21,71 +21,55 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
         | WordKind.BigWord -> x.IsBigWordChar c
         | WordKind.NormalWord -> x.IsNormalWordChar c 
 
-    /// Get the word predicate given the current char and word wordKind. The returned predicate 
-    /// will match all valid characters in the word based on the initial char. 
-    member x.GetWordPredicateNonWhitespace wordKind c =
-        Debug.Assert(not (CharUtil.IsWhiteSpace c))
-        match wordKind with
-        | WordKind.NormalWord -> 
-            if x.IsNormalWordChar c then x.IsNormalWordChar
-            else x.IsBigWordOnlyChar
-        | WordKind.BigWord -> x.IsBigWordChar
-
-    member x.GetWordPredicate wordKind c =
-        if CharUtil.IsWhiteSpace c then None
-        else x.GetWordPredicateNonWhitespace wordKind c |> Some
-
     member x.GetFullWordSpanInText wordKind (text: string) index =
-        match x.GetWordPredicate wordKind text.[index] with
-        | Some predicate -> x.GetFullWordSpanCore text index predicate |> Some
-        | None -> None
-
-    member private x.GetFullWordSpanCore (text: string) index predicate =
-        Debug.Assert(not (CharUtil.IsWhiteSpace text.[index]))
-        let mutable startIndex = index
-        let mutable index = index
-        while startIndex > 0 && predicate text.[startIndex - 1] do
-            startIndex <- startIndex - 1
-        while index < text.Length && predicate text.[index] do
-            index <- index + 1
-        Span.FromBounds(startIndex, index)
+        match EditUtil.GetFullLineBreakSpanAtIndex text index with
+        | Some span ->
+            if span.Start > 0 && Option.isSome (EditUtil.GetFullLineBreakSpanAtIndex text (span.Start - 1)) then Some span
+            else None
+        | None -> 
+            let c = text.[index]
+            if CharUtil.IsWhiteSpace c then
+                None
+            else
+                let predicate = 
+                    match wordKind with
+                    | WordKind.NormalWord -> 
+                        if x.IsNormalWordChar c then x.IsNormalWordChar
+                        else x.IsBigWordOnlyChar
+                    | WordKind.BigWord -> x.IsBigWordChar
+                let mutable startIndex = index
+                let mutable index = index
+                while startIndex > 0 && predicate text.[startIndex - 1] do
+                    startIndex <- startIndex - 1
+                while index < text.Length && predicate text.[index] do
+                    index <- index + 1
+                Some (Span.FromBounds(startIndex, index))
 
     /// Get the word spans on the text in the given direction
-    member x.GetWordSpansInText wordKind path (text: string) =
-
-        // Build up a sequence to get the words in the line
-        let wordsForward = 
+    member x.GetWordSpansInText wordKind searchPath (text: string) =
+        match searchPath with 
+        | SearchPath.Forward ->
             0
             |> Seq.unfold (fun index ->
-                // Get the start index of the word and the predicate to keep matching
-                // the word
-                let rec getWord index = 
-                    if index < text.Length then
-                        let lineBreakLength = EditUtil.GetLineBreakLengthAtIndex text index
-                        if lineBreakLength = 0 then
-                            match x.GetWordPredicate wordKind text.[index] with
-                            | Some predicate -> 
-                                let mutable endIndex = index + 1
-                                while endIndex < text.Length && predicate text.[endIndex] do
-                                    endIndex <- endIndex + 1
-                                Some (Span.FromBounds(index, endIndex), endIndex)
-                            | None -> 
-                                // Go to the next index
-                                getWord (index + 1)
-                        elif index > 0 && EditUtil.IsInsideLineBreakAtIndex text (index - 1) then
-                            // Empty line is a word
-                            let endIndex = index + lineBreakLength
-                            Some (Span.FromBounds(index, endIndex), endIndex)
-                        else
-                            getWord (index + lineBreakLength)
-                    else
-                        None
-                getWord index)
-
-        // Now return the actual sequence 
-        match path with
-        | SearchPath.Forward -> wordsForward
-        | SearchPath.Backward -> wordsForward |> List.ofSeq |> List.rev |> Seq.ofList
+                let mutable index = index
+                let mutable span: Span Option = None
+                while index < text.Length && Option.isNone span do
+                    span <- x.GetFullWordSpanInText wordKind text index
+                    index <- index + 1
+                match span with 
+                | Some span -> Some (span, span.End)
+                | None -> None)
+        | SearchPath.Backward ->
+            text.Length - 1
+            |> Seq.unfold (fun index ->
+                let mutable index = index
+                let mutable span: Span Option = None
+                while index >= 0 && Option.isNone span do
+                    span <- x.GetFullWordSpanInText wordKind text index
+                    index <- index - 1
+                match span with 
+                | Some span -> Some (span, span.Start - 1)
+                | None -> None)
 
     /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
     /// in the middle of a word the span of the entire word will be returned
