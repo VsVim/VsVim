@@ -2478,40 +2478,75 @@ type internal CommonOperations
         | _ ->
             ()
 
-    /// Run the specified action for all carets
-    member x.RunForAllCarets action =
+    /// Map the specified span to the current snapshot
+    member x.MapSpanToCurrentSnapshot (span: VirtualSnapshotSpan) =
+        let startPoint =
+            span.Start.Position
+            |> x.MapPointNegativeToCurrentSnapshot
+            |> VirtualSnapshotPointUtil.OfPoint
+        let endPoint =
+            span.End.Position
+            |> x.MapPointNegativeToCurrentSnapshot
+            |> VirtualSnapshotPointUtil.OfPoint
+        VirtualSnapshotSpan(startPoint, endPoint)
 
-        /// Get any linked transaction from the specified command result.
-        let getLinkedTransaction result =
-            match result with
-            | CommandResult.Completed modeSwitch ->
-                match modeSwitch with
-                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                    match modeArgument with
-                    | ModeArgument.InsertWithTransaction linkedTransaction ->
-                        Some linkedTransaction
-                    | _ ->
-                        None
+    /// Get any linked transaction from the specified command result.
+    member x.GetLinkedTransaction result =
+        match result with
+        | CommandResult.Completed modeSwitch ->
+            match modeSwitch with
+            | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                match modeArgument with
+                | ModeArgument.InsertWithTransaction linkedTransaction ->
+                    Some linkedTransaction
                 | _ ->
                     None
             | _ ->
                 None
+        | _ ->
+            None
+
+    /// If the command result ended with a linked transaction, use the overall
+    /// linked transaction instead
+    member x.HandleCommandResult transaction result =
+        match x.GetLinkedTransaction result with
+        | Some _ ->
+            let modeArgument = ModeArgument.InsertWithTransaction transaction
+            (ModeKind.Insert, modeArgument)
+            |> ModeSwitch.SwitchModeWithArgument
+            |> CommandResult.Completed
+        | None ->
+            transaction.Complete()
+            result
+
+    /// Run the action and complete any embedded linked transaction
+    member x.RunActionAndCloseTransaction action =
+        let result = action()
+        match x.GetLinkedTransaction result with
+        | Some linkedTransaction ->
+            linkedTransaction.Complete()
+        | None ->
+            ()
+        result
+
+/// Run the specified action for all carets
+    member x.RunForAllCarets action =
 
         // Get the virtual carets from the host.
-        let caretPoints = x.CaretPoints |> GenericListUtil.OfSeq
-        if caretPoints.Count = 1 then
+        let caretPoints = x.CaretPoints |> Seq.toList
+        if caretPoints.Length = 1 then
 
-            // In the normal case, perform the action once.
+            // Just one caret so perform the action once.
             action()
 
         else
 
-            // Create a linked transaction for all carets.
+            // Create a linked transaction for the operation.
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             let transaction
                 = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
 
-            // Run the action for all carets.
+            // Run the action for each caret point.
             let results =
                 seq {
 
@@ -2524,21 +2559,15 @@ type internal CommonOperations
                         |> (fun point -> _textView.Caret.MoveTo(point))
                         |> ignore
 
-                        // Run the action once and complete any embedded linked
-                        // transaction.
-                        let result = action()
-                        match getLinkedTransaction result with
-                        | Some linkedTransaction ->
-                            linkedTransaction.Complete()
-                        | None ->
-                            ()
+                        // Run the action once.
+                        let result = x.RunActionAndCloseTransaction action
 
                         // Collect the command result and new caret point.
                         yield result, x.CaretPoint
                 }
                 |> Seq.toList
 
-            // Extract the resulting new caret points and set them.
+            // Extract the resulting caret points and set them.
             results
             |> Seq.map (fun (_, point) -> point)
             |> Seq.map x.MapPointNegativeToCurrentSnapshot
@@ -2551,16 +2580,53 @@ type internal CommonOperations
                 |> Seq.map (fun (result, _) -> result)
                 |> Seq.head
 
-            // If the command result ended with a linked transaction,
-            // use the overall linked transaction instead.
-            match getLinkedTransaction result with
-            | Some _ ->
-                let modeArgument = ModeArgument.InsertWithTransaction transaction
-                ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, modeArgument)
-                |> CommandResult.Completed
-            | None ->
-                transaction.Complete()
-                result
+            x.HandleCommandResult transaction result
+
+    /// Run the specified action for all selections
+    member x.RunForAllSelections action =
+        let selectedSpans = x.SelectedSpans |> Seq.toList
+        if selectedSpans.Length = 1 then
+
+            // Just one selection so perform the action once.
+            action()
+
+        else
+
+            // Create a linked transaction for the operation.
+            let flags = LinkedUndoTransactionFlags.CanBeEmpty
+            let transaction
+                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
+
+            // Run the action for each selected span.
+            let results =
+                seq {
+                    for selectedSpan in selectedSpans do
+
+                        // Temporarily set the real selection.
+                        let span = x.MapSpanToCurrentSnapshot selectedSpan
+                        _textView.Selection.Select(span.Start, span.End)
+
+                        // Run the action once.
+                        let result = x.RunActionAndCloseTransaction action
+
+                        // Collect the command result and new caret point.
+                        yield result, _textView.Selection.StreamSelectionSpan
+                }
+                |> Seq.toList
+
+            // Extract the resulting selected spans and set them.
+            results
+            |> Seq.map (fun (_, point) -> point)
+            |> Seq.map x.MapSpanToCurrentSnapshot
+            |> (fun spans -> x.SelectedSpans <- spans)
+
+            // Extract the first command result.
+            let result =
+                results
+                |> Seq.map (fun (result, _) -> result)
+                |> Seq.head
+
+            x.HandleCommandResult transaction result
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
@@ -2639,6 +2705,7 @@ type internal CommonOperations
         member x.Redo count = x.Redo count
         member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.RunForAllCarets action = x.RunForAllCarets action
+        member x.RunForAllSelections action = x.RunForAllSelections action
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier

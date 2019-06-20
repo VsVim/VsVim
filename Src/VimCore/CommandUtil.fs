@@ -1613,7 +1613,8 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Invert the current selection
-    member x.InvertSelection (visualSpan: VisualSpan) (streamSelectionSpan: VirtualSnapshotSpan) columnOnlyInBlock =
+    member x.InvertSelection (visualSpan: VisualSpan) columnOnlyInBlock =
+        let streamSelectionSpan = _textView.Selection.StreamSelectionSpan
 
         // Do the selection change with the new values.  The only elements that must be correct
         // are the anchor point and caret position.  The selection tracker will be responsible
@@ -2950,7 +2951,7 @@ type internal CommandUtil
         _insertUtil.RunInsertCommand command
 
     /// Whether we should run the specified command for all carets
-    member x.ShouldRunForEachCaret command =
+    member x.ShouldRunNormalCommandForEachCaret command =
         match command with
         | NormalCommand.AddToWord -> true
         | NormalCommand.ChangeMotion _ -> true
@@ -2991,7 +2992,7 @@ type internal CommandUtil
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command data =
-        if x.ShouldRunForEachCaret command then
+        if x.ShouldRunNormalCommandForEachCaret command then
             fun () -> x.RunNormalCommandCore command data
             |> _commonOperations.RunForAllCarets
         else
@@ -3115,20 +3116,57 @@ type internal CommandUtil
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion registerName)
         | NormalCommand.YankLines -> x.YankLines count registerName
 
-    /// Run a VisualCommand against the buffer
-    member x.RunVisualCommand command (data: CommandData) (visualSpan: VisualSpan) =
-
-        let streamSelectionSpan = _textView.Selection.StreamSelectionSpan
-
+    member x.ShouldRunVisualCommandForEachCaret command =
         match command with
-        | VisualCommand.AddCaretAtMousePoint -> ()
-        | VisualCommand.SelectWordOrMatchingToken _ -> ()
-        | _ ->
+        | VisualCommand.AddToSelection _ -> true
+        | VisualCommand.ChangeCase _ -> true
+        | VisualCommand.DeleteSelection -> true
+        | VisualCommand.MoveCaretToTextObject _-> true
+        | VisualCommand.PutOverSelection _ -> true
+        | VisualCommand.ReplaceSelection _ -> true
+        | VisualCommand.SelectLine -> true
+        | VisualCommand.ShiftLinesLeft -> true
+        | VisualCommand.ShiftLinesRight -> true
+        | VisualCommand.SubtractFromSelection _ -> true
+        | VisualCommand.CutSelection -> true
+        | VisualCommand.CutSelectionAndPaste -> true
+        | _ -> false
 
-            // Clear the selection before actually running any Visual Commands.  Selection is one
-            // of the items which is preserved along with caret position when we use an edit transaction
-            // with the change primitives (EditWithUndoTransaction).  We don't want the selection to
-            // reappear during an undo hence clear it now so it's gone.
+    /// Whether we should clear the selection before running the command
+    member x.ShouldClearSelection command =
+        match command with
+        | VisualCommand.AddCaretAtMousePoint -> false
+        | VisualCommand.CutSelection -> false
+        | VisualCommand.CopySelection -> false
+        | VisualCommand.CutSelectionAndPaste -> false
+        | VisualCommand.InvertSelection _ -> false
+        | VisualCommand.SelectWordOrMatchingToken _ -> false
+        | _ -> true
+
+    member x.CharacterVisualSpan =
+        let tabStop = _localSettings.TabStop
+        let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+        VisualSpan.CreateForVirtualSelection _textView VisualKind.Character tabStop useVirtualSpace
+
+    /// Run a VisualCommand against the buffer
+    member x.RunVisualCommand command data visualSpan =
+        if x.ShouldRunVisualCommandForEachCaret command then
+            fun () ->
+                x.CharacterVisualSpan
+                |> x.RunVisualCommandCore command data
+            |> _commonOperations.RunForAllSelections
+        else
+            x.RunVisualCommandCore command data visualSpan
+
+    /// Run a VisualCommand against the buffer
+    member x.RunVisualCommandCore command (data: CommandData) (visualSpan: VisualSpan) =
+
+        // Maybe clear the selection before actually running any Visual
+        // Commands. Selection is one of the items which is preserved along
+        // with caret position when we use an edit transaction with the change
+        // primitives (EditWithUndoTransaction).  We don't want the selection
+        // to reappear during an undo hence clear it now so it's gone.
+        if x.ShouldClearSelection command then
             _textView.Selection.Clear()
 
         let registerName = data.RegisterName
@@ -3156,7 +3194,7 @@ type internal CommandUtil
         | VisualCommand.GoToFileInSelectionInNewWindow -> x.GoToFileInSelectionInNewWindow visualSpan
         | VisualCommand.GoToFileInSelection -> x.GoToFileInSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
-        | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan streamSelectionSpan columnOnlyInBlock
+        | VisualCommand.InvertSelection columnOnlyInBlock -> x.InvertSelection visualSpan columnOnlyInBlock
         | VisualCommand.MoveCaretToMouse -> x.MoveCaretToMouse()
         | VisualCommand.MoveCaretToTextObject (motion, textObjectKind)-> x.MoveCaretToTextObject count motion textObjectKind visualSpan
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
@@ -3178,9 +3216,9 @@ type internal CommandUtil
         | VisualCommand.ToggleAllFoldsInSelection-> x.ToggleAllFolds()
         | VisualCommand.YankLineSelection -> x.YankLineSelection registerName visualSpan
         | VisualCommand.YankSelection -> x.YankSelection registerName visualSpan
-        | VisualCommand.CutSelection -> x.CutSelection streamSelectionSpan
-        | VisualCommand.CopySelection -> x.CopySelection streamSelectionSpan
-        | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste streamSelectionSpan
+        | VisualCommand.CutSelection -> x.CutSelection()
+        | VisualCommand.CopySelection -> x.CopySelection()
+        | VisualCommand.CutSelectionAndPaste -> x.CutSelectionAndPaste()
         | VisualCommand.SelectAll -> x.SelectAll()
 
     /// Get the MotionResult value for the provided MotionData and pass it
@@ -4232,20 +4270,17 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Cut selection
-    member x.CutSelection streamSelectionSpan =
-        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+    member x.CutSelection () =
         _editorOperations.CutSelection() |> ignore
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Copy selection
-    member x.CopySelection streamSelectionSpan =
-        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+    member x.CopySelection () =
         _editorOperations.CopySelection() |> ignore
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Cut selection and paste
-    member x.CutSelectionAndPaste streamSelectionSpan =
-        _textView.Selection.Select(streamSelectionSpan.Start, streamSelectionSpan.End)
+    member x.CutSelectionAndPaste () =
         _editorOperations.Paste() |> ignore
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 

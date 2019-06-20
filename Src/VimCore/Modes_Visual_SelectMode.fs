@@ -157,40 +157,11 @@ type internal SelectMode
 
     /// Overwrite the selection with the specified text
     member x.ProcessInput text linked =
-        let selectedSpans = _commonOperations.SelectedSpans |> Seq.toList
-        if selectedSpans.Length = 1 then
+        fun () ->
             x.ProcessInputCore text linked
-        elif linked then
-            let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "MultiCaret Replace"
-            try
-                seq {
-                    for selectedSpan in selectedSpans do
-                        let mappedStart =
-                            selectedSpan.Start.Position
-                            |> _commonOperations.MapPointNegativeToCurrentSnapshot
-                            |> VirtualSnapshotPointUtil.OfPoint
-                        let mappedEnd =
-                            selectedSpan.End.Position
-                            |> _commonOperations.MapPointNegativeToCurrentSnapshot
-                            |> VirtualSnapshotPointUtil.OfPoint
-                        _textView.Selection.Select(mappedStart, mappedEnd)
-                        x.ProcessInputCore text false |> ignore
-                        yield x.CaretPoint
-                }
-                |> Seq.toList
-                |> Seq.map _commonOperations.MapPointNegativeToCurrentSnapshot
-                |> Seq.map VirtualSnapshotPointUtil.OfPoint
-                |> (fun points -> _commonOperations.CaretPoints <- points)
-            with
-                | _ ->
-                    transaction.Dispose()
-                    reraise()
-            let modeArgument = ModeArgument.InsertWithTransaction transaction
-            (ModeKind.Insert, modeArgument)
-            |> ModeSwitch.SwitchModeWithArgument
-            |> ProcessResult.Handled
-        else
-            ProcessResult.Error
+            |> ProcessResult.ToCommandResult
+        |> _commonOperations.RunForAllSelections
+        |> ProcessResult.OfCommandResult
 
     /// The user hit an input key.  Need to replace the current selection with
     /// the given text and put the caret just after the insert.  This needs to

@@ -552,6 +552,9 @@ type ICommonOperations =
     /// Run the specified action for all carets
     abstract RunForAllCarets: action: (unit -> CommandResult) -> CommandResult
 
+    /// Run the specified action for all selections
+    abstract RunForAllSelections: action: (unit -> CommandResult) -> CommandResult
+
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
 
