@@ -3116,21 +3116,25 @@ type internal CommandUtil
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion registerName)
         | NormalCommand.YankLines -> x.YankLines count registerName
 
-    member x.ShouldRunVisualCommandForEachCaret command =
-        match command with
-        | VisualCommand.AddToSelection _ -> true
-        | VisualCommand.ChangeCase _ -> true
-        | VisualCommand.DeleteSelection -> true
-        | VisualCommand.MoveCaretToTextObject _-> true
-        | VisualCommand.PutOverSelection _ -> true
-        | VisualCommand.ReplaceSelection _ -> true
-        | VisualCommand.SelectLine -> true
-        | VisualCommand.ShiftLinesLeft -> true
-        | VisualCommand.ShiftLinesRight -> true
-        | VisualCommand.SubtractFromSelection _ -> true
-        | VisualCommand.CutSelection -> true
-        | VisualCommand.CutSelectionAndPaste -> true
-        | _ -> false
+    /// Whether we should run the specified visual command for each selection
+    member x.ShouldRunVisualCommandForEachSelection command visualKind =
+        if visualKind = VisualKind.Character then
+            match command with
+            | VisualCommand.AddToSelection _ -> true
+            | VisualCommand.ChangeCase _ -> true
+            | VisualCommand.DeleteSelection -> true
+            | VisualCommand.MoveCaretToTextObject _-> true
+            | VisualCommand.PutOverSelection _ -> true
+            | VisualCommand.ReplaceSelection _ -> true
+            | VisualCommand.SelectLine -> true
+            | VisualCommand.ShiftLinesLeft -> true
+            | VisualCommand.ShiftLinesRight -> true
+            | VisualCommand.SubtractFromSelection _ -> true
+            | VisualCommand.CutSelection -> true
+            | VisualCommand.CutSelectionAndPaste -> true
+            | _ -> false
+        else
+            false
 
     /// Whether we should clear the selection before running the command
     member x.ShouldClearSelection command =
@@ -3143,16 +3147,17 @@ type internal CommandUtil
         | VisualCommand.SelectWordOrMatchingToken _ -> false
         | _ -> true
 
-    member x.CharacterVisualSpan =
+    /// The character visual span associated with the selection
+    member x.GetCharacterVisualSpan visualKind =
         let tabStop = _localSettings.TabStop
         let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
         VisualSpan.CreateForVirtualSelection _textView VisualKind.Character tabStop useVirtualSpace
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command data visualSpan =
-        if x.ShouldRunVisualCommandForEachCaret command then
+        if x.ShouldRunVisualCommandForEachSelection command visualSpan.VisualKind then
             fun () ->
-                x.CharacterVisualSpan
+                x.GetCharacterVisualSpan visualSpan.VisualKind
                 |> x.RunVisualCommandCore command data
             |> _commonOperations.RunForAllSelections
         else
