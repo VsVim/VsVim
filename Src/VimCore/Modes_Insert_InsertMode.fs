@@ -17,10 +17,6 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
-    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
-
-    /// The set of KeyInput value that should commit a session
-    static member CommitKeyInput = _commitKeyInput
 
     /// Get a fun (string -> bool) that determines if a particular word should be included in the output
     /// based on the text that we are searching for 
