@@ -2693,7 +2693,7 @@ namespace Vim.UnitTest
                 Dispatcher.DoEvents();
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
