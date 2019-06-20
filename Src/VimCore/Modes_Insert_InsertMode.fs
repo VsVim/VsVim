@@ -17,7 +17,7 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
-    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
+    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; ]
 
     /// The set of KeyInput value that should commit a session
     static member CommitKeyInput = _commitKeyInput
@@ -998,8 +998,11 @@ type internal InsertMode
                 wordCompletionSession.MovePrevious() |> Some
             elif keyInput = KeyNotationUtil.StringToKeyInput("<Up>") then
                 wordCompletionSession.MovePrevious() |> Some
-            elif List.contains keyInput WordCompletionUtil.CommitKeyInput then
-                wordCompletionSession.Commit() 
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-y>") then
+                wordCompletionSession.Commit()
+                Some true
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-e>") then
+                x.CancelWordCompletionSession()
                 Some true
             else
                 None
@@ -1010,9 +1013,9 @@ type internal InsertMode
             else 
                 ProcessResult.Error
         | None -> 
-            // Any other key should cancel the IWordCompletionSession and we should process
+            // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
-            x.CancelWordCompletionSession()
+            wordCompletionSession.Commit()
             x.ProcessCore keyInput
 
     /// Start a paste session in insert mode

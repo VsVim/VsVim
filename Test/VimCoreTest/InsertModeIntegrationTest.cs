@@ -2561,7 +2561,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Space>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
             
             [AsyncCompletionWpfFact]
@@ -2572,6 +2572,30 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
                 _vimBuffer.ProcessNotation("<Space>");
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
+            }
+            
+            /// <summary>
+            /// Simple ...
+            /// </summary>
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Legacy_Commit_CtrlY()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-Y>"));
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            }
+            
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Async_Commit_CtrlY()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-Y>");
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
 
@@ -2604,6 +2628,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Simulate Aborting / Exiting a completion
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Abort_Async()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-e>");
+                Assert.Equal("c dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
             /// Typing a char while the completion list is up should cancel it out and 
             /// cause the char to be added to the IVimBuffer
             /// </summary>
@@ -2624,7 +2662,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process('s');
-                Assert.Equal("cs dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cats dog", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
