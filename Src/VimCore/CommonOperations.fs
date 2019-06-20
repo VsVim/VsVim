@@ -2553,7 +2553,7 @@ type internal CommonOperations
             // Create a linked transaction for the operation.
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
+                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "For All Carets" flags
 
             // Run the action for each caret point.
             let results =
@@ -2602,7 +2602,7 @@ type internal CommonOperations
             // Create a linked transaction for the operation.
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiCaret" flags
+                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "For All Selections" flags
 
             // Run the action for each selected span.
             let results =

@@ -372,7 +372,7 @@ namespace Vim.UnitTest.Mock
             remove { _beforeSave -= value; }
         }
 
-        event EventHandler IVimHost.SelectedSpansSet
+        event EventHandler IVimHost.SelectedSpansChanged
         {
             add { _selectedSpansChanged += value; }
             remove { _selectedSpansChanged -= value; }
