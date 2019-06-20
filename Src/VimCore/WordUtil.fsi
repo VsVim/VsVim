@@ -20,7 +20,7 @@ type SnapshotWordUtil =
     /// The set of keyword chars this snapshot is using. 
     member KeywordCharSet: VimCharSet
 
-    member IsWordChar: wordKind: WordKind -> c: char -> bool
+    member IsKeywordChar: c: char -> bool
 
     /// Get the full word span for the word value which crosses the given SnapshotPoint
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
@@ -52,7 +52,9 @@ type WordUtil =
     member Snapshot: SnapshotWordUtil
     member SnapshotWordNavigator: SnapshotWordNavigator
     member WordNavigator: ITextStructureNavigator
-    member IsWordChar: wordKind: WordKind -> c: char -> bool
+
+    /// <see cref="SnapshotWordUtil.IsKeywordChar" />
+    member IsKeywordChar: c: char -> bool
 
     /// <see cref="SnapshotWordUtil.GetFullWordSpan" />
     member GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option

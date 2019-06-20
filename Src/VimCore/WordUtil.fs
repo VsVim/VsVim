@@ -16,10 +16,7 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
     member x.IsNormalWordChar c = _keywordCharSet.Contains c
     member x.IsBigWordOnlyChar c = (not (x.IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
 
-    member x.IsWordChar wordKind c =
-        match wordKind with
-        | WordKind.BigWord -> x.IsBigWordChar c
-        | WordKind.NormalWord -> x.IsNormalWordChar c 
+    member x.IsKeywordChar c = x.KeywordCharSet.Contains c
 
     member x.GetFullWordSpanInText wordKind (text: string) index =
         match EditUtil.GetFullLineBreakSpanAtIndex text index with
@@ -177,7 +174,7 @@ type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as th
     member x.Snapshot = _snapshotWordUtil
     member x.SnapshotWordNavigator = _snapshotWordNavigator
     member x.WordNavigator = _wordNavigator
-    member x.IsWordChar wordKind c = x.Snapshot.IsWordChar wordKind c
+    member x.IsKeywordChar c = x.Snapshot.IsKeywordChar c
     member x.GetFullWordSpan wordKind point = x.Snapshot.GetFullWordSpan wordKind point
     member x.GetFullWordSpanInText wordKind text index = x.Snapshot.GetFullWordSpanInText wordKind text index
     member x.GetWordSpans wordKind path point = x.Snapshot.GetWordSpans wordKind path point

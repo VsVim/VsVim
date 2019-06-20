@@ -36,7 +36,7 @@ type WordCompletionUtil
                 false
             else
                 let c = span.Start.GetChar()
-                _wordUtil.IsWordChar WordKind.NormalWord c
+                _wordUtil.IsKeywordChar c
 
         // Is this span a match for the filter text? 
         let isMatch (span: SnapshotSpan) =
