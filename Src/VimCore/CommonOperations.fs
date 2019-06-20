@@ -12,6 +12,7 @@ open System
 open System.ComponentModel.Composition
 open System.Text.RegularExpressions
 open StringBuilderExtensions
+open System.Collections.Generic
 
 module internal CommonUtil = 
 
@@ -165,6 +166,14 @@ type internal CommonOperations
     member x.CaretPoints
         with get() = _vimHost.GetCaretPoints _textView
         and set value = _vimHost.SetCaretPoints _textView value
+
+    /// The current virtual caret points
+    member x.SelectedSpans
+        with get() =
+            _textView.Selection.VirtualSelectedSpans
+            :> IEnumerable<VirtualSnapshotSpan>
+        and set value =
+            _vimHost.SetSelectedSpans _textView value
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
@@ -2409,11 +2418,19 @@ type internal CommonOperations
 
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
-        seq {
-            yield! x.CaretPoints
-            yield point
-        }
-        |> (fun points -> x.CaretPoints <- points)
+        let selectedSpans = x.SelectedSpans |> GenericListUtil.OfSeq
+        if selectedSpans.Count > 0 && selectedSpans.[0].Length <> 0 then
+            seq {
+                yield! x.SelectedSpans
+                yield VirtualSnapshotSpan(point, point)
+            }
+            |> (fun spans -> x.SelectedSpans <- spans)
+        else
+            seq {
+                yield! x.CaretPoints
+                yield point
+            }
+            |> (fun points -> x.CaretPoints <- points)
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
@@ -2554,6 +2571,9 @@ type internal CommonOperations
         member x.CaretPoints 
             with get() = x.CaretPoints
             and set value = x.CaretPoints <- value
+        member x.SelectedSpans 
+            with get() = x.SelectedSpans
+            and set value = x.SelectedSpans <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint

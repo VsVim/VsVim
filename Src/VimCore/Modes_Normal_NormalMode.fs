@@ -187,9 +187,10 @@ type internal NormalMode
                 yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken false)
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
+                yield ("<A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken false)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))

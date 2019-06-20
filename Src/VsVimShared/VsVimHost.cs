@@ -1506,6 +1506,12 @@ namespace Vim.VisualStudio
             RaiseCaretPointsSet();
         }
 
+        public override void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            _sharedService.SetSelectedSpans(textView, selectedSpans);
+            RaiseCaretPointsSet();
+        }
+
         #endregion
     }
 }

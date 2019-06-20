@@ -332,6 +332,9 @@ type ICommonOperations =
     /// The current caret points
     abstract CaretPoints: IEnumerable<VirtualSnapshotPoint> with get, set
 
+    /// The current selected spans
+    abstract SelectedSpans: IEnumerable<VirtualSnapshotSpan> with get, set
+
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
 

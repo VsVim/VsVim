@@ -27,6 +27,12 @@ namespace Vim.VisualStudio.Specific
             var caretPoint = caretPoints.First();
             textView.Caret.MoveTo(caretPoint);
         }
+
+        private void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            var selectedSpan = selectedSpans.First();
+            textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+        }
     }
 
 #else
@@ -41,6 +47,11 @@ namespace Vim.VisualStudio.Specific
         private void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
             SetCaretPointsCommon(textView, caretPoints.ToArray());
+        }
+
+        private void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            SetSelectedSpansCommon(textView, selectedSpans.ToArray());
         }
 
         private IEnumerable<VirtualSnapshotPoint> GetCaretPointsCommon(ITextView textView)
@@ -64,6 +75,23 @@ namespace Vim.VisualStudio.Specific
             for (var caretIndex = 0; caretIndex < caretPoints.Length; caretIndex++)
             {
                 selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(caretPoints[caretIndex]);
+            }
+            var broker = textView.GetMultiSelectionBroker();
+            broker.SetSelectionRange(selections, selections[0]);
+        }
+
+        private void SetSelectedSpansCommon(ITextView textView, VirtualSnapshotSpan[] selectedSpans)
+        {
+            if (selectedSpans.Length == 1)
+            {
+                var selectedSpan = selectedSpans[0];
+                textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            }
+
+            var selections = new Microsoft.VisualStudio.Text.Selection[selectedSpans.Length];
+            for (var caretIndex = 0; caretIndex < selectedSpans.Length; caretIndex++)
+            {
+                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(selectedSpans[caretIndex]);
             }
             var broker = textView.GetMultiSelectionBroker();
             broker.SetSelectionRange(selections, selections[0]);

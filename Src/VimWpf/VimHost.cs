@@ -491,6 +491,13 @@ namespace Vim.UI.Wpf
             RaiseCaretPointsSet();
         }
 
+        public virtual void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            var selectedSpan = selectedSpans.First();
+            textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            RaiseCaretPointsSet();
+        }
+
         /// <summary>
         /// Custom processing of an insert command is a host specific operation.  By default
         /// no custom processing is done
@@ -926,6 +933,11 @@ namespace Vim.UI.Wpf
         void IVimHost.SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints)
         {
             SetCaretPoints(textView, caretPoints);
+        }
+
+        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            SetSelectedSpans(textView, selectedSpans);
         }
 
         event EventHandler<TextViewEventArgs> IVimHost.IsVisibleChanged

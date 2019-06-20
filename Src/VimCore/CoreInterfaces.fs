@@ -3092,7 +3092,7 @@ type NormalCommand =
     | SelectTextForMouseRelease
 
     /// Select the current word or matching token
-    | SelectWordOrMatchingToken
+    | SelectWordOrMatchingToken of AddToExistingSelection: bool
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3249,7 +3249,7 @@ type NormalCommand =
         | NormalCommand.SelectTextForMouseClick -> None
         | NormalCommand.SelectTextForMouseDrag -> None
         | NormalCommand.SelectTextForMouseRelease -> None
-        | NormalCommand.SelectWordOrMatchingToken -> None
+        | NormalCommand.SelectWordOrMatchingToken _ -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3277,6 +3277,9 @@ type NormalCommand =
 [<NoComparison>]
 [<StructuralEquality>]
 type VisualCommand = 
+
+    /// Add a new caret at the mouse point
+    | AddCaretAtMousePoint
 
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
@@ -3376,7 +3379,7 @@ type VisualCommand =
     | SelectLine
 
     /// Select current word or matching token
-    | SelectWordOrMatchingToken
+    | SelectWordOrMatchingToken of AddToExistingSelection: bool
 
     /// Shift the selected lines left
     | ShiftLinesLeft
@@ -4455,6 +4458,12 @@ type ProcessResult =
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
         | CommandResult.Error -> Error
 
+    /// Create a CommandResult from the given ProcessResult value
+    static member ToCommandResult processResult = 
+        match processResult with
+        | Handled modeSwitch -> CommandResult.Completed modeSwitch
+        | _ -> CommandResult.Error
+
 type StringEventArgs(_message: string) =
     inherit System.EventArgs()
 
@@ -4931,6 +4940,9 @@ type IVimHost =
 
     /// Set all the caret points for the specified text view
     abstract SetCaretPoints: textView: ITextView -> IEnumerable<VirtualSnapshotPoint> -> unit
+
+    /// Set all the selected spans for the specified text view
+    abstract SetSelectedSpans: textView: ITextView -> IEnumerable<VirtualSnapshotSpan> -> unit
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]

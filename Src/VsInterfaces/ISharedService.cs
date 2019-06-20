@@ -66,6 +66,11 @@ namespace Vim.VisualStudio
         /// Set all the carets for a text view
         /// </summary>
         void SetCaretPoints(ITextView textView, IEnumerable<VirtualSnapshotPoint> caretPoints);
+
+        /// <summary>
+        /// Set all the selected spans for a text view
+        /// </summary>
+        void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans);
     }
 
     /// <summary>

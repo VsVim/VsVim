@@ -450,5 +450,11 @@ namespace Vim.UnitTest.Mock
             var caretPoint = caretPoints.First();
             textView.Caret.MoveTo(caretPoint);
         }
+
+        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            var selectedSpan = selectedSpans.First();
+            textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+        }
     }
 }

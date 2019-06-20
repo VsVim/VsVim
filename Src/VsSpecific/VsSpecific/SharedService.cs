@@ -111,6 +111,11 @@ namespace Vim.VisualStudio.Specific
             SetCaretPoints(textView, caretPoints);
         }
 
+        void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            SetSelectedSpans(textView, selectedSpans);
+        }
+
         #endregion
     }
 }

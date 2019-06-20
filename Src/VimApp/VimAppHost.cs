@@ -360,6 +360,12 @@ namespace VimApp
             RaiseCaretPointsSet();
         }
 
+        public override void SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+        {
+            SetSelectedSpansCommon(textView, selectedSpans.ToArray());
+            RaiseCaretPointsSet();
+        }
+
         private IEnumerable<VirtualSnapshotPoint> GetCaretPointsCommon(ITextView textView)
         {
             var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
@@ -381,6 +387,23 @@ namespace VimApp
             for (var caretIndex = 0; caretIndex < caretPoints.Length; caretIndex++)
             {
                 selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(caretPoints[caretIndex]);
+            }
+            var broker = textView.GetMultiSelectionBroker();
+            broker.SetSelectionRange(selections, selections[0]);
+        }
+
+        private void SetSelectedSpansCommon(ITextView textView, VirtualSnapshotSpan[] selectedSpans)
+        {
+            if (selectedSpans.Length == 1)
+            {
+                var selectedSpan = selectedSpans[0];
+                textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            }
+
+            var selections = new Microsoft.VisualStudio.Text.Selection[selectedSpans.Length];
+            for (var caretIndex = 0; caretIndex < selectedSpans.Length; caretIndex++)
+            {
+                selections[caretIndex] = new Microsoft.VisualStudio.Text.Selection(selectedSpans[caretIndex]);
             }
             var broker = textView.GetMultiSelectionBroker();
             broker.SetSelectionRange(selections, selections[0]);

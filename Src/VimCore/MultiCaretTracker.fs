@@ -59,6 +59,8 @@ type internal MultiCaretTracker
         if
             _vimBuffer.ModeKind <> ModeKind.Disabled
             && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
+            && not (VimExtensions.IsAnySelect _vimBuffer.ModeKind)
+            && not (VimExtensions.IsAnyVisual _vimBuffer.ModeKind)
             && not _textView.IsClosed
         then
             x.RestoreCarets()
@@ -107,7 +109,8 @@ type internal MultiCaretTracker
                             if newPosition >= 0 && newPosition <= snapshot.Length then
                                 VirtualSnapshotPoint(snapshot, newPosition)
                             else
-                                oldCaretPoints.[caretIndex]
+                                oldPoint
+                                |> VirtualSnapshotPointUtil.OfPoint
 
                         yield newCaretPoint
                     for caretIndex = oldCaretPoints.Count to newCaretPoints.Count - 1 do

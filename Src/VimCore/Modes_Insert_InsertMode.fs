@@ -363,9 +363,10 @@ type internal InsertMode
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
-                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.SelectWordOrMatchingToken false)))
                 ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
                 ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
+                ("<A-2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.SelectWordOrMatchingToken true)))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text

@@ -12,6 +12,7 @@ open RegexPatternUtil
 open VimCoreExtensions
 open ITextEditExtensions
 open StringBuilderExtensions
+open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -3093,7 +3094,7 @@ type internal CommandUtil
         | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
-        | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
+        | NormalCommand.SelectWordOrMatchingToken addToExistingSelection -> x.SelectWordOrMatchingToken addToExistingSelection
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3119,15 +3120,21 @@ type internal CommandUtil
 
         let streamSelectionSpan = _textView.Selection.StreamSelectionSpan
 
-        // Clear the selection before actually running any Visual Commands.  Selection is one
-        // of the items which is preserved along with caret position when we use an edit transaction
-        // with the change primitives (EditWithUndoTransaction).  We don't want the selection to
-        // reappear during an undo hence clear it now so it's gone.
-        _textView.Selection.Clear()
+        match command with
+        | VisualCommand.AddCaretAtMousePoint -> ()
+        | VisualCommand.SelectWordOrMatchingToken _ -> ()
+        | _ ->
+
+            // Clear the selection before actually running any Visual Commands.  Selection is one
+            // of the items which is preserved along with caret position when we use an edit transaction
+            // with the change primitives (EditWithUndoTransaction).  We don't want the selection to
+            // reappear during an undo hence clear it now so it's gone.
+            _textView.Selection.Clear()
 
         let registerName = data.RegisterName
         let count = data.CountOrDefault
         match command with
+        | VisualCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
         | VisualCommand.CancelOperation -> x.CancelOperation()
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
@@ -3159,7 +3166,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
         | VisualCommand.SelectLine -> x.SelectLine()
-        | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
+        | VisualCommand.SelectWordOrMatchingToken addToExistingSelection -> x.SelectWordOrMatchingToken addToExistingSelection
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
@@ -3763,7 +3770,38 @@ type internal CommandUtil
         x.SwitchMode modeKind modeArgument
 
     /// Select the current word or matching token
-    member x.SelectWordOrMatchingToken () =
+    member x.SelectWordOrMatchingToken addToExistingSelection =
+        let selectedSpans = _commonOperations.SelectedSpans
+        let result = x.SelectWordOrMatchingTokenCore()
+        if addToExistingSelection then
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArg) ->
+                    match modeArg with
+                    | ModeArgument.InitialVisualSelection (visualSelection, _) ->
+                        let newSpans =
+                            visualSelection.VisualSpan.Spans
+                            |> Seq.map VirtualSnapshotSpanUtil.OfSpan
+                        seq {
+                            yield! selectedSpans
+                            yield! newSpans
+                        }
+                        |> Seq.filter (fun span -> span.Length <> 0)
+                        |> (fun spans -> _commonOperations.SelectedSpans <- spans)
+                        ModeSwitch.NoSwitch
+                        |> CommandResult.Completed
+                    | _ ->
+                        result
+                | _ ->
+                    result
+            | _ ->
+                result
+        else
+            result
+
+    /// Select the current word or matching token
+    member x.SelectWordOrMatchingTokenCore () =
         x.MoveCaretToMouseUnconditionally() |> ignore
         let text =
             x.CaretPoint

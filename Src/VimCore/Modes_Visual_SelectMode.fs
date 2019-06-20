@@ -40,9 +40,11 @@ type internal SelectMode
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken false)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+                yield ("<A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
+                yield ("<A-2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken true)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -150,32 +152,71 @@ type internal SelectMode
                 _selectionTracker.UpdateSelection()
                 ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// The user hit an input key.  Need to replace the current selection with the given
-    /// text and put the caret just after the insert.  This needs to be a single undo
-    /// transaction
+    /// Overwrite the selection with the specified text
     member x.ProcessInput text linked =
+        let selectedSpans = _commonOperations.SelectedSpans |> Seq.toList
+        if selectedSpans.Length = 1 then
+            x.ProcessInputCore text linked
+        elif linked then
+            let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "MultiCaret Replace"
+            try
+                seq {
+                    for selectedSpan in selectedSpans do
+                        let mappedStart =
+                            selectedSpan.Start.Position
+                            |> _commonOperations.MapPointNegativeToCurrentSnapshot
+                            |> VirtualSnapshotPointUtil.OfPoint
+                        let mappedEnd =
+                            selectedSpan.End.Position
+                            |> _commonOperations.MapPointNegativeToCurrentSnapshot
+                            |> VirtualSnapshotPointUtil.OfPoint
+                        _textView.Selection.Select(mappedStart, mappedEnd)
+                        x.ProcessInputCore text false |> ignore
+                        yield x.CaretPoint
+                }
+                |> Seq.toList
+                |> Seq.map _commonOperations.MapPointNegativeToCurrentSnapshot
+                |> Seq.map VirtualSnapshotPointUtil.OfPoint
+                |> (fun points -> _commonOperations.CaretPoints <- points)
+            with
+                | _ ->
+                    transaction.Dispose()
+                    reraise()
+            let modeArgument = ModeArgument.InsertWithTransaction transaction
+            (ModeKind.Insert, modeArgument)
+            |> ModeSwitch.SwitchModeWithArgument
+            |> ProcessResult.Handled
+        else
+            ProcessResult.Error
+
+    /// The user hit an input key.  Need to replace the current selection with
+    /// the given text and put the caret just after the insert.  This needs to
+    /// be a single undo transaction
+    member x.ProcessInputCore text linked =
 
         let replaceSelection (span: SnapshotSpan) text =
-            _undoRedoOperations.EditWithUndoTransaction "Replace" _textView <| fun () ->
-
+            fun () ->
                 use edit = _textBuffer.CreateEdit()
 
                 // First step is to replace the deleted text with the new one
                 edit.Delete(span.Span) |> ignore
                 edit.Insert(span.End.Position, text) |> ignore
 
-                // Now move the caret past the insert point in the new snapshot. We don't need to
-                // add one here (or even the length of the insert text).  The insert occurred at
-                // the exact point we are tracking and we chose PointTrackingMode.Positive so this
-                // will push the point past the insert
+                // Now move the caret past the insert point in the new
+                // snapshot. We don't need to add one here (or even the length
+                // of the insert text).  The insert occurred at the exact point
+                // we are tracking and we chose PointTrackingMode.Positive so
+                // this will push the point past the insert
                 edit.Apply() |> ignore
                 _commonOperations.MapPointPositiveToCurrentSnapshot span.End
                 |> TextViewUtil.MoveCaretToPoint _textView
 
-        // During undo we don't want the currently selected text to be reselected as that
-        // would put the editor back into select mode.  Clear the selection now so that
-        // it's not recorderd in the undo transaction and move the caret to the selection
-        // start
+            |> _undoRedoOperations.EditWithUndoTransaction "Replace" _textView
+
+        // During undo we don't want the currently selected text to be
+        // reselected as that would put the editor back into select mode.
+        // Clear the selection now so that it's not recorderd in the undo
+        // transaction and move the caret to the selection start
         let span = _textView.Selection.StreamSelectionSpan.SnapshotSpan
         _textView.Selection.Clear()
         TextViewUtil.MoveCaretToPoint _textView span.Start

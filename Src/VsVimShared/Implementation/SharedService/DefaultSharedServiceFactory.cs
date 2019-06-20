@@ -41,6 +41,12 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 var caretPoint = caretPoints.First();
                 textView.Caret.MoveTo(caretPoint);
             }
+
+            void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<VirtualSnapshotSpan> selectedSpans)
+            {
+                var selectedSpan = selectedSpans.First();
+                textView.Selection.Select(selectedSpan.Start, selectedSpan.End);
+            }
         }
 
         VisualStudioVersion ISharedServiceVersionFactory.Version
