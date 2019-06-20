@@ -125,22 +125,24 @@ type internal SelectMode
 
     member x.ProcessCaretMovement caretMovement keyInput =
         let shouldStopSelection = x.ShouldStopSelection keyInput
+        let isInclusive = _globalSettings.IsSelectionInclusive
+        let shouldMimicNative = shouldStopSelection && not isInclusive
 
         let leaveSelectWithCaretAtPoint caretPoint =
             _textView.Selection.Clear()
             _commonOperations.MoveCaretToVirtualPoint caretPoint ViewFlags.Standard
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
 
-        if shouldStopSelection && caretMovement = CaretMovement.Left then
+        if shouldMimicNative && caretMovement = CaretMovement.Left then
 
-            // Typing plain left in select mode leaves the caret at the
-            // selection start point.
+            // For a native exclusive selction, typing plain left leaves the
+            // caret at the selection start point.
             leaveSelectWithCaretAtPoint _textView.Selection.Start
 
-        elif shouldStopSelection && caretMovement = CaretMovement.Right then
+        elif shouldMimicNative && caretMovement = CaretMovement.Right then
 
-            // Typing plain right in select mode leaves the caret at the
-            // selection end point.
+            // For a native exclusive selction, typing plain left leaves the
+            // caret at the selection end point.
             leaveSelectWithCaretAtPoint _textView.Selection.End
 
         else
