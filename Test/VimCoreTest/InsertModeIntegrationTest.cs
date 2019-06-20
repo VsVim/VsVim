@@ -2576,7 +2576,7 @@ namespace Vim.UnitTest
             }
             
             /// <summary>
-            /// Simple ...
+            /// Simple word completion that is accepted with ctrl+y
             /// </summary>
             [LegacyCompletionWpfFact]
             public void WordCompletion_Legacy_Commit_CtrlY()
