@@ -2578,26 +2578,26 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple ...
             /// </summary>
-            [LegacyCompletionWpfFact]
-            public void WordCompletion_Legacy_Commit_CtrlY()
-            {
-                Create("c dog", "cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-Y>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
-            }
+            ///[LegacyCompletionWpfFact]
+            ///public void WordCompletion_Legacy_Commit_CtrlY()
+            ///{
+            ///    Create("c dog", "cat");
+            ///    _textView.MoveCaretTo(1);
+            ///    _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+            ///    _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-Y>"));
+            ///    Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            ///}
             
-            [AsyncCompletionWpfFact]
-            public void WordCompletion_Async_Commit_CtrlY()
-            {
-                Create("c dog", "cat");
-                _textView.MoveCaretTo(1);
-                _vimBuffer.ProcessNotation("<C-N>");
-                Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-Y>");
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
-            }
+            ///[AsyncCompletionWpfFact]
+            ///public void WordCompletion_Async_Commit_CtrlY()
+            ///{
+            ///    Create("c dog", "cat");
+            ///    _textView.MoveCaretTo(1);
+            ///    _vimBuffer.ProcessNotation("<C-N>");
+            ///    Dispatcher.DoEvents();
+            ///    _vimBuffer.ProcessNotation("<C-Y>");
+            ///    Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            ///}
 
 
             /// <summary>
