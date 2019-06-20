@@ -2647,6 +2647,7 @@ type internal CommandUtil
                     | Some _ -> { data with Count = repeatCount }
                     | None -> data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
+                visualSpan.Select _textView SearchPath.Forward
                 x.RunVisualCommand command data visualSpan
 
             | StoredCommand.InsertCommand (command, _) ->
