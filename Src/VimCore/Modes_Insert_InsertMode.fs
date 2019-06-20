@@ -1015,7 +1015,8 @@ type internal InsertMode
         | None -> 
             // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
-            wordCompletionSession.Commit()
+            // wordCompletionSession.Commit()
+            x.CancelWordCompletionSession()
             x.ProcessCore keyInput
 
     /// Start a paste session in insert mode
