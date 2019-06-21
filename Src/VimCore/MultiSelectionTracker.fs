@@ -12,10 +12,11 @@ type internal MultiSelectionTracker
     ) as this =
 
     let _globalSettings = _vimBuffer.GlobalSettings
+    let _vimData = _vimBuffer.Vim.VimData
     let _textView = _vimBuffer.TextView
     let _bag = DisposableBag()
 
-    let mutable _oldSelectedSpans: SelectedSpan array = [||]
+    let mutable _recordedSelectedSpans: SelectedSpan array = [||]
 
     do
         _commonOperations.SelectedSpansSet
@@ -39,17 +40,20 @@ type internal MultiSelectionTracker
         |> _bag.Add
 
    /// The caret points at the start of the most recent key input 
-    member x.OldSelectedSpans 
-        with get () =  _oldSelectedSpans
-        and set value = _oldSelectedSpans <- value
+    member x.RecordedSelectedSpans
+        with get () =  _recordedSelectedSpans
+        and set (value: SelectedSpan array) =
+            for caretIndex = _recordedSelectedSpans.Length to value.Length - 1 do
+                x.InitializeSecondaryCaretRegisters caretIndex
+            _recordedSelectedSpans <- value
 
     /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
-        x.OldSelectedSpans <- x.GetSelectedSpans()
+        x.RecordedSelectedSpans <- x.GetSelectedSpans()
 
     /// Raised when the buffer starts processing input
     member x.OnKeyInputStart () = 
-        x.OldSelectedSpans <- x.GetSelectedSpans()
+        x.RecordedSelectedSpans <- x.GetSelectedSpans()
 
     /// Raised when the caret position changes
     member x.OnKeyInputProcessed args = 
@@ -71,7 +75,7 @@ type internal MultiSelectionTracker
                 |> Seq.take 1
                 |> Seq.toArray
             _commonOperations.SetSelectedSpans newSelectedSpans
-            x.OldSelectedSpans <- newSelectedSpans
+            x.RecordedSelectedSpans <- newSelectedSpans
         | _ ->
             ()
 
@@ -83,10 +87,22 @@ type internal MultiSelectionTracker
     member x.GetSelectedSpans () =
         _commonOperations.SelectedSpans |> Seq.toArray
 
+    /// Copy the primary caret's registers to a secondary caret
+    member x.InitializeSecondaryCaretRegisters caretIndex =
+        let oldCaretIndex = _vimData.CaretIndex
+        let register = _commonOperations.GetRegister None
+        try
+            _vimData.CaretIndex <- 0
+            let oldValue = register.RegisterValue
+            _vimData.CaretIndex <- caretIndex
+            register.RegisterValue <- oldValue
+        finally
+            _vimData.CaretIndex <- oldCaretIndex
+
     /// Restore selected spans present at the start of key processing
     member x.RestoreSelectedSpans () =
         let snapshot = _textView.TextBuffer.CurrentSnapshot
-        let oldSelectedSpans = x.OldSelectedSpans
+        let oldSelectedSpans = x.RecordedSelectedSpans
         let newSelectedSpans = x.GetSelectedSpans()
         if
             oldSelectedSpans.[0] = newSelectedSpans.[0]
