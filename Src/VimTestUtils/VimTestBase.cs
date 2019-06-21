@@ -151,11 +151,6 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.CommonOperationsFactory; }
         }
 
-        public IWordUtil WordUtil
-        {
-            get { return _vimEditorHost.WordUtil; }
-        }
-
         public IFoldManagerFactory FoldManagerFactory
         {
             get { return _vimEditorHost.FoldManagerFactory; }
@@ -440,16 +435,14 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null)
+            IVimWindowSettings windowSettings = null)
         {
             return CreateVimBufferData(
                 Vim.GetOrCreateVimTextBuffer(textView.TextBuffer),
                 textView,
                 statusUtil,
                 jumpList,
-                windowSettings,
-                wordUtil);
+                windowSettings);
         }
 
         /// <summary>
@@ -461,20 +454,17 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null)
+            IVimWindowSettings windowSettings = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
-            wordUtil = wordUtil ?? WordUtil;
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil,
-                wordUtil);
+                statusUtil);
         }
 
         /// <summary>
@@ -509,11 +499,6 @@ namespace Vim.UnitTest
             var textView = CreateTextView(lines);
             textView.TextBuffer.Properties[MockVimHost.FileNameKey] = fileName;
             return Vim.CreateVimBuffer(textView);
-        }
-
-        protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
-        {
-            return WordUtil.CreateTextStructureNavigator(kind, textBuffer.ContentType);
         }
 
         protected WpfTextViewDisplay CreateTextViewDisplay(IWpfTextView textView, bool setFocus = true, bool show = true)

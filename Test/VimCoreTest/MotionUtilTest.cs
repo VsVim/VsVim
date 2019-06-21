@@ -56,7 +56,6 @@ namespace Vim.UnitTest
             _markMap = vimBufferData.Vim.MarkMap;
             _vimData = vimBufferData.Vim.VimData;
             _search = vimBufferData.Vim.SearchService;
-            var wordNavigator = CreateTextStructureNavigator(_textView.TextBuffer, WordKind.NormalWord);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             _motionUtil = new MotionUtil(vimBufferData, operations);
         }

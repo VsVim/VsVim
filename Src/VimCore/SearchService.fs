@@ -11,7 +11,7 @@ type ServiceSearchData = {
 
     VimRegexOptions: VimRegexOptions
 
-    Navigator: ITextStructureNavigator
+    Navigator: SnapshotWordNavigator
 }
 
 /// An entry in our cache.  This type must be *very* careful to not hold the ITextBuffer in

@@ -11,9 +11,9 @@ type internal VimTextBuffer
     (
         _textBuffer: ITextBuffer,
         _localSettings: IVimLocalSettings,
-        _wordNavigator: ITextStructureNavigator,
         _bufferTrackingService: IBufferTrackingService,
         _undoRedoOperations: IUndoRedoOperations,
+        _wordUtil: WordUtil,
         _vim: IVim
     ) =
 
@@ -22,6 +22,7 @@ type internal VimTextBuffer
     let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
+    let _wordNavigator = _wordUtil.WordNavigator
 
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None
@@ -329,6 +330,7 @@ type internal VimTextBuffer
         member x.Name = _vimHost.GetName _textBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.Vim = _vim
+        member x.WordUtil = _wordUtil
         member x.WordNavigator = _wordNavigator
         member x.UseVirtualSpace = x.UseVirtualSpace
         member x.CheckModeLine windowSettings = x.CheckModeLine windowSettings

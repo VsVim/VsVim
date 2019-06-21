@@ -163,7 +163,7 @@ type internal IncrementalSearchSession
 
     member private x.RunSearchImplNotFound(searchData) = SearchResult.NotFound (_searchData, CanFindWithWrap=false)
 
-    member private x.RunSearchImplStart(searchPoint, searchText): (SnapshotPoint option * obj * SearchData * ISearchService * ITextStructureNavigator) =
+    member private x.RunSearchImplStart(searchPoint, searchText): (SnapshotPoint option * obj * SearchData * ISearchService * SnapshotWordNavigator) =
 
         // Don't update the view here. Let the next search do the view 
         // updating when it completes. Want to avoid chopiness here when
@@ -178,7 +178,8 @@ type internal IncrementalSearchSession
 
         // Get the data required to complete the search
         let point = TrackingPointUtil.GetPoint _textView.TextSnapshot searchPoint
-        (point, searchKey, _searchData, _vimBufferData.Vim.SearchService, _vimBufferData.VimTextBuffer.WordNavigator)
+        let navigator = _vimBufferData.WordUtil.SnapshotWordNavigator
+        (point, searchKey, _searchData, _vimBufferData.Vim.SearchService, navigator)
 
     member private x.RunSearchImplEnd(searchResult, updateView) =
         match _searchState with

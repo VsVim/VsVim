@@ -11,16 +11,6 @@ open Vim.Modes
 open Vim.StringBuilderExtensions
 open Vim.Interpreter
 
-type OptionBuilder() =
-    member x.Bind (value, cont) = 
-        match value with 
-        | None -> None
-        | Some value -> cont value
-
-    member x.Return value = Some value
-    member x.ReturnFrom o = o
-    member x.Zero () = None
-
 type CachedParsedItem<'T> = { 
     Version: int
     Items: List<'T>
@@ -1819,7 +1809,7 @@ type internal MotionUtil
 
         // Get all of the words on this line going forward
         let all = 
-            _wordUtil.GetWords kind SearchPath.Forward contextPoint
+            _wordUtil.GetWordSpans kind SearchPath.Forward contextPoint
             |> Seq.takeWhile isOnSameLine
             |> Seq.truncate count
             |> List.ofSeq
@@ -1873,7 +1863,7 @@ type internal MotionUtil
                     // though they are not called out in the documentation.  We should only include
                     // white space here if there is a word on the same line before this one.  
                     let startPoint = 
-                        _wordUtil.GetWords kind SearchPath.Backward span.Start
+                        _wordUtil.GetWordSpans kind SearchPath.Backward span.Start
                         |> Seq.filter isOnSameLine
                         |> Seq.map SnapshotSpanUtil.GetEndPoint
                         |> SeqUtil.headOrDefault span.Start
@@ -2001,7 +1991,7 @@ type internal MotionUtil
                 count
 
         let endPoint = 
-            _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint
+            _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint
             |> SeqUtil.skipMax count
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetEndPoint x.CurrentSnapshot)
@@ -2040,7 +2030,7 @@ type internal MotionUtil
     member x.WordBackward kind count =
 
         let startPoint = 
-            _wordUtil.GetWords kind SearchPath.Backward x.CaretPoint
+            _wordUtil.GetWordSpans kind SearchPath.Backward x.CaretPoint
             |> SeqUtil.skipMax (count - 1)
             |> Seq.map SnapshotSpanUtil.GetStartPoint
             |> SeqUtil.headOrDefault (SnapshotUtil.GetStartPoint x.CurrentSnapshot)
@@ -2053,11 +2043,11 @@ type internal MotionUtil
         // If the caret is currently at the end of the word then we start searching one character
         // back from that point 
         let searchPoint = 
-            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> x.CaretPoint
             | Some span -> span.Start
 
-        let words = _wordUtil.GetWords kind SearchPath.Backward searchPoint 
+        let words = _wordUtil.GetWordSpans kind SearchPath.Backward searchPoint 
         let startPoint = 
             match words |> Seq.skip (count - 1) |> SeqUtil.tryHeadOnly with
             | None -> SnapshotPoint(x.CurrentSnapshot, 0)
@@ -2074,7 +2064,7 @@ type internal MotionUtil
         // on the last point inside a word then we calculate the next word starting at
         // the end of the first word.
         let searchPoint = 
-            match _wordUtil.GetWords kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
+            match _wordUtil.GetWordSpans kind SearchPath.Forward x.CaretPoint |> SeqUtil.tryHeadOnly with
             | None -> 
                 x.CaretPoint
             | Some span -> 
@@ -2085,7 +2075,7 @@ type internal MotionUtil
 
         let endPoint = 
             searchPoint
-            |> _wordUtil.GetWords kind SearchPath.Forward
+            |> _wordUtil.GetWordSpans kind SearchPath.Forward
             |> Seq.filter (fun span ->
                 // The typical word motion includes blank lines as part of the word. The one 
                 // exception is end of word which doesn't count blank lines as words.  Filter
@@ -2304,7 +2294,7 @@ type internal MotionUtil
             // number of words at 'count'.  Since the 'count' includes the white space between
             // the words 'count' is a definite max on the number of words we need to consider
             let words = 
-                _wordUtil.GetWords wordKind SearchPath.Forward point
+                _wordUtil.GetWordSpans wordKind SearchPath.Forward point
                 |> Seq.truncate count
                 |> List.ofSeq
 
@@ -2944,7 +2934,7 @@ type internal MotionUtil
         // The search operation should also update the search history
         _vimData.SearchHistory.Add searchData.Pattern
 
-        let searchResult = _search.FindNextPattern searchPoint searchData _wordNavigator count
+        let searchResult = _search.FindNextPattern searchPoint searchData _wordUtil.SnapshotWordNavigator count
 
         // Raise the messages that go with this given result
         CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
@@ -3102,7 +3092,7 @@ type internal MotionUtil
             // All search operations update the jump list.
             _jumpList.Add x.CaretVirtualPoint
 
-            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordNavigator count
+            let searchResult = _search.FindNextPattern x.CaretPoint searchData _wordUtil.SnapshotWordNavigator count
 
             // Raise the messages that go with this given result.
             CommonUtil.RaiseSearchResultMessage _statusUtil searchResult
@@ -3144,7 +3134,7 @@ type internal MotionUtil
             let points = SnapshotPointUtil.GetPointsOnLineForward x.CaretPoint
             let isWordPoint point = 
                 let c = SnapshotPointUtil.GetChar point 
-                TextUtil.IsWordChar WordKind.NormalWord c
+                _wordUtil.IsKeywordChar c
 
             match points |> Seq.filter isWordPoint |> SeqUtil.tryHeadOnly with
             | Some point -> point
@@ -3163,7 +3153,7 @@ type internal MotionUtil
             // Can only do whole words on actual words.  If it's not an actual word then
             // we revert back to non-whole word match
             let isWholeWord = 
-                let isWord = word |> Seq.forall (TextUtil.IsWordChar WordKind.NormalWord)
+                let isWord = word |> Seq.forall _wordUtil.IsKeywordChar
                 isWholeWord && isWord
 
             let pattern = if isWholeWord then PatternUtil.CreateWholeWord word else word
