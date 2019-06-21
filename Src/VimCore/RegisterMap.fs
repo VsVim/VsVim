@@ -23,21 +23,31 @@ type UnnamedRegisterValueBacking (_vimData: IVimData) =
             and set value = x.SetRegisterValue value
 
 /// IRegisterValueBacking implementation for the clipboard 
-type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
+type ClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevice) =
+    let backingRegister = UnnamedRegisterValueBacking(_vimData)
 
     member x.RegisterValue = 
-        let text = _device.Text
-        let operationKind = 
-            if EditUtil.GetLineBreakLengthAtEnd text > 0 then
-                OperationKind.LineWise
-            else
-                OperationKind.CharacterWise
-        RegisterValue(text, operationKind)
+        if _vimData.CaretIndex = 0 then
+            let text = _device.Text
+            let operationKind = 
+                if EditUtil.GetLineBreakLengthAtEnd text > 0 then
+                    OperationKind.LineWise
+                else
+                    OperationKind.CharacterWise
+            RegisterValue(text, operationKind)
+        else
+            backingRegister.RegisterValue
+
+    member x.SetRegisterValue (value: RegisterValue) =
+        if _vimData.CaretIndex = 0 then
+            _device.Text <- value.StringValue
+        else
+            backingRegister.SetRegisterValue value
 
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = x.RegisterValue
-            and set value = _device.Text <- value.StringValue
+            and set value = x.SetRegisterValue value
 
 /// IRegisterValueBacking implementation for append registers.  All of the lower
 /// case letter registers can be accessed via an upper case version.  The only
@@ -79,7 +89,7 @@ type internal BlackholeRegisterValueBacking() =
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
     new(vimData: IVimData, clipboard: IClipboardDevice, currentFileNameFunc: unit -> string option) = 
         let unnamedBacking = UnnamedRegisterValueBacking(vimData) :> IRegisterValueBacking
-        let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
+        let clipboardBacking = ClipboardRegisterValueBacking(vimData, clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
