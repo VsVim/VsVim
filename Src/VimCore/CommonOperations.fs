@@ -2530,7 +2530,7 @@ type internal CommonOperations
             | _ ->
                 None
 
-        /// Run the action and complete any embedded linked transaction
+        // Run the action and complete any embedded linked transaction
         let runActionAndCompleteTransaction action =
             let result = action()
             match getLinkedTransaction result with
@@ -2540,8 +2540,23 @@ type internal CommonOperations
                 ()
             result
 
+        // Get the effective selected span
+        let getVisualSelectedSpan (oldSpan: SelectedSpan) =
+            let oldSpan = x.MapSelectedSpanToCurrentSnapshot oldSpan
+            let visualKind = VisualKind.Character
+            let anchorPoint = oldSpan.StartPoint
+            let caretPoint = x.CaretVirtualPoint
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let selectionKind = _globalSettings.SelectionKind
+            let tabStop = _localSettings.TabStop
+            let visualSelection =
+                VisualSelection.CreateForVirtualPoints visualKind anchorPoint caretPoint tabStop useVirtualSpace
+            let visualSelection = visualSelection.AdjustForSelectionKind selectionKind
+            visualSelection.GetPrimarySelectedSpan selectionKind
+
         // Get the current set of selected spans.
         let selectedSpans = x.SelectedSpans |> Seq.toList
+        let visualAnchorPoint = _vimBufferData.VisualAnchorPoint
         if selectedSpans.Length = 1 then
 
             // This is just one selection so perform the action once and return
@@ -2570,12 +2585,15 @@ type internal CommonOperations
                         // Collect the command result and new selected span
                         // or any embedded visual span, if present.
                         let span =
-                            match getVisualSelection result with
-                            | Some visualSelection ->
-                                _globalSettings.SelectionKind
-                                |> visualSelection.GetPrimarySelectedSpan
-                            | None ->
-                                x.SelectedSpans |> Seq.head
+                            if Option.isSome visualAnchorPoint then
+                                getVisualSelectedSpan span
+                            else
+                                match getVisualSelection result with
+                                | Some visualSelection ->
+                                    _globalSettings.SelectionKind
+                                    |> visualSelection.GetPrimarySelectedSpan
+                                | None ->
+                                    x.SelectedSpans |> Seq.head
                         yield result, span
                 }
                 |> Seq.toList
