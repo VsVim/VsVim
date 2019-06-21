@@ -359,14 +359,15 @@ namespace VimApp
             SetSelectedSpansCommon(textView, selectedSpans.ToArray());
         }
 
+        // TODO: duplicated code start
         private IEnumerable<SelectedSpan> GetSelectedSpansCommon(ITextView textView)
         {
             var broker = textView.GetMultiSelectionBroker();
-            var primaryCaretPoint = textView.Caret.Position.VirtualBufferPosition;
+            var primarySelection = broker.PrimarySelection;
             var secondarySelections = broker.AllSelections
-                .Select(selection => GetSelectedSpan(selection))
-                .Where(span => span.CaretPoint != primaryCaretPoint);
-            return new[] { GetSelectedSpan(broker.PrimarySelection) }.Concat(secondarySelections);
+                .Where(span => span != primarySelection)
+                .Select(selection => GetSelectedSpan(selection));
+            return new[] { GetSelectedSpan(primarySelection) }.Concat(secondarySelections);
         }
 
         private void SetSelectedSpansCommon(ITextView textView, SelectedSpan[] selectedSpans)
@@ -404,6 +405,7 @@ namespace VimApp
         {
             return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.StartPoint, span.EndPoint);
         }
+        // TODO: duplicated code end
 
 #endif
 
