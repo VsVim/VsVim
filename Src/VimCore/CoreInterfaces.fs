@@ -2168,6 +2168,12 @@ type VisualSelection =
 
     with
 
+    member x.IsForward =
+        match x with
+        | Character (_, path) -> path.IsSearchPathForward
+        | Line (_, path, _) -> path.IsSearchPathForward
+        | Block _ -> true
+
     member x.IsCharacterForward =
         match x with
         | Character (_, path) -> path.IsSearchPathForward
@@ -2327,7 +2333,10 @@ type VisualSelection =
             x.VisualSpan.Spans
             |> Seq.head
             |> VirtualSnapshotSpanUtil.OfSpan
-        SelectedSpan(caretPoint, span)
+        if x.IsForward then
+            SelectedSpan(caretPoint, span.Start, span.End)
+        else
+            SelectedSpan(caretPoint, span.End, span.Start)
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =

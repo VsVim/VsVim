@@ -6,14 +6,16 @@ namespace Vim.UnitTest
 {
     public sealed class ClipboardRegisterValueBackingTest
     {
+        private readonly Mock<IVimData> _vimData;
         private readonly Mock<IClipboardDevice> _clipboardDevice;
         private readonly ClipboardRegisterValueBacking _valueBackingRaw;
         private readonly IRegisterValueBacking _valueBacking;
 
         public ClipboardRegisterValueBackingTest()
         {
+            _vimData = new Mock<IVimData>(MockBehavior.Strict);
             _clipboardDevice = new Mock<IClipboardDevice>(MockBehavior.Strict);
-            _valueBackingRaw = new ClipboardRegisterValueBacking(_clipboardDevice.Object);
+            _valueBackingRaw = new ClipboardRegisterValueBacking(_vimData.Object, _clipboardDevice.Object);
             _valueBacking = _valueBackingRaw;
         }
 

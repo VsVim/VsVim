@@ -382,7 +382,7 @@ namespace VimApp
                 }
                 else
                 {
-                    textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+                    textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
                 }
                 return;
             }
@@ -398,12 +398,12 @@ namespace VimApp
 
         private static SelectedSpan GetSelectedSpan(Microsoft.VisualStudio.Text.Selection selection)
         {
-            return new SelectedSpan(selection.InsertionPoint, selection.Start, selection.End);
+            return new SelectedSpan(selection.InsertionPoint, selection.AnchorPoint, selection.ActivePoint);
         }
 
         private static Microsoft.VisualStudio.Text.Selection GetSelection(SelectedSpan span)
         {
-            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.StartPoint, span.EndPoint);
+            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
         }
         // TODO: duplicated code end
 

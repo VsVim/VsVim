@@ -20,8 +20,9 @@ namespace Vim.VisualStudio.Specific
         private IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
             var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-            var span = textView.Selection.StreamSelectionSpan;
-            return new[] { new SelectedSpan(caretPoint, span) };
+            var anchorPoint = textView.Selection.AnchorPoint;
+            var activePoint = textView.Selection.ActivePoint;
+            return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
         }
 
         private void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
@@ -30,7 +31,7 @@ namespace Vim.VisualStudio.Specific
             textView.Caret.MoveTo(selectedSpan.CaretPoint);
             if (selectedSpan.Length != 0)
             {
-                textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+                textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
             }
         }
     }
@@ -72,7 +73,7 @@ namespace Vim.VisualStudio.Specific
                 }
                 else
                 {
-                    textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+                    textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
                 }
                 return;
             }
@@ -88,12 +89,12 @@ namespace Vim.VisualStudio.Specific
 
         private static SelectedSpan GetSelectedSpan(Microsoft.VisualStudio.Text.Selection selection)
         {
-            return new SelectedSpan(selection.InsertionPoint, selection.Start, selection.End);
+            return new SelectedSpan(selection.InsertionPoint, selection.AnchorPoint, selection.ActivePoint);
         }
 
         private static Microsoft.VisualStudio.Text.Selection GetSelection(SelectedSpan span)
         {
-            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.StartPoint, span.EndPoint);
+            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
         }
         // TODO: duplicated code end
     }

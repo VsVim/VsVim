@@ -59,37 +59,42 @@ type JoinKind =
 type SelectedSpan =
 
     val private _caretPoint: VirtualSnapshotPoint
-    val private _span: VirtualSnapshotSpan
+    val private _anchorPoint: VirtualSnapshotPoint
+    val private _activePoint: VirtualSnapshotPoint
 
     new (caretPoint: VirtualSnapshotPoint) =
         {
             _caretPoint = caretPoint
-            _span = VirtualSnapshotSpan(caretPoint, caretPoint)
+            _anchorPoint = caretPoint
+            _activePoint = caretPoint
         }
 
-    new (caretPoint: VirtualSnapshotPoint, startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint) =
+    new (caretPoint: VirtualSnapshotPoint, anchorPoint: VirtualSnapshotPoint, activePoint: VirtualSnapshotPoint) =
         {
             _caretPoint = caretPoint
-            _span = VirtualSnapshotSpan(startPoint, endPoint)
-        }
-
-    new (caretPoint: VirtualSnapshotPoint, span: VirtualSnapshotSpan) =
-        {
-            _caretPoint = caretPoint
-            _span = span
+            _anchorPoint = anchorPoint
+            _activePoint = activePoint
         }
 
     member x.CaretPoint = x._caretPoint
-    member x.StartPoint = x._span.Start
-    member x.EndPoint = x._span.End
-    member x.Span = x._span
-    member x.Length = x._span.Length
+    member x.AnchorPoint = x._anchorPoint
+    member x.ActivePoint = x._activePoint
+    member x.IsReversed = x._anchorPoint.Position.Position > x._activePoint.Position.Position
+    member x.Span =
+        if not x.IsReversed then
+            VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
+        else
+            VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
+    member x.StartPoint = x.Span.Start
+    member x.EndPoint = x.Span.End
+    member x.Length = x.Span.Length
 
     override x.ToString() =
-        System.String.Format("{0}: [{1}-{2})",
+        System.String.Format("{0}: [{1}-{2}){3}",
             x._caretPoint.Position.Position,
-            x._span.Start.Position.Position,
-            x._span.End.Position.Position)
+            x.Span.Start.Position.Position,
+            x.Span.End.Position.Position,
+            if x.IsReversed then " (reversed)" else "")
 
 type NavigationKind =
     | First = 0

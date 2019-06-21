@@ -2433,9 +2433,9 @@ type internal CommonOperations
     /// Map the specified selected span to the current snapshot
     member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
         let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
-        let startPoint = x.MapCaretPointToCurrentSnapshot span.StartPoint
-        let endPoint = x.MapCaretPointToCurrentSnapshot span.EndPoint
-        SelectedSpan(caretPoint, startPoint, endPoint)
+        let anchorPoint = x.MapCaretPointToCurrentSnapshot span.AnchorPoint
+        let activcePoint = x.MapCaretPointToCurrentSnapshot span.ActivePoint
+        SelectedSpan(caretPoint, anchorPoint, activcePoint)
 
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
@@ -2554,7 +2554,7 @@ type internal CommonOperations
         let getVisualSelectedSpan (oldSpan: SelectedSpan) =
             let oldSpan = x.MapSelectedSpanToCurrentSnapshot oldSpan
             let visualKind = VisualKind.Character
-            let anchorPoint = oldSpan.StartPoint
+            let anchorPoint = oldSpan.AnchorPoint
             let caretPoint = x.CaretVirtualPoint
             let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
             let selectionKind = _globalSettings.SelectionKind
@@ -2658,12 +2658,13 @@ type internal CommonOperations
 
         else
 
-            // Do the actions for each selection being sure to reset the caret
-            // index at the end.
+            // Do the actions for each selection being sure to restore the
+            // caret index at the end.
+            let oldCaretIndex = _vimData.CaretIndex
             try
                 doActions()
             finally
-                _vimData.CaretIndex <- 0
+                _vimData.CaretIndex <- oldCaretIndex
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData

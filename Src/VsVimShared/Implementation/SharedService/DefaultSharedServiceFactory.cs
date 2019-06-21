@@ -34,8 +34,9 @@ namespace Vim.VisualStudio.Implementation.SharedService
             IEnumerable<SelectedSpan> ISharedService.GetSelectedSpans(ITextView textView)
             {
                 var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-                var span = textView.Selection.StreamSelectionSpan;
-                return new[] { new SelectedSpan(caretPoint, span) };
+                var anchorPoint = textView.Selection.AnchorPoint;
+                var activePoint = textView.Selection.ActivePoint;
+                return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
             }
 
             void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
@@ -44,7 +45,7 @@ namespace Vim.VisualStudio.Implementation.SharedService
                 textView.Caret.MoveTo(selectedSpan.CaretPoint);
                 if (selectedSpan.Length != 0)
                 {
-                    textView.Selection.Select(selectedSpan.StartPoint, selectedSpan.EndPoint);
+                    textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
                 }
             }
         }
