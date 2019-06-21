@@ -2537,7 +2537,9 @@ namespace Vim.UnitTest
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<CR>"));
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
 
             [AsyncCompletionWpfFact]
@@ -2547,8 +2549,9 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-y>");
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                _vimBuffer.ProcessNotation("<CR>");
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
+                Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
             
             /// <summary>
@@ -2623,7 +2626,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-N><C-y>");
+                _vimBuffer.ProcessNotation("<C-N><C-Y>");
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
 
@@ -2637,8 +2640,10 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-e>");
+                _vimBuffer.ProcessNotation("<C-E>");
+                _vimBuffer.ProcessNotation("<Esc>");
                 Assert.Equal("c dog", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
