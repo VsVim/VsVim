@@ -2502,6 +2502,10 @@ type internal CommonOperations
     /// Run the specified action for all selections
     member x.RunForAllSelections action =
 
+        // Get the current set of selected spans.
+        let selectedSpans = x.SelectedSpans |> Seq.toList
+        let visualAnchorPoint = _vimBufferData.VisualAnchorPoint
+
         // Get any mode argument from the specified command result
         let getModeArgument result =
             match result with
@@ -2530,6 +2534,12 @@ type internal CommonOperations
             | _ ->
                 None
 
+        // Create a linked undo transaction
+        let createTransaction () =
+            let name = "MultiSelection"
+            let flags = LinkedUndoTransactionFlags.CanBeEmpty
+            _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
+
         // Run the action and complete any embedded linked transaction
         let runActionAndCompleteTransaction action =
             let result = action()
@@ -2550,53 +2560,54 @@ type internal CommonOperations
             let selectionKind = _globalSettings.SelectionKind
             let tabStop = _localSettings.TabStop
             let visualSelection =
-                VisualSelection.CreateForVirtualPoints visualKind anchorPoint caretPoint tabStop useVirtualSpace
-            let visualSelection = visualSelection.AdjustForSelectionKind selectionKind
+                VisualSelection.CreateForVirtualPoints
+                    visualKind anchorPoint caretPoint tabStop useVirtualSpace
+            let visualSelection =
+                visualSelection.AdjustForSelectionKind selectionKind
             visualSelection.GetPrimarySelectedSpan selectionKind
 
-        // Get the current set of selected spans.
-        let selectedSpans = x.SelectedSpans |> Seq.toList
-        let visualAnchorPoint = _vimBufferData.VisualAnchorPoint
-        if selectedSpans.Length = 1 then
+        // Get the results for all actions.
+        let getResults () =
+            seq {
+                let indexedSpans =
+                    selectedSpans
+                    |> Seq.mapi (fun index span -> index, span)
+                for index, selectedSpan in indexedSpans do
 
-            // This is just one selection so perform the action once and return
-            // its result normally.
-            action()
+                    // Set the global caret index.
+                    _vimData.CaretIndex <- index
 
-        else
+                    // Temporarily set the real caret and selection.
+                    let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
+                    x.SetSelectedSpans [span]
+
+                    // Run the action once.
+                    let result = runActionAndCompleteTransaction action
+
+                    // Collect the command result and new selected span
+                    // or any embedded visual span, if present.
+                    let span =
+                        if Option.isSome visualAnchorPoint then
+                            getVisualSelectedSpan span
+                        else
+                            match getVisualSelection result with
+                            | Some visualSelection ->
+                                _globalSettings.SelectionKind
+                                |> visualSelection.GetPrimarySelectedSpan
+                            | None ->
+                                x.SelectedSpans |> Seq.head
+                    yield result, span
+            }
+            |> Seq.toList
+
+        // Do the action for all selections
+        let doActions () =
 
             // Create a linked transaction for the overall operation.
-            let flags = LinkedUndoTransactionFlags.CanBeEmpty
-            let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiSelection" flags
+            let transaction = createTransaction()
 
             // Run the action for each selected span.
-            let results =
-                seq {
-                    for selectedSpan in selectedSpans do
-
-                        // Temporarily set the real caret and selection.
-                        let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
-                        x.SetSelectedSpans [span]
-
-                        // Run the action once.
-                        let result = runActionAndCompleteTransaction action
-
-                        // Collect the command result and new selected span
-                        // or any embedded visual span, if present.
-                        let span =
-                            if Option.isSome visualAnchorPoint then
-                                getVisualSelectedSpan span
-                            else
-                                match getVisualSelection result with
-                                | Some visualSelection ->
-                                    _globalSettings.SelectionKind
-                                    |> visualSelection.GetPrimarySelectedSpan
-                                | None ->
-                                    x.SelectedSpans |> Seq.head
-                        yield result, span
-                }
-                |> Seq.toList
+            let results = getResults()
 
             // Extract the resulting selected spans and set them.
             results
@@ -2629,15 +2640,30 @@ type internal CommonOperations
 
                     // If there was a visual selection for the individual
                     // command, the multi-selection is already set and correct.
-                    // Let the selection change tracker notice and perform the
-                    // mode switch automatically.
+                    // Let the selection change tracker notice and do the mode
+                    // switch automatically.
                     CommandResult.Completed ModeSwitch.NoSwitch
 
                 else
 
                     // Any other kind of command result.
-                    transaction.Complete()
                     result
+
+        // Body starts here.
+        if selectedSpans.Length = 1 then
+
+            // This is just one selection so do the action once and return its
+            // result normally.
+            action()
+
+        else
+
+            // Do the actions for each selection being sure to reset the caret
+            // index at the end.
+            try
+                doActions()
+            finally
+                _vimData.CaretIndex <- 0
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData

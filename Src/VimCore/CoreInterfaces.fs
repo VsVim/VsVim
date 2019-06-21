@@ -4701,6 +4701,9 @@ type IVimData =
     /// isn't currently suspended then tihs command will have no effect on the system
     abstract ResumeDisplayPattern: unit -> unit
 
+    /// The current caret index
+    abstract CaretIndex: int with get, set
+
     /// Raised when the DisplayPattern property changes
     [<CLIEvent>]
     abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>

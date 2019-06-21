@@ -91,6 +91,7 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
     let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
+    let mutable _caretIndex = 0
     let _displayPatternChanged = StandardEvent()
 
     do 
@@ -190,6 +191,9 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
         member x.LastVisualSelection 
             with get() = _lastVisualSelection
             and set value = _lastVisualSelection <- value
+        member x.CaretIndex 
+            with get() = _caretIndex
+            and set value = _caretIndex <- value
         member x.SuspendDisplayPattern() = x.SuspendDisplayPattern()
         member x.ResumeDisplayPattern() = x.ResumeDisplayPattern()
         [<CLIEvent>]

@@ -2,6 +2,26 @@
 
 namespace Vim
 
+/// IRegisterValueBacking implementation for the unnamed register 
+type UnnamedRegisterValueBacking (_vimData: IVimData) =
+    static let defaultValue
+        = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
+    let map = System.Collections.Generic.Dictionary<int, RegisterValue>();
+    member x.RegisterValue = 
+        let caretIndex = _vimData.CaretIndex
+        if not (map.ContainsKey(caretIndex)) then
+            map.[caretIndex] <- defaultValue
+        map.[caretIndex]
+
+    member x.SetRegisterValue value =
+        let caretIndex = _vimData.CaretIndex
+        map.[caretIndex] <- value
+
+    interface IRegisterValueBacking with
+        member x.RegisterValue 
+            with get () = x.RegisterValue
+            and set value = x.SetRegisterValue value
+
 /// IRegisterValueBacking implementation for the clipboard 
 type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
 
@@ -58,6 +78,7 @@ type internal BlackholeRegisterValueBacking() =
 
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
     new(vimData: IVimData, clipboard: IClipboardDevice, currentFileNameFunc: unit -> string option) = 
+        let unnamedBacking = UnnamedRegisterValueBacking(vimData) :> IRegisterValueBacking
         let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
@@ -76,6 +97,7 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
 
         let getBacking name = 
             match name with 
+            | RegisterName.Unnamed -> unnamedBacking
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Plus -> clipboardBacking
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Star  -> clipboardBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Percent -> fileNameBacking

@@ -2990,6 +2990,7 @@ type internal CommandUtil
         | NormalCommand.ShiftMotionLinesLeft _ -> true
         | NormalCommand.ShiftMotionLinesRight _ -> true
         | NormalCommand.SwitchToSelection _ -> true
+        | NormalCommand.Yank _ -> true
         | _ -> false
 
     /// Run a NormalCommand against the buffer
