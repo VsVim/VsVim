@@ -2539,7 +2539,6 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<CR>"));
                 Assert.Equal("cat", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
 
             [AsyncCompletionWpfFact]
@@ -2551,7 +2550,6 @@ namespace Vim.UnitTest
                 Dispatcher.DoEvents();
                 _vimBuffer.ProcessNotation("<CR>");
                 Assert.Equal("cat", _textView.GetLine(0).GetText());
-                Assert.Equal("dog", _textView.GetLine(1).GetText());
             }
             
             /// <summary>
