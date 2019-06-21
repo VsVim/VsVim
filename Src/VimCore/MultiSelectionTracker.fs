@@ -88,7 +88,18 @@ type internal MultiSelectionTracker
         let snapshot = _textView.TextBuffer.CurrentSnapshot
         let oldSelectedSpans = x.OldSelectedSpans
         let newSelectedSpans = x.GetSelectedSpans()
-        if oldSelectedSpans.Length > 1 then
+        if
+            oldSelectedSpans.[0] = newSelectedSpans.[0]
+            && oldSelectedSpans.Length = newSelectedSpans.Length
+        then
+
+            // The caret didn't move and the number of selected spans didn't
+            // change.
+            ()
+
+        elif oldSelectedSpans.Length > 1 then
+
+            // We previously had selected spans.
             let oldPosition =
                 oldSelectedSpans.[0].CaretPoint.Position
                 |> _commonOperations.MapPointNegativeToCurrentSnapshot

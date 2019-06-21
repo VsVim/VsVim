@@ -628,7 +628,7 @@ type internal InsertUtil
     member x.RunInsertCommand command = 
         if x.ShouldRunForEachCaret command then
             fun () -> x.RunInsertCommandCore command
-            |> _operations.RunForAllCarets
+            |> _operations.RunForAllSelections
         else
             x.RunInsertCommandCore command
 

@@ -2996,7 +2996,7 @@ type internal CommandUtil
     member x.RunNormalCommand command data =
         if x.ShouldRunNormalCommandForEachCaret command then
             fun () -> x.RunNormalCommandCore command data
-            |> _commonOperations.RunForAllCarets
+            |> _commonOperations.RunForAllSelections
         else
             x.RunNormalCommandCore command data
 

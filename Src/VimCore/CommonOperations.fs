@@ -2499,19 +2499,31 @@ type internal CommonOperations
         let endPoint = x.MapCaretPointToCurrentSnapshot span.EndPoint
         SelectedSpan(caretPoint, startPoint, endPoint)
 
-    /// Get any linked transaction from the specified command result.
-    member x.GetLinkedTransaction result =
+    /// Get any mode argument from the specified command result
+    member x.GetModeArgument result =
         match result with
         | CommandResult.Completed modeSwitch ->
             match modeSwitch with
             | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                match modeArgument with
-                | ModeArgument.InsertWithTransaction linkedTransaction ->
-                    Some linkedTransaction
-                | _ ->
-                    None
+                Some modeArgument
             | _ ->
                 None
+        | _ ->
+            None
+
+    /// Get any linked transaction from the specified command result
+    member x.GetLinkedTransaction result =
+        match x.GetModeArgument result with
+        | Some (ModeArgument.InsertWithTransaction linkedTransaction) ->
+            Some linkedTransaction
+        | _ ->
+            None
+
+    /// Get any visual selection from the specified command result
+    member x.GetVisualSelection result =
+        match x.GetModeArgument result with
+        | Some (ModeArgument.InitialVisualSelection (visualSelection, _)) ->
+            Some visualSelection
         | _ ->
             None
 
@@ -2537,57 +2549,6 @@ type internal CommonOperations
         | None ->
             ()
         result
-
-    /// Run the specified action for all carets
-    member x.RunForAllCarets action =
-
-        // Get the virtual carets from the host.
-        let caretPoints = x.CaretPoints |> Seq.toList
-        if caretPoints.Length = 1 then
-
-            // Just one caret so perform the action once.
-            action()
-
-        else
-
-            // Create a linked transaction for the operation.
-            let flags = LinkedUndoTransactionFlags.CanBeEmpty
-            let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "For All Carets" flags
-
-            // Run the action for each caret point.
-            let results =
-                seq {
-
-                    // Iterate over the virtual carets.
-                    for caretPoint in caretPoints do
-
-                        // Temporarily move the real caret.
-                        let point = x.MapCaretPointToCurrentSnapshot caretPoint
-                        x.SetCaretPoints [point]
-
-                        // Run the action once.
-                        let result = x.RunActionAndCompleteTransaction action
-
-                        // Collect the command result and new caret point.
-                        let point = x.CaretPoints |> Seq.head
-                        yield result, point
-                }
-                |> Seq.toList
-
-            // Extract the resulting caret points and set them.
-            results
-            |> Seq.map (fun (_, point) -> point)
-            |> Seq.map x.MapCaretPointToCurrentSnapshot
-            |> x.SetCaretPoints
-
-            // Extract the first command result.
-            let result =
-                results
-                |> Seq.map (fun (result, _) -> result)
-                |> Seq.head
-
-            x.HandleCommandResult transaction result
 
     /// Run the specified action for all selections
     member x.RunForAllSelections action =
@@ -2616,8 +2577,15 @@ type internal CommonOperations
                         // Run the action once.
                         let result = x.RunActionAndCompleteTransaction action
 
-                        // Collect the command result and new caret point.
-                        let span = x.SelectedSpans |> Seq.head
+                        // Collect the command result and new selected span
+                        // or any embedded visual span, if present.
+                        let span =
+                            match x.GetVisualSelection result with
+                            | Some visualSelection ->
+                                _globalSettings.SelectionKind
+                                |> visualSelection.GetPrimarySelectedSpan
+                            | None ->
+                                x.SelectedSpans |> Seq.head
                         yield result, span
                 }
                 |> Seq.toList
@@ -2634,7 +2602,11 @@ type internal CommonOperations
                 |> Seq.map (fun (result, _) -> result)
                 |> Seq.head
 
-            x.HandleCommandResult transaction result
+            match x.GetVisualSelection result with
+            | Some _ ->
+                CommandResult.Completed ModeSwitch.NoSwitch
+            | None ->
+                x.HandleCommandResult transaction result
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
@@ -2708,7 +2680,6 @@ type internal CommonOperations
         member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
         member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
-        member x.RunForAllCarets action = x.RunForAllCarets action
         member x.RunForAllSelections action = x.RunForAllSelections action
         member x.SetCaretPoints points = x.SetCaretPoints points
         member x.SetSelectedSpans spans = x.SetSelectedSpans spans

@@ -549,9 +549,6 @@ type ICommonOperations =
     /// Restore spaces to caret, or move to start of line if 'startofline' is set
     abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
-    /// Run the specified action for all carets
-    abstract RunForAllCarets: action: (unit -> CommandResult) -> CommandResult
-
     /// Run the specified action for all selections
     abstract RunForAllSelections: action: (unit -> CommandResult) -> CommandResult
 
