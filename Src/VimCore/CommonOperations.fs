@@ -2424,6 +2424,19 @@ type internal CommonOperations
             TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
             |> OptionUtil.getOrDefault (SnapshotPoint(snapshot, min point.Position snapshot.Length))
 
+    /// Map the specified caret point to the current snapshot
+    member x.MapCaretPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
+        point.Position
+        |> x.MapPointNegativeToCurrentSnapshot
+        |> VirtualSnapshotPointUtil.OfPoint
+
+    /// Map the specified selected span to the current snapshot
+    member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
+        let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
+        let startPoint = x.MapCaretPointToCurrentSnapshot span.StartPoint
+        let endPoint = x.MapCaretPointToCurrentSnapshot span.EndPoint
+        SelectedSpan(caretPoint, startPoint, endPoint)
+
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
         let selectedSpans = x.SelectedSpans |> Seq.toList
@@ -2486,84 +2499,61 @@ type internal CommonOperations
         | _ ->
             ()
 
-    /// Map the specified caret point to the current snapshot
-    member x.MapCaretPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
-        point.Position
-        |> x.MapPointNegativeToCurrentSnapshot
-        |> VirtualSnapshotPointUtil.OfPoint
-
-    /// Map the specified selected span to the current snapshot
-    member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
-        let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
-        let startPoint = x.MapCaretPointToCurrentSnapshot span.StartPoint
-        let endPoint = x.MapCaretPointToCurrentSnapshot span.EndPoint
-        SelectedSpan(caretPoint, startPoint, endPoint)
-
-    /// Get any mode argument from the specified command result
-    member x.GetModeArgument result =
-        match result with
-        | CommandResult.Completed modeSwitch ->
-            match modeSwitch with
-            | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                Some modeArgument
-            | _ ->
-                None
-        | _ ->
-            None
-
-    /// Get any linked transaction from the specified command result
-    member x.GetLinkedTransaction result =
-        match x.GetModeArgument result with
-        | Some (ModeArgument.InsertWithTransaction linkedTransaction) ->
-            Some linkedTransaction
-        | _ ->
-            None
-
-    /// Get any visual selection from the specified command result
-    member x.GetVisualSelection result =
-        match x.GetModeArgument result with
-        | Some (ModeArgument.InitialVisualSelection (visualSelection, _)) ->
-            Some visualSelection
-        | _ ->
-            None
-
-    /// If the command result ended with a linked transaction, use the overall
-    /// linked transaction instead
-    member x.HandleCommandResult transaction result =
-        match x.GetLinkedTransaction result with
-        | Some _ ->
-            let modeArgument = ModeArgument.InsertWithTransaction transaction
-            (ModeKind.Insert, modeArgument)
-            |> ModeSwitch.SwitchModeWithArgument
-            |> CommandResult.Completed
-        | None ->
-            transaction.Complete()
-            result
-
-    /// Run the action and complete any embedded linked transaction
-    member x.RunActionAndCompleteTransaction action =
-        let result = action()
-        match x.GetLinkedTransaction result with
-        | Some linkedTransaction ->
-            linkedTransaction.Complete()
-        | None ->
-            ()
-        result
-
     /// Run the specified action for all selections
     member x.RunForAllSelections action =
+
+        // Get any mode argument from the specified command result
+        let getModeArgument result =
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                    Some modeArgument
+                | _ ->
+                    None
+            | _ ->
+                None
+
+        // Get any linked transaction from the specified command result
+        let getLinkedTransaction result =
+            match getModeArgument result with
+            | Some (ModeArgument.InsertWithTransaction linkedTransaction) ->
+                Some linkedTransaction
+            | _ ->
+                None
+
+        // Get any visual selection from the specified command result
+        let getVisualSelection result =
+            match getModeArgument result with
+            | Some (ModeArgument.InitialVisualSelection (visualSelection, _)) ->
+                Some visualSelection
+            | _ ->
+                None
+
+        /// Run the action and complete any embedded linked transaction
+        let runActionAndCompleteTransaction action =
+            let result = action()
+            match getLinkedTransaction result with
+            | Some linkedTransaction ->
+                linkedTransaction.Complete()
+            | None ->
+                ()
+            result
+
+        // Get the current set of selected spans.
         let selectedSpans = x.SelectedSpans |> Seq.toList
         if selectedSpans.Length = 1 then
 
-            // Just one selection so perform the action once.
+            // This is just one selection so perform the action once and return
+            // its result normally.
             action()
 
         else
 
-            // Create a linked transaction for the operation.
+            // Create a linked transaction for the overall operation.
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             let transaction
-                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "For All Selections" flags
+                = _undoRedoOperations.CreateLinkedUndoTransactionWithFlags "MultiSelection" flags
 
             // Run the action for each selected span.
             let results =
@@ -2575,12 +2565,12 @@ type internal CommonOperations
                         x.SetSelectedSpans [span]
 
                         // Run the action once.
-                        let result = x.RunActionAndCompleteTransaction action
+                        let result = runActionAndCompleteTransaction action
 
                         // Collect the command result and new selected span
                         // or any embedded visual span, if present.
                         let span =
-                            match x.GetVisualSelection result with
+                            match getVisualSelection result with
                             | Some visualSelection ->
                                 _globalSettings.SelectionKind
                                 |> visualSelection.GetPrimarySelectedSpan
@@ -2602,11 +2592,34 @@ type internal CommonOperations
                 |> Seq.map (fun (result, _) -> result)
                 |> Seq.head
 
-            match x.GetVisualSelection result with
-            | Some _ ->
-                CommandResult.Completed ModeSwitch.NoSwitch
-            | None ->
-                x.HandleCommandResult transaction result
+            // Handle command result.
+            if getLinkedTransaction result |> Option.isSome then
+
+                // The individual command ended in a linked transaction. Enter
+                // insert mode with the overall linked transaction instead.
+                let modeArgument = ModeArgument.InsertWithTransaction transaction
+                (ModeKind.Insert, modeArgument)
+                |> ModeSwitch.SwitchModeWithArgument
+                |> CommandResult.Completed
+
+            else
+
+                // Complete the transaction.
+                transaction.Complete()
+
+                if getVisualSelection result |> Option.isSome then
+
+                    // If there was a visual selection for the individual
+                    // command, the multi-selection is already set and correct.
+                    // Let the selection change tracker notice and perform the
+                    // mode switch automatically.
+                    CommandResult.Completed ModeSwitch.NoSwitch
+
+                else
+
+                    // Any other kind of command result.
+                    transaction.Complete()
+                    result
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
@@ -2694,6 +2707,8 @@ type internal CommonOperations
         member x.ToggleLanguage isForInsert = x.ToggleLanguage isForInsert
         member x.MapPointNegativeToCurrentSnapshot point = x.MapPointNegativeToCurrentSnapshot point
         member x.MapPointPositiveToCurrentSnapshot point = x.MapPointPositiveToCurrentSnapshot point
+        member x.MapCaretPointToCurrentSnapshot point = x.MapCaretPointToCurrentSnapshot point
+        member x.MapSelectedSpanToCurrentSnapshot span = x.MapSelectedSpanToCurrentSnapshot span
         member x.Undo count = x.Undo count
 
         [<CLIEvent>]

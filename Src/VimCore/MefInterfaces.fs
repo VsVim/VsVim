@@ -591,6 +591,12 @@ type ICommonOperations =
     /// Map the specified point with positive tracking to the current snapshot
     abstract MapPointPositiveToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
 
+    /// Map the specified virtual point to the current snapshot
+    abstract MapCaretPointToCurrentSnapshot: point: VirtualSnapshotPoint -> VirtualSnapshotPoint
+
+    /// Map the specified point with positive tracking to the current snapshot
+    abstract MapSelectedSpanToCurrentSnapshot: point: SelectedSpan -> SelectedSpan
+
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
 
