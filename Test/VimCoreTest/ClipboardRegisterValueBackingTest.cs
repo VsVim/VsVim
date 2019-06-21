@@ -14,6 +14,7 @@ namespace Vim.UnitTest
         public ClipboardRegisterValueBackingTest()
         {
             _vimData = new Mock<IVimData>(MockBehavior.Strict);
+            _vimData.SetupGet(x => x.CaretIndex).Returns(0);
             _clipboardDevice = new Mock<IClipboardDevice>(MockBehavior.Strict);
             _valueBackingRaw = new ClipboardRegisterValueBacking(_vimData.Object, _clipboardDevice.Object);
             _valueBacking = _valueBackingRaw;
