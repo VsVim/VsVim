@@ -13,7 +13,7 @@ open System.Collections.Generic
 type WordCompletionUtil
     (
         _vim: IVim,
-        _wordUtil: IWordUtil
+        _wordUtil: WordUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
@@ -27,7 +27,7 @@ type WordCompletionUtil
     ///
     /// This method will be called for every single word in the file hence avoid allocations whenever
     /// possible.  That dramatically reduces the allocations
-    static member private GetFilterFunc (filterText: string) (comparer: CharComparer) =
+    member private x.GetFilterFunc (filterText: string) (comparer: CharComparer) =
 
         // Is this actually a word we're interest in.  Need to clear out new lines, 
         // comment characters, one character items, etc ... 
@@ -36,7 +36,7 @@ type WordCompletionUtil
                 false
             else
                 let c = span.Start.GetChar()
-                TextUtil.IsWordChar WordKind.NormalWord c
+                _wordUtil.IsKeywordChar c
 
         // Is this span a match for the filter text? 
         let isMatch (span: SnapshotSpan) =
@@ -65,7 +65,7 @@ type WordCompletionUtil
         let snapshot = wordSpan.Snapshot
         let wordsBefore = 
             let startPoint = SnapshotUtil.GetStartPoint snapshot
-            _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward startPoint
+            _wordUtil.GetWordSpans WordKind.NormalWord SearchPath.Forward startPoint
             |> Seq.filter (fun span -> span.End.Position <= wordSpan.Start.Position)
 
         // Get the sequence of words after the completion word 
@@ -74,17 +74,17 @@ type WordCompletionUtil
             // The provided SnapshotSpan can be a subset of an entire word.  If so then
             // we want to consider the text to the right of the caret as a full word
             match _wordUtil.GetFullWordSpan WordKind.NormalWord wordSpan.Start with
-            | None -> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
+            | None -> _wordUtil.GetWordSpans WordKind.NormalWord SearchPath.Forward wordSpan.End
             | Some fullWordSpan ->
                 if fullWordSpan = wordSpan then
-                    _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward wordSpan.End
+                    _wordUtil.GetWordSpans WordKind.NormalWord SearchPath.Forward wordSpan.End
                 else
                     let remaining = SnapshotSpan(wordSpan.End, fullWordSpan.End)
-                    let after = _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward fullWordSpan.End
+                    let after = _wordUtil.GetWordSpans WordKind.NormalWord SearchPath.Forward fullWordSpan.End
                     Seq.append (Seq.singleton remaining) after
 
         let filterText = wordSpan.GetText()
-        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+        let filterFunc = x.GetFilterFunc filterText comparer
 
         // Combine the collections
         Seq.append wordsAfter wordsBefore
@@ -93,10 +93,10 @@ type WordCompletionUtil
     /// Get the word completion entries in the specified ITextSnapshot.  If the token is cancelled the 
     /// exception will be propagated out of this method.  This method will return duplicate words too
     member private x.GetWordCompletionsInFile (filterText: string) comparer (snapshot: ITextSnapshot) =
-        let filterFunc = WordCompletionUtil.GetFilterFunc filterText comparer
+        let filterFunc = x.GetFilterFunc filterText comparer
         let startPoint = SnapshotPoint(snapshot, 0) 
         startPoint
-        |> _wordUtil.GetWords WordKind.NormalWord SearchPath.Forward
+        |> _wordUtil.GetWordSpans WordKind.NormalWord SearchPath.Forward
         |> Seq.filter filterFunc
 
     member x.GetWordCompletions (wordSpan: SnapshotSpan) =
@@ -254,7 +254,6 @@ type internal InsertMode
         _isReplace: bool,
         _keyboard: IKeyboardDevice,
         _mouse: IMouseDevice,
-        _wordUtil: IWordUtil,
         _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService
     ) as this =
 
@@ -309,6 +308,7 @@ type internal InsertMode
     let _globalSettings = _vimBuffer.GlobalSettings
     let _editorOperations = _operations.EditorOperations
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
+    let _wordUtil = _vimBuffer.VimTextBuffer.WordUtil
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData

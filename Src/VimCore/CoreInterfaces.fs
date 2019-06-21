@@ -128,22 +128,6 @@ type IFileSystem =
 
     abstract Write: filePath: string -> stream: Stream -> bool
 
-/// Utility function for searching for Word values.  This is a MEF importable
-/// component
-[<UsedInBackgroundThread>]
-type IWordUtil = 
-
-    /// Get the full word span for the word value which crosses the given SnapshotPoint
-    abstract GetFullWordSpan: wordKind: WordKind -> point: SnapshotPoint -> SnapshotSpan option
-
-    /// Get the SnapshotSpan for Word values from the given point.  If the provided point is 
-    /// in the middle of a word the span of the entire word will be returned
-    abstract GetWords: wordKind: WordKind -> path: SearchPath -> point: SnapshotPoint -> SnapshotSpan seq
-
-    /// Create an ITextStructureNavigator where the extent of words is calculated for
-    /// the specified WordKind value
-    abstract CreateTextStructureNavigator: wordKind: WordKind -> contentType: IContentType -> ITextStructureNavigator
-
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 
@@ -704,11 +688,11 @@ type ISearchService =
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: ITextStructureNavigator -> SearchResult
+    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: SnapshotWordNavigator -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: ITextStructureNavigator -> count: int -> SearchResult
+    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: SnapshotWordNavigator -> count: int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
@@ -4980,7 +4964,7 @@ and IVimBufferData =
     abstract WindowSettings: IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
-    abstract WordUtil: IWordUtil
+    abstract WordUtil: WordUtil
 
     /// The IVimLocalSettings associated with the ITextBuffer
     abstract LocalSettings: IVimLocalSettings
@@ -5250,6 +5234,9 @@ and IVimTextBuffer =
 
     /// The associated IVim instance
     abstract Vim: IVim
+
+    /// The WordUtil for this IVimTextBuffer
+    abstract WordUtil: WordUtil
 
     /// The ITextStructureNavigator for word values in the ITextBuffer
     abstract WordNavigator: ITextStructureNavigator

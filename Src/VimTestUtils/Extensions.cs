@@ -1952,5 +1952,7 @@ namespace Vim.UnitTest
             Assert.True(option.IsSome());
             return option.Value;
         }
+
+        public static string Substring(this string s, Span span) => s.Substring(span.Start, span.Length);
     }
 }

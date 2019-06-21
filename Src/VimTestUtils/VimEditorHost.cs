@@ -17,7 +17,6 @@ namespace Vim.UnitTest
         private readonly IVimBufferFactory _vimBufferFactory;
         private readonly ICommonOperationsFactory _commonOperationsFactory;
         private readonly IVimErrorDetector _vimErrorDetector;
-        private readonly IWordUtil _wordUtil;
         private readonly IFoldManagerFactory _foldManagerFactory;
         private readonly IBufferTrackingService _bufferTrackingService;
         private readonly IBulkOperations _bulkOperations;
@@ -52,11 +51,6 @@ namespace Vim.UnitTest
         public ICommonOperationsFactory CommonOperationsFactory
         {
             get { return _commonOperationsFactory; }
-        }
-
-        public IWordUtil WordUtil
-        {
-            get { return _wordUtil; }
         }
 
         public IFoldManagerFactory FoldManagerFactory
@@ -125,7 +119,6 @@ namespace Vim.UnitTest
             _vimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
             _vimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
             _commonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();
-            _wordUtil = CompositionContainer.GetExportedValue<IWordUtil>();
             _bufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();
             _foldManagerFactory = CompositionContainer.GetExportedValue<IFoldManagerFactory>();
             _bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();

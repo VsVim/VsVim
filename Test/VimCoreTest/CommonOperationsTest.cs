@@ -71,6 +71,8 @@ namespace Vim.UnitTest
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _localSettings.SetupGet(x => x.IsKeyword).Returns("@,_,0-9");
+            _localSettings.SetupGet(x => x.IsKeywordCharSet).Returns(VimCharSet.TryParse("@,_,0-9").Value);
 
             _statusUtil = _factory.Create<IStatusUtil>();
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
