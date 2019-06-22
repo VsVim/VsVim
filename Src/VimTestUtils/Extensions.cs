@@ -1100,6 +1100,11 @@ namespace Vim.UnitTest
             return textView.TextBuffer.GetPointInLine(lineNumber, column);
         }
 
+        public static VirtualSnapshotPoint GetVirtualPointInLine(this ITextView textView, int lineNumber, int column)
+        {
+            return textView.TextBuffer.GetVirtualPointInLine(lineNumber, column);
+        }
+
         public static SnapshotLineRange GetLineRange(this ITextView textView, int startLine, int endLine = -1)
         {
             return textView.TextBuffer.GetLineRange(startLine, endLine);

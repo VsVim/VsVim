@@ -70,6 +70,8 @@ namespace Vim.UnitTest.Mock
         public WordWrapStyles WordWrapStyle { get; set; }
         public bool UseDefaultCaret { get; set; }
         public FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory { get; set; }
+        public bool IsMultiSelectionSupported { get; set; }
+        public List<SelectedSpan> SecondarySelectedSpans { get; set; }
 
         public MockVimHost()
         {
@@ -126,6 +128,8 @@ namespace Vim.UnitTest.Mock
             ShouldIncludeRcFile = true;
             WordWrapStyle = WordWrapStyles.WordWrap;
             UseDefaultCaret = false;
+            IsMultiSelectionSupported = false;
+            SecondarySelectedSpans = new List<SelectedSpan>();
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -445,16 +449,29 @@ namespace Vim.UnitTest.Mock
             var caretPoint = textView.Caret.Position.VirtualBufferPosition;
             var anchorPoint = textView.Selection.AnchorPoint;
             var activePoint = textView.Selection.ActivePoint;
-            return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
+            var primarySelectedSpan = new SelectedSpan(caretPoint, anchorPoint, activePoint);
+            if (IsMultiSelectionSupported)
+            {
+                return Enumerable.Repeat(primarySelectedSpan, 1).Concat(SecondarySelectedSpans);
+            }
+            else
+            {
+                return Enumerable.Repeat(primarySelectedSpan, 1);
+            }
         }
 
         void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
-            var selectedSpan = selectedSpans.First();
-            textView.Caret.MoveTo(selectedSpan.CaretPoint);
-            if (selectedSpan.Length != 0)
+            var allSelectedSpans = selectedSpans.ToArray();
+            var primarySelectedSpan = allSelectedSpans[0];
+            textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
+            if (primarySelectedSpan.Length != 0)
             {
-                textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
+                textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
+            }
+            if (IsMultiSelectionSupported)
+            {
+                SecondarySelectedSpans = allSelectedSpans.Skip(1).ToList();
             }
         }
     }
