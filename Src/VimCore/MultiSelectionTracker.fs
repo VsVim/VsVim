@@ -43,8 +43,8 @@ type internal MultiSelectionTracker
     member x.RecordedSelectedSpans
         with get () =  _recordedSelectedSpans
         and set (value: SelectedSpan array) =
-            for caretIndex = _recordedSelectedSpans.Length to value.Length - 1 do
-                x.InitializeSecondaryCaretRegisters caretIndex
+            if value.Length > _recordedSelectedSpans.Length then
+                x.InitializeSecondaryCaretRegisters value
             _recordedSelectedSpans <- value
 
     /// Raised when the selected spans are set
@@ -87,15 +87,16 @@ type internal MultiSelectionTracker
     member x.GetSelectedSpans () =
         _commonOperations.SelectedSpans |> Seq.toArray
 
-    /// Copy the primary caret's registers to a secondary caret
-    member x.InitializeSecondaryCaretRegisters caretIndex =
+    /// Copy the primary caret's registers to all secondary carets
+    member x.InitializeSecondaryCaretRegisters selectedSpans =
         let oldCaretIndex = _vimData.CaretIndex
         let register = _commonOperations.GetRegister None
         try
             _vimData.CaretIndex <- 0
-            let oldValue = register.RegisterValue
-            _vimData.CaretIndex <- caretIndex
-            register.RegisterValue <- oldValue
+            let value = register.RegisterValue
+            for caretIndex = 1 to selectedSpans.Length - 1 do
+                _vimData.CaretIndex <- caretIndex
+                register.RegisterValue <- value
         finally
             _vimData.CaretIndex <- oldCaretIndex
 
