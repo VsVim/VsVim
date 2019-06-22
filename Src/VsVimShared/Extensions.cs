@@ -1143,25 +1143,6 @@ namespace Vim.VisualStudio
 
         #endregion
 
-        #region InsertCommand
-
-        public static InsertCommand.Insert AsInsert(this InsertCommand command)
-        {
-            return (InsertCommand.Insert)command;
-        }
-
-        public static bool IsInsert(this InsertCommand command, char c)
-        {
-            return IsInsert(command, c.ToString());
-        }
-
-        public static bool IsInsert(this InsertCommand command, string text)
-        {
-            return command.IsInsert && command.AsInsert().Text == text;
-        }
-
-        #endregion
-
         #region IEditorFormatMap
 
         public static Color GetBackgroundColor(this IEditorFormatMap map, string name, Color defaultColor)

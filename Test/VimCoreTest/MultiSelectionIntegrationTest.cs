@@ -202,8 +202,8 @@ namespace Vim.UnitTest
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 _vimBuffer.ProcessNotation("gh<C-S-Right>xxx ");
-                AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
                 AssertLines("abc xxx ghi", "jkl xxx pqr", "");
+                AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
             }
 
             /// <summary>

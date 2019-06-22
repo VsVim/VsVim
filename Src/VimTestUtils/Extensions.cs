@@ -627,6 +627,38 @@ namespace Vim.UnitTest
             return (InsertCommand.InsertLiteral)command;
         }
 
+        public static bool IsInsert(this InsertCommand command, char c)
+        {
+            return IsInsert(command, c.ToString());
+        }
+
+        public static bool IsInsert(this InsertCommand command, string text)
+        {
+            return command.IsInsert && command.AsInsert().Text == text;
+        }
+
+        public static bool TryGetInsertionText(this InsertCommand command, out string text)
+        {
+            text = null;
+            if (command.IsInsert)
+            {
+                text = command.AsInsert().Text;
+            }
+            else if (command.IsInsertLiteral)
+            {
+                text = command.AsInsertLiteral().Text;
+            }
+            else if (command.IsInsertNewLine)
+            {
+                text = Environment.NewLine;
+            }
+            else if (command.IsInsertTab)
+            {
+                text = "\t";
+            }
+            return text != null;
+        }
+
         #endregion
 
         #region IMotionCapture
