@@ -142,12 +142,6 @@ namespace Vim.UnitTest
                 Assert.Equal(
                     new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
                     _mockVimHost.SecondarySelectedSpans[0]);
-                Assert.Equal(
-                    _textView.GetVirtualPointInLine(0, 1),
-                    _textView.GetCaretVirtualPoint());
-                Assert.Equal(
-                    new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
-                    spans[1]);
             }
         }
 
