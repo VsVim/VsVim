@@ -216,8 +216,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _vimBuffer.ProcessNotation("<S-Right>");
                 AssertSelections(
-                    GetPoint(0, 1).GetSelectedSpan(-1, 0),
-                    GetPoint(1, 0).GetSelectedSpan(-1, 0));
+                    GetPoint(0, 1).GetSelectedSpan(-1, 0, false),
+                    GetPoint(1, 1).GetSelectedSpan(-1, 0, false));
             }
 
             /// <summary>
@@ -243,8 +243,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 _vimBuffer.ProcessNotation("gh<C-S-Right>");
                 AssertSelections(
-                    GetPoint(0, 8).GetSelectedSpan(-4, 0),
-                    GetPoint(1, 8).GetSelectedSpan(-4, 0));
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false),
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false));
             }
 
             /// <summary>
@@ -257,8 +257,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 8), GetPoint(1, 8));
                 _vimBuffer.ProcessNotation("gh<C-S-Left>");
                 AssertSelections(
-                    GetPoint(0, 4).GetSelectedSpan(4, 0),
-                    GetPoint(1, 4).GetSelectedSpan(4, 0));
+                    GetPoint(0, 4).GetSelectedSpan(0, 4, true),
+                    GetPoint(1, 4).GetSelectedSpan(0, 4, true));
             }
         }
     }
