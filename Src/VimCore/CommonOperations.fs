@@ -176,6 +176,11 @@ type internal CommonOperations
         _vimHost.SetSelectedSpans _textView spans
         _selectedSpansSetEvent.Trigger x EventArgs.Empty
 
+    /// Set a single selected span temporarily without raising the 'selected
+    /// spans set' event
+    member x.SetSingleSelectedSpan span =
+        _vimHost.SetSelectedSpans _textView [span]
+
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
         match _vim.TryGetOrCreateVimBufferForHost textView with
@@ -2563,7 +2568,7 @@ type internal CommonOperations
 
                     // Temporarily set the real caret and selection.
                     let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
-                    x.SetSelectedSpans [span]
+                    x.SetSingleSelectedSpan span
 
                     // Run the action once.
                     let result = runActionAndCompleteTransaction action
@@ -2579,7 +2584,7 @@ type internal CommonOperations
                                 _globalSettings.SelectionKind
                                 |> visualSelection.GetPrimarySelectedSpan
                             | None ->
-                                x.SelectedSpans |> Seq.head
+                                x.PrimarySelectedSpan
                     yield result, span
             }
             |> Seq.toList
