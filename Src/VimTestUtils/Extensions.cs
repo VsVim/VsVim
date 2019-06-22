@@ -926,6 +926,43 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region VirtualSnapshotPoint
+
+        public static VirtualSnapshotPoint Add(this VirtualSnapshotPoint point, int offset)
+        {
+            if (offset == 0)
+            {
+                return point;
+            }
+            var line = point.Position.GetContainingLine();
+            var realPointOffset = point.Position.Position - line.Start.Position;
+            var newOffset = realPointOffset + point.VirtualSpaces + offset;
+            if (newOffset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(point));
+            }
+            if (newOffset < line.Length)
+            {
+                return new VirtualSnapshotPoint(point.Position.Add(offset));
+            }
+            else
+            {
+                return new VirtualSnapshotPoint(line.End, newOffset - line.Length);
+            }
+        }
+
+        public static SelectedSpan GetSelectedSpan(this VirtualSnapshotPoint point)
+        {
+            return new SelectedSpan(point);
+        }
+
+        public static SelectedSpan GetSelectedSpan(this VirtualSnapshotPoint point, int anchorOffset, int activeOffset)
+        {
+            return new SelectedSpan(point, point.Add(anchorOffset), point.Add(activeOffset));
+        }
+
+        #endregion
+
         #region ITextSnapshot
 
         public static ITextSnapshotLine GetLine(this ITextSnapshot snapshot, int lineNumber)
@@ -1840,6 +1877,11 @@ namespace Vim.UnitTest
         public static SnapshotColumn GetCaretColumn(this ITextView textView)
         {
             return new SnapshotColumn(textView.GetCaretPoint());
+        }
+
+        public static VirtualSnapshotSpan GetVirtualSelectionSpan(this ITextView textView)
+        {
+            return textView.Selection.StreamSelectionSpan;
         }
 
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
