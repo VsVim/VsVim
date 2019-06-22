@@ -41,7 +41,7 @@ namespace Vim.UnitTest
         [Fact]
         public void All1()
         {
-            Assert.Equal(74, RegisterName.All.Count());
+            Assert.Equal(75, RegisterName.All.Count());
         }
 
         /// <summary>
