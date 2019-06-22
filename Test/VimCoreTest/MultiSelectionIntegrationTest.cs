@@ -69,6 +69,11 @@ namespace Vim.UnitTest
             base.Dispose();
         }
 
+        private VirtualSnapshotPoint GetPoint(int lineNumber, int column)
+        {
+            return _textView.GetVirtualPointInLine(lineNumber, column);
+        }
+
         private SnapshotPoint[] CaretPoints =>
             _vimHost.GetSelectedSpans(_textView).Select(x => x.CaretPoint.Position).ToArray();
 
@@ -78,11 +83,6 @@ namespace Vim.UnitTest
         private SelectedSpan[] SelectedSpans =>
             _vimHost.GetSelectedSpans(_textView).ToArray();
 
-        private VirtualSnapshotPoint GetPoint(int lineNumber, int column)
-        {
-            return _textView.GetVirtualPointInLine(lineNumber, column);
-        }
-
         private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
         {
             _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
@@ -90,22 +90,12 @@ namespace Vim.UnitTest
 
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
         {
-            var actualSpans = SelectedSpans;
-            Assert.Equal(expectedCarets.Length, actualSpans.Length);
-            for (var i = 0; i < expectedCarets.Length; i++)
-            {
-                Assert.Equal(expectedCarets[i].GetSelectedSpan(), actualSpans[i]);
-            }
+            AssertSelections(expectedCarets.Select(x => new SelectedSpan(x)).ToArray());
         }
 
         private void AssertSelections(params SelectedSpan[] expectedSpans)
         {
-            var actualSpans = SelectedSpans;
-            Assert.Equal(expectedSpans.Length, actualSpans.Length);
-            for (var i = 0; i < expectedSpans.Length; i++)
-            {
-                Assert.Equal(expectedSpans[i], actualSpans[i]);
-            }
+            Assert.Equal(expectedSpans, SelectedSpans);
         }
 
         private void AssertLines(params string[] lines)
@@ -229,8 +219,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _vimBuffer.ProcessNotation("<S-Right>");
                 AssertSelections(
-                    GetPoint(0, 1).GetSelectedSpan(-1, 0, false),
-                    GetPoint(1, 1).GetSelectedSpan(-1, 0, false));
+                    GetPoint(0, 1).GetSelectedSpan(-1, 0, false), // 'a|'
+                    GetPoint(1, 1).GetSelectedSpan(-1, 0, false)); // 'j|'
             }
 
             /// <summary>
@@ -256,8 +246,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 _vimBuffer.ProcessNotation("gh<C-S-Right>");
                 AssertSelections(
-                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false),
-                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false));
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def|'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno|'
             }
 
             /// <summary>
@@ -270,8 +260,52 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 8), GetPoint(1, 8));
                 _vimBuffer.ProcessNotation("gh<C-S-Left>");
                 AssertSelections(
-                    GetPoint(0, 4).GetSelectedSpan(0, 4, true),
-                    GetPoint(1, 4).GetSelectedSpan(0, 4, true));
+                    GetPoint(0, 4).GetSelectedSpan(0, 4, true), // '|def'
+                    GetPoint(1, 4).GetSelectedSpan(0, 4, true)); // '|mno'
+            }
+
+            /// <summary>
+            /// Using alt-double-click should add a word to the selection
+            /// </summary>
+            [WpfFact]
+            public void ExclusiveDoubleClick()
+            {
+                Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                _globalSettings.Selection = "exclusive";
+
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'd' in 'def'
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelections(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def'
+
+                _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
+                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelections(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|'
+                    GetPoint(1, 11).GetSelectedSpan(-3, 0, false)); // 'stu|'
+            }
+
+            /// <summary>
+            /// Using alt-double-click should add a word to the selection
+            /// </summary>
+            [WpfFact]
+            public void InclusiveDoubleClick()
+            {
+                Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                _globalSettings.Selection = "inclusive";
+
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'd' in 'def'
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelections(GetPoint(0, 6).GetSelectedSpan(-2, 1, false)); // 'def'
+
+                _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
+                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelections(
+                    GetPoint(0, 6).GetSelectedSpan(-2, 1, false), // 'de|f'
+                    GetPoint(1, 10).GetSelectedSpan(-2, 1, false)); // 'st|u'
             }
         }
     }

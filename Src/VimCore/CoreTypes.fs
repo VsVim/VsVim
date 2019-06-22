@@ -90,11 +90,23 @@ type SelectedSpan =
     member x.Length = x.Span.Length
 
     override x.ToString() =
-        System.String.Format("{0}: [{1}-{2}){3}",
+        let reversedString =
+            if x.IsReversed then " (reversed)" else ""
+        let displayString =
+            let point = x.CaretPoint.Position
+            let span = x.Span.SnapshotSpan
+            let text = span.GetText()
+            if span.Contains(point) then
+                let offset = point.Position - span.Start.Position
+                text.Substring(0, offset) + "|" + text.Substring(offset)
+            else
+                text
+        System.String.Format("{0}: [{1}-{2}){3} \"{4}\"",
             x._caretPoint.Position.Position,
             x.Span.Start.Position.Position,
             x.Span.End.Position.Position,
-            if x.IsReversed then " (reversed)" else "")
+            reversedString,
+            displayString)
 
 type NavigationKind =
     | First = 0

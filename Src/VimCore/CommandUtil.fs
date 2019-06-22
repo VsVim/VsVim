@@ -3829,6 +3829,10 @@ type internal CommandUtil
                         let newSelectedSpan =
                             _globalSettings.SelectionKind
                             |> visualSelection.GetPrimarySelectedSpan
+                        let oldSelectedSpans =
+                            oldSelectedSpans
+                            |> Seq.filter (fun span ->
+                                not (newSelectedSpan.Span.Contains(span.CaretPoint)))
                         seq {
                             yield! oldSelectedSpans
                             yield newSelectedSpan
