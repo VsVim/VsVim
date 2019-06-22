@@ -352,9 +352,18 @@ namespace Vim.UnitTest.Mock
         {
             if (TryCustomProcessFunc != null)
             {
-                return TryCustomProcessFunc(textView, command);
+                if (TryCustomProcessFunc(textView, command))
+                {
+                    return true;
+                }
             }
-
+            if (IsMultiSelectionSupported)
+            {
+                if (TryCustomProcessMultCaret(this, textView, command))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -473,6 +482,34 @@ namespace Vim.UnitTest.Mock
             {
                 SecondarySelectedSpans = allSelectedSpans.Skip(1).ToList();
             }
+        }
+
+        private static bool TryCustomProcessMultCaret(IVimHost vimHost, ITextView textView, InsertCommand command)
+        {
+            if (command.IsInsert)
+            {
+                // Simulate native simultaneouos insertion at all carets at the
+                // same time.
+                var text = command.AsInsert().Text;
+                var oldCarets =
+                    vimHost.GetSelectedSpans(textView).Select(x => x.CaretPoint).ToArray();
+                using (var textEdit = textView.TextBuffer.CreateEdit())
+                {
+                    foreach (var caret in oldCarets)
+                    {
+                        textEdit.Insert(caret.Position.Position, text);
+                    }
+                    textEdit.Apply();
+                }
+                var snapshot = textView.TextBuffer.CurrentSnapshot;
+                var newCarets =
+                    oldCarets
+                    .Select(x => x.MapToSnapshot(snapshot).Add(text.Length))
+                    .ToArray();
+                vimHost.SetSelectedSpans(textView, newCarets.Select(x => new SelectedSpan(x)));
+                return true;
+            }
+            return false;
         }
     }
 }

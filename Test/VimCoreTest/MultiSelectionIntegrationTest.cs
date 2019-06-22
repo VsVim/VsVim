@@ -53,7 +53,6 @@ namespace Vim.UnitTest
             _mockVimHost = (MockVimHost)_vimHost;
             _mockVimHost.BeepCount = 0;
             _mockVimHost.IsMultiSelectionSupported = true;
-            _mockVimHost.TryCustomProcessFunc = TryCustomProcess;
             _vimData = Vim.VimData;
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
@@ -68,33 +67,6 @@ namespace Vim.UnitTest
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
             base.Dispose();
-        }
-
-        private bool TryCustomProcess(ITextView textView, InsertCommand command)
-        {
-            if (command.IsInsert)
-            {
-                // Simulate native simultaneouos insertion at all carets at the
-                // same time.
-                var text = command.AsInsert().Text;
-                var oldCarets = CaretVirtualPoints;
-                using (var textEdit = _textBuffer.CreateEdit())
-                {
-                    foreach (var caret in oldCarets)
-                    {
-                        textEdit.Insert(caret.Position.Position, text);
-                    }
-                    textEdit.Apply();
-                }
-                var snapshot = _textBuffer.CurrentSnapshot;
-                var newCarets =
-                    oldCarets
-                    .Select(x => x.MapToSnapshot(snapshot).Add(text.Length))
-                    .ToArray();
-                _vimHost.SetSelectedSpans(_textView, newCarets.Select(x => new SelectedSpan(x)));
-                return true;
-            }
-            return false;
         }
 
         private SnapshotPoint[] CaretPoints =>
@@ -201,7 +173,8 @@ namespace Vim.UnitTest
             protected override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _globalSettings.SelectModeOptions = SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
+                _globalSettings.SelectModeOptions =
+                    SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
                 _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
                 _globalSettings.Selection = "exclusive";
             }
