@@ -100,7 +100,7 @@ namespace Vim.UnitTest
 
         private void AssertLines(params string[] lines)
         {
-            Assert.Equal(lines, _textBuffer.GetLines());
+            Assert.Equal(lines, _textBuffer.GetLines().ToArray());
         }
 
         public sealed class MockTest : MultiSelectionIntegrationTest
@@ -195,6 +195,102 @@ namespace Vim.UnitTest
                     GetPoint(1, 4),
                     GetPoint(3, 4),
                     GetPoint(4, 4));
+            }
+        }
+
+        public sealed class NormalModeTest : MultiSelectionIntegrationTest
+        {
+            /// <summary>
+            /// Test moving the caret
+            /// </summary>
+            [WpfFact]
+            public void Motion()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("w");
+                AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
+            }
+
+            /// <summary>
+            /// Test inserting text
+            /// </summary>
+            [WpfFact]
+            public void Insert()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("ixxx <Esc>");
+                AssertLines("abc xxx def ghi", "jkl xxx mno pqr", "");
+                AssertCarets(GetPoint(0, 7), GetPoint(1, 7));
+            }
+
+            /// <summary>
+            /// Test undoing inserting text
+            /// </summary>
+            [WpfFact]
+            public void UndoInsert()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("ixxx <Esc>");
+                AssertLines("abc xxx def ghi", "jkl xxx mno pqr", "");
+                AssertCarets(GetPoint(0, 7), GetPoint(1, 7));
+                _vimBuffer.ProcessNotation("u");
+                AssertLines("abc def ghi", "jkl mno pqr", "");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
+            }
+
+            /// <summary>
+            /// Test repeating inserting text
+            /// </summary>
+            [WpfFact]
+            public void RepeatInsert()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("ixxx <Esc>ww.");
+                AssertLines("abc xxx def xxx ghi", "jkl xxx mno xxx pqr", "");
+                AssertCarets(GetPoint(0, 15), GetPoint(1, 15));
+            }
+
+            /// <summary>
+            /// Test deleting the word at the caret
+            /// </summary>
+            [WpfFact]
+            public void Delete()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("dw");
+                AssertLines("abc ghi", "jkl pqr", "");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
+            }
+
+            /// <summary>
+            /// Test changing the word at the caret
+            /// </summary>
+            [WpfFact]
+            public void Change()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("cwxxx<Esc>");
+                AssertLines("abc xxx ghi", "jkl xxx pqr", "");
+                AssertCarets(GetPoint(0, 6), GetPoint(1, 6));
+            }
+
+            /// <summary>
+            /// Test deleting the word at the caret
+            /// </summary>
+            [WpfFact]
+            public void DeleteAndPut()
+            {
+                Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("dwwP");
+                AssertLines("abc ghi def jkl", "mno stu pqr vwx", "");
+                AssertCarets(GetPoint(0, 11), GetPoint(1, 11));
             }
         }
 
