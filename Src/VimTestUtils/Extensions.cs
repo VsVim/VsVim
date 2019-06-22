@@ -1378,6 +1378,34 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region SelectedSpan
+
+        public static SelectedSpan AdjustCaretForInclusive(this SelectedSpan selectedSpan)
+        {
+            if (selectedSpan.CaretPoint == selectedSpan.Start)
+            {
+                return selectedSpan;
+            }
+            else
+            {
+                return new SelectedSpan(selectedSpan.End.Add(-1), selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
+            }
+        }
+
+        public static SelectedSpan AdjustEndForInclusive(this SelectedSpan selectedSpan)
+        {
+            if (selectedSpan.CaretPoint == selectedSpan.Start)
+            {
+                return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
+            }
+            else
+            {
+                return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint, selectedSpan.ActivePoint.Add(1));
+            }
+        }
+
+        #endregion SelectedSpan
+
         #region VisualSpan
 
         public static VisualSpan.Character AsCharacter(this VisualSpan span)

@@ -96,6 +96,7 @@ namespace Vim.UnitTest
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
             base.Dispose();
         }
 

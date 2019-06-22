@@ -59,7 +59,6 @@ namespace Vim.UnitTest
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
-            _testableMouseDevice.YOffset = 0;
         }
 
         public override void Dispose()
@@ -86,6 +85,26 @@ namespace Vim.UnitTest
         private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
         {
             _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
+
+            // Simulate copying the unnamed register to secondary carets.
+            var registerName =
+                _globalSettings.ClipboardOptions.HasFlag(ClipboardOptions.Unnamed)
+                ? RegisterName.UnnamedClipboard
+                : RegisterName.Unnamed;
+            var register = Vim.RegisterMap.GetRegister(registerName);
+            var value = register.StringValue;
+            for (var caretIndex = 1; caretIndex < caretPoints.Length; caretIndex++)
+            {
+                try
+                {
+                    _vimData.CaretIndex = caretIndex;
+                    register.UpdateValue(value);
+                }
+                finally
+                {
+                    _vimData.CaretIndex = 0;
+                }
+            }
         }
 
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
@@ -96,6 +115,32 @@ namespace Vim.UnitTest
         private void AssertSelections(params SelectedSpan[] expectedSpans)
         {
             Assert.Equal(expectedSpans, SelectedSpans);
+        }
+
+        private void AssertSelectionsAdjustCaret(params SelectedSpan[] expectedSpans)
+        {
+            if (!_globalSettings.IsSelectionInclusive)
+            {
+                AssertSelections(expectedSpans);
+                return;
+            }
+            var adjustedExpectedSpans =
+                expectedSpans.Select(x => x.AdjustCaretForInclusive())
+                .ToArray();
+            Assert.Equal(adjustedExpectedSpans, SelectedSpans);
+        }
+
+        private void AssertSelectionsAdjustEnd(params SelectedSpan[] expectedSpans)
+        {
+            if (!_globalSettings.IsSelectionInclusive)
+            {
+                AssertSelections(expectedSpans);
+                return;
+            }
+            var adjustedExpectedSpans =
+                expectedSpans.Select(x => x.AdjustEndForInclusive())
+                .ToArray();
+            Assert.Equal(adjustedExpectedSpans, SelectedSpans);
         }
 
         private void AssertLines(params string[] lines)
@@ -281,16 +326,67 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Test deleting the word at the caret
+            /// Test putting before word at the caret
             /// </summary>
             [WpfFact]
-            public void DeleteAndPut()
+            public void Put()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                _vimBuffer.ProcessNotation("yw");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("wP");
+                AssertLines("abc def abc ghi", "jkl mno abc pqr", "");
+                AssertCarets(GetPoint(0, 11), GetPoint(1, 11));
+            }
+
+            /// <summary>
+            /// Test deleting and putting the word at the caret
+            /// </summary>
+            [WpfTheory, InlineData(""), InlineData("unnamed")]
+            public void DeleteAndPut(string clipboardSetting)
             {
                 Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                _globalSettings.Clipboard = clipboardSetting;
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 _vimBuffer.ProcessNotation("dwwP");
                 AssertLines("abc ghi def jkl", "mno stu pqr vwx", "");
                 AssertCarets(GetPoint(0, 11), GetPoint(1, 11));
+            }
+        }
+
+        public sealed class VisualModeTest : MultiSelectionIntegrationTest
+        {
+            private void Create(bool isInclusive, params string[] lines)
+            {
+                Create(lines);
+                _globalSettings.Selection = isInclusive ? "inclusive" : "exclusive";
+            }
+
+            /// <summary>
+            /// Test moving the caret
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void Motion(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("vw");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
+            }
+
+            /// <summary>
+            /// Test deleting text
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void Delete(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("veld");
+                AssertLines("abc ghi", "jkl pqr", "");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
         }
 
