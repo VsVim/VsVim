@@ -505,7 +505,11 @@ namespace Vim.UnitTest.Mock
             }
             if (IsMultiSelectionSupported)
             {
-                SecondarySelectedSpans = allSelectedSpans.Skip(1).ToList();
+                SecondarySelectedSpans =
+                    allSelectedSpans
+                    .Skip(1)
+                    .OrderBy(span => span.CaretPoint.Position.Position)
+                    .ToList();
             }
         }
     }

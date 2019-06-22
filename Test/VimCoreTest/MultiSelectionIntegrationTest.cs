@@ -127,7 +127,6 @@ namespace Vim.UnitTest
                 SetCaretPoints(
                     _textView.GetVirtualPointInLine(0, 1),
                     _textView.GetVirtualPointInLine(1, 1));
-                var spans = SelectedSpans;
 
                 // Verify real caret and real selection.
                 Assert.Equal(
@@ -148,17 +147,64 @@ namespace Vim.UnitTest
         public sealed class AddCaretTest : MultiSelectionIntegrationTest
         {
             /// <summary>
-            /// Test adding a caret with ctrl-alt-arrow
+            /// Using alt-click adds a new caret
             /// </summary>
             [WpfFact]
-            public void AddCaret()
+            public void MouseClick()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
+                _textView.Caret.MoveTo(GetPoint(0, 4));
+                _testableMouseDevice.Point = GetPoint(1, 8).Position;
+                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
+            }
+
+            /// <summary>
+            /// Using ctrl-alt-arrow adds a new caret
+            /// </summary>
+            [WpfFact]
+            public void AddOnLineAbove()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                _textView.Caret.MoveTo(GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("<C-A-Up>");
+                AssertCarets(GetPoint(1, 4), GetPoint(0, 4));
+            }
+
+            /// <summary>
+            /// Using ctrl-alt-arrow adds a new caret
+            /// </summary>
+            [WpfFact]
+            public void AddOnLineBelow()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                _textView.Caret.MoveTo(GetPoint(0, 4));
                 _vimBuffer.ProcessNotation("<C-A-Down>");
-                var spans = SelectedSpans;
-                Assert.Equal(2, spans.Length);
-                Assert.Equal(GetPoint(0, 0).GetSelectedSpan(), spans[0]);
-                Assert.Equal(GetPoint(1, 0).GetSelectedSpan(), spans[1]);
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
+            }
+
+            /// <summary>
+            /// Using ctrl-alt-arrow adds a new caret
+            /// </summary>
+            [WpfFact]
+            public void AddTwoAboveAndBelow()
+            {
+                Create(
+                    "abc def ghi",
+                    "jkl mno pqr",
+                    "abc def ghi",
+                    "jkl mno pqr",
+                    "abc def ghi",
+                    "jkl mno pqr",
+                    "");
+                _textView.Caret.MoveTo(GetPoint(2, 4));
+                _vimBuffer.ProcessNotation("<C-A-Up><C-A-Up><C-A-Down><C-A-Down>");
+                AssertCarets(
+                    GetPoint(2, 4),
+                    GetPoint(0, 4),
+                    GetPoint(1, 4),
+                    GetPoint(3, 4),
+                    GetPoint(4, 4));
             }
         }
 
