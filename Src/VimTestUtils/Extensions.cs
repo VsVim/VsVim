@@ -926,7 +926,22 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region SnapshotPoint
+
+        public static SnapshotPoint MapToSnapshot(this SnapshotPoint point, ITextSnapshot snapshot)
+        {
+            var trackingPoint = snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative);
+            return trackingPoint.GetPoint(snapshot);
+        }
+
+        #endregion
+
         #region VirtualSnapshotPoint
+
+        public static VirtualSnapshotPoint MapToSnapshot(this VirtualSnapshotPoint point, ITextSnapshot snapshot)
+        {
+            return new VirtualSnapshotPoint(MapToSnapshot(point.Position, snapshot), point.VirtualSpaces);
+        }
 
         public static VirtualSnapshotPoint Add(this VirtualSnapshotPoint point, int offset)
         {

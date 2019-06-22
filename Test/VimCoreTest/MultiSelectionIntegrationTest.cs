@@ -53,6 +53,7 @@ namespace Vim.UnitTest
             _mockVimHost = (MockVimHost)_vimHost;
             _mockVimHost.BeepCount = 0;
             _mockVimHost.IsMultiSelectionSupported = true;
+            _mockVimHost.TryCustomProcessFunc = TryCustomProcess;
             _vimData = Vim.VimData;
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
@@ -69,7 +70,37 @@ namespace Vim.UnitTest
             base.Dispose();
         }
 
-        private VirtualSnapshotPoint[] CaretPoints =>
+        private bool TryCustomProcess(ITextView textView, InsertCommand command)
+        {
+            if (command.IsInsert)
+            {
+                // Simulate native simultaneouos insertion at all carets at the
+                // same time.
+                var text = command.AsInsert().Text;
+                var oldCarets = CaretVirtualPoints;
+                using (var textEdit = _textBuffer.CreateEdit())
+                {
+                    foreach (var caret in oldCarets)
+                    {
+                        textEdit.Insert(caret.Position.Position, text);
+                    }
+                    textEdit.Apply();
+                }
+                var snapshot = _textBuffer.CurrentSnapshot;
+                var newCarets =
+                    oldCarets
+                    .Select(x => x.MapToSnapshot(snapshot).Add(text.Length))
+                    .ToArray();
+                _vimHost.SetSelectedSpans(_textView, newCarets.Select(x => new SelectedSpan(x)));
+                return true;
+            }
+            return false;
+        }
+
+        private SnapshotPoint[] CaretPoints =>
+            _vimHost.GetSelectedSpans(_textView).Select(x => x.CaretPoint.Position).ToArray();
+
+        private VirtualSnapshotPoint[] CaretVirtualPoints =>
             _vimHost.GetSelectedSpans(_textView).Select(x => x.CaretPoint).ToArray();
 
         private SelectedSpan[] SelectedSpans =>
@@ -80,14 +111,34 @@ namespace Vim.UnitTest
             return _textView.GetVirtualPointInLine(lineNumber, column);
         }
 
-        private void SetCaretPoints(IEnumerable<VirtualSnapshotPoint> caretPoints)
+        private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
         {
             _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
         }
 
-        private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
+        private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
         {
-            SetCaretPoints(caretPoints.AsEnumerable());
+            var actualSpans = SelectedSpans;
+            Assert.Equal(expectedCarets.Length, actualSpans.Length);
+            for (var i = 0; i < expectedCarets.Length; i++)
+            {
+                Assert.Equal(expectedCarets[i].GetSelectedSpan(), actualSpans[i]);
+            }
+        }
+
+        private void AssertSelections(params SelectedSpan[] expectedSpans)
+        {
+            var actualSpans = SelectedSpans;
+            Assert.Equal(expectedSpans.Length, actualSpans.Length);
+            for (var i = 0; i < expectedSpans.Length; i++)
+            {
+                Assert.Equal(expectedSpans[i], actualSpans[i]);
+            }
+        }
+
+        private void AssertLines(params string[] lines)
+        {
+            Assert.Equal(lines, _textBuffer.GetLines());
         }
 
         public sealed class MockTest : MultiSelectionIntegrationTest
@@ -104,7 +155,7 @@ namespace Vim.UnitTest
                 SetCaretPoints(
                     _textView.GetVirtualPointInLine(0, 1),
                     _textView.GetVirtualPointInLine(1, 1));
-                var spans = GetSelectedSpans();
+                var spans = SelectedSpans;
 
                 // Verify real caret and real selection.
                 Assert.Equal(
@@ -138,7 +189,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 _vimBuffer.ProcessNotation("<C-A-Down>");
-                var spans = GetSelectedSpans();
+                var spans = SelectedSpans;
                 Assert.Equal(2, spans.Length);
                 Assert.Equal(GetPoint(0, 0).GetSelectedSpan(), spans[0]);
                 Assert.Equal(GetPoint(1, 0).GetSelectedSpan(), spans[1]);
@@ -164,10 +215,50 @@ namespace Vim.UnitTest
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _vimBuffer.ProcessNotation("<S-Right>");
-                var spans = GetSelectedSpans();
-                Assert.Equal(2, spans.Length);
-                Assert.Equal(GetPoint(0, 1).GetSelectedSpan(-1, 0), spans[0]);
-                Assert.Equal(GetPoint(1, 1).GetSelectedSpan(-1, 0), spans[1]);
+                AssertSelections(
+                    GetPoint(0, 1).GetSelectedSpan(-1, 0),
+                    GetPoint(1, 0).GetSelectedSpan(-1, 0));
+            }
+
+            /// <summary>
+            /// Test extending the selection forward
+            /// </summary>
+            [WpfFact]
+            public void ReplaceSelection()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("gh<C-S-Right>xxx ");
+                AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
+                AssertLines("abc xxx ghi", "jkl xxx pqr", "");
+            }
+
+            /// <summary>
+            /// Test extending the selection forward
+            /// </summary>
+            [WpfFact]
+            public void ExtendForward()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                _vimBuffer.ProcessNotation("gh<C-S-Right>");
+                AssertSelections(
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0),
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0));
+            }
+
+            /// <summary>
+            /// Test extending the selection backward
+            /// </summary>
+            [WpfFact]
+            public void ExtendBackward()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 8), GetPoint(1, 8));
+                _vimBuffer.ProcessNotation("gh<C-S-Left>");
+                AssertSelections(
+                    GetPoint(0, 4).GetSelectedSpan(4, 0),
+                    GetPoint(1, 4).GetSelectedSpan(4, 0));
             }
         }
     }
