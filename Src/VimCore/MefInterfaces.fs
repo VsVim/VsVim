@@ -7,7 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Tagging
 open System
 open System.Configuration
-open System.Collections.Generic
 
 /// Used to determine if a completion window is active for a given view
 type IDisplayWindowBroker =
@@ -329,8 +328,8 @@ type ICommonOperations =
     /// buffer
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
-    /// The current caret points
-    abstract CaretPoints: VirtualSnapshotPoint seq
+    /// The primary selected span
+    abstract PrimarySelectedSpan: SelectedSpan
 
     /// The current selected spans
     abstract SelectedSpans: SelectedSpan seq
@@ -554,9 +553,6 @@ type ICommonOperations =
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
-
-    /// Set the current caret points
-    abstract SetCaretPoints: VirtualSnapshotPoint seq -> unit
 
     /// Set the current selected spans
     abstract SetSelectedSpans: SelectedSpan seq -> unit

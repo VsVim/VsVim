@@ -85,8 +85,8 @@ type SelectedSpan =
             VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
         else
             VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
-    member x.StartPoint = x.Span.Start
-    member x.EndPoint = x.Span.End
+    member x.Start = x.Span.Start
+    member x.End = x.Span.End
     member x.Length = x.Span.Length
 
     override x.ToString() =

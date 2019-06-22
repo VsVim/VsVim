@@ -163,22 +163,15 @@ type internal CommonOperations
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
 
-    /// The current caret points
-    member x.CaretPoints =
-        x.SelectedSpans
-        |> Seq.map (fun (span: SelectedSpan) -> span.CaretPoint)
+    /// The primary selected span
+    member x.PrimarySelectedSpan =
+        x.SelectedSpans |> Seq.head
 
-    /// Set the current caret points
-    member x.SetCaretPoints points =
-        points
-        |> Seq.map (fun point -> SelectedSpan(point))
-        |> x.SetSelectedSpans
-
-    /// The current virtual caret points
+    /// The current selected spans
     member x.SelectedSpans =
         _vimHost.GetSelectedSpans _textView
 
-    /// Set the current virtual caret points
+    /// Set the current selected spans
     member x.SetSelectedSpans spans =
         _vimHost.SetSelectedSpans _textView spans
         _selectedSpansSetEvent.Trigger x EventArgs.Empty
@@ -2439,19 +2432,11 @@ type internal CommonOperations
 
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint point =
-        let selectedSpans = x.SelectedSpans |> Seq.toList
-        if selectedSpans.Length > 0 && selectedSpans.[0].Length <> 0 then
-            seq {
-                yield! x.SelectedSpans
-                yield SelectedSpan(point)
-            }
-            |> x.SetSelectedSpans
-        else
-            seq {
-                yield! x.CaretPoints
-                yield point
-            }
-            |> x.SetCaretPoints
+        seq {
+            yield! x.SelectedSpans
+            yield SelectedSpan(point)
+        }
+        |> x.SetSelectedSpans
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
@@ -2464,17 +2449,16 @@ type internal CommonOperations
     /// Add a new caret on an adjacent line in the specified direction
     member x.AddCaretOnAdjacentLine direction =
 
-        // Get the primary caret and sorted caret points.
-        let caretPoints = x.CaretPoints |> Seq.toList
-        let primaryCaretPoint = caretPoints.Head
-        let caretPoints =
-            caretPoints
-            |> Seq.sortBy (fun point -> point.Position.Position)
+        // Get the selected spans sorted by caret point.
+        let selectedSpans =
+            x.SelectedSpans
+            |> Seq.sortBy (fun span -> span.CaretPoint.Position.Position)
             |> Seq.toList
 
         // Add a caret on the specified line number in the same column as the
         // primary caret.
         let addCaretOnLineNumber lineNumber =
+            let primaryCaretPoint = x.PrimarySelectedSpan.CaretPoint
             let line = SnapshotUtil.GetLine primaryCaretPoint.Position.Snapshot lineNumber
             let spaces = x.GetSpacesToVirtualPoint primaryCaretPoint
             x.GetAppropriateColumnForSpaces line spaces
@@ -2485,13 +2469,13 @@ type internal CommonOperations
         match direction with
         | Direction.Up ->
             let firstLine =
-                caretPoints.[0]
+                selectedSpans.[0].CaretPoint
                 |> VirtualSnapshotPointUtil.GetContainingLine
             if firstLine.LineNumber > 0 then
                 addCaretOnLineNumber (firstLine.LineNumber - 1)
         | Direction.Down ->
             let lastLine =
-                caretPoints.[caretPoints.Length - 1]
+                selectedSpans.[selectedSpans.Length - 1].CaretPoint
                 |> VirtualSnapshotPointUtil.GetContainingLine
             let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber lastLine.Snapshot
             if lastLine.LineNumber < lastLineNumber then
@@ -2672,7 +2656,7 @@ type internal CommonOperations
         member x.MaintainCaretColumn 
             with get() = x.MaintainCaretColumn
             and set value = x.MaintainCaretColumn <- value
-        member x.CaretPoints = x.CaretPoints
+        member x.PrimarySelectedSpan = x.PrimarySelectedSpan
         member x.SelectedSpans = x.SelectedSpans
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
@@ -2739,7 +2723,6 @@ type internal CommonOperations
         member x.Redo count = x.Redo count
         member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
         member x.RunForAllSelections action = x.RunForAllSelections action
-        member x.SetCaretPoints points = x.SetCaretPoints points
         member x.SetSelectedSpans spans = x.SetSelectedSpans spans
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count

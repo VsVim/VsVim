@@ -12,7 +12,6 @@ open RegexPatternUtil
 open VimCoreExtensions
 open ITextEditExtensions
 open StringBuilderExtensions
-open System.Collections.Generic
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -3818,7 +3817,7 @@ type internal CommandUtil
 
     /// Select the current word or matching token
     member x.SelectWordOrMatchingToken addToExistingSelection =
-        let selectedSpans = _commonOperations.SelectedSpans
+        let oldSelectedSpans = _commonOperations.SelectedSpans
         let result = x.SelectWordOrMatchingTokenCore()
         if addToExistingSelection then
             match result with
@@ -3827,14 +3826,13 @@ type internal CommandUtil
                 | ModeSwitch.SwitchModeWithArgument (_, modeArg) ->
                     match modeArg with
                     | ModeArgument.InitialVisualSelection (visualSelection, _) ->
-                        let newSpan =
+                        let newSelectedSpan =
                             _globalSettings.SelectionKind
                             |> visualSelection.GetPrimarySelectedSpan
                         seq {
-                            yield! selectedSpans
-                            yield newSpan
+                            yield! oldSelectedSpans
+                            yield newSelectedSpan
                         }
-                        |> Seq.filter (fun span -> span.Length <> 0)
                         |> _commonOperations.SetSelectedSpans
                         ModeSwitch.NoSwitch
                         |> CommandResult.Completed
