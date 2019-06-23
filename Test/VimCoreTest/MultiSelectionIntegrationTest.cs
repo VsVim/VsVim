@@ -281,7 +281,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Test undoing inserting text
+            /// Test undoing inserted text
             /// </summary>
             [WpfFact]
             public void UndoInsert()
@@ -297,7 +297,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Test repeating inserting text
+            /// Test repeating inserted text
             /// </summary>
             [WpfFact]
             public void RepeatInsert()
@@ -454,7 +454,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Test extending the selection forward
+            /// Test replacing the selection
             /// </summary>
             [WpfFact]
             public void ReplaceSelection()

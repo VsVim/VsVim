@@ -52,11 +52,11 @@ type internal MultiSelectionTracker
 
     /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
-        x.RecordedSelectedSpans <- x.GetSelectedSpans()
+        x.RecordedSelectedSpans <- x.SelectedSpans
 
     /// Raised when the buffer starts processing input
     member x.OnKeyInputStart () = 
-        x.RecordedSelectedSpans <- x.GetSelectedSpans()
+        x.RecordedSelectedSpans <- x.SelectedSpans
 
     /// Raised when the buffer finishes processing input
     member x.OnKeyInputEnd args = 
@@ -84,8 +84,8 @@ type internal MultiSelectionTracker
     member x.OnBufferClosed() = 
         _bag.DisposeAll()
 
-    /// Get all the caret points
-    member x.GetSelectedSpans () =
+    /// Get all the selected spans
+    member x.SelectedSpans =
         _commonOperations.SelectedSpans |> Seq.toArray
 
     /// Copy the primary caret's registers to all secondary carets
@@ -140,8 +140,8 @@ type internal MultiSelectionTracker
         let oldSelectedSpans = x.RecordedSelectedSpans
         if oldSelectedSpans.Length > 1 then
 
-            // We previous had secondary selected spans.
-            let newSelectedSpans = x.GetSelectedSpans()
+            // We previously had secondary selected spans.
+            let newSelectedSpans = x.SelectedSpans
             if
                 newSelectedSpans.[0] = oldSelectedSpans.[0]
                 && newSelectedSpans.Length = oldSelectedSpans.Length
@@ -153,6 +153,9 @@ type internal MultiSelectionTracker
 
             else
                 x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans
+
+                let finalSelectedSpans = x.SelectedSpans
+                ()
 
     /// Restore selected spans present at the start of key processing
     member x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans =

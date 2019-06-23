@@ -546,7 +546,10 @@ namespace Vim.UnitTest.Mock
 
         private void ClearSecondarySelections()
         {
-            SecondarySelectedSpans = new List<SelectedSpan>();
+            if (SecondarySelectedSpans.Count > 0)
+            {
+                SecondarySelectedSpans.Clear();
+            }
         }
     }
 }
