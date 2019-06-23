@@ -498,10 +498,13 @@ namespace Vim.UnitTest.Mock
         {
             var allSelectedSpans = selectedSpans.ToArray();
             var primarySelectedSpan = allSelectedSpans[0];
-            textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
-            if (primarySelectedSpan.Length != 0)
+            if (!primarySelectedSpan.Equals(GetPrimarySelectedSpan(textView)))
             {
-                textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
+                textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
+                if (primarySelectedSpan.Length != 0)
+                {
+                    textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
+                }
             }
             if (IsMultiSelectionSupported)
             {
@@ -511,6 +514,14 @@ namespace Vim.UnitTest.Mock
                     .OrderBy(span => span.CaretPoint.Position.Position)
                     .ToList();
             }
+        }
+
+        private SelectedSpan GetPrimarySelectedSpan(ITextView textView)
+        {
+            return new SelectedSpan(
+                textView.Caret.Position.VirtualBufferPosition,
+                textView.Selection.AnchorPoint,
+                textView.Selection.ActivePoint);
         }
 
         public void RegisterVimBuffer(IVimBuffer vimBuffer)

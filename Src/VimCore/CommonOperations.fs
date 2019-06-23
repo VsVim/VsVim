@@ -2493,7 +2493,7 @@ type internal CommonOperations
 
         // Get the current set of selected spans.
         let selectedSpans = x.SelectedSpans |> Seq.toList
-        let visualAnchorPoint = _vimBufferData.VisualAnchorPoint
+        let visualCaretStartPoint = _vimBufferData.VisualCaretStartPoint
 
         // Get any mode argument from the specified command result
         let getModeArgument result =
@@ -2576,7 +2576,7 @@ type internal CommonOperations
                     // Collect the command result and new selected span
                     // or any embedded visual span, if present.
                     let span =
-                        if Option.isSome visualAnchorPoint then
+                        if Option.isSome visualCaretStartPoint then
                             getVisualSelectedSpan span
                         else
                             match getVisualSelection result with

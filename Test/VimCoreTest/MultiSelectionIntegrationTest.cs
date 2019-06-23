@@ -71,8 +71,12 @@ namespace Vim.UnitTest
 
         private void ProcessNotation(string notation)
         {
-            _vimBuffer.ProcessNotation(notation);
-            DoEvents();
+            var keyInputSet = KeyNotationUtil.StringToKeyInputSet(notation);
+            foreach (var keyInput in keyInputSet.KeyInputs)
+            {
+                _vimBuffer.Process(keyInput);
+                DoEvents();
+            }
         }
 
         private VirtualSnapshotPoint GetPoint(int lineNumber, int column)

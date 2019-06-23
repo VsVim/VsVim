@@ -86,6 +86,7 @@ type internal SelectionTracker
         if not x.IsRunning then invalidOp Resources.SelectionTracker_NotRunning
         _textChangedHandler.Remove()
         _anchorPoint <- None
+        _vimBufferData.VisualCaretStartPoint <- None
         _vimBufferData.VisualAnchorPoint <- None
 
     member x.OnIncrementalSearchSessionCreated (session: IIncrementalSearchSession) =
