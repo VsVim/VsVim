@@ -154,9 +154,6 @@ type internal MultiSelectionTracker
             else
                 x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans
 
-                let finalSelectedSpans = x.SelectedSpans
-                ()
-
     /// Restore selected spans present at the start of key processing
     member x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans =
 
