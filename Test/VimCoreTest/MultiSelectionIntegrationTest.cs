@@ -32,6 +32,7 @@ namespace Vim.UnitTest
         protected IVimData _vimData;
         protected INormalMode _normalMode;
         protected IVimHost _vimHost;
+        internal MultiSelectionTracker _multiSelectionTracker;
         protected MockVimHost _mockVimHost;
         protected TestableClipboardDevice _clipboardDevice;
         protected TestableMouseDevice _testableMouseDevice;
@@ -53,7 +54,10 @@ namespace Vim.UnitTest
             _mockVimHost = (MockVimHost)_vimHost;
             _mockVimHost.BeepCount = 0;
             _mockVimHost.IsMultiSelectionSupported = true;
+            _mockVimHost.RegisterVimBuffer(_vimBuffer);
             _vimData = Vim.VimData;
+            var commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBufferData);
+            _multiSelectionTracker = new MultiSelectionTracker(_vimBuffer, commonOperations, _testableMouseDevice);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
@@ -66,6 +70,12 @@ namespace Vim.UnitTest
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
             base.Dispose();
+        }
+
+        private void ProcessNotation(string notation)
+        {
+            _vimBuffer.ProcessNotation(notation);
+            DoEvents();
         }
 
         private VirtualSnapshotPoint GetPoint(int lineNumber, int column)
@@ -85,26 +95,6 @@ namespace Vim.UnitTest
         private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
         {
             _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
-
-            // Simulate copying the unnamed register to secondary carets.
-            var registerName =
-                _globalSettings.ClipboardOptions.HasFlag(ClipboardOptions.Unnamed)
-                ? RegisterName.UnnamedClipboard
-                : RegisterName.Unnamed;
-            var register = Vim.RegisterMap.GetRegister(registerName);
-            var value = register.StringValue;
-            for (var caretIndex = 1; caretIndex < caretPoints.Length; caretIndex++)
-            {
-                try
-                {
-                    _vimData.CaretIndex = caretIndex;
-                    register.UpdateValue(value);
-                }
-                finally
-                {
-                    _vimData.CaretIndex = 0;
-                }
-            }
         }
 
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
@@ -179,6 +169,29 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class MultiSelectionTrackerTest : MultiSelectionIntegrationTest
+        {
+            [WpfFact]
+            public void RestoreCarets()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                _globalSettings.StartOfLine = false;
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation(":1<CR>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
+            }
+
+            [WpfFact]
+            public void MoveCarets()
+            {
+                Create("abc def ghi", "jkl mno pqr", "stu vwx yz.", "");
+                _globalSettings.StartOfLine = false;
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation(":2<CR>");
+                AssertCarets(GetPoint(1, 4), GetPoint(2, 4));
+            }
+        }
+
         public sealed class AddCaretTest : MultiSelectionIntegrationTest
         {
             /// <summary>
@@ -189,8 +202,8 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 _textView.Caret.MoveTo(GetPoint(0, 4));
-                _testableMouseDevice.Point = GetPoint(1, 8).Position;
-                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease>");
+                _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'e' in 'def'
+                ProcessNotation("<A-LeftMouse><A-LeftRelease>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
             }
 
@@ -202,7 +215,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 _textView.Caret.MoveTo(GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("<C-A-Up>");
+                ProcessNotation("<C-A-Up>");
                 AssertCarets(GetPoint(1, 4), GetPoint(0, 4));
             }
 
@@ -214,7 +227,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 _textView.Caret.MoveTo(GetPoint(0, 4));
-                _vimBuffer.ProcessNotation("<C-A-Down>");
+                ProcessNotation("<C-A-Down>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
 
@@ -233,7 +246,7 @@ namespace Vim.UnitTest
                     "jkl mno pqr",
                     "");
                 _textView.Caret.MoveTo(GetPoint(2, 4));
-                _vimBuffer.ProcessNotation("<C-A-Up><C-A-Up><C-A-Down><C-A-Down>");
+                ProcessNotation("<C-A-Up><C-A-Up><C-A-Down><C-A-Down>");
                 AssertCarets(
                     GetPoint(2, 4),
                     GetPoint(0, 4),
@@ -253,7 +266,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("w");
+                ProcessNotation("w");
                 AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
             }
 
@@ -265,7 +278,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("ixxx <Esc>");
+                ProcessNotation("ixxx <Esc>");
                 AssertLines("abc xxx def ghi", "jkl xxx mno pqr", "");
                 AssertCarets(GetPoint(0, 7), GetPoint(1, 7));
             }
@@ -278,10 +291,10 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("ixxx <Esc>");
+                ProcessNotation("ixxx <Esc>");
                 AssertLines("abc xxx def ghi", "jkl xxx mno pqr", "");
                 AssertCarets(GetPoint(0, 7), GetPoint(1, 7));
-                _vimBuffer.ProcessNotation("u");
+                ProcessNotation("u");
                 AssertLines("abc def ghi", "jkl mno pqr", "");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
@@ -294,7 +307,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("ixxx <Esc>ww.");
+                ProcessNotation("ixxx <Esc>ww.");
                 AssertLines("abc xxx def xxx ghi", "jkl xxx mno xxx pqr", "");
                 AssertCarets(GetPoint(0, 15), GetPoint(1, 15));
             }
@@ -307,7 +320,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("dw");
+                ProcessNotation("dw");
                 AssertLines("abc ghi", "jkl pqr", "");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
@@ -320,7 +333,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("cwxxx<Esc>");
+                ProcessNotation("cwxxx<Esc>");
                 AssertLines("abc xxx ghi", "jkl xxx pqr", "");
                 AssertCarets(GetPoint(0, 6), GetPoint(1, 6));
             }
@@ -332,9 +345,9 @@ namespace Vim.UnitTest
             public void Put()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
-                _vimBuffer.ProcessNotation("yw");
+                ProcessNotation("yw");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("wP");
+                ProcessNotation("wP");
                 AssertLines("abc def abc ghi", "jkl mno abc pqr", "");
                 AssertCarets(GetPoint(0, 11), GetPoint(1, 11));
             }
@@ -348,7 +361,7 @@ namespace Vim.UnitTest
                 Create("abc def ghi jkl", "mno pqr stu vwx", "");
                 _globalSettings.Clipboard = clipboardSetting;
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("dwwP");
+                ProcessNotation("dwwP");
                 AssertLines("abc ghi def jkl", "mno stu pqr vwx", "");
                 AssertCarets(GetPoint(0, 11), GetPoint(1, 11));
             }
@@ -363,17 +376,45 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Test moving the caret
+            /// Test moving the caret forward
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void Motion(bool isInclusive)
+            public void MotionForward(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("vw");
+                ProcessNotation("vw");
                 AssertSelectionsAdjustEnd(
                     GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
                     GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
+            }
+
+            /// <summary>
+            /// Test moving the caret backward
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void MotionBackward(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 8), GetPoint(1, 8));
+                ProcessNotation("vb");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 4).GetSelectedSpan(0, 4, true), // '|def '
+                    GetPoint(1, 4).GetSelectedSpan(0, 4, true)); // '|mno '
+            }
+
+            /// <summary>
+            /// Motion through zero width
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void MotionThroughZeroWidth(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("vwbb");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 0).GetSelectedSpan(0, 4, true), // '|abc '
+                    GetPoint(1, 0).GetSelectedSpan(0, 4, true)); // '|jkl '
             }
 
             /// <summary>
@@ -384,7 +425,7 @@ namespace Vim.UnitTest
             {
                 Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("veld");
+                ProcessNotation("veld");
                 AssertLines("abc ghi", "jkl pqr", "");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
@@ -409,7 +450,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
-                _vimBuffer.ProcessNotation("<S-Right>");
+                ProcessNotation("<S-Right>");
                 AssertSelections(
                     GetPoint(0, 1).GetSelectedSpan(-1, 0, false), // 'a|'
                     GetPoint(1, 1).GetSelectedSpan(-1, 0, false)); // 'j|'
@@ -423,7 +464,7 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("gh<C-S-Right>xxx ");
+                ProcessNotation("gh<C-S-Right>xxx ");
                 AssertLines("abc xxx ghi", "jkl xxx pqr", "");
                 AssertCarets(GetPoint(0, 8), GetPoint(1, 8));
             }
@@ -436,10 +477,10 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
-                _vimBuffer.ProcessNotation("gh<C-S-Right>");
+                ProcessNotation("gh<C-S-Right>");
                 AssertSelections(
-                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def|'
-                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno|'
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
             }
 
             /// <summary>
@@ -450,10 +491,24 @@ namespace Vim.UnitTest
             {
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 8), GetPoint(1, 8));
-                _vimBuffer.ProcessNotation("gh<C-S-Left>");
+                ProcessNotation("gh<C-S-Left>");
                 AssertSelections(
-                    GetPoint(0, 4).GetSelectedSpan(0, 4, true), // '|def'
-                    GetPoint(1, 4).GetSelectedSpan(0, 4, true)); // '|mno'
+                    GetPoint(0, 4).GetSelectedSpan(0, 4, true), // '|def '
+                    GetPoint(1, 4).GetSelectedSpan(0, 4, true)); // '|mno '
+            }
+
+            /// <summary>
+            /// Test extending the selection through zero width
+            /// </summary>
+            [WpfFact]
+            public void ExtendThroughZeroWidth()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("gh<C-S-Right><C-S-Left><C-S-Left>");
+                AssertSelections(
+                    GetPoint(0, 0).GetSelectedSpan(0, 4, true), // 'abc |'
+                    GetPoint(1, 0).GetSelectedSpan(0, 4, true)); // 'jkl |'
             }
 
             /// <summary>
@@ -465,13 +520,13 @@ namespace Vim.UnitTest
                 Create("abc def ghi jkl", "mno pqr stu vwx", "");
                 _globalSettings.Selection = "exclusive";
 
-                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'd' in 'def'
-                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def'
+                AssertSelections(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|'
 
                 _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
-                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
+                ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 AssertSelections(
                     GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|'
@@ -487,13 +542,13 @@ namespace Vim.UnitTest
                 Create("abc def ghi jkl", "mno pqr stu vwx", "");
                 _globalSettings.Selection = "inclusive";
 
-                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'd' in 'def'
-                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(GetPoint(0, 6).GetSelectedSpan(-2, 1, false)); // 'def'
+                AssertSelections(GetPoint(0, 6).GetSelectedSpan(-2, 1, false)); // 'def|'
 
                 _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
-                _vimBuffer.ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
+                ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 AssertSelections(
                     GetPoint(0, 6).GetSelectedSpan(-2, 1, false), // 'de|f'

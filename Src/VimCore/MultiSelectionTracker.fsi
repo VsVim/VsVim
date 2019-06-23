@@ -3,4 +3,4 @@
 namespace Vim
 
 type internal MultiSelectionTracker =
-    new: vimHost: IVimBuffer * commonOperations: ICommonOperations * mouseDevice: IMouseDevice -> MultiSelectionTracker
+    new: vimBuffer: IVimBuffer * commonOperations: ICommonOperations * mouseDevice: IMouseDevice -> MultiSelectionTracker

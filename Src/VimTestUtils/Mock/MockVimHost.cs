@@ -512,5 +512,41 @@ namespace Vim.UnitTest.Mock
                     .ToList();
             }
         }
+
+        public void RegisterVimBuffer(IVimBuffer vimBuffer)
+        {
+            if (IsMultiSelectionSupported)
+            {
+                var textView = vimBuffer.TextView;
+                textView.Selection.SelectionChanged += OnSelectionChanged;
+                textView.Caret.PositionChanged += OnCaretPositionChanged;
+                vimBuffer.Closed += OnVimBufferClosed;
+            }
+        }
+
+        private void OnVimBufferClosed(object sender, EventArgs e)
+        {
+            if (sender is IVimBuffer vimBuffer)
+            {
+                var textView = vimBuffer.TextView;
+                textView.Selection.SelectionChanged -= OnSelectionChanged;
+                textView.Caret.PositionChanged -= OnCaretPositionChanged;
+            }
+        }
+
+        private void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
+        {
+            ClearSecondarySelections();
+        }
+
+        private void OnSelectionChanged(object sender, EventArgs e)
+        {
+            ClearSecondarySelections();
+        }
+
+        private void ClearSecondarySelections()
+        {
+            SecondarySelectedSpans = new List<SelectedSpan>();
+        }
     }
 }

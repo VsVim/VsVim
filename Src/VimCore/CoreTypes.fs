@@ -55,7 +55,7 @@ type JoinKind =
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
-[<DebuggerDisplay("{ToString()}")>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type SelectedSpan =
 
     val private _caretPoint: VirtualSnapshotPoint
@@ -101,7 +101,7 @@ type SelectedSpan =
                 text.Substring(0, offset) + "|" + text.Substring(offset)
             else
                 text
-        System.String.Format("{0}: [{1}-{2}){3} \"{4}\"",
+        System.String.Format("{0}: [{1}-{2}){3} '{4}'",
             x._caretPoint.Position.Position,
             x.Span.Start.Position.Position,
             x.Span.End.Position.Position,
