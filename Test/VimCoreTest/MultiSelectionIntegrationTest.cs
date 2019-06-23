@@ -32,7 +32,6 @@ namespace Vim.UnitTest
         protected IVimData _vimData;
         protected INormalMode _normalMode;
         protected IVimHost _vimHost;
-        internal MultiSelectionTracker _multiSelectionTracker;
         protected MockVimHost _mockVimHost;
         protected TestableClipboardDevice _clipboardDevice;
         protected TestableMouseDevice _testableMouseDevice;
@@ -56,8 +55,6 @@ namespace Vim.UnitTest
             _mockVimHost.IsMultiSelectionSupported = true;
             _mockVimHost.RegisterVimBuffer(_vimBuffer);
             _vimData = Vim.VimData;
-            var commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBufferData);
-            _multiSelectionTracker = new MultiSelectionTracker(_vimBuffer, commonOperations, _testableMouseDevice);
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;

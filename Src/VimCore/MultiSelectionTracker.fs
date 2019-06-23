@@ -138,17 +138,14 @@ type internal MultiSelectionTracker
     /// Restore selected spans present at the start of key processing
     member x.RestoreSelectedSpans () =
         let oldSelectedSpans = x.RecordedSelectedSpans
-        let newSelectedSpans = x.GetSelectedSpans()
-        if newSelectedSpans.Length = 1 && oldSelectedSpans.Length > 1 then
+        if oldSelectedSpans.Length > 1 then
+            let newSelectedSpans = x.GetSelectedSpans()
 
-            // All secondary selected spans were removed. This is generally the
-            // result of VsVim or some external component changing the primary
-            // selection using the old non-multi-selection aware API.
+            // We previous had secondary selected spans.
             let oldPrimarySelectedSpan =
                 oldSelectedSpans.[0]
                 |> _commonOperations.MapSelectedSpanToCurrentSnapshot
-            let newPrimarySelectedSpan =
-                newSelectedSpans.[0]
+            let newPrimarySelectedSpan = newSelectedSpans.[0]
             seq {
 
                 // Return the first selected span as is.
@@ -184,7 +181,11 @@ type internal MultiSelectionTracker
                             |> _commonOperations.MapSelectedSpanToCurrentSnapshot
                             |> x.AdjustSelectedSpan lineOffset spacesOffset length
                         yield newSelectedSpan
-                }
+
+                // Return any remaining new selected spans.
+                for caretIndex = oldSelectedSpans.Length to newSelectedSpans.Length - 1 do
+                    yield newSelectedSpans.[caretIndex]
+            }
 
             |> _commonOperations.SetSelectedSpans
 
