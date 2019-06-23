@@ -30,8 +30,8 @@ type internal MultiSelectionTracker
         |> Observable.subscribe (fun _ -> this.OnKeyInputStart())
         |> _bag.Add
 
-        _vimBuffer.KeyInputProcessed
-        |> Observable.subscribe (fun _ -> this.OnKeyInputProcessed())
+        _vimBuffer.KeyInputEnd
+        |> Observable.subscribe (fun _ -> this.OnKeyInputEnd())
         |> _bag.Add
 
         _vimBuffer.SwitchedMode
@@ -58,14 +58,14 @@ type internal MultiSelectionTracker
     member x.OnKeyInputStart () = 
         x.RecordedSelectedSpans <- x.GetSelectedSpans()
 
-    /// Raised when the caret position changes
-    member x.OnKeyInputProcessed args = 
+    /// Raised when the buffer finishes processing input
+    member x.OnKeyInputEnd args = 
         if
             _vimBuffer.ModeKind <> ModeKind.Disabled
             && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
             && not _textView.IsClosed
         then
-            x.RestoreSelectedSpans()
+            x.CheckRestoreSelectedSpans()
 
     /// Raised when the vim buffer switches modes
     member x.OnSwitchedMode args =
@@ -135,59 +135,73 @@ type internal MultiSelectionTracker
             let newActivePoint = adjustPoint span.ActivePoint
             SelectedSpan(newCaretPoint, newAnchorPoint, newActivePoint)
 
-    /// Restore selected spans present at the start of key processing
-    member x.RestoreSelectedSpans () =
+    /// Check whether we need to restore selected spans and if so, restore them
+    member x.CheckRestoreSelectedSpans () =
         let oldSelectedSpans = x.RecordedSelectedSpans
         if oldSelectedSpans.Length > 1 then
-            let newSelectedSpans = x.GetSelectedSpans()
 
             // We previous had secondary selected spans.
-            let oldPrimarySelectedSpan =
-                oldSelectedSpans.[0]
-                |> _commonOperations.MapSelectedSpanToCurrentSnapshot
-            let newPrimarySelectedSpan = newSelectedSpans.[0]
-            seq {
+            let newSelectedSpans = x.GetSelectedSpans()
+            if
+                newSelectedSpans.[0] = oldSelectedSpans.[0]
+                && newSelectedSpans.Length = oldSelectedSpans.Length
+            then
 
-                // Return the first selected span as is.
-                yield newSelectedSpans.[0]
+                // The caret didn't move and the number of selected spans
+                // didn't change.
+                ()
 
-                if newPrimarySelectedSpan = oldPrimarySelectedSpan then
+            else
+                x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans
 
-                    // The primary selection hasn't changed but the secondary
-                    // selections were cleared. Restore them.
-                    for caretIndex = 1 to oldSelectedSpans.Length - 1 do
-                        let newSecondarySelectedSpan =
-                            oldSelectedSpans.[caretIndex]
-                            |> _commonOperations.MapSelectedSpanToCurrentSnapshot
-                        yield newSecondarySelectedSpan
+    /// Restore selected spans present at the start of key processing
+    member x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans =
 
-                else
+        let oldPrimarySelectedSpan =
+            oldSelectedSpans.[0]
+            |> _commonOperations.MapSelectedSpanToCurrentSnapshot
+        let newPrimarySelectedSpan = newSelectedSpans.[0]
+        seq {
 
-                    // The primary selection has changed and we previously had
-                    // multiple selected spans that were not cleared explicitly.
-                    let oldCaretPoint = oldPrimarySelectedSpan.CaretPoint
-                    let newCaretPoint = newPrimarySelectedSpan.CaretPoint
-                    let oldLine, oldSpaces = x.GetLineAndSpaces oldCaretPoint
-                    let newLine, newSpaces =x.GetLineAndSpaces newCaretPoint
-                    let lineOffset = newLine.LineNumber - oldLine.LineNumber
-                    let spacesOffset = newSpaces - oldSpaces
-                    let length = newPrimarySelectedSpan.Length
+            // Return the first selected span as is.
+            yield newSelectedSpans.[0]
 
-                    // Shift the old secondary spans by the change in position of
-                    // the primary caret.
-                    for caretIndex = 1 to oldSelectedSpans.Length - 1 do
-                        let newSelectedSpan =
-                            oldSelectedSpans.[caretIndex]
-                            |> _commonOperations.MapSelectedSpanToCurrentSnapshot
-                            |> x.AdjustSelectedSpan lineOffset spacesOffset length
-                        yield newSelectedSpan
+            if newPrimarySelectedSpan = oldPrimarySelectedSpan then
 
-                // Return any remaining new selected spans.
-                for caretIndex = oldSelectedSpans.Length to newSelectedSpans.Length - 1 do
-                    yield newSelectedSpans.[caretIndex]
-            }
+                // The primary selection hasn't changed but the secondary
+                // selections were cleared. Restore them.
+                for caretIndex = 1 to oldSelectedSpans.Length - 1 do
+                    let newSecondarySelectedSpan =
+                        oldSelectedSpans.[caretIndex]
+                        |> _commonOperations.MapSelectedSpanToCurrentSnapshot
+                    yield newSecondarySelectedSpan
 
-            |> _commonOperations.SetSelectedSpans
+            else
+
+                // The primary selection has changed and we previously had
+                // multiple selected spans that were not cleared explicitly.
+                let oldCaretPoint = oldPrimarySelectedSpan.CaretPoint
+                let newCaretPoint = newPrimarySelectedSpan.CaretPoint
+                let oldLine, oldSpaces = x.GetLineAndSpaces oldCaretPoint
+                let newLine, newSpaces =x.GetLineAndSpaces newCaretPoint
+                let lineOffset = newLine.LineNumber - oldLine.LineNumber
+                let spacesOffset = newSpaces - oldSpaces
+                let length = newPrimarySelectedSpan.Length
+
+                // Shift the old secondary spans by the change in position of
+                // the primary caret.
+                for caretIndex = 1 to oldSelectedSpans.Length - 1 do
+                    let newSelectedSpan =
+                        oldSelectedSpans.[caretIndex]
+                        |> _commonOperations.MapSelectedSpanToCurrentSnapshot
+                        |> x.AdjustSelectedSpan lineOffset spacesOffset length
+                    yield newSelectedSpan
+
+            // Return any remaining new selected spans.
+            for caretIndex = oldSelectedSpans.Length to newSelectedSpans.Length - 1 do
+                yield newSelectedSpans.[caretIndex]
+        }
+        |> _commonOperations.SetSelectedSpans
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal MultiSelectionTrackerFactory
