@@ -1993,24 +1993,6 @@ type VisualSpan =
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) path =
 
-        // Select the given SnapshotSpan
-        let selectSpan startPoint endPoint = 
-
-            textView.Selection.Mode <- TextSelectionMode.Stream
-
-            let startPoint, endPoint = 
-                match path with
-                | SearchPath.Forward -> startPoint, endPoint 
-                | SearchPath.Backward -> endPoint, startPoint
-
-            // The editor will normalize SnapshotSpan values here which extend into the line break
-            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
-            // values to ensure the proper selection
-            let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-            let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-
-            textView.Selection.Select(startPoint, endPoint)
-
         // Select the given VirtualSnapshotSpan
         let selectVirtualSpan startPoint endPoint =
 
@@ -2021,7 +2003,18 @@ type VisualSpan =
                 | SearchPath.Forward -> startPoint, endPoint
                 | SearchPath.Backward -> endPoint, startPoint
 
-            textView.Selection.Select(startPoint, endPoint)
+            // Don't change the selection if it is correct.
+            if
+                textView.Selection.AnchorPoint <> startPoint
+                || textView.Selection.ActivePoint <> endPoint
+            then
+                textView.Selection.Select(startPoint, endPoint)
+
+        // Select the given SnapshotSpan
+        let selectSpan startPoint endPoint = 
+            let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            selectVirtualSpan startPoint endPoint
 
         match x with
         | Character characterSpan ->
