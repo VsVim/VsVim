@@ -506,14 +506,17 @@ namespace Vim.UnitTest.Mock
                     .OrderBy(span => span.CaretPoint.Position.Position)
                     .ToList();
             }
-            try
+            if (!_shouldIgnoreEvents)
             {
-                _shouldIgnoreEvents = true;
-                SetPrimarySelectedSpan(textView, primarySelectedSpan);
-            }
-            finally
-            {
-                _shouldIgnoreEvents = false;
+                try
+                {
+                    _shouldIgnoreEvents = true;
+                    SetPrimarySelectedSpan(textView, primarySelectedSpan);
+                }
+                finally
+                {
+                    _shouldIgnoreEvents = false;
+                }
             }
         }
 
