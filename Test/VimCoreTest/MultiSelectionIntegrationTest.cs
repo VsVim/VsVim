@@ -197,6 +197,19 @@ namespace Vim.UnitTest
                 ProcessNotation(":2<CR>");
                 AssertCarets(GetPoint(1, 4), GetPoint(2, 4));
             }
+
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void ExternalPrimarySelection(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                _textView.Caret.MoveTo(GetPoint(0, 7));
+                _textView.Selection.Select(GetPoint(0, 4), GetPoint(0, 7));
+                _textView.Selection.IsActive = true;
+                DoEvents();
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+            }
         }
 
         public sealed class AddCaretTest : MultiSelectionIntegrationTest
