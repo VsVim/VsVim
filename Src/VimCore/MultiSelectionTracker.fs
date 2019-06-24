@@ -3,6 +3,7 @@
 namespace Vim
 open System.ComponentModel.Composition
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Editor
 
 type internal MultiSelectionTracker
     ( 
@@ -19,9 +20,14 @@ type internal MultiSelectionTracker
     let _textView = _vimBuffer.TextView
     let _bag = DisposableBag()
 
+    let mutable _syncingSelection = false
     let mutable _recordedSelectedSpans: SelectedSpan array = [||]
 
     do
+        _textView.Selection.SelectionChanged
+        |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
+        |> _bag.Add
+
         _commonOperations.SelectedSpansSet
         |> Observable.subscribe (fun _ -> this.OnSelectedSpansSet())
         |> _bag.Add
@@ -49,6 +55,65 @@ type internal MultiSelectionTracker
             if value.Length > _recordedSelectedSpans.Length then
                 x.InitializeSecondaryCaretRegisters value
             _recordedSelectedSpans <- value
+
+    /// Adjust the specified selected span for inclusive selection
+    member x.AdjustForInclusive (selectedSpan: SelectedSpan) =
+        if
+            not selectedSpan.IsReversed
+            && selectedSpan.Length > 0
+            && selectedSpan.CaretPoint = selectedSpan.End
+        then
+            let caretPoint =
+                selectedSpan.CaretPoint
+                |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
+            let anchorPoint = selectedSpan.AnchorPoint
+            let activePoint = selectedSpan.ActivePoint
+            SelectedSpan(caretPoint, anchorPoint, activePoint)
+            |> Some
+        else
+            None
+
+    /// Raised when the selection changes
+    member x.OnSelectionChanged () =
+        if
+            _syncingSelection
+            || _vimBuffer.IsProcessingInput
+            || _vimBuffer.IsSwitchingMode
+        then
+
+            // Other components are responsible for managing the selection.
+            ()
+
+        elif
+            _globalSettings.IsSelectionInclusive
+            && _textView.Selection.Mode = TextSelectionMode.Stream
+        then
+
+            // An external selection event occurred, so check whether any
+            // secondary selections need to be adjusted for inclusive
+            // selection.
+            let (selectedSpans: SelectedSpan array) = x.SelectedSpans
+            if selectedSpans.Length > 1 then
+                let results =
+                    seq {
+                        yield false, selectedSpans.[0]
+                        for caretIndex = 1 to selectedSpans.Length - 1 do
+                            let selectedSpan = selectedSpans.[caretIndex]
+                            match x.AdjustForInclusive selectedSpan with
+                            | Some adjustedSelectedSpan ->
+                                yield true, adjustedSelectedSpan
+                            | None ->
+                                yield false, selectedSpan
+                    }
+                    |> Seq.toList
+                if results |> Seq.exists (fun (changed, _) -> changed) then
+                    try
+                        _syncingSelection <- true
+                        results
+                        |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
+                        |> _commonOperations.SetSelectedSpans
+                    finally
+                        _syncingSelection <- false
 
     /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
