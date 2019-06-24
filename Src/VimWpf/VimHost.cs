@@ -28,7 +28,7 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler _selectedSpansChanged;
+        private event EventHandler<SelectedSpansChangedEventArgs> _selectedSpansChanged;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -533,11 +533,12 @@ namespace Vim.UI.Wpf
             }
         }
 
-        protected void RaiseSelectedSpansChanged()
+        protected void RaiseSelectedSpansChanged(ITextView textView)
         {
             if (_selectedSpansChanged != null)
             {
-                _selectedSpansChanged(this, EventArgs.Empty);
+                var args = new SelectedSpansChangedEventArgs(textView);
+                _selectedSpansChanged(this, args);
             }
         }
 
@@ -952,7 +953,7 @@ namespace Vim.UI.Wpf
             remove { _beforeSave -= value; }
         }
 
-        event EventHandler IVimHost.SelectedSpansChanged
+        event EventHandler<SelectedSpansChangedEventArgs> IVimHost.SelectedSpansChanged
         {
             add { _selectedSpansChanged += value; }
             remove { _selectedSpansChanged -= value; }
