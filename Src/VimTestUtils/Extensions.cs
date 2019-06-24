@@ -1394,7 +1394,7 @@ namespace Vim.UnitTest
 
         public static SelectedSpan AdjustEndForInclusive(this SelectedSpan selectedSpan)
         {
-            if (selectedSpan.CaretPoint == selectedSpan.Start)
+            if (selectedSpan.CaretPoint == selectedSpan.Start && selectedSpan.Length != 0)
             {
                 return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
             }

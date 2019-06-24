@@ -377,6 +377,20 @@ namespace Vim.UnitTest
         public sealed class VisualModeTest : MultiSelectionIntegrationTest
         {
             /// <summary>
+            /// Test entering visual mode
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void Enter(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("v");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 4).GetSelectedSpan(0, 0, false), // '|*'def or '|d*'ef
+                    GetPoint(1, 4).GetSelectedSpan(0, 0, false)); // '|*'mno or 'm*'no
+            }
+
+            /// <summary>
             /// Test moving the caret forward
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
