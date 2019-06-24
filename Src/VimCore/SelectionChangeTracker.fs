@@ -74,6 +74,10 @@ type internal SelectionChangeTracker
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual or select mode are the responsibility of the mode to handle
                 _selectionDirty <- false
+            elif Seq.length _commonOperations.SelectedSpans > 1 then
+                // If there are secondary selections, the multi-selection support is
+                // responsible for setting the correct mode.
+                _selectionDirty <- false
             else 
                 _selectionDirty <- true
         elif _vimBuffer.IsSwitchingMode then

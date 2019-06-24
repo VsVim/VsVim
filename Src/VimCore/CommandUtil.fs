@@ -2989,6 +2989,7 @@ type internal CommandUtil
         | NormalCommand.ShiftLinesRight -> true
         | NormalCommand.ShiftMotionLinesLeft _ -> true
         | NormalCommand.ShiftMotionLinesRight _ -> true
+        | NormalCommand.SwitchModeVisualCommand _ -> true
         | NormalCommand.SwitchToSelection _ -> true
         | NormalCommand.Yank _ -> true
         | _ -> false
@@ -4056,7 +4057,7 @@ type internal CommandUtil
     member x.SwitchMode modeKind modeArgument =
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
-    /// Switch to the visual mode specified by 'selectmode=cmd'
+    /// Switch to the specified kind of visual mode
     member x.SwitchModeVisualCommand visualKind count =
         match count, _vimData.LastVisualSelection with
         | Some count, Some lastSelection ->

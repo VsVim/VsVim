@@ -2495,7 +2495,7 @@ type internal CommonOperations
         let selectedSpans = x.SelectedSpans |> Seq.toList
         let visualCaretStartPoint = _vimBufferData.VisualCaretStartPoint
 
-        // Get any mode argument from the specified command result
+        // Get any mode argument from the specified command result.
         let getModeArgument result =
             match result with
             | CommandResult.Completed modeSwitch ->
@@ -2507,7 +2507,7 @@ type internal CommonOperations
             | _ ->
                 None
 
-        // Get any linked transaction from the specified command result
+        // Get any linked transaction from the specified command result.
         let getLinkedTransaction result =
             match getModeArgument result with
             | Some (ModeArgument.InsertWithTransaction linkedTransaction) ->
@@ -2515,21 +2515,39 @@ type internal CommonOperations
             | _ ->
                 None
 
-        // Get any visual selection from the specified command result
+        // Get any visual selection from the specified command result.
         let getVisualSelection result =
             match getModeArgument result with
             | Some (ModeArgument.InitialVisualSelection (visualSelection, _)) ->
-                Some visualSelection
+                _globalSettings.SelectionKind
+                |> visualSelection.GetPrimarySelectedSpan
+                |> Some
             | _ ->
                 None
 
-        // Create a linked undo transaction
+        // Get any switch to visual mode from the specifed command result.
+        let getSwitchToVisualKind result =
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchMode modeKind ->
+                    match modeKind with
+                    | ModeKind.VisualCharacter -> Some VisualKind.Character
+                    | ModeKind.VisualLine -> Some VisualKind.Line
+                    | ModeKind.VisualBlock -> Some VisualKind.Block
+                    | _ -> None
+                | _ ->
+                    None
+            | _ ->
+                None
+
+        // Create a linked undo transaction.
         let createTransaction () =
             let name = "MultiSelection"
             let flags = LinkedUndoTransactionFlags.CanBeEmpty
             _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
 
-        // Run the action and complete any embedded linked transaction
+        // Run the action and complete any embedded linked transaction.
         let runActionAndCompleteTransaction action =
             let result = action()
             match getLinkedTransaction result with
@@ -2539,7 +2557,7 @@ type internal CommonOperations
                 ()
             result
 
-        // Get the effective selected span
+        // Get the effective selected span.
         let getVisualSelectedSpan (oldSpan: SelectedSpan) =
             let oldSpan = x.MapSelectedSpanToCurrentSnapshot oldSpan
             let visualKind = VisualKind.Character
@@ -2553,6 +2571,14 @@ type internal CommonOperations
                     visualKind anchorPoint caretPoint tabStop useVirtualSpace
             let visualSelection =
                 visualSelection.AdjustForSelectionKind selectionKind
+            visualSelection.GetPrimarySelectedSpan selectionKind
+
+        // Get the initial selected span for specified kind of visual mode.
+        let getInitialSelection visualKind =
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView
+            let visualSelection = VisualSelection.CreateInitial visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind useVirtualSpace
+            let selectionKind = _globalSettings.SelectionKind
             visualSelection.GetPrimarySelectedSpan selectionKind
 
         // Get the results for all actions.
@@ -2576,15 +2602,18 @@ type internal CommonOperations
                     // Collect the command result and new selected span
                     // or any embedded visual span, if present.
                     let span =
-                        if Option.isSome visualCaretStartPoint then
-                            getVisualSelectedSpan span
-                        else
-                            match getVisualSelection result with
-                            | Some visualSelection ->
-                                _globalSettings.SelectionKind
-                                |> visualSelection.GetPrimarySelectedSpan
-                            | None ->
-                                x.PrimarySelectedSpan
+                        match getSwitchToVisualKind result with
+                        | Some visualKind ->
+                            getInitialSelection visualKind
+                        | None ->
+                            if Option.isSome visualCaretStartPoint then
+                                getVisualSelectedSpan span
+                            else
+                                match getVisualSelection result with
+                                | Some selectedSpan ->
+                                    selectedSpan
+                                | None ->
+                                    x.PrimarySelectedSpan
                     yield result, span
             }
             |> Seq.toList
