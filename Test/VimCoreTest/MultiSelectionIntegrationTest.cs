@@ -62,6 +62,12 @@ namespace Vim.UnitTest
             _testableMouseDevice.Point = null;
         }
 
+        private void Create(bool isInclusive, params string[] lines)
+        {
+            Create(lines);
+            _globalSettings.Selection = isInclusive ? "inclusive" : "exclusive";
+        }
+
         public override void Dispose()
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
@@ -370,12 +376,6 @@ namespace Vim.UnitTest
 
         public sealed class VisualModeTest : MultiSelectionIntegrationTest
         {
-            private void Create(bool isInclusive, params string[] lines)
-            {
-                Create(lines);
-                _globalSettings.Selection = isInclusive ? "inclusive" : "exclusive";
-            }
-
             /// <summary>
             /// Test moving the caret forward
             /// </summary>
@@ -386,8 +386,8 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 ProcessNotation("vw");
                 AssertSelectionsAdjustEnd(
-                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
-                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |' or 'def |g*'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |' or 'mno |p*'
             }
 
             /// <summary>
@@ -515,45 +515,24 @@ namespace Vim.UnitTest
             /// <summary>
             /// Using alt-double-click should add a word to the selection
             /// </summary>
-            [WpfFact]
-            public void ExclusiveDoubleClick()
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void DoubleClick(bool isInclusive)
             {
-                Create("abc def ghi jkl", "mno pqr stu vwx", "");
-                _globalSettings.Selection = "exclusive";
+                Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
 
+                // First double-click.
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
                 ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|'
+                AssertSelectionsAdjustCaret(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|'
 
+                // Second double-click.
                 _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
                 ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(
-                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|'
-                    GetPoint(1, 11).GetSelectedSpan(-3, 0, false)); // 'stu|'
-            }
-
-            /// <summary>
-            /// Using alt-double-click should add a word to the selection
-            /// </summary>
-            [WpfFact]
-            public void InclusiveDoubleClick()
-            {
-                Create("abc def ghi jkl", "mno pqr stu vwx", "");
-                _globalSettings.Selection = "inclusive";
-
-                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
-                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
-                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(GetPoint(0, 6).GetSelectedSpan(-2, 1, false)); // 'def|'
-
-                _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
-                ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
-                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelections(
-                    GetPoint(0, 6).GetSelectedSpan(-2, 1, false), // 'de|f'
-                    GetPoint(1, 10).GetSelectedSpan(-2, 1, false)); // 'st|u'
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(1, 11).GetSelectedSpan(-3, 0, false)); // 'stu|*' or 'st|u*'
             }
         }
     }

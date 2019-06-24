@@ -101,6 +101,13 @@ type SelectedSpan =
                 text.Substring(0, offset) + "|" + text.Substring(offset)
             else
                 text
+        let displayString =
+            if x.ActivePoint = x.End then
+                displayString + "*"
+            elif x.ActivePoint = x.Start then
+                "*" + displayString
+            else
+                displayString
         System.String.Format("{0}: [{1}-{2}){3} '{4}'",
             x._caretPoint.Position.Position,
             x.Span.Start.Position.Position,
