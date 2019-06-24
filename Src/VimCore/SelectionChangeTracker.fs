@@ -193,10 +193,9 @@ type internal SelectionChangeTracker
                 match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> 
-                    if VisualKind.IsAnyVisualOrSelect modeKind then
-                        if VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
-                            // Switching from an insert mode to a visual/select mode automatically initiates one command mode
-                            _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
+                    // Switching from an insert mode to a visual/select mode automatically initiates one command mode
+                    if VisualKind.IsAnyVisualOrSelect modeKind && VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
+                        _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
                     _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match getDesiredNewMode() with
