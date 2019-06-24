@@ -78,8 +78,8 @@ type internal SelectionChangeTracker
                 // visual or select mode are the responsibility of the mode to handle
                 _selectionDirty <- false
             elif x.HasSecondarySelections then
-                // If there are secondary selections, the multi-selection support is
-                // responsible for setting the correct mode.
+                // If there are secondary selections, the multi-selection
+                // support is responsible for setting the correct mode.
                 _selectionDirty <- false
             else 
                 _selectionDirty <- true
@@ -109,8 +109,12 @@ type internal SelectionChangeTracker
         let getDesiredNewMode () = 
             let isSelectModeMouse =
                 Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse 
-            let inner = 
-                if TextViewUtil.IsSelectionEmpty _textView then
+            let desiredNewMode = 
+                if x.HasSecondarySelections then
+                    // If there are secondary selections, it is the responsibility of
+                    // the multi-selection tracker to set the mode.
+                    None
+                elif TextViewUtil.IsSelectionEmpty _textView then
                     if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                         Some ModeKind.Normal
                     else 
@@ -152,7 +156,7 @@ type internal SelectionChangeTracker
                         Some ModeKind.SelectBlock
                     else
                         Some ModeKind.VisualBlock
-            match inner with 
+            match desiredNewMode with 
             | None -> None
             | Some kind -> if kind <> _vimBuffer.ModeKind then Some kind else None 
 
@@ -166,10 +170,11 @@ type internal SelectionChangeTracker
                 // If vim was disabled between the posting of this event and the callback then do
                 // nothing
                 ()
-            elif _vimBuffer.IsClosed || _selectionDirty || x.HasSecondarySelections then 
-                // Something has changed since we planned to change the mode.
+            elif x.HasSecondarySelections then
+                // If there are secondary selections, it is the responsibility
+                // of the multi-selection tracker to set the mode.
                 ()
-            else
+            elif not _vimBuffer.IsClosed && not _selectionDirty then
                 match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> 
@@ -190,8 +195,7 @@ type internal SelectionChangeTracker
                 // caches information about the original selection.  Update that information now
                 if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> IVisualMode
-                    if not x.HasSecondarySelections then
-                        mode.SyncSelection()
+                    mode.SyncSelection()
                 elif VisualKind.IsAnySelect _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> ISelectMode
                     mode.SyncSelection()

@@ -65,7 +65,7 @@ type internal MultiSelectionTracker
             && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
             && not _textView.IsClosed
         then
-            x.CheckRestoreSelectedSpans()
+            x.CheckRestoreSelections()
 
     /// Raised when the vim buffer switches modes
     member x.OnSwitchedMode args =
@@ -136,7 +136,7 @@ type internal MultiSelectionTracker
             SelectedSpan(newCaretPoint, newAnchorPoint, newActivePoint)
 
     /// Check whether we need to restore selected spans and if so, restore them
-    member x.CheckRestoreSelectedSpans () =
+    member x.CheckRestoreSelections () =
         let oldSelectedSpans = x.RecordedSelectedSpans
         if oldSelectedSpans.Length > 1 then
 
@@ -147,7 +147,7 @@ type internal MultiSelectionTracker
                 && newSelectedSpans.Length = oldSelectedSpans.Length
             then
 
-                // The caret didn't move and the number of selected spans
+                // The selection didn't change and the number of selected spans
                 // didn't change.
                 ()
 
