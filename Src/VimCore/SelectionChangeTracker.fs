@@ -100,6 +100,13 @@ type internal SelectionChangeTracker
             _selectionDirty <- false
             x.SetModeForSelection()
 
+    /// Whether an externally applied selection needs an inclusive adjustment
+    member x.NeedInclusiveAdjustmentForSelection =
+        _globalSettings.SelectionKind = SelectionKind.Inclusive
+        && _textView.Selection.IsActive
+        && _textView.Selection.Mode = TextSelectionMode.Stream
+        && not _textView.Selection.IsReversed
+
     /// Update the mode based on the current Selection
     member x.SetModeForSelection() = 
 
@@ -178,10 +185,20 @@ type internal SelectionChangeTracker
                 match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> 
-                    // Switching from an insert mode to a visual/select mode automatically initiates one command mode
-                    if VisualKind.IsAnyVisualOrSelect modeKind && VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
-                        _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
-                    _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
+                    if VisualKind.IsAnyVisualOrSelect modeKind then
+                        if VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
+                            // Switching from an insert mode to a visual/select mode automatically initiates one command mode
+                            _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
+                        elif x.NeedInclusiveAdjustmentForSelection then
+                            try
+                                _syncingSelection <- true
+                                _textView.Caret.Position.BufferPosition
+                                |> SnapshotPointUtil.SubtractOneOrCurrent
+                                |> VirtualSnapshotPointUtil.OfPoint
+                                |> (fun point -> _textView.Caret.MoveTo(point) |> ignore)
+                            finally
+                                _syncingSelection <- false
+                        _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match getDesiredNewMode() with
         | None ->
@@ -211,25 +228,20 @@ type internal SelectionChangeTracker
     member x.AdjustSelectionToCaret() =
         Contract.Assert _syncingSelection
 
-        if (_mouseDevice.InDragOperation(_textView) && 
-            _globalSettings.SelectionKind = SelectionKind.Inclusive &&
-            _textView.Selection.IsActive && 
-            _textView.Selection.Mode = TextSelectionMode.Stream && 
-            not _textView.Selection.IsReversed && 
-            (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)) then
-
-            match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
-            | Some textViewLines, Some vimPoint ->
-                let x = vimPoint.X
-                let y = vimPoint.Y
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
-                if textViewLine <> null then
-                    let point = textViewLine.GetBufferPositionFromXCoordinate x 
-                    VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')
-                    if point.HasValue && point.Value.Position >= _textView.Selection.ActivePoint.Position.Position && point.Value.Position < point.Value.Snapshot.Length then
-                        let activePoint = VirtualSnapshotPoint(point.Value.Add(1))
-                        let anchorPoint = _textView.Selection.AnchorPoint
-                        _textView.Selection.Select(anchorPoint, activePoint)
+        if
+            _mouseDevice.InDragOperation(_textView)
+            && x.NeedInclusiveAdjustmentForSelection
+            && (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)
+        then
+            match _commonOperations.MousePoint with
+            | Some mousePoint ->
+                // TODO: Don't lose virtual spaces when adding.
+                let activePoint =
+                    mousePoint.Position
+                    |> SnapshotPointUtil.AddOneOrCurrent
+                    |> VirtualSnapshotPointUtil.OfPoint
+                let anchorPoint = _textView.Selection.AnchorPoint
+                _textView.Selection.Select(anchorPoint, activePoint)
             | _ -> ()
 
 [<Export(typeof<IVimBufferCreationListener>)>]
