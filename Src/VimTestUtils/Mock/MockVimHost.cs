@@ -75,6 +75,8 @@ namespace Vim.UnitTest.Mock
 
         public MockVimHost()
         {
+            SecondarySelectedSpans = new List<SelectedSpan>();
+
             Clear();
         }
 
@@ -129,7 +131,7 @@ namespace Vim.UnitTest.Mock
             WordWrapStyle = WordWrapStyles.WordWrap;
             UseDefaultCaret = false;
             IsMultiSelectionSupported = false;
-            SecondarySelectedSpans = new List<SelectedSpan>();
+            SecondarySelectedSpans.Clear();
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -480,10 +482,7 @@ namespace Vim.UnitTest.Mock
 
         IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
-            var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-            var anchorPoint = textView.Selection.AnchorPoint;
-            var activePoint = textView.Selection.ActivePoint;
-            var primarySelectedSpan = new SelectedSpan(caretPoint, anchorPoint, activePoint);
+            var primarySelectedSpan = GetPrimarySelectedSpan(textView);
             if (IsMultiSelectionSupported)
             {
                 return Enumerable.Repeat(primarySelectedSpan, 1).Concat(SecondarySelectedSpans);
