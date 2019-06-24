@@ -22,6 +22,7 @@ namespace Vim.UnitTest.Mock
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
         private event EventHandler<SelectedSpansChangedEventArgs> _selectedSpansChanged;
 #pragma warning restore 67
+        private bool _shouldIgnoreEvents;
 
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
@@ -497,14 +498,6 @@ namespace Vim.UnitTest.Mock
         {
             var allSelectedSpans = selectedSpans.ToArray();
             var primarySelectedSpan = allSelectedSpans[0];
-            if (!primarySelectedSpan.Equals(GetPrimarySelectedSpan(textView)))
-            {
-                textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
-                if (primarySelectedSpan.Length != 0)
-                {
-                    textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
-                }
-            }
             if (IsMultiSelectionSupported)
             {
                 SecondarySelectedSpans =
@@ -512,6 +505,15 @@ namespace Vim.UnitTest.Mock
                     .Skip(1)
                     .OrderBy(span => span.CaretPoint.Position.Position)
                     .ToList();
+            }
+            try
+            {
+                _shouldIgnoreEvents = true;
+                SetPrimarySelectedSpan(textView, primarySelectedSpan);
+            }
+            finally
+            {
+                _shouldIgnoreEvents = false;
             }
         }
 
@@ -521,6 +523,15 @@ namespace Vim.UnitTest.Mock
                 textView.Caret.Position.VirtualBufferPosition,
                 textView.Selection.AnchorPoint,
                 textView.Selection.ActivePoint);
+        }
+
+        private void SetPrimarySelectedSpan(ITextView textView, SelectedSpan primarySelectedSpan)
+        {
+            textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
+            if (primarySelectedSpan.Length != 0)
+            {
+                textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
+            }
         }
 
         public void RegisterVimBuffer(IVimBuffer vimBuffer)
@@ -556,7 +567,7 @@ namespace Vim.UnitTest.Mock
 
         private void ClearSecondarySelections()
         {
-            if (SecondarySelectedSpans.Count > 0)
+            if (!_shouldIgnoreEvents && SecondarySelectedSpans.Count > 0)
             {
                 SecondarySelectedSpans.Clear();
             }

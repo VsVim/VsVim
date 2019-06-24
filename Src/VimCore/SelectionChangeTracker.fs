@@ -88,6 +88,15 @@ type internal SelectionChangeTracker
             // of the mode switching logic to properly update the mode here. 
             ()
         else
+            // Adjust the caret for the external selection.
+            if
+                x.NeedInclusiveAdjustmentForSelection
+                && not (TextViewUtil.IsSelectionEmpty _textView)
+                && _textView.Caret.Position.VirtualBufferPosition = _textView.Selection.End
+            then
+                x.SyncSelection (fun () -> x.AdjustCaretToSelection())
+
+            // Set the appropriate mode for the external selection.
             x.SetModeForSelection()
 
     member x.OnBufferClosed() = 
@@ -103,7 +112,6 @@ type internal SelectionChangeTracker
     /// Whether an externally applied selection needs an inclusive adjustment
     member x.NeedInclusiveAdjustmentForSelection =
         _globalSettings.SelectionKind = SelectionKind.Inclusive
-        && _textView.Selection.IsActive
         && _textView.Selection.Mode = TextSelectionMode.Stream
         && not _textView.Selection.IsReversed
 
@@ -189,23 +197,11 @@ type internal SelectionChangeTracker
                         if VimExtensions.IsAnyInsert _vimBuffer.ModeKind then
                             // Switching from an insert mode to a visual/select mode automatically initiates one command mode
                             _vimBuffer.VimTextBuffer.InOneTimeCommand <- Some _vimBuffer.ModeKind
-                        elif x.NeedInclusiveAdjustmentForSelection then
-                            try
-                                _syncingSelection <- true
-                                _textView.Caret.Position.BufferPosition
-                                |> SnapshotPointUtil.SubtractOneOrCurrent
-                                |> VirtualSnapshotPointUtil.OfPoint
-                                |> (fun point -> _textView.Caret.MoveTo(point) |> ignore)
-                            finally
-                                _syncingSelection <- false
-                        _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
+                    _vimBuffer.SwitchMode modeKind ModeArgument.None |> ignore
 
         match getDesiredNewMode() with
         | None ->
-
-            try
-                _syncingSelection <- true
-
+            fun () ->
                 x.AdjustSelectionToCaret()
 
                 // No mode change is desired.  However the selection has changed and Visual Mode 
@@ -217,10 +213,18 @@ type internal SelectionChangeTracker
                     let mode = _vimBuffer.Mode :?> ISelectMode
                     mode.SyncSelection()
 
-            finally
-                _syncingSelection <- false
+            |> x.SyncSelection
         | Some _ -> 
             _commonOperations.DoActionAsync doUpdate
+
+    /// Suppress events while syncing the caret and the selection by performing
+    /// the specified action
+    member x.SyncSelection action =
+        try
+            _syncingSelection <- true
+            action()
+        finally
+            _syncingSelection <- false
 
     /// In a normal character style selection vim extends the selection to include the value
     /// under the caret.  The editor by default does an exclusive selection.  Adjust the selection
@@ -230,6 +234,7 @@ type internal SelectionChangeTracker
 
         if
             _mouseDevice.InDragOperation(_textView)
+            && _textView.Selection.IsActive
             && x.NeedInclusiveAdjustmentForSelection
             && (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)
         then
@@ -243,6 +248,16 @@ type internal SelectionChangeTracker
                 let anchorPoint = _textView.Selection.AnchorPoint
                 _textView.Selection.Select(anchorPoint, activePoint)
             | _ -> ()
+
+    /// When an non-empty external selection occurs with an inclusive selection,
+    /// move the caret back one position.
+    member x.AdjustCaretToSelection() =
+        Contract.Assert _syncingSelection
+
+        _textView.Caret.Position.BufferPosition
+        |> SnapshotPointUtil.SubtractOneOrCurrent
+        |> VirtualSnapshotPointUtil.OfPoint
+        |> (fun point -> _textView.Caret.MoveTo(point) |> ignore)
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal SelectionChangeTrackerFactory

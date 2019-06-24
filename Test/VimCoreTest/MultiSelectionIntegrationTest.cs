@@ -104,6 +104,11 @@ namespace Vim.UnitTest
             _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
         }
 
+        private void SetSelectedSpans(params SelectedSpan[] selectedSpans)
+        {
+            _vimHost.SetSelectedSpans(_textView, selectedSpans);
+        }
+
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
         {
             AssertSelections(expectedCarets.Select(x => new SelectedSpan(x)).ToArray());
@@ -199,16 +204,27 @@ namespace Vim.UnitTest
             }
 
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void ExternalPrimarySelection(bool isInclusive)
+            public void ExternalSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+
+                // Primary selection.
                 _textView.Caret.MoveTo(GetPoint(0, 7));
                 _textView.Selection.Select(GetPoint(0, 4), GetPoint(0, 7));
-                _textView.Selection.IsActive = true;
                 DoEvents();
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 AssertSelectionsAdjustCaret(
                     GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Secondary selection.
+                SetSelectedSpans(
+                    SelectedSpans[0],
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false)); // 'mno|*'
+                DoEvents();
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false)); // 'mno|*' or 'mn|o*'
             }
         }
 
