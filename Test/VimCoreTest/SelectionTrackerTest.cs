@@ -16,6 +16,7 @@ namespace Vim.UnitTest
         private ITextView _textView;
         private IVimGlobalSettings _globalSettings;
         private IVimBufferData _vimBufferData;
+        private ICommonOperations _commonOperations;
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
 
@@ -34,7 +35,8 @@ namespace Vim.UnitTest
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             _vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, _textView);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
-            _tracker = new SelectionTracker(_vimBufferData, _incrementalSearch.Object, kind);
+            _commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBufferData);
+            _tracker = new SelectionTracker(_vimBufferData, _commonOperations, _incrementalSearch.Object, kind);
             _tracker.Start();
         }
 
@@ -98,7 +100,7 @@ namespace Vim.UnitTest
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view.Object);
-            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
+            var tracker = new SelectionTracker(vimBufferData, _commonOperations, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -117,7 +119,7 @@ namespace Vim.UnitTest
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view);
-            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
+            var tracker = new SelectionTracker(vimBufferData, _commonOperations, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             Assert.Equal(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position);
         }

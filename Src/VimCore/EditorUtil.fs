@@ -3166,6 +3166,10 @@ module TextViewUtil =
             | Some textViewLines -> doScrollToPoint textViewLines
             | _ -> ()
 
+    let IsSelectionEmpty (textView: ITextView) =
+        textView.Selection.IsEmpty
+        || textView.Selection.StreamSelectionSpan.Length = 0
+
     /// Clear out the selection
     let ClearSelection (textView: ITextView) =
         textView.Selection.Clear()
