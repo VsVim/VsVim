@@ -47,6 +47,9 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun _ -> this.OnKeyInputFinished())
         |> _bag.Add
 
+    member x.HasSecondarySelections =
+        Seq.length _commonOperations.SelectedSpans > 1
+
     member x.ShouldIgnoreSelectionChange() = 
         _selectionOverrideList
         |> Seq.exists (fun x -> x.IsInsertModePreferred _textView)
@@ -74,7 +77,7 @@ type internal SelectionChangeTracker
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual or select mode are the responsibility of the mode to handle
                 _selectionDirty <- false
-            elif Seq.length _commonOperations.SelectedSpans > 1 then
+            elif x.HasSecondarySelections then
                 // If there are secondary selections, the multi-selection support is
                 // responsible for setting the correct mode.
                 _selectionDirty <- false
@@ -163,7 +166,10 @@ type internal SelectionChangeTracker
                 // If vim was disabled between the posting of this event and the callback then do
                 // nothing
                 ()
-            elif not _vimBuffer.IsClosed && not _selectionDirty then 
+            elif _vimBuffer.IsClosed || _selectionDirty || x.HasSecondarySelections then 
+                // Something has changed since we planned to change the mode.
+                ()
+            else
                 match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> 
@@ -184,7 +190,8 @@ type internal SelectionChangeTracker
                 // caches information about the original selection.  Update that information now
                 if VisualKind.IsAnyVisual _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> IVisualMode
-                    mode.SyncSelection()
+                    if not x.HasSecondarySelections then
+                        mode.SyncSelection()
                 elif VisualKind.IsAnySelect _vimBuffer.ModeKind then
                     let mode = _vimBuffer.Mode :?> ISelectMode
                     mode.SyncSelection()

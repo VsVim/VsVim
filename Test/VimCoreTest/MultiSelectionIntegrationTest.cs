@@ -385,6 +385,7 @@ namespace Vim.UnitTest
                 Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 ProcessNotation("v");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 AssertSelectionsAdjustEnd(
                     GetPoint(0, 4).GetSelectedSpan(0, 0, false), // '|*'def or '|d*'ef
                     GetPoint(1, 4).GetSelectedSpan(0, 0, false)); // '|*'mno or 'm*'no

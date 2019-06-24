@@ -2653,19 +2653,7 @@ type internal CommonOperations
 
                 // Complete the transaction.
                 transaction.Complete()
-
-                if getVisualSelection result |> Option.isSome then
-
-                    // If there was a visual selection for the individual
-                    // command, the multi-selection is already set and correct.
-                    // Let the selection change tracker notice and do the mode
-                    // switch automatically.
-                    CommandResult.Completed ModeSwitch.NoSwitch
-
-                else
-
-                    // Any other kind of command result.
-                    result
+                result
 
         // Body starts here.
         if selectedSpans.Length = 1 then
