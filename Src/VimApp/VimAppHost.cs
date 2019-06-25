@@ -364,6 +364,10 @@ namespace VimApp
         {
             var broker = textView.GetMultiSelectionBroker();
             var primarySelection = broker.PrimarySelection;
+            if (textView.Selection.Mode != TextSelectionMode.Stream)
+            {
+                return new[] { GetSelectedSpan(primarySelection) };
+            }
             var secondarySelections = broker.AllSelections
                 .Where(span => span != primarySelection)
                 .Select(selection => GetSelectedSpan(selection));
@@ -372,7 +376,7 @@ namespace VimApp
 
         private void SetSelectedSpansCommon(ITextView textView, SelectedSpan[] selectedSpans)
         {
-            if (selectedSpans.Length == 1)
+            if (selectedSpans.Length == 1 || textView.Selection.Mode != TextSelectionMode.Stream)
             {
                 var selectedSpan = selectedSpans[0];
                 textView.Caret.MoveTo(selectedSpan.CaretPoint);

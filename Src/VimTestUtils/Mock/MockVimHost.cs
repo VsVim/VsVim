@@ -476,14 +476,18 @@ namespace Vim.UnitTest.Mock
 
         IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
-            var primarySelectedSpan = GetPrimarySelectedSpan(textView);
+            var primarySelectedSpans = new[] { GetPrimarySelectedSpan(textView) };
             if (IsMultiSelectionSupported)
             {
-                return Enumerable.Repeat(primarySelectedSpan, 1).Concat(SecondarySelectedSpans);
+                if (textView.Selection.Mode != TextSelectionMode.Stream)
+                {
+                    return primarySelectedSpans;
+                }
+                return primarySelectedSpans.Concat(SecondarySelectedSpans);
             }
             else
             {
-                return Enumerable.Repeat(primarySelectedSpan, 1);
+                return primarySelectedSpans;
             }
         }
 
@@ -493,11 +497,18 @@ namespace Vim.UnitTest.Mock
             var primarySelectedSpan = allSelectedSpans[0];
             if (IsMultiSelectionSupported)
             {
-                SecondarySelectedSpans =
-                    allSelectedSpans
-                    .Skip(1)
-                    .OrderBy(span => span.CaretPoint.Position.Position)
-                    .ToList();
+                if (textView.Selection.Mode != TextSelectionMode.Stream)
+                {
+                    SecondarySelectedSpans.Clear();
+                }
+                else
+                {
+                    SecondarySelectedSpans =
+                        allSelectedSpans
+                        .Skip(1)
+                        .OrderBy(span => span.CaretPoint.Position.Position)
+                        .ToList();
+                }
             }
             if (!_shouldIgnoreEvents)
             {
