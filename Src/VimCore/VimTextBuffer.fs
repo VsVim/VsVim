@@ -11,6 +11,7 @@ type internal VimTextBuffer
     (
         _textBuffer: ITextBuffer,
         _localSettings: IVimLocalSettings,
+        _localAbbreviationMap: IVimLocalAbbreviationMap,
         _bufferTrackingService: IBufferTrackingService,
         _undoRedoOperations: IUndoRedoOperations,
         _wordUtil: WordUtil,
@@ -325,6 +326,7 @@ type internal VimTextBuffer
             with get() = x.InSelectModeOneTimeCommand
             and set value = x.InSelectModeOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
+        member x.LocalAbbreviationMap = _localAbbreviationMap
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer

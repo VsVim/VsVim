@@ -4236,7 +4236,14 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
-type IAbbreviationMap =
+type IVimGlobalAbbreviationMap =
+
+    /// Insert the specified abbreviation into the map
+    abstract Abbreviate: lhs: KeyInputSet -> rhs: KeyInputSet -> unit
+
+type IVimLocalAbbreviationMap =
+
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap  
 
     abstract TryParse: text: string -> AbbreviationKind option
 
@@ -5208,7 +5215,9 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService: ISearchService
 
-    /// IGlobalSettings for this IVim instance
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
+
+    /// IVimGlobalSettings for this IVim instance
     abstract GlobalSettings: IVimGlobalSettings
 
     /// The variable map for this IVim instance
@@ -5403,6 +5412,9 @@ and IVimTextBuffer =
 
     /// The associated IVimLocalSettings instance
     abstract LocalSettings: IVimLocalSettings
+
+    /// The associated abbreviation map
+    abstract LocalAbbreviationMap: IVimLocalAbbreviationMap
 
     /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
     /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening

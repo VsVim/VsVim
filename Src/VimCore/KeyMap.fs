@@ -286,8 +286,18 @@ type internal KeyMap
         member x.Clear mode = x.Clear mode
         member x.ClearAll () = x.ClearAll()
 
-type AbbreviationMap
+type internal GlobalAbbreviationMap
     (
+    ) = 
+
+    member x.Abbreviate (lhs: KeyInputSet) (rhs: KeyInputSet): unit = raise (Exception("ATODO"))
+
+    interface IVimGlobalAbbreviationMap with
+        member x.Abbreviate lhs rhs = x.Abbreviate lhs rhs
+
+type internal LocalAbbreviationMap
+    (
+        _globalAbbreviationMap: IVimGlobalAbbreviationMap,
         _wordUtil : WordUtil
     ) = 
 
@@ -307,5 +317,6 @@ type AbbreviationMap
             else
                 None
 
-    interface IAbbreviationMap with
+    interface IVimLocalAbbreviationMap with
+        member x.GlobalAbbreviationMap = _globalAbbreviationMap
         member x.TryParse text = x.TryParse text

@@ -16,14 +16,14 @@ namespace Vim.UnitTest
             private readonly ITextBuffer _textBuffer;
             private readonly WordUtil _wordUtil;
             private readonly IVimLocalSettings _localSettings;
-            private readonly AbbreviationMap _map;
+            private readonly LocalAbbreviationMap _map;
 
             public AbbreviationKindTest()
             {
                 _textBuffer = CreateTextBuffer();
                 _localSettings = new LocalSettings(Vim.GlobalSettings);
                 _wordUtil = new WordUtil(_textBuffer, _localSettings);
-                _map = new AbbreviationMap(_wordUtil);
+                _map = new LocalAbbreviationMap(Vim.GlobalAbbreviationMap, _wordUtil);
             }
 
             [WpfTheory]

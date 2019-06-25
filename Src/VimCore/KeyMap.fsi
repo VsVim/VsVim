@@ -7,8 +7,13 @@ type internal KeyMap =
 
     new: settings: IVimGlobalSettings * variableMap: VariableMap -> KeyMap 
 
-type internal AbbreviationMap =
-    interface IAbbreviationMap
+type internal LocalAbbreviationMap =
+    interface IVimLocalAbbreviationMap
 
-    new: wordUtil: WordUtil -> AbbreviationMap
+    new: globalAbbreviationMap: IVimGlobalAbbreviationMap * wordUtil: WordUtil -> LocalAbbreviationMap
+
+type internal GlobalAbbreviationMap =
+    interface IVimGlobalAbbreviationMap
+
+    new: unit -> GlobalAbbreviationMap
 

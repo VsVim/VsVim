@@ -222,6 +222,7 @@ type internal VimBufferFactory
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordUtil = WordUtil(textBuffer, localSettings)
+        let localAbbreviationMap = LocalAbbreviationMap(vim.GlobalAbbreviationMap, wordUtil) :> IVimLocalAbbreviationMap
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 
@@ -230,7 +231,7 @@ type internal VimBufferFactory
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
-        VimTextBuffer(textBuffer, localSettings, _bufferTrackingService, undoRedoOperations, wordUtil, vim)
+        VimTextBuffer(textBuffer, localSettings, localAbbreviationMap, _bufferTrackingService, undoRedoOperations, wordUtil, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
@@ -366,6 +367,7 @@ type internal Vim
     let _vimBufferMap = Dictionary<ITextView, IVimBuffer * IVimInterpreter * DisposableBag>()
 
     let _digraphMap = DigraphMap() :> IDigraphMap
+    let _globalAbbreviationMap = GlobalAbbreviationMap() :> IVimGlobalAbbreviationMap
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack: IVimBuffer list = List.empty
@@ -975,6 +977,7 @@ type internal Vim
             and set value = x.IsDisabled <- value
         member x.InBulkOperation = _bulkOperations.InBulkOperation
         member x.RegisterMap = _registerMap 
+        member x.GlobalAbbreviationMap = _globalAbbreviationMap
         member x.GlobalSettings = _globalSettings
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
         member x.CreateVimBuffer textView = x.CreateVimBuffer textView (Some (x.GetWindowSettingsForNewBuffer()))
