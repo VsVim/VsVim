@@ -90,6 +90,15 @@ type SelectedSpan =
     member x.Length = x.Span.Length
     member x.IsEmpty = x.Length = 0
 
+    static member FromSpan (caretPoint: SnapshotPoint) (span: SnapshotSpan) (isReversed: bool) =
+        SelectedSpan.FromVirtualSpan (VirtualSnapshotPoint(caretPoint)) (VirtualSnapshotSpan(span)) isReversed
+
+    static member FromVirtualSpan (caretPoint: VirtualSnapshotPoint) (span: VirtualSnapshotSpan) (isReversed: bool) =
+        if not isReversed then
+            SelectedSpan(caretPoint, span.Start, span.End)
+        else
+            SelectedSpan(caretPoint, span.End, span.Start)
+
     override x.ToString() =
         let reversedString =
             if x.IsReversed then " (reversed)" else ""

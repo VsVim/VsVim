@@ -7,7 +7,7 @@ type internal ExternalEditMode(_vimBufferData: IVimBufferData) =
     member x.ClearSelection () =
         let textView = _vimBufferData.TextView
         let start = textView.Selection.Start
-        textView.Selection.Clear()
+        TextViewUtil.ClearSelection textView
         TextViewUtil.MoveCaretToVirtualPoint textView start
 
     interface IMode with 

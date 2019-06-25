@@ -11,6 +11,7 @@ using Xunit;
 using Microsoft.FSharp.Core;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Vim.UnitTest
 {

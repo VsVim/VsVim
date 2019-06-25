@@ -50,7 +50,7 @@ type internal NormalModeSelectionGuard
     member x.Dispose() =
         let selection = _vimBufferData.TextView.Selection
         if _beganInNormalMode && not selection.IsEmpty then
-            selection.Clear()
+            TextViewUtil.ClearSelection _vimBufferData.TextView
             _vimBufferData.VimTextBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
 
     interface System.IDisposable with
@@ -2793,7 +2793,7 @@ type internal CommandUtil
         //
         // The caret can be anywhere at the start of the operation so move it to the
         // first point before even beginning the edit transaction
-        _textView.Selection.Clear()
+        TextViewUtil.ClearSelection _textView
         TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
 
         x.EditWithUndoTransaction "ReplaceChar" (fun () ->
@@ -3177,7 +3177,7 @@ type internal CommandUtil
         // primitives (EditWithUndoTransaction).  We don't want the selection
         // to reappear during an undo hence clear it now so it's gone.
         if x.ShouldClearSelection command then
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
 
         let registerName = data.RegisterName
         let count = data.CountOrDefault
@@ -3291,8 +3291,7 @@ type internal CommandUtil
 
         // Move the caret without checking visibility.
         let moveCaretToPoint (point: SnapshotPoint) =
-            _textView.Caret.MoveTo(point)
-            |> ignore
+            TextViewUtil.MoveCaretToPointRaw _textView point MoveCaretFlags.None
 
         match x.CaretTextViewLineUnlessWrap() with
         | Some textViewLine ->
@@ -3517,7 +3516,7 @@ type internal CommandUtil
 
                     // The last line is already visible. Move the caret
                     // to the last line and scroll it to the top of the view.
-                    _textView.Caret.MoveTo(lastLine.Start) |> ignore
+                    TextViewUtil.MoveCaretToPointRaw _textView lastLine.Start MoveCaretFlags.None
                     _editorOperations.ScrollLineTop()
                 else
                     let scrollAmount = getScrollAmount textViewLines
@@ -3587,7 +3586,7 @@ type internal CommandUtil
                 let line = SnapshotPointUtil.GetContainingLine textViewLine.Start
 
                 // Move the caret to the beginning of that line.
-                _textView.Caret.MoveTo(line.Start) |> ignore
+                TextViewUtil.MoveCaretToPointRaw _textView line.Start MoveCaretFlags.None
 
                 // First apply scroll offset.
                 _commonOperations.AdjustCaretForScrollOffset()
@@ -4306,8 +4305,9 @@ type internal CommandUtil
 
     /// Select the whole document
     member x.SelectAll () =
-        let extent = SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot
-        _textView.Selection.Select(extent, false)
+        SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot
+        |> (fun span -> SelectedSpan.FromSpan span.End span false)
+        |> TextViewUtil.SelectSpan _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with

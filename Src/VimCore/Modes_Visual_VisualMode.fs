@@ -279,7 +279,7 @@ type internal VisualMode
                 if result.IsAnySwitchToVisual then
                     _selectionTracker.UpdateSelection()
                 elif not result.IsAnySwitchToCommand then
-                    _textView.Selection.Clear()
+                    TextViewUtil.ClearSelection _textView
                     _textView.Selection.Mode <- TextSelectionMode.Stream
 
         result

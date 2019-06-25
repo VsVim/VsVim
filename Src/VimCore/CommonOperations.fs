@@ -2199,15 +2199,16 @@ type internal CommonOperations
         x.RecordLastChangeOrYank oldSpan newSpan
 
     /// Record last yank start and end positions
-    member x.RecordLastYank span =
+    member x.RecordLastYank (span: SnapshotSpan) =
 
         // If ':set clipboard=unnamed' is in effect, copy the yanked span to
         // the clipboard using the editor to preserve formatting. Feature
         // requested in issue #1920.
         if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-            _textView.Selection.Select(span, false)
+            SelectedSpan.FromSpan span.End span false
+            |> TextViewUtil.SelectSpan _textView
             _editorOperations.CopySelection() |> ignore
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
 
         x.RecordLastChangeOrYank span span
 

@@ -2218,7 +2218,7 @@ type VimInterpreter
             // mimics the selection concept than putting the caret at the end
             // of the thing.
             let start = _textView.Selection.Start
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             TextViewUtil.MoveCaretToVirtualPoint _textView start
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =

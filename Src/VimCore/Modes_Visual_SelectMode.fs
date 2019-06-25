@@ -136,7 +136,7 @@ type internal SelectMode
         let shouldMimicNative = shouldStopSelection && not isInclusive
 
         let leaveSelectWithCaretAtPoint caretPoint =
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             _commonOperations.MoveCaretToVirtualPoint caretPoint ViewFlags.Standard
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
 
@@ -154,7 +154,7 @@ type internal SelectMode
 
         else
             let anchorPoint = _textView.Selection.AnchorPoint
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             _commonOperations.MoveCaretWithArrow caretMovement |> ignore
             if shouldStopSelection then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
@@ -200,7 +200,7 @@ type internal SelectMode
         // Clear the selection now so that it's not recorderd in the undo
         // transaction and move the caret to the selection start
         let span = _textView.Selection.StreamSelectionSpan.SnapshotSpan
-        _textView.Selection.Clear()
+        TextViewUtil.ClearSelection _textView
         TextViewUtil.MoveCaretToPoint _textView span.Start
 
         if linked then
@@ -270,7 +270,7 @@ type internal SelectMode
         if processResult.IsAnySwitchToVisual then
             _selectionTracker.UpdateSelection()
         elif processResult.IsAnySwitch then
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult

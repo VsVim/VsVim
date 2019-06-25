@@ -239,13 +239,12 @@ type internal SelectionChangeTracker
         then
             match _commonOperations.MousePoint with
             | Some mousePoint ->
-                // TODO: Don't lose virtual spaces when adding.
                 let activePoint =
-                    mousePoint.Position
-                    |> SnapshotPointUtil.AddOneOrCurrent
-                    |> VirtualSnapshotPointUtil.OfPoint
+                    mousePoint
+                    |> VirtualSnapshotPointUtil.AddOneOnSameLine
                 let anchorPoint = _textView.Selection.AnchorPoint
-                _textView.Selection.Select(anchorPoint, activePoint)
+                SelectedSpan(mousePoint, anchorPoint, activePoint)
+                |> TextViewUtil.SelectSpan _textView
             | _ -> ()
 
     /// When an non-empty external selection occurs with an inclusive selection,
@@ -256,7 +255,8 @@ type internal SelectionChangeTracker
         _textView.Caret.Position.BufferPosition
         |> SnapshotPointUtil.SubtractOneOrCurrent
         |> VirtualSnapshotPointUtil.OfPoint
-        |> (fun point -> _textView.Caret.MoveTo(point) |> ignore)
+        |> (fun point ->
+            TextViewUtil.MoveCaretToVirtualPointRaw _textView point MoveCaretFlags.None)
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal SelectionChangeTrackerFactory

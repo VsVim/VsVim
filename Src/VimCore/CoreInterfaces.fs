@@ -1998,17 +1998,13 @@ type VisualSpan =
 
             textView.Selection.Mode <- TextSelectionMode.Stream
 
-            let startPoint, endPoint =
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+            let anchorPoint, activePoint =
                 match path with
                 | SearchPath.Forward -> startPoint, endPoint
                 | SearchPath.Backward -> endPoint, startPoint
 
-            // Don't change the selection if it is correct.
-            if
-                textView.Selection.AnchorPoint <> startPoint
-                || textView.Selection.ActivePoint <> endPoint
-            then
-                textView.Selection.Select(startPoint, endPoint)
+            TextViewUtil.Select textView caretPoint anchorPoint activePoint
 
         // Select the given SnapshotSpan
         let selectSpan startPoint endPoint = 
@@ -2055,7 +2051,8 @@ type VisualSpan =
                 else
                     blockSpan.VirtualStart.VirtualStartPoint
             textView.Selection.Mode <- TextSelectionMode.Box
-            textView.Selection.Select(startPoint, blockSpan.VirtualEnd.VirtualStartPoint)
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+            TextViewUtil.Select textView caretPoint startPoint blockSpan.VirtualEnd.VirtualStartPoint
 
     override x.ToString() =
         match x with

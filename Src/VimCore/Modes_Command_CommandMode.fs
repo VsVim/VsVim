@@ -71,10 +71,10 @@ type internal CommandMode
         if not selection.IsEmpty && not _buffer.TextView.IsClosed && not _keepSelection then 
             if moveCaretToStart then
                 let point = selection.StreamSelectionSpan.SnapshotSpan.Start
-                selection.Clear()
+                TextViewUtil.ClearSelection _buffer.TextView
                 TextViewUtil.MoveCaretToPoint _buffer.TextView point
             else 
-                selection.Clear()
+                TextViewUtil.ClearSelection _buffer.TextView
 
     member x.Process (keyInputData: KeyInputData) =
         match _bindData.MappedBindFunction keyInputData with
