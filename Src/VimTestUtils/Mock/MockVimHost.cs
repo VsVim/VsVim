@@ -20,7 +20,6 @@ namespace Vim.UnitTest.Mock
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler<SelectedSpansChangedEventArgs> _selectedSpansChanged;
 #pragma warning restore 67
         private bool _shouldIgnoreEvents;
 
@@ -411,12 +410,6 @@ namespace Vim.UnitTest.Mock
         {
             add { _beforeSave += value; }
             remove { _beforeSave -= value; }
-        }
-
-        event EventHandler<SelectedSpansChangedEventArgs> IVimHost.SelectedSpansChanged
-        {
-            add { _selectedSpansChanged += value; }
-            remove { _selectedSpansChanged -= value; }
         }
 
         void IVimHost.BeginBulkOperation()

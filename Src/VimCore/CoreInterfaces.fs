@@ -4951,10 +4951,6 @@ type IVimHost =
     [<CLIEvent>]
     abstract BeforeSave: IDelegateEvent<System.EventHandler<BeforeSaveEventArgs>>
 
-    /// Raised when the selected spans are changed
-    [<CLIEvent>]
-    abstract SelectedSpansChanged: IDelegateEvent<System.EventHandler<SelectedSpansChangedEventArgs>>
-
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
@@ -5138,14 +5134,6 @@ and BeforeSaveEventArgs
     inherit System.EventArgs()
 
     member x.TextBuffer = _textBuffer
-
-and SelectedSpansChangedEventArgs
-    (
-        _textView: ITextView
-    ) =
-    inherit System.EventArgs()
-
-    member x.TextView = _textView
 
 and SwitchModeKindEventArgs
     (

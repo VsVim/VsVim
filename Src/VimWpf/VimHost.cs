@@ -28,7 +28,6 @@ namespace Vim.UI.Wpf
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
-        private event EventHandler<SelectedSpansChangedEventArgs> _selectedSpansChanged;
 
         public ITextDocumentFactoryService TextDocumentFactoryService
         {
@@ -533,15 +532,6 @@ namespace Vim.UI.Wpf
             }
         }
 
-        protected void RaiseSelectedSpansChanged(ITextView textView)
-        {
-            if (_selectedSpansChanged != null)
-            {
-                var args = new SelectedSpansChangedEventArgs(textView);
-                _selectedSpansChanged(this, args);
-            }
-        }
-
         /// <summary>
         /// Do the vertical scrolling necessary to make sure the line is visible
         /// </summary>
@@ -951,12 +941,6 @@ namespace Vim.UI.Wpf
         {
             add { _beforeSave += value; }
             remove { _beforeSave -= value; }
-        }
-
-        event EventHandler<SelectedSpansChangedEventArgs> IVimHost.SelectedSpansChanged
-        {
-            add { _selectedSpansChanged += value; }
-            remove { _selectedSpansChanged -= value; }
         }
 
         #endregion

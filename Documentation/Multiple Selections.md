@@ -32,7 +32,6 @@ In order to handle this, there are three API entry points in the Vim host:
 
 - `IVimHost.GetSelectedSpans` - member
 - `IVimHost.SetSelectedSpans` - member
-- `IVimHost.SelectedSpansChanged` - event
 
 If there is no multiple-selection support, getting the selected spans always
 returns a single (possibly empty) span and setting multiple selected spans
