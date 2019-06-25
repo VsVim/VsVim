@@ -171,8 +171,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
             _textView.LostAggregateFocus += OnCaretEvent;
-            _textView.Selection.SelectionChanged += OnCaretEvent;
-            _textView.Caret.PositionChanged += OnCaretPositionChanged;
+            _textView.Selection.SelectionChanged += OnCaretPositionChanged;
             _textView.Closed += OnTextViewClosed;
 
             _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
@@ -313,12 +312,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         /// <summary>
-        /// Whenever the caret moves it should become both visible and reset the blink timer.  This is the
-        /// behavior of gVim.  It can be demonstrated by simply moving the caret horizontally along a 
-        /// line of text.  If the interval between the movement commands is shorter than the blink timer
-        /// the caret will always be visible
+        /// Whenever the caret moves it should become both visible and reset
+        /// the blink timer. This is the behavior of gVim.  It can be
+        /// demonstrated by simply moving the caret horizontally along a line
+        /// of text. If the interval between the movement commands is shorter
+        /// than the blink timer the caret will always be visible. Note that we
+        /// use the selection changed event which is a superset of the caret
+        /// position changed event and also includes any changes to secondary
+        /// carets
         /// </summary>
-        private void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
+        private void OnCaretPositionChanged(object sender, EventArgs e)
         {
             RestartBlinkCycle();
 
@@ -797,8 +800,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 _textView.LayoutChanged -= OnCaretEvent;
                 _textView.GotAggregateFocus -= OnCaretEvent;
                 _textView.LostAggregateFocus -= OnCaretEvent;
-                _textView.Selection.SelectionChanged -= OnCaretEvent;
-                _textView.Caret.PositionChanged -= OnCaretPositionChanged;
+                _textView.Selection.SelectionChanged -= OnCaretPositionChanged;
                 _textView.Caret.IsHidden = false;
                 _textView.Closed -= OnTextViewClosed;
             }
