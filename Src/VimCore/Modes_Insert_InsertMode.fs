@@ -357,16 +357,16 @@ type internal InsertMode
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
-                ("<A-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.AddCaretAtMousePoint))
+                ("<C-A-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.AddCaretAtMousePoint))
                 ("<C-A-Up>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Up)))
                 ("<C-A-Down>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Down)))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
-                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.SelectWordOrMatchingToken false)))
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
                 ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
                 ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
-                ("<A-2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.SelectWordOrMatchingToken true)))
+                ("<C-A-2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text

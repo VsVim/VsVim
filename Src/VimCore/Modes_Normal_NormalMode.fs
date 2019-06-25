@@ -161,7 +161,7 @@ type internal NormalMode
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
-                yield ("<A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
+                yield ("<C-A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
                 yield ("<C-A-Up>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)
                 yield ("<C-LeftRelease>", CommandFlags.Special, NormalCommand.NoOperation)
@@ -187,10 +187,10 @@ type internal NormalMode
                 yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken false)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
-                yield ("<A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken false)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))

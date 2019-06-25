@@ -3087,7 +3087,7 @@ type NormalCommand =
     | SelectTextForMouseRelease
 
     /// Select the current word or matching token
-    | SelectWordOrMatchingToken of AddToExistingSelection: bool
+    | SelectWordOrMatchingToken
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3244,7 +3244,7 @@ type NormalCommand =
         | NormalCommand.SelectTextForMouseClick -> None
         | NormalCommand.SelectTextForMouseDrag -> None
         | NormalCommand.SelectTextForMouseRelease -> None
-        | NormalCommand.SelectWordOrMatchingToken _ -> None
+        | NormalCommand.SelectWordOrMatchingToken -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3278,6 +3278,9 @@ type VisualCommand =
 
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
+
+    /// Add word or matching token to the selection
+    | AddWordOrMatchingTokenToSelection
 
     /// Cancel any in-progress operation
     | CancelOperation
@@ -3374,7 +3377,7 @@ type VisualCommand =
     | SelectLine
 
     /// Select current word or matching token
-    | SelectWordOrMatchingToken of AddToExistingSelection: bool
+    | SelectWordOrMatchingToken
 
     /// Shift the selected lines left
     | ShiftLinesLeft

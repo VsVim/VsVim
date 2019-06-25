@@ -2121,6 +2121,7 @@ type internal CommandUtil
 
     member x.MoveCaretToMouse () =
         if x.MoveCaretToMouseUnconditionally() then
+            x.ClearSecondarySelections()
             _commonOperations.AdjustCaretForVirtualEdit()
             if VisualKind.IsAnyVisualOrSelect _vimTextBuffer.ModeKind then
                 ModeSwitch.SwitchPreviousMode
@@ -3099,7 +3100,7 @@ type internal CommandUtil
         | NormalCommand.SelectTextForMouseClick -> x.SelectTextForMouseClick()
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
-        | NormalCommand.SelectWordOrMatchingToken addToExistingSelection -> x.SelectWordOrMatchingToken addToExistingSelection
+        | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3148,7 +3149,7 @@ type internal CommandUtil
         | VisualCommand.CopySelection -> false
         | VisualCommand.CutSelectionAndPaste -> false
         | VisualCommand.InvertSelection _ -> false
-        | VisualCommand.SelectWordOrMatchingToken _ -> false
+        | VisualCommand.AddWordOrMatchingTokenToSelection -> false
         | _ -> true
 
     /// The character visual span associated with the selection
@@ -3183,6 +3184,7 @@ type internal CommandUtil
         match command with
         | VisualCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
+        | VisualCommand.AddWordOrMatchingTokenToSelection -> x.AddWordOrMatchingTokenToSelection()
         | VisualCommand.CancelOperation -> x.CancelOperation()
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection registerName visualSpan
@@ -3213,7 +3215,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
         | VisualCommand.SelectLine -> x.SelectLine()
-        | VisualCommand.SelectWordOrMatchingToken addToExistingSelection -> x.SelectWordOrMatchingToken addToExistingSelection
+        | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
@@ -3816,42 +3818,8 @@ type internal CommandUtil
         let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
         x.SwitchMode modeKind modeArgument
 
-    /// Select the current word or matching token
-    member x.SelectWordOrMatchingToken addToExistingSelection =
-        let oldSelectedSpans = _commonOperations.SelectedSpans
-        let result = x.SelectWordOrMatchingTokenCore()
-        if addToExistingSelection then
-            match result with
-            | CommandResult.Completed modeSwitch ->
-                match modeSwitch with
-                | ModeSwitch.SwitchModeWithArgument (_, modeArg) ->
-                    match modeArg with
-                    | ModeArgument.InitialVisualSelection (visualSelection, _) ->
-                        let newSelectedSpan =
-                            _globalSettings.SelectionKind
-                            |> visualSelection.GetPrimarySelectedSpan
-                        let oldSelectedSpans =
-                            oldSelectedSpans
-                            |> Seq.filter (fun span ->
-                                not (newSelectedSpan.Span.Contains(span.CaretPoint)))
-                        seq {
-                            yield! oldSelectedSpans
-                            yield newSelectedSpan
-                        }
-                        |> _commonOperations.SetSelectedSpans
-                        ModeSwitch.NoSwitch
-                        |> CommandResult.Completed
-                    | _ ->
-                        result
-                | _ ->
-                    result
-            | _ ->
-                result
-        else
-            result
-
-    /// Select the current word or matching token
-    member x.SelectWordOrMatchingTokenCore () =
+    /// Get the word or matching token under the mouse
+    member x.GetWordOrMatchingToken () =
         x.MoveCaretToMouseUnconditionally() |> ignore
         let text =
             x.CaretPoint
@@ -3888,16 +3856,56 @@ type internal CommandUtil
                 | _ ->
                     VisualKind.Character
             let tabStop = _localSettings.TabStop
-            let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
+            |> Some
+        | None ->
+            None
+
+    // Explicitly set a single caret or selection so that the multi-selection
+    // tracker doesn't restore any secondary selections
+    member x.ClearSecondarySelections () =
+        [Seq.head _commonOperations.SelectedSpans]
+        |> _commonOperations.SetSelectedSpans
+
+    /// Select the current word or matching token
+    member x.SelectWordOrMatchingToken () =
+        match x.GetWordOrMatchingToken() with
+        | Some visualSelection ->
+            x.ClearSecondarySelections()
+            let visualKind = visualSelection.VisualKind
             let modeKind =
                 if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
                     visualKind.SelectModeKind
                 else
                     visualKind.VisualModeKind
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some endPoint)
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
             x.SwitchMode modeKind modeArgument
         | None ->
+            CommandResult.Error
+
+    /// Add word or matching token to the selection
+    member x.AddWordOrMatchingTokenToSelection () =
+        let oldSelectedSpans = _commonOperations.SelectedSpans
+        match x.GetWordOrMatchingToken() with
+        | Some visualSelection ->
+            let newSelectedSpan =
+                _globalSettings.SelectionKind
+                |> visualSelection.GetPrimarySelectedSpan
+
+            // One of the old spans will contain the secondary caret
+            // added by the first click. Remove it and add a new one.
+            let oldSelectedSpans =
+                oldSelectedSpans
+                |> Seq.filter (fun span ->
+                    not (newSelectedSpan.Span.Contains(span.CaretPoint)))
+            seq {
+                yield! oldSelectedSpans
+                yield newSelectedSpan
+            }
+            |> _commonOperations.SetSelectedSpans
             CommandResult.Completed ModeSwitch.NoSwitch
+        | None ->
+            CommandResult.Error
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text

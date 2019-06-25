@@ -239,7 +239,7 @@ namespace Vim.UnitTest
                 Create("abc def ghi", "jkl mno pqr", "");
                 _textView.Caret.MoveTo(GetPoint(0, 4));
                 _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'e' in 'def'
-                ProcessNotation("<A-LeftMouse><A-LeftRelease>");
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
             }
 
@@ -557,22 +557,52 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Using alt-double-click should add a word to the selection
+            /// Using single-click should revert to a single caret
+            /// </summary>
+            [WpfFact]
+            public void Click()
+            {
+                Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                AssertCarets(GetPoint(0, 5)); // d'|*'ef
+            }
+
+            /// <summary>
+            /// Using double-click should revert to a single selection
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void DoubleClick(bool isInclusive)
+            public void Select(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'def|*'
+            }
+
+            /// <summary>
+            /// Using ctrl-alt-double-click should add a word to the selection
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void AddToSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
 
                 // First double-click.
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
-                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease><C-A-2-LeftMouse><C-A-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
-                AssertSelectionsAdjustCaret(GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|'
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'def|*'
 
                 // Second double-click.
                 _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
-                ProcessNotation("<A-LeftMouse><A-LeftRelease><A-2-LeftMouse><LeftRelease>");
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease><C-A-2-LeftMouse><C-A-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 AssertSelectionsAdjustCaret(
                     GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
