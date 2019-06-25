@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Vim.Extensions;
 
 namespace Vim.VisualStudio.Implementation.Misc
 {
@@ -44,6 +45,12 @@ namespace Vim.VisualStudio.Implementation.Misc
                 .Where(textView =>
                     !textView.Selection.IsEmpty && !HadPreExistingSelection(textView))
                 .ForEach(textView => ClearSelection(textView));
+
+            var focusedWindow = _vim.VimHost.GetFocusedTextView();
+            if (focusedWindow.IsSome())
+            {
+                ClearSelection(focusedWindow.Value);
+            }
         }
 
         internal void ClearSelection(ITextView textView)
@@ -52,13 +59,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             var startPoint = textView.Selection.Start;
             textView.Selection.Clear();
             textView.Caret.MoveTo(startPoint);
-
-            // This window might not have the focus yet. If not the selection
-            // change tracker will ignore the selection changed event. To guard
-            // against that case, force the buffer to normal mode.  See PR
-            // #2205 for context related to this problem.
-            if (!_vim.VimHost.IsFocused(textView)
-                && _vim.TryGetVimBuffer(textView, out var vimBuffer))
+            if (_vim.TryGetVimBuffer(textView, out var vimBuffer))
             {
                 vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             }
