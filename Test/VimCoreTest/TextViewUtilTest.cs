@@ -25,10 +25,16 @@ namespace Vim.UnitTest
                 PositionAffinity.Predecessor);
             caret.Setup(x => x.EnsureVisible()).Verifiable();
             caret.SetupGet(x => x.Position).Returns(caretPosition).Verifiable();
-            caret.Setup(x => x.MoveTo(point)).Returns(caretPosition).Verifiable();
+
+            // Verify not called: By not creating a setup, it will assert if called.
+            //caret.Setup(x => x.MoveTo(point)).Returns(caretPosition).Verifiable();
 
             var selection = MockObjectFactory.CreateSelection(factory: factory);
-            selection.Setup(x => x.Clear()).Verifiable();
+
+            // Verify not called: By not creating a setup, it will assert if called.
+            //selection.Setup(x => x.Clear()).Verifiable();
+
+            selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
 
             var textView = MockObjectFactory.CreateTextView(
                 textBuffer: buffer,
