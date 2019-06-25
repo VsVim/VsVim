@@ -984,18 +984,7 @@ namespace Vim.UnitTest
             var line = point.Position.GetContainingLine();
             var realPointOffset = point.Position.Position - line.Start.Position;
             var newOffset = realPointOffset + point.VirtualSpaces + offset;
-            if (newOffset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(point));
-            }
-            if (newOffset < line.Length)
-            {
-                return new VirtualSnapshotPoint(point.Position.Add(offset));
-            }
-            else
-            {
-                return new VirtualSnapshotPoint(line.End, newOffset - line.Length);
-            }
+            return new VirtualSnapshotPoint(line, newOffset);
         }
 
         public static SelectedSpan GetSelectedSpan(this VirtualSnapshotPoint point)
@@ -1394,7 +1383,7 @@ namespace Vim.UnitTest
 
         public static SelectedSpan AdjustEndForInclusive(this SelectedSpan selectedSpan)
         {
-            if (selectedSpan.CaretPoint == selectedSpan.Start && selectedSpan.Length != 0)
+            if (selectedSpan.CaretPoint == selectedSpan.Start && !selectedSpan.IsEmpty)
             {
                 return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
             }

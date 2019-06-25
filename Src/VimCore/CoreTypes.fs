@@ -88,6 +88,7 @@ type SelectedSpan =
     member x.Start = x.Span.Start
     member x.End = x.Span.End
     member x.Length = x.Span.Length
+    member x.IsEmpty = x.Length = 0
 
     override x.ToString() =
         let reversedString =
