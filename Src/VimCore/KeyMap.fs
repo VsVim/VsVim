@@ -286,3 +286,26 @@ type internal KeyMap
         member x.Clear mode = x.Clear mode
         member x.ClearAll () = x.ClearAll()
 
+type AbbreviationMap
+    (
+        _wordUtil : WordUtil
+    ) = 
+
+    member x.TryParse text = 
+        if StringUtil.IsNullOrEmpty text || Seq.exists CharUtil.IsWhiteSpace text then
+            None
+        elif Seq.forall _wordUtil.IsKeywordChar text then
+            Some AbbreviationKind.FullId
+        else
+            let isLastKeyword = _wordUtil.IsKeywordChar text.[text.Length - 1]
+            let isNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
+            let rest = Seq.take (text.Length - 1) text
+            if isLastKeyword && Seq.forall isNonKeywordChar rest then
+                Some AbbreviationKind.EndId
+            elif not isLastKeyword then
+                Some AbbreviationKind.NonId
+            else
+                None
+
+    interface IAbbreviationMap with
+        member x.TryParse text = x.TryParse text
