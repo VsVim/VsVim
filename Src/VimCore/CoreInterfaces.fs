@@ -4236,12 +4236,6 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
-/// The different types of abbreviations as described in `:help abbreviations`
-type AbbreviationKind = 
-    | FullId
-    | EndId
-    | NonId
-
 type IAbbreviationMap =
 
     abstract TryParse: text: string -> AbbreviationKind option

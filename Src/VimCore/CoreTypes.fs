@@ -47,6 +47,33 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
+
+/// The different types of abbreviations as described in `:help abbreviations`
+[<RequireQualifiedAccess>]
+type AbbreviationKind = 
+    | FullId
+    | EndId
+    | NonId
+
+/// The vim modes where a given abbreviation is valid
+[<RequireQualifiedAccess>]
+type AbbreviationMode =
+    | Insert
+    | Replace
+    | Command
+
+    static member All = 
+        seq {
+            yield Insert
+            yield Replace
+            yield Command }
+
+    override x.ToString() =
+        match x with
+        | Insert -> "Insert"
+        | Replace -> "Replace"
+        | Command -> "Command"
+
 [<RequireQualifiedAccess>]
 type JoinKind = 
     | RemoveEmptySpaces

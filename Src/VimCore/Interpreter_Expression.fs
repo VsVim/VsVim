@@ -460,6 +460,9 @@ and [<RequireQualifiedAccess>] Expression =
     | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
+   
+    /// Add a new abbreviation 
+    | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AbbreviationModes: AbbreviationMode list
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
     | AddAutoCommand of AutoCommandDefinition: AutoCommandDefinition
@@ -530,6 +533,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Display the specified marks.  If no Mark values are provided then display 
     /// all marks
     | DisplayMarks of Marks: Mark list
+
+    /// Display the abbrevation for the given modes and left hand side if provided
+    | DisplayAbbreviation of AbbreviationModes: AbbreviationMode list * Notation: string option
 
     /// Display the keymap for the given modes.  Restrict the display to the provided
     /// key notation if it's provided
