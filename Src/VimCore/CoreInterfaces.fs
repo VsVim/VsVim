@@ -4239,7 +4239,9 @@ type IDigraphMap =
 type IVimGlobalAbbreviationMap =
 
     /// Insert the specified abbreviation into the map
-    abstract Abbreviate: lhs: KeyInputSet -> rhs: KeyInputSet -> unit
+    abstract Abbreviate: lhs: KeyInputSet -> mode: AbbreviationMode -> rhs: KeyInputSet -> unit
+
+    abstract GetAbbreviation: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
 
 type IVimLocalAbbreviationMap =
 

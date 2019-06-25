@@ -575,6 +575,18 @@ type VimInterpreter
     member x.GetPointAfter lineRange =
         x.GetPointAfterOrDefault lineRange DefaultLineRange.None
 
+    member x.RunAbbreviate lhs rhs modeList =
+        // ATODO: error messages
+        // ATODO: how does the ability to parse the kind fit into the storage here?
+        match _vimTextBuffer.LocalAbbreviationMap.TryParse lhs with
+        | None -> ()
+        | Some _ ->
+            let lhs = KeyNotationUtil.StringToKeyInputSet lhs
+            let rhs = KeyNotationUtil.StringToKeyInputSet rhs
+            for mode in modeList do
+                // ATODO: what about <buffer> abbreviations?
+                _vim.GlobalAbbreviationMap.Abbreviate lhs mode rhs
+
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
         let builder = System.Collections.Generic.List<AutoCommand>()
@@ -2287,6 +2299,7 @@ type VimInterpreter
         let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
+        | LineCommand.Abbreviate lhs rhs modeList -> x.RunAbbreviate lhs rhs modeList
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.Call callInfo -> x.RunCall callInfo

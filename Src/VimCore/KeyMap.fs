@@ -2,7 +2,9 @@
 
 namespace Vim
 open System
+open System.Collections.Generic
 open Vim.Interpreter
+open CollectionExtensions
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
@@ -288,12 +290,25 @@ type internal KeyMap
 
 type internal GlobalAbbreviationMap
     (
-    ) = 
+    ) =
 
-    member x.Abbreviate (lhs: KeyInputSet) (rhs: KeyInputSet): unit = raise (Exception("ATODO"))
+    let mutable _map = Dictionary<AbbreviationMode, Dictionary<KeyInputSet, KeyInputSet>>()
+
+    do 
+        for mode in AbbreviationMode.All do
+            _map.[mode] <- Dictionary<KeyInputSet, KeyInputSet>()
+
+    member x.Abbreviate (lhs: KeyInputSet) (mode: AbbreviationMode) (rhs: KeyInputSet) =
+        let map = _map.[mode]
+        map.[lhs] <- rhs
+
+    member x.GetAbbreviation lhs mode =
+        let map = _map.[mode]
+        map.TryGetValueEx lhs 
 
     interface IVimGlobalAbbreviationMap with
-        member x.Abbreviate lhs rhs = x.Abbreviate lhs rhs
+        member x.Abbreviate lhs mode rhs = x.Abbreviate lhs mode rhs
+        member x.GetAbbreviation lhs mode = x.GetAbbreviation lhs mode
 
 type internal LocalAbbreviationMap
     (
