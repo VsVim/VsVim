@@ -776,7 +776,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 .Select(span => span.CaretPoint)
                 .ToList();
 
-            if (!_caretPoints.Select(caretPoint => IsRealCaretVisible(caretPoint)).Any())
+            var areAnyCaretsVisible =
+                _caretPoints
+                .Select(caretPoint => IsRealCaretVisible(caretPoint))
+                .Any(isVisible => isVisible);
+
+            if (!areAnyCaretsVisible)
             {
                 EnsureAdnormentsRemoved();
             }
