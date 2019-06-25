@@ -306,6 +306,7 @@ type internal InsertMode
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     let _wordUtil = _vimBuffer.VimTextBuffer.WordUtil
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
+    let _localAbbreviationMap = _vimBuffer.VimTextBuffer.LocalAbbreviationMap
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
@@ -932,19 +933,8 @@ type internal InsertMode
 
         // Actually try and process this with the current change 
         let func (text: string) = 
-            let data = 
-                if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
-                    let flags = CommandFlags.Repeatable ||| CommandFlags.ContextSensitive
-                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
-                    Some (InsertCommand.DeleteAllIndent, flags, keyInputSet, "0")
-                else
-                    None
-
-            match data with
-            | None ->
-                None
-            | Some (command, flags, keyInputSet, text) ->
-
+            if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
                 // First step is to delete the portion of the current change which matches up with
                 // our command.
                 if x.CaretPoint.Position >= text.Length then
@@ -954,7 +944,19 @@ type internal InsertMode
                     _textBuffer.Delete(span.Span) |> ignore
 
                 // Now run the command
-                x.RunInsertCommand command keyInputSet flags |> Some
+                x.RunInsertCommand InsertCommand.DeleteAllIndent keyInputSet (CommandFlags.Repeatable ||| CommandFlags.ContextSensitive) |> Some
+
+            else
+                // ATODO: this is a terrible hack. Need to really look at the last word here not the whole text
+                match _localAbbreviationMap.GlobalAbbreviationMap.GetAbbreviation (KeyNotationUtil.StringToKeyInputSet text) AbbreviationMode.Insert with
+                | None -> None
+                | Some rhs -> 
+                    let newText = rhs.ToString()
+                    let span = 
+                        let startPoint = x.CaretPoint.Subtract text.Length
+                        SnapshotSpan(startPoint, x.CaretPoint)
+                    _textBuffer.Delete(span.Span) |> ignore
+                    x.RunInsertCommand (InsertCommand.Insert newText) rhs CommandFlags.None |> Some
 
         match _sessionData.CombinedEditCommand with
         | None -> None

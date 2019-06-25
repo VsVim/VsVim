@@ -2299,7 +2299,7 @@ type VimInterpreter
         let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
-        | LineCommand.Abbreviate lhs rhs modeList -> x.RunAbbreviate lhs rhs modeList
+        | LineCommand.Abbreviate (lhs, rhs, modeList) -> x.RunAbbreviate lhs rhs modeList
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.Call callInfo -> x.RunCall callInfo
