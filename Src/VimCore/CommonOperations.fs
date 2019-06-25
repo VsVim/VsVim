@@ -178,7 +178,7 @@ type internal CommonOperations
 
     /// Set a single selected span temporarily without raising the 'selected
     /// spans set' event
-    member x.SetSingleSelectedSpan span =
+    member x.SetTemporarySelectedSpan span =
         _vimHost.SetSelectedSpans _textView [span]
 
     /// Get the common operations for the specified text view
@@ -2575,10 +2575,12 @@ type internal CommonOperations
 
         // Get the initial selected span for specified kind of visual mode.
         let getInitialSelection visualKind =
-            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
             let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView
-            let visualSelection = VisualSelection.CreateInitial visualKind caretPoint _localSettings.TabStop _globalSettings.SelectionKind useVirtualSpace
+            let tabStop = _localSettings.TabStop
             let selectionKind = _globalSettings.SelectionKind
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let visualSelection =
+                VisualSelection.CreateInitial visualKind caretPoint tabStop selectionKind useVirtualSpace
             visualSelection.GetPrimarySelectedSpan selectionKind
 
         // Get the results for all actions.
@@ -2593,8 +2595,9 @@ type internal CommonOperations
                     _vimData.CaretIndex <- index
 
                     // Temporarily set the real caret and selection.
-                    let span = x.MapSelectedSpanToCurrentSnapshot selectedSpan
-                    x.SetSingleSelectedSpan span
+                    let selectedSpan =
+                        x.MapSelectedSpanToCurrentSnapshot selectedSpan
+                    x.SetTemporarySelectedSpan selectedSpan
 
                     // Run the action once.
                     let result = runActionAndCompleteTransaction action
@@ -2607,7 +2610,7 @@ type internal CommonOperations
                             getInitialSelection visualKind
                         | None ->
                             if Option.isSome visualCaretStartPoint then
-                                getVisualSelectedSpan span
+                                getVisualSelectedSpan selectedSpan
                             else
                                 match getVisualSelection result with
                                 | Some selectedSpan ->

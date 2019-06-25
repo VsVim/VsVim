@@ -28,23 +28,25 @@ secondary selections behind the scenes.
 #### The multi-selection API
 
 Unfortunately, not all versions of the editor API support multiple selections.
-In order to handle this, there are three API entry points in the Vim host:
+In order to handle this, there are two API entry points in the Vim host:
 
 - `IVimHost.GetSelectedSpans` - member
 - `IVimHost.SetSelectedSpans` - member
 
-If there is no multiple-selection support, getting the selected spans always
+If there is no multi-selection support, getting the selected spans always
 returns a single (possibly empty) span and setting multiple selected spans
 ignores all of the secondary selections.
 
-If there is multiple-selection support, then the first selected span is the
+If there is multi-selection support, then the first selected span is the
 primary selection and any subsequent selected spans are secondary selections,
 sorted in ascending order by position within the text buffer.
 
-In order to insulate the code base from the host, all consumers who use
-the multi-selection API access the selections using related APIs in the
-common operations module:
+In order to insulate the code base from the host, all consumers who use the
+multi-selection API access the selections using related APIs in the common
+operations module:
 
 - `ICommonOperations.SelectedSpans` - property
 - `ICommonOperations.SetSelectedSpans` - member
 - `ICommonOperations.SelectedSpansSet` - event
+
+For multiple caret support, a caret is just a zero-width selection.
