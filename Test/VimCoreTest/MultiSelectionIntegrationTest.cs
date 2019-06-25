@@ -474,6 +474,29 @@ namespace Vim.UnitTest
                 AssertLines("abc ghi", "jkl pqr", "");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
+
+            /// <summary>
+            /// Spacing back and forth through the centerline
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void SpacingBackAndForth(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("vhh");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 2).GetSelectedSpan(0, 2, true), // '*|c '
+                    GetPoint(1, 2).GetSelectedSpan(0, 2, true)); // '*|l '
+                ProcessNotation("llll");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 6).GetSelectedSpan(-2, 0, false), // 'de|*'
+                    GetPoint(1, 6).GetSelectedSpan(-2, 0, false)); // 'jk|*'
+                ProcessNotation("hhhh");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 2).GetSelectedSpan(0, 2, true), // '*|c '
+                    GetPoint(1, 2).GetSelectedSpan(0, 2, true)); // '*|l '
+            }
+
         }
 
         public sealed class SelectModeTest : MultiSelectionIntegrationTest

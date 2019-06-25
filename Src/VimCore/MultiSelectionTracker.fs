@@ -51,9 +51,7 @@ type internal MultiSelectionTracker
    /// The caret points at the start of the most recent key input 
     member x.RecordedSelectedSpans
         with get () =  _recordedSelectedSpans
-        and set (value: SelectedSpan array) =
-            if value.Length > _recordedSelectedSpans.Length then
-                x.InitializeSecondaryCaretRegisters value
+        and set value =
             _recordedSelectedSpans <- value
 
     /// Adjust the specified selected span for inclusive selection
@@ -107,13 +105,11 @@ type internal MultiSelectionTracker
                     }
                     |> Seq.toList
                 if results |> Seq.exists (fun (changed, _) -> changed) then
-                    try
-                        _syncingSelection <- true
+                    fun () ->
                         results
                         |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
                         |> _commonOperations.SetSelectedSpans
-                    finally
-                        _syncingSelection <- false
+                    |> x.SyncSelection
 
     /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
@@ -141,7 +137,6 @@ type internal MultiSelectionTracker
                 |> Seq.take 1
                 |> Seq.toArray
             _commonOperations.SetSelectedSpans newSelectedSpans
-            x.RecordedSelectedSpans <- newSelectedSpans
         | _ ->
             ()
 
@@ -153,8 +148,17 @@ type internal MultiSelectionTracker
     member x.SelectedSpans =
         _commonOperations.SelectedSpans |> Seq.toArray
 
+    /// Suppress events while syncing the caret and the selection by performing
+    /// the specified action
+    member x.SyncSelection action =
+        try
+            _syncingSelection <- true
+            action()
+        finally
+            _syncingSelection <- false
+
     /// Copy the primary caret's registers to all secondary carets
-    member x.InitializeSecondaryCaretRegisters selectedSpans =
+    member x.InitializeSecondaryCaretRegisters (selectedSpans: SelectedSpan array) =
         let oldCaretIndex = _vimData.CaretIndex
         let register = _commonOperations.GetRegister None
         try
@@ -203,10 +207,14 @@ type internal MultiSelectionTracker
     /// Check whether we need to restore selected spans and if so, restore them
     member x.CheckRestoreSelections () =
         let oldSelectedSpans = x.RecordedSelectedSpans
+        let newSelectedSpans = x.SelectedSpans
+
+        if oldSelectedSpans.Length <> newSelectedSpans.Length then
+            x.InitializeSecondaryCaretRegisters newSelectedSpans
+
         if oldSelectedSpans.Length > 1 then
 
             // We previously had secondary selected spans.
-            let newSelectedSpans = x.SelectedSpans
             if
                 newSelectedSpans.[0] = oldSelectedSpans.[0]
                 && newSelectedSpans.Length = oldSelectedSpans.Length
@@ -217,7 +225,9 @@ type internal MultiSelectionTracker
                 ()
 
             else
-                x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans
+                fun () ->
+                    x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans
+                |> x.SyncSelection
 
     /// Restore selected spans present at the start of key processing
     member x.RestoreSelectedSpans oldSelectedSpans newSelectedSpans =

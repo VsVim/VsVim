@@ -2569,9 +2569,27 @@ type internal CommonOperations
             let visualSelection =
                 VisualSelection.CreateForVirtualPoints
                     visualKind anchorPoint caretPoint tabStop useVirtualSpace
+            let adjustSelection =
+                match selectionKind with
+                | SelectionKind.Exclusive ->
+                    true
+                | SelectionKind.Inclusive ->
+                    oldSpan.IsReversed && oldSpan.Length <> 1
             let visualSelection =
-                visualSelection.AdjustForSelectionKind selectionKind
-            visualSelection.GetPrimarySelectedSpan selectionKind
+                if adjustSelection then
+                    visualSelection.AdjustForSelectionKind SelectionKind.Exclusive
+                else
+                    visualSelection
+            let span =
+                visualSelection.GetPrimarySelectedSpan selectionKind
+            if
+                selectionKind = SelectionKind.Inclusive
+                && span.Length = 1 &&
+                span.CaretPoint = span.Start
+            then
+                SelectedSpan(span.CaretPoint, span.Start, span.End)
+            else
+                span
 
         // Get the initial selected span for specified kind of visual mode.
         let getInitialSelection visualKind =

@@ -72,14 +72,14 @@ type internal SelectionChangeTracker
         elif _vimBuffer.ModeKind = ModeKind.Disabled || _vimBuffer.ModeKind = ModeKind.ExternalEdit then
             // If the selection changes while Vim is disabled then don't update
             () 
+        elif x.HasSecondarySelections then
+            // If there are secondary selections, the multi-selection
+            // support is responsible for setting the correct mode.
+            _selectionDirty <- false
         elif _vimBuffer.IsProcessingInput then
             if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual or select mode are the responsibility of the mode to handle
-                _selectionDirty <- false
-            elif x.HasSecondarySelections then
-                // If there are secondary selections, the multi-selection
-                // support is responsible for setting the correct mode.
                 _selectionDirty <- false
             else 
                 _selectionDirty <- true
