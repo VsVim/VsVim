@@ -52,6 +52,8 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
+        private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);
+
         private readonly IVimHost _vimHost;
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
@@ -62,7 +64,6 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private readonly HashSet<object> _adornmentsPresent = new HashSet<object>();
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
-        private static readonly Point s_invalidPoint;
 
         private List<VirtualSnapshotPoint> _caretPoints = new List<VirtualSnapshotPoint>();
         private Dictionary<int, CaretData> _caretDataMap = new Dictionary<int, CaretData>();
