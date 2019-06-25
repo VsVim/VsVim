@@ -51,25 +51,14 @@ type internal MultiSelectionTracker
    /// The caret points at the start of the most recent key input 
     member x.RecordedSelectedSpans
         with get () =  _recordedSelectedSpans
-        and set value =
+        and set (value: SelectedSpan array) =
+            let oldRecordedSelectedSpans = _recordedSelectedSpans
             _recordedSelectedSpans <- value
-
-    /// Adjust the specified selected span for inclusive selection
-    member x.AdjustForInclusive (selectedSpan: SelectedSpan) =
-        if
-            not selectedSpan.IsReversed
-            && selectedSpan.Length > 0
-            && selectedSpan.CaretPoint = selectedSpan.End
-        then
-            let caretPoint =
-                selectedSpan.CaretPoint
-                |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
-            let anchorPoint = selectedSpan.AnchorPoint
-            let activePoint = selectedSpan.ActivePoint
-            SelectedSpan(caretPoint, anchorPoint, activePoint)
-            |> Some
-        else
-            None
+            if
+                x.HasSecondarySelections _recordedSelectedSpans
+                && _recordedSelectedSpans.Length <> oldRecordedSelectedSpans.Length
+            then
+                x.InitializeSecondaryCaretRegisters()
 
     /// Raised when the selection changes
     member x.OnSelectionChanged () =
@@ -77,39 +66,31 @@ type internal MultiSelectionTracker
             _syncingSelection
             || _vimBuffer.IsProcessingInput
             || _vimBuffer.IsSwitchingMode
+            || _vimBuffer.ModeKind = ModeKind.Disabled
+            || _vimBuffer.ModeKind = ModeKind.ExternalEdit
+            || _textView.IsClosed
         then
 
             // Other components are responsible for managing the selection.
             ()
 
-        elif
-            _globalSettings.IsSelectionInclusive
-            && _textView.Selection.Mode = TextSelectionMode.Stream
-        then
+        else
 
-            // An external selection event occurred, so check whether any
-            // secondary selections need to be adjusted for inclusive
-            // selection.
+            // An external selection event occurred.
             let (selectedSpans: SelectedSpan array) = x.SelectedSpans
-            if selectedSpans.Length > 1 then
-                let results =
-                    seq {
-                        yield false, selectedSpans.[0]
-                        for caretIndex = 1 to selectedSpans.Length - 1 do
-                            let selectedSpan = selectedSpans.[caretIndex]
-                            match x.AdjustForInclusive selectedSpan with
-                            | Some adjustedSelectedSpan ->
-                                yield true, adjustedSelectedSpan
-                            | None ->
-                                yield false, selectedSpan
-                    }
-                    |> Seq.toList
-                if results |> Seq.exists (fun (changed, _) -> changed) then
-                    fun () ->
-                        results
-                        |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
-                        |> _commonOperations.SetSelectedSpans
-                    |> x.SyncSelection
+
+            // Check whether we need to switch to a visual mode.
+            if x.HasSecondarySelections selectedSpans then
+                x.CheckSwitchToVisual selectedSpans
+
+            // Check whether any secondary selections need to be adjusted for
+            // inclusive selection.
+            if
+                x.HasSecondarySelections selectedSpans
+                && _globalSettings.IsSelectionInclusive
+                && _textView.Selection.Mode = TextSelectionMode.Stream
+            then
+                x.CheckAdjustForInclusive selectedSpans
 
     /// Raised when the selected spans are set
     member x.OnSelectedSpansSet () = 
@@ -120,23 +101,22 @@ type internal MultiSelectionTracker
         x.RecordedSelectedSpans <- x.SelectedSpans
 
     /// Raised when the buffer finishes processing input
-    member x.OnKeyInputEnd args = 
+    member x.OnKeyInputEnd () = 
         if
-            _vimBuffer.ModeKind <> ModeKind.Disabled
-            && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
-            && not _textView.IsClosed
+            _vimBuffer.ModeKind = ModeKind.Disabled
+            || _vimBuffer.ModeKind = ModeKind.ExternalEdit
+            || _textView.IsClosed
         then
+            // Don't restore selections when disabled.
+            ()
+        else
             x.CheckRestoreSelections()
 
     /// Raised when the vim buffer switches modes
     member x.OnSwitchedMode args =
         match args.ModeArgument with
         | ModeArgument.CancelOperation ->
-            let newSelectedSpans =
-                _commonOperations.SelectedSpans
-                |> Seq.take 1
-                |> Seq.toArray
-            _commonOperations.SetSelectedSpans newSelectedSpans
+            x.ClearSecondarySelections()
         | _ ->
             ()
 
@@ -157,12 +137,22 @@ type internal MultiSelectionTracker
         finally
             _syncingSelection <- false
 
+    // Whether there are any secondary selections
+    member x.HasSecondarySelections (selectedSpans: SelectedSpan array) =
+        selectedSpans.Length > 1
+
+    // Clear any secondary selections
+    member x.ClearSecondarySelections () =
+        [Seq.head _commonOperations.SelectedSpans]
+        |> _commonOperations.SetSelectedSpans
+
     /// Copy the primary caret's registers to all secondary carets
-    member x.InitializeSecondaryCaretRegisters (selectedSpans: SelectedSpan array) =
+    member x.InitializeSecondaryCaretRegisters () =
+        let selectedSpans = x.SelectedSpans
         let oldCaretIndex = _vimData.CaretIndex
-        let register = _commonOperations.GetRegister None
         try
             _vimData.CaretIndex <- 0
+            let register = _commonOperations.GetRegister None
             let value = register.RegisterValue
             for caretIndex = 1 to selectedSpans.Length - 1 do
                 _vimData.CaretIndex <- caretIndex
@@ -176,6 +166,23 @@ type internal MultiSelectionTracker
         let line, columnNumber = VirtualSnapshotPointUtil.GetLineAndOffset point
         let spaces = VirtualSnapshotColumn.GetSpacesToColumnNumber(line, columnNumber, tabStop)
         line, spaces
+
+    /// Adjust the specified selected span for inclusive selection
+    member x.AdjustForInclusive (selectedSpan: SelectedSpan) =
+        if
+            not selectedSpan.IsReversed
+            && selectedSpan.Length > 0
+            && selectedSpan.CaretPoint = selectedSpan.End
+        then
+            let caretPoint =
+                selectedSpan.CaretPoint
+                |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
+            let anchorPoint = selectedSpan.AnchorPoint
+            let activePoint = selectedSpan.ActivePoint
+            SelectedSpan(caretPoint, anchorPoint, activePoint)
+            |> Some
+        else
+            None
 
     /// Adjust the specified selected span to new relative line and spaces offsets
     member x.AdjustSelectedSpan lineOffset spacesOffset length (span: SelectedSpan) =
@@ -207,12 +214,8 @@ type internal MultiSelectionTracker
     /// Check whether we need to restore selected spans and if so, restore them
     member x.CheckRestoreSelections () =
         let oldSelectedSpans = x.RecordedSelectedSpans
-        let newSelectedSpans = x.SelectedSpans
-
-        if oldSelectedSpans.Length <> newSelectedSpans.Length then
-            x.InitializeSecondaryCaretRegisters newSelectedSpans
-
-        if oldSelectedSpans.Length > 1 then
+        if x.HasSecondarySelections oldSelectedSpans then
+            let newSelectedSpans = x.SelectedSpans
 
             // We previously had secondary selected spans.
             if
@@ -220,8 +223,8 @@ type internal MultiSelectionTracker
                 && newSelectedSpans.Length = oldSelectedSpans.Length
             then
 
-                // The selection didn't change and the number of selected spans
-                // didn't change.
+                // The primary selection didn't change and the number of
+                // selected spans didn't change.
                 ()
 
             else
@@ -277,6 +280,48 @@ type internal MultiSelectionTracker
                 yield newSelectedSpans.[caretIndex]
         }
         |> _commonOperations.SetSelectedSpans
+
+    /// Check whether we need to switch to a visual mode
+    member x.CheckSwitchToVisual selectedSpans =
+        if selectedSpans.[0].Length > 0 then
+            match _vimBuffer.ModeKind with
+            | ModeKind.VisualCharacter -> ()
+            | ModeKind.VisualLine -> ()
+            | ModeKind.VisualBlock -> ()
+            | ModeKind.SelectCharacter -> ()
+            | ModeKind.SelectLine -> ()
+            | ModeKind.SelectBlock -> ()
+            | _ ->
+                let isSelectModeMouse =
+                    SelectModeOptions.Mouse 
+                    |> Util.IsFlagSet _globalSettings.SelectModeOptions
+                let modeKind =
+                    if isSelectModeMouse then
+                        ModeKind.SelectCharacter
+                    else
+                        ModeKind.VisualCharacter
+                _vimBuffer.SwitchMode modeKind ModeArgument.None
+                |> ignore
+
+    /// Check whether we need to adjust any selections for inclusive
+    member x.CheckAdjustForInclusive selectedSpans =
+        let results =
+            seq {
+                for caretIndex = 0 to selectedSpans.Length - 1 do
+                    let selectedSpan = selectedSpans.[caretIndex]
+                    match x.AdjustForInclusive selectedSpan with
+                    | Some adjustedSelectedSpan ->
+                        yield true, adjustedSelectedSpan
+                    | None ->
+                        yield false, selectedSpan
+            }
+            |> Seq.toList
+        if results |> Seq.exists (fun (changed, _) -> changed) then
+            fun () ->
+                results
+                |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
+                |> _commonOperations.SetSelectedSpans
+            |> x.SyncSelection
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal MultiSelectionTrackerFactory

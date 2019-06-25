@@ -2679,7 +2679,7 @@ type internal CommonOperations
         // Body starts here.
         if selectedSpans.Length = 1 then
 
-            // This is just one selection so do the action once and return its
+            // There is just one selection so do the action once and return its
             // result normally.
             action()
 
