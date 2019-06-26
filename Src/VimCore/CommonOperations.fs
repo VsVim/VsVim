@@ -173,6 +173,10 @@ type internal CommonOperations
 
     /// Set the current selected spans
     member x.SetSelectedSpans spans =
+        let spans = Seq.toArray spans
+        if spans.Length > 1 then
+            let modeKind = _vimTextBuffer.ModeKind
+            _vimBufferData.LastMultiSelection <- Some (modeKind, spans)
         _vimHost.SetSelectedSpans _textView spans
         _selectedSpansSetEvent.Trigger x EventArgs.Empty
 
@@ -2501,7 +2505,10 @@ type internal CommonOperations
 
         // Get the current set of selected spans.
         let selectedSpans = x.SelectedSpans |> Seq.toList
-        let visualCaretStartPoint = _vimBufferData.VisualCaretStartPoint
+        let isInVisualMode =
+            _vimTextBuffer.ModeKind
+            |> VisualKind.OfModeKind
+            |> Option.isSome
 
         // Get any mode argument from the specified command result.
         let getModeArgument result =
@@ -2635,7 +2642,7 @@ type internal CommonOperations
                         | Some visualKind ->
                             getInitialSelection visualKind
                         | None ->
-                            if Option.isSome visualCaretStartPoint then
+                            if isInVisualMode then
                                 getVisualSelectedSpan selectedSpan
                             else
                                 match getVisualSelection result with

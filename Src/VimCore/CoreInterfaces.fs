@@ -3023,6 +3023,9 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput: KeyInput
 
+    /// Restore the most recent set of multiple selections
+    | RestoreMultiSelection
+
     /// Run an 'at' command for the specified character
     | RunAtCommand of Character: char
 
@@ -3223,6 +3226,7 @@ type NormalCommand =
         | NormalCommand.RepeatLastSubstitute _ -> None 
         | NormalCommand.ReplaceAtCaret -> None
         | NormalCommand.ReplaceChar _ -> None
+        | NormalCommand.RestoreMultiSelection -> None
         | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
         | NormalCommand.ScrollColumns _ -> None
@@ -4981,6 +4985,9 @@ and IVimBufferData =
     /// of the visual selection.  While the anchor point for visual mode selection may be in 
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
+
+    /// The last multi-selection recorded for this buffer
+    abstract LastMultiSelection: (ModeKind * SelectedSpan array) option with get, set
 
     /// The IJumpList associated with the IVimBuffer
     abstract JumpList: IJumpList

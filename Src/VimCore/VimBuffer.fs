@@ -22,6 +22,7 @@ type VimBufferData
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
+    let mutable _lastMultiSelection: (ModeKind * SelectedSpan array) option = None
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
     member x.CurrentRelativeFilePath : string option =
@@ -51,6 +52,9 @@ type VimBufferData
         member x.VisualAnchorPoint 
             with get() = _visualAnchorPoint
             and set value = _visualAnchorPoint <- value
+        member x.LastMultiSelection
+            with get() = _lastMultiSelection
+            and set value = _lastMultiSelection <- value
         member x.JumpList = _jumpList
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer

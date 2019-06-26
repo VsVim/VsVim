@@ -296,6 +296,44 @@ namespace Vim.UnitTest
         public sealed class NormalModeTest : MultiSelectionIntegrationTest
         {
             /// <summary>
+            /// Test clearing carets with escape
+            /// </summary>
+            [WpfFact]
+            public void ClearCarets()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("<Esc>");
+                AssertCarets(GetPoint(0, 4));
+            }
+
+            /// <summary>
+            /// Test cancelling with control-C
+            /// </summary>
+            [WpfFact]
+            public void CancelOperation()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("<C-C>");
+                AssertCarets(GetPoint(0, 4));
+            }
+
+            /// <summary>
+            /// Test restoring carets
+            /// </summary>
+            [WpfFact]
+            public void RestoreCarets()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("<C-C>");
+                AssertCarets(GetPoint(0, 4));
+                ProcessNotation("g/");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+            }
+
+            /// <summary>
             /// Test moving the caret
             /// </summary>
             [WpfFact]

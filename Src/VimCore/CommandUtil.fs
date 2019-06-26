@@ -341,11 +341,9 @@ type internal CommandUtil
         else RegisterOperation.Delete
 
     member x.CancelOperation () =
-        match _vimBufferData.Vim.GetVimBuffer _textView with
-        | None -> _commonOperations.Beep()
-        | Some vimBuffer ->
-            vimBuffer.SwitchMode ModeKind.Normal ModeArgument.CancelOperation
-            |> ignore
+        [Seq.head _commonOperations.SelectedSpans]
+        |> _commonOperations.SetSelectedSpans
+        _vimTextBuffer.SwitchMode ModeKind.Normal ModeArgument.CancelOperation
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Change the characters in the given span via the specified change kind
@@ -3082,6 +3080,7 @@ type internal CommandUtil
         | NormalCommand.RepeatLastSubstitute (useSameFlags, useWholeBuffer) -> x.RepeatLastSubstitute useSameFlags useWholeBuffer
         | NormalCommand.ReplaceAtCaret -> x.ReplaceAtCaret count
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
+        | NormalCommand.RestoreMultiSelection -> x.RestoreMultiSelection()
         | NormalCommand.RunAtCommand char -> x.RunAtCommand char data.CountOrDefault
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.ScrollLines (direction, useScrollOption) -> x.ScrollLines direction useScrollOption data.Count
@@ -3941,6 +3940,31 @@ type internal CommandUtil
 
         ModeSwitch.SwitchMode ModeKind.Normal
         |> CommandResult.Completed
+
+    /// Restore the most recent set of multiple selections
+    member x.RestoreMultiSelection () =
+        if Seq.length _commonOperations.SelectedSpans = 1 then
+            match _vimBufferData.LastMultiSelection with
+            | Some (modeKind, selectedSpans) ->
+                let restoredSelectedSpans =
+                    selectedSpans
+                    |> Seq.map _commonOperations.MapSelectedSpanToCurrentSnapshot
+                    |> Seq.toArray
+                restoredSelectedSpans
+                |> _commonOperations.SetSelectedSpans
+                let allSelectionsAreEmpty =
+                    restoredSelectedSpans
+                    |> Seq.tryFind (fun span -> span.Length <> 0)
+                    |> Option.isNone
+                if allSelectionsAreEmpty then
+                    CommandResult.Completed ModeSwitch.NoSwitch
+                else
+                    ModeSwitch.SwitchMode modeKind
+                    |> CommandResult.Completed
+            | None ->
+                CommandResult.Error
+        else
+            CommandResult.Error
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text
