@@ -2723,6 +2723,12 @@ module VirtualSnapshotSpanUtil =
         let virtualSpaces = StringUtil.RepeatChar span.End.VirtualSpaces ' '
         spanText + virtualSpaces
 
+    let Conttains (span: VirtualSnapshotSpan) (point: VirtualSnapshotPoint) =
+        span.Contains(point)
+
+    let ContainsOrEndsWith (span: VirtualSnapshotSpan) (point: VirtualSnapshotPoint) =
+        Conttains span point || span.End = point
+
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context
 module SnapshotLineRangeUtil = 

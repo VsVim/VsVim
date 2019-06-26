@@ -2448,12 +2448,25 @@ type internal CommonOperations
         SelectedSpan(caretPoint, anchorPoint, activcePoint)
 
     /// Add a new caret at the specified point
-    member x.AddCaretAtPoint point =
-        seq {
-            yield! x.SelectedSpans
-            yield SelectedSpan(point)
-        }
-        |> x.SetSelectedSpans
+    member x.AddCaretAtPoint (point: VirtualSnapshotPoint) =
+        let contains = VirtualSnapshotSpanUtil.ContainsOrEndsWith
+        let isContainedByExistingSpan =
+            x.SelectedSpans
+            |> Seq.exists (fun span -> contains span.Span point)
+        let remainingSpans =
+            x.SelectedSpans
+            |> Seq.filter (fun span -> not (contains span.Span point))
+            |> Seq.toArray
+        if
+            remainingSpans.Length > 0
+            || not isContainedByExistingSpan
+        then
+            seq {
+                yield! remainingSpans
+                if not isContainedByExistingSpan then
+                    yield SelectedSpan(point)
+            }
+            |> x.SetSelectedSpans
 
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =

@@ -235,13 +235,48 @@ namespace Vim.UnitTest
             /// Using alt-click adds a new caret
             /// </summary>
             [WpfFact]
-            public void MouseClick()
+            public void AddCaret()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
-                _textView.Caret.MoveTo(GetPoint(0, 4));
-                _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'e' in 'def'
+                SetCaretPoints(GetPoint(0, 4));
+                _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
+            }
+
+            [WpfFact]
+            public void RemovePrimaryCaret()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4));
+                _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
+                _testableMouseDevice.Point = GetPoint(0, 4).Position; // 'd' in 'def'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
+                AssertCarets(GetPoint(1, 8));
+            }
+
+            [WpfFact]
+            public void RemoveSecondaryCaret()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4));
+                _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 8));
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>"); // 'g' in 'ghi'
+                AssertCarets(GetPoint(0, 4));
+            }
+
+            [WpfFact]
+            public void RemoveOnlyCaret()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4));
+                _testableMouseDevice.Point = GetPoint(0, 4).Position; // 'd' in 'def'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
+                AssertCarets(GetPoint(0, 4));
             }
 
             /// <summary>

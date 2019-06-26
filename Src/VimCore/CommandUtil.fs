@@ -3885,6 +3885,7 @@ type internal CommandUtil
     /// Add word or matching token to the selection
     member x.AddWordOrMatchingTokenToSelection () =
         let oldSelectedSpans = _commonOperations.SelectedSpans
+        let contains = VirtualSnapshotSpanUtil.ContainsOrEndsWith
         match x.GetWordOrMatchingToken() with
         | Some visualSelection ->
             let newSelectedSpan =
@@ -3896,7 +3897,7 @@ type internal CommandUtil
             let oldSelectedSpans =
                 oldSelectedSpans
                 |> Seq.filter (fun span ->
-                    not (newSelectedSpan.Span.Contains(span.CaretPoint)))
+                    not (contains newSelectedSpan.Span span.CaretPoint))
             seq {
                 yield! oldSelectedSpans
                 yield newSelectedSpan
