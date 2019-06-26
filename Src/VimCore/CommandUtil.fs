@@ -3156,17 +3156,17 @@ type internal CommandUtil
         | VisualCommand.AddWordOrMatchingTokenToSelection -> false
         | _ -> true
 
-    /// The character visual span associated with the selection
-    member x.GetCharacterVisualSpan visualKind =
+    /// The visual span associated with the selection
+    member x.GetVisualSpan visualKind =
         let tabStop = _localSettings.TabStop
         let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
-        VisualSpan.CreateForVirtualSelection _textView VisualKind.Character tabStop useVirtualSpace
+        VisualSpan.CreateForVirtualSelection _textView visualKind tabStop useVirtualSpace
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command data visualSpan =
         if x.ShouldRunVisualCommandForEachSelection command visualSpan.VisualKind then
             fun () ->
-                x.GetCharacterVisualSpan visualSpan.VisualKind
+                x.GetVisualSpan visualSpan.VisualKind
                 |> x.RunVisualCommandCore command data
             |> _commonOperations.RunForAllSelections
         else
