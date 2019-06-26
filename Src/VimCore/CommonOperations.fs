@@ -2585,9 +2585,9 @@ type internal CommonOperations
             result
 
         // Get the effective selected span.
-        let getVisualSelectedSpan visualKind (oldSpan: SelectedSpan) =
-            let oldSpan = x.MapSelectedSpanToCurrentSnapshot oldSpan
-            let anchorPoint = oldSpan.AnchorPoint
+        let getVisualSelectedSpan visualKind (oldSelectedSpan: SelectedSpan) =
+            let oldSelectedSpan = x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
+            let anchorPoint = oldSelectedSpan.AnchorPoint
             let caretPoint = x.CaretVirtualPoint
             let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
             let selectionKind = _globalSettings.SelectionKind
@@ -2600,7 +2600,7 @@ type internal CommonOperations
                 | SelectionKind.Exclusive ->
                     true
                 | SelectionKind.Inclusive ->
-                    oldSpan.IsReversed && oldSpan.Length <> 1
+                    oldSelectedSpan.IsReversed && oldSelectedSpan.Length <> 1
             let visualSelection =
                 if adjustSelection then
                     visualSelection.AdjustForSelectionKind SelectionKind.Exclusive
@@ -2627,42 +2627,46 @@ type internal CommonOperations
                 VisualSelection.CreateInitial visualKind caretPoint tabStop selectionKind useVirtualSpace
             visualSelection.GetPrimarySelectedSpan selectionKind
 
+        // Collect the command result and new selected span or any embedded
+        // visual span, if present.
+        let getResultingSpan oldSelectedSpan result =
+            match getSwitchToVisualKind result with
+            | Some visualKind ->
+                getInitialSelection visualKind
+            | None ->
+                match visualModeKind with
+                | Some modeKind ->
+                    getVisualSelectedSpan modeKind oldSelectedSpan
+                | None ->
+                    match getVisualSelection result with
+                    | Some selectedSpan ->
+                        selectedSpan
+                    | None ->
+                        x.PrimarySelectedSpan
+
         // Get the results for all actions.
         let getResults () =
             seq {
                 let indexedSpans =
                     selectedSpans
                     |> Seq.mapi (fun index span -> index, span)
-                for index, selectedSpan in indexedSpans do
+                for index, oldSelectedSpan in indexedSpans do
 
                     // Set the global caret index.
                     _vimData.CaretIndex <- index
 
                     // Temporarily set the real caret and selection.
-                    let selectedSpan =
-                        x.MapSelectedSpanToCurrentSnapshot selectedSpan
-                    x.SetTemporarySelectedSpan selectedSpan
+                    x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
+                    |> x.SetTemporarySelectedSpan
 
-                    // Run the action once.
+                    // Run the action once and get the result.
                     let result = runActionAndCompleteTransaction action
 
-                    // Collect the command result and new selected span
-                    // or any embedded visual span, if present.
-                    let span =
-                        match getSwitchToVisualKind result with
-                        | Some visualKind ->
-                            getInitialSelection visualKind
-                        | None ->
-                            match visualModeKind with
-                            | Some modeKind ->
-                                getVisualSelectedSpan modeKind selectedSpan
-                            | None ->
-                                match getVisualSelection result with
-                                | Some selectedSpan ->
-                                    selectedSpan
-                                | None ->
-                                    x.PrimarySelectedSpan
-                    yield result, span
+                    // Get the resulting span.
+                    let newSelectedSpan =
+                        getResultingSpan oldSelectedSpan result
+
+                    yield result, newSelectedSpan
             }
             |> Seq.toList
 
@@ -2677,7 +2681,7 @@ type internal CommonOperations
 
             // Extract the resulting selected spans and set them.
             results
-            |> Seq.map (fun (_, span) -> span)
+            |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
             |> Seq.map x.MapSelectedSpanToCurrentSnapshot
             |> x.SetSelectedSpans
 
