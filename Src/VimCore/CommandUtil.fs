@@ -2988,7 +2988,11 @@ type internal CommandUtil
         | NormalCommand.ShiftLinesRight -> true
         | NormalCommand.ShiftMotionLinesLeft _ -> true
         | NormalCommand.ShiftMotionLinesRight _ -> true
-        | NormalCommand.SwitchModeVisualCommand _ -> true
+        | NormalCommand.SwitchModeVisualCommand visualKind ->
+            match visualKind with
+            | VisualKind.Character -> true
+            | VisualKind.Line -> true
+            | VisualKind.Block -> false
         | NormalCommand.SwitchToSelection _ -> true
         | NormalCommand.Yank _ -> true
         | _ -> false
