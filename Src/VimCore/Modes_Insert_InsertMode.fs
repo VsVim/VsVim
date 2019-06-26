@@ -951,7 +951,7 @@ type internal InsertMode
                 match _localAbbreviationMap.GlobalAbbreviationMap.GetAbbreviation (KeyNotationUtil.StringToKeyInputSet text) AbbreviationMode.Insert with
                 | None -> None
                 | Some rhs -> 
-                    let newText = rhs.ToString()
+                    let newText = (rhs.Add keyInput).ToString()
                     let span = 
                         let startPoint = x.CaretPoint.Subtract text.Length
                         SnapshotSpan(startPoint, x.CaretPoint)

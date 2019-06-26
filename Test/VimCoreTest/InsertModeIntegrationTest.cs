@@ -3602,7 +3602,7 @@ namespace Vim.UnitTest
                 Assert.Equal($"comment this{keyNotation}", _textBuffer.GetLineText(0));
             }
 
-            [WpfFact]
+            [WpfFact(Skip = "ATODO")]
             public void ReplaceMustBeComplete()
             {
                 Create("");
@@ -3613,7 +3613,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cco", _textBuffer.GetLineText(0));
             }
 
-            [WpfFact]
+            [WpfFact(Skip = "ATODO")]
             public void ExplicitCancelOfReplace()
             {
                 Create("");
