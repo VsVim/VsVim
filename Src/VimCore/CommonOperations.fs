@@ -2518,10 +2518,9 @@ type internal CommonOperations
 
         // Get the current set of selected spans.
         let selectedSpans = x.SelectedSpans |> Seq.toList
-        let isInVisualMode =
+        let visualModeKind =
             _vimTextBuffer.ModeKind
             |> VisualKind.OfModeKind
-            |> Option.isSome
 
         // Get any mode argument from the specified command result.
         let getModeArgument result =
@@ -2586,9 +2585,8 @@ type internal CommonOperations
             result
 
         // Get the effective selected span.
-        let getVisualSelectedSpan (oldSpan: SelectedSpan) =
+        let getVisualSelectedSpan visualKind (oldSpan: SelectedSpan) =
             let oldSpan = x.MapSelectedSpanToCurrentSnapshot oldSpan
-            let visualKind = VisualKind.Character
             let anchorPoint = oldSpan.AnchorPoint
             let caretPoint = x.CaretVirtualPoint
             let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
@@ -2655,9 +2653,10 @@ type internal CommonOperations
                         | Some visualKind ->
                             getInitialSelection visualKind
                         | None ->
-                            if isInVisualMode then
-                                getVisualSelectedSpan selectedSpan
-                            else
+                            match visualModeKind with
+                            | Some modeKind ->
+                                getVisualSelectedSpan modeKind selectedSpan
+                            | None ->
                                 match getVisualSelection result with
                                 | Some selectedSpan ->
                                     selectedSpan
