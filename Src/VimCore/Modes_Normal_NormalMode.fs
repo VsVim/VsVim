@@ -111,7 +111,7 @@ type internal NormalMode
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
-                yield ("<C-c>", CommandFlags.Repeatable, NormalCommand.CancelOperation)
+                yield ("<C-c>", CommandFlags.Special, NormalCommand.CancelOperation)
                 yield ("<C-g>", CommandFlags.Special, NormalCommand.PrintFileInformation)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
@@ -373,6 +373,7 @@ type internal NormalMode
             let command = _data.Command + keyInput.Char.ToString()
             _data <- { _data with Command = command }
 
+        let wasWaitingForMoreInput = _runner.IsWaitingForMoreInput
         match _runner.Run keyInput with
         | BindResult.NeedMoreInput _ -> 
             ProcessResult.HandledNeedMoreInput
@@ -384,8 +385,13 @@ type internal NormalMode
             ProcessResult.Handled ModeSwitch.NoSwitch
         | BindResult.Cancelled -> 
             _incrementalSearch.CancelSession()
-            x.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            if wasWaitingForMoreInput then
+                x.Reset()
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                (ModeKind.Normal, ModeArgument.CancelOperation)
+                |> ModeSwitch.SwitchModeWithArgument
+                |> ProcessResult.Handled
 
     member x.OnEnter (arg: ModeArgument) =
         x.EnsureCommands()
