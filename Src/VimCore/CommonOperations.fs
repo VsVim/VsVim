@@ -2417,17 +2417,24 @@ type internal CommonOperations
     /// Map the specified point with the specified tracking to the current snapshot
     member x.MapPointToCurrentSnapshot (point: SnapshotPoint) (pointTrackingMode: PointTrackingMode) =
         let snapshot = _textBuffer.CurrentSnapshot
-        if point.Snapshot = snapshot then
-            point
-        else
-            TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
-            |> OptionUtil.getOrDefault (SnapshotPoint(snapshot, min point.Position snapshot.Length))
+        TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
+        |> Option.defaultValue (SnapshotPoint(snapshot, min point.Position snapshot.Length))
 
     /// Map the specified caret point to the current snapshot
     member x.MapCaretPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
-        point.Position
-        |> x.MapPointNegativeToCurrentSnapshot
-        |> VirtualSnapshotPointUtil.OfPoint
+        if _vimTextBuffer.UseVirtualSpace then
+            let snapshot = _textBuffer.CurrentSnapshot
+            let pointTrackingMode = PointTrackingMode.Negative
+            match TrackingPointUtil.GetVirtualPointInSnapshot point pointTrackingMode snapshot with
+            | Some point -> point
+            | None ->
+                let defaultPoint =
+                    SnapshotPoint(snapshot, min point.Position.Position snapshot.Length)
+                VirtualSnapshotPoint(defaultPoint, point.VirtualSpaces)
+        else
+            point.Position
+            |> x.MapPointNegativeToCurrentSnapshot
+            |> VirtualSnapshotPointUtil.OfPoint
 
     /// Map the specified selected span to the current snapshot
     member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
