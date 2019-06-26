@@ -161,7 +161,8 @@ type internal NormalMode
                 yield ("<C-]>", CommandFlags.Special, NormalCommand.GoToDefinition)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
-                yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
+                yield ("<C-LeftRelease>", CommandFlags.Special, NormalCommand.NoOperation)
+                yield ("<MiddleMouse>", CommandFlags.Special, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
@@ -189,7 +190,6 @@ type internal NormalMode
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
                 yield ("<C-A-Up>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)
-                yield ("<C-LeftRelease>", CommandFlags.Special, NormalCommand.NoOperation)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
                 yield ("g/", CommandFlags.Special, NormalCommand.RestoreMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 

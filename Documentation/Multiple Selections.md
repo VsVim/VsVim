@@ -1,4 +1,4 @@
-### Multiple Selections
+### Multiple Carets / Multiple Cursors / Multiple Selections
 
 If the host supports multiple selections, VsVim will also support them.
 
@@ -25,13 +25,18 @@ set all at once. This causes the non-multi-selection aware code to still see
 the primary selection as the real and only selection, while maintaining the
 secondary selections behind the scenes.
 
-#### The multi-selection API
+#### The Multi-Selection API
 
 Unfortunately, not all versions of the editor API support multiple selections.
 In order to handle this, there are two API entry points in the Vim host:
 
 - `IVimHost.GetSelectedSpans` - member
 - `IVimHost.SetSelectedSpans` - member
+
+A selected span is a triple of caret point, anchor point, and active point.
+All three values are virtual snapshot points.  For multiple caret support,
+a caret is just a zero-width selection. Selected spans are associated with
+a specific text view, just like the normal caret and normal selection.
 
 If there is no multi-selection support, getting the selected spans always
 returns a single (possibly empty) span and setting multiple selected spans
@@ -49,4 +54,35 @@ operations module:
 - `ICommonOperations.SetSelectedSpans` - member
 - `ICommonOperations.SelectedSpansSet` - event
 
-For multiple caret support, a caret is just a zero-width selection.
+#### VsVim Key Bindings
+
+- `<Esc>` - clear secondary carets (normal)
+- `<C-c>` - clear secondary carets or selections (normal, visual, insert)
+- `<C-A-LeftMouse>` - add or remove caret (normal, visual, select, insert)
+- `<C-A-2-LeftMouse>` - add a new selected word or token (normal, visual, select, insert)
+- `<C-A-Up>` and `<C-A-Down>` - add a new caret on an adjecent line (normal, insert)
+- `<C-A-/>` - split selection into carets (visual, select)
+- `<C-A-/>` - restore recent multi-carets or multi-selections (normal)
+- `g/` - split selection into carets (visual)
+- `g/` - restore recent multi-carets or multi-selection (normal)
+
+#### The Unnamaed Register
+
+Each caret gets their own unnamed register. All secondary caret's unnamed
+registers are copied from the "real" unnamed register whenever a caret is
+added or removed. The result is that if you put from the unnamed register at
+all carets immediately after creating them, all carets will put the same
+value. But if you yank text and the put it while there are multiple carets,
+each caret will put what that caret yanked.
+
+#### Interoperation with Visual Studio
+
+Visual Studio itself provides some commands for multiple carets. VsVim
+supports multi-selection operations performed by external components such
+as the Visual Studio editor, a language service, a code assistant like
+Resharper, or event another Visual Studio extension.
+
+#### Visual Studio Key Bindings
+
+- `<S-A-.>` - add selection for the next occurrence of the current word
+- `<S-A-;>` - add selections for all occurrences of the current word
