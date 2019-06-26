@@ -3218,6 +3218,7 @@ type internal CommandUtil
         | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
+        | VisualCommand.SplitSelectionIntoCarets -> x.SplitSelectionIntoCarets visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
         | VisualCommand.SwitchModeInsert atEndOfLine -> x.SwitchModeInsert visualSpan atEndOfLine
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
@@ -3905,6 +3906,41 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         | None ->
             CommandResult.Error
+
+    /// Split the selection into carets
+    member x.SplitSelectionIntoCarets visualSpan =
+
+        let setCarets caretPoints =
+            caretPoints
+            |> Seq.map VirtualSnapshotPointUtil.OfPoint
+            |> Seq.map SelectedSpan
+            |> _commonOperations.SetSelectedSpans
+
+        let splitLineRangeWith pointFunction =
+            visualSpan.LineRange.Lines
+            |> Seq.map pointFunction
+            |> setCarets
+
+        let getSpaceOnLine spaces line =
+            let column = _commonOperations.GetColumnForSpacesOrEnd line spaces
+            column.StartPoint
+
+        match visualSpan.VisualKind with
+        | VisualKind.Character ->
+            visualSpan.PerLineSpans
+            |> Seq.map (fun span -> span.Start)
+            |> setCarets
+            ()
+        | VisualKind.Line ->
+            SnapshotLineUtil.GetFirstNonBlankOrEnd
+            |> splitLineRangeWith
+        | VisualKind.Block ->
+            _commonOperations.GetSpacesToPoint x.CaretPoint
+            |> getSpaceOnLine
+            |> splitLineRangeWith
+
+        ModeSwitch.SwitchMode ModeKind.Normal
+        |> CommandResult.Completed
 
     /// Shift the given line range left by the specified value.  The caret will be
     /// placed at the first character on the first line of the shifted text

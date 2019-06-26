@@ -45,6 +45,7 @@ type internal SelectMode
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenToSelection)
+                yield ("<C-A-/>", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))

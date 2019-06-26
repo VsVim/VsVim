@@ -498,6 +498,32 @@ namespace Vim.UnitTest
                     GetPoint(1, 2).GetSelectedSpan(0, 2, true)); // '*|l '
             }
 
+            [WpfFact]
+            public void SplitCharacterSelection()
+            {
+                Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("vjjg/");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 0), GetPoint(2, 0));
+            }
+
+            [WpfFact]
+            public void SplitLineSelection()
+            {
+                Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
+                ProcessNotation("Vjjg/");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
+            }
+
+            [WpfFact]
+            public void SplitBlockSelection()
+            {
+                Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("<C-V>jjg/");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
+            }
+
         }
 
         public sealed class SelectModeTest : MultiSelectionIntegrationTest

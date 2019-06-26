@@ -3382,6 +3382,9 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
+    /// Shift the selection into carets
+    | SplitSelectionIntoCarets
+
     /// Subtract count from the word in each line of the selection, optionally progressively
     | SubtractFromSelection of IsProgressive: bool
 
