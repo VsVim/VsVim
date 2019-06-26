@@ -3388,6 +3388,8 @@ module TrackingPointUtil =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point
         if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
             Some point
+        elif oldSnapshot.Version.ReiteratedVersionNumber = newSnapshot.Version.ReiteratedVersionNumber then
+            Some (SnapshotPoint(newSnapshot, point.Position))
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
             GetPoint newSnapshot trackingPoint
@@ -3396,6 +3398,8 @@ module TrackingPointUtil =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point.Position
         if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
             Some point
+        elif oldSnapshot.Version.ReiteratedVersionNumber = newSnapshot.Version.ReiteratedVersionNumber then
+            Some (VirtualSnapshotPoint(SnapshotPoint(newSnapshot, point.Position.Position), point.VirtualSpaces))
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position.Position, mode)
             match GetPoint newSnapshot trackingPoint with
