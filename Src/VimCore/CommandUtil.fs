@@ -3126,7 +3126,8 @@ type internal CommandUtil
 
     /// Whether we should run the specified visual command for each selection
     member x.ShouldRunVisualCommandForEachSelection command visualKind =
-        if visualKind = VisualKind.Character then
+        match visualKind with
+        | VisualKind.Character | VisualKind.Line ->
             match command with
             | VisualCommand.AddToSelection _ -> true
             | VisualCommand.ChangeCase _ -> true
@@ -3141,7 +3142,7 @@ type internal CommandUtil
             | VisualCommand.CutSelection -> true
             | VisualCommand.CutSelectionAndPaste -> true
             | _ -> false
-        else
+        | VisualKind.Block ->
             false
 
     /// Whether we should clear the selection before running the command

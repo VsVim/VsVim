@@ -477,10 +477,10 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class VisualModeTest : MultiSelectionIntegrationTest
+        public sealed class VisualCharacterModeTest : MultiSelectionIntegrationTest
         {
             /// <summary>
-            /// Test entering visual mode
+            /// Test entering visual character mode
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
             public void Enter(bool isInclusive)
@@ -572,31 +572,57 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void SplitCharacterSelection()
+            public void SplitSelection()
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
                 ProcessNotation("vjjg/");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 0), GetPoint(2, 0));
             }
+        }
 
+        public sealed class VisualLineModeTest : MultiSelectionIntegrationTest
+        {
+            /// <summary>
+            /// Test entering visual line mode
+            /// </summary>
             [WpfFact]
-            public void SplitLineSelection()
+            public void Enter()
             {
-                Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
-                ProcessNotation("Vjjg/");
-                AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
+                Create("abc def", "ghi jkl", "mno pqr", "stu vwx", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(2, 4));
+                ProcessNotation("V");
+                Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
+                AssertSelections(
+                    GetPoint(0, 4).Position.GetSelectedSpan(-4, 5, false), // 'abc |def^M^J*'
+                    GetPoint(2, 4).Position.GetSelectedSpan(-4, 5, false)); // 'mno |pqr^M^J*'
             }
 
+            /// <summary>
+            /// Test deleting lines
+            /// </summary>
             [WpfFact]
-            public void SplitBlockSelection()
+            public void Delete()
+            {
+                Create("abc def", "ghi jkl", "mno pqr", "stu vwx", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(2, 4));
+                ProcessNotation("Vx");
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                AssertLines("ghi jkl", "stu vwx", "");
+                AssertCarets(GetPoint(0, 0), GetPoint(1, 0));
+            }
+        }
+
+        public sealed class VisualBlockModeTest : MultiSelectionIntegrationTest
+        {
+            [WpfFact]
+            public void SplitSelection()
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
                 ProcessNotation("<C-V>jjg/");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
             }
-
         }
 
         public sealed class SelectModeTest : MultiSelectionIntegrationTest

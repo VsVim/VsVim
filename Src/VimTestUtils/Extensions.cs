@@ -968,6 +968,33 @@ namespace Vim.UnitTest
 
         #endregion
 
+        public static SelectedSpan GetSelectedSpan(
+            this SnapshotPoint point,
+            int startOffset,
+            int endOffset,
+            bool isReversed)
+        {
+            if (startOffset > endOffset)
+            {
+                throw new InvalidOperationException("start is after end");
+            }
+
+            if (!isReversed)
+            {
+                return new SelectedSpan(
+                    new VirtualSnapshotPoint(point),
+                    new VirtualSnapshotPoint(point.Add(startOffset)),
+                    new VirtualSnapshotPoint(point.Add(endOffset)));
+            }
+            else
+            {
+                return new SelectedSpan(
+                    new VirtualSnapshotPoint(point),
+                    new VirtualSnapshotPoint(point.Add(endOffset)),
+                    new VirtualSnapshotPoint(point.Add(startOffset)));
+            }
+        }
+
         #region VirtualSnapshotPoint
 
         public static VirtualSnapshotPoint MapToSnapshot(this VirtualSnapshotPoint point, ITextSnapshot snapshot)

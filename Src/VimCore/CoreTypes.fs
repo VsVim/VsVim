@@ -105,7 +105,9 @@ type SelectedSpan =
         let displayString =
             let point = x.CaretPoint.Position
             let span = x.Span.SnapshotSpan
-            let text = span.GetText()
+            let text =
+                span.GetText()
+                |> StringUtil.GetDisplayString
             if span.Contains(point) || span.End = point then
                 let offset = point.Position - span.Start.Position
                 text.Substring(0, offset) + "|" + text.Substring(offset)
