@@ -341,8 +341,7 @@ type internal CommandUtil
         else RegisterOperation.Delete
 
     member x.CancelOperation () =
-        [Seq.head _commonOperations.SelectedSpans]
-        |> _commonOperations.SetSelectedSpans
+        x.ClearSecondarySelections()
         _vimTextBuffer.SwitchMode ModeKind.Normal ModeArgument.CancelOperation
         CommandResult.Completed ModeSwitch.NoSwitch
 
