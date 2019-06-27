@@ -58,7 +58,7 @@ type internal CommonOperations
     let _vim = _vimBufferData.Vim
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
-    let _registerMap = _vim.RegisterMap
+    let _registerMap = _vimBufferData.CaretRegisterMap
     let _localSettings = _vimBufferData.LocalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
@@ -2325,34 +2325,28 @@ type internal CommonOperations
 
     member x.GetRegister name = 
         let name = x.GetRegisterName name
-        match name with
-        | RegisterName.Unnamed | RegisterName.UnnamedClipboard ->
-            _vimBufferData.CaretRegisterMap.GetRegister name
-        | _ ->
-            _registerMap.GetRegister name
+        _registerMap.GetRegister name
 
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
     member x.SetRegisterValue (name: RegisterName option) operation (value: RegisterValue) = 
-        let register = x.GetRegister name
         let name, isUnnamedOrMissing, isMissing = 
             match name with 
-            | None -> register.Name, true, true
+            | None -> x.GetRegisterName None, true, true
             | Some name -> name, name = RegisterName.Unnamed, false
 
         if name <> RegisterName.Blackhole then
 
-            register.RegisterValue <- value
+            _registerMap.SetRegisterValue name value
 
             // If this is not the unnamed register then the unnamed register
             // needs to  be updated to the value of the register we just set
             // (or appended to).
             if name <> RegisterName.Unnamed then
-                let unnamedRegister =
-                    Some RegisterName.Unnamed
-                    |> x.GetRegister
-                unnamedRegister.RegisterValue <- register.RegisterValue
+                _registerMap.GetRegister name
+                |> (fun register -> register.RegisterValue)
+                |> _registerMap.SetRegisterValue RegisterName.Unnamed
 
             let hasNewLine = 
                 match value.StringData with 
