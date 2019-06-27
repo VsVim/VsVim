@@ -594,4 +594,8 @@ type IRegisterMap =
     /// Update the register with the specified value
     abstract SetRegisterValue: registerName: RegisterName -> value: RegisterValue -> unit
 
+type ICaretRegisterMap =
 
+    inherit IRegisterMap
+
+    abstract CaretIndex: int with get, set

@@ -91,7 +91,6 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
     let mutable _lastCommandLine = ""
     let mutable _displayPattern = ""
     let mutable _displayPatternSuspended = false
-    let mutable _caretIndex = 0
     let _displayPatternChanged = StandardEvent()
 
     do 
@@ -191,9 +190,6 @@ type internal VimData(_globalSettings: IVimGlobalSettings) as this =
         member x.LastVisualSelection 
             with get() = _lastVisualSelection
             and set value = _lastVisualSelection <- value
-        member x.CaretIndex 
-            with get() = _caretIndex
-            and set value = _caretIndex <- value
         member x.SuspendDisplayPattern() = x.SuspendDisplayPattern()
         member x.ResumeDisplayPattern() = x.ResumeDisplayPattern()
         [<CLIEvent>]
@@ -247,7 +243,8 @@ type internal VimBufferFactory
         let localSettings = vimTextBuffer.LocalSettings
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
-        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil) :> IVimBufferData
+        let caretRegisterMap = CaretRegisterMap(vim.RegisterMap)
+        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, caretRegisterMap) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData: IVimBufferData) = 

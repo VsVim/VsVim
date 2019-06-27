@@ -149,16 +149,16 @@ type internal MultiSelectionTracker
     /// Copy the primary caret's registers to all secondary carets
     member x.InitializeSecondaryCaretRegisters () =
         let selectedSpans = x.SelectedSpans
-        let oldCaretIndex = _vimData.CaretIndex
+        let oldCaretIndex = _vimBufferData.CaretIndex
         try
-            _vimData.CaretIndex <- 0
+            _vimBufferData.CaretIndex <- 0
             let register = _commonOperations.GetRegister None
             let value = register.RegisterValue
             for caretIndex = 1 to selectedSpans.Length - 1 do
-                _vimData.CaretIndex <- caretIndex
+                _vimBufferData.CaretIndex <- caretIndex
                 register.RegisterValue <- value
         finally
-            _vimData.CaretIndex <- oldCaretIndex
+            _vimBufferData.CaretIndex <- oldCaretIndex
 
     /// Get the snapshot line and spaces for the specified point
     member x.GetLineAndSpaces point =

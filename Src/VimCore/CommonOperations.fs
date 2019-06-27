@@ -2290,7 +2290,8 @@ type internal CommonOperations
     
     /// Ensure the view properties are met at the caret
     member x.EnsureAtCaret viewFlags = 
-        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
+        if _vimBufferData.CaretIndex = 0 then
+            x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
 
     /// Ensure that the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
@@ -2324,28 +2325,34 @@ type internal CommonOperations
 
     member x.GetRegister name = 
         let name = x.GetRegisterName name
-        _registerMap.GetRegister name
+        match name with
+        | RegisterName.Unnamed | RegisterName.UnnamedClipboard ->
+            _vimBufferData.CaretRegisterMap.GetRegister name
+        | _ ->
+            _registerMap.GetRegister name
 
     /// Updates the given register with the specified value.  This will also update 
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
     member x.SetRegisterValue (name: RegisterName option) operation (value: RegisterValue) = 
+        let register = x.GetRegister name
         let name, isUnnamedOrMissing, isMissing = 
             match name with 
-            | None -> x.GetRegisterName None, true, true
+            | None -> register.Name, true, true
             | Some name -> name, name = RegisterName.Unnamed, false
 
         if name <> RegisterName.Blackhole then
 
-            _registerMap.SetRegisterValue name value
+            register.RegisterValue <- value
 
             // If this is not the unnamed register then the unnamed register
             // needs to  be updated to the value of the register we just set
             // (or appended to).
             if name <> RegisterName.Unnamed then
-                _registerMap.GetRegister name
-                |> (fun register -> register.RegisterValue)
-                |> _registerMap.SetRegisterValue RegisterName.Unnamed
+                let unnamedRegister =
+                    Some RegisterName.Unnamed
+                    |> x.GetRegister
+                unnamedRegister.RegisterValue <- register.RegisterValue
 
             let hasNewLine = 
                 match value.StringData with 
@@ -2653,7 +2660,7 @@ type internal CommonOperations
                 for index, oldSelectedSpan in indexedSpans do
 
                     // Set the global caret index.
-                    _vimData.CaretIndex <- index
+                    _vimBufferData.CaretIndex <- index
 
                     // Temporarily set the real caret and selection.
                     x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
@@ -2718,11 +2725,14 @@ type internal CommonOperations
 
             // Do the actions for each selection being sure to restore the
             // caret index at the end.
-            let oldCaretIndex = _vimData.CaretIndex
+            let oldCaretIndex = _vimBufferData.CaretIndex
             try
                 doActions()
             finally
-                _vimData.CaretIndex <- oldCaretIndex
+                _vimBufferData.CaretIndex <- oldCaretIndex
+
+                // Ensure view properties at the primary caret.
+                x.EnsureAtCaret ViewFlags.Standard
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData

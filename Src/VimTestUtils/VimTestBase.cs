@@ -454,17 +454,20 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null)
+            IVimWindowSettings windowSettings = null,
+            ICaretRegisterMap caretRegisterMap = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
             statusUtil = statusUtil ?? new StatusUtil();
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
+            caretRegisterMap = caretRegisterMap ?? new CaretRegisterMap(Vim.RegisterMap);
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil);
+                statusUtil,
+                caretRegisterMap);
         }
 
         /// <summary>

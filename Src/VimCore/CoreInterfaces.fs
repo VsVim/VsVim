@@ -4694,9 +4694,6 @@ type IVimData =
     /// isn't currently suspended then tihs command will have no effect on the system
     abstract ResumeDisplayPattern: unit -> unit
 
-    /// The current caret index
-    abstract CaretIndex: int with get, set
-
     /// Raised when the DisplayPattern property changes
     [<CLIEvent>]
     abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>
@@ -4961,6 +4958,12 @@ type IVimHost =
 /// Core parts of an IVimBuffer.  Used for components which make up an IVimBuffer but
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
+
+    /// The current caret index
+    abstract CaretIndex: int with get, set
+
+    /// The caret register map
+    abstract CaretRegisterMap: IRegisterMap
 
     /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set

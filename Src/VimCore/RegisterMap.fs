@@ -2,32 +2,6 @@
 
 namespace Vim
 
-/// IRegisterValueBacking implementation for the unnamed register. If there are
-/// multiple carets, each caret gets its own unnamed register
-type UnnamedRegisterValueBacking (_vimData: IVimData) =
-
-    static let defaultValue
-        = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
-    let map = System.Collections.Generic.Dictionary<int, RegisterValue>();
-
-    member x.RegisterValue = 
-        let caretIndex = _vimData.CaretIndex
-        if not (map.ContainsKey(caretIndex)) then
-            if map.ContainsKey(0) then
-                map.[caretIndex] <- map.[0]
-            else
-                map.[caretIndex] <- defaultValue
-        map.[caretIndex]
-
-    member x.SetRegisterValue value =
-        let caretIndex = _vimData.CaretIndex
-        map.[caretIndex] <- value
-
-    interface IRegisterValueBacking with
-        member x.RegisterValue 
-            with get () = x.RegisterValue
-            and set value = x.SetRegisterValue value
-
 /// IRegisterValueBacking implementation for the clipboard
 type ClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevice) =
 
@@ -42,30 +16,6 @@ type ClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevic
 
     member x.SetRegisterValue (value: RegisterValue) =
         _device.Text <- value.StringValue
-
-    interface IRegisterValueBacking with
-        member x.RegisterValue 
-            with get () = x.RegisterValue
-            and set value = x.SetRegisterValue value
-
-/// IRegisterValueBacking implementation for the unnamed clipboard. If there
-/// are multiple carets, the primary caret uses the clipboard and each
-/// secondary caret get its own unnamed register
-type UnnamedClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevice) =
-    let clipboardRegister = ClipboardRegisterValueBacking(_vimData, _device)
-    let unnamedRegister = UnnamedRegisterValueBacking(_vimData)
-
-    member x.RegisterValue = 
-        if _vimData.CaretIndex = 0 then
-            clipboardRegister.RegisterValue
-        else
-            unnamedRegister.RegisterValue
-
-    member x.SetRegisterValue (value: RegisterValue) =
-        if _vimData.CaretIndex = 0 then
-            clipboardRegister.SetRegisterValue value
-        else
-            unnamedRegister.SetRegisterValue value
 
     interface IRegisterValueBacking with
         member x.RegisterValue 
@@ -111,9 +61,7 @@ type internal BlackholeRegisterValueBacking() =
 
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
     new(vimData: IVimData, clipboard: IClipboardDevice, currentFileNameFunc: unit -> string option) = 
-        let unnamedBacking = UnnamedRegisterValueBacking(vimData) :> IRegisterValueBacking
         let clipboardBacking = ClipboardRegisterValueBacking(vimData, clipboard) :> IRegisterValueBacking
-        let unnamedClipboardBacking = UnnamedClipboardRegisterValueBacking(vimData, clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
@@ -131,8 +79,6 @@ type internal RegisterMap (_map: Map<RegisterName, Register>) =
 
         let getBacking name = 
             match name with 
-            | RegisterName.Unnamed -> unnamedBacking
-            | RegisterName.UnnamedClipboard -> unnamedClipboardBacking
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Plus -> clipboardBacking
             | RegisterName.SelectionAndDrop SelectionAndDropRegister.Star  -> clipboardBacking
             | RegisterName.ReadOnly ReadOnlyRegister.Percent -> fileNameBacking
