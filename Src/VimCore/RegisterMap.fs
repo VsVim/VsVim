@@ -2,8 +2,8 @@
 
 namespace Vim
 
-/// IRegisterValueBacking implementation for the clipboard
-type ClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevice) =
+/// IRegisterValueBacking implementation for the clipboard 
+type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
 
     member x.RegisterValue = 
         let text = _device.Text
@@ -14,13 +14,10 @@ type ClipboardRegisterValueBacking (_vimData: IVimData, _device: IClipboardDevic
                 OperationKind.CharacterWise
         RegisterValue(text, operationKind)
 
-    member x.SetRegisterValue (value: RegisterValue) =
-        _device.Text <- value.StringValue
-
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = x.RegisterValue
-            and set value = x.SetRegisterValue value
+            and set value = _device.Text <- value.StringValue
 
 /// IRegisterValueBacking implementation for append registers.  All of the lower
 /// case letter registers can be accessed via an upper case version.  The only
@@ -61,7 +58,7 @@ type internal BlackholeRegisterValueBacking() =
 
 type internal RegisterMap (_map: Map<RegisterName, Register>) =
     new(vimData: IVimData, clipboard: IClipboardDevice, currentFileNameFunc: unit -> string option) = 
-        let clipboardBacking = ClipboardRegisterValueBacking(vimData, clipboard) :> IRegisterValueBacking
+        let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
         let commandLineBacking = CommandLineBacking(vimData) :> IRegisterValueBacking
         let lastTextInsertBacking = LastTextInsertBacking(vimData) :> IRegisterValueBacking
         let fileNameBacking = { new IRegisterValueBacking with
