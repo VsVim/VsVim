@@ -143,7 +143,7 @@ type internal MultiSelectionTracker
 
     // Clear any secondary selections
     member x.ClearSecondarySelections () =
-        [Seq.head _commonOperations.SelectedSpans]
+        [_commonOperations.PrimarySelectedSpan]
         |> _commonOperations.SetSelectedSpans
 
     /// Copy the primary caret's registers to all secondary carets

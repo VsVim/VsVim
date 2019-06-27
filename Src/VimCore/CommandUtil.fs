@@ -3867,7 +3867,7 @@ type internal CommandUtil
     // Explicitly set a single caret or selection so that the multi-selection
     // tracker doesn't restore any secondary selections
     member x.ClearSecondarySelections () =
-        [Seq.head _commonOperations.SelectedSpans]
+        [_commonOperations.PrimarySelectedSpan]
         |> _commonOperations.SetSelectedSpans
 
     /// Select the current word or matching token
