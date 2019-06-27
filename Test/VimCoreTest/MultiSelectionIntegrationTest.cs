@@ -54,7 +54,7 @@ namespace Vim.UnitTest
             _mockVimHost = (MockVimHost)_vimHost;
             _mockVimHost.BeepCount = 0;
             _mockVimHost.IsMultiSelectionSupported = true;
-            _mockVimHost.RegisterVimBuffer(_vimBuffer);
+            _mockVimHost.MockMultiSelection.RegisterVimBuffer(_vimBuffer);
             _vimData = Vim.VimData;
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
@@ -175,10 +175,10 @@ namespace Vim.UnitTest
                     _textView.GetVirtualSelectionSpan());
 
                 // Verify secondary selection agrees with mock vim host.
-                Assert.Single(_mockVimHost.SecondarySelectedSpans);
+                Assert.Single(_mockVimHost.MockMultiSelection.SecondarySelectedSpans);
                 Assert.Equal(
                     new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
-                    _mockVimHost.SecondarySelectedSpans[_textView][0]);
+                    _mockVimHost.MockMultiSelection.SecondarySelectedSpans[_textView][0]);
             }
         }
 

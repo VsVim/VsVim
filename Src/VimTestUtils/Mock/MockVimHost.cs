@@ -16,12 +16,13 @@ namespace Vim.UnitTest.Mock
     {
         public static readonly object FileNameKey = new object();
 
+        public readonly MockMultiSelection _mockMultiSelection;
+
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
 #pragma warning restore 67
-        private bool _shouldIgnoreEvents;
 
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
@@ -70,12 +71,16 @@ namespace Vim.UnitTest.Mock
         public WordWrapStyles WordWrapStyle { get; set; }
         public bool UseDefaultCaret { get; set; }
         public FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory { get; set; }
-        public bool IsMultiSelectionSupported { get; set; }
-        public Dictionary<ITextView, List<SelectedSpan>> SecondarySelectedSpans { get; set; }
+        public MockMultiSelection MockMultiSelection => _mockMultiSelection;
+        public bool IsMultiSelectionSupported
+        {
+            get { return _mockMultiSelection.IsMultiSelectionSupported; }
+            set { _mockMultiSelection.IsMultiSelectionSupported = value; }
+        }
 
         public MockVimHost()
         {
-            SecondarySelectedSpans = new Dictionary<ITextView, List<SelectedSpan>>();
+            _mockMultiSelection = new MockMultiSelection(this);
 
             Clear();
         }
@@ -131,7 +136,7 @@ namespace Vim.UnitTest.Mock
             WordWrapStyle = WordWrapStyles.WordWrap;
             UseDefaultCaret = false;
             IsMultiSelectionSupported = false;
-            SecondarySelectedSpans.Clear();
+            _mockMultiSelection.Clear();
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -361,7 +366,7 @@ namespace Vim.UnitTest.Mock
             }
             if (IsMultiSelectionSupported)
             {
-                if (TryCustomProcessMultiSelection(textView, command))
+                if (_mockMultiSelection.TryCustomProcess(textView, command))
                 {
                     return true;
                 }
@@ -451,151 +456,12 @@ namespace Vim.UnitTest.Mock
 
         IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
-            return GetSelectedSpans(textView);
+            return _mockMultiSelection.GetSelectedSpans(textView);
         }
 
         void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
-            SetSelectedSpans(textView, selectedSpans);
-        }
-
-        private void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            var allSelectedSpans = selectedSpans.ToArray();
-            var primarySelectedSpan = allSelectedSpans[0];
-            if (IsMultiSelectionSupported)
-            {
-                if (textView.Selection.Mode != TextSelectionMode.Stream)
-                {
-                    SecondarySelectedSpans.Clear();
-                }
-                else
-                {
-                    SecondarySelectedSpans[textView] =
-                        allSelectedSpans
-                        .Skip(1)
-                        .OrderBy(span => span.CaretPoint.Position.Position)
-                        .ToList();
-                }
-            }
-            if (!_shouldIgnoreEvents)
-            {
-                try
-                {
-                    _shouldIgnoreEvents = true;
-                    SetPrimarySelectedSpan(textView, primarySelectedSpan);
-                }
-                finally
-                {
-                    _shouldIgnoreEvents = false;
-                }
-            }
-        }
-
-        private IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
-        {
-            var primarySelectedSpans = new[] { GetPrimarySelectedSpan(textView) };
-            if (IsMultiSelectionSupported)
-            {
-                if (textView.Selection.Mode != TextSelectionMode.Stream)
-                {
-                    return primarySelectedSpans;
-                }
-                return primarySelectedSpans.Concat(GetSecondarySelectedSpans(textView));
-            }
-            else
-            {
-                return primarySelectedSpans;
-            }
-        }
-
-        private SelectedSpan GetPrimarySelectedSpan(ITextView textView)
-        {
-            return new SelectedSpan(
-                textView.Caret.Position.VirtualBufferPosition,
-                textView.Selection.AnchorPoint,
-                textView.Selection.ActivePoint);
-        }
-
-        private List<SelectedSpan> GetSecondarySelectedSpans(ITextView textView)
-        {
-            if (SecondarySelectedSpans.TryGetValue(textView, out var list))
-            {
-                return list;
-            }
-            return new List<SelectedSpan>();
-        }
-
-        private void SetPrimarySelectedSpan(ITextView textView, SelectedSpan primarySelectedSpan)
-        {
-            textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
-            if (primarySelectedSpan.Length != 0)
-            {
-                textView.Selection.Select(primarySelectedSpan.AnchorPoint, primarySelectedSpan.ActivePoint);
-            }
-        }
-
-        public void RegisterVimBuffer(IVimBuffer vimBuffer)
-        {
-            if (IsMultiSelectionSupported)
-            {
-                var textView = vimBuffer.TextView;
-                void clearSecondarySelections(object sender, EventArgs e)
-                {
-                    ClearSecondarySelections(textView);
-                }
-                textView.Selection.SelectionChanged += clearSecondarySelections;
-                textView.Caret.PositionChanged += clearSecondarySelections;
-                void unsubscribe(object sender, EventArgs e)
-                {
-                    ClearSecondarySelections(textView);
-                    textView.Selection.SelectionChanged -= clearSecondarySelections;
-                    textView.Caret.PositionChanged -= clearSecondarySelections;
-                }
-                vimBuffer.Closed += unsubscribe;
-            }
-        }
-
-        private void ClearSecondarySelections(ITextView textView)
-        {
-            if (!_shouldIgnoreEvents && GetSecondarySelectedSpans(textView).Count > 0)
-            {
-                SecondarySelectedSpans.Clear();
-            }
-        }
-
-        private bool TryCustomProcessMultiSelection(ITextView textView, InsertCommand command)
-        {
-            if (command.TryGetInsertionText(out var text))
-            {
-                // Simulate editor support for simultaneouos insertion
-                // at all carets at the same time.
-                InsertAtAllCarets(this, textView, text);
-                return true;
-            }
-            return false;
-        }
-
-        private static void InsertAtAllCarets(IVimHost vimHost, ITextView textView, string text)
-        {
-            var oldSpans = vimHost.GetSelectedSpans(textView).ToArray();
-            using (var textEdit = textView.TextBuffer.CreateEdit())
-            {
-                foreach (var span in oldSpans)
-                {
-                    textEdit.Insert(span.CaretPoint.Position.Position, text);
-                }
-                textEdit.Apply();
-            }
-            var snapshot = textView.TextBuffer.CurrentSnapshot;
-            var newSpans =
-                oldSpans
-                .Select(span => span.CaretPoint)
-                .Select(point => point.MapToSnapshot(snapshot))
-                .Select(point => point.Add(text.Length))
-                .Select(point => new SelectedSpan(point))
-                .ToArray();
-            vimHost.SetSelectedSpans(textView, newSpans);
+            _mockMultiSelection.SetSelectedSpans(textView, selectedSpans);
         }
     }
 }
