@@ -178,7 +178,7 @@ namespace Vim.UnitTest
                 Assert.Single(_mockVimHost.SecondarySelectedSpans);
                 Assert.Equal(
                     new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
-                    _mockVimHost.SecondarySelectedSpans[0]);
+                    _mockVimHost.SecondarySelectedSpans[_textView][0]);
             }
         }
 
