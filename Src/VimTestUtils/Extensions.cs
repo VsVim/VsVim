@@ -958,16 +958,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region SnapshotPoint
-
-        public static SnapshotPoint MapToSnapshot(this SnapshotPoint point, ITextSnapshot snapshot)
-        {
-            var trackingPoint = snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative);
-            return trackingPoint.GetPoint(snapshot);
-        }
-
-        #endregion
-
         public static SelectedSpan GetSelectedSpan(
             this SnapshotPoint point,
             int startOffset,
@@ -979,6 +969,10 @@ namespace Vim.UnitTest
                 throw new InvalidOperationException("start is after end");
             }
 
+            // This is different than just converting the point to a virtual
+            // point and getting the virtual selected span because point
+            // addition adds within the buffer, but virtual point addition adds
+            // on the same line.
             if (!isReversed)
             {
                 return new SelectedSpan(
@@ -996,11 +990,6 @@ namespace Vim.UnitTest
         }
 
         #region VirtualSnapshotPoint
-
-        public static VirtualSnapshotPoint MapToSnapshot(this VirtualSnapshotPoint point, ITextSnapshot snapshot)
-        {
-            return new VirtualSnapshotPoint(MapToSnapshot(point.Position, snapshot), point.VirtualSpaces);
-        }
 
         public static VirtualSnapshotPoint Add(this VirtualSnapshotPoint point, int offset)
         {

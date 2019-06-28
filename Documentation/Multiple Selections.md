@@ -86,3 +86,10 @@ Resharper, or event another Visual Studio extension.
 
 - `<S-A-.>` - add selection for the next occurrence of the current word
 - `<S-A-;>` - add selections for all occurrences of the current word
+
+#### Testing
+
+The multi-selection feature is accessed through the Vim host interface. During
+testing the `MockVimHost` conditionally supports the the full multi-selection
+APIs (controlled by the `IsMultSelectionSupported` property), which are
+emulated by `MockMultiSelection`.

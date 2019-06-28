@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -162,7 +163,7 @@ namespace Vim.UnitTest.Mock
             var newSpans =
                 oldSpans
                 .Select(span => span.CaretPoint)
-                .Select(point => point.MapToSnapshot(snapshot))
+                .Select(point => point.TranslateTo(snapshot, PointTrackingMode.Negative))
                 .Select(point => point.Add(text.Length))
                 .Select(point => new SelectedSpan(point))
                 .ToArray();
