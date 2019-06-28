@@ -188,7 +188,7 @@ type internal NormalMode
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
 
-                // Bindings not in Vim.
+                // Multi-selection bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
                 yield ("<C-A-Up>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)

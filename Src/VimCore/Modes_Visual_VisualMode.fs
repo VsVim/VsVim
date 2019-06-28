@@ -111,7 +111,7 @@ type internal VisualMode
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
 
-                // Bindings not in Vim.
+                // Multi-selection bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenToSelection)
                 yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
