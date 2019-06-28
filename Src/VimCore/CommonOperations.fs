@@ -44,7 +44,8 @@ type internal CommonOperations
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option,
-        _mouseDevice: IMouseDevice
+        _mouseDevice: IMouseDevice,
+        _bulkOperations: IBulkOperations
     ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -2737,6 +2738,7 @@ type internal CommonOperations
             // caret index at the end.
             let oldCaretIndex = _vimBufferData.CaretIndex
             try
+                use bulkOperation = _bulkOperations.BeginBulkOperation()
                 doActions()
             finally
                 _vimBufferData.CaretIndex <- oldCaretIndex
@@ -2843,7 +2845,8 @@ type CommonOperationsFactory
         _editorOperationsFactoryService: IEditorOperationsFactoryService,
         _outliningManagerService: IOutliningManagerService,
         _undoManagerProvider: ITextBufferUndoManagerProvider,
-        _mouseDevice: IMouseDevice
+        _mouseDevice: IMouseDevice,
+        _bulkOperations: IBulkOperations
     ) as this = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -2861,7 +2864,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
+        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice, _bulkOperations) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData: IVimBufferData) = 
