@@ -572,6 +572,8 @@ type ICommonOperations =
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
 
+    abstract EditorOperationsFactoryService: IEditorOperationsFactoryService
+
     /// Get the ICommonOperations instance for this IVimBuffer
     abstract GetCommonOperations: IVimBufferData -> ICommonOperations
 

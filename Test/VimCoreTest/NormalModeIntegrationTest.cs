@@ -2104,8 +2104,6 @@ namespace Vim.UnitTest
             private readonly Vim _vimRaw;
 
             private string _name;
-            private FSharpOption<int> _line;
-            private FSharpOption<int> _column;
 
             public EditAlternateFileTest()
             {
@@ -2115,11 +2113,9 @@ namespace Vim.UnitTest
             protected override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _vimHost.LoadIntoNewWindowFunc = (name, line, column) =>
+                _vimHost.LoadIntoNewWindowFunc = name =>
                     {
                         _name = name;
-                        _line = line;
-                        _column = column;
                         return FSharpOption<ITextView>.None;
                     };
             }
@@ -2167,12 +2163,8 @@ namespace Vim.UnitTest
                 Assert.Equal("buffer2.cs", _vimData.FileHistory.Items.Head);
 
                 _name = null;
-                _line = null;
-                _column = null;
                 vimBuffers[2].ProcessNotation(command);
                 Assert.Equal(name, _name);
-                Assert.Equal(0, _line.Value);
-                Assert.Null(_column);
             }
         }
 

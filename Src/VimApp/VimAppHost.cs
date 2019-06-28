@@ -165,29 +165,13 @@ namespace VimApp
             }
         }
 
-        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath)
         {
             try
             {
                 var textDocument = TextDocumentFactoryService.CreateAndLoadTextDocument(filePath, TextBufferFactoryService.TextContentType);
                 var wpfTextView = MainWindow.CreateTextView(textDocument.TextBuffer);
                 MainWindow.AddNewTab(System.IO.Path.GetFileName(filePath), wpfTextView);
-
-                if (line.IsSome())
-                {
-                    // Move the caret to its initial position.
-                    if (column.IsSome())
-                    {
-                        wpfTextView.MoveCaretToLine(line.Value, column.Value);
-                    }
-                    else
-                    {
-                        // Default column implies moving to the first non-blank.
-                        wpfTextView.MoveCaretToLine(line.Value);
-                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
-                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
-                    }
-                }
 
                 // Give the focus to the new buffer.
                 var point = wpfTextView.Caret.Position.VirtualBufferPosition;

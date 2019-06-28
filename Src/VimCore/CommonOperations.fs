@@ -2030,8 +2030,23 @@ type internal CommonOperations
     /// Load a file into a new window, optionally moving the caret to the first
     /// non-blank on a specific line or to a specific line and column
     member x.LoadFileIntoNewWindow file lineNumber columnNumber =
-        match _vimHost.LoadFileIntoNewWindow file lineNumber columnNumber with
+        match _vimHost.LoadFileIntoNewWindow file with
         | Some textView ->
+            match lineNumber with 
+            | Some lineNumber ->
+                let snapshot = TextViewUtil.GetSnapshot textView
+                let snapshotLine = snapshot.GetLineFromLineNumber lineNumber
+                match columnNumber with
+                | Some columnNumber -> 
+                    let point = snapshotLine.Start.Add columnNumber
+                    TextViewUtil.MoveCaretToPointRaw textView point MoveCaretFlags.None
+                    textView.Caret.MoveTo point |> ignore
+                | None ->
+                    // Default column implies moving to the first non-blank.
+                    TextViewUtil.MoveCaretToPointRaw textView snapshotLine.Start MoveCaretFlags.None
+                    let editorOperations = _commonOperationsFactory.EditorOperationsFactoryService.GetEditorOperations textView
+                    editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
+            | None -> ()
 
             // Try to ensure that our view flags are enforced in the new window.
             match x.TryGetCommonOperationsForTextView textView with
@@ -2045,6 +2060,7 @@ type internal CommonOperations
         | None ->
             Resources.Common_CouldNotOpenFile file
             |> Result.Failed
+
 
     // Puts the provided StringData at the given point in the ITextBuffer.  Does not attempt
     // to move the caret as a result of this operation
@@ -2505,4 +2521,5 @@ type CommonOperationsFactory
         properties.GetOrCreateSingletonProperty(_key, (fun () -> x.CreateCommonOperations bufferData))
 
     interface ICommonOperationsFactory with
+        member x.EditorOperationsFactoryService = _editorOperationsFactoryService
         member x.GetCommonOperations bufferData = x.GetCommonOperations bufferData

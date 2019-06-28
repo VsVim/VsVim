@@ -566,7 +566,7 @@ namespace Vim.VisualStudio
         /// <summary>
         /// Open up a new document window with the specified file
         /// </summary>
-        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath)
         {
             try
             {
@@ -579,26 +579,6 @@ namespace Vim.VisualStudio
 
                 // Get the WPF text view for the VS text view.
                 var wpfTextView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
-
-                if (line.IsSome())
-                {
-                    // Move the caret to its initial position.
-                    var snapshotLine = wpfTextView.TextSnapshot.GetLineFromLineNumber(line.Value);
-                    var point = snapshotLine.Start;
-                    if (column.IsSome())
-                    {
-                        point = point.Add(column.Value);
-                        wpfTextView.Caret.MoveTo(point);
-                    }
-                    else
-                    {
-                        // Default column implies moving to the first non-blank.
-                        wpfTextView.Caret.MoveTo(point);
-                        var editorOperations = EditorOperationsFactoryService.GetEditorOperations(wpfTextView);
-                        editorOperations.MoveToStartOfLineAfterWhiteSpace(false);
-                    }
-                }
-
                 return FSharpOption.Create<ITextView>(wpfTextView);
             }
             catch (Exception e)

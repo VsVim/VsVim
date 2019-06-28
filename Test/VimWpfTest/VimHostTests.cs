@@ -87,7 +87,7 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
-            public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+            public override FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath)
             {
                 throw new NotImplementedException();
             }

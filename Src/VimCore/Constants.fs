@@ -36,6 +36,8 @@ module VimConstants =
     [<Literal>]
     let MainKeyProcessorName = "VsVim";
 
+    let IsKeywordDefault = "@,48-57,_,128-167,224-235"
+
 #if DEBUG
     [<Literal>]
     let VersionNumber = "2.8.99.99 Debug"

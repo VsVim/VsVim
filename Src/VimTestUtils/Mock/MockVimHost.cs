@@ -51,7 +51,7 @@ namespace Vim.UnitTest.Mock
         public Func<string, string, string, string, RunCommandResults> RunCommandFunc { get; set; }
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
-        public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
+        public Func<string, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
         public Func<ListKind, NavigationKind, FSharpOption<int>, bool, FSharpOption<ListItem>> NavigateToListItemFunc { get; set; }
         public Action<ListKind> OpenListWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
@@ -306,9 +306,9 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        FSharpOption<ITextView> IVimHost.LoadFileIntoNewWindow(string filePath)
         {
-            return LoadIntoNewWindowFunc(filePath, line, column);
+            return LoadIntoNewWindowFunc(filePath);
         }
 
         FSharpOption<ITextView> IVimHost.GetFocusedTextView()

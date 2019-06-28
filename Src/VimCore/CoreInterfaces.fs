@@ -4833,7 +4833,7 @@ type IVimHost =
 
     /// Load a file into a new window, optionally moving the caret to the first
     /// non-blank on a specific line or to a specific line and column
-    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> ITextView option
+    abstract LoadFileIntoNewWindow: filePath: string -> ITextView option
 
     /// Run the host specific make operation
     abstract Make: jumpToFirstError: bool -> arguments: string -> unit

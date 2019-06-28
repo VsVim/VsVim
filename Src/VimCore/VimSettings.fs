@@ -513,7 +513,8 @@ type internal LocalSettings
         _globalSettings: IVimGlobalSettings
     ) =
 
-    static let IsKeywordCharSetDefault = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+    static let IsKeywordDefault = VimConstants.IsKeywordDefault
+    static let IsKeywordCharSetDefault = VimCharSet.TryParse(IsKeywordDefault) |> Option.get
 
     static let LocalSettingInfoList =
         [|
@@ -531,7 +532,7 @@ type internal LocalSettings
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
             (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
-            (IsKeywordName, "isk", SettingValue.String IsKeywordCharSetDefault.Text, SettingOptions.None)
+            (IsKeywordName, "isk", SettingValue.String IsKeywordDefault, SettingOptions.None)
         |]
 
     static let LocalSettingList = 
