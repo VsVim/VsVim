@@ -509,6 +509,20 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Test adding a selection on an adjacent line
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void AddSelection(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("vw<C-A-Down>");
+                AssertSelectionsAdjustEnd(
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |' or 'def |g*'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |' or 'mno |p*'
+            }
+
+            /// <summary>
             /// Test moving the caret backward
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
@@ -672,6 +686,20 @@ namespace Vim.UnitTest
                 Create("abc def ghi", "jkl mno pqr", "");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 ProcessNotation("gh<C-S-Right>");
+                AssertSelections(
+                    GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
+                    GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
+            }
+
+            /// <summary>
+            /// Test add a selection on an adjacent line
+            /// </summary>
+            [WpfFact]
+            public void AddSelection()
+            {
+                Create("abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("gh<C-S-Right><C-A-Down>");
                 AssertSelections(
                     GetPoint(0, 8).GetSelectedSpan(-4, 0, false), // 'def |'
                     GetPoint(1, 8).GetSelectedSpan(-4, 0, false)); // 'mno |'
