@@ -2668,9 +2668,11 @@ type internal CommonOperations
                 let indexedSpans =
                     selectedSpans
                     |> Seq.mapi (fun index span -> index, span)
+
+                // Iterate over all selections.
                 for index, oldSelectedSpan in indexedSpans do
 
-                    // Set the global caret index.
+                    // Set the buffer local caret index.
                     _vimBufferData.CaretIndex <- index
 
                     // Temporarily set the real caret and selection.
