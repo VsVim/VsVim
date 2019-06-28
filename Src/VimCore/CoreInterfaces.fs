@@ -3277,6 +3277,9 @@ type VisualCommand =
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
 
+    /// Add a new selection on an adjacent line in the specified direction
+    | AddSelectionOnAdjacentLine of Direction: Direction
+
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
 

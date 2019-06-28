@@ -349,8 +349,8 @@ type ICommonOperations =
     /// Add a new caret at the mouse point
     abstract AddCaretAtMousePoint: unit -> unit
 
-    /// Add a new caret on an adjacent line in the specified direction
-    abstract AddCaretOnAdjacentLine: direction: Direction -> unit
+    /// Add a caret or selection on an adjacent line in the specified direction
+    abstract AddCaretOrSelectionOnAdjacentLine: direction: Direction -> unit
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes

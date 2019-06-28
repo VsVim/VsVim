@@ -2469,6 +2469,14 @@ type internal CommonOperations
             }
             |> x.SetSelectedSpans
 
+    /// Add the specified selected span
+    member x.AddSelectedSpan selectedSpan =
+        seq {
+            yield! x.SelectedSpans
+            yield selectedSpan
+        }
+        |> x.SetSelectedSpans
+
     /// Add a new caret at the mouse point
     member x.AddCaretAtMousePoint () =
         match x.MousePoint with
@@ -2477,8 +2485,8 @@ type internal CommonOperations
         | None ->
             ()
 
-    /// Add a new caret on an adjacent line in the specified direction
-    member x.AddCaretOnAdjacentLine direction =
+    /// Add a caret or selection on an adjacent line in the specified direction
+    member x.AddCaretOrSelectionOnAdjacentLine direction =
 
         // Get the selected spans sorted by caret point.
         let selectedSpans =
@@ -2486,15 +2494,23 @@ type internal CommonOperations
             |> Seq.sortBy (fun span -> span.CaretPoint.Position.Position)
             |> Seq.toList
 
-        // Add a caret on the specified line number in the same column as the
-        // primary caret.
-        let addCaretOnLineNumber lineNumber =
-            let primaryCaretPoint = x.PrimarySelectedSpan.CaretPoint
-            let line = SnapshotUtil.GetLine primaryCaretPoint.Position.Snapshot lineNumber
-            let spaces = x.GetSpacesToVirtualPoint primaryCaretPoint
-            x.GetAppropriateColumnForSpaces line spaces
-            |> (fun column -> column.VirtualStartPoint)
-            |> x.AddCaretAtPoint
+        // Add a selection on the specified line number in the same column as
+        // the primary caret.
+        let addSelectionOnLineNumber lineNumber =
+            let primarySelectedSpan = x.PrimarySelectedSpan
+            let snapshot = primarySelectedSpan.CaretPoint.Position.Snapshot
+            let line = SnapshotUtil.GetLine snapshot lineNumber
+
+            let getRelativePoint point =
+                let spaces = x.GetSpacesToVirtualPoint point
+                let column = x.GetAppropriateColumnForSpaces line spaces
+                column.VirtualStartPoint
+
+            let caretPoint = getRelativePoint primarySelectedSpan.CaretPoint
+            let anchorPoint = getRelativePoint primarySelectedSpan.AnchorPoint
+            let activePoint = getRelativePoint primarySelectedSpan.ActivePoint
+            SelectedSpan(caretPoint, anchorPoint, activePoint)
+            |> x.AddSelectedSpan
 
         // Choose an appropriate line to add the caret on.
         match direction with
@@ -2503,14 +2519,14 @@ type internal CommonOperations
                 selectedSpans.[0].CaretPoint
                 |> VirtualSnapshotPointUtil.GetContainingLine
             if firstLine.LineNumber > 0 then
-                addCaretOnLineNumber (firstLine.LineNumber - 1)
+                addSelectionOnLineNumber (firstLine.LineNumber - 1)
         | Direction.Down ->
             let lastLine =
                 selectedSpans.[selectedSpans.Length - 1].CaretPoint
                 |> VirtualSnapshotPointUtil.GetContainingLine
             let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber lastLine.Snapshot
             if lastLine.LineNumber < lastLineNumber then
-                addCaretOnLineNumber (lastLine.LineNumber + 1)
+                addSelectionOnLineNumber (lastLine.LineNumber + 1)
         | _ ->
             ()
 
@@ -2742,7 +2758,7 @@ type internal CommonOperations
 
         member x.AddCaretAtPoint point = x.AddCaretAtPoint point
         member x.AddCaretAtMousePoint() = x.AddCaretAtMousePoint()
-        member x.AddCaretOnAdjacentLine direction = x.AddCaretOnAdjacentLine direction
+        member x.AddCaretOrSelectionOnAdjacentLine direction = x.AddCaretOrSelectionOnAdjacentLine direction
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()

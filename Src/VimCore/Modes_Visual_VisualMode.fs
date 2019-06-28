@@ -110,8 +110,12 @@ type internal VisualMode
                 yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+
+                // Bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenToSelection)
+                yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
                 yield ("<C-A-/>", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
                 yield ("g/", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
             } |> Seq.map (fun (str, flags, command) -> 

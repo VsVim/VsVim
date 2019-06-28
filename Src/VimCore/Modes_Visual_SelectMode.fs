@@ -43,8 +43,12 @@ type internal SelectMode
                 yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+
+                // Bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenToSelection)
+                yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
                 yield ("<C-A-/>", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
@@ -54,7 +58,8 @@ type internal SelectMode
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput: KeyInput) =
-        if not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Control) then
+        let nonShiftModifiers = keyInput.KeyModifiers &&& ~~~VimKeyModifiers.Shift
+        if nonShiftModifiers = VimKeyModifiers.None then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.Up
             | VimKey.Right -> Some CaretMovement.Right
@@ -65,7 +70,7 @@ type internal SelectMode
             | VimKey.PageUp -> Some CaretMovement.PageUp
             | VimKey.PageDown -> Some CaretMovement.PageDown
             | _ -> None
-        else
+        elif nonShiftModifiers = VimKeyModifiers.Control then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.ControlUp
             | VimKey.Right -> Some CaretMovement.ControlRight
@@ -74,6 +79,8 @@ type internal SelectMode
             | VimKey.Home -> Some CaretMovement.ControlHome
             | VimKey.End -> Some CaretMovement.ControlEnd
             | _ -> None
+        else
+            None
 
     /// Whether a key input corresponds to normal text
     static let IsTextKeyInput (keyInput: KeyInput) =

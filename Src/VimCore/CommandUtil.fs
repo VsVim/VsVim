@@ -142,7 +142,12 @@ type internal CommandUtil
 
     /// Add a new caret on an adjacent line in the specified direction
     member x.AddCaretOnAdjacentLine direction =
-        _commonOperations.AddCaretOnAdjacentLine direction
+        _commonOperations.AddCaretOrSelectionOnAdjacentLine direction
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Add a new selection on an adjacent line in the specified direction
+    member x.AddSelectionOnAdjacentLine direction =
+        _commonOperations.AddCaretOrSelectionOnAdjacentLine direction
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Add count values to the specific word
@@ -3148,6 +3153,7 @@ type internal CommandUtil
     member x.ShouldClearSelection command =
         match command with
         | VisualCommand.AddCaretAtMousePoint -> false
+        | VisualCommand.AddSelectionOnAdjacentLine _ -> false
         | VisualCommand.CutSelection -> false
         | VisualCommand.CopySelection -> false
         | VisualCommand.CutSelectionAndPaste -> false
@@ -3186,6 +3192,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
+        | VisualCommand.AddSelectionOnAdjacentLine direction -> x.AddSelectionOnAdjacentLine direction
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
         | VisualCommand.AddWordOrMatchingTokenToSelection -> x.AddWordOrMatchingTokenToSelection()
         | VisualCommand.CancelOperation -> x.CancelOperation()
