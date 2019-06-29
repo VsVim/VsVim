@@ -2669,8 +2669,7 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Esacpe should cancel both word completion and insert mode.  It's just
-            /// like normal intellisense in that respect
+            /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
             [LegacyCompletionWpfFact]
             public void WordCompletion_Escape_Legacy()
@@ -2680,12 +2679,12 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
-            /// Esacpe should cancel both word completion and insert mode.  It's just
-            /// like normal intellisense in that respect
+            /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
             [AsyncCompletionWpfFact]
             public void WordCompletion_Escape_Async()
@@ -2696,6 +2695,7 @@ namespace Vim.UnitTest
                 Dispatcher.DoEvents();
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
