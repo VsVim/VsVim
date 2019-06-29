@@ -3950,6 +3950,7 @@ type internal CommandUtil
             |> getSpaceOnLine
             |> splitLineRangeWith
 
+        _commonOperations.EnsureAtCaret ViewFlags.Standard
         ModeSwitch.SwitchMode ModeKind.Normal
         |> CommandResult.Completed
 
