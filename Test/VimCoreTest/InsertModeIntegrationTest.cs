@@ -2632,6 +2632,21 @@ namespace Vim.UnitTest
             /// Simulate Aborting / Exiting a completion
             /// </summary>
             [AsyncCompletionWpfFact]
+            public void WordCompletion_Abort_Legacy()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-E>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                Assert.Equal("c dog", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Simulate Aborting / Exiting a completion
+            /// </summary>
+            [AsyncCompletionWpfFact]
             public void WordCompletion_Abort_Async()
             {
                 Create("c dog", "cat copter");

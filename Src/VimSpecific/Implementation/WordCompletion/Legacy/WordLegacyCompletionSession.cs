@@ -20,6 +20,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
         private readonly ITrackingSpan _wordTrackingSpan;
         private readonly WordLegacyCompletionSet _wordCompletionSet;
         private bool _isDismissed;
+        private string _initialText;
         private event EventHandler _dismissed;
 
         internal WordLegacyCompletionSession(ITrackingSpan wordTrackingSpan, IIntellisenseSessionStack intellisenseSessionStack, ICompletionSession completionSession, WordLegacyCompletionSet wordCompletionSet)
@@ -28,6 +29,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
             _wordTrackingSpan = wordTrackingSpan;
             _wordCompletionSet = wordCompletionSet;
             _completionSession = completionSession;
+            _initialText = _wordTrackingSpan.GetText(_textView.TextSnapshot);
             _completionSession.Dismissed += delegate { OnDismissed(); };
             _intellisenseSessionStack = intellisenseSessionStack;
         }
@@ -117,6 +119,13 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 
         void IWordCompletionSession.Dismiss()
         {
+            /// to Dismiss, we need to replace the wordSpan (which holds the text inserted by C-n/C-p)
+            /// by the _initialText before completion was started
+            var wordSpan = TrackingSpanUtil.GetSpan(_textView.TextSnapshot, _wordTrackingSpan);
+            if (wordSpan.IsSome())
+            {
+                _textView.TextBuffer.Replace(wordSpan.Value, _initialText);
+            }
             _isDismissed = true;
             _completionSession.Dismiss();
         }
