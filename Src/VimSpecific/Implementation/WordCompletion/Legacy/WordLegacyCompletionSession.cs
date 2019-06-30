@@ -142,6 +142,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
 
         void IWordCompletionSession.Commit()
         {
+            _isDismissed = true;
             _completionSession.Commit();
         }
 

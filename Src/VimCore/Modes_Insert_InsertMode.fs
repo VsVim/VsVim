@@ -1013,6 +1013,7 @@ type internal InsertMode
             // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
             wordCompletionSession.Commit()
+            // Commit will set IsDismissed on wordCompletionSession so CancelWordCompletionSession will not call Dismiss() it
             // Cancel as finish. we need this because otherwise we get a stackoverflow in tests from call to ProcessCore
             x.CancelWordCompletionSession()
             x.ProcessCore keyInput
