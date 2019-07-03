@@ -101,16 +101,6 @@ namespace Vim.VisualStudio.Specific
             RunCSharpScript(vimBuffer, callInfo, createEachTime);
         }
 
-        IEnumerable<SelectedSpan> ISharedService.GetSelectedSpans(ITextView textView)
-        {
-            return GetSelectedSpans(textView);
-        }
-
-        void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            SetSelectedSpans(textView, selectedSpans);
-        }
-
         #endregion
     }
 }

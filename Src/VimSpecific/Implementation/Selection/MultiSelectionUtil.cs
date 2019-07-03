@@ -1,57 +1,18 @@
-﻿using System;
+﻿#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#else
+
+using Microsoft.VisualStudio.Text.Editor;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Platform.WindowManagement;
-using Microsoft.VisualStudio.PlatformUI.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
+using Vim;
 
-namespace Vim.VisualStudio.Specific
+namespace Vim.Specific.Implementation.Selection
 {
-#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
-
-    internal partial class SharedService
+    [Export(typeof(ISelectionUtil))]
+    class MultiSelectionUtil : ISelectionUtil
     {
-        private IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
-        {
-            var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-            var anchorPoint = textView.Selection.AnchorPoint;
-            var activePoint = textView.Selection.ActivePoint;
-            return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
-        }
-
-        private void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            var selectedSpan = selectedSpans.First();
-            textView.Caret.MoveTo(selectedSpan.CaretPoint);
-            if (selectedSpan.Length != 0)
-            {
-                textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
-            }
-        }
-    }
-
-#else
-
-    internal partial class SharedService
-    {
-        private IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
-        {
-            return GetSelectedSpansCommon(textView);
-        }
-
-        private void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            SetSelectedSpansCommon(textView, selectedSpans.ToArray());
-        }
-
-        // TODO: duplicated code start
-        private IEnumerable<SelectedSpan> GetSelectedSpansCommon(ITextView textView)
+        IEnumerable<SelectedSpan> ISelectionUtil.GetSelectedSpans(ITextView textView)
         {
             var broker = textView.GetMultiSelectionBroker();
             var primarySelection = broker.PrimarySelection;
@@ -65,7 +26,12 @@ namespace Vim.VisualStudio.Specific
             return new[] { GetSelectedSpan(primarySelection) }.Concat(secondarySelections);
         }
 
-        private void SetSelectedSpansCommon(ITextView textView, SelectedSpan[] selectedSpans)
+        void ISelectionUtil.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
+        {
+            SetSelectedSpansCore(textView, selectedSpans.ToArray());
+        }
+
+        private void SetSelectedSpansCore(ITextView textView, SelectedSpan[] selectedSpans)
         {
             if (selectedSpans.Length == 1 || textView.Selection.Mode != TextSelectionMode.Stream)
             {
@@ -100,8 +66,7 @@ namespace Vim.VisualStudio.Specific
         {
             return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
         }
-        // TODO: duplicated code end
     }
+}
 
 #endif
-}

@@ -321,13 +321,15 @@ namespace Vim.VisualStudio
             IControlCharUtil controlCharUtil,
             ICommandDispatcher commandDispatcher,
             SVsServiceProvider serviceProvider,
-            IClipboardDevice clipboardDevice) :
+            IClipboardDevice clipboardDevice,
+            ISelectionUtil selectionUtil) :
             base(
                   protectedOperations,
                   textBufferFactoryService,
                   textEditorFactoryService,
                   textDocumentFactoryService,
-                  editorOperationsFactoryService)
+                  editorOperationsFactoryService,
+                  selectionUtil)
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
@@ -1493,16 +1495,6 @@ namespace Vim.VisualStudio
                 RaiseBeforeSave(buffer);
             }
             return VSConstants.S_OK;
-        }
-
-        public override IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
-        {
-            return _sharedService.GetSelectedSpans(textView);
-        }
-
-        public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            _sharedService.SetSelectedSpans(textView, selectedSpans);
         }
 
         #endregion

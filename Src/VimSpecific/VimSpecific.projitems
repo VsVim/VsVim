@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)HostIdentifiers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Selection\MultiSelectionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Selection\SingleSelectionUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />

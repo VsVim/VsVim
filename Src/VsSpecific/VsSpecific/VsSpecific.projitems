@@ -12,7 +12,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NotSupportedCSharpScriptExecutor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptExecutor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SharedService.MultiSelection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CSharpScriptGlobals.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedService.CSharpScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SharedServiceVersionFactory.cs" />

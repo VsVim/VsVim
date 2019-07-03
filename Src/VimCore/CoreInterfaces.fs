@@ -127,6 +127,15 @@ type IFileSystem =
 
     abstract Write: filePath: string -> stream: Stream -> bool
 
+/// Used for manipulating the seleciton
+type ISelectionUtil =
+
+    /// Get all the selected spans for the specified text view
+    abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq
+
+    /// Set all the selected spans for the specified text view
+    abstract SetSelectedSpans: textView: ITextView -> SelectedSpan seq -> unit
+
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
 

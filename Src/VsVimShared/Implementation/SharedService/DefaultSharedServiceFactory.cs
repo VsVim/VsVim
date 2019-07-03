@@ -30,24 +30,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
             {
                 vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
             }
-
-            IEnumerable<SelectedSpan> ISharedService.GetSelectedSpans(ITextView textView)
-            {
-                var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-                var anchorPoint = textView.Selection.AnchorPoint;
-                var activePoint = textView.Selection.ActivePoint;
-                return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
-            }
-
-            void ISharedService.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-            {
-                var selectedSpan = selectedSpans.First();
-                textView.Caret.MoveTo(selectedSpan.CaretPoint);
-                if (selectedSpan.Length != 0)
-                {
-                    textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
-                }
-            }
         }
 
         VisualStudioVersion ISharedServiceVersionFactory.Version

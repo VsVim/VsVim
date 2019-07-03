@@ -56,16 +56,6 @@ namespace Vim.VisualStudio
         /// </summary>
         /// <returns></returns>
         void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
-
-        /// <summary>
-        /// Get all the selected spans for a text view
-        /// </summary>
-        IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView);
-
-        /// <summary>
-        /// Set all the selected spans for a text view
-        /// </summary>
-        void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans);
     }
 
     /// <summary>

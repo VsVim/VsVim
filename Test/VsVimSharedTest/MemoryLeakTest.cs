@@ -23,6 +23,7 @@ using Xunit;
 using System.Threading;
 using EnvDTE;
 using Thread = System.Threading.Thread;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -234,6 +235,7 @@ namespace Vim.VisualStudio.UnitTest
             };
 
             editorHostFactory.Add(new TypeCatalog(types));
+            editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }

@@ -64,13 +64,15 @@ namespace VimApp
             IEditorOperationsFactoryService editorOperationsFactoryService,
             IContentTypeRegistryService contentTypeRegistryService,
             IFileSystem fileSystem,
-            IDirectoryUtil directoryUtil) :
+            IDirectoryUtil directoryUtil,
+            ISelectionUtil selectionUtil) :
             base(
                 protectedOperations,
                 textBufferFactoryService,
                 textEditorFactoryService,
                 textDocumentFactoryService,
-                editorOperationsFactoryService)
+                editorOperationsFactoryService,
+                selectionUtil)
         {
             _protectedOperations = protectedOperations;
             _contentTypeRegistryService = contentTypeRegistryService;
@@ -339,79 +341,6 @@ namespace VimApp
         {
             return FSharpOption<ListItem>.None;
         }
-
-#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
-
-        // Visual Studio 2015 editor assemblies do not support the
-        // multi-selection broker. Some versions of the Visual Studio 2017
-        // editor assemblies do support them, but the current VsVim reference
-        // assemblies do not.
-
-#else
-
-        public override IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
-        {
-            return GetSelectedSpansCommon(textView);
-        }
-
-        public override void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            SetSelectedSpansCommon(textView, selectedSpans.ToArray());
-        }
-
-        // TODO: duplicated code start
-        private IEnumerable<SelectedSpan> GetSelectedSpansCommon(ITextView textView)
-        {
-            var broker = textView.GetMultiSelectionBroker();
-            var primarySelection = broker.PrimarySelection;
-            if (textView.Selection.Mode != TextSelectionMode.Stream)
-            {
-                return new[] { GetSelectedSpan(primarySelection) };
-            }
-            var secondarySelections = broker.AllSelections
-                .Where(span => span != primarySelection)
-                .Select(selection => GetSelectedSpan(selection));
-            return new[] { GetSelectedSpan(primarySelection) }.Concat(secondarySelections);
-        }
-
-        private void SetSelectedSpansCommon(ITextView textView, SelectedSpan[] selectedSpans)
-        {
-            if (selectedSpans.Length == 1 || textView.Selection.Mode != TextSelectionMode.Stream)
-            {
-                var selectedSpan = selectedSpans[0];
-                textView.Caret.MoveTo(selectedSpan.CaretPoint);
-                if (selectedSpan.Length == 0)
-                {
-                    textView.Selection.Clear();
-                }
-                else
-                {
-                    textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
-                }
-                return;
-            }
-
-            var selections = new Microsoft.VisualStudio.Text.Selection[selectedSpans.Length];
-            for (var caretIndex = 0; caretIndex < selectedSpans.Length; caretIndex++)
-            {
-                selections[caretIndex] = GetSelection(selectedSpans[caretIndex]);
-            }
-            var broker = textView.GetMultiSelectionBroker();
-            broker.SetSelectionRange(selections, selections[0]);
-        }
-
-        private static SelectedSpan GetSelectedSpan(Microsoft.VisualStudio.Text.Selection selection)
-        {
-            return new SelectedSpan(selection.InsertionPoint, selection.AnchorPoint, selection.ActivePoint);
-        }
-
-        private static Microsoft.VisualStudio.Text.Selection GetSelection(SelectedSpan span)
-        {
-            return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
-        }
-        // TODO: duplicated code end
-
-#endif
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)
         {

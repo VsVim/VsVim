@@ -24,6 +24,7 @@ namespace Vim.UI.Wpf
         private readonly ITextEditorFactoryService _textEditorFactoryService;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
+        private readonly ISelectionUtil _selectionUtil;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
@@ -89,13 +90,15 @@ namespace Vim.UI.Wpf
             ITextBufferFactoryService textBufferFactoryService,
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
-            IEditorOperationsFactoryService editorOperationsFactoryService)
+            IEditorOperationsFactoryService editorOperationsFactoryService,
+            ISelectionUtil selectionUtil)
         {
             _protectedOperations = protectedOperations;
             _textBufferFactoryService = textBufferFactoryService;
             _textEditorFactoryService = textEditorFactoryService;
             _textDocumentFactoryService = textDocumentFactoryService;
             _editorOperationsFactoryService = editorOperationsFactoryService;
+            _selectionUtil = selectionUtil;
         }
 
         public virtual void EnsurePackageLoaded()
@@ -479,21 +482,13 @@ namespace Vim.UI.Wpf
 
         public virtual IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
-            var caretPoint = textView.Caret.Position.VirtualBufferPosition;
-            var anchorPoint = textView.Selection.AnchorPoint;
-            var activePoint = textView.Selection.ActivePoint;
-            return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
+            return _selectionUtil.GetSelectedSpans(textView);
         }
 
 
         public virtual void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
-            var selectedSpan = selectedSpans.First();
-            textView.Caret.MoveTo(selectedSpan.CaretPoint);
-            if (selectedSpan.Length != 0)
-            {
-                textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
-            }
+            _selectionUtil.SetSelectedSpans(textView, selectedSpans);
         }
 
         /// <summary>
