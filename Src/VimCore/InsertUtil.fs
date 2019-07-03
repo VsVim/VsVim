@@ -584,14 +584,14 @@ type internal InsertUtil
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
                     let startLineNumber = blockSpan.Start.LineNumber + 1
-                    let spaces, atEndOfLine =
+                    let atEndOfLine, spaces =
                         match visualInsertKind with
                         | VisualInsertKind.Start ->
-                            blockSpan.BeforeSpaces, false
+                            false, blockSpan.BeforeSpaces
                         | VisualInsertKind.End ->
-                            blockSpan.BeforeSpaces + blockSpan.SpacesLength, false
+                            false, blockSpan.BeforeSpaces + blockSpan.SpacesLength
                         | VisualInsertKind.EndOfLine ->
-                            blockSpan.BeforeSpaces, true
+                            true, blockSpan.BeforeSpaces
                     x.ApplyBlockInsert insertCommand atEndOfLine startLineNumber spaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.

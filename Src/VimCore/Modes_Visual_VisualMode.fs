@@ -246,6 +246,8 @@ type internal VisualMode
                             let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
                             _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
 
+                    // Detect whether the command was an end-of-line motion and
+                    // if it was, record that fact in the vim buffer's data.
                     match commandRanData.Command with
                     | Command.NormalCommand (NormalCommand.MoveCaretToMotion Motion.EndOfLine, _) ->
                         _vimBufferData.EndOfLineUsed <- true

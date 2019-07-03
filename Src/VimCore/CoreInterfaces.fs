@@ -1747,7 +1747,7 @@ type BlockSpan =
                 VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
         let height = SnapshotSpanUtil.GetLineCount span.Span
-        BlockSpan(startColumn, tabStop =tabStop, spaces = width, height = height, endOfLine = false)
+        BlockSpan(startColumn, tabStop = tabStop, spaces = width, height = height, endOfLine = false)
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
@@ -2760,9 +2760,6 @@ type CommandFlags =
     /// Whether the command depends on the context, e.g. a tab insertion
     | ContextSensitive = 0x4000
 
-    /// Whether the command induces 'block end-of-line' mode
-    | BlockEndOfLine = 0x4000
-
 /// Data about the run of a given MotionResult
 type MotionData = {
 
@@ -3404,8 +3401,8 @@ type VisualCommand =
     /// Subtract count from the word in each line of the selection, optionally progressively
     | SubtractFromSelection of IsProgressive: bool
 
-    /// Switch the mode to insert and possibly a block insert. The bool specifies whether
-    /// the insert is at the end of the line
+    /// Switch from a visual mode to insert mode using the specified visual
+    /// insert kind to determine the kind of insertion to perform
     | SwitchModeInsert of VisualInsertKind: VisualInsertKind
 
     /// Switch to the previous mode
@@ -4983,7 +4980,7 @@ and IVimBufferData =
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
 
-    /// Whether end-of-line was used during the last visual mode
+    /// Whether an end-of-line motion was used during the last visual mode
     abstract EndOfLineUsed: bool with get, set
 
     /// The IJumpList associated with the IVimBuffer

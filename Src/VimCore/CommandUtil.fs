@@ -3963,8 +3963,8 @@ type internal CommandUtil
             let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
             CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
 
-    /// Switch from the current visual mode into insert.  If we are in block mode this
-    /// will start a block insertion
+    /// Switch from a visual mode to insert mode using the specified visual
+    /// insert kind to determine the kind of insertion to perform
     member x.SwitchModeInsert (visualSpan: VisualSpan) (visualInsertKind: VisualInsertKind) =
 
         // Apply the 'end-of-line' setting in the visual span to the visual
@@ -3997,9 +3997,9 @@ type internal CommandUtil
 
         match visualSpan with
         | VisualSpan.Block blockSpan ->
-            x.EditBlockWithLinkedChange "Visual Insert" blockSpan visualInsertKind (fun _ -> ())
+            x.EditBlockWithLinkedChange "Visual Insert" blockSpan visualInsertKind id
         | _ ->
-            x.EditWithUndoTransaction "Visual Insert" (fun _ -> ())
+            x.EditWithUndoTransaction "Visual Insert" id
             x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch to the previous mode
