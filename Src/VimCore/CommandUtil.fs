@@ -3970,12 +3970,9 @@ type internal CommandUtil
         // Apply the 'end-of-line' setting in the visual span to the visual
         // insert kind.
         let visualInsertKind =
-            match visualSpan with
-            | VisualSpan.Block blockSpan ->
-                if blockSpan.EndOfLine then
-                    VisualInsertKind.EndOfLine
-                else
-                    visualInsertKind
+            match visualInsertKind, visualSpan with
+            | VisualInsertKind.End, VisualSpan.Block blockSpan when blockSpan.EndOfLine ->
+                VisualInsertKind.EndOfLine
             | _ ->
                 visualInsertKind
 

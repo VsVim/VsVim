@@ -1525,6 +1525,18 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
+                /// The block insert should add the text to every column
+                /// </summary>
+                [WpfFact]
+                public void SimpleAfterDollar()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j$<S-i>the <Esc>");
+                    Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
+                }
+
+                /// <summary>
                 /// The caret should be positioned at the start of the block span when the insertion
                 /// starts
                 /// </summary>
