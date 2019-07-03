@@ -1789,7 +1789,24 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class AppendTabTest : BlockInsertTest
+            public sealed class AppendEndTest : BlockInsertTest
+            {
+                /// <summary>
+                /// Using shift-a from visual block mode appends starting at
+                /// the column of the end of the primary block span
+                /// </summary>
+                [WpfFact]
+                public void Basic()
+                {
+                    // Reported in issue #2667.
+                    Create("hot dog", "fat cat", "big bat", "");
+                    EnterBlock(_textView.GetBlockSpan(0, 4, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-a>x <Esc>");
+                    Assert.Equal(new[] { "hot x dog", "fat x cat", "big x bat", "" }, _textBuffer.GetLines());
+                }
+            }
+
+            public sealed class AppendEndOfLineTabTest : BlockInsertTest
             {
                 /// <summary>
                 /// A block appended tab with 'expandtab' should obey the starting column
