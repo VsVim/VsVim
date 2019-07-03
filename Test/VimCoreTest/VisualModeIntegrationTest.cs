@@ -533,6 +533,14 @@ namespace Vim.UnitTest
                     var blockSpan = new BlockSpan(_textView.GetPoint(1), tabStop: _tabStop, spaces: 2, height: 2);
                     Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
                 }
+
+                [WpfFact]
+                public void DeleteToEndOfLine()
+                {
+                    Create("abc def ghi", "jkl mno", "pqr", "");
+                    _vimBuffer.ProcessNotation("2l<C-Q>2j$d");
+                    Assert.Equal(new[] { "ab", "jk", "pq", "" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class ExclusiveTest : BlockSelectionTest

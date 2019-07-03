@@ -1810,27 +1810,30 @@ type BlockSpan =
     member x.TextBuffer =  x.Start.Snapshot.TextBuffer
 
     member private x.GetBlockSpansCore (makeSpan: ITextSnapshotLine -> int -> 'T): NonEmptyCollection<'T> =
-        let snapshot = x.Snapshot
-        let beforeSpaces = x.BeforeSpaces
-        let lineNumber = x.Start.LineNumber
-        let list = System.Collections.Generic.List<'T>()
-        for i = lineNumber to ((x._height - 1) + lineNumber) do
-            match SnapshotUtil.TryGetLine snapshot i with
-            | None -> ()
-            | Some line -> 
-                let span = makeSpan line beforeSpaces
-                list.Add(span)
-
-        list
+        let x = x
+        seq {
+            for i = 0 to x.Height - 1 do
+                let lineNumber = x.Start.LineNumber + i
+                match SnapshotUtil.TryGetLine x.Snapshot lineNumber with
+                | None -> ()
+                | Some line -> 
+                    yield makeSpan line x.BeforeSpaces
+        }
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
+
+    member private x.GetLastColumn line = SnapshotColumn(line, line.End)
 
     /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
             let startColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
-            let endColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
+            let endColumn =
+                if x.EndOfLine then
+                    x.GetLastColumn line
+                else
+                    SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
 
     /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information
@@ -1838,7 +1841,11 @@ type BlockSpan =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
             let startColumn = VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces, x.TabStop)
-            let endColumn = VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
+            let endColumn =
+                if x.EndOfLine then
+                    VirtualSnapshotColumn(x.GetLastColumn line)
+                else
+                    VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
             VirtualSnapshotColumnSpan(startColumn, endColumn))
 
     /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan that each line of
@@ -1848,7 +1855,11 @@ type BlockSpan =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
             let startColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
-            let endColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
+            let endColumn =
+                if x.EndOfLine then
+                    SnapshotOverlapColumn(x.GetLastColumn line, x.TabStop)
+                else
+                    SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
 
     member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.Span)
