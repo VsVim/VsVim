@@ -1801,7 +1801,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = true;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-a><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog    x", " cat    x", " bat    x", "", }, _textBuffer.GetLines());
                 }
 
@@ -1815,7 +1815,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = false;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-A><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog\tx", " cat\tx", " bat\tx", "", }, _textBuffer.GetLines());
                 }
 
@@ -1830,7 +1830,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = false;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-A><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog_\tx", " cat__\tx", " bat___\tx", "", }, _textBuffer.GetLines());
                 }
             }

@@ -566,7 +566,7 @@ type internal InsertUtil
                 x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
-    member x.RepeatBlock (insertCommand: InsertCommand) (atEndOfLine: bool) (blockSpan: BlockSpan) =
+    member x.RepeatBlock (insertCommand: InsertCommand) (visualInsertKind: VisualInsertKind) (blockSpan: BlockSpan) =
 
         // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
         // applied to it.  For example if you add 2 characters, delete them and then insert text
@@ -584,7 +584,15 @@ type internal InsertUtil
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
                     let startLineNumber = blockSpan.Start.LineNumber + 1
-                    x.ApplyBlockInsert insertCommand atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
+                    let spaces, atEndOfLine =
+                        match visualInsertKind with
+                        | VisualInsertKind.Start ->
+                            blockSpan.BeforeSpaces, false
+                        | VisualInsertKind.End ->
+                            blockSpan.BeforeSpaces + blockSpan.SpacesLength, false
+                        | VisualInsertKind.EndOfLine ->
+                            blockSpan.BeforeSpaces, true
+                    x.ApplyBlockInsert insertCommand atEndOfLine startLineNumber spaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
                     _operations.MapPointNegativeToCurrentSnapshot blockSpan.Start.StartPoint

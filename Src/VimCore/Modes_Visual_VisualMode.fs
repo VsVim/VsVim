@@ -86,8 +86,8 @@ type internal VisualMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CancelOperation)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
-                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert false)
-                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert true)
+                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.Start)
+                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.End)
                 yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
                 yield ("<C-w>gf", CommandFlags.None, VisualCommand.GoToFileInSelectionInNewWindow)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
@@ -190,6 +190,7 @@ type internal VisualMode
 
     member x.OnEnter modeArgument = 
         x.EnsureCommandsBuilt()
+        _vimBufferData.EndOfLineUsed <- false
         _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
 
@@ -206,7 +207,9 @@ type internal VisualMode
         let selectionKind = _globalSettings.SelectionKind
         let tabStop = _vimBufferData.LocalSettings.TabStop
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
-        VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        let visualSelection =
+            VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        visualSelection.AdjustForEndOfLine _vimBufferData.EndOfLineUsed
 
     member x.Process (keyInputData: KeyInputData) =  
         let keyInput = keyInputData.KeyInput
@@ -242,6 +245,12 @@ type internal VisualMode
                         | Some anchorPoint ->
                             let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
                             _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
+
+                    match commandRanData.Command with
+                    | Command.NormalCommand (NormalCommand.MoveCaretToMotion Motion.EndOfLine, _) ->
+                        _vimBufferData.EndOfLineUsed <- true
+                    | _ ->
+                        ()
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->

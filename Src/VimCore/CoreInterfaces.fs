@@ -1709,17 +1709,22 @@ type BlockSpan =
     val private _tabStop: int
     val private _spaces: int
     val private _height: int
+    val private _endOfLine: bool
 
     new(startPoint: SnapshotPoint, tabStop, spaces, height) = 
         let startColumn = VirtualSnapshotColumn(startPoint)
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
+        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = false }
 
-    new(startPoint: VirtualSnapshotPoint, tabStop, spaces, height) =
+    new(startPoint: SnapshotPoint, tabStop, spaces, height, endOfLine) = 
         let startColumn = VirtualSnapshotColumn(startPoint)
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
+        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
 
-    new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height) =
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height }
+    new(startPoint: VirtualSnapshotPoint, tabStop, spaces, height, endOfLine) =
+        let startColumn = VirtualSnapshotColumn(startPoint)
+        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
+
+    new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height, endOfLine) =
+        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
@@ -1742,7 +1747,7 @@ type BlockSpan =
                 VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
         let height = SnapshotSpanUtil.GetLineCount span.Span
-        BlockSpan(startColumn, tabStop =tabStop, spaces = width, height = height)
+        BlockSpan(startColumn, tabStop =tabStop, spaces = width, height = height, endOfLine = false)
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
     /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
@@ -1770,6 +1775,9 @@ type BlockSpan =
 
     /// How many lines does this BlockSpan encompass
     member x.Height = x._height
+
+    /// Whether this block span extends to the end of line
+    member x.EndOfLine = x._endOfLine
 
     member x.OverlapEnd = 
         let line = 
@@ -1847,8 +1855,12 @@ type BlockSpan =
 
     member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
 
+    /// Adjust the block span for the specified 'end-of-line' setting
+    member x.AdjustForEndOfLine endOfLine =
+            BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
+
     override x.ToString() =
-        sprintf "Point: %s Spaces: %d Height: %d" (x.Start.ToString()) x._spaces x._height
+        sprintf "Point: %s Spaces: %d Height: %d EndOfLine: %b" (x.Start.ToString()) x._spaces x._height x._endOfLine
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
@@ -1989,6 +2001,15 @@ type VisualSpan =
             | Line _ -> x
             | Block _ -> x
         else
+            x
+
+    /// Adjust the visual span for a new 'end-of-line' setting
+    member x.AdjustForEndOfLine endOfLine =
+        match x with
+        | Block blockSpan ->
+            let blockSpan = blockSpan.AdjustForEndOfLine endOfLine
+            VisualSpan.Block blockSpan
+        | _ ->
             x
 
     /// Select the given VisualSpan in the ITextView
@@ -2232,8 +2253,17 @@ type VisualSelection =
                 // The width of a block span decreases by 1 in exclusive.  The minimum though
                 // is still 1
                 let width = max (blockSpan.SpacesLength - 1) 1
-                let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height)
+                let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, blockSpan.EndOfLine)
                 VisualSelection.Block (blockSpan, blockCaretLocation)
+
+    /// Adjust the visual selection for a new 'end-of-line' setting
+    member x.AdjustForEndOfLine endOfLine =
+        match x with
+        | Block (blockSpan, blockCaretLocation) ->
+            let blockSpan = blockSpan.AdjustForEndOfLine endOfLine
+            VisualSelection.Block (blockSpan, blockCaretLocation)
+        | _ ->
+            x
 
     /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
     /// specified SelectionKind.  
@@ -2398,7 +2428,7 @@ type VisualSelection =
                 if anchorSpaces <= caretSpaces then SearchPath.Forward
                 else SearchPath.Backward
 
-            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height)
+            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height, false)
             VisualSpan.Block blockSpan, path
 
         let createNormal () = 
@@ -2452,7 +2482,7 @@ type VisualSelection =
                 | VisualSpan.Line _ -> visualSpan
                 | VisualSpan.Block blockSpan ->
                     let width = blockSpan.SpacesLength + 1
-                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height)
+                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, false)
                     VisualSpan.Block blockSpan
 
         let path = 
@@ -2491,7 +2521,7 @@ type VisualSelection =
             let offset = SnapshotPointUtil.GetLineOffset caretPoint
             VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualKind.Block ->
-            let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1)
+            let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1, false)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
 /// This is used for commands like [count]v and [count]V to hold a visual selection
@@ -2570,6 +2600,14 @@ type TextObjectKind =
     | AlwaysCharacter
     | AlwaysLine
 
+/// The kind of visual insertion to perform
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+type VisualInsertKind =
+    | Start
+    | End
+    | EndOfLine
+
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
@@ -2581,7 +2619,7 @@ type ModeArgument =
 
     /// Begins a block insertion.  This can possibly have a linked undo transaction that needs
     /// to be carried forward through the insert
-    | InsertBlock of BlockSpan: BlockSpan * AtEndOfLine: bool * LinkedUndoTransaction: ILinkedUndoTransaction
+    | InsertBlock of BlockSpan: BlockSpan * VisualInsertKind: VisualInsertKind * LinkedUndoTransaction: ILinkedUndoTransaction
 
     /// Begins insert mode with a specified count.  This means the text inserted should
     /// be repeated a total of 'count - 1' times when insert mode exits
@@ -2719,8 +2757,11 @@ type CommandFlags =
     /// hence acts with them in a repeat
     | InsertEdit = 0x2000
 
-    /// Wether the command depends on the context, e.g. a tab insertion
+    /// Whether the command depends on the context, e.g. a tab insertion
     | ContextSensitive = 0x4000
+
+    /// Whether the command induces 'block end-of-line' mode
+    | BlockEndOfLine = 0x4000
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -3365,7 +3406,7 @@ type VisualCommand =
 
     /// Switch the mode to insert and possibly a block insert. The bool specifies whether
     /// the insert is at the end of the line
-    | SwitchModeInsert of AtEndOfLine: bool
+    | SwitchModeInsert of VisualInsertKind: VisualInsertKind
 
     /// Switch to the previous mode
     | SwitchModePrevious
@@ -3880,7 +3921,7 @@ type internal IInsertUtil =
     abstract RepeatEdit: textChange: TextChange -> addNewLines: bool -> count: int -> unit
 
     /// Repeat the given edit series. 
-    abstract RepeatBlock: command: InsertCommand -> atEndOfLine: bool -> blockSpan: BlockSpan -> string option
+    abstract RepeatBlock: command: InsertCommand -> visualInsertKind: VisualInsertKind -> blockSpan: BlockSpan -> string option
 
     /// Signal that a new undo sequence is in effect
     abstract NewUndoSequence: unit -> unit
@@ -3900,7 +3941,7 @@ type StoredVisualSpan =
 
     /// Storing of a block span records the length of the span and the number of
     /// lines which should be affected by the Span
-    | Block of Width: int * Height: int
+    | Block of Width: int * Height: int * EndOfLine: bool
 
     with
 
@@ -3909,7 +3950,7 @@ type StoredVisualSpan =
         match visualSpan with
         | VisualSpan.Character characterSpan -> StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
         | VisualSpan.Line range -> StoredVisualSpan.Line range.Count
-        | VisualSpan.Block blockSpan -> StoredVisualSpan.Block (blockSpan.SpacesLength, blockSpan.Height)
+        | VisualSpan.Block blockSpan -> StoredVisualSpan.Block (blockSpan.SpacesLength, blockSpan.Height, blockSpan.EndOfLine)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
@@ -4941,6 +4982,9 @@ and IVimBufferData =
     /// of the visual selection.  While the anchor point for visual mode selection may be in 
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
+
+    /// Whether end-of-line was used during the last visual mode
+    abstract EndOfLineUsed: bool with get, set
 
     /// The IJumpList associated with the IVimBuffer
     abstract JumpList: IJumpList

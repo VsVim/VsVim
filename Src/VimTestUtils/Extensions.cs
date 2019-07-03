@@ -1847,7 +1847,7 @@ namespace Vim.UnitTest
             Assert.Equal(TextSelectionMode.Box, textView.Selection.Mode);
             var spans = textView.Selection.VirtualSelectedSpans;
             var first = spans[0];
-            return new BlockSpan(first.Start, tabStop, first.Length, spans.Count);
+            return new BlockSpan(first.Start, tabStop, first.Length, spans.Count, false);
         }
 
         public static Register GetRegister(this IRegisterMap map, char c)

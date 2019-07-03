@@ -22,6 +22,7 @@ type VimBufferData
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
+    let mutable _endOfLineUsed: bool = false
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
     member x.CurrentRelativeFilePath : string option =
@@ -48,6 +49,9 @@ type VimBufferData
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value
+        member x.EndOfLineUsed
+            with get() = _endOfLineUsed
+            and set value = _endOfLineUsed <- value
         member x.VisualAnchorPoint 
             with get() = _visualAnchorPoint
             and set value = _visualAnchorPoint <- value

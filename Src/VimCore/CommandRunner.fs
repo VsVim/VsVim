@@ -82,7 +82,8 @@ type internal CommandRunner
     member x.VisualSpan =
         let tabStop = _localSettings.TabStop
         let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
-        VisualSpan.CreateForVirtualSelection _textView _visualKind tabStop useVirtualSpace
+        let visualSpan = VisualSpan.CreateForVirtualSelection _textView _visualKind tabStop useVirtualSpace
+        visualSpan.AdjustForEndOfLine _vimBufferData.EndOfLineUsed
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc

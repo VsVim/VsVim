@@ -651,7 +651,7 @@ namespace Vim.UnitTest
                     _commandUtil.EditBlockWithLinkedChange(
                         "Test",
                         blockSpan,
-                        false,
+                        VisualInsertKind.Start,
                         FSharpFuncUtil.ToFSharpFunc<Unit>(_ => { }));
                 }
                 catch (ArgumentException)
