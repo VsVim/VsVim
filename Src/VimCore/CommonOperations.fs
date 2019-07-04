@@ -164,6 +164,10 @@ type internal CommonOperations
         with get() = _maintainCaretColumn
         and set value = _maintainCaretColumn <- value
 
+    /// Whether multi-selection is supported
+    member x.IsMultiSelectionSupported =
+        _vimHost.IsMultiSelectionSupported
+
     /// The primary selected span
     member x.PrimarySelectedSpan =
         x.SelectedSpans |> Seq.head
@@ -2534,8 +2538,21 @@ type internal CommonOperations
     /// Run the specified action for all selections
     member x.RunForAllSelections action =
 
+        // Unless there are multiple selections just do the action once and
+        // return its result normally.
+        if x.IsMultiSelectionSupported then
+            let selectedSpans = x.SelectedSpans |> Seq.toList
+            if selectedSpans.Length > 1 then
+                x.RunForAllSelectionsCore action selectedSpans
+            else
+                action()
+        else
+            action()
+
+    /// Run the specified action for the specified selected spans
+    member x.RunForAllSelectionsCore action selectedSpans =
+
         // Get the current set of selected spans.
-        let selectedSpans = x.SelectedSpans |> Seq.toList
         let visualModeKind =
             _vimTextBuffer.ModeKind
             |> VisualKind.OfModeKind
@@ -2727,17 +2744,9 @@ type internal CommonOperations
                 transaction.Complete()
                 result
 
-        // Body starts here.
-        if selectedSpans.Length = 1 then
-
-            // There is just one selection so do the action once and return its
-            // result normally.
-            action()
-
-        else
-
-            // Do the actions for each selection being sure to restore the
-            // caret index at the end.
+        // Do the actions for each selection being sure to restore the old
+        // caret index at the end.
+        let wrapDoActions () =
             let oldCaretIndex = _vimBufferData.CaretIndex
             try
                 use bulkOperation = _bulkOperations.BeginBulkOperation()
@@ -2748,12 +2757,16 @@ type internal CommonOperations
                 // Ensure view properties at the primary caret.
                 x.EnsureAtCaret ViewFlags.Standard
 
+        // Body starts here.
+        wrapDoActions()
+
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
         member x.MaintainCaretColumn 
             with get() = x.MaintainCaretColumn
             and set value = x.MaintainCaretColumn <- value
+        member x.IsMultiSelectionSupported = x.IsMultiSelectionSupported
         member x.PrimarySelectedSpan = x.PrimarySelectedSpan
         member x.SelectedSpans = x.SelectedSpans
         member x.EditorOperations = _editorOperations

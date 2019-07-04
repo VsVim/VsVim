@@ -130,11 +130,20 @@ type IFileSystem =
 /// Used for manipulating the seleciton
 type ISelectionUtil =
 
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
+
     /// Get all the selected spans for the specified text view
     abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq
 
     /// Set all the selected spans for the specified text view
     abstract SetSelectedSpans: textView: ITextView -> SelectedSpan seq -> unit
+
+/// Factory service for creating ISelectionUtil instances
+type ISelectionUtilService = 
+
+    /// Create a session with the given set of words
+    abstract GetSelectionUtil: unit -> ISelectionUtil option
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -4948,6 +4957,9 @@ type IVimHost =
     /// special non-vim semantics for certain types of edits (Enter for 
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
+
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
 
     /// Get all the selected spans for the specified text view
     abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq

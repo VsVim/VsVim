@@ -93,7 +93,7 @@ namespace Vim.VisualStudio.UnitTest
                 _commandDispatcher.Object,
                 sp.Object,
                 _clipboardDevice.Object,
-                _factory.Create<ISelectionUtil>(MockBehavior.Loose).Object);
+                _factory.Create<ISelectionUtilService>(MockBehavior.Loose).Object);
             _host = _hostRaw;
         }
 

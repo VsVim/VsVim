@@ -328,6 +328,9 @@ type ICommonOperations =
     /// buffer
     abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
+
     /// The primary selected span
     abstract PrimarySelectedSpan: SelectedSpan
 

@@ -1,16 +1,26 @@
 ﻿#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 
 using Microsoft.VisualStudio.Text.Editor;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using Vim;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.Specific.Implementation.Selection
 {
     [Export(typeof(ISelectionUtil))]
-    class SingleSelectionUtil : ISelectionUtil
+    [Export(typeof(IVimSpecificService))]
+    class SingleSelectionUtil : VimSpecificService, ISelectionUtil
     {
+        [ImportingConstructor]
+        internal SingleSelectionUtil(Lazy<IVimHost> vimHost)
+            : base(vimHost)
+        {
+        }
+
+        bool ISelectionUtil.IsMultiSelectionSupported => false;
+
         IEnumerable<SelectedSpan> ISelectionUtil.GetSelectedSpans(ITextView textView)
         {
             var caretPoint = textView.Caret.Position.VirtualBufferPosition;

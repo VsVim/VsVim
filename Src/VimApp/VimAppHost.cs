@@ -65,14 +65,14 @@ namespace VimApp
             IContentTypeRegistryService contentTypeRegistryService,
             IFileSystem fileSystem,
             IDirectoryUtil directoryUtil,
-            ISelectionUtil selectionUtil) :
+            ISelectionUtilService selectionUtilService) :
             base(
                 protectedOperations,
                 textBufferFactoryService,
                 textEditorFactoryService,
                 textDocumentFactoryService,
                 editorOperationsFactoryService,
-                selectionUtil)
+                selectionUtilService)
         {
             _protectedOperations = protectedOperations;
             _contentTypeRegistryService = contentTypeRegistryService;

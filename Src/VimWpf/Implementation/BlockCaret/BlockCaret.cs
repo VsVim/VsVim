@@ -771,10 +771,20 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void UpdateCaretCore()
         {
-            _caretPoints =
-                _vimHost.GetSelectedSpans(_textView)
-                .Select(span => span.CaretPoint)
-                .ToList();
+            if (_vimHost.IsMultiSelectionSupported)
+            {
+                _caretPoints =
+                    _vimHost.GetSelectedSpans(_textView)
+                    .Select(span => span.CaretPoint)
+                    .ToList();
+            }
+            else
+            {
+                _caretPoints = new List<VirtualSnapshotPoint>
+                {
+                    _textView.Caret.Position.VirtualBufferPosition
+                };
+            }
 
             var areAnyCaretsVisible =
                 _caretPoints

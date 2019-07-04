@@ -24,8 +24,9 @@ namespace Vim.UI.Wpf
         private readonly ITextEditorFactoryService _textEditorFactoryService;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
-        private readonly ISelectionUtil _selectionUtil;
+        private readonly ISelectionUtilService _selectionUtilService;
         private readonly List<ITextView> _textViewList = new List<ITextView>();
+        private ISelectionUtil _selectionUtil = null;
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
         private event EventHandler<BeforeSaveEventArgs> _beforeSave;
@@ -48,6 +49,22 @@ namespace Vim.UI.Wpf
         public IEditorOperationsFactoryService EditorOperationsFactoryService
         {
             get { return _editorOperationsFactoryService; }
+        }
+
+        public ISelectionUtil SelectionUtil
+        {
+            get
+            {
+                if (_selectionUtil == null)
+                {
+                    var value = _selectionUtilService.GetSelectionUtil();
+                    if (value.IsSome())
+                    {
+                        _selectionUtil = value.Value;
+                    }
+                }
+                return _selectionUtil;
+            }
         }
 
         public virtual bool AutoSynchronizeSettings
@@ -91,14 +108,14 @@ namespace Vim.UI.Wpf
             ITextEditorFactoryService textEditorFactoryService,
             ITextDocumentFactoryService textDocumentFactoryService,
             IEditorOperationsFactoryService editorOperationsFactoryService,
-            ISelectionUtil selectionUtil)
+            ISelectionUtilService selectionUtilService)
         {
             _protectedOperations = protectedOperations;
             _textBufferFactoryService = textBufferFactoryService;
             _textEditorFactoryService = textEditorFactoryService;
             _textDocumentFactoryService = textDocumentFactoryService;
             _editorOperationsFactoryService = editorOperationsFactoryService;
-            _selectionUtil = selectionUtil;
+            _selectionUtilService = selectionUtilService;
         }
 
         public virtual void EnsurePackageLoaded()
@@ -480,15 +497,27 @@ namespace Vim.UI.Wpf
         {
         }
 
+        public virtual bool IsMultiSelectionSupported
+        {
+            get
+            {
+                if (SelectionUtil == null)
+                {
+                    return false;
+                }
+                return SelectionUtil.IsMultiSelectionSupported;
+            }
+        }
+
         public virtual IEnumerable<SelectedSpan> GetSelectedSpans(ITextView textView)
         {
-            return _selectionUtil.GetSelectedSpans(textView);
+            return SelectionUtil.GetSelectedSpans(textView);
         }
 
 
         public virtual void SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
         {
-            _selectionUtil.SetSelectedSpans(textView, selectedSpans);
+            SelectionUtil.SetSelectedSpans(textView, selectedSpans);
         }
 
         /// <summary>
@@ -908,6 +937,11 @@ namespace Vim.UI.Wpf
         void IVimHost.VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             VimRcLoaded(vimRcState, localSettings, windowSettings);
+        }
+
+        bool IVimHost.IsMultiSelectionSupported
+        {
+            get { return IsMultiSelectionSupported; }
         }
 
         IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)

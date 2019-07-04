@@ -322,14 +322,14 @@ namespace Vim.VisualStudio
             ICommandDispatcher commandDispatcher,
             SVsServiceProvider serviceProvider,
             IClipboardDevice clipboardDevice,
-            ISelectionUtil selectionUtil) :
+            ISelectionUtilService selectionUtilService) :
             base(
                   protectedOperations,
                   textBufferFactoryService,
                   textEditorFactoryService,
                   textDocumentFactoryService,
                   editorOperationsFactoryService,
-                  selectionUtil)
+                  selectionUtilService)
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;

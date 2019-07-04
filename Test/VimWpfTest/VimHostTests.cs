@@ -23,14 +23,14 @@ namespace Vim.UI.Wpf.UnitTest
                 ITextEditorFactoryService textEditorFactoryService,
                 ITextDocumentFactoryService textDocumentFactoryService,
                 IEditorOperationsFactoryService editorOperationsFactoryService,
-                ISelectionUtil selectionUtil) :
+                ISelectionUtilService selectionUtilService) :
                 base(
                     protectedOperations,
                     textBufferFactoryService,
                     textEditorFactoryService,
                     textDocumentFactoryService,
                     editorOperationsFactoryService,
-                    selectionUtil)
+                    selectionUtilService)
             {
             }
 
@@ -149,19 +149,19 @@ namespace Vim.UI.Wpf.UnitTest
 
         private readonly VimHost _vimHost;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
-        private readonly ISelectionUtil _selectionUtil;
+        private readonly ISelectionUtilService _selectionUtilService;
 
         protected VimHostTest()
         {
             _textDocumentFactoryService = CompositionContainer.GetExportedValue<ITextDocumentFactoryService>();
-            _selectionUtil = CompositionContainer.GetExportedValue<ISelectionUtil>();
+            _selectionUtilService = CompositionContainer.GetExportedValue<ISelectionUtilService>();
             _vimHost = new VimHostImpl(
                 ProtectedOperations,
                 TextBufferFactoryService,
                 TextEditorFactoryService,
                 _textDocumentFactoryService,
                 EditorOperationsFactoryService,
-                _selectionUtil);
+                _selectionUtilService);
         }
 
         public sealed class IsDirtyTest : VimHostTest

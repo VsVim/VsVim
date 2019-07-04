@@ -29,7 +29,7 @@ namespace Vim.UI.Wpf.UnitTest
         private void Create()
         {
             _vimHost = new Mock<IVimHost>(MockBehavior.Strict);
-            _vimHost.Setup(x => x.GetSelectedSpans(It.IsAny<ITextView>())).Returns(new [] { new SelectedSpan() });
+            _vimHost.SetupGet(x => x.IsMultiSelectionSupported).Returns(false);
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _caret.SetupGet(x => x.Position).Returns(new CaretPosition());
             _selection = new Mock<ITextSelection>(MockBehavior.Strict);

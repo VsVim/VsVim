@@ -2,16 +2,27 @@
 #else
 
 using Microsoft.VisualStudio.Text.Editor;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using Vim;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.Specific.Implementation.Selection
 {
     [Export(typeof(ISelectionUtil))]
-    class MultiSelectionUtil : ISelectionUtil
+    [Export(typeof(IVimSpecificService))]
+    class MultiSelectionUtil : VimSpecificService, ISelectionUtil
     {
+        [ImportingConstructor]
+        internal MultiSelectionUtil(Lazy<IVimHost> vimHost)
+            : base(vimHost)
+        {
+        }
+
+        bool ISelectionUtil.IsMultiSelectionSupported => true;
+
         IEnumerable<SelectedSpan> ISelectionUtil.GetSelectedSpans(ITextView textView)
         {
             var broker = textView.GetMultiSelectionBroker();

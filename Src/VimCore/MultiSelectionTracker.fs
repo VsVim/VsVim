@@ -24,29 +24,31 @@ type internal MultiSelectionTracker
     let mutable _recordedSelectedSpans: SelectedSpan array = [||]
 
     do
-        _textView.Selection.SelectionChanged
-        |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
-        |> _bag.Add
+        if _commonOperations.IsMultiSelectionSupported then
 
-        _commonOperations.SelectedSpansSet
-        |> Observable.subscribe (fun _ -> this.OnSelectedSpansSet())
-        |> _bag.Add
+            _textView.Selection.SelectionChanged
+            |> Observable.subscribe (fun _ -> this.OnSelectionChanged())
+            |> _bag.Add
 
-        _vimBuffer.KeyInputStart
-        |> Observable.subscribe (fun _ -> this.OnKeyInputStart())
-        |> _bag.Add
+            _commonOperations.SelectedSpansSet
+            |> Observable.subscribe (fun _ -> this.OnSelectedSpansSet())
+            |> _bag.Add
 
-        _vimBuffer.KeyInputEnd
-        |> Observable.subscribe (fun _ -> this.OnKeyInputEnd())
-        |> _bag.Add
+            _vimBuffer.KeyInputStart
+            |> Observable.subscribe (fun _ -> this.OnKeyInputStart())
+            |> _bag.Add
 
-        _vimBuffer.SwitchedMode
-        |> Observable.subscribe (fun args -> this.OnSwitchedMode args)
-        |> _bag.Add
+            _vimBuffer.KeyInputEnd
+            |> Observable.subscribe (fun _ -> this.OnKeyInputEnd())
+            |> _bag.Add
 
-        _vimBuffer.Closed
-        |> Observable.subscribe (fun _ -> this.OnBufferClosed())
-        |> _bag.Add
+            _vimBuffer.SwitchedMode
+            |> Observable.subscribe (fun args -> this.OnSwitchedMode args)
+            |> _bag.Add
+
+            _vimBuffer.Closed
+            |> Observable.subscribe (fun _ -> this.OnBufferClosed())
+            |> _bag.Add
 
    /// The caret points at the start of the most recent key input 
     member x.RecordedSelectedSpans

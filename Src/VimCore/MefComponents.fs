@@ -533,3 +533,16 @@ type internal VimWordCompletionSessionFactoryService
         member x.CreateWordCompletionSession textView wordSpan words isForward = x.CreateWordCompletionSession textView wordSpan words isForward     
         [<CLIEvent>]
         member x.Created = _created.Publish
+
+[<Export(typeof<ISelectionUtilService>)>]
+type internal SelectionUtilService 
+    [<ImportingConstructor>]
+    (
+        _vimSpecificServiceHost: IVimSpecificServiceHost
+    ) =
+
+    member x.CreateSelectionUtil () =
+        _vimSpecificServiceHost.GetService<ISelectionUtil>()
+
+    interface ISelectionUtilService with
+        member x.GetSelectionUtil () = x.CreateSelectionUtil()

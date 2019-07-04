@@ -454,6 +454,8 @@ namespace Vim.UnitTest.Mock
             get { return UseDefaultCaret; }
         }
 
+        bool IVimHost.IsMultiSelectionSupported => IsMultiSelectionSupported;
+
         IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
         {
             return _mockMultiSelection.GetSelectedSpans(textView);
