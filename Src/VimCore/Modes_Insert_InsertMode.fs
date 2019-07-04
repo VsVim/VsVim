@@ -17,10 +17,6 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
-    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
-
-    /// The set of KeyInput value that should commit a session
-    static member CommitKeyInput = _commitKeyInput
 
     /// Get a fun (string -> bool) that determines if a particular word should be included in the output
     /// based on the text that we are searching for 
@@ -998,11 +994,15 @@ type internal InsertMode
                 wordCompletionSession.MovePrevious() |> Some
             elif keyInput = KeyNotationUtil.StringToKeyInput("<Up>") then
                 wordCompletionSession.MovePrevious() |> Some
-            elif List.contains keyInput WordCompletionUtil.CommitKeyInput then
-                wordCompletionSession.Commit() 
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-y>") then
+                wordCompletionSession.Commit()
+                Some true
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-e>") then
+                x.CancelWordCompletionSession()
                 Some true
             else
                 None
+
         match handled with
         | Some handled -> 
             if handled then 
@@ -1010,8 +1010,11 @@ type internal InsertMode
             else 
                 ProcessResult.Error
         | None -> 
-            // Any other key should cancel the IWordCompletionSession and we should process
+            // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
+            wordCompletionSession.Commit()
+            // Commit will set IsDismissed on wordCompletionSession so CancelWordCompletionSession will not call Dismiss() it
+            // Cancel as finish. we need this because otherwise we get a stackoverflow in tests from call to ProcessCore
             x.CancelWordCompletionSession()
             x.ProcessCore keyInput
 
