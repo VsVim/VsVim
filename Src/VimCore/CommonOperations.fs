@@ -2324,7 +2324,7 @@ type internal CommonOperations
         | Some name -> name
         | None ->
             if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-                RegisterName.UnnamedClipboard
+                RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
             else
                 RegisterName.Unnamed
 

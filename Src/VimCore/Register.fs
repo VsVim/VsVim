@@ -363,7 +363,6 @@ type SelectionAndDropRegister =
 type RegisterName =
     /// The unnamed register.  This is the default register for many types of operations
     | Unnamed
-    | UnnamedClipboard
     | Numbered of NumberedRegister: NumberedRegister
     | SmallDelete
     /// The A-Z and a-z registers
@@ -379,7 +378,6 @@ type RegisterName =
     member x.Char = 
         match x with 
         | Unnamed -> Some '"'
-        | UnnamedClipboard -> None
         | SmallDelete -> Some '-'
         | Blackhole -> Some '_'
         | LastSearchPattern -> Some '/'
@@ -393,7 +391,6 @@ type RegisterName =
     member x.IsAppend =
         match x with 
         | Unnamed -> false
-        | UnnamedClipboard -> false
         | SmallDelete -> false
         | Blackhole -> false
         | LastSearchPattern -> false
@@ -430,7 +427,6 @@ type RegisterName =
         |> Seq.append (ReadOnlyRegister.All |> Seq.map (fun n -> ReadOnly n))
         |> Seq.append (SelectionAndDropRegister.All |> Seq.map (fun n -> SelectionAndDrop n))
         |> Seq.append [Unnamed; Expression; Blackhole; LastSearchPattern; SmallDelete]
-        |> Seq.append [UnnamedClipboard]
 
 module RegisterNameUtil = 
 

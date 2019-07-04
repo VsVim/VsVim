@@ -11,7 +11,7 @@ type CaretIndex() =
 
 /// Caret-aware IRegisterValueBacking implementation for the unnamed register.
 /// If there are multiple carets, each caret gets its own distinct value
-type UnnamedRegisterValueBacking
+type CaretUnnamedRegisterValueBacking
     (
         _caretIndex: CaretIndex,
         _unnamedRegister: Register
@@ -38,14 +38,14 @@ type UnnamedRegisterValueBacking
             with get () = x.RegisterValue
             and set value = x.SetRegisterValue value
 
-/// Caret-aware IRegisterValueBacking implementation for the unnamed clipboard
+/// Caret-aware IRegisterValueBacking implementation for the clipboard
 /// register. If there are multiple carets, the primary caret uses the
-/// clipboard and each secondary caret uses the caret's unnamed register
-type UnnamedClipboardRegisterValueBacking
+/// clipboard and each secondary caret uses that caret's unnamed register
+type CaretClipboardRegisterValueBacking
     (
         _caretIndex: CaretIndex,
-        _caretUnnamedRegister: Register,
-        _clipboardRegister: Register
+        _clipboardRegister: Register,
+        _caretUnnamedRegister: Register
     ) =
     member x.RegisterValue = 
         if _caretIndex.Value = 0 then
@@ -91,27 +91,31 @@ type CaretRegisterMap
         let caretIndex = CaretIndex()
 
         let caretUnnamedRegister =
-            let unnamedRegister =
+            let unnamedRegisterName =
                 RegisterName.Unnamed
+            let unnamedRegister =
+                unnamedRegisterName
                 |> registerMap.GetRegister
             let backing =
-                UnnamedRegisterValueBacking(caretIndex, unnamedRegister)
+                CaretUnnamedRegisterValueBacking(caretIndex, unnamedRegister)
                 :> IRegisterValueBacking
-            Register(RegisterName.Unnamed, backing)
+            Register(unnamedRegisterName, backing)
 
-        let caretUnnamedClipboardRegister =
-            let clipboardRegister =
+        let caretClipboardRegister =
+            let clipboardRegisterName =
                 RegisterName.SelectionAndDrop SelectionAndDropRegister.Star
+            let clipboardRegister =
+                clipboardRegisterName
                 |> registerMap.GetRegister
             let backing =
-                UnnamedClipboardRegisterValueBacking(caretIndex, caretUnnamedRegister, clipboardRegister)
+                CaretClipboardRegisterValueBacking(caretIndex, clipboardRegister, caretUnnamedRegister)
                 :> IRegisterValueBacking
-            Register(RegisterName.UnnamedClipboard, backing)
+            Register(clipboardRegisterName, backing)
 
         let map =
             seq {
                 yield caretUnnamedRegister
-                yield caretUnnamedClipboardRegister
+                yield caretClipboardRegister
             }
             |> Seq.map (fun register -> register.Name, register)
             |> Map.ofSeq
