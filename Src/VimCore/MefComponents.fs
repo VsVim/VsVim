@@ -541,8 +541,8 @@ type internal SelectionUtilService
         _vimSpecificServiceHost: IVimSpecificServiceHost
     ) =
 
-    member x.CreateSelectionUtil () =
+    member x.GetSelectionUtil () =
         _vimSpecificServiceHost.GetService<ISelectionUtil>()
 
     interface ISelectionUtilService with
-        member x.GetSelectionUtil () = x.CreateSelectionUtil()
+        member x.GetSelectionUtil () = x.GetSelectionUtil()

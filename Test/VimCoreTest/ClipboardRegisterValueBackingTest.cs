@@ -13,7 +13,7 @@ namespace Vim.UnitTest
         public ClipboardRegisterValueBackingTest()
         {
             _clipboardDevice = new Mock<IClipboardDevice>(MockBehavior.Strict);
-            _valueBackingRaw = new ClipboardRegisterValueBacking( _clipboardDevice.Object);
+            _valueBackingRaw = new ClipboardRegisterValueBacking(_clipboardDevice.Object);
             _valueBacking = _valueBackingRaw;
         }
 
