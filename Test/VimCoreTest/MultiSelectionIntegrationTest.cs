@@ -20,6 +20,8 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class MultiSelectionIntegrationTest : VimTestBase
     {
+        protected readonly MockVimHost _mockVimHost;
+
         protected IVimBuffer _vimBuffer;
         protected IVimBufferData _vimBufferData;
         protected IVimTextBuffer _vimTextBuffer;
@@ -33,15 +35,21 @@ namespace Vim.UnitTest
         protected IVimData _vimData;
         protected INormalMode _normalMode;
         protected IVimHost _vimHost;
-        protected MockVimHost _mockVimHost;
         protected TestableClipboardDevice _clipboardDevice;
         protected TestableMouseDevice _testableMouseDevice;
+
+        MultiSelectionIntegrationTest()
+        {
+            _mockVimHost = VimHost;
+            _mockVimHost.IsMultiSelectionSupported = true;
+        }
 
         protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
+            _mockVimHost.MockMultiSelection.RegisterVimBuffer(_vimBuffer);
             _vimBufferData = _vimBuffer.VimBufferData;
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _normalMode = _vimBuffer.NormalMode;
@@ -51,10 +59,6 @@ namespace Vim.UnitTest
             _windowSettings = _vimBuffer.WindowSettings;
             _jumpList = _vimBuffer.JumpList;
             _vimHost = _vimBuffer.Vim.VimHost;
-            _mockVimHost = (MockVimHost)_vimHost;
-            _mockVimHost.BeepCount = 0;
-            _mockVimHost.IsMultiSelectionSupported = true;
-            _mockVimHost.MockMultiSelection.RegisterVimBuffer(_vimBuffer);
             _vimData = Vim.VimData;
             _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
 
