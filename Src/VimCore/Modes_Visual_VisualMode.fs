@@ -190,7 +190,6 @@ type internal VisualMode
 
     member x.OnEnter modeArgument = 
         x.EnsureCommandsBuilt()
-        _vimBufferData.EndOfLineUsed <- false
         _selectionTracker.RecordCaretTrackingPoint modeArgument
         _selectionTracker.Start()
 
@@ -209,7 +208,8 @@ type internal VisualMode
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
         let visualSelection =
             VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
-        visualSelection.AdjustForEndOfLine _vimBufferData.EndOfLineUsed
+        let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
+        visualSelection.AdjustForEndOfLine isMaintainingEndOfLine
 
     member x.Process (keyInputData: KeyInputData) =  
         let keyInput = keyInputData.KeyInput
@@ -245,14 +245,6 @@ type internal VisualMode
                         | Some anchorPoint ->
                             let anchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
                             _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
-
-                    // Detect whether the command was an end-of-line motion and
-                    // if it was, record that fact in the vim buffer's data.
-                    match commandRanData.Command with
-                    | Command.NormalCommand (NormalCommand.MoveCaretToMotion Motion.EndOfLine, _) ->
-                        _vimBufferData.EndOfLineUsed <- true
-                    | _ ->
-                        ()
 
                     match commandRanData.CommandResult with
                     | CommandResult.Error ->

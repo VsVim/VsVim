@@ -4766,6 +4766,33 @@ type MarkInfo
     /// The column of the mark
     member x.Column = _column
 
+/// When maintaining the caret column for motion moves this represents the desired 
+/// column to jump to if there is enough space on the line
+///
+[<RequireQualifiedAccess>]
+[<NoComparison>]
+[<NoEquality>]
+type MaintainCaretColumn = 
+
+    /// There is no saved caret column. 
+    | None
+
+    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
+    /// this setting to a motion
+    | Spaces of Count: int
+
+    /// The caret was moved with the $ motion and the further moves should move to the end of 
+    /// the line 
+    | EndOfLine
+
+    with 
+
+    /// Whether we are maintaining end-of-line
+    member x.IsMaintainingEndOfLine = 
+        match x with
+        | EndOfLine -> true
+        | _ -> false
+
 type IVimHost =
 
     /// Should vim automatically start synchronization of IVimBuffer instances when they are 
@@ -4991,8 +5018,9 @@ and IVimBufferData =
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
 
-    /// Whether an end-of-line motion was used during the last visual mode
-    abstract EndOfLineUsed: bool with get, set
+    /// The currently maintained caret column for up / down caret movements in
+    /// the buffer
+    abstract MaintainCaretColumn: MaintainCaretColumn with get, set
 
     /// The IJumpList associated with the IVimBuffer
     abstract JumpList: IJumpList
