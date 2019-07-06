@@ -1822,7 +1822,7 @@ type BlockSpan =
         |> NonEmptyCollectionUtil.OfSeq 
         |> Option.get
 
-    member private x.GetLastColumn line = SnapshotColumn(line, line.End)
+    member private x.GetEndColumn line = SnapshotColumn(line, line.End)
 
     /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
@@ -1831,7 +1831,7 @@ type BlockSpan =
             let startColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
             let endColumn =
                 if x.EndOfLine then
-                    x.GetLastColumn line
+                    x.GetEndColumn line
                 else
                     SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
@@ -1843,7 +1843,7 @@ type BlockSpan =
             let startColumn = VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces, x.TabStop)
             let endColumn =
                 if x.EndOfLine then
-                    VirtualSnapshotColumn(x.GetLastColumn line)
+                    VirtualSnapshotColumn(x.GetEndColumn line)
                 else
                     VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
             VirtualSnapshotColumnSpan(startColumn, endColumn))
@@ -1857,7 +1857,7 @@ type BlockSpan =
             let startColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
             let endColumn =
                 if x.EndOfLine then
-                    SnapshotOverlapColumn(x.GetLastColumn line, x.TabStop)
+                    SnapshotOverlapColumn(x.GetEndColumn line, x.TabStop)
                 else
                     SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
