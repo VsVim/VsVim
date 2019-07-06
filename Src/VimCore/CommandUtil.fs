@@ -1152,13 +1152,7 @@ type internal CommandUtil
             let tabStop = _localSettings.TabStop
             let visualSelection =
                 VisualSelection.CreateForPoints visualKind anchorPoint caretPoint tabStop
-            let argument = ModeArgument.InitialVisualSelection (visualSelection, None)
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    ModeKind.SelectCharacter
-                else
-                    ModeKind.VisualCharacter
-            x.SwitchMode modeKind argument
+            x.SwitchModeVisualOrSelect SelectModeOptions.Mouse visualSelection None
 
         /// Whether the specified point is at a word boundary
         let isWordBoundary (point: SnapshotPoint) =
@@ -3735,34 +3729,22 @@ type internal CommandUtil
     /// Select the current block
     member x.SelectBlock () =
         x.MoveCaretToMouseUnconditionally() |> ignore
-        let modeKind =
-            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                ModeKind.SelectBlock
-            else
-                ModeKind.VisualBlock
         let visualKind = VisualKind.Block
         let startPoint = x.CaretPoint
         let endPoint = x.CaretPoint
         let tabStop = _localSettings.TabStop
         let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
-        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
-        x.SwitchMode modeKind modeArgument
+        x.SwitchModeVisualOrSelect SelectModeOptions.Mouse visualSelection (Some startPoint)
 
     /// Select the current line
     member x.SelectLine () =
         x.MoveCaretToMouseUnconditionally() |> ignore
-        let modeKind =
-            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                ModeKind.SelectLine
-            else
-                ModeKind.VisualLine
         let visualKind = VisualKind.Line
         let startPoint = x.CaretPoint
         let endPoint = x.CaretPoint
         let tabStop = _localSettings.TabStop
         let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
-        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
-        x.SwitchMode modeKind modeArgument
+        x.SwitchModeVisualOrSelect SelectModeOptions.Mouse visualSelection (Some startPoint)
 
     /// Select the next match for the last pattern searched for
     member x.SelectNextMatch searchPath count =
@@ -3780,9 +3762,7 @@ type internal CommandUtil
                     motionResult.Span.End
             let tabStop = _localSettings.TabStop
             let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
-            let modeKind = ModeKind.VisualCharacter
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
-            x.SwitchMode modeKind modeArgument
+            x.SwitchModeVisualOrSelect SelectModeOptions.Command visualSelection None
         | None ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -3824,13 +3804,7 @@ type internal CommandUtil
         let tabStop = _localSettings.TabStop
         let visualSelection = VisualSelection.CreateForPoints visualKind startPoint endPoint tabStop
         let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-        let modeKind =
-            if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                ModeKind.SelectCharacter
-            else
-                ModeKind.VisualCharacter
-        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, Some startPoint)
-        x.SwitchMode modeKind modeArgument
+        x.SwitchModeVisualOrSelect SelectModeOptions.Mouse visualSelection (Some startPoint)
 
     /// Get the word or matching token under the mouse
     member x.GetWordOrMatchingToken () =
@@ -3883,7 +3857,7 @@ type internal CommandUtil
     /// Select the word or matching token at the mouse point
     member x.SelectWordOrMatchingTokenAtMousePoint () =
         x.MoveCaretToMouseUnconditionally() |> ignore
-        x.SelectWordOrMatchingToken()
+        x.SelectWordOrMatchingTokenCore SelectModeOptions.Mouse
 
     /// Add word or matching token at the current mouse point to the selection
     member x.AddWordOrMatchingTokenAtMousePointToSelection () =
@@ -3913,17 +3887,15 @@ type internal CommandUtil
 
     /// Select the word or matching token under the caret
     member x.SelectWordOrMatchingToken () =
+        x.SelectWordOrMatchingTokenCore SelectModeOptions.Command
+
+    /// Select the word or matching token under the caret and switch to mode
+    /// appropriate for the specified select mode options
+    member x.SelectWordOrMatchingTokenCore selectModeOptions =
         match x.GetWordOrMatchingToken() with
         | Some visualSelection ->
             x.ClearSecondarySelections()
-            let visualKind = visualSelection.VisualKind
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    visualKind.SelectModeKind
-                else
-                    visualKind.VisualModeKind
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
-            x.SwitchMode modeKind modeArgument
+            x.SwitchModeVisualOrSelect selectModeOptions visualSelection None
         | None ->
             CommandResult.Error
 
@@ -4275,26 +4247,31 @@ type internal CommandUtil
     member x.SwitchMode modeKind modeArgument =
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, modeArgument))
 
+    /// Switch to the appropriate visual or select mode using the specified
+    /// select mode options and visual selection
+    member x.SwitchModeVisualOrSelect selectModeOptions visualSelection caretPoint =
+        let modeKind = x.GetVisualOrSelectModeKind selectModeOptions visualSelection.VisualKind
+        let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, caretPoint)
+        x.SwitchMode modeKind modeArgument
+
     /// Switch to the specified kind of visual mode
     member x.SwitchModeVisualCommand visualKind count =
         match count, _vimData.LastVisualSelection with
         | Some count, Some lastSelection ->
             let visualSelection = lastSelection.GetVisualSelection x.CaretPoint count
-            let modeKind =
-                match lastSelection with
-                | StoredVisualSelection.Character _ -> ModeKind.VisualCharacter
-                | StoredVisualSelection.CharacterLine _ -> ModeKind.VisualCharacter
-                | StoredVisualSelection.Line _ -> ModeKind.VisualLine
             let visualSelection = VisualSelection.CreateForward visualSelection.VisualSpan
-            let arg = ModeArgument.InitialVisualSelection (visualSelection, None)
-            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (modeKind, arg))
+            x.SwitchModeVisualOrSelect SelectModeOptions.Command visualSelection None
         | _ ->
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Command then
-                    visualKind.SelectModeKind
-                else
-                    visualKind.VisualModeKind
+            let modeKind = x.GetVisualOrSelectModeKind SelectModeOptions.Command visualKind
             CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
+
+    /// Get the appropriate visual or select mode kind for the specified
+    /// select mode options and visual kind
+    member x.GetVisualOrSelectModeKind selectModeOptions visualKind =
+        if Util.IsFlagSet _globalSettings.SelectModeOptions selectModeOptions then
+            visualKind.SelectModeKind
+        else
+            visualKind.VisualModeKind
 
     /// Switch to the previous Visual Span selection
     member x.SwitchPreviousVisualMode () =
@@ -4320,13 +4297,7 @@ type internal CommandUtil
             let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
             let visualSelection = VisualSelection.CreateForVirtualPoints VisualKind.Character anchorPoint x.CaretVirtualPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Keyboard then
-                    ModeKind.SelectCharacter
-                else
-                    ModeKind.VisualCharacter
-            let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
-            CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
+            x.SwitchModeVisualOrSelect SelectModeOptions.Keyboard visualSelection None
 
     /// Switch from the current visual mode into insert.  If we are in block mode this
     /// will start a block insertion
