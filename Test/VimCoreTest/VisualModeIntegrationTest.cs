@@ -1824,6 +1824,19 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<S-a>x <Esc>");
                     Assert.Equal(new[] { "hot x dog", "fat x cat", "big x bat", "" }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// Using shift-a from visual block mode differs from shift-i
+                /// with respect to short lines, specifically it pads them
+                /// </summary>
+                [WpfFact]
+                public void ShortLine()
+                {
+                    Create("hot dog", "", "big bat", "");
+                    EnterBlock(_textView.GetBlockSpan(0, 4, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-a>x <Esc>");
+                    Assert.Equal(new[] { "hot x dog", "    x ", "big x bat", "" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class AppendEndOfLineTabTest : BlockInsertTest
