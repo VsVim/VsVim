@@ -3130,6 +3130,7 @@ type internal CommandUtil
             match command with
             | VisualCommand.AddToSelection _ -> true
             | VisualCommand.ChangeCase _ -> true
+            | VisualCommand.ChangeSelection -> true
             | VisualCommand.DeleteSelection -> true
             | VisualCommand.InvertSelection _ -> true
             | VisualCommand.MoveCaretToTextObject _-> true

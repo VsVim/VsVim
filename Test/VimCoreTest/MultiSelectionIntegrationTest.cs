@@ -568,6 +568,22 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Test changing text
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void Change(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("vec");
+                AssertLines("abc  ghi", "jkl  pqr", "");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
+                ProcessNotation("xxx<Esc>");
+                AssertLines("abc xxx ghi", "jkl xxx pqr", "");
+                AssertCarets(GetPoint(0, 6), GetPoint(1, 6));
+            }
+
+            /// <summary>
             /// Spacing back and forth through the centerline
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
