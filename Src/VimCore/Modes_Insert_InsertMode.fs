@@ -640,8 +640,9 @@ type internal InsertMode
                     let combinedCommand = 
                         match _insertUtil.RepeatBlock insertCommand visualInsertKind blockSpan with
                         | Some text ->
+                            let padShortLines = visualInsertKind = VisualInsertKind.End
                             let atEndOfLine = visualInsertKind = VisualInsertKind.EndOfLine
-                            InsertCommand.BlockInsert (insertCommand, atEndOfLine, blockSpan.Height)
+                            InsertCommand.BlockInsert (insertCommand, padShortLines, atEndOfLine, blockSpan.Height)
                             |> Some
                         | None -> None
                     x.ChangeCombinedEditCommand combinedCommand

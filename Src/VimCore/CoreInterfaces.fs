@@ -3458,10 +3458,12 @@ type InsertCommand  =
     /// Backspace at the current caret position
     | Back
 
-    /// Block edit of the specified TextChange value.  The bool signifies whether
-    /// the insert is at the end of the line. The int represents the number of 
-    /// lines on which this block insert should take place
-    | BlockInsert of InsertCommand: InsertCommand * AtEndOfLine: bool * Height: int
+    /// Block edit of the specified TextChange value.  The first bool
+    /// specifies whether short lines should be padded. The second bool
+    /// specifieds whether the insert is at the end of the line. The int
+    /// represents the number of  lines on which this block insert should take
+    /// place
+    | BlockInsert of InsertCommand: InsertCommand * PadShortLines: bool * AtEndOfLine: bool * Height: int
 
     /// This is an insert command which is a combination of other insert commands
     | Combined of Left: InsertCommand * Right: InsertCommand
