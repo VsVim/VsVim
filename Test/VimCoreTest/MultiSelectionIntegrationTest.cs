@@ -597,6 +597,85 @@ namespace Vim.UnitTest
                 ProcessNotation("vjjg/");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 0), GetPoint(2, 0));
             }
+
+            /// <summary>
+            /// Using double-click should revert to a single selection
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void Select(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'def|*'
+            }
+
+            /// <summary>
+            /// Using ctrl-alt-double-click should add a word to the selection
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void AddToSelection(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+
+                // First double-click.
+                _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease><C-A-2-LeftMouse><C-A-LeftRelease>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Second double-click.
+                _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
+                ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease><C-A-2-LeftMouse><C-A-LeftRelease>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(1, 11).GetSelectedSpan(-3, 0, false)); // 'stu|*' or 'st|u*'
+            }
+
+            /// <summary>
+            /// Adding the next occurrence of the primary selection should wrap
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void AddNextOccurrence(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "abc def ghi", "abc def ghi", "");
+                SetCaretPoints(GetPoint(1, 5));
+
+                // Select word.
+                ProcessNotation("<C-A-N>");
+                Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Select next occurrence below.
+                ProcessNotation("<C-A-N>");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Select next occurrence above.
+                ProcessNotation("<C-A-N>");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // No more matches.
+                var didHit = false;
+                _vimBuffer.ErrorMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.VisualMode_NoMoreMatches, args.Message);
+                        didHit = true;
+                    };
+                ProcessNotation("<C-A-N>");
+                Assert.True(didHit);
+            }
         }
 
         public sealed class VisualLineModeTest : MultiSelectionIntegrationTest
@@ -649,7 +728,9 @@ namespace Vim.UnitTest
             {
                 base.Create(lines);
                 _globalSettings.SelectModeOptions =
-                    SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
+                    SelectModeOptions.Mouse
+                    | SelectModeOptions.Keyboard
+                    | SelectModeOptions.Command;
                 _globalSettings.KeyModelOptions = KeyModelOptions.StartSelection;
                 _globalSettings.Selection = "exclusive";
             }
@@ -818,6 +899,7 @@ namespace Vim.UnitTest
                     GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
                     GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
 
+                // No more matches.
                 var didHit = false;
                 _vimBuffer.ErrorMessage +=
                     (_, args) =>
