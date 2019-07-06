@@ -534,6 +534,10 @@ namespace Vim.UnitTest
                     Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
                 }
 
+                /// <summary>
+                /// A delete in end-of-line block mode should delete to the
+                /// end of all lines
+                /// </summary>
                 [WpfFact]
                 public void DeleteToEndOfLine()
                 {
