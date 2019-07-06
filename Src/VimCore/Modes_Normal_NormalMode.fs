@@ -184,7 +184,7 @@ type internal NormalMode
                 yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
 
@@ -192,7 +192,8 @@ type internal NormalMode
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
                 yield ("<C-A-Up>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)
-                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingTokenAtMousePoint)
+                yield ("<C-A-n>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
                 yield ("g/", CommandFlags.Special, NormalCommand.RestoreMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str

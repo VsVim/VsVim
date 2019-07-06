@@ -779,7 +779,7 @@ namespace Vim.UnitTest
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease><C-A-2-LeftMouse><C-A-LeftRelease>");
                 Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
                 AssertSelectionsAdjustCaret(
-                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'def|*'
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
 
                 // Second double-click.
                 _testableMouseDevice.Point = GetPoint(1, 9).Position; // 't' in 'stu'
@@ -788,6 +788,45 @@ namespace Vim.UnitTest
                 AssertSelectionsAdjustCaret(
                     GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
                     GetPoint(1, 11).GetSelectedSpan(-3, 0, false)); // 'stu|*' or 'st|u*'
+            }
+
+            /// <summary>
+            /// Adding the next occurrence of the primary selection should wrap
+            /// </summary>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void AddNextOccurrence(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "abc def ghi", "abc def ghi", "");
+                SetCaretPoints(GetPoint(1, 5));
+
+                // Select word.
+                ProcessNotation("<C-A-N>");
+                Assert.Equal(ModeKind.SelectCharacter, _vimBuffer.ModeKind);
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Select next occurrence below.
+                ProcessNotation("<C-A-N>");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                // Select next occurrence above.
+                ProcessNotation("<C-A-N>");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
+
+                var didHit = false;
+                _vimBuffer.ErrorMessage +=
+                    (_, args) =>
+                    {
+                        Assert.Equal(Resources.VisualMode_NoMoreMatches, args.Message);
+                        didHit = true;
+                    };
+                ProcessNotation("<C-A-N>");
+                Assert.True(didHit);
             }
         }
     }

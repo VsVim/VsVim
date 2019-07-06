@@ -63,6 +63,8 @@ operations module:
 - `<C-A-Up>` and `<C-A-Down>` - add a new caret on an adjecent line (normal, insert)
 - `<C-A-/>` - split selection into carets (visual, select)
 - `<C-A-/>` - restore recent multi-carets or multi-selections (normal)
+- `<C-A-N>` - select word or token at caret (normal)
+- `<C-A-N>` - add next occurrence of primary selection (visual, select)
 - `g/` - split selection into carets (visual)
 - `g/` - restore recent multi-carets or multi-selection (normal)
 

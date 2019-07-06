@@ -3104,8 +3104,11 @@ type NormalCommand =
     /// Select text for a mouse release
     | SelectTextForMouseRelease
 
-    /// Select the current word or matching token
+    /// Select the word or matching token under the caret
     | SelectWordOrMatchingToken
+
+    /// Select the word or matching token at the mouse point
+    | SelectWordOrMatchingTokenAtMousePoint
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3264,6 +3267,7 @@ type NormalCommand =
         | NormalCommand.SelectTextForMouseDrag -> None
         | NormalCommand.SelectTextForMouseRelease -> None
         | NormalCommand.SelectWordOrMatchingToken -> None
+        | NormalCommand.SelectWordOrMatchingTokenAtMousePoint -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3295,14 +3299,17 @@ type VisualCommand =
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
 
+    /// Add the next occurrence of the primary selection
+    | AddNextOccurrenceOfPrimarySelection
+
     /// Add a new selection on an adjacent line in the specified direction
     | AddSelectionOnAdjacentLine of Direction: Direction
 
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
 
-    /// Add word or matching token to the selection
-    | AddWordOrMatchingTokenToSelection
+    /// Add word or matching token at the current mouse point to the selection
+    | AddWordOrMatchingTokenAtMousePointToSelection
 
     /// Cancel any in-progress operation
     | CancelOperation
@@ -3399,7 +3406,7 @@ type VisualCommand =
     | SelectLine
 
     /// Select current word or matching token
-    | SelectWordOrMatchingToken
+    | SelectWordOrMatchingTokenAtMousePoint
 
     /// Shift the selected lines left
     | ShiftLinesLeft

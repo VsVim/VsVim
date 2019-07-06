@@ -3108,6 +3108,7 @@ type internal CommandUtil
         | NormalCommand.SelectTextForMouseDrag -> x.SelectTextForMouseDrag()
         | NormalCommand.SelectTextForMouseRelease -> x.SelectTextForMouseRelease()
         | NormalCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
+        | NormalCommand.SelectWordOrMatchingTokenAtMousePoint -> x.SelectWordOrMatchingTokenAtMousePoint()
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count registerName
         | NormalCommand.SubtractFromWord -> x.SubtractFromWord count
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -3136,6 +3137,7 @@ type internal CommandUtil
             | VisualCommand.AddToSelection _ -> true
             | VisualCommand.ChangeCase _ -> true
             | VisualCommand.DeleteSelection -> true
+            | VisualCommand.InvertSelection _ -> true
             | VisualCommand.MoveCaretToTextObject _-> true
             | VisualCommand.PutOverSelection _ -> true
             | VisualCommand.ReplaceSelection _ -> true
@@ -3158,7 +3160,8 @@ type internal CommandUtil
         | VisualCommand.CopySelection -> false
         | VisualCommand.CutSelectionAndPaste -> false
         | VisualCommand.InvertSelection _ -> false
-        | VisualCommand.AddWordOrMatchingTokenToSelection -> false
+        | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> false
+        | VisualCommand.AddNextOccurrenceOfPrimarySelection -> false
         | _ -> true
 
     /// The visual span associated with the selection
@@ -3192,9 +3195,10 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
+        | VisualCommand.AddNextOccurrenceOfPrimarySelection -> x.AddNextOccurrenceOfPrimarySelection data.Count
         | VisualCommand.AddSelectionOnAdjacentLine direction -> x.AddSelectionOnAdjacentLine direction
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
-        | VisualCommand.AddWordOrMatchingTokenToSelection -> x.AddWordOrMatchingTokenToSelection()
+        | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> x.AddWordOrMatchingTokenAtMousePointToSelection()
         | VisualCommand.CancelOperation -> x.CancelOperation()
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.ChangeSelection registerName visualSpan
@@ -3225,7 +3229,7 @@ type internal CommandUtil
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
         | VisualCommand.SelectLine -> x.SelectLine()
-        | VisualCommand.SelectWordOrMatchingToken -> x.SelectWordOrMatchingToken()
+        | VisualCommand.SelectWordOrMatchingTokenAtMousePoint -> x.SelectWordOrMatchingTokenAtMousePoint()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
         | VisualCommand.SplitSelectionIntoCarets -> x.SplitSelectionIntoCarets visualSpan
@@ -3830,7 +3834,6 @@ type internal CommandUtil
 
     /// Get the word or matching token under the mouse
     member x.GetWordOrMatchingToken () =
-        x.MoveCaretToMouseUnconditionally() |> ignore
         let text =
             x.CaretPoint
             |> SnapshotPointUtil.GetCharacterSpan
@@ -3877,26 +3880,16 @@ type internal CommandUtil
         [_commonOperations.PrimarySelectedSpan]
         |> _commonOperations.SetSelectedSpans
 
-    /// Select the current word or matching token
-    member x.SelectWordOrMatchingToken () =
-        match x.GetWordOrMatchingToken() with
-        | Some visualSelection ->
-            x.ClearSecondarySelections()
-            let visualKind = visualSelection.VisualKind
-            let modeKind =
-                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
-                    visualKind.SelectModeKind
-                else
-                    visualKind.VisualModeKind
-            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
-            x.SwitchMode modeKind modeArgument
-        | None ->
-            CommandResult.Error
+    /// Select the word or matching token at the mouse point
+    member x.SelectWordOrMatchingTokenAtMousePoint () =
+        x.MoveCaretToMouseUnconditionally() |> ignore
+        x.SelectWordOrMatchingToken()
 
-    /// Add word or matching token to the selection
-    member x.AddWordOrMatchingTokenToSelection () =
+    /// Add word or matching token at the current mouse point to the selection
+    member x.AddWordOrMatchingTokenAtMousePointToSelection () =
         let oldSelectedSpans = _commonOperations.SelectedSpans
         let contains = VirtualSnapshotSpanUtil.ContainsOrEndsWith
+        x.MoveCaretToMouseUnconditionally() |> ignore
         match x.GetWordOrMatchingToken() with
         | Some visualSelection ->
             let newSelectedSpan =
@@ -3917,6 +3910,151 @@ type internal CommandUtil
             CommandResult.Completed ModeSwitch.NoSwitch
         | None ->
             CommandResult.Error
+
+    /// Select the word or matching token under the caret
+    member x.SelectWordOrMatchingToken () =
+        match x.GetWordOrMatchingToken() with
+        | Some visualSelection ->
+            x.ClearSecondarySelections()
+            let visualKind = visualSelection.VisualKind
+            let modeKind =
+                if Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse then
+                    visualKind.SelectModeKind
+                else
+                    visualKind.VisualModeKind
+            let modeArgument = ModeArgument.InitialVisualSelection (visualSelection, None)
+            x.SwitchMode modeKind modeArgument
+        | None ->
+            CommandResult.Error
+
+    /// Add the next occurrence of the primary selection
+    member x.AddNextOccurrenceOfPrimarySelection count =
+        let oldSelectedSpans =
+            _commonOperations.SelectedSpans
+            |> Seq.toList
+
+        /// Whether the specified point is at a word boundary
+        let isWordBoundary (point: SnapshotPoint) =
+            let isStart = SnapshotPointUtil.IsStartPoint point
+            let isEnd = SnapshotPointUtil.IsEndPoint point
+            if isStart || isEnd then
+                false
+            else
+                let pointChar =
+                    point
+                    |> SnapshotPointUtil.GetChar
+                let previousPointChar =
+                    point
+                    |> SnapshotPointUtil.SubtractOne
+                    |> SnapshotPointUtil.GetChar
+                let isWord = _wordUtil.IsKeywordChar pointChar
+                let wasWord = _wordUtil.IsKeywordChar previousPointChar
+                let isEmptyLine = SnapshotPointUtil.IsEmptyLine point
+                isWord <> wasWord || isEmptyLine
+
+        // Reset old selected spans and report failure to find a match.
+        let reportNoMoreMatches () =
+            _commonOperations.SetSelectedSpans oldSelectedSpans
+            _statusUtil.OnError Resources.VisualMode_NoMoreMatches
+            CommandResult.Error
+
+        // Construct a regular expression pattern.
+        let primarySelectedSpan = oldSelectedSpans |> Seq.head
+        let span = primarySelectedSpan.Span.SnapshotSpan
+        let pattern =
+            seq {
+                yield if isWordBoundary span.Start then @"\<" else ""
+                yield @"\V"
+                yield span.GetText().Replace(@"\", @"\\")
+                yield @"\m"
+                yield if isWordBoundary span.End then @"\>" else ""
+            }
+            |> String.concat ""
+
+        // Create and store the search data.
+        let path = SearchPath.Forward
+        let searchKind = SearchKind.OfPathAndWrap path _globalSettings.WrapScan
+        let options = SearchOptions.ConsiderIgnoreCase
+        let searchData = SearchData(pattern, SearchOffsetData.None, searchKind, options)
+        _vimData.LastSearchData <- searchData
+
+        // Determine the search start and end points.
+        let searchStartPoint, searchEndPoint =
+            let primaryCaretPoint = primarySelectedSpan.Start.Position
+            if oldSelectedSpans.Length = 1 then
+                primaryCaretPoint, primaryCaretPoint
+            else
+                let sortedStartPoints =
+                    oldSelectedSpans
+                    |> Seq.map (fun selectedSpan -> selectedSpan.Start.Position)
+                    |> Seq.sortBy (fun point -> point.Position)
+                    |> Seq.toList
+                let beforeStartPoints =
+                    sortedStartPoints
+                    |> Seq.filter (fun point ->
+                        point.Position < primaryCaretPoint.Position)
+                    |> Seq.toList
+                let afterStartPoints =
+                    sortedStartPoints
+                    |> Seq.filter (fun point ->
+                        point.Position > primaryCaretPoint.Position)
+                    |> Seq.toList
+                if beforeStartPoints.IsEmpty then
+                    afterStartPoints |> Seq.last, primaryCaretPoint
+                else
+                    beforeStartPoints |> Seq.last, primaryCaretPoint
+
+        // Whether the specified match point is in range.
+        let isInRange (matchPoint: SnapshotPoint) =
+            if searchStartPoint.Position < searchEndPoint.Position then
+                matchPoint.Position > searchStartPoint.Position
+                && matchPoint.Position < searchEndPoint.Position
+            else
+                matchPoint.Position > searchStartPoint.Position
+                || matchPoint.Position < searchEndPoint.Position
+
+        // Temporariliy move the caret to the search start point.
+        TextViewUtil.MoveCaretToPointRaw _textView searchStartPoint MoveCaretFlags.None
+
+        // Perform the search.
+        let motion = Motion.LastSearch false
+        let argument = MotionArgument(MotionContext.Movement, None, count)
+        match _motionUtil.GetMotion motion argument with
+        | Some motionResult ->
+
+            // Found a match.
+            let matchPoint =
+                if motionResult.IsForward then
+                    motionResult.Span.End
+                else
+                    motionResult.Span.Start
+            if isInRange matchPoint then
+
+                // Calculate the new selected span.
+                let endPoint = SnapshotPointUtil.Add span.Length matchPoint
+                let span = SnapshotSpan(matchPoint, endPoint)
+                let isReversed = primarySelectedSpan.IsReversed
+                let caretPoint =
+                    if isReversed then
+                        span.Start
+                    elif _globalSettings.IsSelectionInclusive && span.Length > 0 then
+                        span.End
+                        |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+                    else
+                        span.End
+                let newSelectedSpan = SelectedSpan.FromSpan caretPoint span isReversed
+
+                // Add the new selected span to the selection.
+                seq {
+                    yield! oldSelectedSpans
+                    yield newSelectedSpan
+                }
+                |> _commonOperations.SetSelectedSpans
+                CommandResult.Completed ModeSwitch.NoSwitch
+            else
+                reportNoMoreMatches()
+        | None ->
+            reportNoMoreMatches()
 
     /// Split the selection into carets
     member x.SplitSelectionIntoCarets visualSpan =

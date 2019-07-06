@@ -40,15 +40,16 @@ type internal SelectMode
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
 
                 // Multi-selection bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
-                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenToSelection)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
                 yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
+                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.AddNextOccurrenceOfPrimarySelection)
                 yield ("<C-A-/>", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
@@ -84,7 +85,9 @@ type internal SelectMode
 
     /// Whether a key input corresponds to normal text
     static let IsTextKeyInput (keyInput: KeyInput) =
-        Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
+        Option.isSome keyInput.RawChar
+        && not (CharUtil.IsControl keyInput.Char)
+        && not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt)
 
     let mutable _builtCommands = false
 

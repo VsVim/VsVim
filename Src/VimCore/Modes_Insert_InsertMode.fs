@@ -360,15 +360,16 @@ type internal InsertMode
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
                 ("<S-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseClick))
-                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingTokenAtMousePoint))
                 ("<3-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectLine))
                 ("<4-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectBlock))
 
                 // Multi-selection bindings not in Vim.
                 ("<C-A-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.AddCaretAtMousePoint))
-                ("<C-A-2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
+                ("<C-A-2-LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingTokenAtMousePoint))
                 ("<C-A-Up>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Up)))
                 ("<C-A-Down>", RawInsertCommand.CustomCommand (this.ForwardToNormal (NormalCommand.AddCaretOnAdjacentLine Direction.Down)))
+                ("<C-A-n>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectWordOrMatchingToken))
             |]
             |> Seq.map (fun (text, rawInsertCommand) ->
                 let keyInput = KeyNotationUtil.StringToKeyInput text
