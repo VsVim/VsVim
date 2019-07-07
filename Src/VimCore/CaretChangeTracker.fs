@@ -29,7 +29,8 @@ type internal CaretChangeTracker
         // If we are processing input then the mode is responsible for
         // controlling the window, so let the mode handle it.
         if
-            not _vimBuffer.Vim.IsDisabled
+            _vimHost.IsFocused _textView
+            && not _vimBuffer.Vim.IsDisabled
             && _vimBuffer.ModeKind <> ModeKind.Disabled
             && _vimBuffer.ModeKind <> ModeKind.ExternalEdit
             && not _vimBuffer.IsProcessingInput
@@ -67,5 +68,5 @@ type internal CaretChangeTrackerFactory
             // several  event handlers which will keep it alive for the
             // duration of the  IVimBuffer.
             let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
-            let selectionTracker = CaretChangeTracker(vimBuffer, commonOperations, _mouseDevice)
+            let caretChangeTracker = CaretChangeTracker(vimBuffer, commonOperations, _mouseDevice)
             ()
