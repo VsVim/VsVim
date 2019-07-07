@@ -368,7 +368,7 @@ namespace Vim.UnitTest
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
                 ProcessNotation("<C-C>");
                 AssertCarets(GetPoint(0, 4));
-                ProcessNotation("g/");
+                ProcessNotation("<C-A-p>");
                 SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
             }
 
@@ -613,7 +613,7 @@ namespace Vim.UnitTest
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
-                ProcessNotation("vjjg/");
+                ProcessNotation("vjj<C-A-i>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 0), GetPoint(2, 0));
             }
 
@@ -741,6 +741,18 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Split selection into carets
+            /// </summary>
+            [WpfFact]
+            public void SplitSelection()
+            {
+                Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("Vjj<C-A-i>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
+            }
+
+            /// <summary>
             /// Test deleting lines
             /// </summary>
             [WpfFact]
@@ -762,7 +774,7 @@ namespace Vim.UnitTest
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
-                ProcessNotation("<C-V>jjg/");
+                ProcessNotation("<C-V>jj<C-A-i>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
             }
         }

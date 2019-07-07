@@ -56,17 +56,16 @@ operations module:
 
 #### VsVim Key Bindings
 
-- `<Esc>` - clear secondary carets (normal)
-- `<C-c>` - clear secondary carets or selections (normal, visual, insert)
 - `<C-A-LeftMouse>` - add or remove caret (normal, visual, select, insert)
 - `<C-A-2-LeftMouse>` - add a new selected word or token (normal, visual, select, insert)
 - `<C-A-Up>` and `<C-A-Down>` - add a new caret on an adjecent line (normal, insert)
-- `<C-A-/>` - split selection into carets (visual, select)
-- `<C-A-/>` - restore recent multi-carets or multi-selections (normal)
+- `<C-A-Up>` and `<C-A-Down>` - add a new selection on an adjecent line (visual, select)
+- `<C-A-I>` - split selection into carets (visual, select)
 - `<C-A-N>` - select word or token at caret (normal)
 - `<C-A-N>` - add next occurrence of primary selection (visual, select)
-- `g/` - split selection into carets (visual)
-- `g/` - restore recent multi-carets or multi-selection (normal)
+- `<C-A-P>` - restore previous multi-carets or multi-selections (normal)
+- `<Esc>` - clear secondary carets (normal)
+- `<C-c>` - clear secondary carets or selections (normal, visual, insert)
 
 #### The Unnamaed Register
 
