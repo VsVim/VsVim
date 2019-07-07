@@ -605,6 +605,9 @@ namespace Vim.UnitTest
                     GetPoint(1, 2).GetSelectedSpan(0, 2, true)); // '*|l '
             }
 
+            /// <summary>
+            /// Split selection into carets
+            /// </summary>
             [WpfFact]
             public void SplitSelection()
             {
@@ -615,10 +618,36 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Invert anchor and active point in all selections
+            /// </summary>
+            /// <param name="isInclusive"></param>
+            [WpfTheory, InlineData(false), InlineData(true)]
+            public void InvertSelection(bool isInclusive)
+            {
+                Create(isInclusive, "abc def ghi", "jkl mno pqr", "stu vwx yz.", "");
+                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
+                ProcessNotation("ve");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'mno|*' or 'mn|o*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'vwx|*' or 'vw|x*'
+                ProcessNotation("o");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 4).GetSelectedSpan(0, 3, true), // '*|def'
+                    GetPoint(1, 4).GetSelectedSpan(0, 3, true), // '*|mno'
+                    GetPoint(2, 4).GetSelectedSpan(0, 3, true)); // '*|vwx'
+                ProcessNotation("o");
+                AssertSelectionsAdjustCaret(
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false), // 'def|*' or 'de|f*'
+                    GetPoint(1, 7).GetSelectedSpan(-3, 0, false), // 'mno|*' or 'mn|o*'
+                    GetPoint(2, 7).GetSelectedSpan(-3, 0, false)); // 'vwx|*' or 'vw|x*'
+            }
+
+            /// <summary>
             /// Using double-click should revert to a single selection
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void Select(bool isInclusive)
+            public void SelectWord(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
@@ -626,14 +655,14 @@ namespace Vim.UnitTest
                 ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
                 Assert.Equal(ModeKind.VisualCharacter, _vimBuffer.ModeKind);
                 AssertSelectionsAdjustCaret(
-                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'def|*'
+                    GetPoint(0, 7).GetSelectedSpan(-3, 0, false)); // 'def|*' or 'de|f*'
             }
 
             /// <summary>
             /// Using ctrl-alt-double-click should add a word to the selection
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void AddToSelection(bool isInclusive)
+            public void AddWordToSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
 
@@ -852,7 +881,7 @@ namespace Vim.UnitTest
             /// Using double-click should revert to a single selection
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void Select(bool isInclusive)
+            public void SelectWord(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
@@ -867,7 +896,7 @@ namespace Vim.UnitTest
             /// Using ctrl-alt-double-click should add a word to the selection
             /// </summary>
             [WpfTheory, InlineData(false), InlineData(true)]
-            public void AddToSelection(bool isInclusive)
+            public void AddWordToSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
 

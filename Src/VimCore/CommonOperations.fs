@@ -2552,7 +2552,7 @@ type internal CommonOperations
     /// Run the specified action for the specified selected spans
     member x.RunForAllSelectionsCore action selectedSpans =
 
-        // Get the current set of selected spans.
+        // Get the current kind of visual mode, if any.
         let visualModeKind =
             _vimTextBuffer.ModeKind
             |> VisualKind.OfModeKind
@@ -2622,7 +2622,19 @@ type internal CommonOperations
         // Get the effective selected span.
         let getVisualSelectedSpan visualKind (oldSelectedSpan: SelectedSpan) =
             let oldSelectedSpan = x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
-            let anchorPoint = oldSelectedSpan.AnchorPoint
+            let snapshot = _textView.TextSnapshot
+            let oldAnchorPoint = oldSelectedSpan.AnchorPoint
+            let anchorPoint =
+                match _vimBufferData.VisualAnchorPoint with
+                | Some trackingPoint ->
+                    match TrackingPointUtil.GetPoint snapshot trackingPoint with
+                    | Some point ->
+                        VirtualSnapshotPointUtil.OfPoint point
+                    | None ->
+                        oldAnchorPoint
+                | None ->
+                    oldAnchorPoint
+            let anchorPointChanged = oldAnchorPoint <> anchorPoint
             let caretPoint = x.CaretVirtualPoint
             let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
             let selectionKind = _globalSettings.SelectionKind
@@ -2635,7 +2647,9 @@ type internal CommonOperations
                 | SelectionKind.Exclusive ->
                     true
                 | SelectionKind.Inclusive ->
-                    oldSelectedSpan.IsReversed && oldSelectedSpan.Length <> 1
+                    oldSelectedSpan.IsReversed
+                    && oldSelectedSpan.Length <> 1
+                    && not anchorPointChanged
             let visualSelection =
                 if adjustSelection then
                     visualSelection.AdjustForSelectionKind SelectionKind.Exclusive
@@ -2679,6 +2693,16 @@ type internal CommonOperations
                     | None ->
                         x.PrimarySelectedSpan
 
+        // Set a temporary visual anchor point.
+        let setVisualAnchorPoint (anchorPoint: VirtualSnapshotPoint) =
+            if Option.isSome visualModeKind then
+                let snapshot = _textBuffer.CurrentSnapshot
+                let position = anchorPoint.Position.Position
+                let trackingPoint =
+                    snapshot.CreateTrackingPoint(position, PointTrackingMode.Negative)
+                    |> Some
+                _vimBufferData.VisualAnchorPoint <- trackingPoint
+
         // Get the results for all actions.
         let getResults () =
             seq {
@@ -2692,6 +2716,9 @@ type internal CommonOperations
                     // Set the buffer local caret index.
                     _vimBufferData.CaretIndex <- index
 
+                    // Set the visual anchor point.
+                    setVisualAnchorPoint oldSelectedSpan.AnchorPoint
+
                     // Temporarily set the real caret and selection.
                     x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
                     |> x.SetTemporarySelectedSpan
@@ -2703,7 +2730,10 @@ type internal CommonOperations
                     let newSelectedSpan =
                         getResultingSpan oldSelectedSpan result
 
-                    yield result, newSelectedSpan
+                    let newAnchorPoint =
+                        _vimBufferData.VisualAnchorPoint
+
+                    yield result, newSelectedSpan, newAnchorPoint
             }
             |> Seq.toList
 
@@ -2718,18 +2748,20 @@ type internal CommonOperations
 
             // Extract the resulting selected spans and set them.
             results
-            |> Seq.map (fun (_, selectedSpan) -> selectedSpan)
+            |> Seq.map (fun (_, selectedSpan, _) -> selectedSpan)
             |> Seq.map x.MapSelectedSpanToCurrentSnapshot
             |> x.SetSelectedSpans
 
-            // Extract the first command result.
-            let result =
+            // Extract the first command result and anchor point.
+            let firstResult, _, firstAnchorPoint =
                 results
-                |> Seq.map (fun (result, _) -> result)
                 |> Seq.head
 
+            // Update the real visual anchor point.
+            _vimBufferData.VisualAnchorPoint <- firstAnchorPoint
+
             // Handle command result.
-            if getLinkedTransaction result |> Option.isSome then
+            if getLinkedTransaction firstResult |> Option.isSome then
 
                 // The individual command ended in a linked transaction. Enter
                 // insert mode with the overall linked transaction instead.
@@ -2742,12 +2774,13 @@ type internal CommonOperations
 
                 // Complete the transaction.
                 transaction.Complete()
-                result
+                firstResult
 
         // Do the actions for each selection being sure to restore the old
         // caret index at the end.
         let wrapDoActions () =
             let oldCaretIndex = _vimBufferData.CaretIndex
+
             try
                 use bulkOperation = _bulkOperations.BeginBulkOperation()
                 doActions()
