@@ -11,11 +11,15 @@ namespace Vim.UI.Wpf.Implementation.Mouse
     {
         private readonly IVimBuffer _vimBuffer;
         private readonly IKeyboardDevice _keyboardDevice;
+        private readonly IWpfTextView _wpfTextView;
+        private readonly MouseDevice _mouseDevice;
 
         internal VimMouseProcessor(IVimBuffer vimBuffer, IKeyboardDevice keyboardDevice)
         {
             _vimBuffer = vimBuffer;
             _keyboardDevice = keyboardDevice;
+            _wpfTextView = (IWpfTextView)_vimBuffer.TextView;
+            _mouseDevice = InputManager.Current.PrimaryMouseDevice;
         }
 
         internal bool TryProcess(VimKey vimKey, int clickCount = 1)
@@ -73,6 +77,10 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             {
                 case MouseButton.Left:
                     e.Handled = TryProcess(VimKey.LeftMouse, e.ClickCount);
+                    if (e.Handled)
+                    {
+                        _mouseDevice.Capture(_wpfTextView.VisualElement);
+                    }
                     break;
                 case MouseButton.Middle:
                     e.Handled = TryProcess(VimKey.MiddleMouse, e.ClickCount);
@@ -95,6 +103,10 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             {
                 case MouseButton.Left:
                     e.Handled = TryProcess(VimKey.LeftRelease);
+                    if (e.Handled)
+                    {
+                        _wpfTextView.VisualElement.ReleaseMouseCapture();
+                    }
                     break;
                 case MouseButton.Middle:
                     e.Handled = TryProcess(VimKey.MiddleRelease);
