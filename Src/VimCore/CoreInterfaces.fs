@@ -127,7 +127,7 @@ type IFileSystem =
 
     abstract Write: filePath: string -> stream: Stream -> bool
 
-/// Used for manipulating the seleciton
+/// Used for manipulating multiple selections
 type ISelectionUtil =
 
     /// Whether multi-selection is supported

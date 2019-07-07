@@ -159,7 +159,7 @@ type internal SelectMode
 
         elif shouldMimicNative && caretMovement = CaretMovement.Right then
 
-            // For a native exclusive selction, typing plain left leaves the
+            // For a native exclusive selction, typing plain right leaves the
             // caret at the selection end point.
             leaveSelectWithCaretAtPoint _textView.Selection.End
 
