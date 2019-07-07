@@ -72,7 +72,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Parse and run the specified command
         /// </summary>
-        private void ParseAndRun(string command)
+        private LineCommand ParseAndRun(string command)
         {
             if (command.Length > 0 && command[0] == ':')
             {
@@ -81,6 +81,7 @@ namespace Vim.UnitTest
 
             var lineCommand = VimUtil.ParseLineCommand(command);
             _interpreter.RunLineCommand(lineCommand);
+            return lineCommand;
         }
 
         public sealed class CallTest : InterpreterTest
@@ -1511,6 +1512,23 @@ namespace Vim.UnitTest
                 ParseAndRun("let x = &fakeoption");
                 AssertValue("x", 2);
             }
+
+            [WpfFact]
+            public void EmbeddedInvalidKeyNotation()
+            {
+                // Reported in issue #2646.
+                Create("");
+                ParseAndRun(@"let x = ""\<Escape>""");
+                AssertValue("x", "<Escape>");
+            }
+
+            [WpfFact]
+            public void EmbeddedVimKeyNotation()
+            {
+                Create("");
+                ParseAndRun(@"let x = ""\<Left>""");
+                AssertValue("x", "<Left>");
+            }
         }
 
         public sealed class UnletTest : InterpreterTest
@@ -1669,18 +1687,27 @@ namespace Vim.UnitTest
             }
         }
 
-        public sealed class QuickFixTest : InterpreterTest
+        public sealed class ListNavigationTest : InterpreterTest
         {
-            private void AssertQuickFix(string command, QuickFix quickFix, int count, bool hasBang)
+            private void AssertListNavigation(string command, ListKind listKind, NavigationKind navigationKind, int? argument, bool hasBang)
             {
                 var didRun = false;
-                VimHost.RunQuickFixFunc =
-                    (qf, c, h) =>
+                VimHost.NavigateToListItemFunc =
+                    (lk, nk, a, h) =>
                     {
-                        Assert.Equal(quickFix, qf);
-                        Assert.Equal(count, c);
+                        Assert.Equal(listKind, lk);
+                        Assert.Equal(navigationKind, nk);
+                        if (argument.HasValue)
+                        {
+                            Assert.Equal(argument.Value, a.Value);
+                        }
+                        else
+                        {
+                            Assert.Equal(FSharpOption<int>.None, a);
+                        }
                         Assert.Equal(hasBang, h);
                         didRun = true;
+                        return FSharpOption<ListItem>.None;
                     };
                 Create("");
                 ParseAndRun(command);
@@ -1690,19 +1717,19 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Next()
             {
-                AssertQuickFix("cn", QuickFix.Next, 1, hasBang: false);
-                AssertQuickFix("1cn", QuickFix.Next, 1, hasBang: false);
-                AssertQuickFix("2cn", QuickFix.Next, 2, hasBang: false);
-                AssertQuickFix("2cn!", QuickFix.Next, 2, hasBang: true);
+                AssertListNavigation("cn", ListKind.Error, NavigationKind.Next, null, hasBang: false);
+                AssertListNavigation("1cn", ListKind.Error, NavigationKind.Next, 1, hasBang: false);
+                AssertListNavigation("2cn", ListKind.Error, NavigationKind.Next, 2, hasBang: false);
+                AssertListNavigation("2cn!", ListKind.Error, NavigationKind.Next, 2, hasBang: true);
             }
 
             [WpfFact]
             public void Previous()
             {
-                AssertQuickFix("cp", QuickFix.Previous, 1, hasBang: false);
-                AssertQuickFix("1cp", QuickFix.Previous, 1, hasBang: false);
-                AssertQuickFix("2cp", QuickFix.Previous, 2, hasBang: false);
-                AssertQuickFix("2cp!", QuickFix.Previous, 2, hasBang: true);
+                AssertListNavigation("cp", ListKind.Error, NavigationKind.Previous, null, hasBang: false);
+                AssertListNavigation("1cp", ListKind.Error, NavigationKind.Previous, 1, hasBang: false);
+                AssertListNavigation("2cp", ListKind.Error, NavigationKind.Previous, 2, hasBang: false);
+                AssertListNavigation("2cp!", ListKind.Error, NavigationKind.Previous, 2, hasBang: true);
             }
         }
 
@@ -1954,6 +1981,152 @@ namespace Vim.UnitTest
                 Create();
                 ParseAndRun("if 1!=0", "set ts=13", "elseif 2>2", "set ts=12", "endif");
                 Assert.Equal(13, _localSettings.TabStop);
+            }
+        }
+
+        public sealed class VimGrep : InterpreterTest
+        {
+            private bool _didRun;
+            private string _pattern;
+            private bool _matchCase;
+            private string _filesOfType;
+            private VimGrepFlags _flags;
+
+            protected override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                VimHost.FindInFilesFunc =
+                    (pattern, matchCase, filesOfType, flags, action) =>
+                    {
+                        _didRun = true;
+                        _pattern = pattern;
+                        _matchCase = matchCase;
+                        _filesOfType = filesOfType;
+                        _flags = flags;
+                    };
+                _didRun = false;
+                _pattern = null;
+                _matchCase = false;
+                _filesOfType = null;
+                _flags = VimGrepFlags.None;
+            }
+
+            [WpfFact]
+            public void IdentSearch()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep pattern").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+            }
+
+            [WpfFact]
+            public void DelimiterSearch()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep /pattern/").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+            }
+
+            [WpfFact]
+            public void NoJumpFlag()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep /pattern/j").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.NoJumpToFirst, lineCommand.Flags);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.NoJumpToFirst, _flags);
+            }
+
+            [WpfFact]
+            public void AllMatchesFlag()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep /pattern/g").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, _flags);
+            }
+
+            [WpfFact]
+            public void FilePattern()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep /pattern/g *.cs").AsVimGrep();
+                Assert.Equal("pattern", lineCommand.Pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, lineCommand.Flags);
+                Assert.Equal("*.cs", lineCommand.FilePattern);
+                Assert.True(_didRun);
+                Assert.Equal("pattern", _pattern);
+                Assert.Equal(VimGrepFlags.AllMatchesPerFile, _flags);
+                Assert.Equal("*.cs", _filesOfType);
+            }
+
+            [WpfFact]
+            public void IdentPatternWithQuote()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep cat\"dog").AsVimGrep();
+                Assert.Equal("cat\"dog", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("cat\"dog", _pattern);
+            }
+
+            [WpfFact]
+            public void DelimitedPatternWithQuote()
+            {
+                Create("");
+                var lineCommand = ParseAndRun("vimgrep /cat\"dog/").AsVimGrep();
+                Assert.Equal("cat\"dog", lineCommand.Pattern);
+                Assert.True(_didRun);
+                Assert.Equal("cat\"dog", _pattern);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseSet()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = true;
+                ParseAndRun("vimgrep /pattern/");
+                Assert.True(_didRun);
+                Assert.False(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseUnset()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = false;
+                ParseAndRun("vimgrep /pattern/");
+                Assert.True(_didRun);
+                Assert.True(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseSet_Override()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = true;
+                ParseAndRun(@"vimgrep /\Cpattern/");
+                Assert.True(_didRun);
+                Assert.True(_matchCase);
+            }
+
+            [WpfFact]
+            public void IgnoreCaseUnset_Override()
+            {
+                Create("");
+                _globalSettings.IgnoreCase = false;
+                ParseAndRun(@"vimgrep /\cpattern/");
+                Assert.True(_didRun);
+                Assert.False(_matchCase);
             }
         }
 

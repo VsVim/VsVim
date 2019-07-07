@@ -106,7 +106,6 @@ namespace Vim.UnitTest
                 !insertMode,
                 _keyboardDevice.Object,
                 _mouseDevice.Object,
-                WordUtil,
                 _wordCompletionSessionFactoryService.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);

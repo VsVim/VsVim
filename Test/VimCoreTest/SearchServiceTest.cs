@@ -10,8 +10,9 @@ namespace Vim.UnitTest
     public abstract class SearchServiceTest : VimTestBase
     {
         private ITextBuffer _textBuffer;
-        private ITextStructureNavigator _wordNavigator;
+        private WordUtil _wordUtil;
         private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private ITextSearchService _textSearch;
         private SearchService _searchRaw;
         private ISearchService _search;
@@ -24,12 +25,12 @@ namespace Vim.UnitTest
         public virtual void Create(ITextSearchService textSearchService, params string[] lines)
         {
             _textBuffer = CreateTextBuffer(lines);
-            _wordNavigator = WordUtil.CreateTextStructureNavigator(WordKind.NormalWord, _textBuffer.ContentType);
             _globalSettings = Vim.GlobalSettings;
             _globalSettings.Magic = true;
             _globalSettings.IgnoreCase = true;
             _globalSettings.SmartCase = false;
-
+            _localSettings = new LocalSettings(_globalSettings);
+            _wordUtil = new WordUtil(_textBuffer, _localSettings);
             _textSearch = textSearchService;
             _searchRaw = new SearchService(_textSearch, _globalSettings);
             _search = _searchRaw;
@@ -38,7 +39,7 @@ namespace Vim.UnitTest
         private FindOptions CreateFindOptions(string pattern, SearchKind kind, SearchOptions options)
         {
             var searchData = new SearchData(pattern, SearchOffsetData.None, kind, options);
-            var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
+            var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordUtil.SnapshotWordNavigator);
             var findData = SearchService.ConvertToFindDataCore(serviceSearchData, _textBuffer.CurrentSnapshot);
             Assert.True(findData.IsResult);
             return findData.AsResult().FindOptions;
@@ -47,7 +48,7 @@ namespace Vim.UnitTest
         private SearchResult FindNextPattern(string pattern, SearchPath path, SnapshotPoint point, int count)
         {
             var searchData = new SearchData(pattern, path, _globalSettings.WrapScan);
-            return _search.FindNextPattern(point, searchData, _wordNavigator, count);
+            return _search.FindNextPattern(point, searchData, _wordUtil.SnapshotWordNavigator, count);
         }
 
         public sealed class CreateFindOptionsTest : SearchServiceTest
@@ -178,7 +179,7 @@ namespace Vim.UnitTest
                 Create("cat dog FISH");
                 _globalSettings.IgnoreCase = true;
                 var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
-                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordNavigator);
+                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordUtil.SnapshotWordNavigator);
                 Assert.True(result.IsFound);
             }
 
@@ -191,7 +192,7 @@ namespace Vim.UnitTest
                 Create("cat dog FISH");
                 _globalSettings.IgnoreCase = false;
                 var data = VimUtil.CreateSearchData("fish", options: SearchOptions.ConsiderIgnoreCase);
-                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordNavigator);
+                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordUtil.SnapshotWordNavigator);
                 Assert.True(result.IsNotFound);
             }
 
@@ -203,7 +204,7 @@ namespace Vim.UnitTest
             {
                 Create(@"cat bthe thedog");
                 var data = VimUtil.CreateSearchData(@"\<the");
-                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordNavigator);
+                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordUtil.SnapshotWordNavigator);
                 Assert.Equal(9, result.AsFound().SpanWithOffset.Start.Position);
             }
 
@@ -216,7 +217,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var data = VimUtil.CreateSearchData("f(");
-                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordNavigator);
+                var result = _search.FindNext(_textBuffer.GetPoint(0), data, _wordUtil.SnapshotWordNavigator);
                 Assert.True(result.IsNotFound);
             }
 
@@ -228,7 +229,7 @@ namespace Vim.UnitTest
             {
                 Create("");
                 var searchData = new SearchData(@"\Va", SearchOffsetData.None, SearchKind.ForwardWithWrap, SearchOptions.None);
-                var result = _search.FindNext(_textBuffer.GetPoint(0), searchData, _wordNavigator);
+                var result = _search.FindNext(_textBuffer.GetPoint(0), searchData, _wordUtil.SnapshotWordNavigator);
                 Assert.True(result.IsNotFound);
             }
 
@@ -240,7 +241,7 @@ namespace Vim.UnitTest
             {
                 Create(" cat dog cat");
                 var data = VimUtil.CreateSearchData("cat");
-                var result = _search.FindNextPattern(_textBuffer.GetPoint(0), data, _wordNavigator, 2);
+                var result = _search.FindNextPattern(_textBuffer.GetPoint(0), data, _wordUtil.SnapshotWordNavigator, 2);
                 Assert.Equal(9, result.AsFound().SpanWithOffset.Start.Position);
             }
         }
@@ -389,7 +390,7 @@ namespace Vim.UnitTest
             private Span ApplySearchOffsetData(SnapshotSpan span, SearchOffsetData searchOffsetData)
             {
                 var searchData = new SearchData("", searchOffsetData, SearchKind.Forward, SearchOptions.None);
-                var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordNavigator);
+                var serviceSearchData = _searchRaw.GetServiceSearchData(searchData, _wordUtil.SnapshotWordNavigator);
                 return _searchRaw.ApplySearchOffsetData(serviceSearchData, span).Value;
             }
 
@@ -489,9 +490,9 @@ namespace Vim.UnitTest
                 base.Create(_mock.Object, lines);
             }
 
-            private void FindNext(string text, int position = 0, SearchPath path = null, bool isWrap = true, ITextStructureNavigator navigator = null)
+            private void FindNext(string text, int position = 0, SearchPath path = null, bool isWrap = true, SnapshotWordNavigator navigator = null)
             {
-                navigator = navigator ?? _wordNavigator;
+                navigator = navigator ?? _wordUtil.SnapshotWordNavigator;
                 path = path ?? SearchPath.Forward;
                 var point = _textBuffer.GetPoint(position);
                 _search.FindNext(point, new SearchData(text, path, isWrap), navigator);
@@ -537,6 +538,19 @@ namespace Vim.UnitTest
                 Create("cat dog");
                 FindNext("dog", position: 0);
                 FindNext("dog", position: 1);
+                Assert.Equal(4, _searchCount);
+            }
+
+            [WpfFact]
+            public void IsKeywordSettingChanges()
+            {
+                Create("cat dog");
+                FindNext("dog", position: 0);
+                Assert.Equal(2, _searchCount);
+                FindNext("dog", position: 0);
+                Assert.Equal(2, _searchCount);
+                _localSettings.IsKeyword = "t,e,m,p";
+                FindNext("dog", position: 0);
                 Assert.Equal(4, _searchCount);
             }
         }

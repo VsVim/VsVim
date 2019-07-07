@@ -580,6 +580,7 @@ module CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
+    let IsIdent x = IsLetterOrDigit x || x = '_'
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
     let IsPrintable x =
@@ -1021,3 +1022,13 @@ module internal HashUtil =
         let hash = (hash * 31) + hash2
         let hash = (hash * 31) + hash3
         hash
+
+type internal OptionBuilder() =
+    member x.Bind (value, cont) = 
+        match value with 
+        | None -> None
+        | Some value -> cont value
+
+    member x.Return value = Some value
+    member x.ReturnFrom o = o
+    member x.Zero () = None

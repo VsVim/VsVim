@@ -126,12 +126,9 @@ and [<Sealed>] Parser
         ("cd", "cd")
         ("chdir", "chd")
         ("close", "clo")
-        ("cnext", "cn")
         ("copy", "co")
-        ("cprevious", "cp")
         ("csx", "cs")
         ("csxe", "csxe")
-        ("cwindow", "cw")
         ("delete","d")
         ("delmarks", "delm")
         ("digraphs", "dig")
@@ -248,6 +245,22 @@ and [<Sealed>] Parser
         ("inoremap", "ino")
         ("lnoremap", "ln")
         ("cnoremap", "cno")
+        ("cwindow", "cw")
+        ("cfirst", "cfir")
+        ("clast", "cla")
+        ("cnext", "cn")
+        ("cNext", "cN")
+        ("cprevious", "cp")
+        ("crewind", "cr")
+        ("lwindow", "lw")
+        ("lfirst", "lfir")
+        ("llast", "lla")
+        ("lnext", "lne")
+        ("lprevious", "lp")
+        ("lNext", "lN")
+        ("lrewind", "lr")
+        ("vimgrep", "vim")
+        ("lvimgrep", "lv")
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -774,6 +787,33 @@ and [<Sealed>] Parser
         | None -> ParseResult.Succeeded flags
         | Some p -> p
 
+    /// Used to parse out the flags for the vimgrep commands
+    member x.ParseVimGrepFlags () =
+
+        // Get the string which we are parsing for flags
+        let flagString = x.ParseWhile (fun token -> 
+            match token.TokenKind with
+            | TokenKind.Word _ -> true
+            | _ -> false)
+        let flagString = OptionUtil.getOrDefault "" flagString
+
+        let mutable parseResult: ParseResult<VimGrepFlags> option = None
+        let mutable flags = VimGrepFlags.None
+        let mutable index = 0
+        while index < flagString.Length && Option.isNone parseResult do
+            match flagString.[index] with
+            | 'g' -> flags <- flags ||| VimGrepFlags.AllMatchesPerFile
+            | 'j' -> flags <- flags ||| VimGrepFlags.NoJumpToFirst
+            | _  -> 
+                // Illegal character in the flags string 
+                parseResult <- ParseResult.Failed Resources.CommandMode_TrailingCharacters |> Some
+
+            index <- index + 1
+
+        match parseResult with
+        | None -> ParseResult.Succeeded flags
+        | Some p -> p
+
     /// Parse out an '@' command
     member x.ParseAtCommand lineRange =
         x.SkipBlanks()
@@ -830,7 +870,6 @@ and [<Sealed>] Parser
             | LineCommand.GoToNextTab _ -> noRangeCommand
             | LineCommand.GoToPreviousTab _ -> noRangeCommand
             | LineCommand.Help _ -> noRangeCommand
-            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.History -> noRangeCommand
             | LineCommand.HorizontalSplit (_, fileOptions, commandOptions) -> LineCommand.HorizontalSplit (lineRange, fileOptions, commandOptions)
             | LineCommand.HostCommand _ -> noRangeCommand
@@ -845,18 +884,17 @@ and [<Sealed>] Parser
             | LineCommand.Make _ -> noRangeCommand
             | LineCommand.MapKeys _ -> noRangeCommand
             | LineCommand.MoveTo (_, destLineRange, count) -> LineCommand.MoveTo (lineRange, destLineRange, count)
+            | LineCommand.NavigateToListItem _ -> noRangeCommand
             | LineCommand.NoHighlightSearch -> noRangeCommand
             | LineCommand.Nop -> noRangeCommand
             | LineCommand.Normal (_, command) -> LineCommand.Normal (lineRange, command)
             | LineCommand.Only -> noRangeCommand
+            | LineCommand.OpenListWindow _ -> noRangeCommand
             | LineCommand.ParseError _ -> noRangeCommand
             | LineCommand.DisplayLines (_, lineCommandFlags)-> LineCommand.DisplayLines (lineRange, lineCommandFlags)
             | LineCommand.PrintCurrentDirectory -> noRangeCommand
             | LineCommand.PutAfter (_, registerName) -> LineCommand.PutAfter (lineRange, registerName)
             | LineCommand.PutBefore (_, registerName) -> LineCommand.PutBefore (lineRange, registerName)
-            | LineCommand.QuickFixNext _ -> noRangeCommand
-            | LineCommand.QuickFixPrevious _ -> noRangeCommand
-            | LineCommand.QuickFixWindow -> noRangeCommand
             | LineCommand.Quit _ -> noRangeCommand
             | LineCommand.QuitAll _ -> noRangeCommand
             | LineCommand.QuitWithWrite (_, hasBang, fileOptions, filePath) -> LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath)
@@ -883,6 +921,8 @@ and [<Sealed>] Parser
             | LineCommand.UnmapKeys _ -> noRangeCommand
             | LineCommand.Version -> noRangeCommand
             | LineCommand.VerticalSplit (_, fileOptions, commandOptions) -> LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions)
+            | LineCommand.VimGrep _ -> noRangeCommand
+            | LineCommand.VimHelp _ -> noRangeCommand
             | LineCommand.Write (_, hasBang, fileOptionList, filePath) -> LineCommand.Write (lineRange, hasBang, fileOptionList, filePath)
             | LineCommand.WriteAll _ -> noRangeCommand
             | LineCommand.Yank (_, registerName, count) -> LineCommand.Yank (lineRange, registerName, count)
@@ -1658,10 +1698,12 @@ and [<Sealed>] Parser
                             | None -> ()
                             | Some notation ->
                                 let notation = "<" + notation + ">"
-                                let keyInput = KeyNotationUtil.StringToKeyInput notation
-                                match keyInput.RawChar with
-                                | None -> ()
-                                | Some rawChar -> builder.AppendChar rawChar
+                                match KeyNotationUtil.TryStringToKeyInput notation with
+                                | None -> builder.AppendString notation
+                                | Some keyInput ->
+                                    match keyInput.RawChar with
+                                    | None -> builder.AppendString notation
+                                    | Some rawChar -> builder.AppendChar rawChar
 
                     | _ -> builder.AppendChar c
                     inner false
@@ -1794,17 +1836,32 @@ and [<Sealed>] Parser
             | _ -> x.ParseError "Error"
         getNames (fun x -> x)
 
-    member x.ParseQuickFixNext count =
-        let hasBang = x.ParseBang()
-        LineCommand.QuickFixNext (count, hasBang)
-
-    member x.ParseQuickFixWindow _ =
+    member x.ParseOpenListWindow listKind =
         _tokenizer.MoveToEndOfLine()
-        LineCommand.QuickFixWindow
+        LineCommand.OpenListWindow listKind
 
-    member x.ParseQuickFixPrevious count =
+    /// Parse out a 'navigate to list item', e.g. ':cnext'
+    member x.ParseNavigateToListItem lineRange listKind navigationKind =
         let hasBang = x.ParseBang()
-        LineCommand.QuickFixPrevious (count, hasBang)
+
+        // Optionally take argument from line range specifier.
+        let argument =
+            match lineRange with
+            | LineRangeSpecifier.SingleLine lineSpecifier ->
+                match lineSpecifier with
+                | LineSpecifier.Number argument -> Some argument
+                | _ -> None
+            | _ -> None
+
+        // Optionally take argument as first argument.
+        let argument =
+            match argument with
+            | Some argument -> Some argument
+            | None ->
+                x.SkipBlanks()
+                x.ParseNumber()
+
+        LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang)
 
     /// Parse out the quit and write command.  This includes 'wq', 'xit' and 'exit' commands.
     member x.ParseQuitAndWrite lineRange = 
@@ -1941,16 +1998,59 @@ and [<Sealed>] Parser
         LineCommand.Normal (lineRange, List.ofSeq inputs)
 
     /// Parse out the :help command
-    member x.ParseHelp() =
+    member x.ParseHelp () =
         x.SkipBlanks ()
         let subject = x.ParseRestOfLine()
         LineCommand.Help subject
 
     /// Parse out the :vimhelp command
-    member x.ParseVimHelp() =
+    member x.ParseVimHelp () =
         x.SkipBlanks ()
         let subject = x.ParseRestOfLine()
         LineCommand.VimHelp subject
+
+    /// Parse out the :vimgrep command
+    member x.ParseVimGrep count =
+        let hasBang = x.ParseBang()
+
+        // Given a pattern and flags, parse the file pattern.
+        let parseFilePattern pattern flags =
+            x.SkipBlanks()
+            use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+            let filePattern = x.ParseRestOfLine()
+            LineCommand.VimGrep (count, hasBang, pattern, flags, filePattern)
+
+        // Check the first character of the pattern.
+        x.SkipBlanks()
+        let delimiter = _tokenizer.CurrentChar
+        if _tokenizer.IsAtEndOfLine then
+            x.ParseError Resources.Parser_Error
+        elif CharUtil.IsIdent delimiter then
+
+            // Parse out a blank separated word.
+            use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
+            match x.ParseWhile (fun token -> token.TokenKind <> TokenKind.Blank) with
+            | Some pattern ->
+                parseFilePattern pattern VimGrepFlags.None
+            | None ->
+                x.ParseError Resources.Parser_Error
+        else
+
+            // Parse out a delimited pattern.
+            _tokenizer.MoveNextChar()
+            let pattern, foundDelimiter = x.ParsePattern delimiter
+            if foundDelimiter then
+
+                // Found the trailing delimiter, e.g. '/pattern/'.
+                match x.ParseVimGrepFlags() with
+                | ParseResult.Failed message ->
+                    x.ParseError message
+                | ParseResult.Succeeded flags ->
+                    parseFilePattern pattern flags
+            else
+
+                // Reached the end of line, e.g. '/pattern'.
+                parseFilePattern pattern VimGrepFlags.None
 
     /// Parse out the :history command
     member x.ParseHistory() =
@@ -2427,18 +2527,22 @@ and [<Sealed>] Parser
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cd" -> noRange x.ParseChangeDirectory
+                | "cfirst" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "chdir" -> noRange x.ParseChangeDirectory
+                | "clast" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Last
                 | "close" -> noRange x.ParseClose
                 | "cmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Command])
                 | "cmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Command])
+                | "cnext" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Next
+                | "cNext" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Previous
                 | "cnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Command])
-                | "cnext" -> handleCount x.ParseQuickFixNext
-                | "cprevious" -> handleCount x.ParseQuickFixPrevious
                 | "copy" -> x.ParseCopyTo lineRange 
+                | "cprevious" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.Previous
+                | "crewind" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
                 | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
-                | "cwindow" -> noRange x.ParseQuickFixWindow
+                | "cwindow" -> noRange (fun () -> x.ParseOpenListWindow ListKind.Error)
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
                 | "digraphs" -> noRange x.ParseDigraphs
@@ -2457,7 +2561,6 @@ and [<Sealed>] Parser
                 | "global" -> x.ParseGlobal lineRange
                 | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
-                | "vimhelp" -> noRange x.ParseVimHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
@@ -2468,11 +2571,19 @@ and [<Sealed>] Parser
                 | "lcd" -> noRange x.ParseChangeLocalDirectory
                 | "lchdir" -> noRange x.ParseChangeLocalDirectory
                 | "let" -> noRange x.ParseLet
+                | "lfirst" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.First
                 | "list" -> x.ParseDisplayLines lineRange LineCommandFlags.List
+                | "llast" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Last
                 | "lmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Language])
+                | "lnext" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Next
+                | "lNext" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Previous
+                | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
+                | "lprevious" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.Previous
+                | "lrewind" -> x.ParseNavigateToListItem lineRange ListKind.Location NavigationKind.First
                 | "ls" -> noRange x.ParseFiles
                 | "lunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Language])
-                | "lnoremap"-> noRange (fun () -> x.ParseMapKeysNoRemap false [KeyRemapMode.Language])
+                | "lvimgrep" -> handleCount x.ParseVimGrep
+                | "lwindow" -> noRange (fun () -> x.ParseOpenListWindow ListKind.Location)
                 | "make" -> noRange x.ParseMake 
                 | "marks" -> noRange x.ParseDisplayMarks
                 | "map"-> noRange (fun () -> x.ParseMapKeys true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
@@ -2527,6 +2638,8 @@ and [<Sealed>] Parser
                 | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
                 | "version" -> noRange (fun () -> LineCommand.Version)
+                | "vimhelp" -> noRange x.ParseVimHelp
+                | "vimgrep" -> handleCount x.ParseVimGrep
                 | "vglobal" -> x.ParseGlobalCore lineRange false
                 | "vmap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Visual; KeyRemapMode.Select])
                 | "vmapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.Visual; KeyRemapMode.Select])

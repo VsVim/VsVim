@@ -461,7 +461,7 @@ type VimInterpreter
                     currentLine |> SnapshotLineUtil.GetStart
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
             _vimData.LastSearchData <- searchData
-            let wordNavigator = _vimBufferData.VimTextBuffer.WordNavigator
+            let wordNavigator = _vimBufferData.VimTextBuffer.WordUtil.SnapshotWordNavigator
             let result = _searchService.FindNextPattern startPoint searchData wordNavigator 1
             match result with
             | SearchResult.Found (_, span, _, _) ->
@@ -1317,6 +1317,33 @@ type VimInterpreter
         _vimHost.OpenLink link |> ignore
         _statusUtil.OnStatus "For help on Vim, use :vimhelp"
 
+    /// Run 'find in files' using the specified vim regular expression
+    member x.RunVimGrep count hasBang pattern flags filePattern =
+
+        // Action to perform when completing the operation.
+        let onFindDone () =
+            if Util.IsFlagSet flags VimGrepFlags.NoJumpToFirst |> not then
+                let listKind = ListKind.Location
+                let navigationKind = NavigationKind.First
+                x.RunNavigateToListItem listKind navigationKind None false
+
+        // Convert the vim regex to a BCL regex for use with 'find in files'.
+        match VimRegexFactory.Create pattern VimRegexOptions.Default with
+        | Some regex ->
+            let pattern = regex.RegexPattern
+            let matchCase =
+                match regex.CaseSpecifier with
+                | CaseSpecifier.IgnoreCase ->
+                    false
+                | CaseSpecifier.OrdinalCase ->
+                    true
+                | CaseSpecifier.None ->
+                    not _globalSettings.IgnoreCase
+            let filesOfType = filePattern
+            _vimHost.FindInFiles pattern matchCase filesOfType flags onFindDone
+        | None ->
+            _commonOperations.Beep()
+
     /// Show Vim help on the specified subject
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
@@ -1363,6 +1390,11 @@ type VimInterpreter
             let helpFile = System.IO.Path.Combine(vimDoc, "help.txt")
             _commonOperations.LoadFileIntoNewWindow helpFile (Some 0) None |> ignore
 
+        let onStatusFocusedWindow message =
+            fun (commonOperations: ICommonOperations) ->
+                commonOperations.OnStatusFitToWindow message
+            |> _commonOperations.ForwardToFocusedWindow
+
         match vimFolder with
         | Some vimFolder ->
 
@@ -1370,7 +1402,7 @@ type VimInterpreter
             let vimDoc = System.IO.Path.Combine(vimFolder, "doc")
             if StringUtil.IsNullOrEmpty subject then
                 loadDefaultHelp vimDoc
-                _statusUtil.OnStatus "For help on VsVim, use :help"
+                onStatusFocusedWindow "For help on VsVim, use :help"
             else
 
                 // Try to navigate to the tag.
@@ -1382,7 +1414,7 @@ type VimInterpreter
 
                     // Load the default help and report the error.
                     loadDefaultHelp vimDoc
-                    _statusUtil.OnError message
+                    onStatusFocusedWindow message
 
         | None ->
 
@@ -1579,16 +1611,40 @@ type VimInterpreter
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 _commonOperations.MoveCaretToPoint point ViewFlags.VirtualEdit))
 
-    member x.RunOpenQuickFixWindow () =
-        _vimHost.OpenQuickFixWindow()
+    /// Run the 'open list window' command, e.g. ':cwindow'
+    member x.RunOpenListWindow listKind =
+        _vimHost.OpenListWindow listKind
 
-    member x.RunQuickFixNext count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Next count hasBang |> ignore
+    /// Run the 'navigate to list item' command, e.g. ':cnext'
+    member x.RunNavigateToListItem listKind navigationKind argument hasBang =
 
-    member x.RunQuickFixPrevious count hasBang =
-        let count = OptionUtil.getOrDefault 1 count 
-        _vimHost.GoToQuickFix QuickFix.Previous count hasBang |> ignore
+        // Handle completing navigation to a find result.
+        let onNavigateDone (listItem: ListItem) (commonOperations: ICommonOperations) =
+
+            // Display the list item in the window navigated to.
+            let itemNumber = listItem.ItemNumber
+            let listLength = listItem.ListLength
+            let message = StringUtil.GetDisplayString listItem.Message
+            sprintf "(%d of %d): %s" itemNumber listLength message
+            |> commonOperations.OnStatusFitToWindow
+
+            // Ensure view properties are met in the new window.
+            commonOperations.EnsureAtCaret ViewFlags.Standard
+
+        // Forward the navigation request to the host.
+        match _vimHost.NavigateToListItem listKind navigationKind argument hasBang with
+        | Some listItem ->
+
+            // We navigated to a (possibly new) document window.
+            listItem
+            |> onNavigateDone
+            |> _commonOperations.ForwardToFocusedWindow
+
+        | None ->
+
+            // We reached the beginning or end of the list, or something else
+            // went wrong.
+            _statusUtil.OnStatus Resources.Interpreter_NoMoreItems
 
     /// Run the quit command
     member x.RunQuit hasBang =
@@ -1764,7 +1820,7 @@ type VimInterpreter
                     lineRange.Start
 
             let searchData = SearchData(pattern, path, _globalSettings.WrapScan)
-            let result = _searchService.FindNextPattern startPoint searchData _vimBufferData.VimTextBuffer.WordNavigator 1
+            let result = _searchService.FindNextPattern startPoint searchData _vimTextBuffer.WordUtil.SnapshotWordNavigator 1
             _commonOperations.RaiseSearchResultMessage(result)
     
             match result with
@@ -2262,7 +2318,6 @@ type VimInterpreter
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
         | LineCommand.Help subject -> x.RunHelp subject
-        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.History -> x.RunHistory()
         | LineCommand.IfStart _ -> cantRun ()
         | LineCommand.IfEnd -> cantRun ()
@@ -2281,18 +2336,17 @@ type VimInterpreter
         | LineCommand.Make (hasBang, arguments) -> x.RunMake hasBang arguments
         | LineCommand.MapKeys (leftKeyNotation, rightKeyNotation, keyRemapModes, allowRemap, mapArgumentList) -> x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList
         | LineCommand.MoveTo (sourceLineRange, destLineRange, count) -> x.RunMoveTo sourceLineRange destLineRange count
+        | LineCommand.NavigateToListItem (listKind, navigationKind, argument, hasBang) -> x.RunNavigateToListItem listKind navigationKind argument hasBang
         | LineCommand.NoHighlightSearch -> x.RunNoHighlightSearch()
         | LineCommand.Nop -> ()
         | LineCommand.Normal (lineRange, command) -> x.RunNormal lineRange command
         | LineCommand.Only -> x.RunOnly()
+        | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
         | LineCommand.ParseError msg -> x.RunParseError msg
         | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
-        | LineCommand.QuickFixWindow -> x.RunOpenQuickFixWindow()
-        | LineCommand.QuickFixNext (count, hasBang) -> x.RunQuickFixNext count hasBang
-        | LineCommand.QuickFixPrevious (count, hasBang) -> x.RunQuickFixPrevious count hasBang
         | LineCommand.Quit hasBang -> x.RunQuit hasBang
         | LineCommand.QuitAll hasBang -> x.RunQuitAll hasBang
         | LineCommand.QuitWithWrite (lineRange, hasBang, fileOptions, filePath) -> x.RunQuitWithWrite lineRange hasBang fileOptions filePath
@@ -2319,6 +2373,8 @@ type VimInterpreter
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList
         | LineCommand.Version -> x.RunVersion()
         | LineCommand.VerticalSplit (lineRange, fileOptions, commandOptions) -> x.RunSplit _vimHost.SplitViewVertically fileOptions commandOptions
+        | LineCommand.VimGrep (count, hasBang, pattern, flags, filePattern) -> x.RunVimGrep count hasBang pattern flags filePattern
+        | LineCommand.VimHelp subject -> x.RunVimHelp subject
         | LineCommand.Write (lineRange, hasBang, fileOptionList, filePath) -> x.RunWrite lineRange hasBang fileOptionList filePath
         | LineCommand.WriteAll (hasBang, andQuit) -> x.RunWriteAll hasBang andQuit
         | LineCommand.Yank (lineRange, registerName, count) -> x.RunYank registerName lineRange count

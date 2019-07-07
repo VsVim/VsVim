@@ -14,8 +14,10 @@ open StringBuilderExtensions
 open CollectionExtensions
 
 // TODO: We need to add verification for setting options which can contain
-// a finite list of values.  For example backspace, virtualedit, etc ...  Setting
-// them to an invalid value should produce an error
+// a finite list of values.  For example 
+//  - backspace, virtualedit:  Setting them to an invalid value should 
+//    produce an error
+//  - iskeyword: this can't contain a space 
 
 type SettingValueParseFunc = string -> SettingValue option
 
@@ -511,6 +513,8 @@ type internal LocalSettings
         _globalSettings: IVimGlobalSettings
     ) =
 
+    static let IsKeywordCharSetDefault = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+
     static let LocalSettingInfoList =
         [|
             (AutoIndentName, "ai", SettingValue.Toggle false, SettingOptions.None)
@@ -527,6 +531,7 @@ type internal LocalSettings
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
             (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
+            (IsKeywordName, "isk", SettingValue.String IsKeywordCharSetDefault.Text, SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -628,6 +633,12 @@ type internal LocalSettings
         member x.Comments
             with get() = _map.GetStringValue CommentsName
             and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
+        member x.IsKeyword
+            with get() = _map.GetStringValue IsKeywordName
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
+        member x.IsKeywordCharSet
+            with get() = match VimCharSet.TryParse (_map.GetStringValue IsKeywordName) with Some s -> s | None -> IsKeywordCharSetDefault
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value.Text) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

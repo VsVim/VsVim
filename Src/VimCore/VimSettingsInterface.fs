@@ -73,6 +73,7 @@ module LocalSettingNames =
     let FixEndOfLineName = "fixendofline"
     let TextWidthName = "textwidth"
     let CommentsName = "comments"
+    let IsKeywordName = "iskeyword"
 
 module WindowSettingNames =
 
@@ -564,6 +565,12 @@ and IVimLocalSettings =
 
     /// Formats that vim considers a number for CTRL-A and CTRL-X
     abstract NumberFormats: string with get, set
+
+    /// The characters which represent a keyword / WordKind.NormalWord
+    abstract IsKeyword: string with get, set
+
+    /// Type safe representation of IsKeyword
+    abstract IsKeywordCharSet: VimCharSet with get, set
 
     /// Whether or not to put relative line numbers on the left column of the display
     abstract RelativeNumber: bool with get, set

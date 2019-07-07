@@ -24,14 +24,16 @@
     <Compile Include="CoreTypes.fs" />
     <Compile Include="EditorUtil.fs" />
     <Compile Include="Register.fs" />
+    <Compile Include="VimCharSet.fsi" />
+    <Compile Include="VimCharSet.fs" />
     <Compile Include="VimSettingsInterface.fs" />
     <Compile Include="LineNumbersMarginOptions.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="TaggingInterfaces.fs" />
+    <Compile Include="WordUtil.fsi" />
+    <Compile Include="WordUtil.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="CoreInternalInterfaces.fs" />
-    <Compile Include="TextUtil.fsi" />
-    <Compile Include="TextUtil.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="VimRegexOptions.fs" />
     <Compile Include="VimRegex.fsi" />
@@ -119,8 +121,6 @@
     <Compile Include="UndoRedoOperations.fs" />
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
-    <Compile Include="WordUtil.fsi" />
-    <Compile Include="WordUtil.fs" />
     <Compile Include="AutoCommandRunner.fsi" />
     <Compile Include="AutoCommandRunner.fs" />
     <Compile Include="Vim.fs" />

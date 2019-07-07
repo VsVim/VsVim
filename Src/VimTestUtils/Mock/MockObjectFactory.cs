@@ -142,7 +142,7 @@ namespace Vim.UnitTest.Mock
             IVimLocalSettings localSettings = null,
             IIncrementalSearch incrementalSearch = null,
             IMotionUtil motionUtil = null,
-            ITextStructureNavigator wordNavigator = null,
+            WordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -150,13 +150,13 @@ namespace Vim.UnitTest.Mock
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             motionUtil = motionUtil ?? factory.Create<IMotionUtil>().Object;
-            wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
             localSettings = localSettings ?? new LocalSettings(vim.GlobalSettings);
+            wordUtil = wordUtil ?? new WordUtil(textView.TextBuffer, localSettings);
             var vimTextBuffer = CreateVimTextBuffer(
                 textView.TextBuffer,
                 localSettings: localSettings,
                 vim: vim,
-                wordNavigator: wordNavigator,
+                wordUtil: wordUtil,
                 factory: factory);
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
@@ -172,7 +172,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupGet(x => x.VimData).Returns(vim.VimData);
             mock.SetupGet(x => x.IncrementalSearch).Returns(incrementalSearch);
-            mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
+            mock.SetupGet(x => x.WordNavigator).Returns(wordUtil.WordNavigator);
             mock.SetupGet(x => x.VimTextBuffer).Returns(vimTextBuffer.Object);
             return mock;
         }
@@ -184,21 +184,22 @@ namespace Vim.UnitTest.Mock
             ITextBuffer textBuffer,
             IVimLocalSettings localSettings = null,
             IVim vim = null,
-            ITextStructureNavigator wordNavigator = null,
             IUndoRedoOperations undoRedoOperations = null,
+            WordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             vim = vim ?? CreateVim(factory: factory).Object;
             localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
-            wordNavigator = wordNavigator ?? factory.Create<ITextStructureNavigator>().Object;
             undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
+            wordUtil = wordUtil ?? new WordUtil(textBuffer, localSettings);
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
             mock.SetupGet(x => x.GlobalSettings).Returns(localSettings.GlobalSettings);
             mock.SetupGet(x => x.Vim).Returns(vim);
-            mock.SetupGet(x => x.WordNavigator).Returns(wordNavigator);
+            mock.SetupGet(x => x.WordNavigator).Returns(wordUtil.WordNavigator);
+            mock.SetupGet(x => x.WordUtil).Returns(wordUtil);
             mock.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             mock.SetupGet(x => x.UndoRedoOperations).Returns(undoRedoOperations);
             mock.SetupProperty(x => x.LastVisualSelection);
@@ -219,21 +220,18 @@ namespace Vim.UnitTest.Mock
             IJumpList jumpList = null,
             IStatusUtil statusUtil = null,
             IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             statusUtil = statusUtil ?? factory.Create<IStatusUtil>().Object;
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
-            wordUtil = wordUtil ?? factory.Create<IWordUtil>().Object;
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil,
-                wordUtil);
+                statusUtil);
         }
 
         public static Mock<ITextCaret> CreateCaret(MockRepository factory = null)

@@ -2102,7 +2102,7 @@ module SnapshotLineUtil =
     /// Get a SnapshotPoint representing 'offset' characters into the line or it's
     /// line break or the EndIncludingLineBreak of the line
     let GetOffsetOrEndIncludingLineBreak offset (line: ITextSnapshotLine) = 
-        if line.Start.Position + offset >= line.EndIncludingLineBreak.Position then line.EndIncludingLineBreak
+        if line.Start.Position + offset > line.End.Position then line.EndIncludingLineBreak
         else line.Start.Add(offset)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
@@ -3465,7 +3465,7 @@ module EditUtil =
             "\t"
 
     /// Get the length of the line break at the given index 
-    let GetLineBreakLength (str: string) index =
+    let GetLineBreakLengthAtIndex (str: string) index =
         match str.Chars(index) with
         | '\r' ->
             if index + 1 < str.Length && '\n' = str.Chars(index + 1) then
@@ -3482,6 +3482,16 @@ module EditUtil =
             if c = char 0x85 then 1
             else 0
 
+    let IsInsideLineBreakAtIndex (str: string) index = GetLineBreakLengthAtIndex str index > 0
+
+    let GetFullLineBreakSpanAtIndex (str: string) index =
+        if str.Chars(index) = '\n' && index > 0 && str.Chars(index - 1) = '\r' then
+            Some (Span(index - 1, 2))
+        else
+            let length = GetLineBreakLengthAtIndex str index
+            if length = 0 then None
+            else Some (Span(index, length))
+
     /// Get the length of the line break at the end of the string
     let GetLineBreakLengthAtEnd (str: string) =
         if System.String.IsNullOrEmpty str then 
@@ -3491,7 +3501,7 @@ module EditUtil =
             if str.Length > 1 && str.Chars(index - 1) = '\r' && str.Chars(index) = '\n' then
                 2
             else
-                GetLineBreakLength str index
+                GetLineBreakLengthAtIndex str index
 
     /// Get the count of new lines in the string
     let GetLineBreakCount (str: string) =
@@ -3499,7 +3509,7 @@ module EditUtil =
             if index >= str.Length then
                 count
             else
-                let length = GetLineBreakLength str index 
+                let length = GetLineBreakLengthAtIndex str index 
                 if length > 0 then
                     inner (index + length) (count + 1)
                 else
@@ -3520,7 +3530,7 @@ module EditUtil =
     /// Does this text have a new line character inside of it?
     let HasNewLine (text: string) = 
         { 0 .. (text.Length - 1) }
-        |> SeqUtil.any (fun index -> GetLineBreakLength text index > 0)
+        |> SeqUtil.any (fun index -> GetLineBreakLengthAtIndex text index > 0)
 
     /// Remove the NewLine at the beginning of the string.  Returns the original input
     /// if no newline is found
@@ -3528,7 +3538,7 @@ module EditUtil =
         if System.String.IsNullOrEmpty value then
             value
         else
-            let length = GetLineBreakLength value 0
+            let length = GetLineBreakLengthAtIndex value 0
             if 0 = length then
                 value
             else
@@ -3553,7 +3563,7 @@ module EditUtil =
             if index >= text.Length then
                 builder.ToString()
             else
-                let length = GetLineBreakLength text index
+                let length = GetLineBreakLengthAtIndex text index
                 if 0 = length then
                     builder.AppendChar text.[index]
                     inner (index + 1)
@@ -3601,7 +3611,7 @@ type TextLine = {
             if index >= fullText.Length then
                 None
             else
-                let length = EditUtil.GetLineBreakLength fullText index
+                let length = EditUtil.GetLineBreakLengthAtIndex fullText index
                 if length = 0 then
                     getNextNewLine (index + 1)
                 else
