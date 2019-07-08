@@ -2447,7 +2447,7 @@ type VisualSelection =
                 if anchorSpaces <= caretSpaces then SearchPath.Forward
                 else SearchPath.Backward
 
-            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height, false)
+            let blockSpan = BlockSpan(startColumn, tabStop, spaces, height, endOfLine = false)
             VisualSpan.Block blockSpan, path
 
         let createNormal () = 
@@ -2501,7 +2501,7 @@ type VisualSelection =
                 | VisualSpan.Line _ -> visualSpan
                 | VisualSpan.Block blockSpan ->
                     let width = blockSpan.SpacesLength + 1
-                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, false)
+                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, endOfLine = false)
                     VisualSpan.Block blockSpan
 
         let path = 
@@ -2540,7 +2540,7 @@ type VisualSelection =
             let offset = SnapshotPointUtil.GetLineOffset caretPoint
             VisualSelection.Line (lineRange, SearchPath.Forward, offset)
         | VisualKind.Block ->
-            let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1, false)
+            let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1, endOfLine = false)
             VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
 
 /// This is used for commands like [count]v and [count]V to hold a visual selection
