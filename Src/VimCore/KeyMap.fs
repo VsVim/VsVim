@@ -308,7 +308,9 @@ type internal GlobalAbbreviationMap
         let map = _map.[mode]
         map.TryGetValueEx lhs 
 
-    member x.Clear() = _map.Clear()
+    member x.Clear() = 
+        for kvp in _map do
+            kvp.Value.Clear()
 
     interface IVimGlobalAbbreviationMap with
         member x.Abbreviate lhs mode rhs = x.Abbreviate lhs mode rhs
