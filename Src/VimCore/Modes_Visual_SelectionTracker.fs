@@ -132,6 +132,8 @@ type internal SelectionTracker
             let visualSelection = VisualSelection.CreateForVirtualPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+            let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
+            let visualSelection = visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
             visualSelection.Select _textView
 
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection

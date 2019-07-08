@@ -86,8 +86,8 @@ type internal VisualMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CancelOperation)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
-                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert false)
-                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert true)
+                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.Start)
+                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.End)
                 yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
                 yield ("<C-w>gf", CommandFlags.None, VisualCommand.GoToFileInSelectionInNewWindow)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
@@ -206,7 +206,10 @@ type internal VisualMode
         let selectionKind = _globalSettings.SelectionKind
         let tabStop = _vimBufferData.LocalSettings.TabStop
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
-        VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        let visualSelection =
+            VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
+        visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
 
     member x.Process (keyInputData: KeyInputData) =  
         let keyInput = keyInputData.KeyInput

@@ -186,7 +186,7 @@ type internal TrackingVisualSpan =
     | Line of TrackingLineColumn: ITrackingLineColumn * LineCount: int
 
     /// Tracks the origin of the block selection, it's tabstop by width by height
-    | Block of TrackingLineColumn: ITrackingLineColumn * TabStop: int * Width: int * Height: int
+    | Block of TrackingLineColumn: ITrackingLineColumn * TabStop: int * Width: int * Height: int * EndOfLine: bool
 
     with
 
@@ -194,7 +194,7 @@ type internal TrackingVisualSpan =
         match x with
         | Character (trackingLineColumn, _, _) -> trackingLineColumn
         | Line (trackingLineColumn, _) -> trackingLineColumn
-        | Block (trackingLineColumn, _, _, _) -> trackingLineColumn
+        | Block (trackingLineColumn, _, _, _, _) -> trackingLineColumn
 
     member x.TextBuffer =
         x.TrackingLineColumn.TextBuffer
@@ -215,9 +215,9 @@ type internal TrackingVisualSpan =
                 let line = SnapshotPointUtil.GetContainingLine point
                 SnapshotLineRangeUtil.CreateForLineAndMaxCount line count 
                 |> VisualSpan.Line
-            | Block (_, tabStop, width, height) ->
+            | Block (_, tabStop, width, height, endOfLine) ->
                 let virtualPoint = VirtualSnapshotPointUtil.OfPoint point
-                let blockSpan = BlockSpan(virtualPoint, tabStop, width, height)
+                let blockSpan = BlockSpan(virtualPoint, tabStop, width, height, endOfLine)
                 VisualSpan.Block blockSpan
             |> Some
 
@@ -225,7 +225,7 @@ type internal TrackingVisualSpan =
         match x with
         | Character (trackingLineColumn, _, _) -> trackingLineColumn.Close()
         | Line (trackingLineColumn, _) -> trackingLineColumn.Close()
-        | Block (trackingLineColumn, _, _, _) -> trackingLineColumn.Close()
+        | Block (trackingLineColumn, _, _, _, _) -> trackingLineColumn.Close()
 
     static member Create (bufferTrackingService: IBufferTrackingService) visualSpan =
         match visualSpan with
@@ -256,7 +256,7 @@ type internal TrackingVisualSpan =
                 let line, offset = VirtualSnapshotPointUtil.GetLineAndOffset blockSpan.VirtualStart.VirtualStartPoint
                 bufferTrackingService.CreateLineOffset textBuffer line.LineNumber offset LineColumnTrackingMode.Default
 
-            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.SpacesLength, blockSpan.Height)
+            TrackingVisualSpan.Block (trackingLineColumn, blockSpan.TabStop, blockSpan.SpacesLength, blockSpan.Height, blockSpan.EndOfLine)
 
     interface ITrackingVisualSpan with
         member x.TextBuffer = x.TextBuffer

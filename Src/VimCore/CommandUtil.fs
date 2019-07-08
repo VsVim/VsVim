@@ -320,10 +320,10 @@ type internal CommandUtil
         | StoredVisualSpan.Character (LineCount = lineCount; LastLineMaxPositionCount = lastLineMaxPositionCount) ->
             let characterSpan = CharacterSpan(x.CaretPoint, lineCount, lastLineMaxPositionCount)
             VisualSpan.Character characterSpan
-        | StoredVisualSpan.Block (Width = width; Height = height) ->
+        | StoredVisualSpan.Block (Width = width; Height = height; EndOfLine = endOfLine) ->
             // Need to rehydrate spans of length 'length' on 'count' lines from the
             // current caret position
-            let blockSpan = BlockSpan(x.CaretVirtualPoint, _localSettings.TabStop, width, height)
+            let blockSpan = BlockSpan(x.CaretVirtualPoint, _localSettings.TabStop, width, height, endOfLine)
             VisualSpan.Block blockSpan
 
     member x.CalculateDeleteOperation (result: MotionResult) =
@@ -657,7 +657,7 @@ type internal CommandUtil
             // Caret needs to be positioned at the front of the span in undo so move it
             // before we create the transaction
             TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
-            x.EditBlockWithLinkedChange "Change Block" blockSpan false (fun () ->
+            x.EditBlockWithLinkedChange "Change Block" blockSpan VisualInsertKind.Start (fun () ->
                 x.DeleteSelection registerName visualSpan |> ignore)
 
         | VisualSpan.Line range -> x.ChangeLinesCore range registerName
@@ -1117,9 +1117,9 @@ type internal CommandUtil
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Create an undo transaction, perform an action, and switch to block insert mode
-    member x.EditBlockWithLinkedChange name blockSpan atEndOfLine action =
+    member x.EditBlockWithLinkedChange name blockSpan visualInsertKind action =
         let transaction = x.CreateTransactionForLinkedChange name action
-        let arg = ModeArgument.InsertBlock (blockSpan, atEndOfLine, transaction)
+        let arg = ModeArgument.InsertBlock (blockSpan, visualInsertKind, transaction)
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
 
     /// Used for commands which need to operate on the visual buffer and produce a SnapshotSpan
@@ -3963,32 +3963,40 @@ type internal CommandUtil
             let argument = ModeArgument.InitialVisualSelection(visualSelection, None)
             CommandResult.Completed (ModeSwitch.SwitchModeWithArgument(modeKind, argument))
 
-    /// Switch from the current visual mode into insert.  If we are in block mode this
-    /// will start a block insertion
-    member x.SwitchModeInsert (visualSpan: VisualSpan) (atEndOfLine: bool) =
+    /// Switch from a visual mode to insert mode using the specified visual
+    /// insert kind to determine the kind of insertion to perform
+    member x.SwitchModeInsert (visualSpan: VisualSpan) (visualInsertKind: VisualInsertKind) =
+
+        // Apply the 'end-of-line' setting in the visual span to the visual
+        // insert kind.
+        let visualInsertKind =
+            match visualInsertKind, visualSpan with
+            | VisualInsertKind.End, VisualSpan.Block blockSpan when blockSpan.EndOfLine ->
+                VisualInsertKind.EndOfLine
+            | _ ->
+                visualInsertKind
+
+        // Any undo should move the caret back to this position so make sure to
+        // move it before we start the transaction so that it will be properly
+        // positioned on undo.
+        match visualInsertKind with
+        | VisualInsertKind.Start ->
+            visualSpan.Start
+        | VisualInsertKind.End ->
+            visualSpan.Spans
+            |> Seq.head
+            |> (fun span -> span.End)
+        | VisualInsertKind.EndOfLine ->
+            visualSpan.Start
+            |> SnapshotPointUtil.GetContainingLine
+            |> SnapshotLineUtil.GetEnd
+        |> TextViewUtil.MoveCaretToPoint _textView
 
         match visualSpan with
         | VisualSpan.Block blockSpan ->
-            // The insert begins at the start of the block collection.  Any undo should move
-            // the caret back to this position so make sure to move it before we start the
-            // transaction so that it will be properly positioned on undo
-            if atEndOfLine then
-                visualSpan.Start
-                |> SnapshotPointUtil.GetContainingLine
-                |> SnapshotLineUtil.GetEnd
-            else
-                visualSpan.Start
-            |> TextViewUtil.MoveCaretToPoint _textView
-            x.EditBlockWithLinkedChange "Visual Insert" blockSpan atEndOfLine (fun _ -> ())
+            x.EditBlockWithLinkedChange "Visual Insert" blockSpan visualInsertKind id
         | _ ->
-            // For all other visual mode inserts the caret moves to column 0 on the first
-            // line of the selection.  It should be positioned there after an undo so move
-            // it now before the undo transaction
-            visualSpan.Start
-            |> SnapshotPointUtil.GetContainingLine
-            |> if atEndOfLine then SnapshotLineUtil.GetEnd else SnapshotLineUtil.GetStart
-            |> TextViewUtil.MoveCaretToPoint _textView
-            x.EditWithUndoTransaction "Visual Insert" (fun _ -> ())
+            x.EditWithUndoTransaction "Visual Insert" id
             x.SwitchMode ModeKind.Insert ModeArgument.None
 
     /// Switch to the previous mode

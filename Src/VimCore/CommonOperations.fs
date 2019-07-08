@@ -63,7 +63,6 @@ type internal CommonOperations
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
     let _eventHandlers = new DisposableBag()
-    let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     do
         _textView.Caret.PositionChanged
@@ -156,9 +155,11 @@ type internal CommonOperations
         | _ ->
             None
 
+    /// The currently maintained caret column for up / down caret movements in
+    /// the buffer
     member x.MaintainCaretColumn 
-        with get() = _maintainCaretColumn
-        and set value = _maintainCaretColumn <- value
+        with get() = _vimBufferData.MaintainCaretColumn
+        and set value = _vimBufferData.MaintainCaretColumn <- value
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =
@@ -2395,9 +2396,6 @@ type internal CommonOperations
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
-        member x.MaintainCaretColumn 
-            with get() = x.MaintainCaretColumn
-            and set value = x.MaintainCaretColumn <- value
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint
