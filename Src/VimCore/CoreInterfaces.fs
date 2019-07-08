@@ -1875,8 +1875,8 @@ type BlockSpan =
     member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
 
     /// Adjust the block span for the specified 'end-of-line' setting
-    member x.AdjustForEndOfLine endOfLine =
-            BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
+    member x.AdjustWithEndOfLine endOfLine =
+        BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
 
     override x.ToString() =
         sprintf "Point: %s Spaces: %d Height: %d EndOfLine: %b" (x.Start.ToString()) x._spaces x._height x._endOfLine
@@ -2023,10 +2023,10 @@ type VisualSpan =
             x
 
     /// Adjust the visual span for a new 'end-of-line' setting
-    member x.AdjustForEndOfLine endOfLine =
+    member x.AdjustWithEndOfLine endOfLine =
         match x with
         | Block blockSpan ->
-            let blockSpan = blockSpan.AdjustForEndOfLine endOfLine
+            let blockSpan = blockSpan.AdjustWithEndOfLine endOfLine
             VisualSpan.Block blockSpan
         | _ ->
             x
@@ -2276,10 +2276,10 @@ type VisualSelection =
                 VisualSelection.Block (blockSpan, blockCaretLocation)
 
     /// Adjust the visual selection for a new 'end-of-line' setting
-    member x.AdjustForEndOfLine endOfLine =
+    member x.AdjustWithEndOfLine endOfLine =
         match x with
         | Block (blockSpan, blockCaretLocation) ->
-            let blockSpan = blockSpan.AdjustForEndOfLine endOfLine
+            let blockSpan = blockSpan.AdjustWithEndOfLine endOfLine
             VisualSelection.Block (blockSpan, blockCaretLocation)
         | _ ->
             x

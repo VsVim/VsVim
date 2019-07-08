@@ -209,7 +209,7 @@ type internal VisualMode
         let visualSelection =
             VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
         let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
-        visualSelection.AdjustForEndOfLine isMaintainingEndOfLine
+        visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
 
     member x.Process (keyInputData: KeyInputData) =  
         let keyInput = keyInputData.KeyInput

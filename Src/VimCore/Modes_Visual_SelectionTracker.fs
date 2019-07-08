@@ -133,7 +133,7 @@ type internal SelectionTracker
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
             let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
-            let visualSelection = visualSelection.AdjustForEndOfLine isMaintainingEndOfLine
+            let visualSelection = visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
             visualSelection.Select _textView
 
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
