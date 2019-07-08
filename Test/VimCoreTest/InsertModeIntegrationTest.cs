@@ -3620,6 +3620,13 @@ namespace Vim.UnitTest
             [InlineData("d dog", "", "#d ", "#d ")] // Single character abbreviation only works after space / tab / newline
             [InlineData("d dog", "", " d ", " dog ")] // Single character abbreviation only works after space / tab / newline
             [InlineData("d dog", "a", "d ", "adog ")] // Even for single character it only checks typed text
+            [InlineData("#d dog", "", "#d ", "dog ")] // End-id
+            [InlineData("#d dog", "", "##d ", "##d ")]
+            [InlineData("#d dog", "", "#d#", "dog#")]
+            [InlineData("#r rog", "", "f#r ", "frog ")]
+            [InlineData("#r rog", "f", "#r ", "frog ")] 
+            [InlineData("#d dog", "#", "d ", "#d ")] 
+            [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
             {
                 Create();

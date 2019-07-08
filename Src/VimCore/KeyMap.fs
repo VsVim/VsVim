@@ -308,9 +308,12 @@ type internal GlobalAbbreviationMap
         let map = _map.[mode]
         map.TryGetValueEx lhs 
 
+    member x.Clear() = _map.Clear()
+
     interface IVimGlobalAbbreviationMap with
         member x.Abbreviate lhs mode rhs = x.Abbreviate lhs mode rhs
         member x.GetAbbreviation lhs mode = x.GetAbbreviation lhs mode
+        member x.Clear() = x.Clear()
 
 type internal LocalAbbreviationMap
     (
@@ -318,16 +321,18 @@ type internal LocalAbbreviationMap
         _wordUtil : WordUtil
     ) = 
 
+    member x.IsKeywordChar c = _wordUtil.IsKeywordChar c
+    member x.IsNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
+
     member x.TryParse text = 
         if StringUtil.IsNullOrEmpty text || Seq.exists CharUtil.IsWhiteSpace text then
             None
-        elif Seq.forall _wordUtil.IsKeywordChar text then
+        elif Seq.forall x.IsKeywordChar text then
             Some AbbreviationKind.FullId
         else
-            let isLastKeyword = _wordUtil.IsKeywordChar text.[text.Length - 1]
-            let isNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
+            let isLastKeyword = x.IsKeywordChar text.[text.Length - 1]
             let rest = Seq.take (text.Length - 1) text
-            if isLastKeyword && Seq.forall isNonKeywordChar rest then
+            if isLastKeyword && Seq.forall x.IsNonKeywordChar rest then
                 Some AbbreviationKind.EndId
             elif not isLastKeyword then
                 Some AbbreviationKind.NonId
@@ -341,7 +346,7 @@ type internal LocalAbbreviationMap
         let getFullId() = 
             Debug.Assert(text.Length > 0)
             let mutable index = text.Length
-            while index > 0 && _wordUtil.IsKeywordChar text.[index - 1] do
+            while index > 0 && x.IsKeywordChar text.[index - 1] do
                 index <- index - 1
             let fullIdText = text.Substring(index)
             match fullIdText.Length with
@@ -359,8 +364,23 @@ type internal LocalAbbreviationMap
                     else None
             | _ -> Some fullIdText
 
-        let getEndId() : string option = None
-        let getNonId() : string option = None
+        let getEndId() =
+            Debug.Assert(text.Length > 0)
+            if text.Length > 1 && x.IsKeywordChar text.[text.Length - 1] && x.IsNonKeywordChar text.[text.Length - 2] then
+                let mutable index = text.Length - 2
+                while index > 0 && x.IsNonKeywordChar text.[index - 1] do
+                    index <- index - 1
+                Some (text.Substring(index))
+            else None
+            
+        let getNonId() =
+            let testChar c = not (c = ' ' || c = '\t')
+            if text.Length > 1 && x.IsNonKeywordChar text.[text.Length - 1] && testChar text.[text.Length - 2] then
+                let mutable index = text.Length - 2
+                while index > 0 && testChar text.[index - 1] do
+                    index <- index - 1
+                Some (text.Substring(index))
+            else None
 
         let isAbbreviationTrigger =
             match triggerKeyInput.RawChar with

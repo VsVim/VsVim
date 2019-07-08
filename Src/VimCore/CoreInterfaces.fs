@@ -4264,6 +4264,8 @@ type IVimGlobalAbbreviationMap =
 
     abstract GetAbbreviation: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
 
+    abstract Clear: unit -> unit
+
 type IVimLocalAbbreviationMap =
 
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap  
