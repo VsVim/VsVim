@@ -4236,6 +4236,27 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
+/// Information about a single abbreviation replace
+[<NoComparison>]
+[<NoEquality>]
+type AbbreviationResult = {
+    OriginalText: string
+    TriggerKeyInput: KeyInput
+    ReplacedSpan: Span
+    AbbreviationKey: KeyInputSet
+    AbbreviationValue: KeyInputSet
+} with
+
+    // ATODO: is this generally applicable? What if TriggerKeyInput is a non-character key like 
+    // escape? 
+    member x.GetText() =
+        let key = x.AbbreviationKey.ToString()
+        let value = (x.AbbreviationValue.Add x.TriggerKeyInput).ToString()
+        let text = x.OriginalText.Substring(0, x.OriginalText.Length - key.Length)
+        text + value
+
+    override x.ToString() = x.GetText()
+
 type IVimGlobalAbbreviationMap =
 
     /// Insert the specified abbreviation into the map
@@ -4248,6 +4269,8 @@ type IVimLocalAbbreviationMap =
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap  
 
     abstract TryParse: text: string -> AbbreviationKind option
+
+    abstract Abbreviate: text: string -> triggerKeyInput: KeyInput -> mode: AbbreviationMode -> AbbreviationResult option
 
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()

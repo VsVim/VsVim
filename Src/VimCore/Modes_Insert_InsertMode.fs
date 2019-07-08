@@ -947,16 +947,16 @@ type internal InsertMode
                 x.RunInsertCommand InsertCommand.DeleteAllIndent keyInputSet (CommandFlags.Repeatable ||| CommandFlags.ContextSensitive) |> Some
 
             else
-                // ATODO: this is a terrible hack. Need to really look at the last word here not the whole text
-                match _localAbbreviationMap.GlobalAbbreviationMap.GetAbbreviation (KeyNotationUtil.StringToKeyInputSet text) AbbreviationMode.Insert with
+                // ATODO: This needs work. Need to update the insert mode state properly after the abbreviation occurs
+                match _localAbbreviationMap.Abbreviate text keyInput AbbreviationMode.Insert with
                 | None -> None
-                | Some rhs -> 
-                    let newText = (rhs.Add keyInput).ToString()
+                | Some result -> 
+                    let newText = result.GetText()
                     let span = 
-                        let startPoint = x.CaretPoint.Subtract text.Length
+                        let startPoint = x.CaretPoint.Subtract result.ReplacedSpan.Length
                         SnapshotSpan(startPoint, x.CaretPoint)
                     _textBuffer.Delete(span.Span) |> ignore
-                    x.RunInsertCommand (InsertCommand.Insert newText) rhs CommandFlags.None |> Some
+                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue CommandFlags.None |> Some
 
         match _sessionData.CombinedEditCommand with
         | None -> None

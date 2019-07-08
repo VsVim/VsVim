@@ -3,8 +3,10 @@
 namespace Vim
 open System
 open System.Collections.Generic
+open System.Diagnostics
 open Vim.Interpreter
 open CollectionExtensions
+open Microsoft.VisualStudio.Text
 
 /// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
 /// the RHS should be remapped as part of an expansion
@@ -332,6 +334,58 @@ type internal LocalAbbreviationMap
             else
                 None
 
+    // ATODO: this is a terrible hack. Need to really look at the last word here not the whole text
+    // ATODO: need to consider the mode argument
+    member x.Abbreviate (text: string) (triggerKeyInput: KeyInput) mode =
+
+        let getFullId() = 
+            Debug.Assert(text.Length > 0)
+            let mutable index = text.Length
+            while index > 0 && _wordUtil.IsKeywordChar text.[index - 1] do
+                index <- index - 1
+            let fullIdText = text.Substring(index)
+            match fullIdText.Length with
+            | 0 -> None
+            | 1 ->
+                if index = 0 then Some fullIdText
+                else 
+                    let before = text.[index - 1]
+                    let isValid =
+                        before = ' ' ||
+                        before = '\t' ||
+                        before = '\n' ||
+                        before = '\r'
+                    if isValid then Some fullIdText
+                    else None
+            | _ -> Some fullIdText
+
+        let getEndId() : string option = None
+        let getNonId() : string option = None
+
+        let isAbbreviationTrigger =
+            match triggerKeyInput.RawChar with
+            | Some c -> not (_wordUtil.IsKeywordChar c)
+            | None -> true
+        if isAbbreviationTrigger then
+            match getFullId() |> Option.orElseWith getEndId |> Option.orElseWith getNonId with
+            | None -> None
+            | Some keyText ->
+                let key = KeyNotationUtil.StringToKeyInputSet keyText 
+                match _globalAbbreviationMap.GetAbbreviation key mode with
+                | None -> None
+                | Some rhs -> 
+                    let span = Span(0, text.Length)
+                    let result = { 
+                        OriginalText = text 
+                        TriggerKeyInput = triggerKeyInput
+                        ReplacedSpan = span
+                        AbbreviationKey = key
+                        AbbreviationValue = rhs
+                    }
+                    Some result
+        else None
+
     interface IVimLocalAbbreviationMap with
         member x.GlobalAbbreviationMap = _globalAbbreviationMap
+        member x.Abbreviate text triggerKeyInput mode = x.Abbreviate text triggerKeyInput mode
         member x.TryParse text = x.TryParse text

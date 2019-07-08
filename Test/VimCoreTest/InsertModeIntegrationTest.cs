@@ -3602,6 +3602,36 @@ namespace Vim.UnitTest
                 Assert.Equal($"comment this{keyNotation}", _textBuffer.GetLineText(0));
             }
 
+            /// <summary>
+            /// There are a lot of rules and cases around when an expansion should or should not occur for 
+            /// the various abbreviation kinds. This theory just enumerates all the cases covered in 
+            /// `:help abbreviate`
+            /// </summary>
+            [WpfTheory]
+            [InlineData("cc hello", "", "cc ", "hello ")]
+            [InlineData("cc hello", "", "cc", "cc")] // Won't expand until non-keyword is typed
+            [InlineData("cc hello", "", "ccc", "ccc")] // Won't expand until non-keyword is typed
+            [InlineData("cc hello", "", "ccc ", "ccc ")] // The ccc doesn't match the abbreviation cc
+            [InlineData("cc hello", "", "lcc ", "lcc ")] // The lcc doesn't match the abbreviation cc
+            [InlineData("cc hello", "c", "c ", "cc ")] 
+            [InlineData("cc hello", "c", "cc ", "chello ")] // Match computed against typed text hence
+            [InlineData("cc hello", "", "#cc ", "#hello ")] // Match starts at the non-keyword
+            [InlineData("cc hello", "#", "cc ", "#hello ")] 
+            [InlineData("d dog", "", "#d ", "#d ")] // Single character abbreviation only works after space / tab / newline
+            [InlineData("d dog", "", " d ", " dog ")] // Single character abbreviation only works after space / tab / newline
+            [InlineData("d dog", "a", "d ", "adog ")] // Even for single character it only checks typed text
+            public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.GetLineText(0));
+            }
+
             [WpfFact(Skip = "ATODO")]
             public void ReplaceMustBeComplete()
             {
