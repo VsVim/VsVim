@@ -64,7 +64,6 @@ type internal CommonOperations
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
     let _eventHandlers = new DisposableBag()
-    let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     let _selectedSpansSetEvent = StandardEvent<EventArgs>()
 
@@ -159,10 +158,11 @@ type internal CommonOperations
         | _ ->
             None
 
-    /// The currently maintained caret column
+    /// The currently maintained caret column for up / down caret movements in
+    /// the buffer
     member x.MaintainCaretColumn 
-        with get() = _maintainCaretColumn
-        and set value = _maintainCaretColumn <- value
+        with get() = _vimBufferData.MaintainCaretColumn
+        and set value = _vimBufferData.MaintainCaretColumn <- value
 
     /// Whether multi-selection is supported
     member x.IsMultiSelectionSupported =
@@ -2796,9 +2796,6 @@ type internal CommonOperations
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
-        member x.MaintainCaretColumn 
-            with get() = x.MaintainCaretColumn
-            and set value = x.MaintainCaretColumn <- value
         member x.IsMultiSelectionSupported = x.IsMultiSelectionSupported
         member x.PrimarySelectedSpan = x.PrimarySelectedSpan
         member x.SelectedSpans = x.SelectedSpans

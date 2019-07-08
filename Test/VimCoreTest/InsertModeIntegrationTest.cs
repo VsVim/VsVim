@@ -2537,7 +2537,8 @@ namespace Vim.UnitTest
                 Create("c dog", "cat");
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<CR>"));
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
             }
 
             [AsyncCompletionWpfFact]
@@ -2548,7 +2549,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
                 _vimBuffer.ProcessNotation("<CR>");
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat", _textView.GetLine(0).GetText());
             }
             
             /// <summary>
@@ -2561,7 +2562,7 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Space>"));
-                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
             
             [AsyncCompletionWpfFact]
@@ -2572,6 +2573,30 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
                 _vimBuffer.ProcessNotation("<Space>");
+                Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
+            }
+            
+            /// <summary>
+            /// Simple word completion that is accepted with ctrl+y
+            /// </summary>
+            [LegacyCompletionWpfFact]
+            public void WordCompletion_Legacy_Commit_CtrlY()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-Y>"));
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+            }
+            
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Async_Commit_CtrlY()
+            {
+                Create("c dog", "cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-Y>");
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
 
@@ -2599,8 +2624,39 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.ProcessNotation("<C-N>");
                 Dispatcher.DoEvents();
-                _vimBuffer.ProcessNotation("<C-N><CR>");
+                _vimBuffer.ProcessNotation("<C-N><C-Y>");
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
+            }
+
+            /// <summary>
+            /// Simulate Aborting / Exiting a completion
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Abort_Legacy()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-E>"));
+                _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
+                Assert.Equal("c dog", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
+            }
+
+            /// <summary>
+            /// Simulate Aborting / Exiting a completion
+            /// </summary>
+            [AsyncCompletionWpfFact]
+            public void WordCompletion_Abort_Async()
+            {
+                Create("c dog", "cat copter");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Dispatcher.DoEvents();
+                _vimBuffer.ProcessNotation("<C-E>");
+                _vimBuffer.ProcessNotation("<Esc>");
+                Assert.Equal("c dog", _textView.GetLine(0).GetText());
+                Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
@@ -2624,12 +2680,11 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(1);
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process('s');
-                Assert.Equal("cs dog", _textView.GetLine(0).GetText());
+                Assert.Equal("cats dog", _textView.GetLine(0).GetText());
             }
 
             /// <summary>
-            /// Esacpe should cancel both word completion and insert mode.  It's just
-            /// like normal intellisense in that respect
+            /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
             [LegacyCompletionWpfFact]
             public void WordCompletion_Escape_Legacy()
@@ -2639,12 +2694,12 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-N>"));
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>
-            /// Esacpe should cancel both word completion and insert mode.  It's just
-            /// like normal intellisense in that respect
+            /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
             [AsyncCompletionWpfFact]
             public void WordCompletion_Escape_Async()
@@ -2655,7 +2710,8 @@ namespace Vim.UnitTest
                 Dispatcher.DoEvents();
                 _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<Esc>"));
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
-                Assert.Equal(0, _textView.GetCaretPoint().Position);
+                Assert.Equal("cat dog", _textView.GetLine(0).GetText());
+                Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
             /// <summary>

@@ -17,10 +17,6 @@ type WordCompletionUtil
     ) =
 
     let _globalSettings = _vim.GlobalSettings
-    static let _commitKeyInput = [ KeyInputUtil.EnterKey; KeyInputUtil.TabKey; KeyInputUtil.CharToKeyInput(' ') ]
-
-    /// The set of KeyInput value that should commit a session
-    static member CommitKeyInput = _commitKeyInput
 
     /// Get a fun (string -> bool) that determines if a particular word should be included in the output
     /// based on the text that we are searching for 
@@ -144,7 +140,7 @@ type InsertKind =
     /// whether or not a newline should be inserted after the text
     | Repeat of Count: int * AddNewLine: bool * TextChange: TextChange
 
-    | Block of AtEndOfLine: bool * BlockSpan: BlockSpan
+    | Block of VisualInsertKind: VisualInsertKind * BlockSpan: BlockSpan
 
 /// The CTRL-R command comes in a number of varieties which really come down to just the 
 /// following options.  Detailed information is available on ':help i_CTRL-R_CTRL-R'
@@ -638,16 +634,18 @@ type internal InsertMode
             | InsertKind.Normal, _ -> ()
             | InsertKind.Repeat (count, addNewLines, textChange), _ -> _insertUtil.RepeatEdit textChange addNewLines (count - 1)
             | InsertKind.Block _, None -> ()
-            | InsertKind.Block (atEndOfLine, blockSpan), Some insertCommand -> 
+            | InsertKind.Block (visualInsertKind, blockSpan), Some insertCommand -> 
 
                 // The RepeatBlock command will be performing edits on the ITextBuffer.  We don't want to 
                 // track these changes.  They instead will be tracked by the InsertCommand that we return
                 try 
                     _textChangeTracker.TrackCurrentChange <- false
                     let combinedCommand = 
-                        match _insertUtil.RepeatBlock insertCommand atEndOfLine blockSpan with
+                        match _insertUtil.RepeatBlock insertCommand visualInsertKind blockSpan with
                         | Some text ->
-                            InsertCommand.BlockInsert (insertCommand, atEndOfLine, blockSpan.Height)
+                            let padShortLines = visualInsertKind = VisualInsertKind.End
+                            let atEndOfLine = visualInsertKind = VisualInsertKind.EndOfLine
+                            InsertCommand.BlockInsert (insertCommand, padShortLines, atEndOfLine, blockSpan.Height)
                             |> Some
                         | None -> None
                     x.ChangeCombinedEditCommand combinedCommand
@@ -1005,11 +1003,15 @@ type internal InsertMode
                 wordCompletionSession.MovePrevious() |> Some
             elif keyInput = KeyNotationUtil.StringToKeyInput("<Up>") then
                 wordCompletionSession.MovePrevious() |> Some
-            elif List.contains keyInput WordCompletionUtil.CommitKeyInput then
-                wordCompletionSession.Commit() 
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-y>") then
+                wordCompletionSession.Commit()
+                Some true
+            elif keyInput = KeyNotationUtil.StringToKeyInput("<C-e>") then
+                x.CancelWordCompletionSession()
                 Some true
             else
                 None
+
         match handled with
         | Some handled -> 
             if handled then 
@@ -1017,8 +1019,11 @@ type internal InsertMode
             else 
                 ProcessResult.Error
         | None -> 
-            // Any other key should cancel the IWordCompletionSession and we should process
+            // Any other key should commit the IWordCompletionSession and we should process
             // the KeyInput as normal
+            wordCompletionSession.Commit()
+            // Commit will set IsDismissed on wordCompletionSession so CancelWordCompletionSession will not call Dismiss() it
+            // Cancel as finish. we need this because otherwise we get a stackoverflow in tests from call to ProcessCore
             x.CancelWordCompletionSession()
             x.ProcessCore keyInput
 
@@ -1472,8 +1477,8 @@ type internal InsertMode
         // Set up transaction and kind of insert
         let transaction, insertKind =
             match arg with
-            | ModeArgument.InsertBlock (blockSpan, atEndOfLine, transaction) ->
-                Some transaction, InsertKind.Block (atEndOfLine, blockSpan)
+            | ModeArgument.InsertBlock (blockSpan, visualInsertKind, transaction) ->
+                Some transaction, InsertKind.Block (visualInsertKind, blockSpan)
             | ModeArgument.InsertWithCount count ->
                 if count > 1 then
                     let transaction = x.CreateLinkedUndoTransaction "Insert with count"

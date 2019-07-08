@@ -135,6 +135,8 @@ type internal SelectionTracker
             let visualSelection = VisualSelection.CreateForVirtualPoints _visualKind anchorPoint simulatedCaretPoint _localSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForExtendIntoLineBreak _extendIntoLineBreak
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
+            let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
+            let visualSelection = visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
             visualSelection.Select _textView
 
             _vimBufferData.VimTextBuffer.LastVisualSelection <- Some visualSelection
@@ -159,7 +161,16 @@ type internal SelectionTracker
                 if visualSelection.VisualKind = _visualKind then
                     visualSelection.Select _textView
                     let visualCaretPoint = visualSelection.GetCaretVirtualPoint _globalSettings.SelectionKind
-                    TextViewUtil.MoveCaretToVirtualPointRaw _textView visualCaretPoint MoveCaretFlags.EnsureOnScreen
+
+                    // Don't scroll the window of unfocused buffers. Reported
+                    // in issue #2664.
+                    let flags =
+                        if _vimBufferData.Vim.VimHost.IsFocused _textView then
+                            MoveCaretFlags.EnsureOnScreen
+                        else
+                            MoveCaretFlags.None
+
+                    TextViewUtil.MoveCaretToVirtualPointRaw _textView visualCaretPoint flags
                     caretPoint
                 else
                     None

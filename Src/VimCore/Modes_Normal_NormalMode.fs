@@ -386,7 +386,7 @@ type internal NormalMode
             ProcessResult.OfCommandResult commandData.CommandResult
         | BindResult.Error -> 
             x.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            ProcessResult.NotHandled
         | BindResult.Cancelled -> 
             _incrementalSearch.CancelSession()
             if wasWaitingForMoreInput then

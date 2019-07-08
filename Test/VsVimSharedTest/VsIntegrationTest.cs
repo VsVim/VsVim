@@ -1,14 +1,13 @@
-﻿using Vim.EditorHost;
+﻿using System.Linq;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Vim;
+using Vim.EditorHost;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.VisualStudio.Implementation.Misc;
 using Vim.VisualStudio.UnitTest.Utils;
 using Xunit;
-using EnvDTE80;
-using EnvDTE;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -322,6 +321,39 @@ namespace Vim.VisualStudio.UnitTest
                 _vsSimulation.Run('s');
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
                 Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
+            }
+
+            /// <summary>
+            /// Ensure that we don't scroll when selecting text in another text
+            /// view
+            /// </summary>
+            [WpfFact]
+            public void TwoViews_NoScroll()
+            {
+                // Reported in #2673.
+                Create(Enumerable.Range(0, 26).Select(x => ((char)('a' + x)).ToString()).ToArray());
+                VimHost.FocusedTextView = _textView;
+                _vimBuffer.ProcessNotation("1G");
+                Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
+                var visibleLines = _textView.TextViewLines.Count;
+                var altTextView = TextEditorFactoryService.CreateTextView(_textBuffer);
+                var altVimBuffer = CreateVimBuffer(CreateVimBufferData(altTextView));
+                try
+                {
+                    VimHost.FocusedTextView = altTextView;
+                    altVimBuffer.ProcessNotation("13G");
+                    Assert.True(altTextView.GetFirstVisibleLineNumber() > visibleLines);
+                    var visualSpan = VimUtil.CreateVisualSpanCharacter(_textBuffer.GetLineSpan(13, 1));
+                    var visualSelection = VisualSelection.CreateForward(visualSpan);
+                    _vimBuffer.VimTextBuffer.SwitchMode(
+                        ModeKind.VisualCharacter,
+                        ModeArgument.NewInitialVisualSelection(visualSelection, FSharpOption<SnapshotPoint>.None));
+                    Assert.Equal(0, _textView.GetFirstVisibleLineNumber());
+                }
+                finally
+                {
+                    altVimBuffer.Close();
+                }
             }
         }
 

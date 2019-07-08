@@ -159,16 +159,6 @@ namespace Vim.UnitTest
         }
 
         /// <summary>
-        /// WPF window level shortcuts shouldn't be processed (for the benefit of VimApp)
-        /// </summary>
-        [WpfFact]
-        public void CanProcess_DontHandleControlTab()
-        {
-            Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
-        }
-
-        /// <summary>
         /// Non-ASCII characters should not be reported as being able to be
         /// processed by normal mode
         /// </summary>

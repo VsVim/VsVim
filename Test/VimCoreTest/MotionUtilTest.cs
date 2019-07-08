@@ -18,6 +18,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IWpfTextView _textView;
         protected ITextSnapshot _snapshot;
+        protected IVimBufferData _vimBufferData;
         protected IVimTextBuffer _vimTextBuffer;
         protected IVimLocalSettings _localSettings;
         protected IVimGlobalSettings _globalSettings;
@@ -50,14 +51,14 @@ namespace Vim.UnitTest
 
             _vimTextBuffer = Vim.CreateVimTextBuffer(_textBuffer);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            var vimBufferData = CreateVimBufferData(_vimTextBuffer, _textView, statusUtil: _statusUtil.Object);
-            _globalSettings = vimBufferData.LocalSettings.GlobalSettings;
-            _localSettings = vimBufferData.LocalSettings;
-            _markMap = vimBufferData.Vim.MarkMap;
-            _vimData = vimBufferData.Vim.VimData;
-            _search = vimBufferData.Vim.SearchService;
-            var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            _motionUtil = new MotionUtil(vimBufferData, operations);
+            _vimBufferData = CreateVimBufferData(_vimTextBuffer, _textView, statusUtil: _statusUtil.Object);
+            _globalSettings = _vimBufferData.LocalSettings.GlobalSettings;
+            _localSettings = _vimBufferData.LocalSettings;
+            _markMap = _vimBufferData.Vim.MarkMap;
+            _vimData = _vimBufferData.Vim.VimData;
+            _search = _vimBufferData.Vim.SearchService;
+            var operations = CommonOperationsFactory.GetCommonOperations(_vimBufferData);
+            _motionUtil = new MotionUtil(_vimBufferData, operations);
         }
 
         public void AssertData(MotionResult data, SnapshotSpan? span, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
@@ -1310,7 +1311,7 @@ more";
                 Create("aaa xxx", "bbb yyy", "ccc zzz", "");
                 _globalSettings.StartOfLine = true;
                 _textView.MoveCaretToLine(2, 4);
-                _motionUtil._commonOperations.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
+                _vimBufferData.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
                 var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(1));
                 Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
@@ -1325,7 +1326,7 @@ more";
                 Create("aaa xxx", "bbb yyy", "ccc zzz", "");
                 _globalSettings.StartOfLine = false;
                 _textView.MoveCaretToLine(2, 4);
-                _motionUtil._commonOperations.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
+                _vimBufferData.MaintainCaretColumn = MaintainCaretColumn.NewSpaces(4);
                 var data = _motionUtil.LineOrLastToFirstNonBlank(FSharpOption.Create(1));
                 Assert.Equal(_textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak, data.Span);
                 Assert.True(data.MotionKind.IsLineWise);
