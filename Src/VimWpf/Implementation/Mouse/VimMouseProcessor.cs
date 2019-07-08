@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Vim.UI.Wpf.Implementation.Mouse
 {
@@ -11,15 +12,29 @@ namespace Vim.UI.Wpf.Implementation.Mouse
     {
         private readonly IVimBuffer _vimBuffer;
         private readonly IKeyboardDevice _keyboardDevice;
+        private readonly IProtectedOperations _protectedOperations;
         private readonly IWpfTextView _wpfTextView;
         private readonly MouseDevice _mouseDevice;
 
-        internal VimMouseProcessor(IVimBuffer vimBuffer, IKeyboardDevice keyboardDevice)
+        private bool _mouseCaptured;
+        private DispatcherTimer _scrollTimer;
+
+        internal VimMouseProcessor(
+            IVimBuffer vimBuffer,
+            IKeyboardDevice keyboardDevice,
+            IProtectedOperations protectedOperations)
         {
             _vimBuffer = vimBuffer;
             _keyboardDevice = keyboardDevice;
+            _protectedOperations = protectedOperations;
             _wpfTextView = (IWpfTextView)_vimBuffer.TextView;
             _mouseDevice = InputManager.Current.PrimaryMouseDevice;
+            _mouseCaptured = false;
+            _scrollTimer = new DispatcherTimer(
+                new TimeSpan(0, 0, 0, 0, 1000),
+                DispatcherPriority.Normal,
+                protectedOperations.GetProtectedEventHandler(OnScrollTimer),
+                Dispatcher.CurrentDispatcher);
         }
 
         internal bool TryProcess(VimKey vimKey, int clickCount = 1)
@@ -79,7 +94,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
                     e.Handled = TryProcess(VimKey.LeftMouse, e.ClickCount);
                     if (e.Handled)
                     {
-                        _mouseDevice.Capture(_wpfTextView.VisualElement);
+                        CaptureMouse();
                     }
                     break;
                 case MouseButton.Middle:
@@ -103,10 +118,7 @@ namespace Vim.UI.Wpf.Implementation.Mouse
             {
                 case MouseButton.Left:
                     e.Handled = TryProcess(VimKey.LeftRelease);
-                    if (e.Handled)
-                    {
-                        _wpfTextView.VisualElement.ReleaseMouseCapture();
-                    }
+                    ReleaseMouseCapture();
                     break;
                 case MouseButton.Middle:
                     e.Handled = TryProcess(VimKey.MiddleRelease);
@@ -126,10 +138,54 @@ namespace Vim.UI.Wpf.Implementation.Mouse
         public override void PreprocessMouseMove(MouseEventArgs e)
         {
             TryProcessDrag(e, e.LeftButton, VimKey.LeftDrag);
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                CheckScroll();
+            }
             TryProcessDrag(e, e.MiddleButton, VimKey.RightDrag);
             TryProcessDrag(e, e.RightButton, VimKey.RightDrag);
             TryProcessDrag(e, e.XButton1, VimKey.X1Drag);
             TryProcessDrag(e, e.XButton2, VimKey.X2Drag);
         }
+
+        private void CaptureMouse()
+        {
+            if (!_mouseCaptured)
+            {
+                _mouseDevice.Capture(_wpfTextView.VisualElement);
+                _mouseCaptured = true;
+                _scrollTimer.IsEnabled = true;
+            }
+        }
+
+        private void ReleaseMouseCapture()
+        {
+            if (_mouseCaptured)
+            {
+                _wpfTextView.VisualElement.ReleaseMouseCapture();
+                _mouseCaptured = false;
+                _scrollTimer.IsEnabled = false;
+            }
+        }
+
+        private void CheckScroll()
+        {
+            if (_mouseCaptured)
+            {
+            }
+        }
+
+        private void OnScrollTimer(object sender, EventArgs e)
+        {
+            if (!_mouseCaptured || !_wpfTextView.VisualElement.IsMouseCaptured)
+            {
+                _mouseCaptured = false;
+                _scrollTimer.IsEnabled = false;
+                return;
+            }
+
+            _wpfTextView.ViewScroller.ScrollViewportVerticallyByLines(ScrollDirection.Up, 1);
+        }
+
     }
 }
