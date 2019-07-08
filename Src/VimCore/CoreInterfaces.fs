@@ -2656,8 +2656,8 @@ type VisualInsertKind =
     /// The visual insert should begin at the end of the primary span
     | End
 
-    /// The visual insert should begin at the end of the line that the contains
-    /// the start of the primary span
+    /// The visual insert should begin at the end of the line that contains the
+    /// start of the primary span
     | EndOfLine
 
 [<RequireQualifiedAccess>]
