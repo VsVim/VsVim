@@ -1699,7 +1699,9 @@ type CharacterSpan =
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
 
-/// Represents the span for a Visual Block mode selection. 
+/// Represents the span for a Visual Block mode selection. Because Visual
+/// Studio cannot display a ragged box selection, when 'end-of-line' is true,
+/// we still use a non-zero spaces width to visually represent the block span
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
@@ -1711,11 +1713,11 @@ type BlockSpan =
     val private _height: int
     val private _endOfLine: bool
 
-    new(startPoint: SnapshotPoint, tabStop, spaces, height) = 
+    new(startPoint: SnapshotPoint, tabStop, spaces, height) =
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = false }
 
-    new(startPoint: SnapshotPoint, tabStop, spaces, height, endOfLine) = 
+    new(startPoint: SnapshotPoint, tabStop, spaces, height, endOfLine) =
         let startColumn = VirtualSnapshotColumn(startPoint)
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
 
@@ -1726,33 +1728,36 @@ type BlockSpan =
     new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height, endOfLine) =
         { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
 
-    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
-    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
-    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
-    /// SnapshotSpan start
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan
+    /// will have a minimum of 1 for height and width.  The start of the
+    /// BlockSpan is not necessarily the Start of the SnapshotSpan as an End
+    /// column which occurs before the start could cause the BlockSpan start to
+    /// be before the SnapshotSpan start
     new(span: VirtualSnapshotColumnSpan, tabStop: int) =
 
-        // The start of the span is by definition before the end of the span but we
-        // also have to handle upper-left/lower-right vs. upper-right/lower-left.
-        let startColumn, width = 
+        // The start of the span is by definition before the end of the span
+        // but we also have to handle upper-left/lower-right vs.
+        // upper-right/lower-left.
+        let startColumn, width =
             let startColumnSpaces = span.Start.GetSpacesToColumn tabStop
             let endColumnSpaces = span.End.GetSpacesToColumn tabStop
-            let width = endColumnSpaces - startColumnSpaces 
+            let width = endColumnSpaces - startColumnSpaces
 
             if width = 0 then
                 span.Start, 1
             elif width > 0 then
                 span.Start, width
-            else 
+            else
                 VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
         let height = SnapshotSpanUtil.GetLineCount span.Span
         BlockSpan(startColumn, tabStop = tabStop, spaces = width, height = height, endOfLine = false)
 
-    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan will have a minimum of 1 for
-    /// height and width.  The start of the BlockSpan is not necessarily the Start of the SnapshotSpan
-    /// as an End column which occurs before the start could cause the BlockSpan start to be before the 
-    /// SnapshotSpan start
+    /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan
+    /// will have a minimum of 1 for height and width.  The start of the
+    /// BlockSpan is not necessarily the Start of the SnapshotSpan as an End
+    /// column which occurs before the start could cause the BlockSpan start to
+    /// be before the SnapshotSpan start
     new(span: VirtualSnapshotSpan, tabStop: int) =
         let span = VirtualSnapshotColumnSpan(span)
         BlockSpan(span, tabStop)
@@ -1769,8 +1774,9 @@ type BlockSpan =
     /// In what space does this BlockSpan begin
     member x.VirtualBeforeSpaces = x.VirtualStart.GetSpacesToColumn x.TabStop
 
-    /// How many spaces does this BlockSpan occupy?  Be careful to treat this value as spaces, not columns.  The
-    /// different being that tabs count as 'tabStop' spaces but only 1 column.  
+    /// How many spaces does this BlockSpan occupy?  Be careful to treat this
+    /// value as spaces, not columns.  The different being that tabs count as
+    /// 'tabStop' spaces but only 1 column
     member x.SpacesLength = x._spaces
 
     /// How many lines does this BlockSpan encompass
@@ -1779,15 +1785,15 @@ type BlockSpan =
     /// Whether this block span extends to the end of line
     member x.EndOfLine = x._endOfLine
 
-    member x.OverlapEnd = 
-        let line = 
+    member x.OverlapEnd =
+        let line =
             let lineNumber = x.Start.LineNumber
             SnapshotUtil.GetLineOrLast x.Snapshot (lineNumber + (x._height - 1))
         let totalSpaces = x.BeforeSpaces + x.SpacesLength
         SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, totalSpaces, x.TabStop)
 
     /// Get the end column (exclusive) of the BlockSpan
-    member x.End = 
+    member x.End =
         let column = x.OverlapEnd
         if column.SpacesBefore > 0 then column.Column.AddOneOrCurrent()
         else column.Column
@@ -1816,15 +1822,16 @@ type BlockSpan =
                 let lineNumber = x.Start.LineNumber + i
                 match SnapshotUtil.TryGetLine x.Snapshot lineNumber with
                 | None -> ()
-                | Some line -> 
+                | Some line ->
                     yield makeSpan line x.BeforeSpaces
         }
-        |> NonEmptyCollectionUtil.OfSeq 
+        |> NonEmptyCollectionUtil.OfSeq
         |> Option.get
 
     member private x.GetEndColumn line = SnapshotColumn(line, line.End)
 
-    /// Get the NonEmptyCollection<SnapshotSpan> for the given block information
+    /// Get the NonEmptyCollection<SnapshotSpan> for the given block
+    /// information
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
@@ -1836,7 +1843,8 @@ type BlockSpan =
                     SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
 
-    /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block information
+    /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block
+    /// information
     member x.BlockVirtualColumnSpans: NonEmptyCollection<VirtualSnapshotColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
@@ -1848,9 +1856,9 @@ type BlockSpan =
                     VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
             VirtualSnapshotColumnSpan(startColumn, endColumn))
 
-    /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan that each line of
-    /// this block spans, along with the offset (measured in cells) of the block
-    /// with respect to the start point and end point.
+    /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan
+    /// that each line of this block spans, along with the offset (measured in
+    /// cells) of the block with respect to the start point and end point
     member x.BlockOverlapColumnSpans: NonEmptyCollection<SnapshotOverlapColumnSpan> =
         let x = x
         x.GetBlockSpansCore (fun line beforeSpaces ->
