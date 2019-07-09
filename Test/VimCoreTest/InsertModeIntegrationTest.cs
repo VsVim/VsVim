@@ -3627,7 +3627,6 @@ namespace Vim.UnitTest
             [InlineData("#r rog", "f", "#r ", "frog ")] 
             [InlineData("#d dog", "#", "d ", "#d ")] 
             [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
-            [InlineData("<CR>d dog", "", "<CR>d ", "dog pound ")] 
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
             {
                 Create();
@@ -3688,6 +3687,32 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
                 _vimBuffer.ProcessNotation("A ");
                 Assert.Equal("cc ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void Repeat()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg <Esc>.");
+                Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void RepeatDoesntCheckMapping()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg <Esc>");
+                _vimBuffer.Vim.GlobalAbbreviationMap.Clear();
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
             }
         }
 

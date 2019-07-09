@@ -394,7 +394,7 @@ type internal LocalAbbreviationMap
                 match _globalAbbreviationMap.GetAbbreviation key mode with
                 | None -> None
                 | Some rhs -> 
-                    let span = Span(0, text.Length)
+                    let span = Span(0, keyText.Length)
                     let result = { 
                         OriginalText = text 
                         TriggerKeyInput = triggerKeyInput

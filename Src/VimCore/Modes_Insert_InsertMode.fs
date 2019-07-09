@@ -951,9 +951,10 @@ type internal InsertMode
                 match _localAbbreviationMap.Abbreviate text keyInput AbbreviationMode.Insert with
                 | None -> None
                 | Some result -> 
+                    let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     let newText = result.AbbreviationValue.ToString()
-                    x.RunInsertCommand (InsertCommand.DeleteLeft newText.Length) KeyInputSet.Empty CommandFlags.None |> ignore
-                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue CommandFlags.None |> ignore
+                    x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
+                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue flags |> ignore
                     None
 
         match _sessionData.CombinedEditCommand with
