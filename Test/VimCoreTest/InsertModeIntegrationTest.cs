@@ -3657,36 +3657,16 @@ namespace Vim.UnitTest
                 Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
             }
 
-            [WpfFact(Skip = "ATODO")]
-            public void ReplaceMustBeComplete()
-            {
-                Create("");
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _vimBuffer.ProcessNotation("cco");
-                Assert.Equal("cco", _textBuffer.GetLineText(0));
-            }
-
-            [WpfFact(Skip = "ATODO")]
-            public void ExplicitCancelOfReplace()
-            {
-                Create("");
-                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _vimBuffer.ProcessNotation("cc<C-v> ");
-                Assert.Equal("cc ", _textBuffer.GetLineText(0));
-            }
-
             [WpfFact]
-            public void LhsMustBeTypedOut()
+            public void EscapeCompletes()
             {
-                Create("cc");
+                Create();
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
-                _vimBuffer.ProcessNotation("A ");
-                Assert.Equal("cc ", _textBuffer.GetLineText(0));
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<Esc>");
+                Assert.Equal("dog", _textBuffer.CurrentSnapshot.GetText());
             }
 
             [WpfFact]
@@ -3713,6 +3693,39 @@ namespace Vim.UnitTest
                 _vimBuffer.Vim.GlobalAbbreviationMap.Clear();
                 _vimBuffer.ProcessNotation(".");
                 Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// This makes sure the trigger key goes through normal insert mode processing vs. being inserted
+            /// literally. Inserting it literally would ignore settings like expandtab, shiftwidth, etc ...
+            /// </summary>
+            [WpfFact]
+            public void TriggerKeyInputNormalProcessingTab()
+            {
+                Create("");
+                _localSettings.ShiftWidth = 6;
+                _localSettings.SoftTabStop = 6;
+                _localSettings.TabStop = 6;
+                _localSettings.ExpandTab = true;
+                _localSettings.EndOfLine = false;
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<tab>");
+                Assert.Equal("dog   ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void TriggerKeyInputNormalProcessingCursor()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab if if ()<Left>", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("if ");
+                Assert.Equal("if ( )", _textBuffer.GetLineText(0));
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
             }
         }
 

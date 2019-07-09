@@ -228,6 +228,10 @@ type InsertSessionData = {
     /// Whether we should suppress breaking the undo sequence for the
     /// next left/right caret movement
     SuppressBreakUndoSequence: bool
+
+    /// Whether we should be suppressing abbreviations for the currently typed
+    /// text
+    SuppressAbbreviation: bool
 }
 
 [<RequireQualifiedAccess>]
@@ -259,6 +263,7 @@ type internal InsertMode
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
         SuppressBreakUndoSequence = false
+        SuppressAbbreviation = false
     }
 
     /// The set of commands supported by insert mode
@@ -946,16 +951,20 @@ type internal InsertMode
                 // Now run the command
                 x.RunInsertCommand InsertCommand.DeleteAllIndent keyInputSet (CommandFlags.Repeatable ||| CommandFlags.ContextSensitive) |> Some
 
-            else
+            elif not _sessionData.SuppressAbbreviation then
                 // ATODO: This needs work. Need to update the insert mode state properly after the abbreviation occurs
                 match _localAbbreviationMap.Abbreviate text keyInput AbbreviationMode.Insert with
                 | None -> None
                 | Some result -> 
                     let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                    let newText = result.AbbreviationValue.ToString()
                     x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
-                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue flags |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = true }
+                    for keyInput in result.AbbreviationValue.KeyInputs do
+                        x.ProcessCore keyInput |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = false }
                     None
+            else 
+                None
 
         match _sessionData.CombinedEditCommand with
         | None -> None
@@ -1508,6 +1517,7 @@ type internal InsertMode
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
             SuppressBreakUndoSequence = false
+            SuppressAbbreviation = false
         }
 
         // If this is replace mode then go ahead and setup overwrite
