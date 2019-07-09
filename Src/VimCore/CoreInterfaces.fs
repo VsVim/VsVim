@@ -1750,7 +1750,7 @@ type BlockSpan =
             else
                 VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
-        let height = SnapshotSpanUtil.GetLineCount span.Span
+        let height = VirtualSnapshotSpanUtil.GetLineCount span.VirtualSpan
         BlockSpan(startColumn, tabStop = tabStop, spaces = width, height = height, endOfLine = false)
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan

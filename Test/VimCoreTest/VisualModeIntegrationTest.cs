@@ -1620,6 +1620,20 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
                     Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// On completely empty lines a block insertion should apply to
+                /// all lines
+                /// </summary>
+                [WpfFact]
+                public void AllEmptyLines()
+                {
+                    // Reported in issue #2675.
+                    Create("", "", "", "");
+                    _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "#", "#", "#", ""}, _textBuffer.GetLines());
+
+                }
             }
 
             public sealed class SurrogatePairTest: BlockInsertTest
