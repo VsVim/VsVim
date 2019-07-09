@@ -105,6 +105,7 @@ namespace Vim.UnitTest
             public void MiddleOfLine()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 1); // 'a' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(1, _textView.GetCaretPoint().Position); // 'a' in 'cat'
@@ -114,6 +115,7 @@ namespace Vim.UnitTest
             public void AfterEndOfLine()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
@@ -123,6 +125,7 @@ namespace Vim.UnitTest
             public void AfterEndOfLineOneMore()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.VirtualEdit = "onemore";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
@@ -133,6 +136,7 @@ namespace Vim.UnitTest
             public void EmptyLine()
             {
                 Create("cat", "", "dog", "");
+                _textView.SetVisibleLineCount(4);
                 var point = _textView.GetPointInLine(1, 0); // empty line
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
@@ -197,6 +201,7 @@ namespace Vim.UnitTest
             public void DeleteToMouse()
             {
                 Create("cat dog mouse", "");
+                _textView.SetVisibleLineCount(2);
                 _textView.MoveCaretTo(4); // 'd' in 'dog'
                 var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
                 _testableMouseDevice.Point = point;
@@ -208,6 +213,7 @@ namespace Vim.UnitTest
             public void ControlClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<C-LeftMouse>");
@@ -9536,6 +9542,7 @@ namespace Vim.UnitTest
             public void MouseDoesNotAffectLastCommand()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.ProcessNotation("yyp");
                 var point = _textView.GetPointInLine(0, 8);
                 var link = "";
