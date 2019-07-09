@@ -951,12 +951,10 @@ type internal InsertMode
                 match _localAbbreviationMap.Abbreviate text keyInput AbbreviationMode.Insert with
                 | None -> None
                 | Some result -> 
-                    let newText = result.GetText()
-                    let span = 
-                        let startPoint = x.CaretPoint.Subtract result.ReplacedSpan.Length
-                        SnapshotSpan(startPoint, x.CaretPoint)
-                    _textBuffer.Delete(span.Span) |> ignore
-                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue CommandFlags.None |> Some
+                    let newText = result.AbbreviationValue.ToString()
+                    x.RunInsertCommand (InsertCommand.DeleteLeft newText.Length) KeyInputSet.Empty CommandFlags.None |> ignore
+                    x.RunInsertCommand (InsertCommand.Insert newText) result.AbbreviationValue CommandFlags.None |> ignore
+                    None
 
         match _sessionData.CombinedEditCommand with
         | None -> None

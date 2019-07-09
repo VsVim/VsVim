@@ -850,6 +850,9 @@ type VimInterpreter
         else
             DigraphUtil.AddToMap _vimBuffer.Vim.DigraphMap digraphList
 
+    // ATODO: implement
+    member x.RunDisplayAbbreviation modeList lhs = ()
+
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes prefixFilter = 
 
@@ -2311,6 +2314,13 @@ type VimInterpreter
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.CSharpScript callInfo -> x.RunCSharpScript(callInfo, createEachTime = false)
         | LineCommand.CSharpScriptCreateEachTime callInfo -> x.RunCSharpScript(callInfo, createEachTime = true)
+        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
+        | LineCommand.DisplayAbbreviation (modes, lhs) -> x.RunDisplayAbbreviation modes lhs
+        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
+        | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
+        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
+        | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
+        | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange registerName
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
@@ -2322,11 +2332,6 @@ type VimInterpreter
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
-        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
-        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
-        | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
-        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
-        | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
@@ -2356,7 +2361,6 @@ type VimInterpreter
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
         | LineCommand.ParseError msg -> x.RunParseError msg
-        | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false

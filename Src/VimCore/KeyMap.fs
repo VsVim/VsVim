@@ -341,8 +341,6 @@ type internal LocalAbbreviationMap
             else
                 None
 
-    // ATODO: this is a terrible hack. Need to really look at the last word here not the whole text
-    // ATODO: need to consider the mode argument
     member x.Abbreviate (text: string) (triggerKeyInput: KeyInput) mode =
 
         let getFullId() = 

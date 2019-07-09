@@ -3627,16 +3627,35 @@ namespace Vim.UnitTest
             [InlineData("#r rog", "f", "#r ", "frog ")] 
             [InlineData("#d dog", "#", "d ", "#d ")] 
             [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
+            [InlineData("<CR>d dog", "", "<CR>d ", "dog pound ")] 
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
             {
                 Create();
                 _textBuffer.SetTextContent(text);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.ProcessNotation($":ab {abbreviate}", enter: true);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
                 _vimBuffer.ProcessNotation(typed);
                 Assert.Equal(expectedText, _textBuffer.GetLineText(0));
+            }
+
+            [WpfTheory]
+            [InlineData("dg dog", "", "dg<CR>", "dog\r\n")]
+            [InlineData("d dog", "", "d<CR>", "dog\r\n")] // Single character completes when only thing on the line
+            [InlineData("<CR>d dog", "", "<CR>d ", "\r\nd ")]
+            [InlineData("<CR>d dog", "", "<CR>d<CR>", "\r\nd\r\n")]
+            public void RulesMultiLine(string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
             }
 
             [WpfFact(Skip = "ATODO")]
