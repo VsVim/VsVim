@@ -47,7 +47,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private readonly ITextView _textView;
+        private readonly IWpfTextView _textView;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
@@ -94,7 +94,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private ITextViewLine TextViewLineContainingCaret
+        private IWpfTextViewLine TextViewLineContainingCaret
         {
             get
             {
@@ -140,7 +140,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         internal BlockCaret(
-            ITextView textView,
+            IWpfTextView textView,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
             IAdornmentLayer layer,
@@ -189,20 +189,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <returns></returns>
         private double SnapToWholeDevicePixels(double value, bool ensurePositive)
         {
-            if (_textView is IWpfTextView wpfTextView)
+            var visualElement = _textView.VisualElement;
+            var presentationSource = PresentationSource.FromVisual(visualElement);
+            var matrix = presentationSource.CompositionTarget.TransformToDevice;
+            var dpiFactor = 1.0 / matrix.M11;
+            var wholePixels = Math.Round(value / dpiFactor);
+            if (ensurePositive && wholePixels < 1.0)
             {
-                var visualElement = wpfTextView.VisualElement;
-                var presentationSource = PresentationSource.FromVisual(visualElement);
-                var matrix = presentationSource.CompositionTarget.TransformToDevice;
-                var dpiFactor = 1.0 / matrix.M11;
-                var wholePixels = Math.Round(value / dpiFactor);
-                if (ensurePositive && wholePixels < 1.0)
-                {
-                    wholePixels = 1.0;
-                }
-                return wholePixels * dpiFactor;
+                wholePixels = 1.0;
             }
-            return value;
+            return wholePixels * dpiFactor;
         }
 
         /// <summary>
@@ -412,9 +408,22 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             if (IsRealCaretVisible)
             {
-                // Get the caret string and caret width.
+                // Get the caret height.
                 var line = TextViewLineContainingCaret;
-                height = line.Height;
+                height = line.TextHeight;
+
+                // Try to use the same line height that a selection would use.
+                var textViewLines = _textView.TextViewLines;
+                if (textViewLines != null && textViewLines.IsValid)
+                {
+                    var geometry = textViewLines.GetMarkerGeometry(line.Extent);
+                    if (geometry != null)
+                    {
+                        height = geometry.Bounds.Height;
+                    }
+                }
+
+                // Get the caret string and caret width.
                 var point = _textView.Caret.Position.BufferPosition;
                 var codePointInfo = new SnapshotCodePoint(point).CodePointInfo;
                 if (point.Position < point.Snapshot.Length)
