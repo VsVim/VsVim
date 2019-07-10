@@ -528,8 +528,9 @@ module CharUtil =
             yield UnicodeCategory.DecimalDigitNumber
             yield UnicodeCategory.LetterNumber
             yield UnicodeCategory.OtherNumber
-            // Not separators
-            //yield UnicodeCategory.SpaceSeparator
+            // Space separators
+            yield UnicodeCategory.SpaceSeparator
+            // Not other separators
             //yield UnicodeCategory.LineSeparator
             //yield UnicodeCategory.ParagraphSeparator
             // Not control, etc.
