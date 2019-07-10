@@ -59,16 +59,13 @@ type AbbreviationKind =
 [<RequireQualifiedAccess>]
 type AbbreviationMode =
     | Insert
-    // ATODO: don't think replace should be here.
-    | Replace
     | Command
 
-    static member All = [Insert; Replace; Command]
+    static member All = [Insert; Command]
 
     override x.ToString() =
         match x with
         | Insert -> "Insert"
-        | Replace -> "Replace"
         | Command -> "Command"
 
 [<RequireQualifiedAccess>]

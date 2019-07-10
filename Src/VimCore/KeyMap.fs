@@ -292,42 +292,44 @@ type internal KeyMap
 
 type internal AbbreviationMap() =
 
-    let mutable _map = Dictionary<AbbreviationMode, Dictionary<KeyInputSet, KeyInputSet>>()
+    let mutable _map = Dictionary<KeyInputSet, AbbreviationData>()
 
-    do 
-        for mode in AbbreviationMode.All do
-            _map.[mode] <- Dictionary<KeyInputSet, KeyInputSet>()
+    member x.Abbreviations = _map.Values :> AbbreviationData seq
 
     member x.Add (lhs: KeyInputSet) (mode: AbbreviationMode) (rhs: KeyInputSet) =
-        let map = _map.[mode]
-        map.[lhs] <- rhs
+        let oldData = _map.TryGetValueEx lhs
+        let data = 
+            match oldData with
+            | Some oldData -> oldData.ChangeReplacement mode rhs
+            | None -> AbbreviationData.Single (lhs, rhs, mode)
+        _map.[lhs] <- data
 
     member x.Get lhs mode =
-        let map = _map.[mode]
-        map.TryGetValueEx lhs 
+        match _map.TryGetValueEx lhs with
+        | Some data -> data.GetReplacement mode
+        | None -> None
 
     member x.Clear mode =
-        let map = _map.[mode]
-        map.Clear()
+        for data in x.Abbreviations |> List.ofSeq do
+            match data.RemoveReplacement mode with
+            | None -> _map.Remove data.Abbreviation |> ignore
+            | Some data -> _map.[data.Abbreviation] <- data
 
     member x.ClearAll() = 
-        for mode in AbbreviationMode.All do
-            x.Clear mode
+        _map.Clear()
 
 type internal GlobalAbbreviationMap() =
 
     let _map = AbbreviationMap()
 
-    member x.Add lhs mode rhs = _map.Add lhs mode rhs
-    member x.Get lhs mode = _map.Get lhs mode
-    member x.Clear mode = _map.Clear mode
-    member x.ClearAll() = _map.ClearAll()
+    member x.Map = _map
 
     interface IVimGlobalAbbreviationMap with
-        member x.Add lhs mode rhs = x.Add lhs mode rhs
-        member x.Get lhs mode = x.Get lhs mode
-        member x.Clear mode = x.Clear mode
-        member x.ClearAll() = x.ClearAll()
+        member x.Abbreviations = x.Map.Abbreviations
+        member x.Add lhs mode rhs = x.Map.Add lhs mode rhs
+        member x.Get lhs mode = x.Map.Get lhs mode
+        member x.Clear mode = x.Map.Clear mode
+        member x.ClearAll() = x.Map.ClearAll()
 
 type internal LocalAbbreviationMap
     (
@@ -337,10 +339,7 @@ type internal LocalAbbreviationMap
 
     let _map = AbbreviationMap()
 
-    member x.Add lhs mode rhs = _map.Add lhs mode rhs
-    member x.Get lhs mode = _map.Get lhs mode
-    member x.Clear mode = _map.Clear mode
-    member x.ClearAll() = _map.ClearAll()
+    member x.Map = _map
     member x.IsKeywordChar c = _wordUtil.IsKeywordChar c
     member x.IsNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
 
@@ -431,10 +430,11 @@ type internal LocalAbbreviationMap
 
     interface IVimLocalAbbreviationMap with
         member x.GlobalAbbreviationMap = _globalAbbreviationMap
-        member x.Add lhs mode rhs = x.Add lhs mode rhs
-        member x.Get lhs mode = x.Get lhs mode
+        member x.Abbreviations = x.Map.Abbreviations
+        member x.Add lhs mode rhs = x.Map.Add lhs mode rhs
+        member x.Get lhs mode = x.Map.Get lhs mode
         member x.GetLocalOrGlobal lhs mode = x.GetLocalOrGlobal lhs mode
-        member x.Clear mode = x.Clear mode
-        member x.ClearAll() = x.ClearAll()
+        member x.Clear mode = x.Map.Clear mode
+        member x.ClearAll() = x.Map.ClearAll()
         member x.TryAbbreviate text triggerKeyInput mode = x.TryAbbreviate text triggerKeyInput mode
         member x.TryParse text = x.TryParse text

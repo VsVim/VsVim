@@ -82,5 +82,73 @@ namespace Vim.UnitTest
                 Assert.True(kind.IsNone());
             }
         }
+
+        public sealed class AbbreviationDataTest : AbbreviationTest
+        {
+            private static AbbreviationMode ParseMode(string mode) =>
+                mode == "i" ? AbbreviationMode.Insert : AbbreviationMode.Command;
+
+            private static AbbreviationData ParseData(string data)
+            {
+                var parts = data.Split(' ');
+                switch (parts[0])
+                {
+                    case "a":
+                        return AbbreviationData.NewAll(
+                            KeyNotationUtil.StringToKeyInputSet(parts[1]),
+                            KeyNotationUtil.StringToKeyInputSet(parts[2]));
+                    case "si":
+                        return AbbreviationData.NewSingle(
+                            KeyNotationUtil.StringToKeyInputSet(parts[1]),
+                            KeyNotationUtil.StringToKeyInputSet(parts[2]),
+                            AbbreviationMode.Insert);
+                    case "sc":
+                        return AbbreviationData.NewSingle(
+                            KeyNotationUtil.StringToKeyInputSet(parts[1]),
+                            KeyNotationUtil.StringToKeyInputSet(parts[2]),
+                            AbbreviationMode.Command);
+                    case "m":
+                        return AbbreviationData.NewMixed(
+                            KeyNotationUtil.StringToKeyInputSet(parts[1]),
+                            KeyNotationUtil.StringToKeyInputSet(parts[2]),
+                            KeyNotationUtil.StringToKeyInputSet(parts[3]));
+                    default:
+                        throw new Exception();
+                }
+            }
+
+            [WpfTheory]
+            [InlineData("a dd dog", "i", "cat", "* dd - cat - dog")]
+            [InlineData("m dd dog cat", "c", "dog", "! dd - dog")]
+            [InlineData("sc dd dog", "i", "dog", "! dd - dog")]
+            [InlineData("sc dd dog", "c", "dog", "c dd - dog")]
+            [InlineData("si dd dog", "i", "dog", "i dd - dog")]
+            [InlineData("si dd dog", "c", "cat", "* dd - dog - cat")]
+            public void ChangeReplacement(string data, string mode, string newReplacement, string expected)
+            {
+                var abbreviationData = ParseData(data);
+                var newData = abbreviationData.ChangeReplacement(ParseMode(mode), KeyNotationUtil.StringToKeyInputSet(newReplacement));
+                Assert.Equal(expected, newData.ToString());
+            }
+
+            [WpfTheory]
+            [InlineData("a dd dog", "i", "c dd - dog")]
+            [InlineData("si dd dog", "i", null)]
+            [InlineData("sc dd dog", "i", "c dd - dog")]
+            [InlineData("m dd dog cat", "c", "i dd - dog")]
+            public void RemoveReplacement(string data, string mode, string expected)
+            {
+                var abbreviationData = ParseData(data);
+                var newData = abbreviationData.RemoveReplacement(ParseMode(mode));
+                if (expected is null)
+                {
+                    Assert.True(newData.IsNone());
+                }
+                else
+                {
+                    Assert.Equal(expected, newData.Value.ToString());
+                }
+            }
+        }
     }
 }

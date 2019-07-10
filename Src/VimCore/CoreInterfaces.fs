@@ -4236,10 +4236,91 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
+type AbbreviationData =
+    | All of Abbreviation: KeyInputSet * Replacement: KeyInputSet
+    | Single of Abbreviation: KeyInputSet * Replacement: KeyInputSet * Mode: AbbreviationMode
+    | Mixed of Abbreviation: KeyInputSet * InsertReplacement: KeyInputSet * CommandReplacement: KeyInputSet
+    with
+
+    member x.Abbreviation = 
+        match x with
+        | All (abbreviation, _) -> abbreviation
+        | Single (abbreviation, _, _) -> abbreviation
+        | Mixed (abbreviation, _, _) -> abbreviation
+
+    member x.Modes = 
+        match x with
+        | All _ -> AbbreviationMode.All
+        | Single (_, _, mode) -> [mode]
+        | Mixed _ -> AbbreviationMode.All
+
+    member x.InsertReplacement =
+        match x with
+        | All (_, r) -> Some r
+        | Mixed (_, i, _) -> Some i
+        | Single (_, r, mode) when mode = AbbreviationMode.Insert -> Some r
+        | _ -> None
+
+    member x.CommandReplacement =
+        match x with
+        | All (_, r) -> Some r
+        | Mixed (_, _, c) -> Some c
+        | Single (_, r, mode) when mode = AbbreviationMode.Command -> Some r
+        | _ -> None
+
+    member x.GetReplacement mode =
+        match mode with
+        | AbbreviationMode.Insert -> x.InsertReplacement
+        | AbbreviationMode.Command -> x.CommandReplacement
+
+    member x.ChangeReplacement mode replacement =
+        let insertReplacement = 
+            if mode = AbbreviationMode.Insert then Some replacement
+            else x.InsertReplacement
+        let commandReplacement = 
+            if mode = AbbreviationMode.Command then Some replacement
+            else x.CommandReplacement
+        let abbreviation = x.Abbreviation
+        match insertReplacement, commandReplacement with
+        | Some i, Some c when i = c -> AbbreviationData.All (abbreviation, replacement)
+        | Some i, Some c -> AbbreviationData.Mixed(abbreviation, InsertReplacement = i, CommandReplacement = c)
+        | _ -> AbbreviationData.Single(abbreviation, replacement, mode)
+
+    member x.RemoveReplacement mode =
+        match mode with
+        | AbbreviationMode.Insert -> 
+            match x with
+            | All (a, r) -> AbbreviationData.Single (a, r, AbbreviationMode.Command) |> Some
+            | Single (_, r, m) when m = AbbreviationMode.Insert -> None
+            | Single _ -> Some x
+            | Mixed (a, _, c) -> AbbreviationData.Single (a, c, AbbreviationMode.Command) |> Some
+        | AbbreviationMode.Command -> 
+            match x with
+            | All (a, r) -> AbbreviationData.Single (a, r, AbbreviationMode.Insert) |> Some
+            | Single (_, r, m) when m = AbbreviationMode.Command -> None
+            | Single _ -> Some x
+            | Mixed (a, i, _) -> AbbreviationData.Single (a, i, AbbreviationMode.Insert) |> Some
+
+    override x.ToString() = 
+        match x with
+        | All (a, r) -> sprintf "! %O - %O" a r
+        | Single (a, r, m) ->
+            match m with
+            | AbbreviationMode.Insert -> sprintf "i %O - %O" a r
+            | AbbreviationMode.Command -> sprintf "c %O - %O" a r
+        | Mixed (a, i, c) -> sprintf "* %O - %O - %O" a i c
+
 /// Information about a single abbreviation replace
 [<NoComparison>]
 [<NoEquality>]
 type AbbreviationResult = {
+    /// The found abbreviation that was replaced
+    Abbreviation: KeyInputSet
+
+    /// The set of KeyInput values the abbreviation maps to. This does not include the 
+    /// character which may, or may not, be added by TriggerKeyInput
+    Replacement: KeyInputSet
+
     OriginalText: string
 
     /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
@@ -4249,15 +4330,9 @@ type AbbreviationResult = {
     /// The Span inside OriginalText which should be replaced by the abbreviation
     ReplacedSpan: Span
 
-    /// The found abbreviation that was replaced
-    Abbreviation: KeyInputSet
-
     /// The AbbreviationKind of the found abbrevitaion
     AbbreviationKind: AbbreviationKind
 
-    /// The set of KeyInput values the abbreviation maps to. This does not include the 
-    /// character which may, or may not, be added by TriggerKeyInput
-    Replacement: KeyInputSet
 } with
 
     override x.ToString() =
@@ -4267,6 +4342,8 @@ type AbbreviationResult = {
         text + value
 
 type IVimAbbreviationMap =
+
+    abstract Abbreviations: AbbreviationData seq
 
     abstract Add: lhs: KeyInputSet -> mode: AbbreviationMode -> rhs: KeyInputSet -> unit
 

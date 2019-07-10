@@ -3783,6 +3783,17 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-]>");
                 Assert.Equal(0, VimHost.BeepCount);
             }
+
+            [WpfFact]
+            public void CommandAndInsertCanHaveDifferentAbbreviationReplacements()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":iab dd dog", enter: true);
+                _vimBuffer.ProcessNotation(":cab dd cat", enter: true);
+                _vimBuffer.ProcessNotation("idd ");
+                Assert.Equal("dog ", _textBuffer.GetLineText(0));
+            }
         }
 
         public sealed class AtomicInsertTests : InsertModeIntegrationTest
