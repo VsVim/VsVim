@@ -124,7 +124,7 @@ type internal HistorySession<'TData, 'TResult>
                 x.ProcessPaste keyInput
             else
                 keyInput.Char.ToString()
-                |> _command.Insert
+                |> _command.InsertText
                 |> x.ResetCommand
                 x.CreateBindResult()
 
@@ -134,7 +134,7 @@ type internal HistorySession<'TData, 'TResult>
         | Some name -> 
             let register = _registerMap.GetRegister name
             register.StringValue
-            |> _command.Insert
+            |> _command.InsertText
             |> x.ResetCommand
 
         _inPasteWait <- false
@@ -154,7 +154,7 @@ type internal HistorySession<'TData, 'TResult>
             | None -> x.ResetCommand _command
             | Some cw ->
                 cw.Span.GetText()
-                |> _command.Insert
+                |> _command.InsertText
                 |> x.ResetCommand
 
             x.CreateBindResult()

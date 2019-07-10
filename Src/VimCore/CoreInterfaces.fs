@@ -4610,6 +4610,7 @@ type HistoryList () =
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type EditableCommand =
 
     val private _text: string
@@ -4675,11 +4676,15 @@ type EditableCommand =
         else
             x
 
-    /// Insert text operation
-    member x.Insert text =
+    /// Insert text at the caret
+    member x.InsertText text =
         let before = x.Text.Substring(0, x.CaretPosition)
         let after = x.Text.Substring(x.CaretPosition)
         EditableCommand(before + text + after, x.CaretPosition + text.Length)
+
+    /// Display representation of an editable command
+    override x.ToString() =
+        String.Format("Text = '{0}', CaretPosition = {1}", x.Text, x.CaretPosition)
 
     /// The empty editable command
     static member Empty =

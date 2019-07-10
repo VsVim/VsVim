@@ -54,7 +54,23 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.Process("Q");
             Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
             var expectedCaretPosition = command.Length - 2;
-            Assert.Equal(new EditableCommand(command, expectedCaretPosition), _vimBuffer.CommandMode.EditableCommand);
+            var expectedCommand = new EditableCommand(command, expectedCaretPosition);
+            Assert.Equal(expectedCommand, _vimBuffer.CommandMode.EditableCommand);
+            Assert.Equal(":" + command, _control.CommandLineTextBox.Text);
+            Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
+        }
+
+        [WpfFact]
+        public void UnmappedSpecialKey()
+        {
+            var command = "%s//g";
+            _vimBuffer.Process($":map Q :{command}<PageUp>", enter: true);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            _vimBuffer.Process("Q");
+            Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+            var expectedCaretPosition = command.Length;
+            var expectedCommand = new EditableCommand(command, expectedCaretPosition);
+            Assert.Equal(expectedCommand, _vimBuffer.CommandMode.EditableCommand);
             Assert.Equal(":" + command, _control.CommandLineTextBox.Text);
             Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
         }
