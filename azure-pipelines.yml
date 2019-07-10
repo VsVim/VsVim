@@ -1,5 +1,4 @@
 trigger:
-- dev/jaredpar/*
 - master
 
 pr:
@@ -87,5 +86,5 @@ jobs:
     inputs:
       filePath: Scripts\Build.ps1
       arguments: -ci -uploadVsix -config Release
-    condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'master'))
 
