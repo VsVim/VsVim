@@ -62,11 +62,7 @@ type AbbreviationMode =
     | Replace
     | Command
 
-    static member All = 
-        seq {
-            yield Insert
-            yield Replace
-            yield Command }
+    static member All = [Insert; Replace; Command]
 
     override x.ToString() =
         match x with

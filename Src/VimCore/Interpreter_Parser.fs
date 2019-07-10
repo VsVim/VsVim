@@ -264,6 +264,9 @@ and [<Sealed>] Parser
         ("abbreviate", "ab")
         ("iabbrevA", "ia")
         ("cabbrevA", "ca")
+        ("abclear", "abc")
+        ("iabclear", "iabc")
+        ("cabclear", "cabc")
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -571,9 +574,38 @@ and [<Sealed>] Parser
             else
                 mapFunc leftKeyNotation rightKeyNotation
 
+    /// Looks for the <buffer> argument that is common to abbreviate commands. Returns true, and consumes
+    /// if it is found. Otherwise it returns false and the tokenizer state remains unchanged
+    member x.ParseAbbreviateBufferArgument() =
+        let mark = _tokenizer.Mark
+        let noBuffer() =
+            _tokenizer.MoveToMark mark
+            false
+
+        x.SkipBlanks()
+        match _tokenizer.CurrentTokenKind with
+        | TokenKind.Character '<' ->
+            _tokenizer.MoveNextToken()
+            match _tokenizer.CurrentTokenKind with 
+            | TokenKind.Word "buffer" -> 
+                _tokenizer.MoveNextToken()
+                match _tokenizer.CurrentTokenKind with
+                | TokenKind.Character '>' -> 
+                    _tokenizer.MoveNextToken()
+                    true
+                | _ -> noBuffer()
+            | _ -> noBuffer()
+        | _ -> noBuffer()
+
     /// Parse out :abbreviate and all of the mode specific variants 
     member x.ParseAbbreviate abbreviationModes =
-        x.ParseMappingCore (fun n -> LineCommand.DisplayAbbreviation (abbreviationModes, n)) (fun l r -> LineCommand.Abbreviate(l, r, abbreviationModes))
+        let isLocal = x.ParseAbbreviateBufferArgument()
+        x.ParseMappingCore (fun n -> LineCommand.DisplayAbbreviation (abbreviationModes, n)) (fun l r -> LineCommand.Abbreviate(l, r, abbreviationModes, isLocal))
+
+    /// Parse out :abclear 
+    member x.ParseAbbreviateClear abbreviationModes =
+        let isLocal = x.ParseAbbreviateBufferArgument()
+        LineCommand.AbbreviateClear (abbreviationModes, isLocal)
 
     /// Parse out core portion of key mappings.
     member x.ParseMapKeysCore keyRemapModes allowRemap =
@@ -846,6 +878,7 @@ and [<Sealed>] Parser
         | _ ->
             match lineCommand with
             | LineCommand.Abbreviate _ -> noRangeCommand
+            | LineCommand.AbbreviateClear _ -> noRangeCommand
             | LineCommand.AddAutoCommand _ -> noRangeCommand
             | LineCommand.Behave _ -> noRangeCommand
             | LineCommand.Call _ -> noRangeCommand
@@ -2534,12 +2567,14 @@ and [<Sealed>] Parser
         let doParse name = 
             let parseResult = 
                 match name with
-                | "abbreviate" -> noRange (fun () -> x.ParseAbbreviate (List.ofSeq AbbreviationMode.All))
+                | "abbreviate" -> noRange (fun () -> x.ParseAbbreviate AbbreviationMode.All)
+                | "abclear" -> noRange (fun () -> x.ParseAbbreviateClear AbbreviationMode.All)
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
                 | "cabbrev" -> noRange (fun () -> x.ParseAbbreviate [AbbreviationMode.Command])                 
+                | "cabclear" -> noRange (fun () -> x.ParseAbbreviateClear [AbbreviationMode.Command])                 
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "cfirst" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -2577,6 +2612,7 @@ and [<Sealed>] Parser
                 | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
                 | "iabbrev" -> noRange (fun () -> x.ParseAbbreviate [AbbreviationMode.Insert])                 
+                | "iabclear" -> noRange (fun () -> x.ParseAbbreviateClear [AbbreviationMode.Insert])                 
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])

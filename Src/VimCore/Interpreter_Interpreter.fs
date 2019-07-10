@@ -575,17 +575,29 @@ type VimInterpreter
     member x.GetPointAfter lineRange =
         x.GetPointAfterOrDefault lineRange DefaultLineRange.None
 
-    member x.RunAbbreviate lhs rhs modeList =
-        // ATODO: error messages
-        // ATODO: how does the ability to parse the kind fit into the storage here?
+    member x.RunAbbreviate lhs rhs modeList isLocal =
+        // Even when doing a global mapping the abbreviation is still parsed in the context of 
+        // the current buffer using `iskeyword`. This means that some global abbreviations are valid
+        // to set in some buffers but not others if they have significantly different `iskeyword` 
+        // values
         match _vimTextBuffer.LocalAbbreviationMap.TryParse lhs with
-        | None -> ()
+        | None ->
+            _statusUtil.OnError Resources.Parser_InvalidArgument
         | Some _ ->
+            let map = 
+                if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+                else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
             let lhs = KeyNotationUtil.StringToKeyInputSet lhs
             let rhs = KeyNotationUtil.StringToKeyInputSet rhs
             for mode in modeList do
-                // ATODO: what about <buffer> abbreviations?
-                _vim.GlobalAbbreviationMap.Abbreviate lhs mode rhs
+                map.Add lhs mode rhs
+
+    member x.RunAbbreviateClear modeList isLocal =
+        let map = 
+            if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+            else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
+        for mode in modeList do
+            map.Clear mode
 
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
@@ -2302,7 +2314,8 @@ type VimInterpreter
         let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
-        | LineCommand.Abbreviate (lhs, rhs, modeList) -> x.RunAbbreviate lhs rhs modeList
+        | LineCommand.Abbreviate (lhs, rhs, modeList, isLocal) -> x.RunAbbreviate lhs rhs modeList isLocal
+        | LineCommand.AbbreviateClear (modeList, isLocal) -> x.RunAbbreviateClear modeList isLocal
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.Call callInfo -> x.RunCall callInfo

@@ -290,9 +290,7 @@ type internal KeyMap
         member x.Clear mode = x.Clear mode
         member x.ClearAll () = x.ClearAll()
 
-type internal GlobalAbbreviationMap
-    (
-    ) =
+type internal AbbreviationMap() =
 
     let mutable _map = Dictionary<AbbreviationMode, Dictionary<KeyInputSet, KeyInputSet>>()
 
@@ -300,22 +298,36 @@ type internal GlobalAbbreviationMap
         for mode in AbbreviationMode.All do
             _map.[mode] <- Dictionary<KeyInputSet, KeyInputSet>()
 
-    member x.Abbreviate (lhs: KeyInputSet) (mode: AbbreviationMode) (rhs: KeyInputSet) =
+    member x.Add (lhs: KeyInputSet) (mode: AbbreviationMode) (rhs: KeyInputSet) =
         let map = _map.[mode]
         map.[lhs] <- rhs
 
-    member x.GetAbbreviation lhs mode =
+    member x.Get lhs mode =
         let map = _map.[mode]
         map.TryGetValueEx lhs 
 
-    member x.Clear() = 
-        for kvp in _map do
-            kvp.Value.Clear()
+    member x.Clear mode =
+        let map = _map.[mode]
+        map.Clear()
+
+    member x.ClearAll() = 
+        for mode in AbbreviationMode.All do
+            x.Clear mode
+
+type internal GlobalAbbreviationMap() =
+
+    let _map = AbbreviationMap()
+
+    member x.Add lhs mode rhs = _map.Add lhs mode rhs
+    member x.Get lhs mode = _map.Get lhs mode
+    member x.Clear mode = _map.Clear mode
+    member x.ClearAll() = _map.ClearAll()
 
     interface IVimGlobalAbbreviationMap with
-        member x.Abbreviate lhs mode rhs = x.Abbreviate lhs mode rhs
-        member x.GetAbbreviation lhs mode = x.GetAbbreviation lhs mode
-        member x.Clear() = x.Clear()
+        member x.Add lhs mode rhs = x.Add lhs mode rhs
+        member x.Get lhs mode = x.Get lhs mode
+        member x.Clear mode = x.Clear mode
+        member x.ClearAll() = x.ClearAll()
 
 type internal LocalAbbreviationMap
     (
@@ -323,8 +335,19 @@ type internal LocalAbbreviationMap
         _wordUtil : WordUtil
     ) = 
 
+    let _map = AbbreviationMap()
+
+    member x.Add lhs mode rhs = _map.Add lhs mode rhs
+    member x.Get lhs mode = _map.Get lhs mode
+    member x.Clear mode = _map.Clear mode
+    member x.ClearAll() = _map.ClearAll()
     member x.IsKeywordChar c = _wordUtil.IsKeywordChar c
     member x.IsNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
+
+    member x.GetLocalOrGlobal lhs mode = 
+        match _map.Get lhs mode with
+        | Some rhs -> Some rhs
+        | None -> _globalAbbreviationMap.Get lhs mode
 
     member x.TryParse text = 
         if StringUtil.IsNullOrEmpty text || Seq.exists CharUtil.IsWhiteSpace text then
@@ -341,7 +364,7 @@ type internal LocalAbbreviationMap
             else
                 None
 
-    member x.Abbreviate (text: string) (triggerKeyInput: KeyInput) mode =
+    member x.TryAbbreviate (text: string) (triggerKeyInput: KeyInput) mode =
 
         let getFullId() = 
             Debug.Assert(text.Length > 0)
@@ -352,7 +375,7 @@ type internal LocalAbbreviationMap
             match fullIdText.Length with
             | 0 -> None
             | 1 ->
-                if index = 0 then Some fullIdText
+                if index = 0 then Some (fullIdText, AbbreviationKind.FullId)
                 else 
                     let before = text.[index - 1]
                     let isValid =
@@ -360,9 +383,9 @@ type internal LocalAbbreviationMap
                         before = '\t' ||
                         before = '\n' ||
                         before = '\r'
-                    if isValid then Some fullIdText
+                    if isValid then Some (fullIdText, AbbreviationKind.FullId)
                     else None
-            | _ -> Some fullIdText
+            | _ -> Some (fullIdText, AbbreviationKind.FullId)
 
         let getEndId() =
             Debug.Assert(text.Length > 0)
@@ -370,7 +393,7 @@ type internal LocalAbbreviationMap
                 let mutable index = text.Length - 2
                 while index > 0 && x.IsNonKeywordChar text.[index - 1] do
                     index <- index - 1
-                Some (text.Substring(index))
+                Some ((text.Substring(index)), AbbreviationKind.EndId)
             else None
             
         let getNonId() =
@@ -379,7 +402,7 @@ type internal LocalAbbreviationMap
                 let mutable index = text.Length - 2
                 while index > 0 && testChar text.[index - 1] do
                     index <- index - 1
-                Some (text.Substring(index))
+                Some ((text.Substring(index)), AbbreviationKind.NonId)
             else None
 
         let isAbbreviationTrigger =
@@ -389,9 +412,9 @@ type internal LocalAbbreviationMap
         if isAbbreviationTrigger then
             match getFullId() |> Option.orElseWith getEndId |> Option.orElseWith getNonId with
             | None -> None
-            | Some keyText ->
+            | Some (keyText, kind) ->
                 let key = KeyNotationUtil.StringToKeyInputSet keyText 
-                match _globalAbbreviationMap.GetAbbreviation key mode with
+                match x.GetLocalOrGlobal key mode with
                 | None -> None
                 | Some rhs -> 
                     let span = Span(0, keyText.Length)
@@ -399,13 +422,19 @@ type internal LocalAbbreviationMap
                         OriginalText = text 
                         TriggerKeyInput = triggerKeyInput
                         ReplacedSpan = span
-                        AbbreviationKey = key
-                        AbbreviationValue = rhs
+                        Abbreviation = key
+                        AbbreviationKind = kind
+                        Replacement = rhs
                     }
                     Some result
         else None
 
     interface IVimLocalAbbreviationMap with
         member x.GlobalAbbreviationMap = _globalAbbreviationMap
-        member x.Abbreviate text triggerKeyInput mode = x.Abbreviate text triggerKeyInput mode
+        member x.Add lhs mode rhs = x.Add lhs mode rhs
+        member x.Get lhs mode = x.Get lhs mode
+        member x.GetLocalOrGlobal lhs mode = x.GetLocalOrGlobal lhs mode
+        member x.Clear mode = x.Clear mode
+        member x.ClearAll() = x.ClearAll()
+        member x.TryAbbreviate text triggerKeyInput mode = x.TryAbbreviate text triggerKeyInput mode
         member x.TryParse text = x.TryParse text

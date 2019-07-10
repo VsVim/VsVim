@@ -4241,38 +4241,55 @@ type IDigraphMap =
 [<NoEquality>]
 type AbbreviationResult = {
     OriginalText: string
+
+    /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
+    /// character.
     TriggerKeyInput: KeyInput
+
+    /// The Span inside OriginalText which should be replaced by the abbreviation
     ReplacedSpan: Span
-    AbbreviationKey: KeyInputSet
-    AbbreviationValue: KeyInputSet
+
+    /// The found abbreviation that was replaced
+    Abbreviation: KeyInputSet
+
+    /// The AbbreviationKind of the found abbrevitaion
+    AbbreviationKind: AbbreviationKind
+
+    /// The set of KeyInput values the abbreviation maps to. This does not include the 
+    /// character which may, or may not, be added by TriggerKeyInput
+    Replacement: KeyInputSet
 } with
 
-    // ATODO: is this generally applicable? What if TriggerKeyInput is a non-character key like 
-    // escape? 
-    member x.GetText() =
-        let key = x.AbbreviationKey.ToString()
-        let value = (x.AbbreviationValue.Add x.TriggerKeyInput).ToString()
+    override x.ToString() =
+        let key = x.Abbreviation.ToString()
+        let value = (x.Replacement.Add x.TriggerKeyInput).ToString()
         let text = x.OriginalText.Substring(0, x.OriginalText.Length - key.Length)
         text + value
 
-    override x.ToString() = x.GetText()
+type IVimAbbreviationMap =
+
+    abstract Add: lhs: KeyInputSet -> mode: AbbreviationMode -> rhs: KeyInputSet -> unit
+
+    abstract Get: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
+
+    abstract Clear: mode: AbbreviationMode -> unit
+
+    abstract ClearAll: unit -> unit
 
 type IVimGlobalAbbreviationMap =
-
-    /// Insert the specified abbreviation into the map
-    abstract Abbreviate: lhs: KeyInputSet -> mode: AbbreviationMode -> rhs: KeyInputSet -> unit
-
-    abstract GetAbbreviation: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
-
-    abstract Clear: unit -> unit
+    inherit IVimAbbreviationMap
 
 type IVimLocalAbbreviationMap =
+    inherit IVimAbbreviationMap
 
-    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap  
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
+
+    /// Like Get but will look in both maps: local and global
+    abstract GetLocalOrGlobal: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
 
     abstract TryParse: text: string -> AbbreviationKind option
 
-    abstract Abbreviate: text: string -> triggerKeyInput: KeyInput -> mode: AbbreviationMode -> AbbreviationResult option
+    abstract TryAbbreviate: text: string -> triggerKeyInput: KeyInput -> mode: AbbreviationMode -> AbbreviationResult option
 
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()

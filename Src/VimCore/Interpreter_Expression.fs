@@ -462,7 +462,10 @@ and [<RequireQualifiedAccess>] Expression =
 and [<RequireQualifiedAccess>] LineCommand =
    
     /// Add a new abbreviation 
-    | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AbbreviationModes: AbbreviationMode list
+    | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AbbreviationModes: AbbreviationMode list * IsLocal: bool
+
+    /// Remove all abbreviations for the specified modes 
+    | AbbreviateClear of AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
     | AddAutoCommand of AutoCommandDefinition: AutoCommandDefinition

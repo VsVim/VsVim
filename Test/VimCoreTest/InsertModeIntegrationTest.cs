@@ -3627,6 +3627,7 @@ namespace Vim.UnitTest
             [InlineData("#r rog", "f", "#r ", "frog ")] 
             [InlineData("#d dog", "#", "d ", "#d ")] 
             [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
+            [InlineData("dg dog", "", "dg<C-]>", "dog")] // <C-]> completes insertion without adding extra space
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
             {
                 Create();
@@ -3690,7 +3691,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(":ab dg dog", enter: true);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.ProcessNotation("dg <Esc>");
-                _vimBuffer.Vim.GlobalAbbreviationMap.Clear();
+                _vimBuffer.Vim.GlobalAbbreviationMap.ClearAll();
                 _vimBuffer.ProcessNotation(".");
                 Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
             }
@@ -3726,6 +3727,52 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("if ");
                 Assert.Equal("if ( )", _textBuffer.GetLineText(0));
                 Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BufferOnlyReplace()
+            {
+                Create("");
+                var vimBuffer2 = CreateVimBuffer();
+                vimBuffer2.ProcessNotation(":ab <buffer> dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<Space>");
+                Assert.Equal("dg ", _vimBuffer.TextBuffer.GetLineText(0));
+                vimBuffer2.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                vimBuffer2.ProcessNotation("dg<Space>");
+                Assert.Equal("dog ", vimBuffer2.TextBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// A buffer only clear should clear mappings specific to that buffer, not to other buffers
+            /// </summary>
+            [WpfFact]
+            public void BufferOnlyClear()
+            {
+                Create("");
+                var vimBuffer2 = CreateVimBuffer();
+                vimBuffer2.ProcessNotation(":ab <buffer> dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":abc <buffer>", enter: true);
+                vimBuffer2.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                vimBuffer2.ProcessNotation("dg<Space>");
+                Assert.Equal("dog ", vimBuffer2.TextBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// A global clear should not clear any buffer specific abbreviations
+            /// </summary>
+            [WpfFact]
+            public void GlobalClearLeavesBuffer()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab <buffer> dd dog", enter: true);
+                _vimBuffer.ProcessNotation(":ab cc hello", enter: true);
+                _vimBuffer.ProcessNotation(":abc", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cc dd ");
+                Assert.Equal("cc dog ", _vimBuffer.TextBuffer.GetLineText(0));
             }
         }
 

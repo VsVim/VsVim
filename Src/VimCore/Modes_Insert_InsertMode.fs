@@ -953,13 +953,14 @@ type internal InsertMode
 
             elif not _sessionData.SuppressAbbreviation then
                 // ATODO: This needs work. Need to update the insert mode state properly after the abbreviation occurs
-                match _localAbbreviationMap.Abbreviate text keyInput AbbreviationMode.Insert with
+                // ATODO: <c-]> needs to just insert the abbreviation without adding any extra text
+                match _localAbbreviationMap.TryAbbreviate text keyInput AbbreviationMode.Insert with
                 | None -> None
                 | Some result -> 
                     let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
                     _sessionData <- { _sessionData with SuppressAbbreviation = true }
-                    for keyInput in result.AbbreviationValue.KeyInputs do
+                    for keyInput in result.Replacement.KeyInputs do
                         x.ProcessCore keyInput |> ignore
                     _sessionData <- { _sessionData with SuppressAbbreviation = false }
                     None

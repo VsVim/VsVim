@@ -284,7 +284,7 @@ namespace Vim.UnitTest
             Vim.KeyMap.ClearAll();
             Vim.DigraphMap.Clear();
             Vim.KeyMap.IsZeroMappingEnabled = true;
-            Vim.GlobalAbbreviationMap.Clear();
+            Vim.GlobalAbbreviationMap.ClearAll();
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;
