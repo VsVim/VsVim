@@ -13,6 +13,10 @@ type HistoryState =
 [<NoComparison>]
 [<NoEquality>]
 type HistoryCommand =
+    | Home
+    | End
+    | LeftArrow
+    | RightArrow
     | Previous
     | Next
     | Execute
@@ -73,6 +77,22 @@ type internal HistorySession<'TData, 'TResult>
                 _historyClient.HistoryList.Add _command.Text
             _inPasteWait <- false
             MappedBindResult.Cancelled
+        | Some HistoryCommand.Home ->
+                _command.Home()
+                |> x.ResetCommand
+                x.CreateBindResult()
+        | Some HistoryCommand.End ->
+                _command.End()
+                |> x.ResetCommand
+                x.CreateBindResult()
+        | Some HistoryCommand.LeftArrow ->
+                _command.LeftArrow()
+                |> x.ResetCommand
+                x.CreateBindResult()
+        | Some HistoryCommand.RightArrow ->
+                _command.RightArrow()
+                |> x.ResetCommand
+                x.CreateBindResult()
         | Some HistoryCommand.Back ->
             match _command.Text.Length with
             | 0 -> 
@@ -196,6 +216,10 @@ and internal HistoryUtil ()  =
 
         let set1 = 
             seq { 
+                yield ("<Home>", HistoryCommand.Home)
+                yield ("<End>", HistoryCommand.End)
+                yield ("<Left>", HistoryCommand.LeftArrow)
+                yield ("<Right>", HistoryCommand.RightArrow)
                 yield ("<C-p>", HistoryCommand.Previous)
                 yield ("<C-n>", HistoryCommand.Next)
                 yield ("<C-R>", HistoryCommand.Paste)
