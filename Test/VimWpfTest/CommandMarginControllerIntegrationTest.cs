@@ -70,6 +70,7 @@ namespace Vim.UI.Wpf.UnitTest
         [WpfFact]
         public void MappedSpecialKey()
         {
+            // Reported in #2683.
             var command = "%s//g";
             _vimBuffer.Process($":map Q :{command}<PageUp>", enter: true);
             Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
