@@ -50,7 +50,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             return false;
         }
 
-        internal static string GetStatus(IVimBuffer vimBuffer, IMode currentMode, bool forModeSwitch)
+        internal static EditableCommand GetStatus(IVimBuffer vimBuffer, IMode currentMode, bool forModeSwitch)
         {
             if (forModeSwitch)
             {
@@ -60,7 +60,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             return GetStatusOther(vimBuffer, currentMode);
         }
 
-        private static string GetStatusOther(IVimBuffer vimBuffer, IMode currentMode)
+        private static EditableCommand GetStatusOther(IVimBuffer vimBuffer, IMode currentMode)
         {
             var search = vimBuffer.IncrementalSearch;
             if (search.HasActiveSession)
@@ -71,27 +71,31 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 {
                     searchText += "\"";
                 }
-                return prefix + searchText;
+                return new EditableCommand(prefix + searchText);
             }
 
-            string status;
             switch (currentMode.ModeKind)
             {
                 case ModeKind.Command:
-                    status = ":" + vimBuffer.CommandMode.Command + (InPasteWait(vimBuffer) ? "\"" : "");
-                    break;
+                    {
+                        var command = vimBuffer.CommandMode.EditableCommand;
+                        var status = ":" + command.Text + (InPasteWait(vimBuffer) ? "\"" : "");
+                        var caretPosition = command.CaretPosition + 1;
+                        return new EditableCommand(status, caretPosition);
+                    }
                 case ModeKind.SubstituteConfirm:
-                    status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
-                    break;
+                    {
+                        var status = GetStatusSubstituteConfirm(vimBuffer.SubstituteConfirmMode);
+                        return new EditableCommand(status);
+                    }
                 default:
-                    status = GetStatusCommon(vimBuffer, currentMode);
                     break;
             }
 
-            return status;
+            return GetStatusCommon(vimBuffer, currentMode);
         }
 
-        private static string GetStatusCommon(IVimBuffer vimBuffer, IMode currentMode)
+        private static EditableCommand GetStatusCommon(IVimBuffer vimBuffer, IMode currentMode)
         {
             // Calculate the argument string if we are in one time command mode
             string oneTimeArgument = null;
@@ -117,8 +121,10 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         : string.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.Command:
-                    status = ":" + vimBuffer.CommandMode.Command;
-                    break;
+                    {
+                        var command = vimBuffer.CommandMode.EditableCommand;
+                        return new EditableCommand(":" + command.Text, command.CaretPosition + 1);
+                    }
                 case ModeKind.Insert:
                     status = Resources.InsertBanner;
                     break;
@@ -169,7 +175,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                     break;
             }
 
-            return status;
+            return new EditableCommand(status);
         }
 
         private static string GetStatusSubstituteConfirm(ISubstituteConfirmMode mode)
@@ -185,7 +191,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             SetMarginVisibility(vimBuffer, commandMarginVisible);
         }
 
-        string ICommandMarginUtil.GetStatus(IVimBuffer vimBuffer)
+        EditableCommand ICommandMarginUtil.GetStatus(IVimBuffer vimBuffer)
         {
             return GetStatus(vimBuffer, vimBuffer.Mode, forModeSwitch: false);
         }

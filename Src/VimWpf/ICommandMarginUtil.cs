@@ -9,6 +9,6 @@ namespace Vim.UI.Wpf
     {
         void SetMarginVisibility(IVimBuffer vimBuffer, bool commandMarginVisible);
 
-        string GetStatus(IVimBuffer vimBuffer);
+        EditableCommand GetStatus(IVimBuffer vimBuffer);
     }
 }
