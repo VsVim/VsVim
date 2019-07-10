@@ -44,8 +44,11 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.Equal(Resources.Common_NoWriteSinceLastChange, _control.CommandLineTextBox.Text);
         }
 
+        /// <summary>
+        /// A mapped left arrow key should affect the caret position
+        /// </summary>
         [WpfFact]
-        public void MapLeft()
+        public void MappedLeft()
         {
             // Reported in issue #1103.
             var command = "%s//g";
@@ -60,8 +63,12 @@ namespace Vim.UI.Wpf.UnitTest
             Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
         }
 
+        /// <summary>
+        /// A mapped special key without a binding should not result in a null
+        /// character being inserted into the command
+        /// </summary>
         [WpfFact]
-        public void UnmappedSpecialKey()
+        public void MappedSpecialKey()
         {
             var command = "%s//g";
             _vimBuffer.Process($":map Q :{command}<PageUp>", enter: true);

@@ -122,10 +122,15 @@ type internal HistorySession<'TData, 'TResult>
         | None -> 
             if _inPasteWait then
                 x.ProcessPaste keyInput
-            else
+            elif
+                CharUtil.IsPrintable keyInput.Char
+                && not keyInput.HasKeyModifiers
+            then
                 keyInput.Char.ToString()
                 |> _command.InsertText
                 |> x.ResetCommand
+                x.CreateBindResult()
+            else
                 x.CreateBindResult()
 
     member x.ProcessPaste keyInput = 
