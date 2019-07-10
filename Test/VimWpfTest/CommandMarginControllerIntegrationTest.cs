@@ -43,5 +43,20 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ProcessNotation(":q<CR>");
             Assert.Equal(Resources.Common_NoWriteSinceLastChange, _control.CommandLineTextBox.Text);
         }
+
+        [WpfFact]
+        public void MapLeft()
+        {
+            // Reported in issue #1103.
+            var command = "%s//g";
+            _vimBuffer.Process($":map Q :{command}<Left><Left>", enter: true);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            _vimBuffer.Process("Q");
+            Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+            var expectedCaretPosition = command.Length - 2;
+            Assert.Equal(new EditableCommand(command, expectedCaretPosition), _vimBuffer.CommandMode.EditableCommand);
+            Assert.Equal(":" + command, _control.CommandLineTextBox.Text);
+            Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
+        }
     }
 }

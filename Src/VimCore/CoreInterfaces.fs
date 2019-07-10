@@ -4644,14 +4644,14 @@ type EditableCommand =
             x
 
     /// Left arrow key operation
-    member x.LeftArrow () =
+    member x.Left () =
         if x.CaretPosition > 0 then
             EditableCommand(x.Text, x.CaretPosition - 1)
         else
             x
 
     /// Right arrow key operation
-    member x.RightArrow () =
+    member x.Right () =
         if x.CaretPosition < x.Text.Length then
             EditableCommand(x.Text, x.CaretPosition + 1)
         else

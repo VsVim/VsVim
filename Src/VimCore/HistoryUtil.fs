@@ -15,13 +15,14 @@ type HistoryState =
 type HistoryCommand =
     | Home
     | End
-    | LeftArrow
-    | RightArrow
+    | Left
+    | Right
     | Previous
     | Next
     | Execute
     | Cancel
-    | Back
+    | Backspace
+    | Delete
     | Paste
     | PasteSpecial of WordKind: WordKind
     | Clear
@@ -78,22 +79,22 @@ type internal HistorySession<'TData, 'TResult>
             _inPasteWait <- false
             MappedBindResult.Cancelled
         | Some HistoryCommand.Home ->
-                _command.Home()
-                |> x.ResetCommand
-                x.CreateBindResult()
+            _command.Home()
+            |> x.ResetCommand
+            x.CreateBindResult()
         | Some HistoryCommand.End ->
-                _command.End()
-                |> x.ResetCommand
-                x.CreateBindResult()
-        | Some HistoryCommand.LeftArrow ->
-                _command.LeftArrow()
-                |> x.ResetCommand
-                x.CreateBindResult()
-        | Some HistoryCommand.RightArrow ->
-                _command.RightArrow()
-                |> x.ResetCommand
-                x.CreateBindResult()
-        | Some HistoryCommand.Back ->
+            _command.End()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Left ->
+            _command.Left()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Right ->
+            _command.Right()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Backspace ->
             match _command.Text.Length with
             | 0 -> 
                 _historyClient.Cancelled _clientData
@@ -102,6 +103,10 @@ type internal HistorySession<'TData, 'TResult>
                 _command.Backspace()
                 |> x.ResetCommand
                 x.CreateBindResult()
+        | Some HistoryCommand.Delete ->
+            _command.Delete()
+            |> x.ResetCommand
+            x.CreateBindResult()
         | Some HistoryCommand.Previous ->
             x.ProcessPrevious()
         | Some HistoryCommand.Next ->
@@ -218,8 +223,8 @@ and internal HistoryUtil ()  =
             seq { 
                 yield ("<Home>", HistoryCommand.Home)
                 yield ("<End>", HistoryCommand.End)
-                yield ("<Left>", HistoryCommand.LeftArrow)
-                yield ("<Right>", HistoryCommand.RightArrow)
+                yield ("<Left>", HistoryCommand.Left)
+                yield ("<Right>", HistoryCommand.Right)
                 yield ("<C-p>", HistoryCommand.Previous)
                 yield ("<C-n>", HistoryCommand.Next)
                 yield ("<C-R>", HistoryCommand.Paste)
@@ -234,7 +239,8 @@ and internal HistoryUtil ()  =
                 yield ("<Enter>", HistoryCommand.Execute)
                 yield ("<Up>", HistoryCommand.Previous)
                 yield ("<Down>", HistoryCommand.Next)
-                yield ("<BS>", HistoryCommand.Back)
+                yield ("<BS>", HistoryCommand.Backspace)
+                yield ("<Del>", HistoryCommand.Delete)
                 yield ("<Esc>", HistoryCommand.Cancel)
             }
             |> Seq.map (fun (name, command) -> 
