@@ -59,6 +59,7 @@ type AbbreviationKind =
 [<RequireQualifiedAccess>]
 type AbbreviationMode =
     | Insert
+    // ATODO: don't think replace should be here.
     | Replace
     | Command
 

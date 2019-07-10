@@ -232,7 +232,12 @@ type InsertSessionData = {
     /// Whether we should be suppressing abbreviations for the currently typed
     /// text
     SuppressAbbreviation: bool
-}
+} with
+
+    member x.RightMostCommand = 
+        match x.CombinedEditCommand with
+        | None -> None
+        | Some command -> Some command.RightMostCommand
 
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
@@ -355,9 +360,10 @@ type internal InsertMode
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessSpecialStart)
-                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
+                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
+                ("<C-]>", RawInsertCommand.CustomCommand this.ProcessAbbreviationCompletion)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
@@ -933,6 +939,30 @@ type internal InsertMode
                 let insertCommand = if isOverwrite then InsertCommand.Overwrite text else InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
+    /// This will attempt to complete an abbreviation based on the currently typed text without inserting
+    /// any additional characters.
+    member x.ProcessAbbreviationCompletion keyInput =
+        x.TryCompleteAbbreviation keyInput |> ignore
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    member x.TryCompleteAbbreviation keyInput =
+        if not _sessionData.SuppressAbbreviation then
+            match _sessionData.RightMostCommand with
+            | Some (InsertCommand.Insert text) ->
+                match _localAbbreviationMap.TryAbbreviate text keyInput AbbreviationMode.Insert with
+                | Some result -> 
+                    let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                    x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = true }
+                    for keyInput in result.Replacement.KeyInputs do
+                        x.ProcessCore keyInput |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = false }
+                    true
+                | _ -> false
+            | _ -> false
+        else
+            false
+
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
 
@@ -951,24 +981,14 @@ type internal InsertMode
                 // Now run the command
                 x.RunInsertCommand InsertCommand.DeleteAllIndent keyInputSet (CommandFlags.Repeatable ||| CommandFlags.ContextSensitive) |> Some
 
-            elif not _sessionData.SuppressAbbreviation then
-                // ATODO: This needs work. Need to update the insert mode state properly after the abbreviation occurs
-                // ATODO: <c-]> needs to just insert the abbreviation without adding any extra text
-                match _localAbbreviationMap.TryAbbreviate text keyInput AbbreviationMode.Insert with
-                | None -> None
-                | Some result -> 
-                    let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
-                    x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
-                    _sessionData <- { _sessionData with SuppressAbbreviation = true }
-                    for keyInput in result.Replacement.KeyInputs do
-                        x.ProcessCore keyInput |> ignore
-                    _sessionData <- { _sessionData with SuppressAbbreviation = false }
-                    None
-            else 
+            else
+                x.TryCompleteAbbreviation keyInput |> ignore
+
+                // Return None to allow keyInput to process no matter whether or not the abbreviation was 
+                // completed. The keyInput still needs to be appended to the buffer.
                 None
 
         match _sessionData.CombinedEditCommand with
-        | None -> None
         | Some insertCommand ->
             match insertCommand.RightMostCommand with
             | InsertCommand.Insert text -> func text
@@ -994,6 +1014,7 @@ type internal InsertMode
                 else
                     None
             | _ -> None
+        | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
     /// is active.

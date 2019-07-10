@@ -3628,6 +3628,7 @@ namespace Vim.UnitTest
             [InlineData("#d dog", "#", "d ", "#d ")] 
             [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
             [InlineData("dg dog", "", "dg<C-]>", "dog")] // <C-]> completes insertion without adding extra space
+            [InlineData("dg dog", "", "dg<C-]><C-]>", "dog")] // <C-]> 
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
             {
                 Create();
@@ -3773,6 +3774,14 @@ namespace Vim.UnitTest
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.ProcessNotation("cc dd ");
                 Assert.Equal("cc dog ", _vimBuffer.TextBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void FailedAbbreviationCompleteIsNotError()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal(0, VimHost.BeepCount);
             }
         }
 
