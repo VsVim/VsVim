@@ -4606,6 +4606,85 @@ type HistoryList () =
             let seq = _list :> string seq
             seq.GetEnumerator()
 
+/// Represents a single line of text being edited
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+type EditableCommand =
+
+    val private _text: string
+    val private _caretPosition: int
+
+    /// Constructor for initial text with the caret at the end
+    new (text: string) =
+        { _text = text; _caretPosition = text.Length }
+
+    /// Constructor for text and caret position
+    new (text: string, caretPosition: int) =
+        { _text = text; _caretPosition = caretPosition }
+
+    /// The text of the command
+    member x.Text = x._text
+
+    /// The caret position of the command
+    member x.CaretPosition = x._caretPosition
+
+    /// Home key operation
+    member x.Home () =
+        if x._caretPosition <> 0 then
+            EditableCommand(x.Text, 0)
+        else
+            x
+
+    /// End key operation
+    member x.End () =
+        if x.CaretPosition <> x.Text.Length then
+            EditableCommand(x.Text, x.Text.Length)
+        else
+            x
+
+    /// Left arrow key operation
+    member x.LeftArrow () =
+        if x.CaretPosition > 0 then
+            EditableCommand(x.Text, x.CaretPosition - 1)
+        else
+            x
+
+    /// Right arrow key operation
+    member x.RightArrow () =
+        if x.CaretPosition < x.Text.Length then
+            EditableCommand(x.Text, x.CaretPosition + 1)
+        else
+            x
+
+    /// Backspace key operation
+    member x.Backspace () =
+        if x.CaretPosition > 0 then
+            let before = x.Text.Substring(0, x.CaretPosition - 1)
+            let after = x.Text.Substring(x.CaretPosition)
+            EditableCommand(before + after, x.CaretPosition  - 1)
+        else
+            x
+
+    /// Delete key operation
+    member x.Delete () =
+        if x.CaretPosition < x.Text.Length - 1 then
+            let before = x.Text.Substring(0, x.CaretPosition)
+            let after = x.Text.Substring(x.CaretPosition + 1)
+            EditableCommand(before + after, x.CaretPosition)
+        else
+            x
+
+    /// Insert text operation
+    member x.Insert text =
+        let before = x.Text.Substring(0, x.CaretPosition)
+        let after = x.Text.Substring(x.CaretPosition)
+        EditableCommand(before + text + after, x.CaretPosition + text.Length)
+
+    /// The empty editable command
+    static member Empty =
+        EditableCommand(StringUtil.Empty, 0)
+
 /// Used for helping history editing 
 type internal IHistoryClient<'TData, 'TResult> =
 
@@ -4622,11 +4701,11 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Beep: unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand: data: 'TData -> command: string -> 'TData
+    abstract ProcessCommand: data: 'TData -> command: EditableCommand -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed: data: 'TData -> command: string -> wasMapped: bool -> 'TResult
+    abstract Completed: data: 'TData -> command: EditableCommand -> wasMapped: bool -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
@@ -4638,8 +4717,8 @@ type internal IHistorySession<'TData, 'TResult> =
     /// The IHistoryClient this session is using 
     abstract HistoryClient: IHistoryClient<'TData, 'TResult>
 
-    /// The current command that is being used 
-    abstract Command: string 
+    /// The current command that is being edited 
+    abstract EditableCommand: EditableCommand 
 
     /// Is the session currently waiting for a register paste operation to complete
     abstract InPasteWait: bool
@@ -4651,7 +4730,7 @@ type internal IHistorySession<'TData, 'TResult> =
     abstract Cancel: unit -> unit
 
     /// Reset the command to the current value
-    abstract ResetCommand: string -> unit
+    abstract ResetCommand: EditableCommand -> unit
 
     /// Create an BindDataStorage for this session which will process relevant KeyInput values
     /// as manipulating the current history
@@ -5692,7 +5771,10 @@ and IInsertMode =
 
 and ICommandMode = 
 
-    /// Buffered input for the current command
+    /// Buffered editable input for the current command
+    abstract EditableCommand: EditableCommand with get, set
+
+    /// The text of the current command
     abstract Command: string with get, set
 
     /// Is command mode currently waiting for a register paste operation to complete
