@@ -4632,7 +4632,7 @@ type EditableCommand =
 
     /// Home key operation
     member x.Home () =
-        if x._caretPosition <> 0 then
+        if x.CaretPosition <> 0 then
             EditableCommand(x.Text, 0)
         else
             x
@@ -4684,7 +4684,7 @@ type EditableCommand =
 
     /// Display representation of an editable command
     override x.ToString() =
-        String.Format("Text = '{0}', CaretPosition = {1}", x.Text, x.CaretPosition)
+        sprintf "Text = %s, CaretPosition = %i" x.Text x.CaretPosition
 
     /// The empty editable command
     static member Empty =
