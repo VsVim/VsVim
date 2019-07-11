@@ -5496,6 +5496,9 @@ and IVimTextBuffer =
     /// The associated IVimGlobalSettings instance
     abstract GlobalSettings: IVimGlobalSettings
 
+    /// The associated IVimGlobalAbbreviationMap instance
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
+
     /// The 'start' point of the current insert session.  This is relevant for settings like 
     /// 'backspace'
     abstract InsertStartPoint: SnapshotPoint option with get, set

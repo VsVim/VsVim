@@ -298,6 +298,7 @@ type internal VimTextBuffer
     interface IVimTextBuffer with
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
+        member x.GlobalAbbreviationMap = _localAbbreviationMap.GlobalAbbreviationMap
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
