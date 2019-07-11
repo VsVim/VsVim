@@ -32,7 +32,7 @@ type internal HistorySession<'TData, 'TResult>
         _historyClient: IHistoryClient<'TData, 'TResult>,
         _initialClientData: 'TData,
         _command: EditableCommand,
-        _buffer: IVimBuffer option
+        _motionUtil: IMotionUtil
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -146,15 +146,13 @@ type internal HistorySession<'TData, 'TResult>
         x.CreateBindResult()
 
     member x.ProcessPasteSpecial wordKind =
-        match _inPasteWait, _buffer with
-        | false, _
-        | _, None ->
+        if _inPasteWait then
             x.ResetCommand EditableCommand.Empty
             MappedBindResult<_>.Error
-        | true, Some buffer ->
+        else
             let motion = Motion.InnerWord wordKind
             let arg = MotionArgument(MotionContext.AfterOperator)
-            let currentWord = buffer.MotionUtil.GetMotion motion arg
+            let currentWord = _motionUtil.GetMotion motion arg
             match currentWord with
             | None -> x.ResetCommand _command
             | Some cw ->
@@ -270,7 +268,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command buffer =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, buffer)
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command motionUtil =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, motionUtil)
         historySession :> IHistorySession<'TData, 'TResult>
 

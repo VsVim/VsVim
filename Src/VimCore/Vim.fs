@@ -250,12 +250,12 @@ type internal VimBufferFactory
     member x.CreateVimBuffer (vimBufferData: IVimBufferData) = 
         let textView = vimBufferData.TextView
         let commonOperations = _commonOperationsFactory.GetCommonOperations vimBufferData
-        let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations) :> IIncrementalSearch
+        let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
+        let incrementalSearch = IncrementalSearch(vimBufferData, commonOperations, motionUtil) :> IIncrementalSearch
         let capture = MotionCapture(vimBufferData, incrementalSearch) :> IMotionCapture
 
         let textChangeTracker = Modes.Insert.TextChangeTracker.GetTextChangeTracker vimBufferData _commonOperationsFactory
         let lineChangeTracker = _lineChangeTrackerFactory.GetLineChangeTracker vimBufferData
-        let motionUtil = MotionUtil(vimBufferData, commonOperations) :> IMotionUtil
         let foldManager = _foldManagerFactory.GetFoldManager textView
         let insertUtil = InsertUtil(vimBufferData, motionUtil, commonOperations) :> IInsertUtil
         let commandUtil = CommandUtil(vimBufferData, motionUtil, commonOperations, foldManager, insertUtil, _bulkOperations, lineChangeTracker) :> ICommandUtil

@@ -6,7 +6,7 @@ namespace Vim
 type internal HistoryUtil = 
 
     /// Begin a history related operation
-    static member CreateHistorySession<'TData, 'TResult> : IHistoryClient<'TData, 'TResult> -> 'TData -> EditableCommand -> IVimBuffer option -> IHistorySession<'TData, 'TResult>
+    static member CreateHistorySession<'TData, 'TResult> : IHistoryClient<'TData, 'TResult> -> 'TData -> EditableCommand -> IMotionUtil -> IHistorySession<'TData, 'TResult>
 
     /// The set of KeyInput values which history considers to be a valid command
     static member CommandNames: KeyInput list
