@@ -27,7 +27,6 @@
     <Compile Include="VimCharSet.fsi" />
     <Compile Include="VimCharSet.fs" />
     <Compile Include="VimSettingsInterface.fs" />
-    <Compile Include="LineNumbersMarginOptions.fs" />
     <Compile Include="Interpreter_Expression.fs" />
     <Compile Include="TaggingInterfaces.fs" />
     <Compile Include="WordUtil.fsi" />

@@ -7,13 +7,13 @@ using Microsoft.VisualStudio.Utilities;
 namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
-    [Name(LineNumbersMarginOptions.LineNumbersMarginOptionName)]
+    [Name(VimWpfConstants.LineNumbersMarginName)]
     [MarginContainer(PredefinedMarginNames.LeftSelection)]
     [Order(Before = PredefinedMarginNames.Spacer, After = PredefinedMarginNames.LineNumber)]
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [TextViewRole(PredefinedTextViewRoles.EmbeddedPeekTextView)]
-    [DeferCreation(OptionName = LineNumbersMarginOptions.LineNumbersMarginOptionName)]
+    [DeferCreation(OptionName = DefaultTextViewHostOptions.LineNumberMarginName)]
     internal sealed class RelativeLineNumbersMarginFactory : IWpfTextViewMarginProvider
     {
         private readonly IClassificationFormatMapService _formatMapService;

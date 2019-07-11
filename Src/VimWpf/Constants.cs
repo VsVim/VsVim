@@ -10,5 +10,6 @@ namespace Vim.UI.Wpf
         public const string BlockCaretFormatDefinitionName = "vsvim_blockcaret";
         public const string ControlCharactersFormatDefinitionName = "vsvim_controlchar";
         public const string CommandMarginFormatDefinitionName = "vsvim_commandmargin";
+        public const string LineNumbersMarginName = "vsvim_linenumbers";
     }
 }

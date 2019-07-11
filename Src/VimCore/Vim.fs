@@ -737,7 +737,11 @@ type internal Vim
             finally
                 _isLoadingVimRc <- false
 
+            _globalSettings.VimRcLocalSettings <- Some _vimRcLocalSettings
+            _globalSettings.VimRcWindowSettings <- Some _vimRcWindowSettings
+
             _vimHost.VimRcLoaded _vimRcState _vimRcLocalSettings _vimRcWindowSettings
+
             _vimRcState
 
     /// This actually loads the lines of the vimrc that we should be using 

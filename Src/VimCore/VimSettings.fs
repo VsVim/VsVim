@@ -140,6 +140,9 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
+    let mutable _vimRcLocalSettings: IVimLocalSettings option = None
+    let mutable _vimRcWindowSettings: IVimWindowSettings option = None
+
     /// Custom parsing for the old 'vi' style values of 'backspace'.  For normal values default
     /// to the standard parsing behavior
     static let ParseBackspaceValue str = 
@@ -324,6 +327,13 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
+        member x.VimRcLocalSettings
+            with get() = _vimRcLocalSettings
+            and set value = _vimRcLocalSettings <- value
+        member x.VimRcWindowSettings
+            with get() = _vimRcWindowSettings
+            and set value = _vimRcWindowSettings <- value
+
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.AtomicInsert
             with get() = _map.GetBoolValue AtomicInsertName
@@ -540,6 +550,11 @@ type internal LocalSettings
 
     let _map = SettingsMap(LocalSettingList)
 
+    member x.Defaults =
+        match _globalSettings.VimRcLocalSettings with
+        | Some localSettings -> localSettings
+        | None -> LocalSettings(_globalSettings) :> IVimLocalSettings
+
     member x.Map = _map
 
     static member Copy (settings: IVimLocalSettings) = 
@@ -584,7 +599,8 @@ type internal LocalSettings
 
     interface IVimLocalSettings with 
         // IVimSettings
-        
+
+        member x.Defaults = x.Defaults
         member x.Settings = _map.Settings
         member x.TrySetValue settingName value = x.TrySetValue settingName value
         member x.TrySetValueFromString settingName strValue =  x.TrySetValueFromString settingName strValue
@@ -673,6 +689,11 @@ type internal WindowSettings
     new (settings) = WindowSettings(settings, None)
     new (settings, textView: ITextView) = WindowSettings(settings, Some textView)
 
+    member x.Defaults =
+        match _globalSettings.VimRcWindowSettings with
+        | Some windowSettings -> windowSettings
+        | None -> WindowSettings(_globalSettings, _textView) :> IVimWindowSettings
+
     member x.Map = _map
 
     /// Calculate the scroll value as specified in the Vim documentation.  Should be half the number of 
@@ -691,6 +712,7 @@ type internal WindowSettings
         copy :> IVimWindowSettings
 
     interface IVimWindowSettings with 
+        member x.Defaults = x.Defaults
         member x.Settings = _map.Settings
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
@@ -732,8 +754,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.TabSizeOptionId.Name
                 GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.TabSizeOptionId
-                VimSettingName = LocalSettingNames.TabStopName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.TabStopName true
+                VimSettingNames = [LocalSettingNames.TabStopName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.TabStopName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.TabStopName true
                 IsLocal = true
             })
 
@@ -741,8 +764,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.IndentSizeOptionId.Name
                 GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.IndentSizeOptionId
-                VimSettingName = LocalSettingNames.ShiftWidthName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ShiftWidthName true
+                VimSettingNames = [LocalSettingNames.ShiftWidthName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ShiftWidthName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ShiftWidthName true
                 IsLocal = true
             })
 
@@ -750,8 +774,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.ConvertTabsToSpacesOptionId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultOptions.ConvertTabsToSpacesOptionId
-                VimSettingName = LocalSettingNames.ExpandTabName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
+                VimSettingNames = [LocalSettingNames.ExpandTabName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ExpandTabName true
                 IsLocal = true
             })
 
@@ -759,17 +784,34 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
-                VimSettingName = LocalSettingNames.NumberName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
-                IsLocal = true
-            })
-
-        _settingList.Add(
-            {
-                EditorOptionKey = LineNumbersMarginOptions.LineNumbersMarginOptionName 
-                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.LineNumbersMarginOptionId
-                VimSettingName = LocalSettingNames.RelativeNumberName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.RelativeNumberName true
+                VimSettingNames = [LocalSettingNames.NumberName; LocalSettingNames.RelativeNumberName]
+                GetVimValue = (fun vimBuffer ->
+                    let localSettings = vimBuffer.LocalSettings
+                    (localSettings.Number || localSettings.RelativeNumber) |> box)
+                SetVimValue = (fun vimBuffer value ->
+                    let localSettings = vimBuffer.LocalSettings
+                    let enableNumber, enableRelativeNumber =
+                        match value with
+                        | SettingValue.Toggle true ->
+                            // The editor line number option is enabled. If
+                            // either or both of the user defaults for 'number'
+                            // and 'relativenumber' are set, then use those
+                            // defaults. Otherwise enable only 'number'.
+                            let localSettingDefaults = localSettings.Defaults
+                            let defaultNumber = localSettingDefaults.Number
+                            let defaultRelativeNumber = localSettingDefaults.RelativeNumber
+                            if defaultNumber || defaultRelativeNumber then
+                                defaultNumber, defaultRelativeNumber
+                            else
+                                true, false
+                        | _ ->
+                            false, false
+                    let setSettingValue name enableSetting =
+                        SettingValue.Toggle enableSetting
+                        |> localSettings.TrySetValue name
+                        |> ignore
+                    setSettingValue LocalSettingNames.NumberName enableNumber
+                    setSettingValue LocalSettingNames.RelativeNumberName enableRelativeNumber)
                 IsLocal = true
             })
 
@@ -780,8 +822,8 @@ type internal EditorToSettingSynchronizer
                     match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
                     | None -> None
                     | Some s -> Util.IsFlagSet s WordWrapStyles.WordWrap |> SettingValue.Toggle |> Option.Some)
-                VimSettingName = WindowSettingNames.WrapName
-                GetVimSettingValue = (fun vimBuffer ->
+                VimSettingNames = [WindowSettingNames.WrapName]
+                GetVimValue = (fun vimBuffer ->
                     let windowSettings = vimBuffer.WindowSettings
                     // Wrap is a difficult option because vim has wrap as on / off while the core editor has
                     // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
@@ -793,6 +835,7 @@ type internal EditorToSettingSynchronizer
                         else
                             WordWrapStyles.None
                     box wordWrap)
+                SetVimValue = SettingSyncData.SetVimValueFunc WindowSettingNames.WrapName false
                 IsLocal = false
             })
 
@@ -800,8 +843,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultTextViewOptions.UseVisibleWhitespaceId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewOptions.UseVisibleWhitespaceId
-                VimSettingName = LocalSettingNames.ListName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ListName true
+                VimSettingNames = [LocalSettingNames.ListName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ListName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ListName true
                 IsLocal = true
             })
 
@@ -810,6 +854,9 @@ type internal EditorToSettingSynchronizer
         if not (properties.ContainsProperty _key) then
             properties.AddProperty(_key, _key)
             x.SetupSynchronization vimBuffer
+
+            // Vim doesn't consider folding an undo operation, and neither does VsVim (issue #2184).
+            vimBuffer.TextView.Options.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false)
 
             match settingSyncSource with
             | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
@@ -869,11 +916,11 @@ type internal EditorToSettingSynchronizer
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting: Setting) = 
-        _settingList |> Seq.exists (fun x -> x.IsLocal && x.VimSettingName = setting.Name)
+        _settingList |> Seq.exists (fun x -> x.IsLocal && List.contains setting.Name x.VimSettingNames)
 
     /// Is this a window setting of note
     member x.IsTrackedWindowSetting (setting: Setting) = 
-        _settingList |> Seq.exists (fun x -> not x.IsLocal && x.VimSettingName = setting.Name)
+        _settingList |> Seq.exists (fun x -> not x.IsLocal && List.contains setting.Name x.VimSettingNames)
 
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
@@ -895,7 +942,8 @@ type internal EditorToSettingSynchronizer
     member x.CopyVimToEditorSettings vimBuffer =
         x.TrySync vimBuffer (fun vimBuffer editorOptions ->
             for data in _settingList do 
-                let value = data.GetVimSettingValue vimBuffer 
+                let settings = data.GetSettings vimBuffer
+                let value = data.GetVimValue vimBuffer
                 if value <> null then 
                     editorOptions.SetOptionValue(data.EditorOptionKey, value))
 
@@ -907,8 +955,7 @@ type internal EditorToSettingSynchronizer
                 match data.GetEditorValue editorOptions with
                 | None -> ()
                 | Some value -> 
-                    let settings = data.GetSettings vimBuffer
-                    settings.TrySetValue data.VimSettingName value |> ignore)
+                    data.SetVimValue vimBuffer value)
 
     interface IEditorToSettingsSynchronizer with
         member x.StartSynchronizing vimBuffer settingSyncSource = x.StartSynchronizing vimBuffer settingSyncSource

@@ -573,8 +573,9 @@ type SettingSyncSource =
  type SettingSyncData = {
     EditorOptionKey: string 
     GetEditorValue: IEditorOptions -> SettingValue option
-    VimSettingName: string
-    GetVimSettingValue: IVimBuffer -> obj
+    VimSettingNames: string list
+    GetVimValue: IVimBuffer -> obj
+    SetVimValue: IVimBuffer -> SettingValue -> unit
     IsLocal: bool
 } with
 
@@ -615,6 +616,11 @@ type SettingSyncSource =
                 | SettingValue.Toggle value -> box value
                 | SettingValue.Number value -> box value)
 
+    static member SetVimValueFunc name isLocal =
+        fun (vimBuffer: IVimBuffer) value ->
+            let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal
+            settings.TrySetValue name value |> ignore
+
     static member Create (key: EditorOptionKey<'T>) (settingName: string) (isLocal: bool) (convertEditorValue: Func<'T, SettingValue>) (convertSettingValue: Func<SettingValue, obj>) =
         {
             EditorOptionKey = key.Name
@@ -622,12 +628,13 @@ type SettingSyncSource =
                 match EditorOptionsUtil.GetOptionValue editorOptions key with
                 | None -> None
                 | Some value -> convertEditorValue.Invoke value |> Some)
-            VimSettingName = settingName
-            GetVimSettingValue = (fun vimBuffer -> 
+            VimSettingNames = [settingName]
+            GetVimValue = (fun vimBuffer -> 
                 let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal 
                 match settings.GetSetting settingName with
                 | None -> null
                 | Some setting -> convertSettingValue.Invoke setting.Value)
+            SetVimValue = SettingSyncData.SetVimValueFunc settingName isLocal
             IsLocal = isLocal
         }
 
