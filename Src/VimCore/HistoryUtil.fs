@@ -32,7 +32,9 @@ type internal HistorySession<'TData, 'TResult>
         _historyClient: IHistoryClient<'TData, 'TResult>,
         _initialClientData: 'TData,
         _command: EditableCommand,
-        _motionUtil: IMotionUtil
+        _localAbbreviationMap: IVimLocalAbbreviationMap,
+        _motionUtil: IMotionUtil,
+        _allowAbbreviations: bool
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -55,8 +57,7 @@ type internal HistorySession<'TData, 'TResult>
     member x.CreateBindDataStorage() = 
         MappedBindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; MappedBindFunction = x.Process })
 
-    /// Process a single KeyInput value in the state machine. 
-    member x.Process (keyInputData: KeyInputData) =
+    member x.ProcessCore(keyInputData: KeyInputData, suppressAbbreviations: bool) =
         let keyInput = keyInputData.KeyInput
         let wasMapped = keyInputData.WasMapped
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
@@ -120,20 +121,13 @@ type internal HistorySession<'TData, 'TResult>
             x.ResetCommand EditableCommand.Empty
             x.CreateBindResult()
         | None -> 
-            if _inPasteWait then
-                x.ProcessPaste keyInput
-            elif
-                CharUtil.IsPrintable keyInput.Char
-                && not keyInput.HasKeyModifiers
-            then
-                keyInput.Char.ToString()
-                |> _command.InsertText
-                |> x.ResetCommand
-                x.CreateBindResult()
-            else
-                x.CreateBindResult()
+            x.ProcessNormal(keyInputData, suppressAbbreviations)
+            x.CreateBindResult()
 
-    member x.ProcessPaste keyInput = 
+    /// Process a single KeyInput value in the state machine. 
+    member x.Process (keyInputData: KeyInputData) = x.ProcessCore(keyInputData, suppressAbbreviations = false)
+
+    member x.ProcessPasteCore (keyInput: KeyInput) = 
         match RegisterName.OfChar keyInput.Char with
         | None -> ()
         | Some name -> 
@@ -143,6 +137,9 @@ type internal HistorySession<'TData, 'TResult>
             |> x.ResetCommand
 
         _inPasteWait <- false
+
+    member x.ProcessPaste keyInput = 
+        x.ProcessPasteCore keyInput
         x.CreateBindResult()
 
     member x.ProcessPasteSpecial wordKind =
@@ -206,6 +203,26 @@ type internal HistorySession<'TData, 'TResult>
 
         x.CreateBindResult()
 
+    member x.ProcessNormal(keyInputData: KeyInputData, suppressAbbreviations: bool) =
+        let keyInput = keyInputData.KeyInput
+        if _inPasteWait then
+            x.ProcessPasteCore keyInput
+        elif not suppressAbbreviations && _allowAbbreviations && _command.CaretPosition = _command.Text.Length then
+            match _localAbbreviationMap.TryAbbreviate _command.Text keyInput AbbreviationMode.Command with
+            | None -> ()
+            | Some result -> 
+                let text = _command.Text.Substring(0, _command.Text.Length - result.ReplacedSpan.Length)
+                x.ResetCommand (EditableCommand(text))
+                for keyInput in result.Replacement.KeyInputs do 
+                    let keyInputData = KeyInputData.Create keyInput false
+                    x.ProcessCore(keyInputData, suppressAbbreviations = true) |> ignore
+
+            x.ProcessCore(keyInputData, suppressAbbreviations = true) |> ignore
+        elif CharUtil.IsPrintable keyInput.Char && not keyInput.HasKeyModifiers then
+            keyInput.Char.ToString()
+            |> _command.InsertText
+            |> x.ResetCommand
+
     member x.Cancel() = 
         _historyClient.Cancelled _clientData
 
@@ -268,7 +285,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command motionUtil =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, motionUtil)
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command localAbbreviationMap motionUtil allowAbbreviations =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, localAbbreviationMap, motionUtil, allowAbbreviations)
         historySession :> IHistorySession<'TData, 'TResult>
 
