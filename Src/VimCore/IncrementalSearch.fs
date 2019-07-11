@@ -89,7 +89,7 @@ type internal IncrementalSearchSession
     member x.ResetSearch pattern = 
         match _sessionState with
         | SessionState.NotStarted -> ()
-        | SessionState.Started historySession -> historySession.ResetCommand pattern
+        | SessionState.Started historySession -> EditableCommand(pattern) |> historySession.ResetCommand
         | SessionState.Completed -> ()
 
     /// Begin the incremental search along the specified path
@@ -100,7 +100,8 @@ type internal IncrementalSearchSession
         let start = TextViewUtil.GetCaretPoint _textView
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-        let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
+        let command = EditableCommand.Empty
+        let historySession = HistoryUtil.CreateHistorySession x startPoint command vimBuffer
         _sessionState <- SessionState.Started historySession
         historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
@@ -263,9 +264,9 @@ type internal IncrementalSearchSession
         member x.RemapMode = x.RemapMode
         member x.Beep() = _operations.Beep()
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
-            x.RunSearchAsync searchPoint searchText
+            x.RunSearchAsync searchPoint searchText.Text
             searchPoint)
-        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
+        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText.Text))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with

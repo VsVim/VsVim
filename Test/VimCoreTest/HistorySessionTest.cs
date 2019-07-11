@@ -41,15 +41,15 @@ namespace Vim.UnitTest
                 CancelledValue = value;
             }
 
-            public int Completed(int data, string command, bool wasMapped)
+            public int Completed(int data, EditableCommand command, bool wasMapped)
             {
-                CompletedValue = Tuple.Create(data, command, wasMapped);
+                CompletedValue = Tuple.Create(data, command.Text, wasMapped);
                 return CompletedReturn ?? data;
             }
 
-            public int ProcessCommand(int data, string command)
+            public int ProcessCommand(int data, EditableCommand command)
             {
-                ProcessValue = Tuple.Create(data, command, false);
+                ProcessValue = Tuple.Create(data, command.Text, false);
                 return ProcessReturn ?? data;
             }
         }
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
         public HistorySessionTest()
         {
             _client = new Client() { HistoryList = new HistoryList(), RegisterMap = Vim.RegisterMap };
-            _historySession = HistoryUtil.CreateHistorySession(_client, 0, "", null);
+            _historySession = HistoryUtil.CreateHistorySession(_client, 0, EditableCommand.Empty, null);
             _bindData = _historySession.CreateBindDataStorage().CreateMappedBindData();
         }
 
@@ -106,7 +106,7 @@ namespace Vim.UnitTest
             {
                 ProcessNotation("<C-R>");
                 Assert.True(_historySession.InPasteWait);
-                _historySession.ResetCommand("any");
+                _historySession.ResetCommand(new EditableCommand("any"));
                 Assert.False(_historySession.InPasteWait);
             }
 
