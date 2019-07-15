@@ -9,7 +9,7 @@ param (
 
   # Settings
   [switch]$ci = $false,
-  [string]$config = "Release",
+  [string]$config = "Debug",
   [string]$testConfig = "",
 
   [parameter(ValueFromRemainingArguments=$true)][string[]]$properties)

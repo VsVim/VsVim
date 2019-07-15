@@ -408,7 +408,7 @@ type internal LocalAbbreviationMap
             match triggerKeyInput.RawChar with
             | Some c -> not (_wordUtil.IsKeywordChar c)
             | None -> true
-        if isAbbreviationTrigger then
+        if isAbbreviationTrigger && not (StringUtil.IsNullOrEmpty text) then
             match getFullId() |> Option.orElseWith getEndId |> Option.orElseWith getNonId with
             | None -> None
             | Some (keyText, kind) ->

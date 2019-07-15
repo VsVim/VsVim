@@ -12,20 +12,18 @@ namespace Vim.UnitTest.Utilities
         internal static readonly WpfTestSharedData Instance = new WpfTestSharedData();
 
         /// <summary>
-        /// The name of a <see cref="Semaphore"/> used to ensure that only a single
-        /// <see cref="WpfFactAttribute"/>-attributed test runs at once. This requirement must be made because,
-        /// currently, <see cref="WpfTestCase"/>'s logic sets various static state before a method runs. If two tests
-        /// run interleaved on the same scheduler (i.e. if one yields with an await) then all bets are off.
-        /// </summary>
-        internal static readonly Guid TestSerializationGateName = Guid.NewGuid();
-
-        /// <summary>
         /// Holds the last 10 test cases executed: more recent test cases will occur later in the 
         /// list. Useful for debugging deadlocks that occur because state leak between runs. 
         /// </summary>
         private readonly List<string> _recentTestCases = new List<string>();
 
-        public Semaphore TestSerializationGate = new Semaphore(1, 1, TestSerializationGateName.ToString("N"));
+        /// <summary>
+        /// The <see cref="Semaphore"/> used to ensure that only a single
+        /// <see cref="WpfFactAttribute"/>-attributed test runs at once. This requirement must be made because,
+        /// currently, <see cref="WpfTestCase"/>'s logic sets various static state before a method runs. If two tests
+        /// run interleaved on the same scheduler (i.e. if one yields with an await) then all bets are off.
+        /// </summary>
+        public Semaphore TestSerializationGate = new Semaphore(initialCount: 1, maximumCount: 1);
 
         private WpfTestSharedData()
         {

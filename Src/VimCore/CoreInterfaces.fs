@@ -4236,6 +4236,7 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
+[<RequireQualifiedAccess>]
 type AbbreviationData =
     | All of Abbreviation: KeyInputSet * Replacement: KeyInputSet
     | Single of Abbreviation: KeyInputSet * Replacement: KeyInputSet * Mode: AbbreviationMode

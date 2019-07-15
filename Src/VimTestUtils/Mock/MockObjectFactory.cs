@@ -57,7 +57,8 @@ namespace Vim.UnitTest.Mock
         public static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             IMarkMap map = null,
-            IVimGlobalSettings settings = null,
+            IVimGlobalSettings globalSettings = null,
+            IVimGlobalAbbreviationMap globalAbbreviationMap = null,
             IVimHost host = null,
             IKeyMap keyMap = null,
             IKeyboardDevice keyboardDevice = null,
@@ -71,19 +72,21 @@ namespace Vim.UnitTest.Mock
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new BufferTrackingService());
-            settings = settings ?? new GlobalSettings();
+            globalSettings = globalSettings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
-            keyMap = keyMap ?? (new KeyMap(settings, new Dictionary<string, VariableValue>()));
+            keyMap = keyMap ?? (new KeyMap(globalSettings, new Dictionary<string, VariableValue>()));
             macroRecorder = macroRecorder ?? CreateMacroRecorder(factory: factory).Object;
             searchService = searchService ?? factory.Create<ISearchService>().Object;
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
             vimData = vimData ?? VimUtil.CreateVimData();
             variableMap = variableMap ?? new Dictionary<string, VariableValue>();
+            globalAbbreviationMap = globalAbbreviationMap ?? new GlobalAbbreviationMap();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
             mock.SetupGet(x => x.MarkMap).Returns(map);
-            mock.SetupGet(x => x.GlobalSettings).Returns(settings);
+            mock.SetupGet(x => x.GlobalSettings).Returns(globalSettings);
+            mock.SetupGet(x => x.GlobalAbbreviationMap).Returns(globalAbbreviationMap);
             mock.SetupGet(x => x.VimHost).Returns(host);
             mock.SetupGet(x => x.KeyMap).Returns(keyMap);
             mock.SetupGet(x => x.VimData).Returns(vimData);
@@ -183,6 +186,7 @@ namespace Vim.UnitTest.Mock
         public static Mock<IVimTextBuffer> CreateVimTextBuffer(
             ITextBuffer textBuffer,
             IVimLocalSettings localSettings = null,
+            IVimLocalAbbreviationMap localAbbreviationMap = null,
             IVim vim = null,
             IUndoRedoOperations undoRedoOperations = null,
             WordUtil wordUtil = null,
@@ -193,9 +197,11 @@ namespace Vim.UnitTest.Mock
             localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
             undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
             wordUtil = wordUtil ?? new WordUtil(textBuffer, localSettings);
+            localAbbreviationMap = localAbbreviationMap ?? new LocalAbbreviationMap(vim.GlobalAbbreviationMap, wordUtil);
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);
+            mock.SetupGet(x => x.LocalAbbreviationMap).Returns(localAbbreviationMap);
             mock.SetupGet(x => x.GlobalSettings).Returns(localSettings.GlobalSettings);
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupGet(x => x.WordNavigator).Returns(wordUtil.WordNavigator);

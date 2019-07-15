@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             var vim = MockObjectFactory.CreateVim(
                 registerMap: _registerMap,
                 host: _vimHost.Object,
-                settings: globalSettings,
+                globalSettings: globalSettings,
                 searchService: _searchService,
                 factory: _factory);
 

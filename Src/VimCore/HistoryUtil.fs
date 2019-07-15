@@ -144,9 +144,6 @@ type internal HistorySession<'TData, 'TResult>
 
     member x.ProcessPasteSpecial wordKind =
         if _inPasteWait then
-            x.ResetCommand EditableCommand.Empty
-            MappedBindResult<_>.Error
-        else
             let motion = Motion.InnerWord wordKind
             let arg = MotionArgument(MotionContext.AfterOperator)
             let currentWord = _motionUtil.GetMotion motion arg
@@ -158,6 +155,9 @@ type internal HistorySession<'TData, 'TResult>
                 |> x.ResetCommand
 
             x.CreateBindResult()
+        else
+            x.ResetCommand EditableCommand.Empty
+            MappedBindResult<_>.Error
 
     /// Run a history scroll at the specified index
     member x.DoHistoryScroll (historyList: string list) index =
