@@ -4190,6 +4190,7 @@ type KeyMapping = {
 }
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
+// ATODO: unify the API with the abbreviation one
 type IKeyMap =
 
     /// Is the mapping of the 0 key currently enabled
@@ -4236,38 +4237,40 @@ type IDigraphMap =
 
     abstract Clear: unit -> unit
 
-[<RequireQualifiedAccess>]
+[<NoEquality>]
+[<NoComparison>]
+[<Struct>]
 type AbbreviationData =
-    | All of Abbreviation: KeyInputSet * Replacement: KeyInputSet
-    | Single of Abbreviation: KeyInputSet * Replacement: KeyInputSet * Mode: AbbreviationMode
-    | Mixed of Abbreviation: KeyInputSet * InsertReplacement: KeyInputSet * CommandReplacement: KeyInputSet
-    with
+    val private _abbreviation: KeyInputSet
+    val private _insertReplacement: KeyInputSet option
+    val private _commandReplacement: KeyInputSet option
 
-    member x.Abbreviation = 
-        match x with
-        | All (abbreviation, _) -> abbreviation
-        | Single (abbreviation, _, _) -> abbreviation
-        | Mixed (abbreviation, _, _) -> abbreviation
+    new (abbreviation: KeyInputSet, replacement: KeyInputSet) =
+        { _abbreviation = abbreviation; _insertReplacement = Some replacement; _commandReplacement = Some replacement }
+
+    new (abbreviation: KeyInputSet, insertReplacement: KeyInputSet, commandReplacement: KeyInputSet) =
+        { _abbreviation = abbreviation; _insertReplacement = Some insertReplacement; _commandReplacement = Some commandReplacement }
+
+    new (abbreviation: KeyInputSet, replacement: KeyInputSet, mode: AbbreviationMode) =
+        let insert, command = 
+            match mode with
+            | AbbreviationMode.Insert -> Some replacement, None
+            | AbbreviationMode.Command -> None, Some replacement
+        { _abbreviation = abbreviation; _insertReplacement = insert; _commandReplacement = command }
+
+    member x.Abbreviation = x._abbreviation
+    member x.InsertReplacement = x._insertReplacement
+    member x.CommandReplacement = x._commandReplacement
+    member x.IsSameReplacement = 
+        match x.InsertReplacement, x.CommandReplacement with
+        | Some i, Some c when i = c -> true
+        | _ -> false
 
     member x.Modes = 
-        match x with
-        | All _ -> AbbreviationMode.All
-        | Single (_, _, mode) -> [mode]
-        | Mixed _ -> AbbreviationMode.All
-
-    member x.InsertReplacement =
-        match x with
-        | All (_, r) -> Some r
-        | Mixed (_, i, _) -> Some i
-        | Single (_, r, mode) when mode = AbbreviationMode.Insert -> Some r
-        | _ -> None
-
-    member x.CommandReplacement =
-        match x with
-        | All (_, r) -> Some r
-        | Mixed (_, _, c) -> Some c
-        | Single (_, r, mode) when mode = AbbreviationMode.Command -> Some r
-        | _ -> None
+        match x._insertReplacement, x._commandReplacement with
+        | Some _, Some _ -> AbbreviationMode.All
+        | Some _, None -> [AbbreviationMode.Insert]
+        | _ -> [AbbreviationMode.Command]
 
     member x.GetReplacement mode =
         match mode with
@@ -4283,33 +4286,28 @@ type AbbreviationData =
             else x.CommandReplacement
         let abbreviation = x.Abbreviation
         match insertReplacement, commandReplacement with
-        | Some i, Some c when i = c -> AbbreviationData.All (abbreviation, replacement)
-        | Some i, Some c -> AbbreviationData.Mixed(abbreviation, InsertReplacement = i, CommandReplacement = c)
-        | _ -> AbbreviationData.Single(abbreviation, replacement, mode)
+        | Some i, Some c when i = c -> AbbreviationData(abbreviation, i)
+        | Some i, Some c -> AbbreviationData(abbreviation, insertReplacement = i, commandReplacement = c)
+        | _ -> AbbreviationData(abbreviation, replacement, mode)
 
     member x.RemoveReplacement mode =
         match mode with
         | AbbreviationMode.Insert -> 
-            match x with
-            | All (a, r) -> AbbreviationData.Single (a, r, AbbreviationMode.Command) |> Some
-            | Single (_, r, m) when m = AbbreviationMode.Insert -> None
-            | Single _ -> Some x
-            | Mixed (a, _, c) -> AbbreviationData.Single (a, c, AbbreviationMode.Command) |> Some
-        | AbbreviationMode.Command -> 
-            match x with
-            | All (a, r) -> AbbreviationData.Single (a, r, AbbreviationMode.Insert) |> Some
-            | Single (_, r, m) when m = AbbreviationMode.Command -> None
-            | Single _ -> Some x
-            | Mixed (a, i, _) -> AbbreviationData.Single (a, i, AbbreviationMode.Insert) |> Some
+            match x._commandReplacement with
+            | Some c -> AbbreviationData(x.Abbreviation, c, AbbreviationMode.Command) |> Some
+            | None -> None
+        | AbbreviationMode.Command ->
+            match x._insertReplacement with
+            | Some i -> AbbreviationData(x.Abbreviation, i, AbbreviationMode.Insert) |> Some
+            | None -> None
 
     override x.ToString() = 
-        match x with
-        | All (a, r) -> sprintf "! %O - %O" a r
-        | Single (a, r, m) ->
-            match m with
-            | AbbreviationMode.Insert -> sprintf "i %O - %O" a r
-            | AbbreviationMode.Command -> sprintf "c %O - %O" a r
-        | Mixed (a, i, c) -> sprintf "* %O - %O - %O" a i c
+        match x.InsertReplacement, x.CommandReplacement with
+        | Some i, Some c when i = c -> sprintf "! %O - %O" x.Abbreviation c
+        | Some i, Some c -> sprintf "* %O - %O - %O" x.Abbreviation i c
+        | Some i, None -> sprintf "i %O - %O" x.Abbreviation i
+        | None, Some c -> sprintf "i %O - %O" x.Abbreviation c
+        | None, None -> "Empty"
 
 /// Information about a single abbreviation replace
 [<NoComparison>]

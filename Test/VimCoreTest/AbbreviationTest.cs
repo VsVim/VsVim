@@ -94,21 +94,21 @@ namespace Vim.UnitTest
                 switch (parts[0])
                 {
                     case "a":
-                        return AbbreviationData.NewAll(
+                        return new AbbreviationData(
                             KeyNotationUtil.StringToKeyInputSet(parts[1]),
                             KeyNotationUtil.StringToKeyInputSet(parts[2]));
                     case "si":
-                        return AbbreviationData.NewSingle(
+                        return new AbbreviationData(
                             KeyNotationUtil.StringToKeyInputSet(parts[1]),
                             KeyNotationUtil.StringToKeyInputSet(parts[2]),
                             AbbreviationMode.Insert);
                     case "sc":
-                        return AbbreviationData.NewSingle(
+                        return new AbbreviationData(
                             KeyNotationUtil.StringToKeyInputSet(parts[1]),
                             KeyNotationUtil.StringToKeyInputSet(parts[2]),
                             AbbreviationMode.Command);
                     case "m":
-                        return AbbreviationData.NewMixed(
+                        return new AbbreviationData(
                             KeyNotationUtil.StringToKeyInputSet(parts[1]),
                             KeyNotationUtil.StringToKeyInputSet(parts[2]),
                             KeyNotationUtil.StringToKeyInputSet(parts[3]));

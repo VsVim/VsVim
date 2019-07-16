@@ -868,19 +868,21 @@ type VimInterpreter
         let appendMap (map: IVimAbbreviationMap) isLocalChar =
             let abbreviations = map.Abbreviations |> Seq.sortBy (fun x -> x.Abbreviation.ToString())
             for abbreviationData in abbreviations do
-                match abbreviationData with
-                | AbbreviationData.All (a, r) -> list.Add(sprintf "!  %O\t%c%O" a isLocalChar r)
-                | AbbreviationData.Mixed (a, i, c) ->
+                let a = abbreviationData.Abbreviation
+                match abbreviationData.InsertReplacement, abbreviationData.CommandReplacement with
+                | Some i, Some c when i = c -> list.Add(sprintf "!  %O\t%c%O" a isLocalChar c)
+                | Some i, Some c -> 
                     if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar i)
+                        list.Add(sprintf "i  %O\t%c%O" a isLocalChar i)
                     if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar i)
-                | AbbreviationData.Single (a, r, m) ->
-                    if Seq.contains m modeList then
-                        let modeChar = 
-                            if m = AbbreviationMode.Insert then 'i'
-                            else 'c'
-                        list.Add(sprintf "%c  %O\t%c%O" modeChar a isLocalChar r)
+                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar c)
+                | Some i, None ->
+                    if Seq.contains AbbreviationMode.Insert modeList then
+                        list.Add(sprintf "i  %O\t%c%O" a isLocalChar i)
+                | None, Some c -> 
+                    if Seq.contains AbbreviationMode.Insert modeList then
+                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar c)
+                | None, None -> ()
 
         appendMap _vimTextBuffer.LocalAbbreviationMap '!'
         appendMap _vimTextBuffer.GlobalAbbreviationMap ' '

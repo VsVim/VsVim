@@ -3659,6 +3659,25 @@ namespace Vim.UnitTest
                 Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
             }
 
+            [WpfTheory]
+            [InlineData("dog cat", "dd dog", "", "dd ", "cat ")]
+            [InlineData("dog cat", "cat dog", "", "cat ", "cat ")]
+            [InlineData("dogs all the toys", "dd dog", "", "dd ", "dog ")] // Partial remap is treated as no remap
+            public void RulesRemap(string keyMap, string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":imap {keyMap}", enter: true);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
+
+            }
+
             [WpfFact]
             public void EscapeCompletes()
             {

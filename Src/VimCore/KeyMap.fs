@@ -301,7 +301,7 @@ type internal AbbreviationMap() =
         let data = 
             match oldData with
             | Some oldData -> oldData.ChangeReplacement mode rhs
-            | None -> AbbreviationData.Single (lhs, rhs, mode)
+            | None -> AbbreviationData(lhs, rhs, mode)
         _map.[lhs] <- data
 
     member x.Get lhs mode =
