@@ -575,7 +575,7 @@ type VimInterpreter
     member x.GetPointAfter lineRange =
         x.GetPointAfterOrDefault lineRange DefaultLineRange.None
 
-    member x.RunAbbreviate lhs rhs modeList isLocal =
+    member x.RunAbbreviate lhs rhs allowRemap modeList isLocal =
         // Even when doing a global mapping the abbreviation is still parsed in the context of 
         // the current buffer using `iskeyword`. This means that some global abbreviations are valid
         // to set in some buffers but not others if they have significantly different `iskeyword` 
@@ -590,7 +590,7 @@ type VimInterpreter
             let lhs = KeyNotationUtil.StringToKeyInputSet lhs
             let rhs = KeyNotationUtil.StringToKeyInputSet rhs
             for mode in modeList do
-                map.Add lhs mode rhs
+                map.Add lhs rhs allowRemap mode
 
     member x.RunAbbreviateClear modeList isLocal =
         let map = 
@@ -866,23 +866,27 @@ type VimInterpreter
 
         let list = List<string>()
         let appendMap (map: IVimAbbreviationMap) isLocalChar =
-            let abbreviations = map.Abbreviations |> Seq.sortBy (fun x -> x.Abbreviation.ToString())
-            for abbreviationData in abbreviations do
-                let a = abbreviationData.Abbreviation
-                match abbreviationData.InsertReplacement, abbreviationData.CommandReplacement with
-                | Some i, Some c when i = c -> list.Add(sprintf "!  %O\t%c%O" a isLocalChar c)
-                | Some i, Some c -> 
-                    if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "i  %O\t%c%O" a isLocalChar i)
-                    if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar c)
-                | Some i, None ->
-                    if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "i  %O\t%c%O" a isLocalChar i)
-                | None, Some c -> 
-                    if Seq.contains AbbreviationMode.Insert modeList then
-                        list.Add(sprintf "c  %O\t%c%O" a isLocalChar c)
-                | None, None -> ()
+            let modeToChar mode =
+                match mode with 
+                | AbbreviationMode.Insert -> 'i'
+                | AbbreviationMode.Command -> 'c'
+
+            let add mode str =
+                if Seq.contains mode modeList then
+                    list.Add str
+
+            let groupedAbbreviations = 
+                map.Abbreviations 
+                |> Seq.groupBy (fun x -> x.Abbreviation)
+                |> Seq.sortBy (fun (key, _) -> key)
+            for (key, abbreviations)  in groupedAbbreviations do
+                match List.ofSeq abbreviations with
+                | [a] -> add a.Mode (sprintf "%c  %O\t%c%O" (modeToChar a.Mode) key isLocalChar a.Replacement)
+                | [a1; a2] when a1.Replacement = a2.Replacement -> list.Add(sprintf "!  %O\t%c%O" key isLocalChar a1.Replacement)
+                | [a1; a2] -> 
+                    add a1.Mode (sprintf "%c  %O\t%c%O" (modeToChar a1.Mode) key isLocalChar a1.Replacement)
+                    add a2.Mode (sprintf "%c  %O\t%c%O" (modeToChar a2.Mode) key isLocalChar a2.Replacement)
+                | _ -> ()
 
         appendMap _vimTextBuffer.LocalAbbreviationMap '!'
         appendMap _vimTextBuffer.GlobalAbbreviationMap ' '
@@ -989,7 +993,7 @@ type VimInterpreter
             // Generate a mode / lhs / rhs tuple for all mappings in the
             // specified mode.
             mode
-            |> _keyMap.GetKeyMappingsForMode
+            |> _keyMap.GetKeyMappings
             |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
 
         |> filterByPrefix
@@ -1559,14 +1563,10 @@ type VimInterpreter
             let name = sprintf "%A" mapArgument
             _statusUtil.OnWarning (Resources.Interpreter_KeyMappingOptionNotSupported name)
 
-        // Get the appropriate mapping function based on whether or not remapping is 
-        // allowed
-        let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
-
         // Perform the mapping for each mode and record if there is an error
         let anyErrors = 
             keyRemapModes
-            |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
+            |> Seq.map (fun keyRemapMode -> _keyMap.Map leftKeyNotation rightKeyNotation allowRemap keyRemapMode)
             |> Seq.exists (fun x -> not x)
 
         if anyErrors then
@@ -2337,7 +2337,7 @@ type VimInterpreter
         let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
-        | LineCommand.Abbreviate (lhs, rhs, modeList, isLocal) -> x.RunAbbreviate lhs rhs modeList isLocal
+        | LineCommand.Abbreviate (lhs, rhs, allowRemap, modeList, isLocal) -> x.RunAbbreviate lhs rhs allowRemap modeList isLocal
         | LineCommand.AbbreviateClear (modeList, isLocal) -> x.RunAbbreviateClear modeList isLocal
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model

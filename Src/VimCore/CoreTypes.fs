@@ -25,16 +25,16 @@ type KeyRemapMode =
 
     with 
 
-    static member All = 
-        seq {
-            yield None
-            yield Normal
-            yield Visual 
-            yield Select
-            yield OperatorPending
-            yield Insert
-            yield Command
-            yield Language }
+    static member All = [ 
+        None
+        Normal
+        Visual 
+        Select
+        OperatorPending
+        Insert
+        Command
+        Language 
+    ]
 
     override x.ToString() =
         match x with 

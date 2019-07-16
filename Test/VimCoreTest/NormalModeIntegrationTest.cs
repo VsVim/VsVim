@@ -8931,7 +8931,7 @@ namespace Vim.UnitTest
             public void Remap_EnterShouldNotMapDuringSearch()
             {
                 Create("cat dog");
-                _keyMap.MapWithNoRemap("<Enter>", "o<Esc>", KeyRemapMode.Normal);
+                _keyMap.Map("<Enter>", "o<Esc>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process("/dog");
                 _vimBuffer.Process(VimKey.Enter);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
@@ -8945,7 +8945,7 @@ namespace Vim.UnitTest
             public void Remap_Nop()
             {
                 Create("cat");
-                _keyMap.MapWithNoRemap("$", "<nop>", KeyRemapMode.Normal);
+                _keyMap.Map("$", "<nop>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process('$');
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }

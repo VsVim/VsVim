@@ -264,9 +264,13 @@ and [<Sealed>] Parser
         ("abbreviate", "ab")
         ("iabbrev", "ia")
         ("cabbrev", "ca")
+        ("noreabbrev", "norea")
+        ("cnoreabbrev", "cnorea")
+        ("inoreabbrev", "inorea")
         ("abclear", "abc")
         ("iabclear", "iabc")
         ("cabclear", "cabc")
+        // ATODO: need to do unabbreviatio
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -598,9 +602,9 @@ and [<Sealed>] Parser
         | _ -> noBuffer()
 
     /// Parse out :abbreviate and all of the mode specific variants 
-    member x.ParseAbbreviate abbreviationModes =
+    member x.ParseAbbreviate(abbreviationModes, allowRemap) =
         let isLocal = x.ParseAbbreviateBufferArgument()
-        x.ParseMappingCore (fun n -> LineCommand.DisplayAbbreviation (abbreviationModes, n)) (fun l r -> LineCommand.Abbreviate(l, r, abbreviationModes, isLocal))
+        x.ParseMappingCore (fun n -> LineCommand.DisplayAbbreviation (abbreviationModes, n)) (fun l r -> LineCommand.Abbreviate(l, r, allowRemap, abbreviationModes, isLocal))
 
     /// Parse out :abclear 
     member x.ParseAbbreviateClear abbreviationModes =
@@ -2567,14 +2571,15 @@ and [<Sealed>] Parser
         let doParse name = 
             let parseResult = 
                 match name with
-                | "abbreviate" -> noRange (fun () -> x.ParseAbbreviate AbbreviationMode.All)
+                | "abbreviate" -> noRange (fun () -> x.ParseAbbreviate(AbbreviationMode.All, allowRemap = true))
                 | "abclear" -> noRange (fun () -> x.ParseAbbreviateClear AbbreviationMode.All)
                 | "autocmd" -> noRange x.ParseAutoCommand
                 | "behave" -> noRange x.ParseBehave
                 | "buffers" -> noRange x.ParseFiles
                 | "call" -> x.ParseCall lineRange
-                | "cabbrev" -> noRange (fun () -> x.ParseAbbreviate [AbbreviationMode.Command])                 
+                | "cabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Command], allowRemap = true))                 
                 | "cabclear" -> noRange (fun () -> x.ParseAbbreviateClear [AbbreviationMode.Command])                 
+                | "cnoreabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Command], allowRemap = false))
                 | "cd" -> noRange x.ParseChangeDirectory
                 | "cfirst" -> x.ParseNavigateToListItem lineRange ListKind.Error NavigationKind.First
                 | "chdir" -> noRange x.ParseChangeDirectory
@@ -2611,8 +2616,9 @@ and [<Sealed>] Parser
                 | "normal" -> x.ParseNormal lineRange
                 | "help" -> noRange x.ParseHelp
                 | "history" -> noRange (fun () -> x.ParseHistory())
-                | "iabbrev" -> noRange (fun () -> x.ParseAbbreviate [AbbreviationMode.Insert])                 
+                | "iabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Insert], allowRemap = true))                 
                 | "iabclear" -> noRange (fun () -> x.ParseAbbreviateClear [AbbreviationMode.Insert])                 
+                | "inoreabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Insert], allowRemap = false))                 
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
@@ -2646,6 +2652,7 @@ and [<Sealed>] Parser
                 | "number" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
                 | "nunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Normal])
                 | "nohlsearch" -> noRange (fun () -> LineCommand.NoHighlightSearch)
+                | "noreabbrev " -> noRange (fun () -> x.ParseAbbreviate(AbbreviationMode.All, allowRemap = false))
                 | "noremap"-> noRange (fun () -> x.ParseMapKeysNoRemap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
                 | "omap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.OperatorPending])
                 | "omapclear" -> noRange (fun () -> x.ParseMapClear false [KeyRemapMode.OperatorPending])

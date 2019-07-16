@@ -4174,52 +4174,54 @@ type ICommandRunner =
     [<CLIEvent>]
     abstract CommandRan: IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
-/// Information about a single key mapping
-[<NoComparison>]
-[<NoEquality>]
-type KeyMapping = {
+[<Struct>]
+type KeyMapping =
+    val private _left: KeyInputSet
+    val private _right: KeyInputSet
+    val private _allowRemap: bool
+    val private _mode: KeyRemapMode
 
-    // The LHS of the key mapping
-    Left: KeyInputSet
+    new (left: KeyInputSet, right: KeyInputSet, allowRemap: bool, mode: KeyRemapMode) =
+        { _left = left; _right = right; _allowRemap = allowRemap; _mode = mode }
 
-    // The RHS of the key mapping
-    Right: KeyInputSet 
+    member x.Left = x._left
+    member x.Right = x._right
+    member x.AllowRemap = x._allowRemap
+    member x.Mode = x._mode
 
-    // Does the expansion participate in remapping
-    AllowRemap: bool
-}
+    override x.ToString() = sprintf "%O - %O" x.Left x.Right
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 // ATODO: unify the API with the abbreviation one
+// ATODO: need to do a local key mapping as well
 type IKeyMap =
 
     /// Is the mapping of the 0 key currently enabled
     abstract IsZeroMappingEnabled: bool with get, set 
 
+    abstract KeyMappings: KeyMapping seq
+
     /// Get all mappings for the specified mode
-    abstract GetKeyMappingsForMode: KeyRemapMode -> KeyMapping list
+    abstract GetKeyMappings: mode: KeyRemapMode -> KeyMapping seq
 
     /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
     /// then a sequence of a single element containing the passed in key will be returned.  
     /// If a recursive mapping is detected it will not be persued and treated instead as 
     /// if the recursion did not exist
-    abstract GetKeyMapping: KeyInputSet -> KeyRemapMode -> KeyMappingResult
+    abstract GetKeyMapping: lhs: KeyInputSet -> mode:KeyRemapMode -> KeyMappingResult
 
     /// Map the given key sequence without allowing for remaping
-    abstract MapWithNoRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
-
-    /// Map the given key sequence allowing for a remap 
-    abstract MapWithRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
+    abstract Map: lhs: string -> rhs: string -> allowRemap: bool -> mode: KeyRemapMode -> bool
 
     /// Unmap the specified key sequence for the specified mode
-    abstract Unmap: lhs: string -> KeyRemapMode -> bool
+    abstract Unmap: lhs: string -> mode: KeyRemapMode -> bool
 
     /// Unmap the specified key sequence for the specified mode by considering
     /// the passed in value to be an expansion
-    abstract UnmapByMapping: righs: string -> KeyRemapMode -> bool
+    abstract UnmapByMapping: righs: string -> mode: KeyRemapMode -> bool
 
     /// Clear the Key mappings for the specified mode
-    abstract Clear: KeyRemapMode -> unit
+    abstract Clear: mode: KeyRemapMode -> unit
 
     /// Clear the Key mappings for all modes
     abstract ClearAll: unit -> unit
@@ -4240,85 +4242,28 @@ type IDigraphMap =
 [<NoEquality>]
 [<NoComparison>]
 [<Struct>]
-type AbbreviationData =
+type Abbreviation =
     val private _abbreviation: KeyInputSet
-    val private _insertReplacement: KeyInputSet option
-    val private _commandReplacement: KeyInputSet option
+    val private _replacement: KeyInputSet
+    val private _allowRemap: bool
+    val private _mode: AbbreviationMode
 
-    new (abbreviation: KeyInputSet, replacement: KeyInputSet) =
-        { _abbreviation = abbreviation; _insertReplacement = Some replacement; _commandReplacement = Some replacement }
-
-    new (abbreviation: KeyInputSet, insertReplacement: KeyInputSet, commandReplacement: KeyInputSet) =
-        { _abbreviation = abbreviation; _insertReplacement = Some insertReplacement; _commandReplacement = Some commandReplacement }
-
-    new (abbreviation: KeyInputSet, replacement: KeyInputSet, mode: AbbreviationMode) =
-        let insert, command = 
-            match mode with
-            | AbbreviationMode.Insert -> Some replacement, None
-            | AbbreviationMode.Command -> None, Some replacement
-        { _abbreviation = abbreviation; _insertReplacement = insert; _commandReplacement = command }
+    new (abbreviation: KeyInputSet, replacement: KeyInputSet, allowRemap: bool, mode: AbbreviationMode) =
+        { _abbreviation = abbreviation; _replacement = replacement; _allowRemap = allowRemap; _mode = mode }
 
     member x.Abbreviation = x._abbreviation
-    member x.InsertReplacement = x._insertReplacement
-    member x.CommandReplacement = x._commandReplacement
-    member x.IsSameReplacement = 
-        match x.InsertReplacement, x.CommandReplacement with
-        | Some i, Some c when i = c -> true
-        | _ -> false
+    member x.Replacement = x._replacement
+    member x.AllowRemap = x._allowRemap
+    member x.Mode = x._mode
 
-    member x.Modes = 
-        match x._insertReplacement, x._commandReplacement with
-        | Some _, Some _ -> AbbreviationMode.All
-        | Some _, None -> [AbbreviationMode.Insert]
-        | _ -> [AbbreviationMode.Command]
-
-    member x.GetReplacement mode =
-        match mode with
-        | AbbreviationMode.Insert -> x.InsertReplacement
-        | AbbreviationMode.Command -> x.CommandReplacement
-
-    member x.ChangeReplacement mode replacement =
-        let insertReplacement = 
-            if mode = AbbreviationMode.Insert then Some replacement
-            else x.InsertReplacement
-        let commandReplacement = 
-            if mode = AbbreviationMode.Command then Some replacement
-            else x.CommandReplacement
-        let abbreviation = x.Abbreviation
-        match insertReplacement, commandReplacement with
-        | Some i, Some c when i = c -> AbbreviationData(abbreviation, i)
-        | Some i, Some c -> AbbreviationData(abbreviation, insertReplacement = i, commandReplacement = c)
-        | _ -> AbbreviationData(abbreviation, replacement, mode)
-
-    member x.RemoveReplacement mode =
-        match mode with
-        | AbbreviationMode.Insert -> 
-            match x._commandReplacement with
-            | Some c -> AbbreviationData(x.Abbreviation, c, AbbreviationMode.Command) |> Some
-            | None -> None
-        | AbbreviationMode.Command ->
-            match x._insertReplacement with
-            | Some i -> AbbreviationData(x.Abbreviation, i, AbbreviationMode.Insert) |> Some
-            | None -> None
-
-    override x.ToString() = 
-        match x.InsertReplacement, x.CommandReplacement with
-        | Some i, Some c when i = c -> sprintf "! %O - %O" x.Abbreviation c
-        | Some i, Some c -> sprintf "* %O - %O - %O" x.Abbreviation i c
-        | Some i, None -> sprintf "i %O - %O" x.Abbreviation i
-        | None, Some c -> sprintf "i %O - %O" x.Abbreviation c
-        | None, None -> "Empty"
+    override x.ToString() = sprintf "%O - %O" x.Abbreviation x.Replacement
 
 /// Information about a single abbreviation replace
 [<NoComparison>]
 [<NoEquality>]
 type AbbreviationResult = {
-    /// The found abbreviation that was replaced
-    Abbreviation: KeyInputSet
-
-    /// The set of KeyInput values the abbreviation maps to. This does not include the 
-    /// character which may, or may not, be added by TriggerKeyInput
-    Replacement: KeyInputSet
+    /// The found Abbreviation that was replaced
+    Abbreviation: Abbreviation
 
     OriginalText: string
 
@@ -4331,8 +4276,13 @@ type AbbreviationResult = {
 
     /// The AbbreviationKind of the found abbrevitaion
     AbbreviationKind: AbbreviationKind
-
 } with
+
+    /// The set of KeyInput values the abbreviation maps to. This does not include the 
+    /// character which may, or may not, be added by TriggerKeyInput
+    member x.Replacement = x.Abbreviation.Replacement
+
+    member x.Mode = x.Abbreviation.Mode
 
     override x.ToString() =
         let key = x.Abbreviation.ToString()
@@ -4342,11 +4292,11 @@ type AbbreviationResult = {
 
 type IVimAbbreviationMap =
 
-    abstract Abbreviations: AbbreviationData seq
+    abstract Abbreviations: Abbreviation seq
 
-    abstract Add: lhs: KeyInputSet -> mode: AbbreviationMode -> rhs: KeyInputSet -> unit
+    abstract Add: lhs: KeyInputSet -> rhs: KeyInputSet -> allowRemap: bool -> mode: AbbreviationMode -> unit
 
-    abstract Get: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
+    abstract Get: lhs: KeyInputSet -> mode: AbbreviationMode -> Abbreviation option
 
     abstract Clear: mode: AbbreviationMode -> unit
 
@@ -4361,7 +4311,7 @@ type IVimLocalAbbreviationMap =
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
 
     /// Like Get but will look in both maps: local and global
-    abstract GetLocalOrGlobal: lhs: KeyInputSet -> mode: AbbreviationMode -> KeyInputSet option
+    abstract GetLocalOrGlobal: lhs: KeyInputSet -> mode: AbbreviationMode -> Abbreviation option
 
     abstract TryParse: text: string -> AbbreviationKind option
 

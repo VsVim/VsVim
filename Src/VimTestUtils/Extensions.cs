@@ -689,6 +689,12 @@ namespace Vim.UnitTest
             return keyMap.GetKeyMapping(KeyNotationUtil.StringToKeyInputSet(str), mode);
         }
 
+        public static bool Map(this IKeyMap keyMap, string lhs, string rhs, KeyRemapMode mode = null)
+        {
+            mode = mode ?? KeyRemapMode.Normal;
+            return keyMap.Map(lhs, rhs, allowRemap: true, mode);
+        }
+
         #endregion
 
         #region KeyMappingResult

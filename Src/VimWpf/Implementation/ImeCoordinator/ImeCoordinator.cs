@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel.Composition;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -402,7 +403,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private bool GetHaveLanguageMappings()
         {
-            return !_vim.KeyMap.GetKeyMappingsForMode(KeyRemapMode.Language).IsEmpty;
+            return _vim.KeyMap.GetKeyMappings(KeyRemapMode.Language).Any();
         }
 
         #region IVimBufferCreationListener

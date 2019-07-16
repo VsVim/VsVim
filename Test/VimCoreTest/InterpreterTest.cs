@@ -2874,7 +2874,7 @@ namespace Vim.UnitTest
                 {
                     foreach (var keyRemapMode in KeyRemapMode.All)
                     {
-                        Assert.True(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
+                        Assert.True(_keyMap.Map("a", "b", allowRemap: false, keyRemapMode));
                     }
                 }
 

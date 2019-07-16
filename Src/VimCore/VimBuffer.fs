@@ -707,7 +707,7 @@ type internal VimBuffer
             // Then type 'i' in insert mode and wait for the time out.  It will print 'short'
             let keyInputSet, wasMapped = 
                 let keyMapping = 
-                    _keyMap.GetKeyMappingsForMode x.KeyRemapMode
+                    _keyMap.GetKeyMappings x.KeyRemapMode
                     |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
                 match keyMapping with
                 | None -> keyInputSet, false

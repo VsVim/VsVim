@@ -138,7 +138,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             var keyMap = buffer.Vim.KeyMap;
             foreach (var keyRemapMode in KeyRemapMode.All)
             {
-                foreach (var keyMapping in keyMap.GetKeyMappingsForMode(keyRemapMode))
+                foreach (var keyMapping in keyMap.GetKeyMappings(keyRemapMode))
                 {
                     keyMapping.Left.KeyInputs.ForEach(keyInput => hashSet.Add(keyInput));
                 }
