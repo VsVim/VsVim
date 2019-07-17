@@ -731,7 +731,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var map = _vimBuffer.VimTextBuffer.LocalAbbreviationMap;
             var text = _margin.CommandLineTextBox.Text;
-            var option = map.TryAbbreviate(text, keyInput, AbbreviationMode.Command);
+            var option = map.Abbreviate(text, keyInput, AbbreviationMode.Command);
             if (option.IsSome())
             {
                 var result = option.Value;

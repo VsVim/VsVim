@@ -649,50 +649,48 @@ namespace Vim.UnitTest
 
         #region IKeyMap
 
-        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            return GetKeyMapping(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
+            return Map(keyMap, new KeyInputSet(ki), mode);
         }
 
-        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)
         {
-            return GetKeyMapping(keyMap, KeyNotationUtil.StringToKeyInputSet(str), mode);
+            return keyMap.Map(set, mode);
         }
 
-        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IKeyMap keyMap, char c, KeyRemapMode mode)
         {
-            return GetKeyMapping(keyMap, new KeyInputSet(ki), mode);
+            return Map(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
         }
 
-        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IKeyMap keyMap, string str, KeyRemapMode mode)
         {
-            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().KeyInputSet.KeyInputs;
+            return keyMap.Map(KeyNotationUtil.StringToKeyInputSet(str), mode);
         }
 
-        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
+        public static bool RemoveKeyMapping(this IKeyMap keyMap, string lhs, KeyRemapMode mode)
         {
-            return GetKeyMappingResult(keyMap, new KeyInputSet(ki), mode);
+            var left = KeyNotationUtil.TryStringToKeyInputSet(lhs);
+            if (left.IsNone())
+            {
+                return false;
+            }
+
+            return keyMap.RemoveKeyMapping(left.Value, mode);
         }
 
-        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)
+        public static bool AddKeyMapping(this IKeyMap keyMap, string lhs, string rhs, bool allowRemap, KeyRemapMode mode)
         {
-            return keyMap.GetKeyMapping(set, mode);
-        }
+            var left = keyMap.ParseKeyNotation(lhs);
+            var right = keyMap.ParseKeyNotation(rhs);
+            if (left.IsNone() || right.IsNone())
+            {
+                return false;
+            }
 
-        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, char c, KeyRemapMode mode)
-        {
-            return GetKeyMappingResult(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
-        }
-
-        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, string str, KeyRemapMode mode)
-        {
-            return keyMap.GetKeyMapping(KeyNotationUtil.StringToKeyInputSet(str), mode);
-        }
-
-        public static bool Map(this IKeyMap keyMap, string lhs, string rhs, KeyRemapMode mode = null)
-        {
-            mode = mode ?? KeyRemapMode.Normal;
-            return keyMap.Map(lhs, rhs, allowRemap: true, mode);
+            keyMap.AddKeyMapping(left.Value, right.Value, allowRemap, mode);
+            return true;
         }
 
         #endregion

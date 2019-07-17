@@ -36,7 +36,7 @@ namespace Vim.UnitTest
                 {
                     _localSettings.IsKeyword = isKeyword;
                 }
-                var kind = _map.TryParse(item);
+                var kind = _map.Parse(item);
                 Assert.True(kind.IsSome(x => x.IsFullId));
             }
 
@@ -50,7 +50,7 @@ namespace Vim.UnitTest
                 {
                     _localSettings.IsKeyword = isKeyword;
                 }
-                var kind = _map.TryParse(item);
+                var kind = _map.Parse(item);
                 Assert.True(kind.IsSome(x => x.IsEndId));
             }
 
@@ -63,7 +63,7 @@ namespace Vim.UnitTest
                 {
                     _localSettings.IsKeyword = isKeyword;
                 }
-                var kind = _map.TryParse(item);
+                var kind = _map.Parse(item);
                 Assert.True(kind.IsSome(x => x.IsNonId));
             }
 
@@ -78,7 +78,7 @@ namespace Vim.UnitTest
                 {
                     _localSettings.IsKeyword = isKeyword;
                 }
-                var kind = _map.TryParse(item);
+                var kind = _map.Parse(item);
                 Assert.True(kind.IsNone());
             }
         }

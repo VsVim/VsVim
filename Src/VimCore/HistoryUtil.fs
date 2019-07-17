@@ -208,7 +208,7 @@ type internal HistorySession<'TData, 'TResult>
         if _inPasteWait then
             x.ProcessPasteCore keyInput
         elif not suppressAbbreviations && _allowAbbreviations && _command.CaretPosition = _command.Text.Length then
-            match _localAbbreviationMap.TryAbbreviate _command.Text keyInput AbbreviationMode.Command with
+            match _localAbbreviationMap.Abbreviate(_command.Text, keyInput, AbbreviationMode.Command) with
             | None -> ()
             | Some result -> 
                 let text = _command.Text.Substring(0, _command.Text.Length - result.ReplacedSpan.Length)

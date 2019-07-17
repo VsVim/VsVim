@@ -87,7 +87,7 @@ namespace Vim.VisualStudio.UnitTest
         public override void Dispose()
         {
             base.Dispose();
-            _vim.KeyMap.ClearAll();
+            _vim.KeyMap.ClearKeyMappings();
         }
 
         /// <summary>
@@ -391,7 +391,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void WithUnmatchedBufferedInput()
             {
-                _vim.KeyMap.Map("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
+                _vim.KeyMap.AddKeyMapping("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -407,7 +407,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void WithMatchedBufferedInput()
             {
-                _vim.KeyMap.Map("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
+                _vim.KeyMap.AddKeyMapping("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -424,7 +424,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void CollapseBufferedInputToSingleKeyInput()
             {
-                _vim.KeyMap.Map("jj", "z", allowRemap: false, KeyRemapMode.Insert);
+                _vim.KeyMap.AddKeyMapping("jj", "z", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -500,7 +500,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void NonSingleKeyMapShouldNotDismissIntellisense()
             {
-                _vimBuffer.Vim.KeyMap.Map("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process("j");
                 Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);
@@ -518,7 +518,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void EnsureTabPassedToCustomProcessorInComplexKeyMapping()
             {
-                _vimBuffer.Vim.KeyMap.Map("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process("j");
                 Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);

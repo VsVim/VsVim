@@ -2874,11 +2874,11 @@ namespace Vim.UnitTest
                 {
                     foreach (var keyRemapMode in KeyRemapMode.All)
                     {
-                        Assert.True(_keyMap.Map("a", "b", allowRemap: false, keyRemapMode));
+                        Assert.True(_keyMap.AddKeyMapping("a", "b", allowRemap: false, keyRemapMode));
                     }
                 }
 
-                _keyMap.ClearAll();
+                _keyMap.ClearKeyMappings();
 
                 testMapClear("mapc", new[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending });
                 testMapClear("nmapc", new[] { KeyRemapMode.Normal });

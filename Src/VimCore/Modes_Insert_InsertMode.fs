@@ -949,7 +949,7 @@ type internal InsertMode
         if not _sessionData.SuppressAbbreviation then
             match _sessionData.RightMostCommand with
             | Some (InsertCommand.Insert text) ->
-                match _localAbbreviationMap.TryAbbreviate text keyInput AbbreviationMode.Insert with
+                match _localAbbreviationMap.Abbreviate(text, keyInput, AbbreviationMode.Insert) with
                 | Some result -> 
                     let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
                     x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore

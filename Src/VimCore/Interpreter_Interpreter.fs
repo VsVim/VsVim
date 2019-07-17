@@ -4,6 +4,7 @@ open Microsoft.VisualStudio.Text
 open Vim
 open Vim.StringBuilderExtensions
 open Vim.VimCoreExtensions
+open System
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
@@ -580,24 +581,26 @@ type VimInterpreter
         // the current buffer using `iskeyword`. This means that some global abbreviations are valid
         // to set in some buffers but not others if they have significantly different `iskeyword` 
         // values
-        match _vimTextBuffer.LocalAbbreviationMap.TryParse lhs with
+        match _vimTextBuffer.LocalAbbreviationMap.Parse lhs with
         | None ->
             _statusUtil.OnError Resources.Parser_InvalidArgument
         | Some _ ->
             let map = 
                 if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
                 else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
-            let lhs = KeyNotationUtil.StringToKeyInputSet lhs
-            let rhs = KeyNotationUtil.StringToKeyInputSet rhs
-            for mode in modeList do
-                map.Add lhs rhs allowRemap mode
+
+            match KeyNotationUtil.TryStringToKeyInputSet lhs, KeyNotationUtil.TryStringToKeyInputSet rhs with
+            | Some lhs, Some rhs ->
+                for mode in modeList do
+                    map.AddAbbreviation(lhs, rhs, allowRemap, mode)
+            | _ -> _statusUtil.OnError Resources.Parser_InvalidArgument
 
     member x.RunAbbreviateClear modeList isLocal =
         let map = 
             if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
             else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
         for mode in modeList do
-            map.Clear mode
+            map.ClearAbbreviations(mode)
 
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
@@ -799,7 +802,7 @@ type VimInterpreter
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
             keyRemapModes
-            |> Seq.iter _keyMap.Clear
+            |> Seq.iter _keyMap.ClearKeyMappings
 
     /// Run the close command
     member x.RunClose hasBang = 
@@ -1563,13 +1566,11 @@ type VimInterpreter
             let name = sprintf "%A" mapArgument
             _statusUtil.OnWarning (Resources.Interpreter_KeyMappingOptionNotSupported name)
 
-        // Perform the mapping for each mode and record if there is an error
-        let anyErrors = 
+        match _keyMap.ParseKeyNotation leftKeyNotation, _keyMap.ParseKeyNotation rightKeyNotation with
+        | Some lhs, Some rhs -> 
             keyRemapModes
-            |> Seq.map (fun keyRemapMode -> _keyMap.Map leftKeyNotation rightKeyNotation allowRemap keyRemapMode)
-            |> Seq.exists (fun x -> not x)
-
-        if anyErrors then
+            |> Seq.iter (fun keyRemapMode -> _keyMap.AddKeyMapping(lhs, rhs, allowRemap, keyRemapMode))
+        | _ ->
             _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
     /// Run the 'nohlsearch' command.  Temporarily disables highlighitng in the buffer
@@ -2244,14 +2245,24 @@ type VimInterpreter
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
 
-            let allSucceeded =
-                keyRemapModes
-                |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode || _keyMap.UnmapByMapping keyNotation keyRemapMode)
-                |> Seq.filter (fun x -> not x)
-                |> Seq.isEmpty
+            match KeyNotationUtil.TryStringToKeyInputSet keyNotation with
+            | Some key ->
+                let mutable succeeded = true;
+                for keyRemapMode in keyRemapModes do
+                    // The unmap operation by default unmaps the LHS. If the argument doesn't match any 
+                    // LHS then all mappings where the argument matches the RHS are removed.
+                    if not (_keyMap.RemoveKeyMapping(key, keyRemapMode)) then
+                        let all = _keyMap.GetKeyMappings(keyRemapMode) |> Seq.filter (fun x -> x.Right = key) |> List.ofSeq
+                        if all.IsEmpty then
+                            succeeded <- false
+                        else
+                            for keyMapping in all do
+                                _keyMap.RemoveKeyMapping(keyMapping.Left, keyRemapMode) |> ignore
 
-            if not allSucceeded then 
-                _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+                if not succeeded then 
+                    _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+            | None ->
+                _statusUtil.OnError Resources.Parser_InvalidArgument
 
     member x.RunVersion() = 
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber

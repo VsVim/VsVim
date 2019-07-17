@@ -1470,7 +1470,6 @@ module KeyInputSetUtil =
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-[<NoEquality>]
 type KeyMappingResult =
 
     /// The values were not mapped
@@ -4205,7 +4204,6 @@ type KeyMapping =
     override x.ToString() = sprintf "%O - %O" x.Left x.Right
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
-// ATODO: unify the API with the abbreviation one
 // ATODO: need to do a local key mapping as well
 type IKeyMap =
 
@@ -4214,34 +4212,34 @@ type IKeyMap =
 
     abstract KeyMappings: KeyMapping seq
 
+    /// Get the specified key mapping if it exists
+    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMapping option
+
     /// Get all mappings for the specified mode
     abstract GetKeyMappings: mode: KeyRemapMode -> KeyMapping seq
 
-    /// Get the mapping for the provided KeyInputSet for the given mode.  If no mapping exists
-    /// then a sequence of a single element containing the passed in key will be returned.  
-    /// If a recursive mapping is detected it will not be persued and treated instead as 
-    /// if the recursion did not exist
-    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
-
-    /// Get the mapping for the provided KeyInputSet. The allowRemap parameter will override 
-    /// the actual remapping behavior defined in the map
-    abstract GetKeyMapping: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
-
     /// Map the given key sequence without allowing for remaping
-    abstract Map: lhs: string -> rhs: string -> allowRemap: bool -> mode: KeyRemapMode -> bool
+    abstract AddKeyMapping: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: KeyRemapMode -> unit
 
     /// Unmap the specified key sequence for the specified mode
-    abstract Unmap: lhs: string -> mode: KeyRemapMode -> bool
-
-    /// Unmap the specified key sequence for the specified mode by considering
-    /// the passed in value to be an expansion
-    abstract UnmapByMapping: righs: string -> mode: KeyRemapMode -> bool
+    abstract RemoveKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> bool
 
     /// Clear the Key mappings for the specified mode
-    abstract Clear: mode: KeyRemapMode -> unit
+    abstract ClearKeyMappings: mode: KeyRemapMode -> unit
 
     /// Clear the Key mappings for all modes
-    abstract ClearAll: unit -> unit
+    abstract ClearKeyMappings: unit -> unit
+
+    /// Map the provided KeyInputSet for the given mode.
+    abstract Map: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
+
+    /// Map the provided KeyInputSet for the given mode. The allowRemap parameter will override
+    /// the defined remapping behavior.
+    abstract Map: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
+
+    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider 
+    /// the <leader> notation as well.
+    abstract ParseKeyNotation: notation: string -> KeyInputSet option
 
 /// Manages the digraph map for Vim
 type IDigraphMap =
@@ -4316,13 +4314,15 @@ type IVimAbbreviationMap =
 
     abstract Abbreviations: Abbreviation seq
 
-    abstract Add: lhs: KeyInputSet -> rhs: KeyInputSet -> allowRemap: bool -> mode: AbbreviationMode -> unit
+    abstract AddAbbreviation: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: AbbreviationMode -> unit
 
-    abstract Get: lhs: KeyInputSet -> mode: AbbreviationMode -> Abbreviation option
+    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> Abbreviation option
 
-    abstract Clear: mode: AbbreviationMode -> unit
+    abstract RemoveAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> bool
 
-    abstract ClearAll: unit -> unit
+    abstract ClearAbbreviations: mode: AbbreviationMode -> unit
+
+    abstract ClearAbbreviations: unit -> unit
 
 type IVimGlobalAbbreviationMap =
     inherit IVimAbbreviationMap
@@ -4332,12 +4332,11 @@ type IVimLocalAbbreviationMap =
 
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
 
-    /// Like Get but will look in both maps: local and global
-    abstract GetLocalOrGlobal: lhs: KeyInputSet -> mode: AbbreviationMode -> Abbreviation option
+    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode * includeGlobal: bool -> Abbreviation option
 
-    abstract TryParse: text: string -> AbbreviationKind option
+    abstract Parse: text: string -> AbbreviationKind option
 
-    abstract TryAbbreviate: text: string -> triggerKeyInput: KeyInput -> mode: AbbreviationMode -> AbbreviationResult option
+    abstract Abbreviate: text: string * triggerKeyInput: KeyInput * mode: AbbreviationMode -> AbbreviationResult option
 
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()

@@ -281,10 +281,10 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
-            Vim.KeyMap.ClearAll();
+            Vim.KeyMap.ClearKeyMappings();
             Vim.DigraphMap.Clear();
             Vim.KeyMap.IsZeroMappingEnabled = true;
-            Vim.GlobalAbbreviationMap.ClearAll();
+            Vim.GlobalAbbreviationMap.ClearAbbreviations();
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;

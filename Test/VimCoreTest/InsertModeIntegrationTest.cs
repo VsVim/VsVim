@@ -141,7 +141,7 @@ namespace Vim.UnitTest
             public void BufferedInputFailsMapping()
             {
                 Create("");
-                _vimBuffer.Vim.KeyMap.Map("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process("j");
                 Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 _vimBuffer.Process("a");
@@ -155,7 +155,7 @@ namespace Vim.UnitTest
             public void TwoKeysToEscape()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "hello");
-                _vimBuffer.Vim.KeyMap.Map("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process("jj");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
@@ -168,7 +168,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world", "");
                 _textView.MoveCaretToLine(1);
-                _vimBuffer.Vim.KeyMap.Map(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process(';');
                 _vimBuffer.Process(VimKey.Escape);
                 Assert.Equal(";", _textBuffer.GetLine(1).GetText());
@@ -183,7 +183,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world", "");
                 _textView.MoveCaretToLine(1);
-                _vimBuffer.Vim.KeyMap.Map(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
+                _vimBuffer.Vim.KeyMap.AddKeyMapping(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process(';');
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('['));
                 Assert.Equal(";", _textBuffer.GetLine(1).GetText());
@@ -1999,7 +1999,7 @@ namespace Vim.UnitTest
             public void Delete_WithShift_KeyMapping()
             {
                 Create(" world");
-                KeyMap.Map("<S-BS>", "hello", allowRemap: false, KeyRemapMode.Insert);
+                KeyMap.AddKeyMapping("<S-BS>", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _textView.MoveCaretTo(0);
                 _vimBuffer.ProcessNotation("<S-BS>");
                 Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
@@ -2034,7 +2034,7 @@ namespace Vim.UnitTest
             {
                 Create("  hello", "world");
                 _localSettings.AutoIndent = true;
-                Vim.KeyMap.Map("<c-e>", "<Enter>", allowRemap: false, KeyRemapMode.Insert);
+                Vim.KeyMap.AddKeyMapping("<c-e>", "<Enter>", allowRemap: false, KeyRemapMode.Insert);
                 _textView.MoveCaretTo(5);
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
                 Assert.Equal("  hel", _textView.GetLine(0).GetText());
@@ -3713,7 +3713,7 @@ namespace Vim.UnitTest
                 _vimBuffer.Process(":ab dg dog", enter: true);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.ProcessNotation("dg <Esc>");
-                _vimBuffer.Vim.GlobalAbbreviationMap.ClearAll();
+                _vimBuffer.Vim.GlobalAbbreviationMap.ClearAbbreviations();
                 _vimBuffer.ProcessNotation(".");
                 Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
             }
