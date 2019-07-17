@@ -411,7 +411,7 @@ type internal VimBuffer
     member x.GetKeyMappingCore keyInputSet keyRemapMode = 
         try
             _keyMap.IsZeroMappingEnabled <- not x.InCount
-            _keyMap.GetKeyMapping keyInputSet keyRemapMode
+            _keyMap.GetKeyMapping(keyInputSet, keyRemapMode)
         finally
             _keyMap.IsZeroMappingEnabled <- true
 

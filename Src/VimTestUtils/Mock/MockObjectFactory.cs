@@ -197,7 +197,7 @@ namespace Vim.UnitTest.Mock
             localSettings = localSettings ?? CreateLocalSettings(factory: factory).Object;
             undoRedoOperations = undoRedoOperations ?? factory.Create<IUndoRedoOperations>().Object;
             wordUtil = wordUtil ?? new WordUtil(textBuffer, localSettings);
-            localAbbreviationMap = localAbbreviationMap ?? new LocalAbbreviationMap(vim.GlobalAbbreviationMap, wordUtil);
+            localAbbreviationMap = localAbbreviationMap ?? new LocalAbbreviationMap(vim.KeyMap, vim.GlobalAbbreviationMap, wordUtil);
             var mock = factory.Create<IVimTextBuffer>();
             mock.SetupGet(x => x.TextBuffer).Returns(textBuffer);
             mock.SetupGet(x => x.LocalSettings).Returns(localSettings);

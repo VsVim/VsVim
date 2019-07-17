@@ -23,7 +23,7 @@ namespace Vim.UnitTest
                 _textBuffer = CreateTextBuffer();
                 _localSettings = new LocalSettings(Vim.GlobalSettings);
                 _wordUtil = new WordUtil(_textBuffer, _localSettings);
-                _map = new LocalAbbreviationMap(Vim.GlobalAbbreviationMap, _wordUtil);
+                _map = new LocalAbbreviationMap(Vim.KeyMap, Vim.GlobalAbbreviationMap, _wordUtil);
             }
 
             [WpfTheory]

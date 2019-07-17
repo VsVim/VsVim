@@ -10,7 +10,7 @@ type internal KeyMap =
 type internal LocalAbbreviationMap =
     interface IVimLocalAbbreviationMap
 
-    new: globalAbbreviationMap: IVimGlobalAbbreviationMap * wordUtil: WordUtil -> LocalAbbreviationMap
+    new: keyMap: IKeyMap * globalAbbreviationMap: IVimGlobalAbbreviationMap * wordUtil: WordUtil -> LocalAbbreviationMap
 
 type internal GlobalAbbreviationMap =
     interface IVimGlobalAbbreviationMap

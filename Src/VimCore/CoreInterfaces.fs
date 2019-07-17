@@ -1368,6 +1368,10 @@ type KeyInputSet
         let list = x.KeyInputs @ [keyInput] 
         KeyInputSet(list)
 
+    member x.AddRange (keyInputSet: KeyInputSet) =
+        let list = x.KeyInputs @ keyInputSet.KeyInputs
+        KeyInputSet(list)
+
     /// Does the name start with the given KeyInputSet
     member x.StartsWith (keyInputSet: KeyInputSet) = 
         let left = keyInputSet.KeyInputs 
@@ -1476,9 +1480,18 @@ type KeyMappingResult =
     | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
-    /// keys which were mapped are processed.  The values are 
+    /// keys which were mapped are processed.
     ///
-    ///  mapped KeyInputSet * remaining KeyInputSet
+    /// The majority of successful mappings will come back as PartiallyMapped because
+    /// key mappings can't be evaluated in isolation. The completely mapped keys need 
+    /// to be processed before the remaining can be evaluated for further remappings. 
+    ///
+    /// Consider the following example:
+    ///     :nmap qq if
+    ///     :imap f dog
+    /// Typing 'qq' in normal mode should produce insert mode with the text 'dog'. The 'f'
+    /// in the mapping of 'qq' can't be evaluated until the 'i' has gone back to normal 
+    /// mode, the mode changed and then insert mode can evaluate the mapping for 'f'
     | PartiallyMapped of MappedKeyInputSet: KeyInputSet * RemainingKeyInputSet: KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
@@ -4204,11 +4217,15 @@ type IKeyMap =
     /// Get all mappings for the specified mode
     abstract GetKeyMappings: mode: KeyRemapMode -> KeyMapping seq
 
-    /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
+    /// Get the mapping for the provided KeyInputSet for the given mode.  If no mapping exists
     /// then a sequence of a single element containing the passed in key will be returned.  
     /// If a recursive mapping is detected it will not be persued and treated instead as 
     /// if the recursion did not exist
-    abstract GetKeyMapping: lhs: KeyInputSet -> mode:KeyRemapMode -> KeyMappingResult
+    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
+
+    /// Get the mapping for the provided KeyInputSet. The allowRemap parameter will override 
+    /// the actual remapping behavior defined in the map
+    abstract GetKeyMapping: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
 
     /// Map the given key sequence without allowing for remaping
     abstract Map: lhs: string -> rhs: string -> allowRemap: bool -> mode: KeyRemapMode -> bool
@@ -4265,6 +4282,18 @@ type AbbreviationResult = {
     /// The found Abbreviation that was replaced
     Abbreviation: Abbreviation
 
+    /// The AbbreviationKind of the found abbrevitaion
+    AbbreviationKind: AbbreviationKind
+
+    /// The set of KeyInput values that should be used to replace the abbreviated text. 
+    /// Note: this can be different than Abbreviation.Replacement when key mappings are 
+    /// in play. AbbreviationResult.Replacement should be preferred.
+    Replacement: KeyInputSet
+
+    /// This contains the result of running the remap operation on Abbreviation.Replacement.
+    ReplacementRemapResult: KeyMappingResult option
+
+    /// The original text which was considered for the abbreviation
     OriginalText: string
 
     /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
@@ -4273,14 +4302,7 @@ type AbbreviationResult = {
 
     /// The Span inside OriginalText which should be replaced by the abbreviation
     ReplacedSpan: Span
-
-    /// The AbbreviationKind of the found abbrevitaion
-    AbbreviationKind: AbbreviationKind
 } with
-
-    /// The set of KeyInput values the abbreviation maps to. This does not include the 
-    /// character which may, or may not, be added by TriggerKeyInput
-    member x.Replacement = x.Abbreviation.Replacement
 
     member x.Mode = x.Abbreviation.Mode
 

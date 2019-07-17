@@ -3613,10 +3613,10 @@ namespace Vim.UnitTest
             [InlineData("cc hello", "", "ccc", "ccc")] // Won't expand until non-keyword is typed
             [InlineData("cc hello", "", "ccc ", "ccc ")] // The ccc doesn't match the abbreviation cc
             [InlineData("cc hello", "", "lcc ", "lcc ")] // The lcc doesn't match the abbreviation cc
-            [InlineData("cc hello", "c", "c ", "cc ")] 
+            [InlineData("cc hello", "c", "c ", "cc ")]
             [InlineData("cc hello", "c", "cc ", "chello ")] // Match computed against typed text hence
             [InlineData("cc hello", "", "#cc ", "#hello ")] // Match starts at the non-keyword
-            [InlineData("cc hello", "#", "cc ", "#hello ")] 
+            [InlineData("cc hello", "#", "cc ", "#hello ")]
             [InlineData("d dog", "", "#d ", "#d ")] // Single character abbreviation only works after space / tab / newline
             [InlineData("d dog", "", " d ", " dog ")] // Single character abbreviation only works after space / tab / newline
             [InlineData("d dog", "a", "d ", "adog ")] // Even for single character it only checks typed text
@@ -3624,9 +3624,9 @@ namespace Vim.UnitTest
             [InlineData("#d dog", "", "##d ", "##d ")]
             [InlineData("#d dog", "", "#d#", "dog#")]
             [InlineData("#r rog", "", "f#r ", "frog ")]
-            [InlineData("#r rog", "f", "#r ", "frog ")] 
-            [InlineData("#d dog", "#", "d ", "#d ")] 
-            [InlineData("dog# dog pound", "", "dog# ", "dog pound ")] 
+            [InlineData("#r rog", "f", "#r ", "frog ")]
+            [InlineData("#d dog", "#", "d ", "#d ")]
+            [InlineData("dog# dog pound", "", "dog# ", "dog pound ")]
             [InlineData("dg dog", "", "dg<C-]>", "dog")] // <C-]> completes insertion without adding extra space
             [InlineData("dg dog", "", "dg<C-]><C-]>", "dog")] // <C-]> 
             public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
@@ -3659,10 +3659,13 @@ namespace Vim.UnitTest
                 Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
             }
 
-            [WpfTheory(Skip = "ATODO need to enable these")]
+            [WpfTheory]
             [InlineData("dog cat", "dd dog", "", "dd ", "cat ")]
             [InlineData("dog cat", "cat dog", "", "cat ", "cat ")]
             [InlineData("dogs all the toys", "dd dog", "", "dd ", "dog ")] // Partial remap is treated as no remap
+            [InlineData("dog# dog pound", "dd dog", "", "dd#", "dog pound#")] // Trigger key is repeated when it completes a key mapping
+            [InlineData("dog tree", "dd dog", "", "dd!", "tree!")] // Trigger key is repeated when it completes a key mapping
+            [InlineData("dog tree", "dd dogs", "", "dd!", "trees!")] // Trigger key is repeated when it completes a key mapping
             public void RulesRemap(string keyMap, string abbreviate, string text, string typed, string expectedText)
             {
                 Create();
@@ -3675,7 +3678,6 @@ namespace Vim.UnitTest
                 _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
                 _vimBuffer.ProcessNotation(typed);
                 Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
-
             }
 
             [WpfFact]

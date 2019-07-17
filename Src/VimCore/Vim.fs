@@ -222,7 +222,7 @@ type internal VimBufferFactory
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordUtil = WordUtil(textBuffer, localSettings)
-        let localAbbreviationMap = LocalAbbreviationMap(vim.GlobalAbbreviationMap, wordUtil) :> IVimLocalAbbreviationMap
+        let localAbbreviationMap = LocalAbbreviationMap(vim.KeyMap, vim.GlobalAbbreviationMap, wordUtil) :> IVimLocalAbbreviationMap
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 

@@ -58,7 +58,8 @@ type Mapper
         _keyInputSet: KeyInputSet,
         _keyMappings: KeyMapping seq,
         _globalSettings: IVimGlobalSettings,
-        _isZeroMappingEnabled: bool
+        _isZeroMappingEnabled: bool,
+        _overrideAllowRemap: bool option
     ) =
 
     /// During the processing of mapping input we found a match for the inputKeySet to the 
@@ -68,7 +69,11 @@ type Mapper
     member x.ProcessMapping (lhs: KeyInputSet) (keyMapping: KeyMapping) = 
 
         let mappedSet, remainingSet = 
-            if keyMapping.AllowRemap then
+            let allowRemap = 
+                match _overrideAllowRemap with
+                | Some b -> b
+                | None -> keyMapping.AllowRemap
+            if allowRemap then
                 // Need to remap the {rhs} of the match here.  Check for the matching prefix
                 // case to prevent infinite remaps (:help recursive_mapping)
                 match lhs.FirstKeyInput, keyMapping.Right.FirstKeyInput with
@@ -275,9 +280,9 @@ type internal KeyMap
 
     /// Get the key mapping for the passed in data.  Returns a KeyMappingResult representing the 
     /// mapping
-    member x.GetKeyMapping (keyInputSet: KeyInputSet) mode =
+    member x.GetKeyMapping (keyInputSet: KeyInputSet) allowRemap mode =
         let keyMappings = _map.GetMappings mode
-        let mapper = Mapper(keyInputSet, keyMappings, _globalSettings, _isZeroMappingEnabled)
+        let mapper = Mapper(keyInputSet, keyMappings, _globalSettings, _isZeroMappingEnabled, allowRemap)
         mapper.GetKeyMapping()
 
     interface IKeyMap with
@@ -286,7 +291,8 @@ type internal KeyMap
             with get() = x.IsZeroMappingEnabled
             and set value = x.IsZeroMappingEnabled <- value
         member x.GetKeyMappings mode = x.GetKeyMappings mode 
-        member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
+        member x.GetKeyMapping(keyInputSet, mode) = x.GetKeyMapping keyInputSet None mode
+        member x.GetKeyMapping(keyInputSet, allowRemap, mode) = x.GetKeyMapping keyInputSet (Some allowRemap) mode
         member x.Map lhs rhs allowRemap mode = x.Map lhs rhs  allowRemap mode
         member x.Unmap lhs mode = x.Unmap lhs mode
         member x.UnmapByMapping rhs mode = x.UnmapByMapping rhs mode
@@ -306,8 +312,10 @@ type internal GlobalAbbreviationMap() =
         member x.Clear mode = x.Map.Clear mode
         member x.ClearAll() = x.Map.ClearAll()
 
+// ATODO: once we split into local and global key maps then this likely needs to be the local one
 type internal LocalAbbreviationMap
     (
+        _keyMap: IKeyMap,
         _globalAbbreviationMap: IVimGlobalAbbreviationMap,
         _wordUtil : WordUtil
     ) = 
@@ -339,6 +347,38 @@ type internal LocalAbbreviationMap
                 None
 
     member x.TryAbbreviate (text: string) (triggerKeyInput: KeyInput) mode =
+
+        // The replacement portion of an abbreviation is potentially subject to key remapping. 
+        let remap (abbreviation: Abbreviation) =
+            if abbreviation.AllowRemap then
+                let remapMode = 
+                    match mode with
+                    | AbbreviationMode.Insert -> KeyRemapMode.Insert
+                    | AbbreviationMode.Command -> KeyRemapMode.Command
+
+                let result = _keyMap.GetKeyMapping(abbreviation.Replacement, allowRemap = false, mode = remapMode)
+                let result =
+                    match result with
+                    | KeyMappingResult.NeedsMoreInput _ -> 
+                        // An undocumented behavior is that when a replacement has an incomplete key mapping then
+                        // the trigger key can be used to complete the mapping. This strangely though does not 
+                        // consume the trigger key, it is just used to complete a mapping and the trigger key is 
+                        // processed as normal
+                        let newResult = _keyMap.GetKeyMapping((abbreviation.Replacement.Add triggerKeyInput), allowRemap = false, mode = remapMode)
+                        match newResult with
+                        | KeyMappingResult.Mapped _ -> newResult
+                        | _ -> result
+                    | _ -> result
+                let replacement = 
+                    match result with 
+                    | KeyMappingResult.NeedsMoreInput _ -> abbreviation.Replacement
+                    | KeyMappingResult.Mapped keyInputSet -> keyInputSet
+                    | KeyMappingResult.PartiallyMapped (l, r) -> l.AddRange r
+                    | KeyMappingResult.Recursive _ -> abbreviation.Replacement
+                    | KeyMappingResult.Unmapped _ -> abbreviation.Replacement
+                (replacement, Some result)
+            else 
+                (abbreviation.Replacement, None)
 
         let getFullId() = 
             Debug.Assert(text.Length > 0)
@@ -392,12 +432,15 @@ type internal LocalAbbreviationMap
                 | None -> None
                 | Some abbreviation -> 
                     let span = Span(0, keyText.Length)
+                    let replacement, remapResult = remap abbreviation
                     let result = { 
                         Abbreviation = abbreviation
+                        AbbreviationKind = kind
+                        Replacement = replacement
+                        ReplacementRemapResult = remapResult
                         OriginalText = text 
                         TriggerKeyInput = triggerKeyInput
                         ReplacedSpan = span
-                        AbbreviationKind = kind
                     }
                     Some result
         else None
