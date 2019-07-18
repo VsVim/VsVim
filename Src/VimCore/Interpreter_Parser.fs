@@ -2025,7 +2025,7 @@ and [<Sealed>] Parser
         let delimiter = _tokenizer.CurrentChar
         if _tokenizer.IsAtEndOfLine then
             x.ParseError Resources.Parser_Error
-        elif CharUtil.IsIdent delimiter then
+        elif _globalSettings.IsIdentCharSet.Contains delimiter then
 
             // Parse out a blank separated word.
             use reset = _tokenizer.SetTokenizerFlagsScoped TokenizerFlags.AllowDoubleQuote
