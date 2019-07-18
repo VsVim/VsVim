@@ -70,8 +70,7 @@ namespace Vim.UnitTest
                 0,
                 EditableCommand.Empty,
                 vimBuffer.VimTextBuffer.LocalAbbreviationMap,
-                vimBuffer.MotionUtil,
-                allowAbbreviations: true);
+                vimBuffer.MotionUtil);
             _bindData = _historySession.CreateBindDataStorage().CreateMappedBindData();
         }
 

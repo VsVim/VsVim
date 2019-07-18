@@ -33,8 +33,7 @@ type internal HistorySession<'TData, 'TResult>
         _initialClientData: 'TData,
         _command: EditableCommand,
         _localAbbreviationMap: IVimLocalAbbreviationMap,
-        _motionUtil: IMotionUtil,
-        _allowAbbreviations: bool
+        _motionUtil: IMotionUtil
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -207,7 +206,7 @@ type internal HistorySession<'TData, 'TResult>
         let keyInput = keyInputData.KeyInput
         if _inPasteWait then
             x.ProcessPasteCore keyInput
-        elif not suppressAbbreviations && _allowAbbreviations && _command.CaretPosition = _command.Text.Length then
+        elif not suppressAbbreviations && _command.CaretPosition = _command.Text.Length then
             match _localAbbreviationMap.Abbreviate(_command.Text, keyInput, AbbreviationMode.Command) with
             | None -> ()
             | Some result -> 
@@ -285,7 +284,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command localAbbreviationMap motionUtil allowAbbreviations =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, localAbbreviationMap, motionUtil, allowAbbreviations)
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command localAbbreviationMap motionUtil =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, localAbbreviationMap, motionUtil)
         historySession :> IHistorySession<'TData, 'TResult>
 

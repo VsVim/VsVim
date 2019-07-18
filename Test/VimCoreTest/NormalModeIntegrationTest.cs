@@ -4904,6 +4904,29 @@ namespace Vim.UnitTest
                     Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
                     Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
                 }
+
+                [WpfFact]
+                public void Abbreviation()
+                {
+                    Create("cat dog ");
+                    _vimBuffer.Process(":ab dd dog", enter: true);
+                    _vimBuffer.Process("/dd ");
+                    Assert.Equal("dog ", _vimBuffer.IncrementalSearch.ActiveSession.Value.SearchData.Pattern);
+                    _vimBuffer.Process(KeyInputUtil.EnterKey);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                [WpfFact]
+                public void AbbreviationFromCommandOnly()
+                {
+                    Create("cat dog ");
+                    _vimBuffer.Process(":iab dd dog", enter: true);
+                    _vimBuffer.Process("/dd ");
+                    Assert.Equal("dd ", _vimBuffer.IncrementalSearch.ActiveSession.Value.SearchData.Pattern);
+                    _assertOnErrorMessage = false;
+                    _vimBuffer.Process(KeyInputUtil.EnterKey);
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
+                }
             }
         }
 

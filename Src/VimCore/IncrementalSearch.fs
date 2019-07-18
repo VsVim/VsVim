@@ -102,7 +102,7 @@ type internal IncrementalSearchSession
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let command = EditableCommand.Empty
-        let historySession = HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap _motionUtil false
+        let historySession = HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap _motionUtil
         _sessionState <- SessionState.Started historySession
         historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
