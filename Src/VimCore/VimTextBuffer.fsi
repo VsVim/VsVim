@@ -10,6 +10,6 @@ open Microsoft.VisualStudio.Utilities
 
 type internal VimTextBuffer =
 
-    new: textBuffer: ITextBuffer * localSettings: IVimLocalSettings * localAbbreviationMap: IVimLocalAbbreviationMap * bufferTrackingService: IBufferTrackingService * undoRedoOperations: IUndoRedoOperations * wordUtil: WordUtil * vim: IVim -> VimTextBuffer
+    new: textBuffer: ITextBuffer * localAbbreviationMap: IVimLocalAbbreviationMap * localKeyMap: IVimLocalKeyMap * localSettings: IVimLocalSettings * bufferTrackingService: IBufferTrackingService * undoRedoOperations: IUndoRedoOperations * wordUtil: WordUtil * vim: IVim -> VimTextBuffer
 
     interface IVimTextBuffer

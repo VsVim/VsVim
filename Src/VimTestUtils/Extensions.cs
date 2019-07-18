@@ -649,27 +649,22 @@ namespace Vim.UnitTest
 
         #region IKeyMap
 
-        public static KeyMappingResult Map(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IVimLocalKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            return Map(keyMap, new KeyInputSet(ki), mode);
+            return keyMap.Map(new KeyInputSet(ki), mode);
         }
 
-        public static KeyMappingResult Map(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)
-        {
-            return keyMap.Map(set, mode);
-        }
-
-        public static KeyMappingResult Map(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IVimLocalKeyMap keyMap, char c, KeyRemapMode mode)
         {
             return Map(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
         }
 
-        public static KeyMappingResult Map(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        public static KeyMappingResult Map(this IVimLocalKeyMap keyMap, string str, KeyRemapMode mode)
         {
             return keyMap.Map(KeyNotationUtil.StringToKeyInputSet(str), mode);
         }
 
-        public static bool RemoveKeyMapping(this IKeyMap keyMap, string lhs, KeyRemapMode mode)
+        public static bool RemoveKeyMapping(this IVimKeyMap keyMap, string lhs, KeyRemapMode mode)
         {
             var left = KeyNotationUtil.TryStringToKeyInputSet(lhs);
             if (left.IsNone())
@@ -680,7 +675,7 @@ namespace Vim.UnitTest
             return keyMap.RemoveKeyMapping(left.Value, mode);
         }
 
-        public static bool AddKeyMapping(this IKeyMap keyMap, string lhs, string rhs, bool allowRemap, KeyRemapMode mode)
+        public static bool AddKeyMapping(this IVimKeyMap keyMap, string lhs, string rhs, bool allowRemap, KeyRemapMode mode)
         {
             var left = keyMap.ParseKeyNotation(lhs);
             var right = keyMap.ParseKeyNotation(rhs);

@@ -1871,9 +1871,9 @@ namespace Vim.UnitTest
             {
                 Create("");
                 RunCommand("imap cat dog");
-                Assert.Single(KeyMap.GetKeyMappings(KeyRemapMode.Insert));
+                Assert.Single(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
                 RunCommand("iunmap dog");
-                Assert.Empty(KeyMap.GetKeyMappings(KeyRemapMode.Insert));
+                Assert.Empty(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
             }
 
             /// <summary>
@@ -1885,9 +1885,9 @@ namespace Vim.UnitTest
             {
                 Create("");
                 RunCommand("imap cat dog");
-                Assert.Single(KeyMap.GetKeyMappings(KeyRemapMode.Insert));
+                Assert.Single(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
                 RunCommand("unmap! dog");
-                Assert.Empty(KeyMap.GetKeyMappings(KeyRemapMode.Insert));
+                Assert.Empty(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
             }
 
             /// <summary>

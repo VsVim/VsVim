@@ -9,16 +9,14 @@ namespace Vim.UnitTest
     public abstract class KeyMapTest
     {
         protected readonly IVimGlobalSettings _globalSettings;
-        protected readonly IKeyMap _map;
+        protected readonly IVimLocalKeyMap _map;
         protected readonly Dictionary<string, VariableValue> _variableMap;
-        internal readonly KeyMap _mapRaw;
 
         public KeyMapTest()
         {
             _globalSettings = new GlobalSettings();
             _variableMap = new Dictionary<string, VariableValue>();
-            _mapRaw = new KeyMap(_globalSettings, _variableMap);
-            _map = _mapRaw;
+            _map = new LocalKeyMap(new GlobalKeyMap(_variableMap), _globalSettings, _variableMap);
         }
 
         protected void AssertNoMapping(string lhs, KeyRemapMode mode = null)
@@ -565,7 +563,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(_map.AddKeyMapping("a", "b", allowRemap: true, KeyRemapMode.Normal));
                 Assert.True(_map.AddKeyMapping("b", "a", allowRemap: true, KeyRemapMode.Normal));
-                var ret = Extensions.Map(_map, KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal);
+                var ret = Extensions.Map(_map, 'a', KeyRemapMode.Normal);
                 Assert.True(ret.IsRecursive);
             }
 
@@ -690,7 +688,7 @@ namespace Vim.UnitTest
                 _map.AddKeyMapping("aa", "b", allowRemap: false, KeyRemapMode.Normal);
 
                 var input = "aa".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = Extensions.Map(_map, new KeyInputSet(input), KeyRemapMode.Normal);
+                var res = _map.Map(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
 
@@ -700,7 +698,7 @@ namespace Vim.UnitTest
                 _map.AddKeyMapping("aa", "b", allowRemap: false, KeyRemapMode.Normal);
 
                 var input = "a".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = Extensions.Map(_map, new KeyInputSet(input), KeyRemapMode.Normal);
+                var res = _map.Map(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.True(res.IsNeedsMoreInput);
             }
 

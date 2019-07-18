@@ -10,8 +10,9 @@ open Microsoft.VisualStudio.Utilities
 type internal VimTextBuffer 
     (
         _textBuffer: ITextBuffer,
-        _localSettings: IVimLocalSettings,
         _localAbbreviationMap: IVimLocalAbbreviationMap,
+        _localKeyMap: IVimLocalKeyMap,
+        _localSettings: IVimLocalSettings,
         _bufferTrackingService: IBufferTrackingService,
         _undoRedoOperations: IUndoRedoOperations,
         _wordUtil: WordUtil,
@@ -328,6 +329,7 @@ type internal VimTextBuffer
             and set value = x.InSelectModeOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
         member x.LocalAbbreviationMap = _localAbbreviationMap
+        member x.LocalKeyMap = _localKeyMap
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer

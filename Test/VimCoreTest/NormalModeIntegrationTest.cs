@@ -27,7 +27,7 @@ namespace Vim.UnitTest
         protected IVimLocalSettings _localSettings;
         protected IVimWindowSettings _windowSettings;
         protected IJumpList _jumpList;
-        protected IKeyMap _keyMap;
+        protected IVimGlobalKeyMap _globalKeyMap;
         protected IVimData _vimData;
         protected IFoldManager _foldManager;
         protected INormalMode _normalMode;
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             _vimBufferData = _vimBuffer.VimBufferData;
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _normalMode = _vimBuffer.NormalMode;
-            _keyMap = _vimBuffer.Vim.KeyMap;
+            _globalKeyMap = _vimBuffer.Vim.GlobalKeyMap;
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _windowSettings = _vimBuffer.WindowSettings;
@@ -2949,6 +2949,56 @@ namespace Vim.UnitTest
                     Assert.True(vimData.LastLineCommand.IsSome());
                     Assert.True(vimData.LastLineCommand.Value.IsEcho);
                     Assert.Equal(new[] { "cat", "dog", "", }, _textBuffer.GetLines());
+                }
+            }
+
+            public sealed class LocalKeyMappingTest : KeyMappingTest
+            {
+                public readonly IVimBuffer _vimBuffer2;
+
+                public LocalKeyMappingTest()
+                {
+                    Create("");
+                    _vimBuffer2 = CreateVimBuffer();
+                }
+
+                [WpfFact]
+                public void LocalBufferOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                    _vimBuffer2.Process("idd");
+                    Assert.Equal("dd", _vimBuffer2.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void LocalOverGlobal()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void ClearGlobalOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process(":imapc", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void ClearLocalOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process(":imapc <buffer>", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("tree", _vimBuffer.TextBuffer.GetLineText(0));
                 }
             }
         }
@@ -8931,7 +8981,7 @@ namespace Vim.UnitTest
             public void Remap_EnterShouldNotMapDuringSearch()
             {
                 Create("cat dog");
-                _keyMap.AddKeyMapping("<Enter>", "o<Esc>", allowRemap: false, KeyRemapMode.Normal);
+                _globalKeyMap.AddKeyMapping("<Enter>", "o<Esc>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process("/dog");
                 _vimBuffer.Process(VimKey.Enter);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
@@ -8945,7 +8995,7 @@ namespace Vim.UnitTest
             public void Remap_Nop()
             {
                 Create("cat");
-                _keyMap.AddKeyMapping("$", "<nop>", allowRemap: false, KeyRemapMode.Normal);
+                _globalKeyMap.AddKeyMapping("$", "<nop>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process('$');
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }

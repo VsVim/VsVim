@@ -222,7 +222,8 @@ type internal VimBufferFactory
     member x.CreateVimTextBuffer (textBuffer: ITextBuffer) (vim: IVim) = 
         let localSettings = LocalSettings(vim.GlobalSettings) :> IVimLocalSettings
         let wordUtil = WordUtil(textBuffer, localSettings)
-        let localAbbreviationMap = LocalAbbreviationMap(vim.KeyMap, vim.GlobalAbbreviationMap, wordUtil) :> IVimLocalAbbreviationMap
+        let localKeyMap = LocalKeyMap(vim.GlobalKeyMap, vim.GlobalSettings, vim.VariableMap) :> IVimLocalKeyMap
+        let localAbbreviationMap = LocalAbbreviationMap(localKeyMap, vim.GlobalAbbreviationMap, wordUtil) :> IVimLocalAbbreviationMap
         let statusUtil = _statusUtilFactory.GetStatusUtilForBuffer textBuffer
         let undoRedoOperations = 
             let history = 
@@ -231,7 +232,7 @@ type internal VimBufferFactory
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(_host, statusUtil, history, _editorOperationsFactoryService) :> IUndoRedoOperations
 
-        VimTextBuffer(textBuffer, localSettings, localAbbreviationMap, _bufferTrackingService, undoRedoOperations, wordUtil, vim)
+        VimTextBuffer(textBuffer, localAbbreviationMap, localKeyMap, localSettings, _bufferTrackingService, undoRedoOperations, wordUtil, vim)
 
     /// Create a VimBufferData instance for the given ITextView and IVimTextBuffer.  This is mainly
     /// used for testing purposes
@@ -342,7 +343,6 @@ type internal Vim
         _bufferCreationListeners: Lazy<IVimBufferCreationListener> list,
         _globalSettings: IVimGlobalSettings,
         _markMap: IMarkMap,
-        _keyMap: IKeyMap,
         _clipboardDevice: IClipboardDevice,
         _search: ISearchService,
         _fileSystem: IFileSystem,
@@ -368,6 +368,7 @@ type internal Vim
 
     let _digraphMap = DigraphMap() :> IDigraphMap
     let _globalAbbreviationMap = GlobalAbbreviationMap() :> IVimGlobalAbbreviationMap
+    let _globalKeyMap = GlobalKeyMap(_variableMap) :> IVimGlobalKeyMap
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack: IVimBuffer list = List.empty
@@ -452,7 +453,6 @@ type internal Vim
             listeners,
             globalSettings,
             markMap :> IMarkMap,
-            KeyMap(globalSettings, variableMap) :> IKeyMap,
             clipboard,
             SearchService(search, globalSettings) :> ISearchService,
             fileSystem,
@@ -969,7 +969,6 @@ type internal Vim
         member x.VimRcState = _vimRcState
         member x.MacroRecorder = _recorder :> IMacroRecorder
         member x.MarkMap = _markMap
-        member x.KeyMap = _keyMap
         member x.DigraphMap = _digraphMap
         member x.SearchService = _search
         member x.IsDisabled
@@ -978,6 +977,7 @@ type internal Vim
         member x.InBulkOperation = _bulkOperations.InBulkOperation
         member x.RegisterMap = _registerMap 
         member x.GlobalAbbreviationMap = _globalAbbreviationMap
+        member x.GlobalKeyMap = _globalKeyMap
         member x.GlobalSettings = _globalSettings
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
         member x.CreateVimBuffer textView = x.CreateVimBuffer textView (Some (x.GetWindowSettingsForNewBuffer()))

@@ -135,7 +135,7 @@ namespace Vim.VisualStudio.Implementation.Misc
             // Need to get the custom key bindings in the list.  It's very common for users 
             // to use for example function keys (<F2>, <F3>, etc ...) in their mappings which
             // are often bound to other Visual Studio commands.
-            var keyMap = buffer.Vim.KeyMap;
+            var keyMap = buffer.Vim.GlobalKeyMap;
             foreach (var keyRemapMode in KeyRemapMode.All)
             {
                 foreach (var keyMapping in keyMap.GetKeyMappings(keyRemapMode))

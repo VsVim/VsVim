@@ -16,6 +16,7 @@ namespace Vim.UnitTest
             private readonly ITextBuffer _textBuffer;
             private readonly WordUtil _wordUtil;
             private readonly IVimLocalSettings _localSettings;
+            private readonly IVimLocalKeyMap _localKeyMap;
             private readonly LocalAbbreviationMap _map;
 
             public AbbreviationKindTest()
@@ -23,7 +24,8 @@ namespace Vim.UnitTest
                 _textBuffer = CreateTextBuffer();
                 _localSettings = new LocalSettings(Vim.GlobalSettings);
                 _wordUtil = new WordUtil(_textBuffer, _localSettings);
-                _map = new LocalAbbreviationMap(Vim.KeyMap, Vim.GlobalAbbreviationMap, _wordUtil);
+                _localKeyMap = new LocalKeyMap(Vim.GlobalKeyMap, Vim.GlobalSettings, Vim.VariableMap);
+                _map = new LocalAbbreviationMap(_localKeyMap, Vim.GlobalAbbreviationMap, _wordUtil);
             }
 
             [WpfTheory]

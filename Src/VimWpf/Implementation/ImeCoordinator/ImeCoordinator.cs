@@ -403,7 +403,7 @@ namespace Vim.UI.Wpf.Implementation.ImeCoordinator
 
         private bool GetHaveLanguageMappings()
         {
-            return _vim.KeyMap.GetKeyMappings(KeyRemapMode.Language).Any();
+            return _vim.GlobalKeyMap.GetKeyMappings(KeyRemapMode.Language).Any();
         }
 
         #region IVimBufferCreationListener

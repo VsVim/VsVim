@@ -52,7 +52,7 @@ namespace Vim.UI.Wpf.UnitTest
         [WpfFact]
         public void Timeout_Single()
         {
-            _vimBuffer.Vim.KeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
+            _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
             Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
@@ -67,7 +67,7 @@ namespace Vim.UI.Wpf.UnitTest
         [WpfFact]
         public void Timeout_Double()
         {
-            _vimBuffer.Vim.KeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
+            _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
             Assert.Equal("", _vimBuffer.TextBuffer.GetLine(0).GetText());
@@ -81,7 +81,7 @@ namespace Vim.UI.Wpf.UnitTest
         public void NoTimeout()
         {
             _vimBuffer.Vim.GlobalSettings.TimeoutLength = 1000;
-            _vimBuffer.Vim.KeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
+            _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
             _vimBuffer.Process('a');
@@ -99,7 +99,7 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _vimBuffer.Vim.GlobalSettings.TimeoutLength = 5;
             _vimBuffer.Vim.GlobalSettings.Timeout = false;
-            _vimBuffer.Vim.KeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
+            _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
             _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _vimBuffer.Process('c');
             _vimBuffer.Process('a');

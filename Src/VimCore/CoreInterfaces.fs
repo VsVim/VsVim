@@ -4203,12 +4203,7 @@ type KeyMapping =
 
     override x.ToString() = sprintf "%O - %O" x.Left x.Right
 
-/// Manages the key map for Vim.  Responsible for handling all key remappings
-// ATODO: need to do a local key mapping as well
-type IKeyMap =
-
-    /// Is the mapping of the 0 key currently enabled
-    abstract IsZeroMappingEnabled: bool with get, set 
+type IVimKeyMap =
 
     abstract KeyMappings: KeyMapping seq
 
@@ -4230,16 +4225,30 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearKeyMappings: unit -> unit
 
+    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider 
+    /// the <leader> notation as well.
+    abstract ParseKeyNotation: notation: string -> KeyInputSet option
+
+type IVimGlobalKeyMap =
+    inherit IVimKeyMap
+
+type IVimLocalKeyMap =
+    inherit IVimKeyMap
+
+    abstract GlobalKeyMap: IVimGlobalKeyMap
+
+    /// Is the mapping of the 0 key currently enabled
+    abstract IsZeroMappingEnabled: bool with get, set 
+
+    /// Get the specified key mapping if it exists
+    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode * includeGlobal: bool -> KeyMapping option
+
     /// Map the provided KeyInputSet for the given mode.
     abstract Map: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
 
     /// Map the provided KeyInputSet for the given mode. The allowRemap parameter will override
     /// the defined remapping behavior.
     abstract Map: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
-
-    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider 
-    /// the <leader> notation as well.
-    abstract ParseKeyNotation: notation: string -> KeyInputSet option
 
 /// Manages the digraph map for Vim
 type IDigraphMap =
@@ -5288,9 +5297,6 @@ and IVim =
     /// In the middle of a bulk operation such as a macro replay or repeat last command
     abstract InBulkOperation: bool
 
-    /// IKeyMap for this IVim instance
-    abstract KeyMap: IKeyMap
-
     /// Digraph map for this IVim instance
     abstract DigraphMap: IDigraphMap
 
@@ -5307,6 +5313,9 @@ and IVim =
     abstract SearchService: ISearchService
 
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
+
+    /// IVimGlobalKeyMap for this IVim instance
+    abstract GlobalKeyMap: IVimGlobalKeyMap
 
     /// IVimGlobalSettings for this IVim instance
     abstract GlobalSettings: IVimGlobalSettings
@@ -5510,6 +5519,9 @@ and IVimTextBuffer =
     /// The associated abbreviation map
     abstract LocalAbbreviationMap: IVimLocalAbbreviationMap
 
+    /// The associated key map
+    abstract LocalKeyMap: IVimLocalKeyMap
+
     /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
     /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening
     /// the same file in multiple tabs, switch to insert in one and then move to the other via the
@@ -5604,6 +5616,12 @@ and IVimBuffer =
 
     /// Local settings for the buffer
     abstract LocalSettings: IVimLocalSettings
+
+    /// The associated abbreviation map
+    abstract LocalAbbreviationMap: IVimLocalAbbreviationMap
+
+    /// The associated key map
+    abstract LocalKeyMap: IVimLocalKeyMap
 
     /// Associated IMarkMap
     abstract MarkMap: IMarkMap

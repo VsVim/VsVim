@@ -327,7 +327,6 @@ type VimInterpreter
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vim.MarkMap
-    let _keyMap = _vim.KeyMap
     let _statusUtil = InterpreterStatusUtil(_vimBufferData.StatusUtil)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
@@ -369,6 +368,13 @@ type VimInterpreter
             SystemUtil.ResolveVimPath _vimData.CurrentDirectory path
         with
             | _ -> path
+
+    member x.GetKeyMap keyMapArguments: IVimKeyMap * KeyMapArgument list = 
+        match keyMapArguments with
+        | [KeyMapArgument.Buffer] -> (_vimBuffer.LocalKeyMap :> IVimKeyMap, [])
+        | _ -> (_vim.GlobalKeyMap :> IVimKeyMap, keyMapArguments)
+
+    member x.KeyMaps = [_vim.GlobalKeyMap :> IVimKeyMap; _vimTextBuffer.LocalKeyMap :> IVimKeyMap]
 
     /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     /// corresponding vim line number
@@ -798,11 +804,12 @@ type VimInterpreter
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
             keyRemapModes
-            |> Seq.iter _keyMap.ClearKeyMappings
+            |> Seq.iter keyMap.ClearKeyMappings
 
     /// Run the close command
     member x.RunClose hasBang = 
@@ -990,22 +997,23 @@ type VimInterpreter
         let getLine modes lhs rhs = 
             sprintf "%-3s%-10s %s" (getModeLabel modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
-        keyRemapModes
-        |> Seq.collect (fun mode ->
+        for keyMap in x.KeyMaps do
+            keyRemapModes
+            |> Seq.collect (fun mode ->
 
-            // Generate a mode / lhs / rhs tuple for all mappings in the
-            // specified mode.
-            mode
-            |> _keyMap.GetKeyMappings
-            |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
+                // Generate a mode / lhs / rhs tuple for all mappings in the
+                // specified mode.
+                mode
+                |> keyMap.GetKeyMappings
+                |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
 
-        |> filterByPrefix
-        |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
-        |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
-        |> Seq.collect combineByGroup
-        |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
-        |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs)
-        |> _statusUtil.OnStatusLong
+            |> filterByPrefix
+            |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
+            |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
+            |> Seq.collect combineByGroup
+            |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
+            |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs)
+            |> _statusUtil.OnStatusLong
 
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =
@@ -1561,15 +1569,25 @@ type VimInterpreter
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
 
         // At this point we can parse out all of the key mapping options, we just don't support
-        // any of them.  Warn the developer but continue processing 
+        // most of them.  Warn the developer but continue processing 
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         for mapArgument in mapArgumentList do
             let name = sprintf "%A" mapArgument
             _statusUtil.OnWarning (Resources.Interpreter_KeyMappingOptionNotSupported name)
 
-        match _keyMap.ParseKeyNotation leftKeyNotation, _keyMap.ParseKeyNotation rightKeyNotation with
+        match keyMap.ParseKeyNotation leftKeyNotation, keyMap.ParseKeyNotation rightKeyNotation with
         | Some lhs, Some rhs -> 
+
+            // Empirically with vim/gvim, <S-$> on the left is never
+            // matched, but <S-$> on the right is treated as '$'. Reported
+            // in issue #2313.
+            let rhs =
+                rhs.KeyInputs
+                |> Seq.map KeyInputUtil.NormalizeKeyModifiers
+                |> KeyInputSetUtil.OfSeq
+
             keyRemapModes
-            |> Seq.iter (fun keyRemapMode -> _keyMap.AddKeyMapping(lhs, rhs, allowRemap, keyRemapMode))
+            |> Seq.iter (fun keyRemapMode -> keyMap.AddKeyMapping(lhs, rhs, allowRemap, keyRemapMode))
         | _ ->
             _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
@@ -2241,23 +2259,23 @@ type VimInterpreter
 
     /// Unmap the specified key notation in all of the listed modes
     member x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList =
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
-
             match KeyNotationUtil.TryStringToKeyInputSet keyNotation with
             | Some key ->
                 let mutable succeeded = true;
                 for keyRemapMode in keyRemapModes do
                     // The unmap operation by default unmaps the LHS. If the argument doesn't match any 
                     // LHS then all mappings where the argument matches the RHS are removed.
-                    if not (_keyMap.RemoveKeyMapping(key, keyRemapMode)) then
-                        let all = _keyMap.GetKeyMappings(keyRemapMode) |> Seq.filter (fun x -> x.Right = key) |> List.ofSeq
+                    if not (keyMap.RemoveKeyMapping(key, keyRemapMode)) then
+                        let all = keyMap.GetKeyMappings(keyRemapMode) |> Seq.filter (fun x -> x.Right = key) |> List.ofSeq
                         if all.IsEmpty then
                             succeeded <- false
                         else
                             for keyMapping in all do
-                                _keyMap.RemoveKeyMapping(keyMapping.Left, keyRemapMode) |> ignore
+                                keyMap.RemoveKeyMapping(keyMapping.Left, keyRemapMode) |> ignore
 
                 if not succeeded then 
                     _statusUtil.OnError Resources.CommandMode_NoSuchMapping

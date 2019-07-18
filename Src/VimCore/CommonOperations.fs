@@ -2354,7 +2354,7 @@ type internal CommonOperations
     /// Toggle the use of typing language characters for insert or search
     /// (see vim ':help i_CTRL-^' and ':help c_CTRL-^')
     member x.ToggleLanguage isForInsert =
-        let keyMap = _vimBufferData.Vim.KeyMap
+        let keyMap = _vimBufferData.VimTextBuffer.LocalKeyMap
         let languageMappings = keyMap.GetKeyMappings KeyRemapMode.Language
         let languageMappingsAreDefined = not (Seq.isEmpty languageMappings)
         if isForInsert || _globalSettings.ImeSearch = -1 then
