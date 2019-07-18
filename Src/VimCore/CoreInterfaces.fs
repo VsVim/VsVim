@@ -4325,6 +4325,8 @@ type IVimAbbreviationMap =
 
     abstract AddAbbreviation: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: AbbreviationMode -> unit
 
+    abstract GetAbbreviations: mode: AbbreviationMode -> Abbreviation seq
+
     abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> Abbreviation option
 
     abstract RemoveAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> bool

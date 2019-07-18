@@ -3680,6 +3680,20 @@ namespace Vim.UnitTest
                 Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
             }
 
+            [WpfTheory]
+            [InlineData(":ab dd dog<CR>:unab dd<CR>idd ", "dd ")]
+            [InlineData(":ab <buffer> dd dog<CR>:unab dd<CR>idd ", "dog ")] // Global clear doesn't affect buffer
+            [InlineData(":iab dd global<CR>:iab <buffer> dd local<CR>:iunab dd<CR>idd ", "local ")]
+            [InlineData(":iab dd global<CR>:iab <buffer> dd local<CR>:iunab <buffer>dd<CR>idd ", "global ")]
+            public void Unabbreviate(string command, string expectedText)
+            {
+                Create();
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.ProcessNotation(command);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
+            }
+
             [WpfFact]
             public void EscapeCompletes()
             {

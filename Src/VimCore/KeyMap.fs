@@ -297,6 +297,7 @@ type internal GlobalAbbreviationMap() =
         member x.Abbreviations = x.Map.Mappings
         member x.AddAbbreviation(lhs, rhs, allowRemap, mode) = x.Map.Add(lhs, mode, (Abbreviation(lhs, rhs, allowRemap, mode)))
         member x.GetAbbreviation(lhs, mode) = x.Map.Get(lhs, mode)
+        member x.GetAbbreviations(mode) = x.Map.Get(mode)
         member x.RemoveAbbreviation(lhs, mode) = x.Map.Remove(lhs, mode)
         member x.ClearAbbreviations(mode) = x.Map.Clear(mode)
         member x.ClearAbbreviations() = x.Map.Clear()
@@ -440,6 +441,7 @@ type internal LocalAbbreviationMap
         member x.AddAbbreviation(lhs, rhs, allowRemap, mode) = x.Map.Add(lhs, mode, (Abbreviation(lhs, rhs, allowRemap, mode)))
         member x.GetAbbreviation(lhs, mode) = x.Map.Get(lhs, mode)
         member x.GetAbbreviation(lhs, mode, includeGlobal) = x.GetAbbreviation(lhs, mode, includeGlobal)
+        member x.GetAbbreviations(mode) = x.Map.Get(mode)
         member x.RemoveAbbreviation(lhs, mode) = x.Map.Remove(lhs, mode)
         member x.ClearAbbreviations(mode) = x.Map.Clear(mode)
         member x.ClearAbbreviations() = x.Map.Clear()

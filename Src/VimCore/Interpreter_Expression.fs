@@ -767,6 +767,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// different flags and count
     | SubstituteRepeat of LineRangeSpecifier: LineRangeSpecifier * SubstituteFlags: SubstituteFlags
 
+    /// Unabbreviate the specified notations
+    | Unabbreviate of KeyNotation: string * AbbreviationModes: AbbreviationMode list * IsLocal: bool
+
     /// Undo the last change
     | Undo
 

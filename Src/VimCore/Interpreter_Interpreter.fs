@@ -608,6 +608,28 @@ type VimInterpreter
         for mode in modeList do
             map.ClearAbbreviations(mode)
 
+    member x.RunUnabbreviate keyNotation modeList isLocal =
+        let map = 
+            if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+            else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
+        match KeyNotationUtil.TryStringToKeyInputSet keyNotation with
+        | None -> _statusUtil.OnError Resources.Parser_InvalidArgument
+        | Some keyInputSet -> 
+            let mutable succeeded = true
+            for mode in modeList do
+                if not (map.RemoveAbbreviation(keyInputSet, mode)) then
+                    // When the LHS doesn't have a match then remove all mappings where the RHS
+                    // matches the provided key notation.
+                    let all = map.GetAbbreviations mode |> Seq.filter (fun x -> x.Replacement = keyInputSet) |> List.ofSeq
+                    if all.IsEmpty then
+                         succeeded <- false
+                    else
+                        for abbreviation in all do
+                            map.RemoveAbbreviation(abbreviation.Abbreviation, mode) |> ignore
+            if not succeeded then
+                _statusUtil.OnError Resources.Parser_InvalidArgument
+        
+
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
         let builder = System.Collections.Generic.List<AutoCommand>()
@@ -2263,7 +2285,7 @@ type VimInterpreter
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
-            match KeyNotationUtil.TryStringToKeyInputSet keyNotation with
+            match keyMap.ParseKeyNotation keyNotation with
             | Some key ->
                 let mutable succeeded = true;
                 for keyRemapMode in keyRemapModes do
@@ -2450,6 +2472,7 @@ type VimInterpreter
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.TabNew filePath -> x.RunTabNew filePath
         | LineCommand.TabOnly -> x.RunTabOnly()
+        | LineCommand.Unabbreviate (keyNotation, modeList, isLocal) -> x.RunUnabbreviate keyNotation modeList isLocal
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList

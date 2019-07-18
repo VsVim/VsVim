@@ -270,7 +270,9 @@ and [<Sealed>] Parser
         ("abclear", "abc")
         ("iabclear", "iabc")
         ("cabclear", "cabc")
-        // ATODO: need to do unabbreviatio
+        ("unabbreviate", "una")
+        ("iunabbrev", "iuna")
+        ("cunabbrev", "cuna")
     ]
 
     /// Map of all autocmd events to the lower case version of the name
@@ -610,6 +612,13 @@ and [<Sealed>] Parser
     member x.ParseAbbreviateClear abbreviationModes =
         let isLocal = x.ParseAbbreviateBufferArgument()
         LineCommand.AbbreviateClear (abbreviationModes, isLocal)
+
+    member x.ParseUnabbreviate(abbreviationModes) =
+        let isLocal = x.ParseAbbreviateBufferArgument()
+        x.SkipBlanks()
+        match x.ParseKeyNotation() with
+        | Some keyNotation -> LineCommand.Unabbreviate(keyNotation, abbreviationModes, isLocal)
+        | None -> x.ParseError Resources.Parser_InvalidArgument
 
     /// Parse out core portion of key mappings.
     member x.ParseMapKeysCore keyRemapModes allowRemap =
@@ -965,6 +974,7 @@ and [<Sealed>] Parser
             | LineCommand.SubstituteRepeat (_, substituteFlags) -> LineCommand.SubstituteRepeat (lineRange, substituteFlags)
             | LineCommand.TabNew _ -> noRangeCommand
             | LineCommand.TabOnly -> noRangeCommand
+            | LineCommand.Unabbreviate _ -> noRangeCommand
             | LineCommand.Undo -> noRangeCommand
             | LineCommand.Unlet _ -> noRangeCommand
             | LineCommand.UnmapKeys _ -> noRangeCommand
@@ -2596,6 +2606,7 @@ and [<Sealed>] Parser
                 | "csx" -> x.ParseCSharpScript(lineRange, createEachTime = false)
                 | "csxe" -> x.ParseCSharpScript(lineRange, createEachTime = true)
                 | "cunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Command])
+                | "cunabbrev" -> noRange (fun () -> x.ParseUnabbreviate [AbbreviationMode.Command])
                 | "cwindow" -> noRange (fun () -> x.ParseOpenListWindow ListKind.Error)
                 | "delete" -> x.ParseDelete lineRange
                 | "delmarks" -> noRange (fun () -> x.ParseDeleteMarks())
@@ -2619,6 +2630,7 @@ and [<Sealed>] Parser
                 | "iabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Insert], allowRemap = true))                 
                 | "iabclear" -> noRange (fun () -> x.ParseAbbreviateClear [AbbreviationMode.Insert])                 
                 | "inoreabbrev" -> noRange (fun () -> x.ParseAbbreviate([AbbreviationMode.Insert], allowRemap = false))                 
+                | "iunabbrev" -> noRange (fun () -> x.ParseUnabbreviate [AbbreviationMode.Insert])
                 | "if" -> noRange x.ParseIfStart
                 | "iunmap" -> noRange (fun () -> x.ParseMapUnmap false [KeyRemapMode.Insert])
                 | "imap"-> noRange (fun () -> x.ParseMapKeys false [KeyRemapMode.Insert])
@@ -2692,6 +2704,7 @@ and [<Sealed>] Parser
                 | "tabNext" -> noRange x.ParseTabPrevious
                 | "tabonly" -> noRange (fun () -> LineCommand.TabOnly)
                 | "tabprevious" -> noRange x.ParseTabPrevious
+                | "unabbreviate" -> noRange (fun () -> x.ParseUnabbreviate AbbreviationMode.All)
                 | "undo" -> noRange (fun () -> LineCommand.Undo)
                 | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
