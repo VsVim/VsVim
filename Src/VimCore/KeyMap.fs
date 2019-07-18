@@ -248,11 +248,16 @@ type internal LocalKeyMap
         with get() = _isZeroMappingEnabled
         and set value = _isZeroMappingEnabled <- value
 
-    member x.GetKeyMapping keyInputSet mode includeGlobal =
+    member x.GetKeyMapping(keyInputSet, mode, includeGlobal) =
         match _map.Get(keyInputSet, mode) with 
         | Some r -> Some r
         | None when includeGlobal -> _globalKeyMap.GetKeyMapping(keyInputSet, mode)
         | None -> None
+
+    member x.GetKeyMappings(mode, includeGlobal) =
+        let local = _map.Get(mode)
+        if includeGlobal then Seq.append (_globalKeyMap.GetKeyMappings(mode)) local
+        else local
 
     /// Map the passed in KeyInputSet and return the result for the mapping
     member x.Map (keyInputSet: KeyInputSet) allowRemap mode =
@@ -277,8 +282,9 @@ type internal LocalKeyMap
             and set value = x.IsZeroMappingEnabled <- value
         member x.KeyMappings = _map.Mappings
         member x.GetKeyMapping(lhs, mode) = _map.Get(lhs, mode)
-        member x.GetKeyMapping(lhs, mode, includeGlobal) = x.GetKeyMapping lhs mode includeGlobal
+        member x.GetKeyMapping(lhs, mode, includeGlobal) = x.GetKeyMapping(lhs, mode, includeGlobal)
         member x.GetKeyMappings(mode) = _map.Get(mode)
+        member x.GetKeyMappings(mode, includeGlobal) = x.GetKeyMappings(mode, includeGlobal)
         member x.AddKeyMapping(lhs, rhs, allowRemap, mode) = _map.Add(lhs, mode, KeyMapping(lhs, rhs, allowRemap, mode))
         member x.RemoveKeyMapping(lhs, mode) = _map.Remove(lhs, mode)
         member x.ClearKeyMappings(mode) = _map.Clear(mode)
@@ -320,6 +326,11 @@ type internal LocalAbbreviationMap
         | Some rhs -> Some rhs
         | None when includeGlobal -> _globalAbbreviationMap.GetAbbreviation(lhs, mode)
         | None -> None
+
+    member x.GetAbbreviations(mode, includeGlobal) =
+        let local = _map.Get(mode)
+        if includeGlobal then Seq.append (_globalAbbreviationMap.GetAbbreviations(mode)) local
+        else local
 
     member x.Parse text = 
         if StringUtil.IsNullOrEmpty text || Seq.exists CharUtil.IsWhiteSpace text then
@@ -442,6 +453,7 @@ type internal LocalAbbreviationMap
         member x.GetAbbreviation(lhs, mode) = x.Map.Get(lhs, mode)
         member x.GetAbbreviation(lhs, mode, includeGlobal) = x.GetAbbreviation(lhs, mode, includeGlobal)
         member x.GetAbbreviations(mode) = x.Map.Get(mode)
+        member x.GetAbbreviations(mode, includeGlobal) = x.GetAbbreviations(mode, includeGlobal)
         member x.RemoveAbbreviation(lhs, mode) = x.Map.Remove(lhs, mode)
         member x.ClearAbbreviations(mode) = x.Map.Clear(mode)
         member x.ClearAbbreviations() = x.Map.Clear()

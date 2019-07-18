@@ -4243,6 +4243,9 @@ type IVimLocalKeyMap =
     /// Get the specified key mapping if it exists
     abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode * includeGlobal: bool -> KeyMapping option
 
+    /// Get the specified key mappings if they exists
+    abstract GetKeyMappings: mode: KeyRemapMode * includeGlobal: bool -> KeyMapping seq
+
     /// Map the provided KeyInputSet for the given mode.
     abstract Map: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
 
@@ -4325,9 +4328,9 @@ type IVimAbbreviationMap =
 
     abstract AddAbbreviation: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: AbbreviationMode -> unit
 
-    abstract GetAbbreviations: mode: AbbreviationMode -> Abbreviation seq
-
     abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> Abbreviation option
+
+    abstract GetAbbreviations: mode: AbbreviationMode -> Abbreviation seq
 
     abstract RemoveAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> bool
 
@@ -4344,6 +4347,8 @@ type IVimLocalAbbreviationMap =
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
 
     abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode * includeGlobal: bool -> Abbreviation option
+
+    abstract GetAbbreviations: mode: AbbreviationMode * includeGlobal: bool -> Abbreviation seq
 
     abstract Parse: text: string -> AbbreviationKind option
 
