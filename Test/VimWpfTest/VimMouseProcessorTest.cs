@@ -24,7 +24,7 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer = CreateVimBuffer("cat", "");
             _keyboardDevice = new Mock<IKeyboardDevice>(MockBehavior.Loose);
             _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.None);
-            _vimMouseProcessor = new VimMouseProcessor(_vimBuffer, _keyboardDevice.Object);
+            _vimMouseProcessor = new VimMouseProcessor(_vimBuffer, _keyboardDevice.Object, ProtectedOperations);
             _textView = _vimBuffer.TextView;
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
