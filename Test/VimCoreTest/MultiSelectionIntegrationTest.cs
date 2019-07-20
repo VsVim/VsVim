@@ -12,6 +12,7 @@ using Microsoft.FSharp.Core;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.FSharp.Collections;
 
 namespace Vim.UnitTest
 {
@@ -20,47 +21,33 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class MultiSelectionIntegrationTest : VimTestBase
     {
-        protected readonly MockVimHost _mockVimHost;
-
+        protected MockSelectionUtil _mockMultiSelectionUtil;
         protected IVimBuffer _vimBuffer;
-        protected IVimBufferData _vimBufferData;
-        protected IVimTextBuffer _vimTextBuffer;
         protected IWpfTextView _textView;
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
         protected IVimWindowSettings _windowSettings;
         protected IJumpList _jumpList;
-        protected IKeyMap _keyMap;
-        protected IVimData _vimData;
-        protected INormalMode _normalMode;
-        protected IVimHost _vimHost;
-        protected TestableClipboardDevice _clipboardDevice;
+        protected ISelectionUtil _selectionUtil;
         protected TestableMouseDevice _testableMouseDevice;
-
-        MultiSelectionIntegrationTest()
-        {
-            _mockVimHost = VimHost;
-            _mockVimHost.IsMultiSelectionSupported = true;
-        }
 
         protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _mockMultiSelectionUtil = new MockSelectionUtil(_textView, isMultiSelectionSupported: true);
+            VimHost.TryCustomProcessFunc = (_, command) => _mockMultiSelectionUtil.TryCustomProcess(command);
             _textBuffer = _textView.TextBuffer;
-            _vimBuffer = Vim.CreateVimBuffer(_textView);
-            _mockVimHost.MockMultiSelection.RegisterVimBuffer(_vimBuffer);
-            _vimBufferData = _vimBuffer.VimBufferData;
-            _vimTextBuffer = _vimBuffer.VimTextBuffer;
-            _normalMode = _vimBuffer.NormalMode;
-            _keyMap = _vimBuffer.Vim.KeyMap;
+            var vimBufferData = CreateVimBufferData(_textView, null, null, null, null, _mockMultiSelectionUtil);
+            var commonOperations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            _vimBuffer = CreateVimBuffer(vimBufferData);
+            var selectionChangeTracker = new SelectionChangeTracker(_vimBuffer, commonOperations, FSharpList<IVisualModeSelectionOverride>.Empty, MouseDevice);
+            var multiSelectionTracker = new MultiSelectionTracker(_vimBuffer, commonOperations, MouseDevice);
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _windowSettings = _vimBuffer.WindowSettings;
             _jumpList = _vimBuffer.JumpList;
-            _vimHost = _vimBuffer.Vim.VimHost;
-            _vimData = Vim.VimData;
-            _clipboardDevice = (TestableClipboardDevice)CompositionContainer.GetExportedValue<IClipboardDevice>();
+            _selectionUtil = _vimBuffer.VimBufferData.SelectionUtil;
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;
             _testableMouseDevice.IsLeftButtonPressed = false;
@@ -95,23 +82,23 @@ namespace Vim.UnitTest
             return _textView.GetVirtualPointInLine(lineNumber, column);
         }
 
+        private SelectedSpan[] SelectedSpans =>
+            _selectionUtil.GetSelectedSpans().ToArray();
+
         private SnapshotPoint[] CaretPoints =>
-            _vimHost.GetSelectedSpans(_textView).Select(x => x.CaretPoint.Position).ToArray();
+            SelectedSpans.Select(x => x.CaretPoint.Position).ToArray();
 
         private VirtualSnapshotPoint[] CaretVirtualPoints =>
-            _vimHost.GetSelectedSpans(_textView).Select(x => x.CaretPoint).ToArray();
-
-        private SelectedSpan[] SelectedSpans =>
-            _vimHost.GetSelectedSpans(_textView).ToArray();
-
-        private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
-        {
-            _vimHost.SetSelectedSpans(_textView, caretPoints.Select(x => new SelectedSpan(x)));
-        }
+            SelectedSpans.Select(x => x.CaretPoint).ToArray();
 
         private void SetSelectedSpans(params SelectedSpan[] selectedSpans)
         {
-            _vimHost.SetSelectedSpans(_textView, selectedSpans);
+            _selectionUtil.SetSelectedSpans(selectedSpans);
+        }
+
+        private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
+        {
+            SetSelectedSpans(caretPoints.Select(x => new SelectedSpan(x)).ToArray());
         }
 
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
@@ -179,10 +166,10 @@ namespace Vim.UnitTest
                     _textView.GetVirtualSelectionSpan());
 
                 // Verify secondary selection agrees with mock vim host.
-                Assert.Single(_mockVimHost.MockMultiSelection.SecondarySelectedSpans);
+                Assert.Single(_mockMultiSelectionUtil.SecondarySelectedSpans);
                 Assert.Equal(
                     new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
-                    _mockVimHost.MockMultiSelection.SecondarySelectedSpans[_textView][0]);
+                    _mockMultiSelectionUtil.SecondarySelectedSpans[0]);
             }
         }
 

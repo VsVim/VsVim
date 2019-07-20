@@ -45,9 +45,8 @@ namespace Vim.VisualStudio.Specific
                 typeof(Implementation.WordCompletion.Legacy.WordLegacyCompletionSourceProvider),
                 typeof(Implementation.WordCompletion.VimWordCompletionUtil),
 #if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
-                typeof(global::Vim.Specific.Implementation.Selection.SingleSelectionUtil),
 #else
-                typeof(global::Vim.Specific.Implementation.Selection.MultiSelectionUtil),
+                typeof(global::Vim.Specific.Implementation.Selection.MultiSelectionUtilFactory),
 #endif
             };
 

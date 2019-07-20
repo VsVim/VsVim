@@ -221,6 +221,7 @@ namespace Vim.UnitTest.Mock
             IStatusUtil statusUtil = null,
             IVimWindowSettings windowSettings = null,
             ICaretRegisterMap caretRegisterMap = null,
+            ISelectionUtil selectionUtil = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -228,12 +229,14 @@ namespace Vim.UnitTest.Mock
             jumpList = jumpList ?? factory.Create<IJumpList>().Object;
             windowSettings = windowSettings ?? factory.Create<IVimWindowSettings>().Object;
             caretRegisterMap = caretRegisterMap ?? factory.Create<ICaretRegisterMap>().Object;
+            selectionUtil = selectionUtil ?? new SingleSelectionUtil(textView);
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
                 statusUtil,
+                selectionUtil,
                 caretRegisterMap);
         }
 

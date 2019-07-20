@@ -56,6 +56,7 @@ type internal CommonOperations
     let _jumpList = _vimBufferData.JumpList
     let _wordUtil = _vimBufferData.WordUtil
     let _statusUtil = _vimBufferData.StatusUtil
+    let _selectionUtil = _vimBufferData.SelectionUtil
     let _vim = _vimBufferData.Vim
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
@@ -166,7 +167,7 @@ type internal CommonOperations
 
     /// Whether multi-selection is supported
     member x.IsMultiSelectionSupported =
-        _vimHost.IsMultiSelectionSupported
+        _selectionUtil.IsMultiSelectionSupported
 
     /// The primary selected span
     member x.PrimarySelectedSpan =
@@ -174,7 +175,7 @@ type internal CommonOperations
 
     /// The current selected spans
     member x.SelectedSpans =
-        _vimHost.GetSelectedSpans _textView
+        _selectionUtil.GetSelectedSpans()
 
     /// Set the current selected spans
     member x.SetSelectedSpans spans =
@@ -182,13 +183,13 @@ type internal CommonOperations
         if spans.Length > 1 then
             let modeKind = _vimTextBuffer.ModeKind
             _vimBufferData.LastMultiSelection <- Some (modeKind, spans)
-        _vimHost.SetSelectedSpans _textView spans
+        _selectionUtil.SetSelectedSpans spans
         _selectedSpansSetEvent.Trigger x EventArgs.Empty
 
     /// Set a single selected span temporarily without raising the 'selected
     /// spans set' event
     member x.SetTemporarySelectedSpan span =
-        _vimHost.SetSelectedSpans _textView [span]
+        _selectionUtil.SetSelectedSpans [span]
 
     /// Get the common operations for the specified text view
     member x.TryGetCommonOperationsForTextView textView =

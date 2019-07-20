@@ -16,8 +16,6 @@ namespace Vim.UnitTest.Mock
     {
         public static readonly object FileNameKey = new object();
 
-        public readonly MockMultiSelection _mockMultiSelection;
-
         private event EventHandler<TextViewEventArgs> _isVisibleChanged;
 #pragma warning disable 67
         private event EventHandler<TextViewChangedEventArgs> _activeTextViewChanged;
@@ -71,17 +69,9 @@ namespace Vim.UnitTest.Mock
         public WordWrapStyles WordWrapStyle { get; set; }
         public bool UseDefaultCaret { get; set; }
         public FSharpOption<IWordCompletionSessionFactory> WordCompletionSessionFactory { get; set; }
-        public MockMultiSelection MockMultiSelection => _mockMultiSelection;
-        public bool IsMultiSelectionSupported
-        {
-            get { return _mockMultiSelection.IsMultiSelectionSupported; }
-            set { _mockMultiSelection.IsMultiSelectionSupported = value; }
-        }
 
         public MockVimHost()
         {
-            _mockMultiSelection = new MockMultiSelection(this);
-
             Clear();
         }
 
@@ -135,8 +125,6 @@ namespace Vim.UnitTest.Mock
             ShouldIncludeRcFile = true;
             WordWrapStyle = WordWrapStyles.WordWrap;
             UseDefaultCaret = false;
-            IsMultiSelectionSupported = false;
-            _mockMultiSelection.Clear();
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -364,13 +352,6 @@ namespace Vim.UnitTest.Mock
                     return true;
                 }
             }
-            if (IsMultiSelectionSupported)
-            {
-                if (_mockMultiSelection.TryCustomProcess(textView, command))
-                {
-                    return true;
-                }
-            }
             return false;
         }
 
@@ -452,18 +433,6 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.UseDefaultCaret
         {
             get { return UseDefaultCaret; }
-        }
-
-        bool IVimHost.IsMultiSelectionSupported => IsMultiSelectionSupported;
-
-        IEnumerable<SelectedSpan> IVimHost.GetSelectedSpans(ITextView textView)
-        {
-            return _mockMultiSelection.GetSelectedSpans(textView);
-        }
-
-        void IVimHost.SetSelectedSpans(ITextView textView, IEnumerable<SelectedSpan> selectedSpans)
-        {
-            _mockMultiSelection.SetSelectedSpans(textView, selectedSpans);
         }
     }
 }

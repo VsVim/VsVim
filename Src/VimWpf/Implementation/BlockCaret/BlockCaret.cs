@@ -54,8 +54,9 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);
 
-        private readonly IVimHost _vimHost;
+        private readonly IVimBufferData _vimBufferData;
         private readonly ITextView _textView;
+        private readonly ISelectionUtil _selectionUtil;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
@@ -153,16 +154,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         internal BlockCaret(
-            IVimHost vimHost,
-            ITextView textView,
+            IVimBufferData vimBufferData,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
             IAdornmentLayer layer,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations)
         {
-            _vimHost = vimHost;
-            _textView = textView;
+            _vimBufferData = vimBufferData;
+            _textView = _vimBufferData.TextView;
+            _selectionUtil = _vimBufferData.SelectionUtil;
             _editorFormatMap = formatMap;
             _adornmentLayer = layer;
             _protectedOperations = protectedOperations;
@@ -179,19 +180,17 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         }
 
         internal BlockCaret(
-            IVimHost vimHost,
-            IWpfTextView textView,
+            IVimBufferData vimBufferData,
             string adornmentLayerName,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations) :
             this(
-                vimHost,
-                textView,
+                vimBufferData,
                 classificationFormatMap,
                 formatMap,
-                textView.GetAdornmentLayer(adornmentLayerName),
+                (vimBufferData.TextView as IWpfTextView).GetAdornmentLayer(adornmentLayerName),
                 controlCharUtil,
                 protectedOperations)
         {
@@ -771,10 +770,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void UpdateCaretCore()
         {
-            if (_vimHost.IsMultiSelectionSupported)
+            if (_selectionUtil.IsMultiSelectionSupported)
             {
                 _caretPoints =
-                    _vimHost.GetSelectedSpans(_textView)
+                    _selectionUtil.GetSelectedSpans()
                     .Select(span => span.CaretPoint)
                     .ToList();
             }

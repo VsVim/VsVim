@@ -17,6 +17,7 @@ type VimBufferData
         _windowSettings: IVimWindowSettings,
         _jumpList: IJumpList,
         _statusUtil: IStatusUtil,
+        _selectionUtil: ISelectionUtil,
         _caretRegisterMap: ICaretRegisterMap
     ) =
 
@@ -72,6 +73,7 @@ type VimBufferData
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
         member x.WordUtil = _vimTextBuffer.WordUtil
+        member x.SelectionUtil = _selectionUtil
         member x.LocalSettings = _vimTextBuffer.LocalSettings
         member x.Vim = _vimTextBuffer.Vim
 

@@ -134,16 +134,22 @@ type ISelectionUtil =
     abstract IsMultiSelectionSupported: bool
 
     /// Get all the selected spans for the specified text view
-    abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq
+    abstract GetSelectedSpans: unit -> SelectedSpan seq
 
     /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: textView: ITextView -> SelectedSpan seq -> unit
+    abstract SetSelectedSpans: SelectedSpan seq -> unit
 
 /// Factory service for creating ISelectionUtil instances
+type ISelectionUtilFactory = 
+
+    /// Get the selection utility interface
+    abstract GetSelectionUtil: textView: ITextView -> ISelectionUtil
+
+/// Service for creating ISelectionUtilFactory instances
 type ISelectionUtilService = 
 
-    /// Create a session with the given set of words
-    abstract GetSelectionUtil: unit -> ISelectionUtil option
+    /// Get the selection utility interface
+    abstract GetSelectionUtilFactory: unit -> ISelectionUtilFactory
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -5058,15 +5064,6 @@ type IVimHost =
     /// example).  This override allows them to do this processing
     abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
 
-    /// Whether multi-selection is supported
-    abstract IsMultiSelectionSupported: bool
-
-    /// Get all the selected spans for the specified text view
-    abstract GetSelectedSpans: textView: ITextView -> SelectedSpan seq
-
-    /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: textView: ITextView -> SelectedSpan seq -> unit
-
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
     abstract IsVisibleChanged: IDelegateEvent<System.EventHandler<TextViewEventArgs>>
@@ -5143,6 +5140,9 @@ and IVimBufferData =
 
     /// The IWordUtil associated with the IVimBuffer
     abstract WordUtil: WordUtil
+
+    /// The ISelectionUtil associated with the IVimBuffer
+    abstract SelectionUtil: ISelectionUtil
 
     /// The IVimLocalSettings associated with the ITextBuffer
     abstract LocalSettings: IVimLocalSettings

@@ -321,15 +321,13 @@ namespace Vim.VisualStudio
             IControlCharUtil controlCharUtil,
             ICommandDispatcher commandDispatcher,
             SVsServiceProvider serviceProvider,
-            IClipboardDevice clipboardDevice,
-            ISelectionUtilService selectionUtilService) :
+            IClipboardDevice clipboardDevice) :
             base(
                   protectedOperations,
                   textBufferFactoryService,
                   textEditorFactoryService,
                   textDocumentFactoryService,
-                  editorOperationsFactoryService,
-                  selectionUtilService)
+                  editorOperationsFactoryService)
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;

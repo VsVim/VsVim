@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf.UnitTest
 {
     public class BlockCaretTest : VimTestBase
     {
-        private Mock<IVimHost> _vimHost;
+        private Mock<IVimBufferData> _vimBufferData;
         private Mock<ITextView> _textView;
         private Mock<ITextCaret> _caret;
         private Mock<ITextSelection> _selection;
@@ -28,8 +28,7 @@ namespace Vim.UI.Wpf.UnitTest
 
         private void Create()
         {
-            _vimHost = new Mock<IVimHost>(MockBehavior.Strict);
-            _vimHost.SetupGet(x => x.IsMultiSelectionSupported).Returns(false);
+            _vimBufferData = new Mock<IVimBufferData>(MockBehavior.Strict);
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _caret.SetupGet(x => x.Position).Returns(new CaretPosition());
             _selection = new Mock<ITextSelection>(MockBehavior.Strict);
@@ -49,7 +48,7 @@ namespace Vim.UI.Wpf.UnitTest
             _formatMap = new Mock<IEditorFormatMap>(MockBehavior.Strict);
             _classificationFormatMap = new Mock<IClassificationFormatMap>(MockBehavior.Strict);
             _layer = new Mock<IAdornmentLayer>(MockBehavior.Strict);
-            _blockCaretRaw = new BlockCaret(_vimHost.Object, _textView.Object, _classificationFormatMap.Object, _formatMap.Object, _layer.Object, new ControlCharUtil(), ProtectedOperations);
+            _blockCaretRaw = new BlockCaret(_vimBufferData.Object, _classificationFormatMap.Object, _formatMap.Object, _layer.Object, new ControlCharUtil(), ProtectedOperations);
             _blockCaret = _blockCaretRaw;
         }
 

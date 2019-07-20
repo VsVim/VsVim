@@ -534,6 +534,35 @@ type internal VimWordCompletionSessionFactoryService
         [<CLIEvent>]
         member x.Created = _created.Publish
 
+type internal SingleSelectionUtil(_textView: ITextView) =
+
+    member x.IsMultiSelectionSupported = false
+
+    member x.GetSelectedSpans () =
+        let caretPoint = _textView.Caret.Position.VirtualBufferPosition
+        let anchorPoint = _textView.Selection.AnchorPoint
+        let activePoint = _textView.Selection.ActivePoint
+        seq { yield SelectedSpan(caretPoint, anchorPoint, activePoint) }
+
+    member x.SetSelectedSpans (selectedSpans: SelectedSpan seq) =
+        let selectedSpan = Seq.head selectedSpans
+        _textView.Caret.MoveTo(selectedSpan.CaretPoint) |> ignore
+        if selectedSpan.Length <> 0 then
+            _textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint)
+
+    interface ISelectionUtil with
+        member x.IsMultiSelectionSupported = x.IsMultiSelectionSupported
+        member x.GetSelectedSpans() = x.GetSelectedSpans()
+        member x.SetSelectedSpans selectedSpans = x.SetSelectedSpans selectedSpans
+
+type internal SingleSelectionUtilFactory() =
+
+    member x.GetSelectionUtil textView =
+        SingleSelectionUtil(textView) :> ISelectionUtil
+
+    interface ISelectionUtilFactory with
+        member x.GetSelectionUtil textView = x.GetSelectionUtil textView
+
 [<Export(typeof<ISelectionUtilService>)>]
 type internal SelectionUtilService 
     [<ImportingConstructor>]
@@ -541,8 +570,10 @@ type internal SelectionUtilService
         _vimSpecificServiceHost: IVimSpecificServiceHost
     ) =
 
-    member x.GetSelectionUtil () =
-        _vimSpecificServiceHost.GetService<ISelectionUtil>()
+    member x.GetSelectionUtilFactory () =
+        match _vimSpecificServiceHost.GetService<ISelectionUtilFactory>() with
+        | Some selectionUtilFactory -> selectionUtilFactory
+        | None -> SingleSelectionUtilFactory() :> ISelectionUtilFactory
 
     interface ISelectionUtilService with
-        member x.GetSelectionUtil () = x.GetSelectionUtil()
+        member x.GetSelectionUtilFactory () = x.GetSelectionUtilFactory()

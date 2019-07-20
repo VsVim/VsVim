@@ -212,6 +212,7 @@ type internal VimBufferFactory
         _undoManagerProvider: ITextBufferUndoManagerProvider,
         _statusUtilFactory: IStatusUtilFactory,
         _foldManagerFactory: IFoldManagerFactory,
+        _selectionUtilService: ISelectionUtilService,
         _keyboardDevice: IKeyboardDevice,
         _mouseDevice: IMouseDevice,
         _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService,
@@ -238,13 +239,12 @@ type internal VimBufferFactory
         Contract.Requires (vimTextBuffer.TextBuffer = textView.TextBuffer)
 
         let vim = vimTextBuffer.Vim
-        let textBuffer = textView.TextBuffer
         let statusUtil = _statusUtilFactory.GetStatusUtilForView textView
-        let localSettings = vimTextBuffer.LocalSettings
+        let selectionUtil = _selectionUtilService.GetSelectionUtilFactory().GetSelectionUtil(textView)
         let jumpList = JumpList(textView, _bufferTrackingService) :> IJumpList
         let windowSettings = WindowSettings(vim.GlobalSettings, textView)
         let caretRegisterMap = CaretRegisterMap(vim.RegisterMap)
-        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, caretRegisterMap) :> IVimBufferData
+        VimBufferData(vimTextBuffer, textView, windowSettings, jumpList, statusUtil, selectionUtil, caretRegisterMap) :> IVimBufferData
 
     /// Create an IVimBuffer instance for the provided VimBufferData
     member x.CreateVimBuffer (vimBufferData: IVimBufferData) = 
