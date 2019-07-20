@@ -37,8 +37,10 @@
     <Reference Include="WindowsBase" />
     <PackageReference Include="Castle.Core" Version="4.0.0-beta002" />
     <PackageReference Include="Moq" Version="4.5.28" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.console" Version="2.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj" />
