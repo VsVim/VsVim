@@ -463,7 +463,7 @@ namespace Vim.UnitTest
             ISelectionUtil selectionUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
-            statusUtil = statusUtil ?? new StatusUtil();
+            statusUtil = statusUtil ?? CompositionContainer.GetExportedValue<IStatusUtilFactory>().GetStatusUtilForView(textView);
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
             caretRegisterMap = caretRegisterMap ?? new CaretRegisterMap(Vim.RegisterMap);
             selectionUtil = selectionUtil ?? new SingleSelectionUtil(textView);

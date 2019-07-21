@@ -212,7 +212,7 @@ type internal VimBufferFactory
         _undoManagerProvider: ITextBufferUndoManagerProvider,
         _statusUtilFactory: IStatusUtilFactory,
         _foldManagerFactory: IFoldManagerFactory,
-        _selectionUtilService: ISelectionUtilService,
+        _selectionUtilService: ISelectionUtilFactoryService,
         _keyboardDevice: IKeyboardDevice,
         _mouseDevice: IMouseDevice,
         _wordCompletionSessionFactoryService: IWordCompletionSessionFactoryService,
@@ -564,12 +564,15 @@ type internal Vim
     /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer.  This 
     /// will not notify the IVimBufferCreationListener collection about the new
     /// IVimBuffer
-    member x.CreateVimBufferCore textView (windowSettings: IVimWindowSettings option) =
+    member x.CreateVimBufferCore textView (windowSettings: IVimWindowSettings option) (vimBufferData: IVimBufferData option) =
         if _vimBufferMap.ContainsKey(textView) then 
             invalidArg "textView" Resources.Vim_TextViewAlreadyHasVimBuffer
 
         let vimTextBuffer = x.GetOrCreateVimTextBuffer textView.TextBuffer
-        let vimBufferData = _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
+        let vimBufferData =
+            match vimBufferData with
+            | Some vimBufferData -> vimBufferData
+            | None -> _bufferFactoryService.CreateVimBufferData vimTextBuffer textView
         let vimBuffer = _bufferFactoryService.CreateVimBuffer vimBufferData
 
         // Apply the specified window settings
@@ -620,11 +623,24 @@ type internal Vim
         let name = _vimHost.GetName vimBuffer.TextBuffer
         _vimData.FileHistory.Add name
 
-    /// Create an IVimBuffer for the given ITextView and associated IVimTextBuffer and notify
-    /// the IVimBufferCreationListener collection about it
-    member x.CreateVimBuffer textView windowSettings = 
-        let vimBuffer = x.CreateVimBufferCore textView windowSettings
+    /// Notify listeners that a new IVimBuffer was created
+    member x.NotifyListeners vimBuffer =
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated vimBuffer)
+
+    /// Create an IVimBuffer for the given ITextView and notify the
+    /// IVimBufferCreationListener collection about it
+    member x.CreateVimBuffer textView windowSettings = 
+        let vimBuffer = x.CreateVimBufferCore textView windowSettings None
+        x.NotifyListeners vimBuffer
+        vimBuffer
+
+    /// Create an IVimBuffer with the given IVimBufferData and notify the
+    /// IVimBufferCreationListener collection about it
+    member x.CreateVimBufferWithData (vimBufferData: IVimBufferData) = 
+        let textView = vimBufferData.TextView
+        let vimBufferData = Some vimBufferData
+        let vimBuffer = x.CreateVimBufferCore textView None vimBufferData
+        x.NotifyListeners vimBuffer
         vimBuffer
 
     member x.GetVimInterpreter (vimBuffer: IVimBuffer) = 
@@ -979,6 +995,7 @@ type internal Vim
         member x.GlobalSettings = _globalSettings
         member x.CloseAllVimBuffers() = x.CloseAllVimBuffers()
         member x.CreateVimBuffer textView = x.CreateVimBuffer textView (Some (x.GetWindowSettingsForNewBuffer()))
+        member x.CreateVimBufferWithData vimBufferData = x.CreateVimBufferWithData vimBufferData
         member x.CreateVimTextBuffer textBuffer = x.CreateVimTextBuffer textBuffer (Some (x.GetLocalSettingsForNewTextBuffer()))
         member x.GetVimInterpreter vimBuffer = x.GetVimInterpreter vimBuffer
         member x.GetOrCreateVimBuffer textView = x.GetOrCreateVimBuffer textView

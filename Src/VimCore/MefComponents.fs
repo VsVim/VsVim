@@ -563,7 +563,7 @@ type internal SingleSelectionUtilFactory() =
     interface ISelectionUtilFactory with
         member x.GetSelectionUtil textView = x.GetSelectionUtil textView
 
-[<Export(typeof<ISelectionUtilService>)>]
+[<Export(typeof<ISelectionUtilFactoryService>)>]
 type internal SelectionUtilService 
     [<ImportingConstructor>]
     (
@@ -575,5 +575,5 @@ type internal SelectionUtilService
         | Some selectionUtilFactory -> selectionUtilFactory
         | None -> SingleSelectionUtilFactory() :> ISelectionUtilFactory
 
-    interface ISelectionUtilService with
+    interface ISelectionUtilFactoryService with
         member x.GetSelectionUtilFactory () = x.GetSelectionUtilFactory()

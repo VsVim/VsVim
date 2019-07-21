@@ -1,18 +1,9 @@
-﻿using System;
-using System.Linq;
-using Vim.EditorHost;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Projection;
-using Vim.Extensions;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using Xunit;
-using Microsoft.FSharp.Core;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.FSharp.Collections;
 
 namespace Vim.UnitTest
 {
@@ -28,25 +19,20 @@ namespace Vim.UnitTest
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
         protected IVimWindowSettings _windowSettings;
-        protected IJumpList _jumpList;
         protected ISelectionUtil _selectionUtil;
         protected TestableMouseDevice _testableMouseDevice;
 
         protected virtual void Create(params string[] lines)
         {
             _textView = CreateTextView(lines);
+            _textBuffer = _textView.TextBuffer;
             _mockMultiSelectionUtil = new MockSelectionUtil(_textView, isMultiSelectionSupported: true);
             VimHost.TryCustomProcessFunc = (_, command) => _mockMultiSelectionUtil.TryCustomProcess(command);
-            _textBuffer = _textView.TextBuffer;
             var vimBufferData = CreateVimBufferData(_textView, null, null, null, null, _mockMultiSelectionUtil);
-            var commonOperations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            _vimBuffer = CreateVimBuffer(vimBufferData);
-            var selectionChangeTracker = new SelectionChangeTracker(_vimBuffer, commonOperations, FSharpList<IVisualModeSelectionOverride>.Empty, MouseDevice);
-            var multiSelectionTracker = new MultiSelectionTracker(_vimBuffer, commonOperations, MouseDevice);
+            _vimBuffer = Vim.CreateVimBufferWithData(vimBufferData);
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _windowSettings = _vimBuffer.WindowSettings;
-            _jumpList = _vimBuffer.JumpList;
             _selectionUtil = _vimBuffer.VimBufferData.SelectionUtil;
 
             _testableMouseDevice = (TestableMouseDevice)MouseDevice;

@@ -146,7 +146,7 @@ type ISelectionUtilFactory =
     abstract GetSelectionUtil: textView: ITextView -> ISelectionUtil
 
 /// Service for creating ISelectionUtilFactory instances
-type ISelectionUtilService = 
+type ISelectionUtilFactoryService = 
 
     /// Get the selection utility interface
     abstract GetSelectionUtilFactory: unit -> ISelectionUtilFactory
@@ -5216,6 +5216,9 @@ and IVim =
 
     /// Create an IVimBuffer for the given ITextView
     abstract CreateVimBuffer: textView: ITextView -> IVimBuffer
+
+    /// Create an IVimBuffer for the specified iVimBufferData
+    abstract CreateVimBufferWithData: vimBufferData: IVimBufferData -> IVimBuffer
 
     /// Create an IVimTextBuffer for the given ITextBuffer
     abstract CreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
