@@ -215,6 +215,7 @@ namespace Vim.UnitTest
             public void AddCaret()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 4));
                 _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
@@ -225,6 +226,7 @@ namespace Vim.UnitTest
             public void RemovePrimaryCaret()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 4));
                 _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
@@ -238,6 +240,7 @@ namespace Vim.UnitTest
             public void RemoveSecondaryCaret()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 4));
                 _testableMouseDevice.Point = GetPoint(1, 8).Position; // 'g' in 'ghi'
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
@@ -250,6 +253,7 @@ namespace Vim.UnitTest
             public void RemoveOnlyCaret()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 4));
                 _testableMouseDevice.Point = GetPoint(0, 4).Position; // 'd' in 'def'
                 ProcessNotation("<C-A-LeftMouse><C-A-LeftRelease>");
@@ -623,6 +627,7 @@ namespace Vim.UnitTest
             public void SelectWord(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
                 ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
@@ -638,6 +643,7 @@ namespace Vim.UnitTest
             public void AddWordToSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                _textView.SetVisibleLineCount(2);
 
                 // First double-click.
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
@@ -855,6 +861,7 @@ namespace Vim.UnitTest
             public void Click()
             {
                 Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
                 ProcessNotation("<LeftMouse><LeftRelease>");
@@ -869,6 +876,7 @@ namespace Vim.UnitTest
             public void SelectWord(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                _textView.SetVisibleLineCount(2);
                 SetCaretPoints(GetPoint(0, 0), GetPoint(1, 0));
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
                 ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease>");
@@ -884,6 +892,7 @@ namespace Vim.UnitTest
             public void AddWordToSelection(bool isInclusive)
             {
                 Create(isInclusive, "abc def ghi jkl", "mno pqr stu vwx", "");
+                _textView.SetVisibleLineCount(2);
 
                 // First double-click.
                 _testableMouseDevice.Point = GetPoint(0, 5).Position; // 'e' in 'def'
