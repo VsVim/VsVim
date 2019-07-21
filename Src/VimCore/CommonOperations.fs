@@ -2590,19 +2590,29 @@ type internal CommonOperations
             | _ ->
                 None
 
-        // Get any switch to visual mode from the specifed command result.
-        let getSwitchToVisualKind result =
+        // Get any switch to mode kind
+        let getSwitchToModeKind result =
             match result with
             | CommandResult.Completed modeSwitch ->
                 match modeSwitch with
                 | ModeSwitch.SwitchMode modeKind ->
-                    match modeKind with
-                    | ModeKind.VisualCharacter -> Some VisualKind.Character
-                    | ModeKind.VisualLine -> Some VisualKind.Line
-                    | ModeKind.VisualBlock -> Some VisualKind.Block
-                    | _ -> None
+                    Some modeKind
+                | ModeSwitch.SwitchModeWithArgument (modeKind, _) ->
+                    Some modeKind
                 | _ ->
                     None
+            | _ ->
+                None
+
+        // Get any switch to visual mode from the specifed command result.
+        let getSwitchToVisualKind result =
+            match getSwitchToModeKind result with
+            | Some modeKind ->
+                match modeKind with
+                | ModeKind.VisualCharacter -> Some VisualKind.Character
+                | ModeKind.VisualLine -> Some VisualKind.Line
+                | ModeKind.VisualBlock -> Some VisualKind.Block
+                | _ -> None
             | _ ->
                 None
 
@@ -2682,19 +2692,23 @@ type internal CommonOperations
         // Collect the command result and new selected span or any embedded
         // visual span, if present.
         let getResultingSpan oldSelectedSpan result =
-            match getSwitchToVisualKind result with
-            | Some visualKind ->
-                getInitialSelection visualKind
-            | None ->
-                match visualModeKind with
-                | Some modeKind ->
-                    getVisualSelectedSpan modeKind oldSelectedSpan
+            match getSwitchToModeKind result with
+            | Some modeKind when VisualKind.OfModeKind modeKind |> Option.isNone ->
+                SelectedSpan(x.CaretVirtualPoint)
+            | _ ->
+                match getSwitchToVisualKind result with
+                | Some visualKind ->
+                    getInitialSelection visualKind
                 | None ->
-                    match getVisualSelection result with
-                    | Some selectedSpan ->
-                        selectedSpan
+                    match visualModeKind with
+                    | Some modeKind ->
+                        getVisualSelectedSpan modeKind oldSelectedSpan
                     | None ->
-                        x.PrimarySelectedSpan
+                        match getVisualSelection result with
+                        | Some selectedSpan ->
+                            selectedSpan
+                        | None ->
+                            x.PrimarySelectedSpan
 
         // Set a temporary visual anchor point.
         let setVisualAnchorPoint (anchorPoint: VirtualSnapshotPoint) =
