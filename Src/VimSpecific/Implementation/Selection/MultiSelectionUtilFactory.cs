@@ -28,12 +28,16 @@ namespace Vim.Specific.Implementation.Selection
 
             IEnumerable<SelectedSpan> ISelectionUtil.GetSelectedSpans()
             {
+                if (_textView.Selection.Mode == TextSelectionMode.Box)
+                {
+                    var caretPoint = _textView.Caret.Position.VirtualBufferPosition;
+                    var anchorPoint = _textView.Selection.AnchorPoint;
+                    var activePoint = _textView.Selection.ActivePoint;
+                    return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
+                }
+
                 var broker = _textView.GetMultiSelectionBroker();
                 var primarySelection = broker.PrimarySelection;
-                if (_textView.Selection.Mode != TextSelectionMode.Stream)
-                {
-                    return new[] { GetSelectedSpan(primarySelection) };
-                }
                 var secondarySelections = broker.AllSelections
                     .Where(span => span != primarySelection)
                     .Select(selection => GetSelectedSpan(selection));
@@ -47,7 +51,7 @@ namespace Vim.Specific.Implementation.Selection
 
             private void SetSelectedSpansCore(SelectedSpan[] selectedSpans)
             {
-                if (selectedSpans.Length == 1 || _textView.Selection.Mode != TextSelectionMode.Stream)
+                if (_textView.Selection.Mode == TextSelectionMode.Box)
                 {
                     var selectedSpan = selectedSpans[0];
                     _textView.Caret.MoveTo(selectedSpan.CaretPoint);
