@@ -95,6 +95,8 @@ type internal CommonOperations
         | Some textViewLines, Some position ->
             let xCoordinate = position.X + _textView.ViewportLeft
             let yCoordinate = position.Y + _textView.ViewportTop
+            let yCoordinate = max yCoordinate _textView.ViewportTop
+            let yCoordinate = min yCoordinate _textView.ViewportBottom
             let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
 
             // Use the last line when clicking below the end of the buffer.

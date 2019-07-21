@@ -309,7 +309,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private void UpdateForSwitchMode(IMode currentMode)
         {
             var status = CommandMarginUtil.GetStatus(_vimBuffer, currentMode, forModeSwitch: true);
-            UpdateCommandLine(status);
+            UpdateCommandLine(status.Text, status.CaretPosition);
         }
 
         /// <summary>
@@ -326,7 +326,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             }
 
             var status = CommandMarginUtil.GetStatus(_vimBuffer, _vimBuffer.Mode, forModeSwitch: false);
-            UpdateCommandLine(status);
+            UpdateCommandLine(status.Text, status.CaretPosition);
         }
 
         private void UpdateForRecordingChanged()
@@ -388,13 +388,17 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         /// to the user.  Having a single function to perform this allows us to distinguish between edits
         /// from the user and mere messaging changes coming from vim events
         /// </summary>
-        private void UpdateCommandLine(string commandLine)
+        private void UpdateCommandLine(string commandLine, int caretPosition = -1)
         {
             Debug.Assert(!_inCommandLineUpdate);
             _inCommandLineUpdate = true;
             try
             {
                 _margin.CommandLineTextBox.Text = commandLine;
+                if (caretPosition != -1)
+                {
+                    _margin.CommandLineTextBox.Select(caretPosition, 0);
+                }
             }
             finally
             {
@@ -410,17 +414,16 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         {
             var textBox = _margin.CommandLineTextBox;
             var builder = new StringBuilder();
-            var offset = textBox.SelectionStart;
+            var caretPosition = textBox.SelectionStart;
             var commandText = textBox.Text;
-            builder.Append(commandText, 0, offset);
+            builder.Append(commandText, 0, caretPosition);
             builder.Append(text);
-            builder.Append(commandText, offset, commandText.Length - offset);
-            UpdateCommandLine(builder.ToString());
+            builder.Append(commandText, caretPosition, commandText.Length - caretPosition);
             if (putCaretAfter)
             {
-                offset += text.Length;
+                caretPosition += text.Length;
             }
-            textBox.Select(offset, 0);
+            UpdateCommandLine(builder.ToString(), caretPosition);
         }
 
         /// <summary>
@@ -436,7 +439,8 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 switch (_editKind)
                 {
                     case EditKind.Command:
-                        UpdateCommandLine(prefixChar.ToString() + _vimBuffer.CommandMode.Command);
+                        var command = _vimBuffer.CommandMode.EditableCommand;
+                        UpdateCommandLine(prefixChar.ToString() + command.Text, command.CaretPosition + 1);
                         break;
 
                     case EditKind.SearchForward:
@@ -823,10 +827,6 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             if (editKind != _editKind)
             {
                 ChangeEditKind(editKind, updateCommandLine);
-                if (editKind != EditKind.None)
-                {
-                    _margin.UpdateCaretPosition(EditPosition.End);
-                }
             }
             
             UpdateShowCommandText();

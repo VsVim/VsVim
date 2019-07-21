@@ -55,7 +55,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);
 
         private readonly IVimBufferData _vimBufferData;
-        private readonly ITextView _textView;
+        private readonly IWpfTextView _textView;
         private readonly ISelectionUtil _selectionUtil;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _editorFormatMap;
@@ -105,7 +105,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private ITextViewLine GetTextViewLineContainingPoint(VirtualSnapshotPoint caretPoint)
+        private IWpfTextViewLine GetTextViewLineContainingPoint(VirtualSnapshotPoint caretPoint)
         {
             try
             {
@@ -162,7 +162,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             IProtectedOperations protectedOperations)
         {
             _vimBufferData = vimBufferData;
-            _textView = _vimBufferData.TextView;
+            _textView = (IWpfTextView)_vimBufferData.TextView;
             _selectionUtil = _vimBufferData.SelectionUtil;
             _editorFormatMap = formatMap;
             _adornmentLayer = layer;
@@ -205,20 +205,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <returns></returns>
         private double SnapToWholeDevicePixels(double value, bool ensurePositive)
         {
-            if (_textView is IWpfTextView wpfTextView)
+            var visualElement = _textView.VisualElement;
+            var presentationSource = PresentationSource.FromVisual(visualElement);
+            var matrix = presentationSource.CompositionTarget.TransformToDevice;
+            var dpiFactor = 1.0 / matrix.M11;
+            var wholePixels = Math.Round(value / dpiFactor);
+            if (ensurePositive && wholePixels < 1.0)
             {
-                var visualElement = wpfTextView.VisualElement;
-                var presentationSource = PresentationSource.FromVisual(visualElement);
-                var matrix = presentationSource.CompositionTarget.TransformToDevice;
-                var dpiFactor = 1.0 / matrix.M11;
-                var wholePixels = Math.Round(value / dpiFactor);
-                if (ensurePositive && wholePixels < 1.0)
-                {
-                    wholePixels = 1.0;
-                }
-                return wholePixels * dpiFactor;
+                wholePixels = 1.0;
             }
-            return value;
+            return wholePixels * dpiFactor;
         }
 
         /// <summary>
@@ -468,8 +464,21 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
             if (IsRealCaretVisible(caretPoint, out var textViewLine))
             {
+                // Get the caret height.
+                height = line.TextHeight;
+
+                // Try to use the same line height that a selection would use.
+                var textViewLines = _textView.TextViewLines;
+                if (textViewLines != null && textViewLines.IsValid)
+                {
+                    var geometry = textViewLines.GetMarkerGeometry(line.Extent);
+                    if (geometry != null)
+                    {
+                        height = geometry.Bounds.Height;
+                    }
+                }
+
                 // Get the caret string and caret width.
-                height = textViewLine.Height;
                 var point = caretPoint.Position;
                 var codePointInfo = new SnapshotCodePoint(point).CodePointInfo;
                 if (point.Position < point.Snapshot.Length)

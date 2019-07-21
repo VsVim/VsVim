@@ -117,6 +117,7 @@ namespace Vim.UnitTest
             public void ExclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -141,6 +142,7 @@ namespace Vim.UnitTest
             public void InclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -165,6 +167,7 @@ namespace Vim.UnitTest
             public void InsertDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -193,6 +196,7 @@ namespace Vim.UnitTest
             public void ExclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -210,6 +214,7 @@ namespace Vim.UnitTest
             public void InclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -227,6 +232,7 @@ namespace Vim.UnitTest
             public void InsertShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -248,6 +254,7 @@ namespace Vim.UnitTest
             public void LinewiseShiftClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.ProcessNotation("V");
                 Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                 Assert.Equal(_textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
@@ -265,6 +272,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -278,6 +286,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -291,6 +300,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -318,6 +328,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -345,6 +356,7 @@ namespace Vim.UnitTest
             public void TokenDoubleClick()
             {
                 Create("cat (dog) bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 4); // open paren
                 _testableMouseDevice.Point = point;
@@ -358,6 +370,7 @@ namespace Vim.UnitTest
             public void DirectiveDoubleClick()
             {
                 Create("cat", "#if DEBUG", "xyzzy", "#endif", "dog", "");
+                _textView.SetVisibleLineCount(6);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(1, 0); // '#' in '#if'
                 _testableMouseDevice.Point = startPoint;
@@ -373,6 +386,7 @@ namespace Vim.UnitTest
             public void TripleClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(3);
                 var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease>");
@@ -386,6 +400,7 @@ namespace Vim.UnitTest
             public void QuadrupleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease><4-LeftMouse><LeftRelease>");
@@ -1619,6 +1634,20 @@ namespace Vim.UnitTest
                     Create("dog", "x", "tree");
                     _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
                     Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// On completely empty lines a block insertion should apply to
+                /// all lines
+                /// </summary>
+                [WpfFact]
+                public void AllEmptyLines()
+                {
+                    // Reported in issue #2675.
+                    Create("", "", "", "");
+                    _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "#", "#", "#", ""}, _textBuffer.GetLines());
+
                 }
             }
 

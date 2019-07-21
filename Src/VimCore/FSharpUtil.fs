@@ -528,8 +528,9 @@ module CharUtil =
             yield UnicodeCategory.DecimalDigitNumber
             yield UnicodeCategory.LetterNumber
             yield UnicodeCategory.OtherNumber
-            // Not separators
-            //yield UnicodeCategory.SpaceSeparator
+            // Space separators
+            yield UnicodeCategory.SpaceSeparator
+            // Not other separators
             //yield UnicodeCategory.LineSeparator
             //yield UnicodeCategory.ParagraphSeparator
             // Not control, etc.
@@ -580,7 +581,6 @@ module CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
-    let IsIdent x = IsLetterOrDigit x || x = '_'
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
     let IsPrintable x =

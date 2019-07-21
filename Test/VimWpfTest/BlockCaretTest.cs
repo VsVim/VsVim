@@ -15,11 +15,11 @@ namespace Vim.UI.Wpf.UnitTest
     public class BlockCaretTest : VimTestBase
     {
         private Mock<IVimBufferData> _vimBufferData;
-        private Mock<ITextView> _textView;
+        private Mock<IWpfTextView> _textView;
         private Mock<ITextCaret> _caret;
         private Mock<ITextSelection> _selection;
-        private Mock<ITextViewLineCollection> _lines;
-        private Mock<ITextViewLine> _caretLine;
+        private Mock<IWpfTextViewLineCollection> _lines;
+        private Mock<IWpfTextViewLine> _caretLine;
         private Mock<IEditorFormatMap> _formatMap;
         private Mock<IAdornmentLayer> _layer;
         private Mock<IClassificationFormatMap> _classificationFormatMap;
@@ -32,16 +32,16 @@ namespace Vim.UI.Wpf.UnitTest
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _caret.SetupGet(x => x.Position).Returns(new CaretPosition());
             _selection = new Mock<ITextSelection>(MockBehavior.Strict);
-            _textView = new Mock<ITextView>(MockBehavior.Strict);
+            _textView = new Mock<IWpfTextView>(MockBehavior.Strict);
             _textView.SetupGet(x => x.Caret).Returns(_caret.Object);
             _textView.SetupGet(x => x.Selection).Returns(_selection.Object);
             _textView.SetupGet(x => x.IsClosed).Returns(false);
             _textView.SetupGet(x => x.InLayout).Returns(false);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
-            _caretLine = new Mock<ITextViewLine>(MockBehavior.Strict);
+            _caretLine = new Mock<IWpfTextViewLine>(MockBehavior.Strict);
             _caretLine.SetupGet(x => x.IsValid).Returns(true);
             _caretLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
-            _lines = new Mock<ITextViewLineCollection>(MockBehavior.Strict);
+            _lines = new Mock<IWpfTextViewLineCollection>(MockBehavior.Strict);
             _lines.SetupGet(x => x.IsValid).Returns(true);
             _lines.Setup(x => x.GetTextViewLineContainingBufferPosition(It.IsAny<SnapshotPoint>())).Returns(_caretLine.Object);
             _textView.SetupGet(x => x.TextViewLines).Returns(_lines.Object);

@@ -43,5 +43,44 @@ namespace Vim.UI.Wpf.UnitTest
             _vimBuffer.ProcessNotation(":q<CR>");
             Assert.Equal(Resources.Common_NoWriteSinceLastChange, _control.CommandLineTextBox.Text);
         }
+
+        /// <summary>
+        /// A mapped left arrow key should affect the caret position
+        /// </summary>
+        [WpfFact]
+        public void MappedLeft()
+        {
+            // Reported in issue #1103.
+            var command = "%s//g";
+            _vimBuffer.Process($":map Q :{command}<Left><Left>", enter: true);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            _vimBuffer.Process("Q");
+            Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+            var expectedCaretPosition = command.Length - 2;
+            var expectedCommand = new EditableCommand(command, expectedCaretPosition);
+            Assert.Equal(expectedCommand, _vimBuffer.CommandMode.EditableCommand);
+            Assert.Equal(":" + command, _control.CommandLineTextBox.Text);
+            Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
+        }
+
+        /// <summary>
+        /// A mapped special key without a binding should not result in a null
+        /// character being inserted into the command
+        /// </summary>
+        [WpfFact]
+        public void MappedSpecialKey()
+        {
+            // Reported in #2683.
+            var command = "%s//g";
+            _vimBuffer.Process($":map Q :{command}<PageUp>", enter: true);
+            Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            _vimBuffer.Process("Q");
+            Assert.Equal(ModeKind.Command, _vimBuffer.ModeKind);
+            var expectedCaretPosition = command.Length;
+            var expectedCommand = new EditableCommand(command, expectedCaretPosition);
+            Assert.Equal(expectedCommand, _vimBuffer.CommandMode.EditableCommand);
+            Assert.Equal(":" + command, _control.CommandLineTextBox.Text);
+            Assert.Equal(expectedCaretPosition + 1, _control.CommandLineTextBox.SelectionStart);
+        }
     }
 }
