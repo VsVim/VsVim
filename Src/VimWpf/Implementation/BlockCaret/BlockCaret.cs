@@ -114,10 +114,10 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     var textViewLines = _textView.TextViewLines;
                     if (textViewLines != null && textViewLines.IsValid)
                     {
-                        var line = textViewLines.GetTextViewLineContainingBufferPosition(caretPoint.Position);
-                        if (line != null && line.IsValid)
+                        var textViewLine = textViewLines.GetTextViewLineContainingBufferPosition(caretPoint.Position);
+                        if (textViewLine != null && textViewLine.IsValid)
                         {
-                            return line;
+                            return textViewLine;
                         }
 
                     }
@@ -465,13 +465,13 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             if (IsRealCaretVisible(caretPoint, out var textViewLine))
             {
                 // Get the caret height.
-                height = line.TextHeight;
+                height = textViewLine.TextHeight;
 
                 // Try to use the same line height that a selection would use.
                 var textViewLines = _textView.TextViewLines;
                 if (textViewLines != null && textViewLines.IsValid)
                 {
-                    var geometry = textViewLines.GetMarkerGeometry(line.Extent);
+                    var geometry = textViewLines.GetMarkerGeometry(textViewLine.Extent);
                     if (geometry != null)
                     {
                         height = geometry.Bounds.Height;
