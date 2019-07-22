@@ -3930,6 +3930,36 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("."); // user
                 Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(1).GetText());
             }
+
+            /// <summary>
+            /// Detailed example of Visual Assist completion with repeat
+            /// </summary>
+            [WpfFact]
+            public void VisualAssistCompletion()
+            {
+                // Reported in issue #2692.
+                Create(
+                    "abc std::string def",
+                    "ghi std::string jkl",
+                    "");
+                _textView.MoveCaretToLine(0, 4); // user
+                _vimBuffer.ProcessNotation("cfg"); // user
+                _textBuffer.Insert(4, "Pho"); // user
+                _textView.MoveCaretTo(4); // assistant
+                _textView.MoveCaretTo(7); // assistant
+                _textBuffer.Replace(new Span(4, 3), "a"); // assistant
+                _textBuffer.Replace(new Span(4, 1), ""); // assistant
+                _textBuffer.Replace(new Span(4, 0), "PhotosStatStringType"); // assistant
+                _vimBuffer.ProcessNotation("<Esc>"); // user
+                _textView.MoveCaretToLine(1, 4); // user
+                _vimBuffer.ProcessNotation("."); // user
+                Assert.Equal(
+                    new[] {
+                        "abc PhotosStatStringType def",
+                        "ghi PhotosStatStringType jkl",
+                        ""
+                    }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class UndoTest : NormalModeIntegrationTest

@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
 using Vim.VisualStudio.Specific;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
@@ -19,6 +20,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
+        protected TestableMouseDevice _testableMouseDevice;
         protected Register _register;
 
         protected void Create(params string[] lines)
@@ -35,6 +37,20 @@ namespace Vim.UnitTest
             _register = Vim.RegisterMap.GetRegister('c');
             _globalSettings = Vim.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
+
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
+
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
+            base.Dispose();
         }
 
         public sealed class InsertCharacterAboveTest : InsertModeIntegrationTest
@@ -551,30 +567,35 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Once the caret moves outside the active region and typing starts again then
-            /// the register resets
+            /// Once the user moves the caret outside the active region and
+            /// typing starts again then the register resets
             /// </summary>
             [WpfFact]
             public void TypeAfterCaretMove()
             {
                 Create("cat");
+                _textView.SetVisibleLineCount(1);
                 _vimBuffer.ProcessNotation("dog");
-                _textView.MoveCaretTo(5);
+                _testableMouseDevice.Point = _textView.GetPoint(5);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 _vimBuffer.ProcessNotation("t<Esc>");
                 Assert.Equal("t", RegisterMap.GetRegisterText('.'));
             }
 
             /// <summary>
-            /// Even if the caret moves back to the original position the new typing action breaks
-            /// the repeat text.
+            /// Even if the user moves the caret back to the original position
+            /// the new typing action breaks the repeat text
             /// </summary>
             [WpfFact]
             public void TypeAfterCaretMoveBack()
             {
                 Create("");
+                _textView.SetVisibleLineCount(1);
                 _vimBuffer.ProcessNotation("dog");
-                _textView.MoveCaretTo(2);
-                _textView.MoveCaretTo(3);
+                _testableMouseDevice.Point = _textView.GetPoint(2);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                _testableMouseDevice.Point = _textView.GetPoint(3);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 _vimBuffer.ProcessNotation("s<Esc>");
                 Assert.Equal("dogs", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("s", RegisterMap.GetRegisterText('.'));
