@@ -5,12 +5,12 @@ namespace Vim
 /// IRegisterValueBacking implementation for the clipboard 
 type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
 
-    let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
+    let mutable _lastSetValue = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
 
     member x.RegisterValue = 
         let text = _device.Text
-        if text = _value.StringValue then
-            _value
+        if text = _lastSetValue.StringValue then
+            _lastSetValue
         else
             let operationKind = 
                 if EditUtil.GetLineBreakLengthAtEnd text > 0 then
@@ -20,7 +20,7 @@ type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
             RegisterValue(text, operationKind)
 
     member x.SetRegisterValue (value: RegisterValue) =
-        _value <- value
+        _lastSetValue <- value
         _device.Text <- value.StringValue
 
     interface IRegisterValueBacking with
