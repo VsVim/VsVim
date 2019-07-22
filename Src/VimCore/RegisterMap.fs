@@ -5,19 +5,28 @@ namespace Vim
 /// IRegisterValueBacking implementation for the clipboard 
 type ClipboardRegisterValueBacking (_device: IClipboardDevice) =
 
+    let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
+
     member x.RegisterValue = 
         let text = _device.Text
-        let operationKind = 
-            if EditUtil.GetLineBreakLengthAtEnd text > 0 then
-                OperationKind.LineWise
-            else
-                OperationKind.CharacterWise
-        RegisterValue(text, operationKind)
+        if text = _value.StringValue then
+            _value
+        else
+            let operationKind = 
+                if EditUtil.GetLineBreakLengthAtEnd text > 0 then
+                    OperationKind.LineWise
+                else
+                    OperationKind.CharacterWise
+            RegisterValue(text, operationKind)
+
+    member x.SetRegisterValue (value: RegisterValue) =
+        _value <- value
+        _device.Text <- value.StringValue
 
     interface IRegisterValueBacking with
         member x.RegisterValue 
             with get () = x.RegisterValue
-            and set value = _device.Text <- value.StringValue
+            and set value = x.SetRegisterValue value
 
 /// IRegisterValueBacking implementation for append registers.  All of the lower
 /// case letter registers can be accessed via an upper case version.  The only
