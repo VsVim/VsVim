@@ -31,6 +31,7 @@ type internal IncrementalSearchSession
     (
         _vimBufferData: IVimBufferData,
         _operations: ICommonOperations,
+        _motionUtil: IMotionUtil,
         _searchPath: SearchPath,
         _isWrap: bool
     ) =
@@ -101,7 +102,7 @@ type internal IncrementalSearchSession
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let command = EditableCommand.Empty
-        let historySession = HistoryUtil.CreateHistorySession x startPoint command vimBuffer
+        let historySession = HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap _motionUtil
         _sessionState <- SessionState.Started historySession
         historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
@@ -289,7 +290,8 @@ type internal IncrementalSearchSession
 type internal IncrementalSearch
     (
         _vimBufferData: IVimBufferData,
-        _operations: ICommonOperations
+        _operations: ICommonOperations,
+        _motionUtil: IMotionUtil
     ) =
 
     // TODO: most of these aren't needed anymore.
@@ -331,7 +333,7 @@ type internal IncrementalSearch
 
         Debug.Assert(Option.isNone _session)
 
-        let session = IncrementalSearchSession(_vimBufferData, _operations, searchPath, _globalSettings.WrapScan)
+        let session = IncrementalSearchSession(_vimBufferData, _operations, _motionUtil, searchPath, _globalSettings.WrapScan)
 
         // When the session completes need to clear out the active info if this is still 
         // the active session.

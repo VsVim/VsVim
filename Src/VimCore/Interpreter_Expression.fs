@@ -460,6 +460,12 @@ and [<RequireQualifiedAccess>] Expression =
     | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
+   
+    /// Add a new abbreviation 
+    | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AllowRemap: bool * AbbreviationModes: AbbreviationMode list * IsLocal: bool
+
+    /// Remove all abbreviations for the specified modes 
+    | AbbreviateClear of AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
     | AddAutoCommand of AutoCommandDefinition: AutoCommandDefinition
@@ -530,6 +536,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Display the specified marks.  If no Mark values are provided then display 
     /// all marks
     | DisplayMarks of Marks: Mark list
+
+    /// Display the abbrevation for the given modes and left hand side if provided
+    | DisplayAbbreviation of AbbreviationModes: AbbreviationMode list * Notation: string option
 
     /// Display the keymap for the given modes.  Restrict the display to the provided
     /// key notation if it's provided
@@ -757,6 +766,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
     | SubstituteRepeat of LineRangeSpecifier: LineRangeSpecifier * SubstituteFlags: SubstituteFlags
+
+    /// Unabbreviate the specified notations
+    | Unabbreviate of KeyNotation: string * AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Undo the last change
     | Undo

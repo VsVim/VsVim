@@ -228,7 +228,16 @@ type InsertSessionData = {
     /// Whether we should suppress breaking the undo sequence for the
     /// next left/right caret movement
     SuppressBreakUndoSequence: bool
-}
+
+    /// Whether we should be suppressing abbreviations for the currently typed
+    /// text
+    SuppressAbbreviation: bool
+} with
+
+    member x.RightMostCommand = 
+        match x.CombinedEditCommand with
+        | None -> None
+        | Some command -> Some command.RightMostCommand
 
 [<RequireQualifiedAccess>]
 type RawInsertCommand =
@@ -259,6 +268,7 @@ type internal InsertMode
         CombinedEditCommand = None
         ActiveEditItem = ActiveEditItem.None
         SuppressBreakUndoSequence = false
+        SuppressAbbreviation = false
     }
 
     /// The set of commands supported by insert mode
@@ -306,6 +316,7 @@ type internal InsertMode
     let _commandRanEvent = StandardEvent<CommandRunDataEventArgs>()
     let _wordUtil = _vimBuffer.VimTextBuffer.WordUtil
     let _wordCompletionUtil = WordCompletionUtil(_vimBuffer.Vim, _wordUtil)
+    let _localAbbreviationMap = _vimBuffer.VimTextBuffer.LocalAbbreviationMap
     let mutable _commandMap: Map<KeyInput, RawInsertCommand> = Map.empty
     let mutable _sessionData = _emptySessionData
     let mutable _isInProcess = false
@@ -349,9 +360,10 @@ type internal InsertMode
                 ("<C-p>", RawInsertCommand.CustomCommand this.ProcessWordCompletionPrevious)
                 ("<C-r>", RawInsertCommand.CustomCommand this.ProcessPasteStart)
                 ("<C-g>", RawInsertCommand.CustomCommand this.ProcessSpecialStart)
-                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
                 ("<C-k>", RawInsertCommand.CustomCommand this.ProcessDigraphStart)
                 ("<C-q>", RawInsertCommand.CustomCommand this.ProcessLiteralStart)
+                ("<C-^>", RawInsertCommand.CustomCommand this.ProcessToggleLanguage)
+                ("<C-]>", RawInsertCommand.CustomCommand this.ProcessAbbreviationCompletion)
                 ("<LeftMouse>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.MoveCaretToMouse))
                 ("<LeftDrag>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseDrag))
                 ("<LeftRelease>", RawInsertCommand.CustomCommand (this.ForwardToNormal NormalCommand.SelectTextForMouseRelease))
@@ -927,24 +939,37 @@ type internal InsertMode
                 let insertCommand = if isOverwrite then InsertCommand.Overwrite text else InsertCommand.Insert text
                 x.RunInsertCommand insertCommand keyInputSet CommandFlags.InsertEdit
 
+    /// This will attempt to complete an abbreviation based on the currently typed text without inserting
+    /// any additional characters.
+    member x.ProcessAbbreviationCompletion keyInput =
+        x.TryCompleteAbbreviation keyInput |> ignore
+        ProcessResult.Handled ModeSwitch.NoSwitch
+
+    member x.TryCompleteAbbreviation keyInput =
+        if not _sessionData.SuppressAbbreviation then
+            match _sessionData.RightMostCommand with
+            | Some (InsertCommand.Insert text) ->
+                match _localAbbreviationMap.Abbreviate(text, keyInput, AbbreviationMode.Insert) with
+                | Some result -> 
+                    let flags = CommandFlags.Repeatable ||| CommandFlags.InsertEdit
+                    x.RunInsertCommand (InsertCommand.DeleteLeft result.ReplacedSpan.Length) KeyInputSet.Empty flags |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = true }
+                    for keyInput in result.Replacement.KeyInputs do
+                        x.ProcessCore keyInput |> ignore
+                    _sessionData <- { _sessionData with SuppressAbbreviation = false }
+                    true
+                | _ -> false
+            | _ -> false
+        else
+            false
+
     /// Try and process the KeyInput by considering the current text edit in Insert Mode
     member x.ProcessWithCurrentChange keyInput = 
 
         // Actually try and process this with the current change 
         let func (text: string) = 
-            let data = 
-                if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
-                    let flags = CommandFlags.Repeatable ||| CommandFlags.ContextSensitive
-                    let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
-                    Some (InsertCommand.DeleteAllIndent, flags, keyInputSet, "0")
-                else
-                    None
-
-            match data with
-            | None ->
-                None
-            | Some (command, flags, keyInputSet, text) ->
-
+            if text.EndsWith("0") && keyInput = KeyInputUtil.CharWithControlToKeyInput 'd' then
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet "0<C-d>"
                 // First step is to delete the portion of the current change which matches up with
                 // our command.
                 if x.CaretPoint.Position >= text.Length then
@@ -954,10 +979,16 @@ type internal InsertMode
                     _textBuffer.Delete(span.Span) |> ignore
 
                 // Now run the command
-                x.RunInsertCommand command keyInputSet flags |> Some
+                x.RunInsertCommand InsertCommand.DeleteAllIndent keyInputSet (CommandFlags.Repeatable ||| CommandFlags.ContextSensitive) |> Some
+
+            else
+                x.TryCompleteAbbreviation keyInput |> ignore
+
+                // Return None to allow keyInput to process no matter whether or not the abbreviation was 
+                // completed. The keyInput still needs to be appended to the buffer.
+                None
 
         match _sessionData.CombinedEditCommand with
-        | None -> None
         | Some insertCommand ->
             match insertCommand.RightMostCommand with
             | InsertCommand.Insert text -> func text
@@ -983,6 +1014,7 @@ type internal InsertMode
                 else
                     None
             | _ -> None
+        | _ -> None
 
     /// Called when we need to process a key stroke and an IWordCompletionSession
     /// is active.
@@ -1507,6 +1539,7 @@ type internal InsertMode
             CombinedEditCommand = None
             ActiveEditItem = ActiveEditItem.None
             SuppressBreakUndoSequence = false
+            SuppressAbbreviation = false
         }
 
         // If this is replace mode then go ahead and setup overwrite

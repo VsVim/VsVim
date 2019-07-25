@@ -47,7 +47,7 @@ namespace Vim.UnitTest
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>(), ViewFlags.Standard));
             _commandUtil = _factory.Create<ICommandUtil>();
             var motionUtil = new MotionUtil(vimBufferData, _operations.Object);
-            var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object));
+            var capture = new MotionCapture(vimBufferData, new IncrementalSearch(vimBufferData, _operations.Object, motionUtil));
             var runner = new CommandRunner(
                 vimBufferData,
                 capture,

@@ -45,6 +45,23 @@ namespace Vim.UnitTest
             _vimBuffer.Process(command, enter: true);
         }
 
+        public sealed class AbbreviationTest : CommandModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData("cab ee put c", "ee ", "tree")]
+            [InlineData("ab ee put c", "ee ", "tree")]
+            [InlineData("iab ee put c", "ee ", "")] // Insert abbreviations don't apply here
+            public void Rules(string abbreviation, string command, string expectedText)
+            {
+                Create();
+                RegisterMap.GetRegister('c').UpdateValue("tree");
+                _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+                RunCommand(abbreviation);
+                RunCommand(command);
+                Assert.Equal(expectedText, _textBuffer.GetLineText(0));
+            }
+        }
+
         public sealed class CommandChangedEventTest : CommandModeIntegrationTest
         {
             private int _commandChangedCount;
@@ -1871,9 +1888,9 @@ namespace Vim.UnitTest
             {
                 Create("");
                 RunCommand("imap cat dog");
-                Assert.Equal(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+                Assert.Single(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
                 RunCommand("iunmap dog");
-                Assert.Equal(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+                Assert.Empty(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
             }
 
             /// <summary>
@@ -1885,9 +1902,9 @@ namespace Vim.UnitTest
             {
                 Create("");
                 RunCommand("imap cat dog");
-                Assert.Equal(1, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+                Assert.Single(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
                 RunCommand("unmap! dog");
-                Assert.Equal(0, KeyMap.GetKeyMappingsForMode(KeyRemapMode.Insert).Length);
+                Assert.Empty(GlobalKeyMap.GetKeyMappings(KeyRemapMode.Insert));
             }
 
             /// <summary>

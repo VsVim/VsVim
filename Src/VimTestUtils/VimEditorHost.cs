@@ -63,9 +63,9 @@ namespace Vim.UnitTest
             get { return _bufferTrackingService; }
         }
 
-        public IKeyMap KeyMap
+        public IVimGlobalKeyMap GlobalKeyMap
         {
-            get { return _vim.KeyMap; }
+            get { return _vim.GlobalKeyMap; }
         }
 
         public IKeyUtil KeyUtil

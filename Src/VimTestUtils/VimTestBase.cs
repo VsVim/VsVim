@@ -161,9 +161,9 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.BufferTrackingService; }
         }
 
-        public IKeyMap KeyMap
+        public IVimGlobalKeyMap GlobalKeyMap
         {
-            get { return _vimEditorHost.KeyMap; }
+            get { return _vimEditorHost.GlobalKeyMap; }
         }
 
         public IKeyUtil KeyUtil
@@ -281,9 +281,9 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
-            Vim.KeyMap.ClearAll();
             Vim.DigraphMap.Clear();
-            Vim.KeyMap.IsZeroMappingEnabled = true;
+            Vim.GlobalKeyMap.ClearKeyMappings();
+            Vim.GlobalAbbreviationMap.ClearAbbreviations();
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;

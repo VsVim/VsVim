@@ -135,7 +135,7 @@ type internal CommandMode
                 member this.Completed _ command wasMapped = completed command.Text wasMapped
                 member this.Cancelled _ = cancelled ()
             }
-        HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
+        HistoryUtil.CreateHistorySession historyClient 0 _command _buffer.VimTextBuffer.LocalAbbreviationMap _buffer.MotionUtil
 
     member x.OnEnter (arg: ModeArgument) = 
         let historySession = x.CreateHistorySession()
