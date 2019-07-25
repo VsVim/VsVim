@@ -4,13 +4,13 @@ namespace Vim.Interpreter
 open Vim
 
 [<RequireQualifiedAccess>]
-type ParseResult<'T> = 
+type internal ParseResult<'T> = 
     | Succeeded of Value: 'T
     | Failed of Error: string
 
 [<Sealed>]
 [<Class>]
-type Parser = 
+type internal Parser = 
 
     new: vimData: IVimGlobalSettings * IVimData -> Parser
 
@@ -36,3 +36,5 @@ type Parser =
     member ParseLineCommand: commandText: string -> LineCommand
 
     member ParseLineCommands: lines: string[] -> LineCommand list
+
+    member TryExpand: command: string -> string option

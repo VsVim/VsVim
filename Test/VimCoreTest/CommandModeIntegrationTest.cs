@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Vim.Interpreter;
 
 namespace Vim.UnitTest
 {
@@ -16,6 +17,7 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private ICommandMode _commandMode;
         private MockVimHost _vimHost;
+        private IVimInterpreter _vimInterpreter;
         private string _lastStatus;
 
         internal virtual void Create(params string[] lines)
@@ -26,6 +28,7 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimHost = VimHost;
             _commandMode = _vimBuffer.CommandMode;
+            _vimInterpreter = Vim.GetVimInterpreter(_vimBuffer);
         }
 
         /// <summary>
@@ -701,7 +704,8 @@ namespace Vim.UnitTest
             /// Specifying "line 0" should move to before the first line.
             /// </summary>
             [WpfFact]
-            public void MoveToBeforeFirstLineInFile() {
+            public void MoveToBeforeFirstLineInFile()
+            {
                 Create("cat", "dog", "bear");
 
                 _textView.MoveCaretToLine(2);
@@ -710,6 +714,35 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
                 Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+            }
+        }
+
+        public sealed class ParseAndRunTest : CommandModeIntegrationTest
+        {
+            private CommandEventArgs _lastCommandRanEventArgs;
+            private int _commandRanCount; 
+
+            internal override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _commandMode.CommandRan += (_, e) =>
+                {
+                    _lastCommandRanEventArgs = e;
+                    _commandRanCount++;
+                };
+            }
+
+            [WpfTheory]
+            [InlineData("red", "red", "redo")]
+            [InlineData("redo", "redo", "redo")]
+            public void ParseAndRun(string typed, string expectedCommandRan, string expectedFullCommandName)
+            {
+                Create();
+                RunCommand(typed);
+                Assert.Equal(1, _commandRanCount);
+                Assert.Equal(expectedCommandRan, _lastCommandRanEventArgs.Command);
+                Assert.True(_vimInterpreter.TryExpandCommandName(expectedCommandRan, out string fullCommandName));
+                Assert.Equal(expectedFullCommandName, fullCommandName);
             }
         }
 

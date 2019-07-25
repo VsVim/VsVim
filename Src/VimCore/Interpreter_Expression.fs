@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim.Interpreter
+open System.Runtime.InteropServices
 open Microsoft.VisualStudio.Text
 open Vim
 
@@ -832,4 +833,7 @@ type IVimInterpreter =
 
     /// Run the given script 
     abstract RunScript: lines: string[] -> unit
+
+    /// Try and expand the shortened command name to its full form
+    abstract TryExpandCommandName: shortCommandName: string * commandName: outref<string> -> bool
 

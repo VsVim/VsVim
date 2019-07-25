@@ -11,12 +11,12 @@ namespace Vim.UnitTest
 {
     public abstract class ParserTest
     {
-        protected Parser CreateParser(params string[] lines)
+        internal Parser CreateParser(params string[] lines)
         {
             return new Parser(new GlobalSettings(), VimUtil.CreateVimData(), lines);
         }
 
-        protected Parser CreateParserOfLines(string text)
+        internal Parser CreateParserOfLines(string text)
         {
             var lines = text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
             return CreateParser(lines);

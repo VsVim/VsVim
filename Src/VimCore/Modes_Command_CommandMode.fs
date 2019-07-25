@@ -13,6 +13,7 @@ type internal CommandMode
     ) =
 
     let _commandChangedEvent = StandardEvent()
+    let _commandRanEvent = StandardEvent<CommandEventArgs>()
     let _vimData = _buffer.VimData
     let _statusUtil = _buffer.VimBufferData.StatusUtil
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
@@ -63,11 +64,12 @@ type internal CommandMode
         | _ -> ()
 
         let vimInterpreter = _buffer.Vim.GetVimInterpreter _buffer
-        let result = vimInterpreter.RunLineCommand lineCommand
+        vimInterpreter.RunLineCommand lineCommand
         if not wasMapped then
             _vimData.LastCommandLine <- command
             _vimData.LastLineCommand <- Some lineCommand
-        result
+
+        _commandRanEvent.Trigger x (CommandEventArgs(command, wasMapped, lineCommand))
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving
@@ -193,5 +195,8 @@ type internal CommandMode
 
         [<CLIEvent>]
         member x.CommandChanged = _commandChangedEvent.Publish
+
+        [<CLIEvent>]
+        member x.CommandRan = _commandRanEvent.Publish
 
 
