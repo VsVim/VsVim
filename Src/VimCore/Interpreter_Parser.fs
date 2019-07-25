@@ -613,6 +613,7 @@ and [<Sealed>] Parser
         let isLocal = x.ParseAbbreviateBufferArgument()
         LineCommand.AbbreviateClear (abbreviationModes, isLocal)
 
+    /// Parse out :unabbreviate and the mode specific variants: cunabbrev and iunabbrev
     member x.ParseUnabbreviate(abbreviationModes) =
         let isLocal = x.ParseAbbreviateBufferArgument()
         x.SkipBlanks()

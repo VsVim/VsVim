@@ -907,11 +907,7 @@ type VimInterpreter
                 if Seq.contains mode modeList then
                     list.Add str
 
-            let groupedAbbreviations = 
-                map.Abbreviations 
-                |> Seq.groupBy (fun x -> x.Abbreviation)
-                |> Seq.sortBy (fun (key, _) -> key)
-            for (key, abbreviations)  in groupedAbbreviations do
+            let getDisplayString key (abbreviations: Abbreviation seq) =
                 match List.ofSeq abbreviations with
                 | [a] -> add a.Mode (sprintf "%c  %O\t%c%O" (modeToChar a.Mode) key isLocalChar a.Replacement)
                 | [a1; a2] when a1.Replacement = a2.Replacement -> list.Add(sprintf "!  %O\t%c%O" key isLocalChar a1.Replacement)
@@ -919,6 +915,14 @@ type VimInterpreter
                     add a1.Mode (sprintf "%c  %O\t%c%O" (modeToChar a1.Mode) key isLocalChar a1.Replacement)
                     add a2.Mode (sprintf "%c  %O\t%c%O" (modeToChar a2.Mode) key isLocalChar a2.Replacement)
                 | _ -> ()
+
+            let groupedAbbreviations = 
+                map.Abbreviations 
+                |> Seq.groupBy (fun x -> x.Abbreviation)
+                |> Seq.sortBy (fun (key, _) -> key)
+
+            for (key, abbreviations)  in groupedAbbreviations do
+                getDisplayString key abbreviations
 
         appendMap _vimTextBuffer.LocalAbbreviationMap '!'
         appendMap _vimTextBuffer.GlobalAbbreviationMap ' '
@@ -1019,7 +1023,8 @@ type VimInterpreter
         let getLine modes lhs rhs = 
             sprintf "%-3s%-10s %s" (getModeLabel modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
-        for keyMap in x.KeyMaps do
+        x.KeyMaps
+        |> Seq.collect (fun (keyMap: IVimKeyMap) ->
             keyRemapModes
             |> Seq.collect (fun mode ->
 
@@ -1034,8 +1039,8 @@ type VimInterpreter
             |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
             |> Seq.collect combineByGroup
             |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
-            |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs)
-            |> _statusUtil.OnStatusLong
+            |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs))
+        |> _statusUtil.OnStatusLong
 
     /// Display the registers.  If a particular name is specified only display that register
     member x.RunDisplayRegisters nameList =
