@@ -2,11 +2,47 @@
 
 namespace Vim
 open System
+open System.Collections.Generic
+open System.Diagnostics
 open Vim.Interpreter
+open CollectionExtensions
+open Microsoft.VisualStudio.Text
 
-/// Map of a LHS of a mapping to the RHS.  The bool is used to indicate whether or not 
-/// the RHS should be remapped as part of an expansion
-type RemapModeMap = Map<KeyInputSet, KeyMapping>
+type internal MappingMap<'TMode, 'TData when 'TMode : equality>(_modeList: 'TMode list) =
+
+    let _map = Dictionary<'TMode, Dictionary<KeyInputSet, 'TData>>(capacity = _modeList.Length)
+
+    do
+        for mode in _modeList do
+            _map.[mode] <- Dictionary<KeyInputSet, 'TData>()
+
+    member x.Mappings: 'TData seq = 
+        seq {
+            for kvp in _map.Values do
+                yield! kvp.Values
+        }
+
+    member x.Add(key, mode, data) =
+        let map = _map.[mode]
+        map.[key] <- data
+
+    member x.Remove(key, mode) =
+        let map = _map.[mode] 
+        map.Remove key
+
+    member x.Get(key, mode) =
+        let map = _map.[mode]
+        map.TryGetValueEx key
+
+    member x.Get(mode) = _map.[mode].Values :> 'TData seq
+
+    member x.Clear(mode) =
+        let map = _map.[mode]
+        map.Clear()
+
+    member x.Clear() = 
+        for map in _map.Values do
+            map.Clear()
 
 /// The type responsible for actually converting the mapping.  This is naturally a recursive
 /// process but is done here iteratively.  There are many Vim scenarios which call for 
@@ -20,9 +56,10 @@ type RemapModeMap = Map<KeyInputSet, KeyMapping>
 type Mapper
     (
         _keyInputSet: KeyInputSet,
-        _modeMap: RemapModeMap,
+        _keyMappings: KeyMapping seq,
         _globalSettings: IVimGlobalSettings,
-        _isZeroMappingEnabled: bool
+        _isZeroMappingEnabled: bool,
+        _overrideAllowRemap: bool option
     ) =
 
     /// During the processing of mapping input we found a match for the inputKeySet to the 
@@ -32,7 +69,11 @@ type Mapper
     member x.ProcessMapping (lhs: KeyInputSet) (keyMapping: KeyMapping) = 
 
         let mappedSet, remainingSet = 
-            if keyMapping.AllowRemap then
+            let allowRemap = 
+                match _overrideAllowRemap with
+                | Some b -> b
+                | None -> keyMapping.AllowRemap
+            if allowRemap then
                 // Need to remap the {rhs} of the match here.  Check for the matching prefix
                 // case to prevent infinite remaps (:help recursive_mapping)
                 match lhs.FirstKeyInput, keyMapping.Right.FirstKeyInput with
@@ -128,8 +169,8 @@ type Mapper
 
             let lhs = remainingSet.Value
             let prefixMatchArray = 
-                _modeMap
-                |> Seq.filter (fun pair -> pair.Key.StartsWith(lhs))
+                _keyMappings
+                |> Seq.filter (fun keyMapping -> keyMapping.Left.StartsWith(lhs))
                 |> Array.ofSeq
             match prefixMatchArray with
             | [| |] -> 
@@ -137,11 +178,11 @@ type Mapper
                 // input just broke.  Need to search for keys which are prefixes to our 
                 // input
                 let brokenMatchArray = 
-                    _modeMap
-                    |> Seq.filter (fun pair -> lhs.StartsWith(pair.Key))
+                    _keyMappings
+                    |> Seq.filter (fun keyMapping -> lhs.StartsWith(keyMapping.Left))
                     |> Array.ofSeq
                 if brokenMatchArray.Length = 1 then
-                    processMapping lhs brokenMatchArray.[0].Value
+                    processMapping lhs brokenMatchArray.[0]
                 elif lhs.Length = 1 then
                     // No mappings for the lhs so we are done
                     result := KeyMappingResult.Unmapped lhs
@@ -154,9 +195,9 @@ type Mapper
                     result := KeyMappingResult.PartiallyMapped (mapped, remaining)
                     isDone := true
 
-            | [| pair |] -> 
-                if pair.Key = lhs then
-                    processMapping lhs pair.Value
+            | [| keyMapping |] -> 
+                if keyMapping.Left = lhs then
+                    processMapping lhs keyMapping
                 else
                     needsMoreInput()
             | _ -> 
@@ -165,124 +206,256 @@ type Mapper
 
         result.Value
 
-type internal KeyMap
+type internal GlobalKeyMap(_variableMap: VariableMap) =
+
+    let _map = MappingMap<KeyRemapMode, KeyMapping>(KeyRemapMode.All)
+
+    static member ParseKeyNotation(notation: string, variableMap: VariableMap) =
+        let notation = 
+            if notation.IndexOf("<leader>", StringComparison.OrdinalIgnoreCase) >= 0 then
+                let replace =
+                    let found, value = variableMap.TryGetValue "mapleader"
+                    if found then 
+                        value.StringValue
+                    else
+                        "\\"
+                StringUtil.ReplaceNoCase notation "<leader>" replace
+            else
+                notation
+        KeyNotationUtil.TryStringToKeyInputSet notation
+
+    interface IVimGlobalKeyMap with
+        member x.KeyMappings = _map.Mappings
+        member x.GetKeyMapping(lhs, mode) = _map.Get(lhs, mode)
+        member x.GetKeyMappings(mode) = _map.Get(mode)
+        member x.AddKeyMapping(lhs, rhs, allowRemap, mode) = _map.Add(lhs, mode, KeyMapping(lhs, rhs, allowRemap, mode))
+        member x.RemoveKeyMapping(lhs, mode) = _map.Remove(lhs, mode)
+        member x.ClearKeyMappings(mode) = _map.Clear(mode)
+        member x.ClearKeyMappings() = _map.Clear()
+        member x.ParseKeyNotation(notation) = GlobalKeyMap.ParseKeyNotation(notation, _variableMap)
+
+type internal LocalKeyMap
     (
+        _globalKeyMap: IVimGlobalKeyMap,
         _globalSettings: IVimGlobalSettings,
         _variableMap: VariableMap
     ) =
 
-    let mutable _map: Map<KeyRemapMode, RemapModeMap> = Map.empty
+    let _map = MappingMap<KeyRemapMode, KeyMapping>(KeyRemapMode.All)
     let mutable _isZeroMappingEnabled = true
 
     member x.IsZeroMappingEnabled 
         with get() = _isZeroMappingEnabled
         and set value = _isZeroMappingEnabled <- value
 
-    member x.MapWithNoRemap lhs rhs mode = x.MapCore lhs rhs mode false
-    member x.MapWithRemap lhs rhs mode = x.MapCore lhs rhs mode true
+    member x.GetKeyMapping(keyInputSet, mode, includeGlobal) =
+        match _map.Get(keyInputSet, mode) with 
+        | Some r -> Some r
+        | None when includeGlobal -> _globalKeyMap.GetKeyMapping(keyInputSet, mode)
+        | None -> None
 
-    member x.Clear mode = _map <- _map |> Map.remove mode
-    member x.ClearAll () = _map <- Map.empty
+    member x.GetKeyMappings(mode, includeGlobal) =
+        let local = _map.Get(mode)
+        if includeGlobal then Seq.append (_globalKeyMap.GetKeyMappings(mode)) local
+        else local
 
-    /// Get a RemapModeMap for the given KeyRemapMode
-    member x.GetRemapModeMap mode = 
-        match Map.tryFind mode _map with
-        | None -> Map.empty
-        | Some map -> map
-
-    /// Get all of the mappings for the given KeyRemapMode
-    member x.GetKeyMappingsForMode mode: KeyMapping list = 
-        match Map.tryFind mode _map with
-        | None -> List.empty
-        | Some map -> map |> Map.toSeq |> Seq.map snd |> List.ofSeq
-
-    /// Main API for adding a key mapping into our storage
-    member x.MapCore (lhs: string) (rhs: string) (mode: KeyRemapMode) allowRemap = 
-
-        // Replace the <Leader> value with the appropriate replacement string
-        let replaceLeader (str: string) =
-            if str.IndexOf("<leader>", StringComparison.OrdinalIgnoreCase) >= 0 then
-                let replace =
-                    let found, value = _variableMap.TryGetValue "mapleader"
-                    if found then 
-                        value.StringValue
-                    else
-                        "\\"
-                StringUtil.ReplaceNoCase str "<leader>" replace
+    /// Map the passed in KeyInputSet and return the result for the mapping
+    member x.Map (keyInputSet: KeyInputSet) allowRemap mode =
+        // The set of key mappings to consider are the local ones and the global ones when they 
+        // don't conflict with a local one.
+        let keyMappings = 
+            let localKeyMappings = _map.Get(mode)
+            let globalKeyMappings = _globalKeyMap.GetKeyMappings(mode)
+            if Seq.isEmpty localKeyMappings then
+                globalKeyMappings
             else
-                str
+                let newGlobalKeyMappings = globalKeyMappings |> Seq.where (fun g -> Option.isNone (_map.Get(g.Left, mode)))
+                Seq.append newGlobalKeyMappings localKeyMappings
 
-        if StringUtil.IsNullOrEmpty rhs then
-            false
-        else
-            let lhs = replaceLeader lhs
-            let rhs = replaceLeader rhs
-            let key = KeyNotationUtil.TryStringToKeyInputSet lhs
-            let rhs = KeyNotationUtil.TryStringToKeyInputSet rhs
-            match key, rhs with
-            | Some left, Some right ->
-                // Empirically with vim/gvim, <S-$> on the left is never
-                // matched, but <S-$> on the right is treated as '$'. Reported
-                // in issue #2313.
-                let right =
-                    right.KeyInputs
-                    |> Seq.map KeyInputUtil.NormalizeKeyModifiers
-                    |> KeyInputSetUtil.OfSeq
-                let keyMapping = {
-                    Left = left
-                    Right = right
-                    AllowRemap = allowRemap
-                }
-                let modeMap = x.GetRemapModeMap mode
-                let modeMap = Map.add left keyMapping modeMap
-                _map <- Map.add mode modeMap _map
-                true
-            | _ -> 
-                // Need both a valid LHS and RHS to create a mapping
-                false
-
-    member x.Unmap lhs mode = 
-        match KeyNotationUtil.TryStringToKeyInputSet lhs with
-        | None -> false
-        | Some key ->
-            let modeMap = x.GetRemapModeMap mode
-            if Map.containsKey key modeMap then
-                let modeMap = Map.remove key modeMap
-                _map <- Map.add mode modeMap _map
-                true
-            else
-                false
-
-    member x.UnmapByMapping rhs mode = 
-        match KeyNotationUtil.TryStringToKeyInputSet rhs with
-        | None -> false
-        | Some right ->
-            let modeMap = x.GetRemapModeMap mode
-            let key = modeMap |> Map.tryFindKey (fun _ keyMapping -> keyMapping.Right = right)
-            match key with
-            | None -> false
-            | Some key ->
-                let modeMap = Map.remove key modeMap
-                _map <- Map.add mode modeMap _map
-                true
-
-    /// Get the key mapping for the passed in data.  Returns a KeyMappingResult representing the 
-    /// mapping
-    member x.GetKeyMapping (keyInputSet: KeyInputSet) mode =
-        let modeMap = x.GetRemapModeMap mode
-        let mapper = Mapper(keyInputSet, modeMap, _globalSettings, _isZeroMappingEnabled)
+        let mapper = Mapper(keyInputSet, keyMappings, _globalSettings, _isZeroMappingEnabled, allowRemap)
         mapper.GetKeyMapping()
 
-    interface IKeyMap with
+    interface IVimLocalKeyMap with
+        member x.GlobalKeyMap = _globalKeyMap
         member x.IsZeroMappingEnabled 
             with get() = x.IsZeroMappingEnabled
             and set value = x.IsZeroMappingEnabled <- value
-        member x.GetKeyMappingsForMode mode = x.GetKeyMappingsForMode mode 
-        member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
-        member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
-        member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode
-        member x.Unmap lhs mode = x.Unmap lhs mode
-        member x.UnmapByMapping rhs mode = x.UnmapByMapping rhs mode
-        member x.Clear mode = x.Clear mode
-        member x.ClearAll () = x.ClearAll()
+        member x.KeyMappings = _map.Mappings
+        member x.GetKeyMapping(lhs, mode) = _map.Get(lhs, mode)
+        member x.GetKeyMapping(lhs, mode, includeGlobal) = x.GetKeyMapping(lhs, mode, includeGlobal)
+        member x.GetKeyMappings(mode) = _map.Get(mode)
+        member x.GetKeyMappings(mode, includeGlobal) = x.GetKeyMappings(mode, includeGlobal)
+        member x.AddKeyMapping(lhs, rhs, allowRemap, mode) = _map.Add(lhs, mode, KeyMapping(lhs, rhs, allowRemap, mode))
+        member x.RemoveKeyMapping(lhs, mode) = _map.Remove(lhs, mode)
+        member x.ClearKeyMappings(mode) = _map.Clear(mode)
+        member x.ClearKeyMappings() = _map.Clear()
+        member x.Map(keyInputSet, mode) = x.Map keyInputSet None mode
+        member x.Map(keyInputSet, allowRemap, mode) = x.Map keyInputSet (Some allowRemap) mode
+        member x.ParseKeyNotation(notation) = GlobalKeyMap.ParseKeyNotation(notation, _variableMap)
 
+type internal GlobalAbbreviationMap() =
+
+    let _map = MappingMap<AbbreviationMode, Abbreviation>(AbbreviationMode.All)
+
+    member x.Map = _map
+
+    interface IVimGlobalAbbreviationMap with
+        member x.Abbreviations = x.Map.Mappings
+        member x.AddAbbreviation(lhs, rhs, allowRemap, mode) = x.Map.Add(lhs, mode, (Abbreviation(lhs, rhs, allowRemap, mode)))
+        member x.GetAbbreviation(lhs, mode) = x.Map.Get(lhs, mode)
+        member x.GetAbbreviations(mode) = x.Map.Get(mode)
+        member x.RemoveAbbreviation(lhs, mode) = x.Map.Remove(lhs, mode)
+        member x.ClearAbbreviations(mode) = x.Map.Clear(mode)
+        member x.ClearAbbreviations() = x.Map.Clear()
+
+type internal LocalAbbreviationMap
+    (
+        _keyMap: IVimLocalKeyMap,
+        _globalAbbreviationMap: IVimGlobalAbbreviationMap,
+        _wordUtil : WordUtil
+    ) = 
+
+    let _map = MappingMap<AbbreviationMode, Abbreviation>(AbbreviationMode.All)
+
+    member x.Map = _map
+    member x.IsKeywordChar c = _wordUtil.IsKeywordChar c
+    member x.IsNonKeywordChar c = not (_wordUtil.IsKeywordChar c)
+
+    member x.GetAbbreviation(lhs, mode, includeGlobal) = 
+        match _map.Get(lhs, mode) with
+        | Some rhs -> Some rhs
+        | None when includeGlobal -> _globalAbbreviationMap.GetAbbreviation(lhs, mode)
+        | None -> None
+
+    member x.GetAbbreviations(mode, includeGlobal) =
+        let local = _map.Get(mode)
+        if includeGlobal then Seq.append (_globalAbbreviationMap.GetAbbreviations(mode)) local
+        else local
+
+    member x.Parse text = 
+        if StringUtil.IsNullOrEmpty text || Seq.exists CharUtil.IsWhiteSpace text then
+            None
+        elif Seq.forall x.IsKeywordChar text then
+            Some AbbreviationKind.FullId
+        else
+            let isLastKeyword = x.IsKeywordChar text.[text.Length - 1]
+            let rest = Seq.take (text.Length - 1) text
+            if isLastKeyword && Seq.forall x.IsNonKeywordChar rest then
+                Some AbbreviationKind.EndId
+            elif not isLastKeyword then
+                Some AbbreviationKind.NonId
+            else
+                None
+
+    member x.Abbreviate (text: string) (triggerKeyInput: KeyInput) mode =
+
+        // The replacement portion of an abbreviation is potentially subject to key remapping. 
+        let remap (abbreviation: Abbreviation) =
+            if abbreviation.AllowRemap then
+                let remapMode = 
+                    match mode with
+                    | AbbreviationMode.Insert -> KeyRemapMode.Insert
+                    | AbbreviationMode.Command -> KeyRemapMode.Command
+
+                let result = _keyMap.Map(abbreviation.Replacement, allowRemap = false, mode = remapMode)
+                let result =
+                    match result with
+                    | KeyMappingResult.NeedsMoreInput _ -> 
+                        // An undocumented behavior is that when a replacement has an incomplete key mapping then
+                        // the trigger key can be used to complete the mapping. This strangely though does not 
+                        // consume the trigger key, it is just used to complete a mapping and the trigger key is 
+                        // processed as normal
+                        let newResult = _keyMap.Map((abbreviation.Replacement.Add triggerKeyInput), allowRemap = false, mode = remapMode)
+                        match newResult with
+                        | KeyMappingResult.Mapped _ -> newResult
+                        | _ -> result
+                    | _ -> result
+                let replacement = 
+                    match result with 
+                    | KeyMappingResult.NeedsMoreInput _ -> abbreviation.Replacement
+                    | KeyMappingResult.Mapped keyInputSet -> keyInputSet
+                    | KeyMappingResult.PartiallyMapped (l, r) -> l.AddRange r
+                    | KeyMappingResult.Recursive _ -> abbreviation.Replacement
+                    | KeyMappingResult.Unmapped _ -> abbreviation.Replacement
+                (replacement, Some result)
+            else 
+                (abbreviation.Replacement, None)
+
+        let getFullId() = 
+            Debug.Assert(text.Length > 0)
+            let mutable index = text.Length
+            while index > 0 && x.IsKeywordChar text.[index - 1] do
+                index <- index - 1
+            let fullIdText = text.Substring(index)
+            match fullIdText.Length with
+            | 0 -> None
+            | 1 ->
+                if index = 0 then Some (fullIdText, AbbreviationKind.FullId)
+                else 
+                    let before = text.[index - 1]
+                    let isValid =
+                        before = ' ' ||
+                        before = '\t' ||
+                        before = '\n' ||
+                        before = '\r'
+                    if isValid then Some (fullIdText, AbbreviationKind.FullId)
+                    else None
+            | _ -> Some (fullIdText, AbbreviationKind.FullId)
+
+        let getEndId() =
+            Debug.Assert(text.Length > 0)
+            if text.Length > 1 && x.IsKeywordChar text.[text.Length - 1] && x.IsNonKeywordChar text.[text.Length - 2] then
+                let mutable index = text.Length - 2
+                while index > 0 && x.IsNonKeywordChar text.[index - 1] do
+                    index <- index - 1
+                Some ((text.Substring(index)), AbbreviationKind.EndId)
+            else None
+            
+        let getNonId() =
+            let testChar c = not (c = ' ' || c = '\t')
+            if text.Length > 1 && x.IsNonKeywordChar text.[text.Length - 1] && testChar text.[text.Length - 2] then
+                let mutable index = text.Length - 2
+                while index > 0 && testChar text.[index - 1] do
+                    index <- index - 1
+                Some ((text.Substring(index)), AbbreviationKind.NonId)
+            else None
+
+        let isAbbreviationTrigger =
+            match triggerKeyInput.RawChar with
+            | Some c -> not (_wordUtil.IsKeywordChar c)
+            | None -> true
+        if isAbbreviationTrigger && not (StringUtil.IsNullOrEmpty text) then
+            match getFullId() |> Option.orElseWith getEndId |> Option.orElseWith getNonId with
+            | None -> None
+            | Some (keyText, kind) ->
+                let key = KeyNotationUtil.StringToKeyInputSet keyText 
+                match x.GetAbbreviation(key, mode, includeGlobal = true) with
+                | None -> None
+                | Some abbreviation -> 
+                    let span = Span(0, keyText.Length)
+                    let replacement, remapResult = remap abbreviation
+                    let result = { 
+                        Abbreviation = abbreviation
+                        AbbreviationKind = kind
+                        Replacement = replacement
+                        ReplacementRemapResult = remapResult
+                        OriginalText = text 
+                        TriggerKeyInput = triggerKeyInput
+                        ReplacedSpan = span
+                    }
+                    Some result
+        else None
+
+    interface IVimLocalAbbreviationMap with
+        member x.GlobalAbbreviationMap = _globalAbbreviationMap
+        member x.Abbreviations = x.Map.Mappings
+        member x.AddAbbreviation(lhs, rhs, allowRemap, mode) = x.Map.Add(lhs, mode, (Abbreviation(lhs, rhs, allowRemap, mode)))
+        member x.GetAbbreviation(lhs, mode) = x.Map.Get(lhs, mode)
+        member x.GetAbbreviation(lhs, mode, includeGlobal) = x.GetAbbreviation(lhs, mode, includeGlobal)
+        member x.GetAbbreviations(mode) = x.Map.Get(mode)
+        member x.GetAbbreviations(mode, includeGlobal) = x.GetAbbreviations(mode, includeGlobal)
+        member x.RemoveAbbreviation(lhs, mode) = x.Map.Remove(lhs, mode)
+        member x.ClearAbbreviations(mode) = x.Map.Clear(mode)
+        member x.ClearAbbreviations() = x.Map.Clear()
+        member x.Abbreviate(text, triggerKeyInput, mode) = x.Abbreviate text triggerKeyInput mode
+        member x.Parse text = x.Parse text

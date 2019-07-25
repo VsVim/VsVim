@@ -560,6 +560,23 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("2l<C-Q>2j$d");
                     Assert.Equal(new[] { "ab", "jk", "pq", "" }, _textBuffer.GetLines());
                 }
+
+                /// <summary>
+                /// Block put should work even when using the clipboard as the
+                /// unnamed register
+                /// </summary>
+                [WpfTheory]
+                [InlineData("")]
+                [InlineData("unnamed")]
+                public void DeleteAndPut(string clipboard)
+                {
+                    // Reported in issue #2694.
+                    Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                    _globalSettings.Clipboard = clipboard;
+                    _textView.MoveCaretToLine(0, 4);
+                    _vimBuffer.ProcessNotation("<C-Q>jeldwP");
+                    Assert.Equal(new[] { "abc ghi def jkl", "mno stu pqr vwx", "" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class ExclusiveTest : BlockSelectionTest

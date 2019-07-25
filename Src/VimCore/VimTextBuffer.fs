@@ -10,6 +10,8 @@ open Microsoft.VisualStudio.Utilities
 type internal VimTextBuffer 
     (
         _textBuffer: ITextBuffer,
+        _localAbbreviationMap: IVimLocalAbbreviationMap,
+        _localKeyMap: IVimLocalKeyMap,
         _localSettings: IVimLocalSettings,
         _bufferTrackingService: IBufferTrackingService,
         _undoRedoOperations: IUndoRedoOperations,
@@ -297,6 +299,7 @@ type internal VimTextBuffer
     interface IVimTextBuffer with
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
+        member x.GlobalAbbreviationMap = _localAbbreviationMap.GlobalAbbreviationMap
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
@@ -325,6 +328,8 @@ type internal VimTextBuffer
             with get() = x.InSelectModeOneTimeCommand
             and set value = x.InSelectModeOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
+        member x.LocalAbbreviationMap = _localAbbreviationMap
+        member x.LocalKeyMap = _localKeyMap
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer

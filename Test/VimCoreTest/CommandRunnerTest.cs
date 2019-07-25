@@ -29,9 +29,9 @@ namespace Vim.UnitTest
                 _vimTextBuffer,
                 _textView);
             _commandUtil = CreateCommandUtil(vimBufferData);
-            var incrementalSearch = new IncrementalSearch(
-                vimBufferData,
-                CommonOperationsFactory.GetCommonOperations(vimBufferData));
+            var commonOperations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            var motionUtil = new MotionUtil(vimBufferData, commonOperations);
+            var incrementalSearch = new IncrementalSearch(vimBufferData, commonOperations, motionUtil);
             var motionCapture = new MotionCapture(vimBufferData, incrementalSearch);
 
             _runnerRaw = new CommandRunner(

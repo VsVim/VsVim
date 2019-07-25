@@ -173,6 +173,16 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
+        public IVimLocalKeyMap LocalKeyMap
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IVimLocalAbbreviationMap LocalAbbreviationMap
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         public IVimGlobalSettings GlobalSettings
         {
             get { return GlobalSettingsImpl; }

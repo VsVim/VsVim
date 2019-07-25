@@ -28,7 +28,7 @@ namespace Vim.UnitTest
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
         private IVimWindowSettings _windowSettings;
-        private IKeyMap _keyMap;
+        private IVimGlobalKeyMap _globalKeyMap;
 
         /// <summary>
         /// A valid directory in the file system
@@ -66,7 +66,7 @@ namespace Vim.UnitTest
                 FoldManagerFactory.GetFoldManager(_vimBufferData.TextView),
                 new FileSystem(),
                 BufferTrackingService);
-            _keyMap = Vim.KeyMap;
+            _globalKeyMap = Vim.GlobalKeyMap;
         }
 
         /// <summary>
@@ -2874,11 +2874,11 @@ namespace Vim.UnitTest
                 {
                     foreach (var keyRemapMode in KeyRemapMode.All)
                     {
-                        Assert.True(_keyMap.MapWithNoRemap("a", "b", keyRemapMode));
+                        Assert.True(_globalKeyMap.AddKeyMapping("a", "b", allowRemap: false, keyRemapMode));
                     }
                 }
 
-                _keyMap.ClearAll();
+                _globalKeyMap.ClearKeyMappings();
 
                 testMapClear("mapc", new[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending });
                 testMapClear("nmapc", new[] { KeyRemapMode.Normal });

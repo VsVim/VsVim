@@ -25,16 +25,16 @@ type KeyRemapMode =
 
     with 
 
-    static member All = 
-        seq {
-            yield None
-            yield Normal
-            yield Visual 
-            yield Select
-            yield OperatorPending
-            yield Insert
-            yield Command
-            yield Language }
+    static member All = [ 
+        None
+        Normal
+        Visual 
+        Select
+        OperatorPending
+        Insert
+        Command
+        Language 
+    ]
 
     override x.ToString() =
         match x with 
@@ -46,6 +46,27 @@ type KeyRemapMode =
         | Insert -> "Insert"
         | Command -> "Command"
         | Language -> "Language"
+
+
+/// The different types of abbreviations as described in `:help abbreviations`
+[<RequireQualifiedAccess>]
+type AbbreviationKind = 
+    | FullId
+    | EndId
+    | NonId
+
+/// The vim modes where a given abbreviation is valid
+[<RequireQualifiedAccess>]
+type AbbreviationMode =
+    | Insert
+    | Command
+
+    static member All = [Insert; Command]
+
+    override x.ToString() =
+        match x with
+        | Insert -> "Insert"
+        | Command -> "Command"
 
 [<RequireQualifiedAccess>]
 type JoinKind = 

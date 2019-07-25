@@ -728,7 +728,7 @@ module internal OptionUtil =
         | None -> None
         | Some opt -> opt
 
-    /// Map an option ta a value which produces an option and then collapse the result
+    /// Map an option to a value which produces an option and then collapse the result
     let map2 mapFunc value =
         match value with
         | None -> None

@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Xunit;
 using Vim.VisualStudio.Specific;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
@@ -19,6 +20,7 @@ namespace Vim.UnitTest
         protected ITextBuffer _textBuffer;
         protected IVimGlobalSettings _globalSettings;
         protected IVimLocalSettings _localSettings;
+        protected TestableMouseDevice _testableMouseDevice;
         protected Register _register;
 
         protected void Create(params string[] lines)
@@ -35,6 +37,20 @@ namespace Vim.UnitTest
             _register = Vim.RegisterMap.GetRegister('c');
             _globalSettings = Vim.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
+
+            _testableMouseDevice = (TestableMouseDevice)MouseDevice;
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
+
+        }
+
+        public override void Dispose()
+        {
+            _testableMouseDevice.IsLeftButtonPressed = false;
+            _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
+            base.Dispose();
         }
 
         public sealed class InsertCharacterAboveTest : InsertModeIntegrationTest
@@ -141,7 +157,7 @@ namespace Vim.UnitTest
             public void BufferedInputFailsMapping()
             {
                 Create("");
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process("j");
                 Assert.Equal("", _textBuffer.GetLine(0).GetText());
                 _vimBuffer.Process("a");
@@ -155,7 +171,7 @@ namespace Vim.UnitTest
             public void TwoKeysToEscape()
             {
                 Create(ModeArgument.NewInsertWithCount(2), "hello");
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "<Esc>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("jj", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process("jj");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
@@ -168,7 +184,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world", "");
                 _textView.MoveCaretToLine(1);
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap(";;", "<Esc>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process(';');
                 _vimBuffer.Process(VimKey.Escape);
                 Assert.Equal(";", _textBuffer.GetLine(1).GetText());
@@ -183,7 +199,7 @@ namespace Vim.UnitTest
             {
                 Create("hello world", "");
                 _textView.MoveCaretToLine(1);
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap(";;", "<Esc>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping(";;", "<Esc>", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.Process(';');
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('['));
                 Assert.Equal(";", _textBuffer.GetLine(1).GetText());
@@ -551,30 +567,35 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
-            /// Once the caret moves outside the active region and typing starts again then
-            /// the register resets
+            /// Once the user moves the caret outside the active region and
+            /// typing starts again then the register resets
             /// </summary>
             [WpfFact]
             public void TypeAfterCaretMove()
             {
                 Create("cat");
+                _textView.SetVisibleLineCount(1);
                 _vimBuffer.ProcessNotation("dog");
-                _textView.MoveCaretTo(5);
+                _testableMouseDevice.Point = _textView.GetPoint(5);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 _vimBuffer.ProcessNotation("t<Esc>");
                 Assert.Equal("t", RegisterMap.GetRegisterText('.'));
             }
 
             /// <summary>
-            /// Even if the caret moves back to the original position the new typing action breaks
-            /// the repeat text.
+            /// Even if the user moves the caret back to the original position
+            /// the new typing action breaks the repeat text
             /// </summary>
             [WpfFact]
             public void TypeAfterCaretMoveBack()
             {
                 Create("");
+                _textView.SetVisibleLineCount(1);
                 _vimBuffer.ProcessNotation("dog");
-                _textView.MoveCaretTo(2);
-                _textView.MoveCaretTo(3);
+                _testableMouseDevice.Point = _textView.GetPoint(2);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
+                _testableMouseDevice.Point = _textView.GetPoint(3);
+                _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 _vimBuffer.ProcessNotation("s<Esc>");
                 Assert.Equal("dogs", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("s", RegisterMap.GetRegisterText('.'));
@@ -1999,7 +2020,7 @@ namespace Vim.UnitTest
             public void Delete_WithShift_KeyMapping()
             {
                 Create(" world");
-                KeyMap.MapWithNoRemap("<S-BS>", "hello", KeyRemapMode.Insert);
+                GlobalKeyMap.AddKeyMapping("<S-BS>", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _textView.MoveCaretTo(0);
                 _vimBuffer.ProcessNotation("<S-BS>");
                 Assert.Equal("hello world", _textBuffer.GetLine(0).GetText());
@@ -2034,7 +2055,7 @@ namespace Vim.UnitTest
             {
                 Create("  hello", "world");
                 _localSettings.AutoIndent = true;
-                Vim.KeyMap.MapWithNoRemap("<c-e>", "<Enter>", KeyRemapMode.Insert);
+                Vim.GlobalKeyMap.AddKeyMapping("<c-e>", "<Enter>", allowRemap: false, KeyRemapMode.Insert);
                 _textView.MoveCaretTo(5);
                 _vimBuffer.Process(KeyInputUtil.CharWithControlToKeyInput('e'));
                 Assert.Equal("  hel", _textView.GetLine(0).GetText());
@@ -3581,6 +3602,253 @@ namespace Vim.UnitTest
                 Create("", "");
                 _vimBuffer.ProcessNotation("<C-q>U0001F47D");
                 Assert.Equal("\U0001F47D", _textBuffer.GetLine(0).GetText()); // 👽
+            }
+        }
+
+        public sealed class AbbreviationTests : InsertModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData(" ")]
+            [InlineData("#")]
+            [InlineData("$")]
+            public void Simple(string keyNotation)
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab cc comment this", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cc");
+                Assert.Equal("cc", _textBuffer.GetLineText(0));
+                _vimBuffer.ProcessNotation(keyNotation);
+                Assert.Equal($"comment this{keyNotation}", _textBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// There are a lot of rules and cases around when an expansion should or should not occur for 
+            /// the various abbreviation kinds. This theory just enumerates all the cases covered in 
+            /// `:help abbreviate`
+            /// </summary>
+            [WpfTheory]
+            [InlineData("cc hello", "", "cc ", "hello ")]
+            [InlineData("cc hello", "", "cc", "cc")] // Won't expand until non-keyword is typed
+            [InlineData("cc hello", "", "ccc", "ccc")] // Won't expand until non-keyword is typed
+            [InlineData("cc hello", "", "ccc ", "ccc ")] // The ccc doesn't match the abbreviation cc
+            [InlineData("cc hello", "", "lcc ", "lcc ")] // The lcc doesn't match the abbreviation cc
+            [InlineData("cc hello", "c", "c ", "cc ")]
+            [InlineData("cc hello", "c", "cc ", "chello ")] // Match computed against typed text hence
+            [InlineData("cc hello", "", "#cc ", "#hello ")] // Match starts at the non-keyword
+            [InlineData("cc hello", "#", "cc ", "#hello ")]
+            [InlineData("d dog", "", "#d ", "#d ")] // Single character abbreviation only works after space / tab / newline
+            [InlineData("d dog", "", " d ", " dog ")] // Single character abbreviation only works after space / tab / newline
+            [InlineData("d dog", "a", "d ", "adog ")] // Even for single character it only checks typed text
+            [InlineData("#d dog", "", "#d ", "dog ")] // End-id
+            [InlineData("#d dog", "", "##d ", "##d ")]
+            [InlineData("#d dog", "", "#d#", "dog#")]
+            [InlineData("#r rog", "", "f#r ", "frog ")]
+            [InlineData("#r rog", "f", "#r ", "frog ")]
+            [InlineData("#d dog", "#", "d ", "#d ")]
+            [InlineData("dog# dog pound", "", "dog# ", "dog pound ")]
+            [InlineData("dg dog", "", "dg<C-]>", "dog")] // <C-]> completes insertion without adding extra space
+            [InlineData("dg dog", "", "dg<C-]><C-]>", "dog")] // <C-]> 
+            public void RulesSingleLine(string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.GetLineText(0));
+            }
+
+            [WpfTheory]
+            [InlineData("dg dog", "", "dg<CR>", "dog\r\n")]
+            [InlineData("d dog", "", "d<CR>", "dog\r\n")] // Single character completes when only thing on the line
+            [InlineData("<CR>d dog", "", "<CR>d ", "\r\nd ")]
+            [InlineData("<CR>d dog", "", "<CR>d<CR>", "\r\nd\r\n")]
+            public void RulesMultiLine(string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
+            }
+
+            [WpfTheory]
+            [InlineData("dog cat", "dd dog", "", "dd ", "cat ")]
+            [InlineData("dog cat", "cat dog", "", "cat ", "cat ")]
+            [InlineData("dogs all the toys", "dd dog", "", "dd ", "dog ")] // Partial remap is treated as no remap
+            [InlineData("dog# dog pound", "dd dog", "", "dd#", "dog pound#")] // Trigger key is repeated when it completes a key mapping
+            [InlineData("dog tree", "dd dog", "", "dd!", "tree!")] // Trigger key is repeated when it completes a key mapping
+            [InlineData("dog tree", "dd dogs", "", "dd!", "trees!")] // Trigger key is repeated when it completes a key mapping
+            public void RulesRemap(string keyMap, string abbreviate, string text, string typed, string expectedText)
+            {
+                Create();
+                _textBuffer.SetTextContent(text);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":imap {keyMap}", enter: true);
+                _vimBuffer.Process($":ab {abbreviate}", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _textView.MoveCaretTo(_vimBuffer.TextBuffer.GetEndPoint());
+                _vimBuffer.ProcessNotation(typed);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
+            }
+
+            [WpfTheory]
+            [InlineData(":ab dd dog<CR>:unab dd<CR>idd ", "dd ")]
+            [InlineData(":ab <buffer> dd dog<CR>:unab dd<CR>idd ", "dog ")] // Global clear doesn't affect buffer
+            [InlineData(":iab dd global<CR>:iab <buffer> dd local<CR>:iunab dd<CR>idd ", "local ")]
+            [InlineData(":iab dd global<CR>:iab <buffer> dd local<CR>:iunab <buffer>dd<CR>idd ", "global ")]
+            public void Unabbreviate(string command, string expectedText)
+            {
+                Create();
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.ProcessNotation(command);
+                Assert.Equal(expectedText, _textBuffer.CurrentSnapshot.GetText());
+            }
+
+            [WpfFact]
+            public void EscapeCompletes()
+            {
+                Create();
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process($":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<Esc>");
+                Assert.Equal("dog", _textBuffer.CurrentSnapshot.GetText());
+            }
+
+            [WpfFact]
+            public void Repeat()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg <Esc>.");
+                Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void RepeatDoesntCheckMapping()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg <Esc>");
+                _vimBuffer.Vim.GlobalAbbreviationMap.ClearAbbreviations();
+                _vimBuffer.ProcessNotation(".");
+                Assert.Equal("dogdog  ", _textBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// This makes sure the trigger key goes through normal insert mode processing vs. being inserted
+            /// literally. Inserting it literally would ignore settings like expandtab, shiftwidth, etc ...
+            /// </summary>
+            [WpfFact]
+            public void TriggerKeyInputNormalProcessingTab()
+            {
+                Create("");
+                _localSettings.ShiftWidth = 6;
+                _localSettings.SoftTabStop = 6;
+                _localSettings.TabStop = 6;
+                _localSettings.ExpandTab = true;
+                _localSettings.EndOfLine = false;
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":ab dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<tab>");
+                Assert.Equal("dog   ", _textBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void TriggerKeyInputNormalProcessingCursor()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.Process(":set noeol", enter: true);
+                _vimBuffer.Process(":ab if if ()<Left>", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("if ");
+                Assert.Equal("if ( )", _textBuffer.GetLineText(0));
+                Assert.Equal(5, _textView.GetCaretPoint().Position);
+            }
+
+            [WpfFact]
+            public void BufferOnlyReplace()
+            {
+                Create("");
+                var vimBuffer2 = CreateVimBuffer();
+                vimBuffer2.ProcessNotation(":ab <buffer> dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("dg<Space>");
+                Assert.Equal("dg ", _vimBuffer.TextBuffer.GetLineText(0));
+                vimBuffer2.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                vimBuffer2.ProcessNotation("dg<Space>");
+                Assert.Equal("dog ", vimBuffer2.TextBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// A buffer only clear should clear mappings specific to that buffer, not to other buffers
+            /// </summary>
+            [WpfFact]
+            public void BufferOnlyClear()
+            {
+                Create("");
+                var vimBuffer2 = CreateVimBuffer();
+                vimBuffer2.ProcessNotation(":ab <buffer> dg dog", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":abc <buffer>", enter: true);
+                vimBuffer2.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                vimBuffer2.ProcessNotation("dg<Space>");
+                Assert.Equal("dog ", vimBuffer2.TextBuffer.GetLineText(0));
+            }
+
+            /// <summary>
+            /// A global clear should not clear any buffer specific abbreviations
+            /// </summary>
+            [WpfFact]
+            public void GlobalClearLeavesBuffer()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":ab <buffer> dd dog", enter: true);
+                _vimBuffer.ProcessNotation(":ab cc hello", enter: true);
+                _vimBuffer.ProcessNotation(":abc", enter: true);
+                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                _vimBuffer.ProcessNotation("cc dd ");
+                Assert.Equal("cc dog ", _vimBuffer.TextBuffer.GetLineText(0));
+            }
+
+            [WpfFact]
+            public void FailedAbbreviationCompleteIsNotError()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<C-]>");
+                Assert.Equal(0, VimHost.BeepCount);
+            }
+
+            [WpfFact]
+            public void CommandAndInsertCanHaveDifferentAbbreviationReplacements()
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
+                _vimBuffer.ProcessNotation(":iab dd dog", enter: true);
+                _vimBuffer.ProcessNotation(":cab dd cat", enter: true);
+                _vimBuffer.ProcessNotation("idd ");
+                Assert.Equal("dog ", _textBuffer.GetLineText(0));
             }
         }
 
