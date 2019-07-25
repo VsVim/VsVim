@@ -132,7 +132,7 @@ type internal CommonOperations
             // Get the point in the line under the mouse cursor or the
             // start/end of the line.
             if textViewLine <> null then
-                match xCoordinate >= textViewLine.Left, xCoordinate <= textViewLine.Right with
+                match xCoordinate >= textViewLine.Left, xCoordinate < textViewLine.Right with
                 | true, true ->
                     textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
                     |> NullableUtil.ToOption

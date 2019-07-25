@@ -1384,7 +1384,9 @@ type internal InsertMode
         let breakUndoSequence =
             match _textChangeTracker.EffectiveChange with
             | Some span ->
-                span.Contains(args.NewPosition.BufferPosition) |> not
+                let newPoint = args.NewPosition.BufferPosition
+                VimTrace.TraceInfo("InsertMode:OnCaretPositionChanged {0}", newPoint.Position)
+                not (span.Contains(newPoint) || span.End = newPoint)
             | None ->
                 true
 
