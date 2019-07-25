@@ -46,7 +46,7 @@ namespace Vim.VisualStudio.Specific
                 typeof(Implementation.WordCompletion.VimWordCompletionUtil),
 #if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 #else
-                typeof(global::Vim.Specific.Implementation.Selection.MultiSelectionUtilFactory),
+                typeof(global::Vim.Specific.Implementation.MultiSelection.MultiSelectionUtilFactory),
 #endif
             };
 

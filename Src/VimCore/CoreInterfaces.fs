@@ -134,10 +134,10 @@ type ISelectionUtil =
     abstract IsMultiSelectionSupported: bool
 
     /// Get all the selected spans for the specified text view
-    abstract GetSelectedSpans: unit -> SelectedSpan seq
+    abstract GetSelectedSpans: unit -> SelectionSpan seq
 
     /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: SelectedSpan seq -> unit
+    abstract SetSelectedSpans: SelectionSpan seq -> unit
 
 /// Factory service for creating ISelectionUtil instances
 type ISelectionUtilFactory = 
@@ -2409,9 +2409,9 @@ type VisualSelection =
             |> Seq.head
             |> VirtualSnapshotSpanUtil.OfSpan
         if x.IsForward then
-            SelectedSpan(caretPoint, span.Start, span.End)
+            SelectionSpan(caretPoint, span.Start, span.End)
         else
-            SelectedSpan(caretPoint, span.End, span.Start)
+            SelectionSpan(caretPoint, span.End, span.Start)
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =
@@ -5313,7 +5313,7 @@ and IVimBufferData =
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
 
     /// The last multi-selection recorded for this buffer
-    abstract LastMultiSelection: (ModeKind * SelectedSpan array) option with get, set
+    abstract LastMultiSelection: (ModeKind * SelectionSpan array) option with get, set
 
     /// The currently maintained caret column for up / down caret movements in
     /// the buffer

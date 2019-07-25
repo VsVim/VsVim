@@ -77,7 +77,7 @@ type JoinKind =
 [<NoComparison>]
 [<Struct>]
 [<DebuggerDisplay("{ToString(),nq}")>]
-type SelectedSpan =
+type SelectionSpan =
 
     val private _caretPoint: VirtualSnapshotPoint
     val private _anchorPoint: VirtualSnapshotPoint
@@ -112,13 +112,13 @@ type SelectedSpan =
     member x.IsEmpty = x.Length = 0
 
     static member FromSpan (caretPoint: SnapshotPoint) (span: SnapshotSpan) (isReversed: bool) =
-        SelectedSpan.FromVirtualSpan (VirtualSnapshotPoint(caretPoint)) (VirtualSnapshotSpan(span)) isReversed
+        SelectionSpan.FromVirtualSpan (VirtualSnapshotPoint(caretPoint)) (VirtualSnapshotSpan(span)) isReversed
 
     static member FromVirtualSpan (caretPoint: VirtualSnapshotPoint) (span: VirtualSnapshotSpan) (isReversed: bool) =
         if not isReversed then
-            SelectedSpan(caretPoint, span.Start, span.End)
+            SelectionSpan(caretPoint, span.Start, span.End)
         else
-            SelectedSpan(caretPoint, span.End, span.Start)
+            SelectionSpan(caretPoint, span.End, span.Start)
 
     override x.ToString() =
         let reversedString =

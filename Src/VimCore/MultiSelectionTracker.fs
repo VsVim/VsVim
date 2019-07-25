@@ -21,7 +21,7 @@ type internal MultiSelectionTracker
     let _bag = DisposableBag()
 
     let mutable _syncingSelection = false
-    let mutable _recordedSelectedSpans: SelectedSpan array = [||]
+    let mutable _recordedSelectedSpans: SelectionSpan array = [||]
 
     do
         if _commonOperations.IsMultiSelectionSupported then
@@ -53,7 +53,7 @@ type internal MultiSelectionTracker
    /// The caret points at the start of the most recent key input 
     member x.RecordedSelectedSpans
         with get () =  _recordedSelectedSpans
-        and set (value: SelectedSpan array) =
+        and set (value: SelectionSpan array) =
             let oldRecordedSelectedSpans = _recordedSelectedSpans
             _recordedSelectedSpans <- value
             if
@@ -79,7 +79,7 @@ type internal MultiSelectionTracker
         else
 
             // An external selection event occurred.
-            let (selectedSpans: SelectedSpan array) = x.SelectedSpans
+            let (selectedSpans: SelectionSpan array) = x.SelectedSpans
 
             // Check whether we need to switch to a visual mode.
             if x.HasSecondarySelections selectedSpans then
@@ -140,7 +140,7 @@ type internal MultiSelectionTracker
             _syncingSelection <- false
 
     // Whether there are any secondary selections
-    member x.HasSecondarySelections (selectedSpans: SelectedSpan array) =
+    member x.HasSecondarySelections (selectedSpans: SelectionSpan array) =
         selectedSpans.Length > 1
 
     // Clear any secondary selections
@@ -170,7 +170,7 @@ type internal MultiSelectionTracker
         line, spaces
 
     /// Adjust the specified selected span for inclusive selection
-    member x.AdjustForInclusive (selectedSpan: SelectedSpan) =
+    member x.AdjustForInclusive (selectedSpan: SelectionSpan) =
         if
             not selectedSpan.IsReversed
             && selectedSpan.Length > 0
@@ -181,13 +181,13 @@ type internal MultiSelectionTracker
                 |> VirtualSnapshotPointUtil.SubtractOneOrCurrent
             let anchorPoint = selectedSpan.AnchorPoint
             let activePoint = selectedSpan.ActivePoint
-            SelectedSpan(caretPoint, anchorPoint, activePoint)
+            SelectionSpan(caretPoint, anchorPoint, activePoint)
             |> Some
         else
             None
 
     /// Adjust the specified selected span to new relative line and spaces offsets
-    member x.AdjustSelectedSpan lineOffset spacesOffset length (span: SelectedSpan) =
+    member x.AdjustSelectedSpan lineOffset spacesOffset length (span: SelectionSpan) =
 
         // Adjust the specified point by the line offset and spaces offset.
         let adjustPoint (point: VirtualSnapshotPoint) =
@@ -207,11 +207,11 @@ type internal MultiSelectionTracker
 
         let newCaretPoint = adjustPoint span.CaretPoint
         if length = 0 then
-            SelectedSpan(newCaretPoint)
+            SelectionSpan(newCaretPoint)
         else
             let newAnchorPoint = adjustPoint span.AnchorPoint
             let newActivePoint = adjustPoint span.ActivePoint
-            SelectedSpan(newCaretPoint, newAnchorPoint, newActivePoint)
+            SelectionSpan(newCaretPoint, newAnchorPoint, newActivePoint)
 
     /// Check whether we need to restore selected spans and if so, restore them
     member x.CheckRestoreSelections () =

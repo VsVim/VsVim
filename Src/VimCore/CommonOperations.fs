@@ -2217,7 +2217,7 @@ type internal CommonOperations
         // the clipboard using the editor to preserve formatting. Feature
         // requested in issue #1920.
         if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-            SelectedSpan.FromSpan span.End span false
+            SelectionSpan.FromSpan span.End span false
             |> TextViewUtil.SelectSpan _textView
             _editorOperations.CopySelection() |> ignore
             TextViewUtil.ClearSelection _textView
@@ -2450,11 +2450,11 @@ type internal CommonOperations
             |> VirtualSnapshotPointUtil.OfPoint
 
     /// Map the specified selected span to the current snapshot
-    member x.MapSelectedSpanToCurrentSnapshot (span: SelectedSpan) =
+    member x.MapSelectedSpanToCurrentSnapshot (span: SelectionSpan) =
         let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
         let anchorPoint = x.MapCaretPointToCurrentSnapshot span.AnchorPoint
         let activcePoint = x.MapCaretPointToCurrentSnapshot span.ActivePoint
-        SelectedSpan(caretPoint, anchorPoint, activcePoint)
+        SelectionSpan(caretPoint, anchorPoint, activcePoint)
 
     /// Add a new caret at the specified point
     member x.AddCaretAtPoint (point: VirtualSnapshotPoint) =
@@ -2473,7 +2473,7 @@ type internal CommonOperations
             seq {
                 yield! remainingSpans
                 if not isContainedByExistingSpan then
-                    yield SelectedSpan(point)
+                    yield SelectionSpan(point)
             }
             |> x.SetSelectedSpans
 
@@ -2517,7 +2517,7 @@ type internal CommonOperations
             let caretPoint = getRelativePoint primarySelectedSpan.CaretPoint
             let anchorPoint = getRelativePoint primarySelectedSpan.AnchorPoint
             let activePoint = getRelativePoint primarySelectedSpan.ActivePoint
-            SelectedSpan(caretPoint, anchorPoint, activePoint)
+            SelectionSpan(caretPoint, anchorPoint, activePoint)
             |> x.AddSelectedSpan
 
         // Choose an appropriate line to add the caret on.
@@ -2633,7 +2633,7 @@ type internal CommonOperations
             result
 
         // Get the effective selected span.
-        let getVisualSelectedSpan visualKind (oldSelectedSpan: SelectedSpan) =
+        let getVisualSelectedSpan visualKind (oldSelectedSpan: SelectionSpan) =
             let oldSelectedSpan = x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
             let snapshot = _textView.TextSnapshot
             let oldAnchorPoint = oldSelectedSpan.AnchorPoint
@@ -2675,7 +2675,7 @@ type internal CommonOperations
                 && span.Length = 1 &&
                 span.CaretPoint = span.Start
             then
-                SelectedSpan(span.CaretPoint, span.Start, span.End)
+                SelectionSpan(span.CaretPoint, span.Start, span.End)
             else
                 span
 
@@ -2694,7 +2694,7 @@ type internal CommonOperations
         let getResultingSpan oldSelectedSpan result =
             match getSwitchToModeKind result with
             | Some modeKind when VisualKind.OfModeKind modeKind |> Option.isNone ->
-                SelectedSpan(x.CaretVirtualPoint)
+                SelectionSpan(x.CaretVirtualPoint)
             | _ ->
                 match getSwitchToVisualKind result with
                 | Some visualKind ->

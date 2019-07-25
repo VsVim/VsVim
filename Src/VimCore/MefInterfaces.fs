@@ -309,10 +309,10 @@ type ICommonOperations =
     abstract IsMultiSelectionSupported: bool
 
     /// The primary selected span
-    abstract PrimarySelectedSpan: SelectedSpan
+    abstract PrimarySelectedSpan: SelectionSpan
 
     /// The current selected spans
-    abstract SelectedSpans: SelectedSpan seq
+    abstract SelectedSpans: SelectionSpan seq
 
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
@@ -535,7 +535,7 @@ type ICommonOperations =
     abstract ScrollLines: ScrollDirection -> count:int -> unit
 
     /// Set the current selected spans
-    abstract SetSelectedSpans: SelectedSpan seq -> unit
+    abstract SetSelectedSpans: SelectionSpan seq -> unit
 
     /// Update the register with the specified value
     abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit
@@ -571,7 +571,7 @@ type ICommonOperations =
     abstract MapCaretPointToCurrentSnapshot: point: VirtualSnapshotPoint -> VirtualSnapshotPoint
 
     /// Map the specified point with positive tracking to the current snapshot
-    abstract MapSelectedSpanToCurrentSnapshot: point: SelectedSpan -> SelectedSpan
+    abstract MapSelectedSpanToCurrentSnapshot: point: SelectionSpan -> SelectionSpan
 
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit

@@ -13,13 +13,13 @@ namespace Vim.UnitTest.Mock
         private bool _shouldIgnoreEvents;
 
         public bool IsMultiSelectionSupported { get; set; }
-        public List<SelectedSpan> SecondarySelectedSpans { get; set; }
+        public List<SelectionSpan> SecondarySelectedSpans { get; set; }
 
         public MockSelectionUtil(ITextView textView, bool isMultiSelectionSupported)
         {
             _textView = textView;
             IsMultiSelectionSupported = isMultiSelectionSupported;
-            SecondarySelectedSpans = new List<SelectedSpan>();
+            SecondarySelectedSpans = new List<SelectionSpan>();
             InstallHandlers();
         }
 
@@ -37,7 +37,7 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        public void SetSelectedSpans(IEnumerable<SelectedSpan> selectedSpans)
+        public void SetSelectedSpans(IEnumerable<SelectionSpan> selectedSpans)
         {
             var allSelectedSpans = selectedSpans.ToArray();
             var primarySelectedSpan = allSelectedSpans[0];
@@ -70,7 +70,7 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        public IEnumerable<SelectedSpan> GetSelectedSpans()
+        public IEnumerable<SelectionSpan> GetSelectedSpans()
         {
             var primarySelectedSpans = new[] { GetPrimarySelectedSpan() };
             if (IsMultiSelectionSupported)
@@ -87,15 +87,15 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        private SelectedSpan GetPrimarySelectedSpan()
+        private SelectionSpan GetPrimarySelectedSpan()
         {
-            return new SelectedSpan(
+            return new SelectionSpan(
                 _textView.Caret.Position.VirtualBufferPosition,
                 _textView.Selection.AnchorPoint,
                 _textView.Selection.ActivePoint);
         }
 
-        private void SetPrimarySelectedSpan(SelectedSpan primarySelectedSpan)
+        private void SetPrimarySelectedSpan(SelectionSpan primarySelectedSpan)
         {
             _textView.Caret.MoveTo(primarySelectedSpan.CaretPoint);
             if (primarySelectedSpan.Length != 0)
@@ -161,7 +161,7 @@ namespace Vim.UnitTest.Mock
                 .Select(span => span.CaretPoint)
                 .Select(point => point.TranslateTo(snapshot, PointTrackingMode.Negative))
                 .Select(point => point.Add(text.Length))
-                .Select(point => new SelectedSpan(point))
+                .Select(point => new SelectionSpan(point))
                 .ToArray();
             SetSelectedSpans(newSpans);
         }

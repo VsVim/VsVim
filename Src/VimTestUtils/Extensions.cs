@@ -957,7 +957,7 @@ namespace Vim.UnitTest
 
         #endregion
 
-        public static SelectedSpan GetSelectedSpan(
+        public static SelectionSpan GetSelectedSpan(
             this SnapshotPoint point,
             int startOffset,
             int endOffset,
@@ -974,14 +974,14 @@ namespace Vim.UnitTest
             // on the same line.
             if (!isReversed)
             {
-                return new SelectedSpan(
+                return new SelectionSpan(
                     new VirtualSnapshotPoint(point),
                     new VirtualSnapshotPoint(point.Add(startOffset)),
                     new VirtualSnapshotPoint(point.Add(endOffset)));
             }
             else
             {
-                return new SelectedSpan(
+                return new SelectionSpan(
                     new VirtualSnapshotPoint(point),
                     new VirtualSnapshotPoint(point.Add(endOffset)),
                     new VirtualSnapshotPoint(point.Add(startOffset)));
@@ -1002,12 +1002,12 @@ namespace Vim.UnitTest
             return new VirtualSnapshotPoint(line, newOffset);
         }
 
-        public static SelectedSpan GetSelectedSpan(this VirtualSnapshotPoint point)
+        public static SelectionSpan GetSelectedSpan(this VirtualSnapshotPoint point)
         {
-            return new SelectedSpan(point);
+            return new SelectionSpan(point);
         }
 
-        public static SelectedSpan GetSelectedSpan(
+        public static SelectionSpan GetSelectedSpan(
             this VirtualSnapshotPoint point,
             int startOffset,
             int endOffset,
@@ -1020,11 +1020,11 @@ namespace Vim.UnitTest
 
             if (!isReversed)
             {
-                return new SelectedSpan(point, point.Add(startOffset), point.Add(endOffset));
+                return new SelectionSpan(point, point.Add(startOffset), point.Add(endOffset));
             }
             else
             {
-                return new SelectedSpan(point, point.Add(endOffset), point.Add(startOffset));
+                return new SelectionSpan(point, point.Add(endOffset), point.Add(startOffset));
             }
         }
 
@@ -1382,9 +1382,9 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region SelectedSpan
+        #region SelectionSpan
 
-        public static SelectedSpan AdjustCaretForInclusive(this SelectedSpan selectedSpan)
+        public static SelectionSpan AdjustCaretForInclusive(this SelectionSpan selectedSpan)
         {
             if (selectedSpan.CaretPoint == selectedSpan.Start)
             {
@@ -1392,23 +1392,23 @@ namespace Vim.UnitTest
             }
             else
             {
-                return new SelectedSpan(selectedSpan.End.Add(-1), selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
+                return new SelectionSpan(selectedSpan.End.Add(-1), selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
             }
         }
 
-        public static SelectedSpan AdjustEndForInclusive(this SelectedSpan selectedSpan)
+        public static SelectionSpan AdjustEndForInclusive(this SelectionSpan selectedSpan)
         {
             if (selectedSpan.CaretPoint == selectedSpan.Start && !selectedSpan.IsEmpty)
             {
-                return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
+                return new SelectionSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
             }
             else
             {
-                return new SelectedSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint, selectedSpan.ActivePoint.Add(1));
+                return new SelectionSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint, selectedSpan.ActivePoint.Add(1));
             }
         }
 
-        #endregion SelectedSpan
+        #endregion SelectionSpan
 
         #region VisualSpan
 

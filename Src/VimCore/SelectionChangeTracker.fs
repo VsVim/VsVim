@@ -243,7 +243,7 @@ type internal SelectionChangeTracker
                     mousePoint
                     |> VirtualSnapshotPointUtil.AddOneOnSameLine
                 let anchorPoint = _textView.Selection.AnchorPoint
-                SelectedSpan(mousePoint, anchorPoint, activePoint)
+                SelectionSpan(mousePoint, anchorPoint, activePoint)
                 |> TextViewUtil.SelectSpan _textView
             | _ -> ()
 

@@ -24,7 +24,7 @@ type VimBufferData
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
-    let mutable _lastMultiSelection: (ModeKind * SelectedSpan array) option = None
+    let mutable _lastMultiSelection: (ModeKind * SelectionSpan array) option = None
     let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some

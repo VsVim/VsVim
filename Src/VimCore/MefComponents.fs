@@ -542,9 +542,9 @@ type internal SingleSelectionUtil(_textView: ITextView) =
         let caretPoint = _textView.Caret.Position.VirtualBufferPosition
         let anchorPoint = _textView.Selection.AnchorPoint
         let activePoint = _textView.Selection.ActivePoint
-        seq { yield SelectedSpan(caretPoint, anchorPoint, activePoint) }
+        seq { yield SelectionSpan(caretPoint, anchorPoint, activePoint) }
 
-    member x.SetSelectedSpans (selectedSpans: SelectedSpan seq) =
+    member x.SetSelectedSpans (selectedSpans: SelectionSpan seq) =
         let selectedSpan = Seq.head selectedSpans
         _textView.Caret.MoveTo(selectedSpan.CaretPoint) |> ignore
         if selectedSpan.Length <> 0 then

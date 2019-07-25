@@ -68,7 +68,7 @@ namespace Vim.UnitTest
             return _textView.GetVirtualPointInLine(lineNumber, column);
         }
 
-        private SelectedSpan[] SelectedSpans =>
+        private SelectionSpan[] SelectedSpans =>
             _selectionUtil.GetSelectedSpans().ToArray();
 
         private SnapshotPoint[] CaretPoints =>
@@ -77,27 +77,27 @@ namespace Vim.UnitTest
         private VirtualSnapshotPoint[] CaretVirtualPoints =>
             SelectedSpans.Select(x => x.CaretPoint).ToArray();
 
-        private void SetSelectedSpans(params SelectedSpan[] selectedSpans)
+        private void SetSelectedSpans(params SelectionSpan[] selectedSpans)
         {
             _selectionUtil.SetSelectedSpans(selectedSpans);
         }
 
         private void SetCaretPoints(params VirtualSnapshotPoint[] caretPoints)
         {
-            SetSelectedSpans(caretPoints.Select(x => new SelectedSpan(x)).ToArray());
+            SetSelectedSpans(caretPoints.Select(x => new SelectionSpan(x)).ToArray());
         }
 
         private void AssertCarets(params VirtualSnapshotPoint[] expectedCarets)
         {
-            AssertSelections(expectedCarets.Select(x => new SelectedSpan(x)).ToArray());
+            AssertSelections(expectedCarets.Select(x => new SelectionSpan(x)).ToArray());
         }
 
-        private void AssertSelections(params SelectedSpan[] expectedSpans)
+        private void AssertSelections(params SelectionSpan[] expectedSpans)
         {
             Assert.Equal(expectedSpans, SelectedSpans);
         }
 
-        private void AssertSelectionsAdjustCaret(params SelectedSpan[] expectedSpans)
+        private void AssertSelectionsAdjustCaret(params SelectionSpan[] expectedSpans)
         {
             if (!_globalSettings.IsSelectionInclusive)
             {
@@ -110,7 +110,7 @@ namespace Vim.UnitTest
             Assert.Equal(adjustedExpectedSpans, SelectedSpans);
         }
 
-        private void AssertSelectionsAdjustEnd(params SelectedSpan[] expectedSpans)
+        private void AssertSelectionsAdjustEnd(params SelectionSpan[] expectedSpans)
         {
             if (!_globalSettings.IsSelectionInclusive)
             {
@@ -154,7 +154,7 @@ namespace Vim.UnitTest
                 // Verify secondary selection agrees with mock vim host.
                 Assert.Single(_mockMultiSelectionUtil.SecondarySelectedSpans);
                 Assert.Equal(
-                    new SelectedSpan(_textView.GetVirtualPointInLine(1, 1)),
+                    new SelectionSpan(_textView.GetVirtualPointInLine(1, 1)),
                     _mockMultiSelectionUtil.SecondarySelectedSpans[0]);
             }
         }

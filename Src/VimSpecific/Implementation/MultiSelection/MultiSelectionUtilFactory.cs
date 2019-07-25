@@ -1,6 +1,7 @@
 ﻿#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 #else
 
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Linq;
 using Vim;
 using Vim.VisualStudio.Specific;
 
-namespace Vim.Specific.Implementation.Selection
+namespace Vim.Specific.Implementation.MultiSelection
 {
     [Export(typeof(ISelectionUtilFactory))]
     [Export(typeof(IVimSpecificService))]
@@ -26,14 +27,14 @@ namespace Vim.Specific.Implementation.Selection
 
             bool ISelectionUtil.IsMultiSelectionSupported => true;
 
-            IEnumerable<SelectedSpan> ISelectionUtil.GetSelectedSpans()
+            IEnumerable<SelectionSpan> ISelectionUtil.GetSelectedSpans()
             {
                 if (_textView.Selection.Mode == TextSelectionMode.Box)
                 {
                     var caretPoint = _textView.Caret.Position.VirtualBufferPosition;
                     var anchorPoint = _textView.Selection.AnchorPoint;
                     var activePoint = _textView.Selection.ActivePoint;
-                    return new[] { new SelectedSpan(caretPoint, anchorPoint, activePoint) };
+                    return new[] { new SelectionSpan(caretPoint, anchorPoint, activePoint) };
                 }
 
                 var broker = _textView.GetMultiSelectionBroker();
@@ -44,12 +45,12 @@ namespace Vim.Specific.Implementation.Selection
                 return new[] { GetSelectedSpan(primarySelection) }.Concat(secondarySelections);
             }
 
-            void ISelectionUtil.SetSelectedSpans(IEnumerable<SelectedSpan> selectedSpans)
+            void ISelectionUtil.SetSelectedSpans(IEnumerable<SelectionSpan> selectedSpans)
             {
                 SetSelectedSpansCore(selectedSpans.ToArray());
             }
 
-            private void SetSelectedSpansCore(SelectedSpan[] selectedSpans)
+            private void SetSelectedSpansCore(SelectionSpan[] selectedSpans)
             {
                 if (_textView.Selection.Mode == TextSelectionMode.Box)
                 {
@@ -66,7 +67,7 @@ namespace Vim.Specific.Implementation.Selection
                     return;
                 }
 
-                var selections = new Microsoft.VisualStudio.Text.Selection[selectedSpans.Length];
+                var selections = new Selection[selectedSpans.Length];
                 for (var caretIndex = 0; caretIndex < selectedSpans.Length; caretIndex++)
                 {
                     selections[caretIndex] = GetSelection(selectedSpans[caretIndex]);
@@ -75,14 +76,14 @@ namespace Vim.Specific.Implementation.Selection
                 broker.SetSelectionRange(selections, selections[0]);
             }
 
-            private static SelectedSpan GetSelectedSpan(Microsoft.VisualStudio.Text.Selection selection)
+            private static SelectionSpan GetSelectedSpan(Selection selection)
             {
-                return new SelectedSpan(selection.InsertionPoint, selection.AnchorPoint, selection.ActivePoint);
+                return new SelectionSpan(selection.InsertionPoint, selection.AnchorPoint, selection.ActivePoint);
             }
 
-            private static Microsoft.VisualStudio.Text.Selection GetSelection(SelectedSpan span)
+            private static Selection GetSelection(SelectionSpan span)
             {
-                return new Microsoft.VisualStudio.Text.Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
+                return new Selection(span.CaretPoint, span.AnchorPoint, span.ActivePoint);
             }
         }
 

@@ -3248,7 +3248,7 @@ module TextViewUtil =
             textView.Selection.Select(anchorPoint, activePoint)
 
     // Apply the specified primary selection
-    let SelectSpan (textView: ITextView) (selectedSpan: SelectedSpan) =
+    let SelectSpan (textView: ITextView) (selectedSpan: SelectionSpan) =
         Select textView selectedSpan.CaretPoint selectedSpan.AnchorPoint selectedSpan.ActivePoint
 
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 

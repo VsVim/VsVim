@@ -4015,7 +4015,7 @@ type internal CommandUtil
                         |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
                     else
                         span.End
-                let newSelectedSpan = SelectedSpan.FromSpan caretPoint span isReversed
+                let newSelectedSpan = SelectionSpan.FromSpan caretPoint span isReversed
 
                 // Add the new selected span to the selection.
                 seq {
@@ -4035,7 +4035,7 @@ type internal CommandUtil
         let setCarets caretPoints =
             caretPoints
             |> Seq.map VirtualSnapshotPointUtil.OfPoint
-            |> Seq.map SelectedSpan
+            |> Seq.map SelectionSpan
             |> _commonOperations.SetSelectedSpans
 
         let splitLineRangeWith pointFunction =
@@ -4497,7 +4497,7 @@ type internal CommandUtil
     /// Select the whole document
     member x.SelectAll () =
         SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot
-        |> (fun span -> SelectedSpan.FromSpan span.End span false)
+        |> (fun span -> SelectionSpan.FromSpan span.End span false)
         |> TextViewUtil.SelectSpan _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
