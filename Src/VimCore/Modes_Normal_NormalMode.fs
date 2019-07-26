@@ -406,7 +406,7 @@ type internal NormalMode
             _operations.EnsureAtCaret ViewFlags.VirtualEdit
 
         // Process the argument if it's applicable
-        arg.CompleteAnyTransaction
+        arg.CompleteAnyTransaction()
 
     interface INormalMode with 
         member x.KeyRemapMode = x.KeyRemapMode

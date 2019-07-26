@@ -3,7 +3,7 @@
 open System.Collections.Generic
 
 /// Mutable caret index object
-type CaretIndex() =
+type internal CaretIndex() =
     let mutable _caretIndex = 0
     member x.Value
         with get() = _caretIndex
@@ -11,19 +11,19 @@ type CaretIndex() =
 
 /// Caret-aware IRegisterValueBacking implementation for the unnamed register.
 /// If there are multiple carets, each caret gets its own distinct value
-type CaretUnnamedRegisterValueBacking
+type internal CaretUnnamedRegisterValueBacking
     (
         _caretIndex: CaretIndex,
         _unnamedRegister: Register
     ) =
 
-    let valueMap = Dictionary<int, RegisterValue>()
+    let _valueMap = Dictionary<int, RegisterValue>()
 
     member x.RegisterValue = 
         if _caretIndex.Value = 0 then
             _unnamedRegister.RegisterValue
         else
-            match valueMap.TryGetValue(_caretIndex.Value) with
+            match _valueMap.TryGetValue(_caretIndex.Value) with
             | true, value -> value
             | _ -> _unnamedRegister.RegisterValue
 
@@ -31,7 +31,7 @@ type CaretUnnamedRegisterValueBacking
         if _caretIndex.Value = 0 then
             _unnamedRegister.RegisterValue <- value
         else
-            valueMap.[_caretIndex.Value] <- value
+            _valueMap.[_caretIndex.Value] <- value
 
     interface IRegisterValueBacking with
         member x.RegisterValue 
@@ -41,7 +41,7 @@ type CaretUnnamedRegisterValueBacking
 /// Caret-aware IRegisterValueBacking implementation for the clipboard
 /// register. If there are multiple carets, the primary caret uses the
 /// clipboard and each secondary caret uses that caret's unnamed register
-type CaretClipboardRegisterValueBacking
+type internal CaretClipboardRegisterValueBacking
     (
         _caretIndex: CaretIndex,
         _clipboardRegister: Register,

@@ -14,7 +14,7 @@ namespace Vim.Specific.Implementation.MultiSelection
 {
     [Export(typeof(ISelectionUtilFactory))]
     [Export(typeof(IVimSpecificService))]
-    class MultiSelectionUtilFactory : VimSpecificService, ISelectionUtilFactory
+    internal sealed class MultiSelectionUtilFactory : VimSpecificService, ISelectionUtilFactory
     {
         private class MultiSelectionUtil : ISelectionUtil
         {

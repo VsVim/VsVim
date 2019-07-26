@@ -56,6 +56,7 @@ operations module:
 
 #### VsVim Key Bindings
 
+- Key inputs - description (applicable modes)
 - `<C-A-LeftMouse>` - add or remove caret (normal, visual, select, insert)
 - `<C-A-2-LeftMouse>` - add a new selected word or token (normal, visual, select, insert)
 - `<C-A-Up>` and `<C-A-Down>` - add a new caret on an adjecent line (normal, insert)

@@ -146,7 +146,7 @@ type internal CommandMode
         _keepSelection <- false
         _isPartialCommand <- false
 
-        arg.CompleteAnyTransaction
+        arg.CompleteAnyTransaction()
         let commandText = 
             match arg with
             | ModeArgument.PartialCommand command -> _isPartialCommand <- true; command

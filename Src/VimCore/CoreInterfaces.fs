@@ -2716,20 +2716,25 @@ type ModeArgument =
 
 with
 
-    // Running linked commands will throw away the ModeSwitch value.  This can contain
-    // an open IUndoTransaction.  This must be completed here or it will break undo in the
-    // ITextBuffer
-    member x.CompleteAnyTransaction =
+    /// Extract any linked undo transaction from the mode argument
+    member x.LinkedUndoTransaction =
         match x with
-        | ModeArgument.None -> ()
-        | ModeArgument.InitialVisualSelection _ -> ()
-        | ModeArgument.InsertBlock (_, _, transaction) -> transaction.Complete()
-        | ModeArgument.InsertWithCount _ -> ()
-        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
-        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-        | ModeArgument.Substitute _ -> ()
-        | ModeArgument.PartialCommand _ -> ()
-        | ModeArgument.CancelOperation _ -> ()
+        | ModeArgument.None -> Option.None
+        | ModeArgument.InitialVisualSelection _ -> Option.None
+        | ModeArgument.InsertBlock (_, _, transaction) -> Some transaction
+        | ModeArgument.InsertWithCount _ -> Option.None
+        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> Some transaction
+        | ModeArgument.InsertWithTransaction transaction -> Some transaction
+        | ModeArgument.Substitute _ -> Option.None
+        | ModeArgument.PartialCommand _ -> Option.None
+        | ModeArgument.CancelOperation _ -> Option.None
+
+
+    /// Complete any embedded linked undo transaction
+    member x.CompleteAnyTransaction () =
+        match x.LinkedUndoTransaction with
+        | Some transaction -> transaction.Complete()
+        | Option.None -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]

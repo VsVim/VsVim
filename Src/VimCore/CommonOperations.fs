@@ -2217,7 +2217,7 @@ type internal CommonOperations
         // the clipboard using the editor to preserve formatting. Feature
         // requested in issue #1920.
         if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-            SelectionSpan.FromSpan span.End span false
+            SelectionSpan.FromSpan(span.End, span, isReversed = false)
             |> TextViewUtil.SelectSpan _textView
             _editorOperations.CopySelection() |> ignore
             TextViewUtil.ClearSelection _textView
@@ -2575,8 +2575,8 @@ type internal CommonOperations
         // Get any linked transaction from the specified command result.
         let getLinkedTransaction result =
             match getModeArgument result with
-            | Some (ModeArgument.InsertWithTransaction linkedTransaction) ->
-                Some linkedTransaction
+            | Some modeArgument ->
+                modeArgument.LinkedUndoTransaction
             | _ ->
                 None
 
@@ -2757,41 +2757,61 @@ type internal CommonOperations
         // Do the action for all selections
         let doActions () =
 
-            // Create a linked transaction for the overall operation.
+            // Create a linked transaction for the overall operation, but
+            // protect against leaving it open if it isn't used.
             let transaction = createTransaction()
+            let mutable usedTransaction = false
 
-            // Run the action for each selected span.
-            let results = getResults()
+            try
 
-            // Extract the resulting selected spans and set them.
-            results
-            |> Seq.map (fun (_, selectedSpan, _) -> selectedSpan)
-            |> Seq.map x.MapSelectedSpanToCurrentSnapshot
-            |> x.SetSelectedSpans
+                // Run the action for each selected span.
+                let results = getResults()
 
-            // Extract the first command result and anchor point.
-            let firstResult, _, firstAnchorPoint =
+                // Extract the resulting selected spans and set them.
                 results
-                |> Seq.head
+                |> Seq.map (fun (_, selectedSpan, _) -> selectedSpan)
+                |> Seq.map x.MapSelectedSpanToCurrentSnapshot
+                |> x.SetSelectedSpans
 
-            // Update the real visual anchor point.
-            _vimBufferData.VisualAnchorPoint <- firstAnchorPoint
+                // Extract the first command result and anchor point.
+                let firstResult, _, firstAnchorPoint =
+                    results
+                    |> Seq.head
 
-            // Handle command result.
-            if getLinkedTransaction firstResult |> Option.isSome then
+                // Update the real visual anchor point.
+                _vimBufferData.VisualAnchorPoint <- firstAnchorPoint
 
-                // The individual command ended in a linked transaction. Enter
-                // insert mode with the overall linked transaction instead.
-                let modeArgument = ModeArgument.InsertWithTransaction transaction
-                (ModeKind.Insert, modeArgument)
-                |> ModeSwitch.SwitchModeWithArgument
-                |> CommandResult.Completed
+                // Translate any mode argument with a transaction.
+                let newModeArgument =
+                    match getModeArgument firstResult with
+                    | Some (ModeArgument.InsertWithCountAndNewLine (count, _)) ->
+                        Some (ModeArgument.InsertWithCountAndNewLine (count, transaction))
+                    | Some (ModeArgument.InsertWithTransaction _) ->
+                        Some (ModeArgument.InsertWithTransaction transaction)
+                    | _ ->
+                        None
 
-            else
+                // Handle command result.
+                match newModeArgument with
+                | Some modeArgument ->
 
-                // Complete the transaction.
-                transaction.Complete()
-                firstResult
+                    // The individual command ended in a linked transaction. Enter
+                    // insert mode with the overall linked transaction instead.
+                    usedTransaction <- true
+                    (ModeKind.Insert, modeArgument)
+                    |> ModeSwitch.SwitchModeWithArgument
+                    |> CommandResult.Completed
+
+                | None ->
+
+                    // Otherwise just return the first result.
+                    firstResult
+
+            finally
+
+                // Maybe complete the transaction.
+                if not usedTransaction then
+                    transaction.Complete()
 
         // Do the actions for each selection being sure to restore the old
         // caret index at the end.

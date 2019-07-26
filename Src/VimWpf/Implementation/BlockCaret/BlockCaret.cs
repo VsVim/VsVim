@@ -150,7 +150,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private bool IsRealCaretVisible(VirtualSnapshotPoint caretPoint)
         {
-            return IsRealCaretVisible(caretPoint, out var textViewLine);
+            return IsRealCaretVisible(caretPoint, out _);
         }
 
         internal BlockCaret(
@@ -173,7 +173,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
             _textView.LostAggregateFocus += OnCaretEvent;
-            _textView.Selection.SelectionChanged += OnCaretPositionChanged;
+            _textView.Selection.SelectionChanged += OnCaretPositionOrSelectionChanged;
             _textView.Closed += OnTextViewClosed;
 
             _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
@@ -317,7 +317,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// position changed event and also includes any changes to secondary
         /// carets
         /// </summary>
-        private void OnCaretPositionChanged(object sender, EventArgs e)
+        private void OnCaretPositionOrSelectionChanged(object sender, EventArgs e)
         {
             RestartBlinkCycle();
 
@@ -824,7 +824,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 _textView.LayoutChanged -= OnCaretEvent;
                 _textView.GotAggregateFocus -= OnCaretEvent;
                 _textView.LostAggregateFocus -= OnCaretEvent;
-                _textView.Selection.SelectionChanged -= OnCaretPositionChanged;
+                _textView.Selection.SelectionChanged -= OnCaretPositionOrSelectionChanged;
                 _textView.Caret.IsHidden = false;
                 _textView.Closed -= OnTextViewClosed;
             }

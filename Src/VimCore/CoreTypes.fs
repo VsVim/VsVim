@@ -73,6 +73,7 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+/// A selection represented as a triple of caret, anchor and active points
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
@@ -83,6 +84,7 @@ type SelectionSpan =
     val private _anchorPoint: VirtualSnapshotPoint
     val private _activePoint: VirtualSnapshotPoint
 
+    /// Construct a zero-length selection representing a caret
     new (caretPoint: VirtualSnapshotPoint) =
         {
             _caretPoint = caretPoint
@@ -90,6 +92,7 @@ type SelectionSpan =
             _activePoint = caretPoint
         }
 
+    /// Construct a selection from a triple of caret, anchor and active points
     new (caretPoint: VirtualSnapshotPoint, anchorPoint: VirtualSnapshotPoint, activePoint: VirtualSnapshotPoint) =
         {
             _caretPoint = caretPoint
@@ -97,29 +100,52 @@ type SelectionSpan =
             _activePoint = activePoint
         }
 
+    /// The selection's caret point
     member x.CaretPoint = x._caretPoint
+
+    /// The selection's anchor point
     member x.AnchorPoint = x._anchorPoint
+
+    /// The selection's active point
     member x.ActivePoint = x._activePoint
+
+    /// Whether the selection is reversed
     member x.IsReversed = x._anchorPoint.Position.Position > x._activePoint.Position.Position
+
+    /// The forward snapshot span corresponding to the selection
     member x.Span =
         if not x.IsReversed then
             VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
         else
             VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
+
+    /// The snapshot point at the start of the forward span
     member x.Start = x.Span.Start
+
+    /// The snapshot point at the end of the forward span
     member x.End = x.Span.End
+
+    /// The length of the selection
     member x.Length = x.Span.Length
+
+    /// Whether the selection is empty
     member x.IsEmpty = x.Length = 0
 
-    static member FromSpan (caretPoint: SnapshotPoint) (span: SnapshotSpan) (isReversed: bool) =
-        SelectionSpan.FromVirtualSpan (VirtualSnapshotPoint(caretPoint)) (VirtualSnapshotSpan(span)) isReversed
+    /// Create a selection span from the specified caret point and forward or
+    /// reverse snapshot span
+    static member FromSpan(caretPoint: SnapshotPoint, span: SnapshotSpan, isReversed: bool) =
+        SelectionSpan.FromVirtualSpan(VirtualSnapshotPoint(caretPoint), VirtualSnapshotSpan(span), isReversed)
 
-    static member FromVirtualSpan (caretPoint: VirtualSnapshotPoint) (span: VirtualSnapshotSpan) (isReversed: bool) =
+    /// Create a selection span from the specified caret point and forward or
+    /// reverse virtual snapshot span
+    static member FromVirtualSpan(caretPoint: VirtualSnapshotPoint, span: VirtualSnapshotSpan, isReversed: bool) =
         if not isReversed then
             SelectionSpan(caretPoint, span.Start, span.End)
         else
             SelectionSpan(caretPoint, span.End, span.Start)
 
+    /// Convert a selection span to a helpful display string indicating the
+    /// selected characters, the caret point and the active point
     override x.ToString() =
         let reversedString =
             if x.IsReversed then " (reversed)" else ""

@@ -2571,7 +2571,7 @@ type internal CommandUtil
             | CommandResult.Completed modeSwitch ->
                 match modeSwitch with
                 | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
-                    modeArgument.CompleteAnyTransaction
+                    modeArgument.CompleteAnyTransaction()
                 | _ -> ()
                 runNextCommand ()
 
@@ -2948,56 +2948,57 @@ type internal CommandUtil
     member x.RunInsertCommand command =
         _insertUtil.RunInsertCommand command
 
-    /// Whether we should run the specified command for all carets
-    member x.ShouldRunNormalCommandForEachCaret command =
-        match command with
-        | NormalCommand.AddToWord -> true
-        | NormalCommand.ChangeMotion _ -> true
-        | NormalCommand.ChangeCaseCaretLine _ -> true
-        | NormalCommand.ChangeCaseCaretPoint _ -> true
-        | NormalCommand.ChangeCaseMotion _ -> true
-        | NormalCommand.ChangeLines -> true
-        | NormalCommand.ChangeTillEndOfLine -> true
-        | NormalCommand.DeleteCharacterAtCaret -> true
-        | NormalCommand.DeleteCharacterBeforeCaret -> true
-        | NormalCommand.DeleteLines -> true
-        | NormalCommand.DeleteMotion _ -> true
-        | NormalCommand.DeleteTillEndOfLine -> true
-        | NormalCommand.FilterLines -> true
-        | NormalCommand.FilterMotion _ -> true
-        | NormalCommand.FormatCodeLines -> true
-        | NormalCommand.FormatCodeMotion _ -> true
-        | NormalCommand.FormatTextLines _ -> true
-        | NormalCommand.FormatTextMotion _ -> true
-        | NormalCommand.JoinLines _ -> true
-        | NormalCommand.MoveCaretToMotion _ -> true
-        | NormalCommand.PutAfterCaret _ -> true
-        | NormalCommand.PutAfterCaretWithIndent -> true
-        | NormalCommand.PutAfterCaretMouse -> true
-        | NormalCommand.PutBeforeCaret _ -> true
-        | NormalCommand.PutBeforeCaretWithIndent -> true
-        | NormalCommand.RepeatLastCommand -> true
-        | NormalCommand.RepeatLastSubstitute _ -> true
-        | NormalCommand.ReplaceAtCaret -> true
-        | NormalCommand.ReplaceChar _ -> true
-        | NormalCommand.RunAtCommand _ -> true
-        | NormalCommand.SubtractFromWord -> true
-        | NormalCommand.ShiftLinesLeft -> true
-        | NormalCommand.ShiftLinesRight -> true
-        | NormalCommand.ShiftMotionLinesLeft _ -> true
-        | NormalCommand.ShiftMotionLinesRight _ -> true
-        | NormalCommand.SwitchModeVisualCommand visualKind ->
-            match visualKind with
-            | VisualKind.Character -> true
-            | VisualKind.Line -> true
-            | VisualKind.Block -> false
-        | NormalCommand.SwitchToSelection _ -> true
-        | NormalCommand.Yank _ -> true
-        | _ -> false
-
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command data =
-        if x.ShouldRunNormalCommandForEachCaret command then
+
+        // Whether we should run the specified command for all carets.
+        let shouldRunNormalCommandForEachCaret command =
+            match command with
+            | NormalCommand.AddToWord -> true
+            | NormalCommand.ChangeMotion _ -> true
+            | NormalCommand.ChangeCaseCaretLine _ -> true
+            | NormalCommand.ChangeCaseCaretPoint _ -> true
+            | NormalCommand.ChangeCaseMotion _ -> true
+            | NormalCommand.ChangeLines -> true
+            | NormalCommand.ChangeTillEndOfLine -> true
+            | NormalCommand.DeleteCharacterAtCaret -> true
+            | NormalCommand.DeleteCharacterBeforeCaret -> true
+            | NormalCommand.DeleteLines -> true
+            | NormalCommand.DeleteMotion _ -> true
+            | NormalCommand.DeleteTillEndOfLine -> true
+            | NormalCommand.FilterLines -> true
+            | NormalCommand.FilterMotion _ -> true
+            | NormalCommand.FormatCodeLines -> true
+            | NormalCommand.FormatCodeMotion _ -> true
+            | NormalCommand.FormatTextLines _ -> true
+            | NormalCommand.FormatTextMotion _ -> true
+            | NormalCommand.JoinLines _ -> true
+            | NormalCommand.MoveCaretToMotion _ -> true
+            | NormalCommand.PutAfterCaret _ -> true
+            | NormalCommand.PutAfterCaretWithIndent -> true
+            | NormalCommand.PutAfterCaretMouse -> true
+            | NormalCommand.PutBeforeCaret _ -> true
+            | NormalCommand.PutBeforeCaretWithIndent -> true
+            | NormalCommand.RepeatLastCommand -> true
+            | NormalCommand.RepeatLastSubstitute _ -> true
+            | NormalCommand.ReplaceAtCaret -> true
+            | NormalCommand.ReplaceChar _ -> true
+            | NormalCommand.RunAtCommand _ -> true
+            | NormalCommand.SubtractFromWord -> true
+            | NormalCommand.ShiftLinesLeft -> true
+            | NormalCommand.ShiftLinesRight -> true
+            | NormalCommand.ShiftMotionLinesLeft _ -> true
+            | NormalCommand.ShiftMotionLinesRight _ -> true
+            | NormalCommand.SwitchModeVisualCommand visualKind ->
+                match visualKind with
+                | VisualKind.Character -> true
+                | VisualKind.Line -> true
+                | VisualKind.Block -> false
+            | NormalCommand.SwitchToSelection _ -> true
+            | NormalCommand.Yank _ -> true
+            | _ -> false
+
+        if shouldRunNormalCommandForEachCaret command then
             fun () -> x.RunNormalCommandCore command data
             |> _commonOperations.RunForAllSelections
         else
@@ -3123,42 +3124,6 @@ type internal CommandUtil
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion registerName)
         | NormalCommand.YankLines -> x.YankLines count registerName
 
-    /// Whether we should run the specified visual command for each selection
-    member x.ShouldRunVisualCommandForEachSelection command visualKind =
-        match visualKind with
-        | VisualKind.Character | VisualKind.Line ->
-            match command with
-            | VisualCommand.AddToSelection _ -> true
-            | VisualCommand.ChangeCase _ -> true
-            | VisualCommand.ChangeSelection -> true
-            | VisualCommand.DeleteSelection -> true
-            | VisualCommand.InvertSelection _ -> true
-            | VisualCommand.MoveCaretToTextObject _-> true
-            | VisualCommand.PutOverSelection _ -> true
-            | VisualCommand.ReplaceSelection _ -> true
-            | VisualCommand.SelectLine -> true
-            | VisualCommand.ShiftLinesLeft -> true
-            | VisualCommand.ShiftLinesRight -> true
-            | VisualCommand.SubtractFromSelection _ -> true
-            | VisualCommand.CutSelection -> true
-            | VisualCommand.CutSelectionAndPaste -> true
-            | _ -> false
-        | VisualKind.Block ->
-            false
-
-    /// Whether we should clear the selection before running the command
-    member x.ShouldClearSelection command =
-        match command with
-        | VisualCommand.AddCaretAtMousePoint -> false
-        | VisualCommand.AddSelectionOnAdjacentLine _ -> false
-        | VisualCommand.CutSelection -> false
-        | VisualCommand.CopySelection -> false
-        | VisualCommand.CutSelectionAndPaste -> false
-        | VisualCommand.InvertSelection _ -> false
-        | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> false
-        | VisualCommand.AddNextOccurrenceOfPrimarySelection -> false
-        | _ -> true
-
     /// The visual span associated with the selection
     member x.GetVisualSpan visualKind =
         let tabStop = _localSettings.TabStop
@@ -3167,7 +3132,31 @@ type internal CommandUtil
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command data visualSpan =
-        if x.ShouldRunVisualCommandForEachSelection command visualSpan.VisualKind then
+
+        // Whether we should run the specified visual command for each selection
+        let shouldRunVisualCommandForEachSelection command visualKind =
+            match visualKind with
+            | VisualKind.Character | VisualKind.Line ->
+                match command with
+                | VisualCommand.AddToSelection _ -> true
+                | VisualCommand.ChangeCase _ -> true
+                | VisualCommand.ChangeSelection -> true
+                | VisualCommand.DeleteSelection -> true
+                | VisualCommand.InvertSelection _ -> true
+                | VisualCommand.MoveCaretToTextObject _-> true
+                | VisualCommand.PutOverSelection _ -> true
+                | VisualCommand.ReplaceSelection _ -> true
+                | VisualCommand.SelectLine -> true
+                | VisualCommand.ShiftLinesLeft -> true
+                | VisualCommand.ShiftLinesRight -> true
+                | VisualCommand.SubtractFromSelection _ -> true
+                | VisualCommand.CutSelection -> true
+                | VisualCommand.CutSelectionAndPaste -> true
+                | _ -> false
+            | VisualKind.Block ->
+                false
+
+        if shouldRunVisualCommandForEachSelection command visualSpan.VisualKind then
             fun () ->
                 x.GetVisualSpan visualSpan.VisualKind
                 |> x.RunVisualCommandCore command data
@@ -3178,12 +3167,25 @@ type internal CommandUtil
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommandCore command (data: CommandData) (visualSpan: VisualSpan) =
 
+        /// Whether we should clear the selection before running the command
+        let shouldClearSelection command =
+            match command with
+            | VisualCommand.AddCaretAtMousePoint -> false
+            | VisualCommand.AddSelectionOnAdjacentLine _ -> false
+            | VisualCommand.CutSelection -> false
+            | VisualCommand.CopySelection -> false
+            | VisualCommand.CutSelectionAndPaste -> false
+            | VisualCommand.InvertSelection _ -> false
+            | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> false
+            | VisualCommand.AddNextOccurrenceOfPrimarySelection -> false
+            | _ -> true
+
         // Maybe clear the selection before actually running any Visual
         // Commands. Selection is one of the items which is preserved along
         // with caret position when we use an edit transaction with the change
         // primitives (EditWithUndoTransaction).  We don't want the selection
         // to reappear during an undo hence clear it now so it's gone.
-        if x.ShouldClearSelection command then
+        if shouldClearSelection command then
             TextViewUtil.ClearSelection _textView
 
         let registerName = data.RegisterName
@@ -4015,7 +4017,7 @@ type internal CommandUtil
                         |> SnapshotPointUtil.GetPreviousCharacterSpanWithWrap
                     else
                         span.End
-                let newSelectedSpan = SelectionSpan.FromSpan caretPoint span isReversed
+                let newSelectedSpan = SelectionSpan.FromSpan(caretPoint, span, isReversed)
 
                 // Add the new selected span to the selection.
                 seq {
@@ -4497,7 +4499,7 @@ type internal CommandUtil
     /// Select the whole document
     member x.SelectAll () =
         SnapshotUtil.GetExtent _textBuffer.CurrentSnapshot
-        |> (fun span -> SelectionSpan.FromSpan span.End span false)
+        |> (fun span -> SelectionSpan.FromSpan(span.End, span, isReversed = false))
         |> TextViewUtil.SelectSpan _textView
         CommandResult.Completed ModeSwitch.NoSwitch
 
