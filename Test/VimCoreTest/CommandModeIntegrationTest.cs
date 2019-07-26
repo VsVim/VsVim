@@ -2341,7 +2341,7 @@ namespace Vim.UnitTest
 
             [WpfTheory]
             [InlineData("fo", "fo")]
-            [InlineData("tree<Back>", "tre")]
+            [InlineData("tree<BS>", "tre")]
             [InlineData("tree<Esc>", "")]
             [InlineData("c<BS><BS>", "")]
             [InlineData("BS", "BS")]
@@ -2369,9 +2369,12 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 _textView.MoveCaretTo(3);
                 var didSave = false;
+                var didClose = false;
                 VimHost.SaveFunc = _ => didSave = true;
+                VimHost.CloseFunc = _ => didClose = true;
                 RunCommand("wq");
                 Assert.True(didSave);
+                Assert.True(didClose);
             }
 
             [WpfFact]

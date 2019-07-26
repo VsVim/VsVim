@@ -2147,9 +2147,17 @@ namespace Vim.UnitTest
                 _vimRaw.OnFocus(vimBuffers[0]);
                 _vimRaw.OnFocus(vimBuffers[1]);
                 _vimRaw.OnFocus(vimBuffers[2]);
-                vimBuffers[2].ProcessNotation(command);
+                _vimHost.NavigateToFunc = _ => true;
                 var expectedData = vimBuffers[bufferIndex].TextView.Caret.Position.VirtualBufferPosition;
-                Assert.Equal(expectedData, _vimHost.NavigateToData);
+                var didNavigate = false;
+                VimHost.NavigateToFunc = point =>
+                {
+                    Assert.Equal(vimBuffers[bufferIndex].TextView.GetCaretVirtualPoint(), point);
+                    didNavigate = true;
+                    return true;
+                };
+                vimBuffers[2].ProcessNotation(command);
+                Assert.True(didNavigate);
             }
 
             [WpfTheory]
