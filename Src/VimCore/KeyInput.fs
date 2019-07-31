@@ -489,3 +489,13 @@ module KeyInputUtil =
             true
         else
             false
+
+    let IsTextInput (keyInput: KeyInput) =
+        if keyInput.KeyModifiers <> VimKeyModifiers.None then
+            // Any key input with modifiers is not an input key.
+            false
+        elif CharUtil.IsPrintable keyInput.Char then
+            // Any printable character is an input key.
+            true
+        else
+            false

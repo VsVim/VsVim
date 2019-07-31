@@ -6634,6 +6634,18 @@ namespace Vim.UnitTest
                 Assert.Equal("\n", _textBuffer.GetLine(0).GetLineBreakText());
                 Assert.Equal("", _textBuffer.GetLine(0).GetText());
             }
+
+            [WpfFact]
+            public void ReplaceNonAscii()
+            {
+                // Reported in issue #2702.
+                Create("abc", "");
+                Assert.False(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                _vimBuffer.Process("r");
+                Assert.True(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                _vimBuffer.Process("©");
+                Assert.Equal(new[] { "©bc", "" }, _textBuffer.GetLines());
+            }
         }
 
         public abstract class ScrollWindowTest : NormalModeIntegrationTest

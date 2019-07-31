@@ -360,6 +360,7 @@ type internal NormalMode
     member x.CanProcess (keyInput: KeyInput) =
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         || _runner.DoesCommandStartWith keyInput
+        || x.KeyRemapMode = KeyRemapMode.Language && KeyInputUtil.IsTextInput keyInput
     
     member x.Process (keyInputData: KeyInputData) = 
 
