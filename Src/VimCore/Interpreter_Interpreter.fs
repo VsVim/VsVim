@@ -4,6 +4,7 @@ open Microsoft.VisualStudio.Text
 open Vim
 open Vim.StringBuilderExtensions
 open Vim.VimCoreExtensions
+open System
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
@@ -326,7 +327,6 @@ type VimInterpreter
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
     let _markMap = _vim.MarkMap
-    let _keyMap = _vim.KeyMap
     let _statusUtil = InterpreterStatusUtil(_vimBufferData.StatusUtil)
     let _registerMap = _vimBufferData.Vim.RegisterMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
@@ -368,6 +368,13 @@ type VimInterpreter
             SystemUtil.ResolveVimPath _vimData.CurrentDirectory path
         with
             | _ -> path
+
+    member x.GetKeyMap keyMapArguments: IVimKeyMap * KeyMapArgument list = 
+        match keyMapArguments with
+        | [KeyMapArgument.Buffer] -> (_vimBuffer.LocalKeyMap :> IVimKeyMap, [])
+        | _ -> (_vim.GlobalKeyMap :> IVimKeyMap, keyMapArguments)
+
+    member x.KeyMaps = [_vim.GlobalKeyMap :> IVimKeyMap; _vimTextBuffer.LocalKeyMap :> IVimKeyMap]
 
     /// Get a tuple of the ITextSnapshotLine specified by the given LineSpecifier and the 
     /// corresponding vim line number
@@ -575,6 +582,54 @@ type VimInterpreter
     member x.GetPointAfter lineRange =
         x.GetPointAfterOrDefault lineRange DefaultLineRange.None
 
+    member x.RunAbbreviate lhs rhs allowRemap modeList isLocal =
+        // Even when doing a global mapping the abbreviation is still parsed in the context of 
+        // the current buffer using `iskeyword`. This means that some global abbreviations are valid
+        // to set in some buffers but not others if they have significantly different `iskeyword` 
+        // values
+        match _vimTextBuffer.LocalAbbreviationMap.Parse lhs with
+        | None ->
+            _statusUtil.OnError Resources.Parser_InvalidArgument
+        | Some _ ->
+            let map = 
+                if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+                else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
+
+            match KeyNotationUtil.TryStringToKeyInputSet lhs, KeyNotationUtil.TryStringToKeyInputSet rhs with
+            | Some lhs, Some rhs ->
+                for mode in modeList do
+                    map.AddAbbreviation(lhs, rhs, allowRemap, mode)
+            | _ -> _statusUtil.OnError Resources.Parser_InvalidArgument
+
+    member x.RunAbbreviateClear modeList isLocal =
+        let map = 
+            if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+            else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
+        for mode in modeList do
+            map.ClearAbbreviations(mode)
+
+    member x.RunUnabbreviate keyNotation modeList isLocal =
+        let map = 
+            if isLocal then _vimTextBuffer.LocalAbbreviationMap :> IVimAbbreviationMap
+            else _vim.GlobalAbbreviationMap :> IVimAbbreviationMap
+        match KeyNotationUtil.TryStringToKeyInputSet keyNotation with
+        | None -> _statusUtil.OnError Resources.Parser_InvalidArgument
+        | Some keyInputSet -> 
+            let mutable succeeded = true
+            for mode in modeList do
+                if not (map.RemoveAbbreviation(keyInputSet, mode)) then
+                    // When the LHS doesn't have a match then remove all mappings where the RHS
+                    // matches the provided key notation.
+                    let all = map.GetAbbreviations mode |> Seq.filter (fun x -> x.Replacement = keyInputSet) |> List.ofSeq
+                    if all.IsEmpty then
+                         succeeded <- false
+                    else
+                        for abbreviation in all do
+                            map.RemoveAbbreviation(abbreviation.Abbreviation, mode) |> ignore
+            if not succeeded then
+                _statusUtil.OnError Resources.Parser_InvalidArgument
+        
+
     /// Add the specified auto command to the list 
     member x.RunAddAutoCommand (autoCommandDefinition: AutoCommandDefinition) = 
         let builder = System.Collections.Generic.List<AutoCommand>()
@@ -771,11 +826,12 @@ type VimInterpreter
 
     /// Clear out the key map for the given modes
     member x.RunClearKeyMap keyRemapModes mapArgumentList = 
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
             keyRemapModes
-            |> Seq.iter _keyMap.Clear
+            |> Seq.iter keyMap.ClearKeyMappings
 
     /// Run the close command
     member x.RunClose hasBang = 
@@ -837,6 +893,40 @@ type VimInterpreter
             |> _statusUtil.OnStatus
         else
             DigraphUtil.AddToMap _vimBuffer.Vim.DigraphMap digraphList
+
+    member x.RunDisplayAbbreviation modeList (lhs: string option) =
+
+        let list = List<string>()
+        let appendMap (map: IVimAbbreviationMap) isLocalChar =
+            let modeToChar mode =
+                match mode with 
+                | AbbreviationMode.Insert -> 'i'
+                | AbbreviationMode.Command -> 'c'
+
+            let add mode str =
+                if Seq.contains mode modeList then
+                    list.Add str
+
+            let getDisplayString key (abbreviations: Abbreviation seq) =
+                match List.ofSeq abbreviations with
+                | [a] -> add a.Mode (sprintf "%c  %O\t%c%O" (modeToChar a.Mode) key isLocalChar a.Replacement)
+                | [a1; a2] when a1.Replacement = a2.Replacement -> list.Add(sprintf "!  %O\t%c%O" key isLocalChar a1.Replacement)
+                | [a1; a2] -> 
+                    add a1.Mode (sprintf "%c  %O\t%c%O" (modeToChar a1.Mode) key isLocalChar a1.Replacement)
+                    add a2.Mode (sprintf "%c  %O\t%c%O" (modeToChar a2.Mode) key isLocalChar a2.Replacement)
+                | _ -> ()
+
+            let groupedAbbreviations = 
+                map.Abbreviations 
+                |> Seq.groupBy (fun x -> x.Abbreviation)
+                |> Seq.sortBy (fun (key, _) -> key)
+
+            for (key, abbreviations)  in groupedAbbreviations do
+                getDisplayString key abbreviations
+
+        appendMap _vimTextBuffer.LocalAbbreviationMap '!'
+        appendMap _vimTextBuffer.GlobalAbbreviationMap ' '
+        _statusUtil.OnStatusLong (list :> string seq)
 
     /// Display the given map modes
     member x.RunDisplayKeyMap keyRemapModes prefixFilter = 
@@ -933,21 +1023,23 @@ type VimInterpreter
         let getLine modes lhs rhs = 
             sprintf "%-3s%-10s %s" (getModeLabel modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
 
-        keyRemapModes
-        |> Seq.collect (fun mode ->
+        x.KeyMaps
+        |> Seq.collect (fun (keyMap: IVimKeyMap) ->
+            keyRemapModes
+            |> Seq.collect (fun mode ->
 
-            // Generate a mode / lhs / rhs tuple for all mappings in the
-            // specified mode.
-            mode
-            |> _keyMap.GetKeyMappingsForMode
-            |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
+                // Generate a mode / lhs / rhs tuple for all mappings in the
+                // specified mode.
+                mode
+                |> keyMap.GetKeyMappings
+                |> Seq.map (fun keyMapping -> (mode, keyMapping.Left, keyMapping.Right)))
 
-        |> filterByPrefix
-        |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
-        |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
-        |> Seq.collect combineByGroup
-        |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
-        |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs)
+            |> filterByPrefix
+            |> Seq.groupBy (fun (_, lhs, rhs) -> lhs, rhs)
+            |> Seq.map (fun (_, mappings) -> mappings |> Seq.toList)
+            |> Seq.collect combineByGroup
+            |> Seq.sortBy (fun (modes, lhs, _) -> lhs, modes)
+            |> Seq.map (fun (modes, lhs, rhs) -> getLine modes lhs rhs))
         |> _statusUtil.OnStatusLong
 
     /// Display the registers.  If a particular name is specified only display that register
@@ -1504,22 +1596,26 @@ type VimInterpreter
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
 
         // At this point we can parse out all of the key mapping options, we just don't support
-        // any of them.  Warn the developer but continue processing 
+        // most of them.  Warn the developer but continue processing 
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         for mapArgument in mapArgumentList do
             let name = sprintf "%A" mapArgument
             _statusUtil.OnWarning (Resources.Interpreter_KeyMappingOptionNotSupported name)
 
-        // Get the appropriate mapping function based on whether or not remapping is 
-        // allowed
-        let mapFunc = if allowRemap then _keyMap.MapWithRemap else _keyMap.MapWithNoRemap
+        match keyMap.ParseKeyNotation leftKeyNotation, keyMap.ParseKeyNotation rightKeyNotation with
+        | Some lhs, Some rhs -> 
 
-        // Perform the mapping for each mode and record if there is an error
-        let anyErrors = 
+            // Empirically with vim/gvim, <S-$> on the left is never
+            // matched, but <S-$> on the right is treated as '$'. Reported
+            // in issue #2313.
+            let rhs =
+                rhs.KeyInputs
+                |> Seq.map KeyInputUtil.NormalizeKeyModifiers
+                |> KeyInputSetUtil.OfSeq
+
             keyRemapModes
-            |> Seq.map (fun keyRemapMode -> mapFunc leftKeyNotation rightKeyNotation keyRemapMode)
-            |> Seq.exists (fun x -> not x)
-
-        if anyErrors then
+            |> Seq.iter (fun keyRemapMode -> keyMap.AddKeyMapping(lhs, rhs, allowRemap, keyRemapMode))
+        | _ ->
             _statusUtil.OnError (Resources.Interpreter_UnableToMapKeys leftKeyNotation rightKeyNotation)
 
     /// Run the 'nohlsearch' command.  Temporarily disables highlighitng in the buffer
@@ -2190,18 +2286,28 @@ type VimInterpreter
 
     /// Unmap the specified key notation in all of the listed modes
     member x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList =
+        let keyMap, mapArgumentList = x.GetKeyMap mapArgumentList
         if not (List.isEmpty mapArgumentList) then
             _statusUtil.OnError (Resources.Interpreter_OptionNotSupported "map special arguments")
         else
+            match keyMap.ParseKeyNotation keyNotation with
+            | Some key ->
+                let mutable succeeded = true;
+                for keyRemapMode in keyRemapModes do
+                    // The unmap operation by default unmaps the LHS. If the argument doesn't match any 
+                    // LHS then all mappings where the argument matches the RHS are removed.
+                    if not (keyMap.RemoveKeyMapping(key, keyRemapMode)) then
+                        let all = keyMap.GetKeyMappings(keyRemapMode) |> Seq.filter (fun x -> x.Right = key) |> List.ofSeq
+                        if all.IsEmpty then
+                            succeeded <- false
+                        else
+                            for keyMapping in all do
+                                keyMap.RemoveKeyMapping(keyMapping.Left, keyRemapMode) |> ignore
 
-            let allSucceeded =
-                keyRemapModes
-                |> Seq.map (fun keyRemapMode -> _keyMap.Unmap keyNotation keyRemapMode || _keyMap.UnmapByMapping keyNotation keyRemapMode)
-                |> Seq.filter (fun x -> not x)
-                |> Seq.isEmpty
-
-            if not allSucceeded then 
-                _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+                if not succeeded then 
+                    _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+            | None ->
+                _statusUtil.OnError Resources.Parser_InvalidArgument
 
     member x.RunVersion() = 
         let msg = sprintf "VsVim Version %s" VimConstants.VersionNumber
@@ -2218,7 +2324,7 @@ type VimInterpreter
             // mimics the selection concept than putting the caret at the end
             // of the thing.
             let start = _textView.Selection.Start
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             TextViewUtil.MoveCaretToVirtualPoint _textView start
 
     member x.RunWrite lineRange hasBang fileOptionList filePath =
@@ -2287,6 +2393,8 @@ type VimInterpreter
         let cantRun () = _statusUtil.OnError Resources.Interpreter_Error
 
         match lineCommand with
+        | LineCommand.Abbreviate (lhs, rhs, allowRemap, modeList, isLocal) -> x.RunAbbreviate lhs rhs allowRemap modeList isLocal
+        | LineCommand.AbbreviateClear (modeList, isLocal) -> x.RunAbbreviateClear modeList isLocal
         | LineCommand.AddAutoCommand autoCommandDefinition -> x.RunAddAutoCommand autoCommandDefinition
         | LineCommand.Behave model -> x.RunBehave model
         | LineCommand.Call callInfo -> x.RunCall callInfo
@@ -2298,6 +2406,13 @@ type VimInterpreter
         | LineCommand.CopyTo (sourceLineRange, destLineRange, count) -> x.RunCopyTo sourceLineRange destLineRange count
         | LineCommand.CSharpScript callInfo -> x.RunCSharpScript(callInfo, createEachTime = false)
         | LineCommand.CSharpScriptCreateEachTime callInfo -> x.RunCSharpScript(callInfo, createEachTime = true)
+        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
+        | LineCommand.DisplayAbbreviation (modes, lhs) -> x.RunDisplayAbbreviation modes lhs
+        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
+        | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
+        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
+        | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
+        | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Delete (lineRange, registerName) -> x.RunDelete lineRange registerName
         | LineCommand.DeleteMarks marks -> x.RunDeleteMarks marks
         | LineCommand.DeleteAllMarks -> x.RunDeleteAllMarks()
@@ -2309,11 +2424,6 @@ type VimInterpreter
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
         | LineCommand.FunctionEnd _ -> cantRun ()
-        | LineCommand.Digraphs digraphList -> x.RunDigraphs digraphList
-        | LineCommand.DisplayKeyMap (keyRemapModes, keyNotationOption) -> x.RunDisplayKeyMap keyRemapModes keyNotationOption
-        | LineCommand.DisplayRegisters nameList -> x.RunDisplayRegisters nameList
-        | LineCommand.DisplayLet variables -> x.RunDisplayLet variables
-        | LineCommand.DisplayMarks marks -> x.RunDisplayMarks marks
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand
@@ -2343,7 +2453,6 @@ type VimInterpreter
         | LineCommand.Only -> x.RunOnly()
         | LineCommand.OpenListWindow listKind -> x.RunOpenListWindow listKind
         | LineCommand.ParseError msg -> x.RunParseError msg
-        | LineCommand.DisplayLines (lineRange, lineCommandFlags) -> x.RunDisplayLines lineRange lineCommandFlags
         | LineCommand.PrintCurrentDirectory -> x.RunPrintCurrentDirectory()
         | LineCommand.PutAfter (lineRange, registerName) -> x.RunPut lineRange registerName true
         | LineCommand.PutBefore (lineRange, registerName) -> x.RunPut lineRange registerName false
@@ -2368,6 +2477,7 @@ type VimInterpreter
         | LineCommand.SubstituteRepeat (lineRange, substituteFlags) -> x.RunSubstituteRepeatLast lineRange substituteFlags
         | LineCommand.TabNew filePath -> x.RunTabNew filePath
         | LineCommand.TabOnly -> x.RunTabOnly()
+        | LineCommand.Unabbreviate (keyNotation, modeList, isLocal) -> x.RunUnabbreviate keyNotation modeList isLocal
         | LineCommand.Undo -> x.RunUndo()
         | LineCommand.Unlet (ignoreMissing, nameList) -> x.RunUnlet ignoreMissing nameList
         | LineCommand.UnmapKeys (keyNotation, keyRemapModes, mapArgumentList) -> x.RunUnmapKeys keyNotation keyRemapModes mapArgumentList

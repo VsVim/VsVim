@@ -87,7 +87,7 @@ namespace Vim.VisualStudio.UnitTest
         public override void Dispose()
         {
             base.Dispose();
-            _vim.KeyMap.ClearAll();
+            _vim.GlobalKeyMap.ClearKeyMappings();
         }
 
         /// <summary>
@@ -355,7 +355,7 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             [WpfFact]
-            public void DiscardUnprocessedInputInNonInputMode()
+            public void DiscardUnprocessedInput_Visual()
             {
                 _commonOperations.Setup(x => x.Beep()).Verifiable();
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
@@ -364,8 +364,8 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// Must be able discard non-ASCII characters or they will end up
-            /// as input
+            /// Must discard non-ASCII characters in normal mode or they
+            /// will end up as input
             /// </summary>
             [WpfTheory]
             [InlineData('¤')]
@@ -373,7 +373,7 @@ namespace Vim.VisualStudio.UnitTest
             [InlineData('£')]
             [InlineData('§')]
             [InlineData('´')]
-            public void CanProcessPrintableNonAscii(char c)
+            public void DiscardUnprocessedInput_Normal(char c)
             {
                 // Reported in issue #1793.
                 _commonOperations.Setup(x => x.Beep()).Verifiable();
@@ -391,7 +391,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void WithUnmatchedBufferedInput()
             {
-                _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
+                _vim.GlobalKeyMap.AddKeyMapping("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -407,7 +407,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void WithMatchedBufferedInput()
             {
-                _vim.KeyMap.MapWithNoRemap("jj", "hello", KeyRemapMode.Insert);
+                _vim.GlobalKeyMap.AddKeyMapping("jj", "hello", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -424,7 +424,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void CollapseBufferedInputToSingleKeyInput()
             {
-                _vim.KeyMap.MapWithNoRemap("jj", "z", KeyRemapMode.Insert);
+                _vim.GlobalKeyMap.AddKeyMapping("jj", "z", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 RunExec('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);
@@ -500,7 +500,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void NonSingleKeyMapShouldNotDismissIntellisense()
             {
-                _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process("j");
                 Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);
@@ -518,7 +518,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void EnsureTabPassedToCustomProcessorInComplexKeyMapping()
             {
-                _vimBuffer.Vim.KeyMap.MapWithRemap("jj", "<ESC>", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("jj", "<ESC>", allowRemap: true, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.Process("j");
                 Assert.Equal(1, _vimBuffer.BufferedKeyInputs.Length);

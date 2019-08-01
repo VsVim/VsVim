@@ -10,7 +10,7 @@ namespace Vim.UnitTest
     public abstract class SelectModeIntegrationTest : VimTestBase
     {
         protected IVimBuffer _vimBuffer;
-        protected ITextView _textView;
+        protected IWpfTextView _textView;
         protected ITextBuffer _textBuffer;
         protected ITextSelection _textSelection;
         protected IVimGlobalSettings _globalSettings;
@@ -18,8 +18,8 @@ namespace Vim.UnitTest
 
         protected virtual void Create(params string[] lines)
         {
-            _vimBuffer = CreateVimBuffer(lines);
-            _textView = _vimBuffer.TextView;
+            _textView = CreateTextView(lines);
+            _vimBuffer = Vim.CreateVimBuffer(_textView);
             _textBuffer = _vimBuffer.TextBuffer;
             _globalSettings = _vimBuffer.GlobalSettings;
             _globalSettings.SelectModeOptions = SelectModeOptions.Mouse | SelectModeOptions.Keyboard;
@@ -102,6 +102,7 @@ namespace Vim.UnitTest
             public void ExclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -126,6 +127,7 @@ namespace Vim.UnitTest
             public void InclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -150,6 +152,7 @@ namespace Vim.UnitTest
             public void InsertDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -178,6 +181,7 @@ namespace Vim.UnitTest
             public void ExclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -195,6 +199,7 @@ namespace Vim.UnitTest
             public void InclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -212,6 +217,7 @@ namespace Vim.UnitTest
             public void InsertShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -233,6 +239,7 @@ namespace Vim.UnitTest
             public void LinewiseShiftClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.SelectMode = "cmd";
                 _vimBuffer.ProcessNotation("V");
                 Assert.Equal(ModeKind.SelectLine, _vimBuffer.ModeKind);
@@ -251,6 +258,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -264,6 +272,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -277,6 +286,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -304,6 +314,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -331,6 +342,7 @@ namespace Vim.UnitTest
             public void TripleClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(3);
                 var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease>");
@@ -344,6 +356,7 @@ namespace Vim.UnitTest
             public void QuadrupleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease><4-LeftMouse><LeftRelease>");

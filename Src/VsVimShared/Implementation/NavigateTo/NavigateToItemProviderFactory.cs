@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using System.Windows.Input;
 using System.Collections.Generic;
+using Vim.VisualStudio.Implementation.Misc;
 
 namespace Vim.VisualStudio.Implementation.NavigateTo
 {
@@ -27,25 +28,23 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
         /// depends on.  Using the WindowsFormsSynchronizationContext out of necessity here
         /// </summary>
         private readonly SynchronizationContext _synchronizationContext;
+        private readonly IVim _vim;
         private readonly ITextManager _textManager;
+        private readonly UnwantedSelectionHandler _unwantedSelectionHandler;
         private bool _inSearch;
-        private List<WeakReference<ITextView>> _selected;
 
         [ImportingConstructor]
-        internal NavigateToItemProviderFactory(ITextManager textManager)
+        internal NavigateToItemProviderFactory(IVim vim, ITextManager textManager)
         {
+            _vim = vim;
             _textManager = textManager;
             _synchronizationContext = WindowsFormsSynchronizationContext.Current;
+            _unwantedSelectionHandler = new UnwantedSelectionHandler(_vim, _textManager);
         }
 
         private void OnSearchStarted(string searchText)
         {
-            // Cautiously record which buffers have pre-existing selections.
-            _selected = _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                .Where(x => !x.Selection.IsEmpty)
-                .Select(x => new WeakReference<ITextView>(x))
-                .ToList();
+            _unwantedSelectionHandler.PreAction();
             _inSearch = true;
             VimTrace.TraceInfo("NavigateTo Start: {0}", searchText);
         }
@@ -55,19 +54,8 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
             VimTrace.TraceInfo("NavigateTo Stop: {0}", searchText);
             if (_inSearch)
             {
-                // Once the search is stopped clear out all of the selections in active buffers.  Leaving the 
-                // selection puts us into Visual Mode.  Don't force any document loads here.  If the document 
-                // isn't loaded then it can't have a selection which will interfere with this
                 _inSearch = false;
-                _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
-                    .Where(x => !x.Selection.IsEmpty &&
-                        !_selected.Where(y => y.TryGetTarget(out ITextView target) && target == x).Any())
-                    .ForEach(x =>
-                    {
-                        var startPoint = x.Selection.Start;
-                        x.Selection.Clear();
-                        x.Caret.MoveTo(startPoint);
-                    });
+                _unwantedSelectionHandler.PostAction();
             }
         }
 

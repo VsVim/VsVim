@@ -161,9 +161,9 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.BufferTrackingService; }
         }
 
-        public IKeyMap KeyMap
+        public IVimGlobalKeyMap GlobalKeyMap
         {
-            get { return _vimEditorHost.KeyMap; }
+            get { return _vimEditorHost.GlobalKeyMap; }
         }
 
         public IKeyUtil KeyUtil
@@ -281,9 +281,9 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
-            Vim.KeyMap.ClearAll();
             Vim.DigraphMap.Clear();
-            Vim.KeyMap.IsZeroMappingEnabled = true;
+            Vim.GlobalKeyMap.ClearKeyMappings();
+            Vim.GlobalAbbreviationMap.ClearAbbreviations();
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;
@@ -435,14 +435,18 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null)
+            IVimWindowSettings windowSettings = null,
+            ICaretRegisterMap caretRegisterMap = null,
+            ISelectionUtil selectionUtil = null)
         {
             return CreateVimBufferData(
                 Vim.GetOrCreateVimTextBuffer(textView.TextBuffer),
                 textView,
                 statusUtil,
                 jumpList,
-                windowSettings);
+                windowSettings,
+                caretRegisterMap,
+                selectionUtil);
         }
 
         /// <summary>
@@ -454,17 +458,23 @@ namespace Vim.UnitTest
             ITextView textView,
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
-            IVimWindowSettings windowSettings = null)
+            IVimWindowSettings windowSettings = null,
+            ICaretRegisterMap caretRegisterMap = null,
+            ISelectionUtil selectionUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
-            statusUtil = statusUtil ?? new StatusUtil();
+            statusUtil = statusUtil ?? CompositionContainer.GetExportedValue<IStatusUtilFactory>().GetStatusUtilForView(textView);
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
+            caretRegisterMap = caretRegisterMap ?? new CaretRegisterMap(Vim.RegisterMap);
+            selectionUtil = selectionUtil ?? new SingleSelectionUtil(textView);
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
-                statusUtil);
+                statusUtil,
+                selectionUtil,
+                caretRegisterMap);
         }
 
         /// <summary>

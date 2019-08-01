@@ -9,16 +9,14 @@ namespace Vim.UnitTest
     public abstract class KeyMapTest
     {
         protected readonly IVimGlobalSettings _globalSettings;
-        protected readonly IKeyMap _map;
+        protected readonly IVimLocalKeyMap _map;
         protected readonly Dictionary<string, VariableValue> _variableMap;
-        internal readonly KeyMap _mapRaw;
 
         public KeyMapTest()
         {
             _globalSettings = new GlobalSettings();
             _variableMap = new Dictionary<string, VariableValue>();
-            _mapRaw = new KeyMap(_globalSettings, _variableMap);
-            _map = _mapRaw;
+            _map = new LocalKeyMap(new GlobalKeyMap(_variableMap), _globalSettings, _variableMap);
         }
 
         protected void AssertNoMapping(string lhs, KeyRemapMode mode = null)
@@ -28,10 +26,11 @@ namespace Vim.UnitTest
 
         protected void AssertNoMapping(KeyInputSet lhs, KeyRemapMode mode = null)
         {
-            Assert.DoesNotContain(_map.GetKeyMappingsForMode(mode), keyMapping => keyMapping.Left == lhs);
-
             mode = mode ?? KeyRemapMode.Normal;
-            var result = _map.GetKeyMappingResult(lhs, mode);
+
+            Assert.DoesNotContain(_map.GetKeyMappings(mode), keyMapping => keyMapping.Left == lhs);
+
+            var result = _map.Map(lhs, mode);
             if (lhs.Length == 1)
             {
                 Assert.True(result.IsMapped || result.IsUnmapped);
@@ -54,7 +53,7 @@ namespace Vim.UnitTest
         protected void AssertMapping(KeyInputSet lhs, string expected, KeyRemapMode mode = null)
         {
             mode = mode ?? KeyRemapMode.Normal;
-            var ret = _map.GetKeyMappingResult(lhs, mode);
+            var ret = _map.Map(lhs, mode);
             Assert.True(ret.IsMapped || ret.IsUnmapped);
             Assert.Equal(KeyInputSetUtil.OfString(expected), ret.GetMappedKeyInputs());
         }
@@ -67,7 +66,7 @@ namespace Vim.UnitTest
         protected void AssertPartialMapping(KeyInputSet lhs, string expectedMapped, string expectedRemaining, KeyRemapMode mode = null)
         {
             mode = mode ?? KeyRemapMode.Normal;
-            var ret = _map.GetKeyMappingResult(lhs, mode);
+            var ret = _map.Map(lhs, mode);
             Assert.True(ret.IsPartiallyMapped);
 
             var partiallyMapped = ret.AsPartiallyMapped();
@@ -75,50 +74,57 @@ namespace Vim.UnitTest
             Assert.Equal(KeyInputSetUtil.OfString(expectedRemaining), partiallyMapped.RemainingKeyInputSet);
         }
 
+        private KeyInput MapSingle(string lhs, KeyRemapMode mode = null)
+        {
+            mode = mode ?? KeyRemapMode.Normal;
+            var result = _map.Map(KeyNotationUtil.StringToKeyInputSet(lhs), mode);
+            return result.AsMapped().KeyInputSet.KeyInputs.Single();
+        }
+
         public sealed class MapWithNoRemapTest : KeyMapTest
         {
             private void Map(string lhs, string rhs)
             {
-                Assert.True(_map.MapWithNoRemap(lhs, rhs, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping(lhs, rhs, allowRemap: false, KeyRemapMode.Normal));
             }
 
             [Fact]
             public void AlphaToAlpha()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping('a', KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("a");
                 Assert.Equal(KeyInputUtil.CharToKeyInput('b'), ret);
             }
 
             [Fact]
             public void AlphaToDigit()
             {
-                Assert.True(_map.MapWithNoRemap("a", "1", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping('a', KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("a", "1", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("a");
                 Assert.Equal(KeyInputUtil.CharToKeyInput('1'), ret);
             }
 
             [Fact]
             public void ManyAlphaToSingle()
             {
-                Assert.True(_map.MapWithNoRemap("ab", "b", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping("ab", KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("ab", "b", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("ab");
                 Assert.Equal(KeyInputUtil.CharToKeyInput('b'), ret);
             }
 
             [Fact]
             public void SymbolToSymbol()
             {
-                Assert.True(_map.MapWithNoRemap("&", "!", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping('&', KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("&", "!", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("&", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('!'), ret);
             }
 
             [Fact]
             public void OneAlphaToTwo()
             {
-                Assert.True(_map.MapWithNoRemap("a", "bc", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping('a', KeyRemapMode.Normal).ToList();
+                Assert.True(_map.AddKeyMapping("a", "bc", allowRemap: false, KeyRemapMode.Normal));
+                var ret = _map.Map("a", KeyRemapMode.Normal).AsMapped().KeyInputSet.KeyInputs.ToList();
                 Assert.Equal(2, ret.Count);
                 Assert.Equal('b', ret[0].Char);
                 Assert.Equal('c', ret[1].Char);
@@ -127,8 +133,8 @@ namespace Vim.UnitTest
             [Fact]
             public void OneAlphaToThree()
             {
-                Assert.True(_map.MapWithNoRemap("a", "bcd", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).ToList();
+                Assert.True(_map.AddKeyMapping("a", "bcd", allowRemap: false, KeyRemapMode.Normal));
+                var ret = _map.Map("a", KeyRemapMode.Normal).AsMapped().KeyInputSet.KeyInputs.ToList();
                 Assert.Equal(3, ret.Count);
                 Assert.Equal('b', ret[0].Char);
                 Assert.Equal('c', ret[1].Char);
@@ -138,7 +144,7 @@ namespace Vim.UnitTest
             [Fact]
             public void DontRemapEmptyString()
             {
-                Assert.False(_map.MapWithNoRemap("a", "", KeyRemapMode.Normal));
+                Assert.False(_map.AddKeyMapping("a", "", allowRemap: false, KeyRemapMode.Normal));
             }
 
             [Fact]
@@ -164,13 +170,13 @@ namespace Vim.UnitTest
                 AssertNoMapping("#");
                 var keyInput = KeyInputUtil.CharToKeyInput('#');
                 keyInput = KeyInputUtil.ChangeKeyModifiersDangerous(keyInput, VimKeyModifiers.Shift);
-                Assert.True(_map.GetKeyMappingResult(keyInput, KeyRemapMode.Normal).IsMapped);
+                Assert.True(_map.Map(keyInput, KeyRemapMode.Normal).IsMapped);
             }
 
             [Fact]
             public void LessThanChar()
             {
-                Assert.True(_map.MapWithNoRemap("<", "pound", KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("<", "pound", allowRemap: false, KeyRemapMode.Normal));
             }
 
             /// <summary>
@@ -181,49 +187,49 @@ namespace Vim.UnitTest
             [Fact]
             public void EscapeLessThanSymbol()
             {
-                Assert.True(_map.MapWithNoRemap("a", @"\<Home>", KeyRemapMode.Normal));
-                var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", @"\<Home>", allowRemap: false, KeyRemapMode.Normal));
+                var result = _map.Map("a", KeyRemapMode.Normal);
                 Assert.Equal(KeyNotationUtil.StringToKeyInputSet(@"\<Home>"), result.AsMapped().KeyInputSet);
             }
 
             [Fact]
             public void HandleLessThanEscapeLiteral()
             {
-                Assert.True(_map.MapWithNoRemap("a", "<lt>lt>", KeyRemapMode.Normal));
-                var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", "<lt>lt>", allowRemap: false, KeyRemapMode.Normal));
+                var result = _map.Map("a", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputSetUtil.OfString("<lt>"), result.AsMapped().KeyInputSet);
             }
 
             [Fact]
             public void ControlAlphaIsCaseInsensitive()
             {
-                Assert.True(_map.MapWithNoRemap("<C-a>", "1", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("<C-A>", "2", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping("<C-a>", KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("<C-a>", "1", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("<C-A>", "2", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("<C-a>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
-                ret = _map.GetKeyMapping("<C-A>", KeyRemapMode.Normal).Single();
+                ret = MapSingle("<C-A>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
             }
 
             [Fact]
             public void AltAlphaIsCaseInsensitive()
             {
-                Assert.True(_map.MapWithNoRemap("<A-a>", "1", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("<A-A>", "2", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping("<A-a>", KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("<A-a>", "1", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("<A-A>", "2", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("<A-a>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
-                ret = _map.GetKeyMapping("<A-A>", KeyRemapMode.Normal).Single();
+                ret = MapSingle("<A-A>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
             }
 
             [Fact]
             public void AltAlphaSupportsShift()
             {
-                Assert.True(_map.MapWithNoRemap("<A-A>", "1", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("<A-S-A>", "2", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping("<A-A>", KeyRemapMode.Normal).Single();
+                Assert.True(_map.AddKeyMapping("<A-A>", "1", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("<A-S-A>", "2", allowRemap: false, KeyRemapMode.Normal));
+                var ret = MapSingle("<A-A>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('1'), ret);
-                ret = _map.GetKeyMapping("<A-S-A>", KeyRemapMode.Normal).Single();
+                ret = MapSingle("<A-S-A>", KeyRemapMode.Normal);
                 Assert.Equal(KeyInputUtil.CharToKeyInput('2'), ret);
             }
 
@@ -234,9 +240,9 @@ namespace Vim.UnitTest
             [Fact]
             public void Ambiguous()
             {
-                Assert.True(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMappingResult("aa", KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("aa", "foo", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("aaa", "bar", allowRemap: false, KeyRemapMode.Normal));
+                var ret = _map.Map("aa", KeyRemapMode.Normal);
                 Assert.True(ret.IsNeedsMoreInput);
             }
 
@@ -247,17 +253,17 @@ namespace Vim.UnitTest
             [Fact]
             public void Ambiguous_ResolveShorter()
             {
-                Assert.True(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("aa", "foo", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("aaa", "bar", allowRemap: false, KeyRemapMode.Normal));
                 AssertPartialMapping("aab", "foo", "b");
             }
 
             [Fact]
             public void Ambiguous_ResolveLonger()
             {
-                Assert.True(_map.MapWithNoRemap("aa", "foo", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("aaa", "bar", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMappingResult("aaa", KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("aa", "foo", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("aaa", "bar", allowRemap: false, KeyRemapMode.Normal));
+                var ret = _map.Map("aaa", KeyRemapMode.Normal);
                 Assert.True(ret.IsMapped);
                 Assert.Equal(KeyInputSetUtil.OfString("bar"), ret.AsMapped().KeyInputSet);
             }
@@ -293,7 +299,7 @@ namespace Vim.UnitTest
         {
             private void Map(string lhs, string rhs)
             {
-                Assert.True(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping(lhs, rhs, allowRemap: true, KeyRemapMode.Normal));
             }
 
             /// <summary>
@@ -421,8 +427,8 @@ namespace Vim.UnitTest
                 _globalSettings.MaxMapDepth = 1000;
                 Map("k", "j");
                 Map("j", "k");
-                Assert.True(_map.GetKeyMappingResult("k", KeyRemapMode.Normal).IsRecursive);
-                Assert.True(_map.GetKeyMappingResult("j", KeyRemapMode.Normal).IsRecursive);
+                Assert.True(_map.Map("k", KeyRemapMode.Normal).IsRecursive);
+                Assert.True(_map.Map("j", KeyRemapMode.Normal).IsRecursive);
             }
 
             [Fact]
@@ -464,14 +470,14 @@ namespace Vim.UnitTest
             public void SimpleLeft()
             {
                 _variableMap["mapleader"] = VariableValue.NewString("x");
-                _map.MapWithNoRemap("<Leader>", "y", KeyRemapMode.Normal);
+                _map.AddKeyMapping("<Leader>", "y", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping("x", "y");
             }
 
             [Fact]
             public void SimpleLeftWithNoMapping()
             {
-                _map.MapWithNoRemap("<Leader>", "y", KeyRemapMode.Normal);
+                _map.AddKeyMapping("<Leader>", "y", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping(@"\", "y");
             }
 
@@ -479,28 +485,28 @@ namespace Vim.UnitTest
             public void SimpleRight()
             {
                 _variableMap["mapleader"] = VariableValue.NewString("y");
-                _map.MapWithNoRemap("x", "<Leader>", KeyRemapMode.Normal);
+                _map.AddKeyMapping("x", "<Leader>", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping("x", "y");
             }
 
             [Fact]
             public void SimpleRightWithNoMapping()
             {
-                _map.MapWithNoRemap("x", "<Leader>", KeyRemapMode.Normal);
+                _map.AddKeyMapping("x", "<Leader>", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping("x", @"\");
             }
 
             [Fact]
             public void LowerCaseLeader()
             {
-                _map.MapWithNoRemap("x", "<leader>", KeyRemapMode.Normal);
+                _map.AddKeyMapping("x", "<leader>", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping("x", @"\");
             }
 
             [Fact]
             public void MixedCaseLeader()
             {
-                _map.MapWithNoRemap("x", "<lEaDer>", KeyRemapMode.Normal);
+                _map.AddKeyMapping("x", "<lEaDer>", allowRemap: false, KeyRemapMode.Normal);
                 AssertMapping("x", @"\");
             }
         }
@@ -509,7 +515,7 @@ namespace Vim.UnitTest
         {
             private void Map(string lhs, string rhs)
             {
-                Assert.True(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping(lhs, rhs, allowRemap: true, KeyRemapMode.Normal));
             }
 
             [Fact]
@@ -549,24 +555,24 @@ namespace Vim.UnitTest
         {
             private void MapWithRemap(string lhs, string rhs)
             {
-                Assert.True(_map.MapWithRemap(lhs, rhs, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping(lhs, rhs, allowRemap: true, KeyRemapMode.Normal));
             }
 
             [Fact]
             public void GetKeyMapping1()
             {
-                Assert.True(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithRemap("b", "a", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: true, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("b", "a", allowRemap: true, KeyRemapMode.Normal));
+                var ret = Extensions.Map(_map, 'a', KeyRemapMode.Normal);
                 Assert.True(ret.IsRecursive);
             }
 
             [Fact]
             public void GetKeyMappingResult1()
             {
-                Assert.True(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithRemap("b", "a", KeyRemapMode.Normal));
-                var ret = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: true, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("b", "a", allowRemap: true, KeyRemapMode.Normal));
+                var ret = _map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(ret.IsRecursive);
             }
 
@@ -584,8 +590,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetKeyMapppingResult3()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                var res = _map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(res.IsMapped);
                 Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
@@ -593,8 +599,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetKeyMappingResult4()
             {
-                Assert.True(_map.MapWithNoRemap("a", "bc", KeyRemapMode.Normal));
-                var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("a", "bc", allowRemap: false, KeyRemapMode.Normal));
+                var res = _map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(res.IsMapped);
                 var list = res.AsMapped().KeyInputSet.KeyInputs.ToList();
                 Assert.Equal(2, list.Count);
@@ -605,8 +611,8 @@ namespace Vim.UnitTest
             [Fact]
             public void GetKeyMappingResult5()
             {
-                Assert.True(_map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal));
-                var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
+                Assert.True(_map.AddKeyMapping("aa", "b", allowRemap: false, KeyRemapMode.Normal));
+                var res = _map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
                 Assert.True(res.IsNeedsMoreInput);
             }
 
@@ -617,7 +623,7 @@ namespace Vim.UnitTest
             [Fact]
             public void GetKeyMappingResult_RemainderIsMappable()
             {
-                var result = _map.GetKeyMappingResult("dog", KeyRemapMode.Normal).AsPartiallyMapped();
+                var result = _map.Map("dog", KeyRemapMode.Normal).AsPartiallyMapped();
                 Assert.Equal(KeyInputSetUtil.OfString("d"), result.MappedKeyInputSet);
                 Assert.Equal(KeyInputSetUtil.OfString("og"), result.RemainingKeyInputSet);
             }
@@ -629,7 +635,7 @@ namespace Vim.UnitTest
             public void Clear1()
             {
                 MapWithRemap("a", "b");
-                _map.Clear(KeyRemapMode.Normal);
+                _map.ClearKeyMappings(KeyRemapMode.Normal);
                 AssertNoMapping("a");
             }
 
@@ -639,10 +645,10 @@ namespace Vim.UnitTest
             [Fact]
             public void Clear2()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Insert));
-                _map.Clear(KeyRemapMode.Normal);
-                var res = _map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Insert);
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Insert));
+                _map.ClearKeyMappings(KeyRemapMode.Normal);
+                var res = _map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Insert);
                 Assert.True(res.IsMapped);
                 Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
@@ -650,9 +656,9 @@ namespace Vim.UnitTest
             [Fact]
             public void ClearAll()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Insert));
-                _map.ClearAll();
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Insert));
+                _map.ClearKeyMappings();
                 AssertNoMapping("a", KeyRemapMode.Normal);
                 AssertNoMapping("a", KeyRemapMode.Insert);
             }
@@ -663,72 +669,51 @@ namespace Vim.UnitTest
             [Fact]
             public void Unmap1()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                Assert.True(_map.Unmap("a", KeyRemapMode.Normal));
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                Assert.True(_map.RemoveKeyMapping("a", KeyRemapMode.Normal));
                 AssertNoMapping("a");
             }
 
             [Fact]
             public void Unmap2()
             {
-                Assert.True(_map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-                Assert.False(_map.Unmap("a", KeyRemapMode.Insert));
-                Assert.True(_map.GetKeyMappingResult(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsMapped);
-            }
-
-            /// <summary>
-            /// Straight forward unmap of via the mapping instead of the key 
-            /// </summary>
-            [Fact]
-            public void UnmapByMapping_Simple()
-            {
-                Assert.True(_map.MapWithNoRemap("cat", "dog", KeyRemapMode.Insert));
-                Assert.True(_map.UnmapByMapping("dog", KeyRemapMode.Insert));
-                AssertNoMapping("cat");
-            }
-
-            /// <summary>
-            /// Don't allow the unmapping by the key
-            /// </summary>
-            [Fact]
-            public void UnmapByMapping_Bad()
-            {
-                Assert.True(_map.MapWithNoRemap("cat", "dog", KeyRemapMode.Insert));
-                Assert.False(_map.UnmapByMapping("cat", KeyRemapMode.Insert));
+                Assert.True(_map.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal));
+                Assert.False(_map.RemoveKeyMapping("a", KeyRemapMode.Insert));
+                Assert.True(_map.Map(KeyInputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsMapped);
             }
 
             [Fact]
             public void GetKeyMappingResultFromMultiple1()
             {
-                _map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
+                _map.AddKeyMapping("aa", "b", allowRemap: false, KeyRemapMode.Normal);
 
                 var input = "aa".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = _map.GetKeyMapping(new KeyInputSet(input), KeyRemapMode.Normal);
+                var res = _map.Map(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.Equal('b', res.AsMapped().KeyInputSet.KeyInputs.Single().Char);
             }
 
             [Fact]
             public void GetKeyMappingResultFromMultiple2()
             {
-                _map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
+                _map.AddKeyMapping("aa", "b", allowRemap: false, KeyRemapMode.Normal);
 
                 var input = "a".Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-                var res = _map.GetKeyMapping(new KeyInputSet(input), KeyRemapMode.Normal);
+                var res = _map.Map(new KeyInputSet(input), KeyRemapMode.Normal);
                 Assert.True(res.IsNeedsMoreInput);
             }
 
             [Fact]
             public void Issue328()
             {
-                Assert.True(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
-                var res = _map.GetKeyMapping(KeyInputUtil.ApplyKeyModifiersToChar(' ', VimKeyModifiers.Shift), KeyRemapMode.Insert);
-                Assert.Equal(KeyInputUtil.EscapeKey, res.Single());
+                Assert.True(_map.AddKeyMapping("<S-SPACE>", "<ESC>", allowRemap: false, KeyRemapMode.Insert));
+                var res = _map.Map(KeyInputUtil.ApplyKeyModifiersToChar(' ', VimKeyModifiers.Shift), KeyRemapMode.Insert).AsMapped().KeyInputSet.KeyInputs.Single();
+                Assert.Equal(KeyInputUtil.EscapeKey, res);
             }
 
             [Fact]
             public void Issue1059()
             {
-                Assert.True(_map.MapWithNoRemap("/v", "<hello>", KeyRemapMode.Insert));
+                Assert.True(_map.AddKeyMapping("/v", "<hello>", allowRemap: false, KeyRemapMode.Insert));
                 AssertMapping("/v", "<hello>", KeyRemapMode.Insert);
             }
         }

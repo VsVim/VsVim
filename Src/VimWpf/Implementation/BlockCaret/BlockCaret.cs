@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
@@ -17,6 +19,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
     {
         private readonly struct CaretData
         {
+            internal readonly int CaretIndex;
             internal readonly CaretDisplay CaretDisplay;
             internal readonly double CaretOpacity;
             internal readonly UIElement Element;
@@ -27,6 +30,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             internal readonly string CaretCharacter;
 
             internal CaretData(
+                int caretIndex,
                 CaretDisplay caretDisplay,
                 double caretOpacity,
                 UIElement element,
@@ -36,6 +40,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                 double baselineOffset,
                 string caretCharacter)
             {
+                CaretIndex = caretIndex;
                 CaretDisplay = caretDisplay;
                 CaretOpacity = caretOpacity;
                 Element = element;
@@ -47,18 +52,24 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private readonly ITextView _textView;
+        private static readonly Point s_invalidPoint = new Point(double.NaN, double.NaN);
+
+        private readonly IVimBufferData _vimBufferData;
+        private readonly IWpfTextView _textView;
+        private readonly ISelectionUtil _selectionUtil;
         private readonly IProtectedOperations _protectedOperations;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IAdornmentLayer _adornmentLayer;
-        private readonly object _tag = new object();
+        private readonly List<object> _tags = new List<object>();
+        private readonly HashSet<object> _adornmentsPresent = new HashSet<object>();
         private readonly DispatcherTimer _blinkTimer;
         private readonly IControlCharUtil _controlCharUtil;
-        private CaretData? _caretData;
+
+        private List<VirtualSnapshotPoint> _caretPoints = new List<VirtualSnapshotPoint>();
+        private Dictionary<int, CaretData> _caretDataMap = new Dictionary<int, CaretData>();
         private CaretDisplay _caretDisplay;
         private FormattedText _formattedText;
-        private bool _isAdornmentPresent;
         private bool _isDestroyed;
         private bool _isUpdating;
         private double _caretOpacity = 1.0;
@@ -94,60 +105,65 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
         }
 
-        private ITextViewLine TextViewLineContainingCaret
+        private IWpfTextViewLine GetTextViewLineContainingPoint(VirtualSnapshotPoint caretPoint)
         {
-            get
+            try
             {
-                try
+                if (!_textView.IsClosed && !_textView.InLayout)
                 {
-                    if (!_textView.IsClosed && !_textView.InLayout)
+                    var textViewLines = _textView.TextViewLines;
+                    if (textViewLines != null && textViewLines.IsValid)
                     {
-                        var caretPoint = _textView.Caret.Position.BufferPosition;
-                        var textViewLines = _textView.TextViewLines;
-                        if (textViewLines != null && textViewLines.IsValid)
+                        var textViewLine = textViewLines.GetTextViewLineContainingBufferPosition(caretPoint.Position);
+                        if (textViewLine != null && textViewLine.IsValid)
                         {
-                            var line = textViewLines.GetTextViewLineContainingBufferPosition(caretPoint);
-                            if (line != null && line.IsValid)
-                            {
-                                return line;
-                            }
-
+                            return textViewLine;
                         }
+
                     }
                 }
-                catch (InvalidOperationException ex)
-                {
-                    VimTrace.TraceError(ex);
-                }
-                return null;
             }
+            catch (InvalidOperationException ex)
+            {
+                VimTrace.TraceError(ex);
+            }
+            return null;
         }
 
         /// <summary>
         /// Is the real caret visible in some way?
         /// </summary>
-        private bool IsRealCaretVisible
+        private bool IsRealCaretVisible(VirtualSnapshotPoint caretPoint, out ITextViewLine textViewLine)
         {
-            get
+            textViewLine = null;
+            if (_textView.HasAggregateFocus)
             {
-                if (_textView.HasAggregateFocus)
+                textViewLine = GetTextViewLineContainingPoint(caretPoint);
+                if (textViewLine != null && textViewLine.VisibilityState != VisibilityState.Unattached)
                 {
-                    var line = TextViewLineContainingCaret;
-                    return line != null && line.VisibilityState != VisibilityState.Unattached;
+                    return true;
                 }
-                return false;
+                textViewLine = null;
             }
+            return false;
+        }
+
+        private bool IsRealCaretVisible(VirtualSnapshotPoint caretPoint)
+        {
+            return IsRealCaretVisible(caretPoint, out _);
         }
 
         internal BlockCaret(
-            ITextView textView,
+            IVimBufferData vimBufferData,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
             IAdornmentLayer layer,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations)
         {
-            _textView = textView;
+            _vimBufferData = vimBufferData;
+            _textView = (IWpfTextView)_vimBufferData.TextView;
+            _selectionUtil = _vimBufferData.SelectionUtil;
             _editorFormatMap = formatMap;
             _adornmentLayer = layer;
             _protectedOperations = protectedOperations;
@@ -157,24 +173,24 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _textView.LayoutChanged += OnCaretEvent;
             _textView.GotAggregateFocus += OnCaretEvent;
             _textView.LostAggregateFocus += OnCaretEvent;
-            _textView.Caret.PositionChanged += OnCaretPositionChanged;
+            _textView.Selection.SelectionChanged += OnCaretPositionOrSelectionChanged;
             _textView.Closed += OnTextViewClosed;
 
             _blinkTimer = CreateBlinkTimer(protectedOperations, OnCaretBlinkTimer);
         }
 
         internal BlockCaret(
-            IWpfTextView textView,
+            IVimBufferData vimBufferData,
             string adornmentLayerName,
             IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap formatMap,
             IControlCharUtil controlCharUtil,
             IProtectedOperations protectedOperations) :
             this(
-                textView,
+                vimBufferData,
                 classificationFormatMap,
                 formatMap,
-                textView.GetAdornmentLayer(adornmentLayerName),
+                (vimBufferData.TextView as IWpfTextView).GetAdornmentLayer(adornmentLayerName),
                 controlCharUtil,
                 protectedOperations)
         {
@@ -189,20 +205,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <returns></returns>
         private double SnapToWholeDevicePixels(double value, bool ensurePositive)
         {
-            if (_textView is IWpfTextView wpfTextView)
+            var visualElement = _textView.VisualElement;
+            var presentationSource = PresentationSource.FromVisual(visualElement);
+            var matrix = presentationSource.CompositionTarget.TransformToDevice;
+            var dpiFactor = 1.0 / matrix.M11;
+            var wholePixels = Math.Round(value / dpiFactor);
+            if (ensurePositive && wholePixels < 1.0)
             {
-                var visualElement = wpfTextView.VisualElement;
-                var presentationSource = PresentationSource.FromVisual(visualElement);
-                var matrix = presentationSource.CompositionTarget.TransformToDevice;
-                var dpiFactor = 1.0 / matrix.M11;
-                var wholePixels = Math.Round(value / dpiFactor);
-                if (ensurePositive && wholePixels < 1.0)
-                {
-                    wholePixels = 1.0;
-                }
-                return wholePixels * dpiFactor;
+                wholePixels = 1.0;
             }
-            return value;
+            return wholePixels * dpiFactor;
         }
 
         /// <summary>
@@ -286,20 +298,26 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void OnCaretBlinkTimer(object sender, EventArgs e)
         {
-            if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
+            foreach (var caretData in _caretDataMap.Values)
             {
-                var data = _caretData.Value;
-                data.Element.Opacity = data.Element.Opacity == 0.0 ? 1.0 : 0.0;
+                if (caretData.CaretDisplay != CaretDisplay.NormalCaret)
+                {
+                    caretData.Element.Opacity = caretData.Element.Opacity == 0.0 ? 1.0 : 0.0;
+                }
             }
         }
 
         /// <summary>
-        /// Whenever the caret moves it should become both visible and reset the blink timer.  This is the
-        /// behavior of gVim.  It can be demonstrated by simply moving the caret horizontally along a 
-        /// line of text.  If the interval between the movement commands is shorter than the blink timer
-        /// the caret will always be visible
+        /// Whenever the caret moves it should become both visible and reset
+        /// the blink timer. This is the behavior of gVim.  It can be
+        /// demonstrated by simply moving the caret horizontally along a line
+        /// of text. If the interval between the movement commands is shorter
+        /// than the blink timer the caret will always be visible. Note that we
+        /// use the selection changed event which is a superset of the caret
+        /// position changed event and also includes any changes to secondary
+        /// carets
         /// </summary>
-        private void OnCaretPositionChanged(object sender, EventArgs e)
+        private void OnCaretPositionOrSelectionChanged(object sender, EventArgs e)
         {
             RestartBlinkCycle();
 
@@ -315,9 +333,12 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
 
             // If the caret is invisible, make it visible
-            if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
+            foreach (var caretData in _caretDataMap.Values)
             {
-                _caretData.Value.Element.Opacity = _caretOpacity;
+                if (caretData.CaretDisplay != CaretDisplay.NormalCaret)
+                {
+                    caretData.Element.Opacity = _caretOpacity;
+                }
             }
         }
 
@@ -326,27 +347,47 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _blinkTimer.IsEnabled = false;
         }
 
-        private void OnBlockCaretAdornmentRemoved(object sender, UIElement element)
+        private void OnBlockCaretAdornmentRemoved(object tag, UIElement element)
         {
-            _isAdornmentPresent = false;
+            _adornmentsPresent.Remove(tag);
         }
 
-        private void EnsureAdornmentRemoved()
+        private void EnsureAdnormentsRemoved()
         {
-            if (_isAdornmentPresent)
+            while (_adornmentsPresent.Count > 0)
             {
-                _adornmentLayer.RemoveAdornmentsByTag(_tag);
-                Debug.Assert(!_isAdornmentPresent);
+                var tag = _adornmentsPresent.First();
+                EnsureAdnormentRemoved(tag);
             }
         }
 
+        private void EnsureAdnormentRemoved(object tag)
+        {
+            if (_adornmentsPresent.Contains(tag))
+            {
+                _adornmentLayer.RemoveAdornmentsByTag(tag);
+                Contract.Assert(!_adornmentsPresent.Contains(tag));
+            }
+        }
+
+        private string GetFormatName(int caretIndex, int numberOfCarets)
+        {
+            return
+                numberOfCarets == 1
+                ? BlockCaretFormatDefinition.Name
+                : (caretIndex == 0
+                    ? PrimaryCaretFormatDefinition.Name
+                    : SecondaryCaretFormatDefinition.Name);
+        }
+        
         /// <summary>
         /// Attempt to copy the real caret color
         /// </summary>
-        private Color? TryCalculateCaretColor()
+        private Color? TryCalculateCaretColor(int caretIndex, int numberOfCarets)
         {
-            const string key = EditorFormatDefinition.ForegroundColorId;
-            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var formatName = GetFormatName(caretIndex, numberOfCarets);
+            const string key = EditorFormatDefinition.BackgroundColorId;
+            var properties = _editorFormatMap.GetProperties(formatName);
             if (properties.Contains(key))
             {
                 return (Color)properties[key];
@@ -355,42 +396,53 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return null;
         }
 
-        private Point GetRealCaretVisualPoint()
+        private Point GetRealCaretVisualPoint(VirtualSnapshotPoint caretPoint)
         {
             // Default screen position is the same as that of the native caret.
-            var caret = _textView.Caret;
-            var left = caret.Left;
-            var top = caret.Top;
-
-            if (_caretDisplay == CaretDisplay.Block ||
-                _caretDisplay == CaretDisplay.HalfBlock ||
-                _caretDisplay == CaretDisplay.QuarterBlock)
+            if (IsRealCaretVisible(caretPoint, out var textViewLine))
             {
-                var point = caret.Position.BufferPosition;
-                if (point < _textView.TextSnapshot.Length && point.GetChar() == '\t')
+                var bounds = textViewLine.GetCharacterBounds(caretPoint);
+                var left = bounds.Left;
+                var top = bounds.Top;
+
+                if (_caretDisplay == CaretDisplay.Block ||
+                    _caretDisplay == CaretDisplay.HalfBlock ||
+                    _caretDisplay == CaretDisplay.QuarterBlock)
                 {
-                    // Any kind of block caret situated on a tab floats over
-                    // the last space occupied by the tab.
-                    var textViewLine = TextViewLineContainingCaret;
-                    var width = textViewLine.GetCharacterBounds(point).Width;
-                    var defaultWidth = _formattedText.Width;
-                    var offset = Math.Max(0, width - defaultWidth);
-                    left += offset;
+                    var point = caretPoint.Position;
+                    if (point < _textView.TextSnapshot.Length && point.GetChar() == '\t')
+                    {
+                        // Any kind of block caret situated on a tab floats over
+                        // the last space occupied by the tab.
+                        var width = textViewLine.GetCharacterBounds(point).Width;
+                        var defaultWidth = _formattedText.Width;
+                        var offset = Math.Max(0, width - defaultWidth);
+                        left += offset;
+                    }
                 }
+                return new Point(left, top);
             }
 
-            return new Point(left, top);
+            return s_invalidPoint;
         }
 
-        private void MoveCaretElementToCaret(CaretData caretData)
+        private void MoveCaretElementToCaret(VirtualSnapshotPoint caretPoint, CaretData caretData)
         {
-            var point = GetRealCaretVisualPoint();
-            if (caretData.CaretDisplay == CaretDisplay.Select)
+            var point = GetRealCaretVisualPoint(caretPoint);
+            if (point == s_invalidPoint)
             {
-                point = new Point(SnapToWholeDevicePixels(point.X, ensurePositive: false), point.Y);
+                caretData.Element.Visibility = Visibility.Hidden;
             }
-            Canvas.SetLeft(caretData.Element, point.X);
-            Canvas.SetTop(caretData.Element, point.Y + caretData.YDisplayOffset);
+            else
+            {
+                caretData.Element.Visibility = Visibility.Visible;
+                if (caretData.CaretDisplay == CaretDisplay.Select)
+                {
+                    point = new Point(SnapToWholeDevicePixels(point.X, ensurePositive: false), point.Y);
+                }
+                Canvas.SetLeft(caretData.Element, point.X);
+                Canvas.SetTop(caretData.Element, point.Y + caretData.YDisplayOffset);
+            }
         }
 
         private FormattedText CreateFormattedText()
@@ -402,7 +454,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// <summary>
         /// Calculate the dimensions of the caret
         /// </summary>
-        private Size CalculateCaretSize(out string caretCharacter)
+        private Size CalculateCaretSize(VirtualSnapshotPoint caretPoint, out string caretCharacter)
         {
             caretCharacter = "";
 
@@ -410,12 +462,24 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             var width = defaultWidth;
             var height = _textView.LineHeight;
 
-            if (IsRealCaretVisible)
+            if (IsRealCaretVisible(caretPoint, out var textViewLine))
             {
+                // Get the caret height.
+                height = textViewLine.TextHeight;
+
+                // Try to use the same line height that a selection would use.
+                var textViewLines = _textView.TextViewLines;
+                if (textViewLines != null && textViewLines.IsValid)
+                {
+                    var geometry = textViewLines.GetMarkerGeometry(textViewLine.Extent);
+                    if (geometry != null)
+                    {
+                        height = geometry.Bounds.Height;
+                    }
+                }
+
                 // Get the caret string and caret width.
-                var line = TextViewLineContainingCaret;
-                height = line.Height;
-                var point = _textView.Caret.Position.BufferPosition;
+                var point = caretPoint.Position;
                 var codePointInfo = new SnapshotCodePoint(point).CodePointInfo;
                 if (point.Position < point.Snapshot.Length)
                 {
@@ -424,32 +488,32 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     {
                         // Handle control character notation.
                         caretCharacter = caretString;
-                        width = line.GetCharacterBounds(point).Width;
+                        width = textViewLine.GetCharacterBounds(point).Width;
                     }
                     else if (codePointInfo == CodePointInfo.SurrogatePairHighCharacter)
                     {
                         // Handle surrogate pairs.
                         caretCharacter = new SnapshotSpan(point, 2).GetText();
-                        width = line.GetCharacterBounds(point).Width;
+                        width = textViewLine.GetCharacterBounds(point).Width;
                     }
                     else if (pointCharacter == '\t')
                     {
                         // Handle tab as no character and default width,
                         // except no wider than the tab's screen width.
                         caretCharacter = "";
-                        width = Math.Min(defaultWidth, line.GetCharacterBounds(point).Width);
+                        width = Math.Min(defaultWidth, textViewLine.GetCharacterBounds(point).Width);
                     }
                     else if (pointCharacter == '\r' || pointCharacter == '\n')
                     {
                         // Handle linebreak.
                         caretCharacter = "";
-                        width = line.GetCharacterBounds(point).Width;
+                        width = textViewLine.GetCharacterBounds(point).Width;
                     }
                     else
                     {
                         // Handle ordinary UTF16 character.
                         caretCharacter = pointCharacter.ToString();
-                        width = line.GetCharacterBounds(point).Width;
+                        width = textViewLine.GetCharacterBounds(point).Width;
                     }
                 }
             }
@@ -457,22 +521,21 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             return new Size(width, height);
         }
 
-        private double CalculateBaselineOffset()
+        private double CalculateBaselineOffset(VirtualSnapshotPoint caretPoint)
         {
             var offset = 0.0;
-            if (IsRealCaretVisible)
+            if (IsRealCaretVisible(caretPoint, out var textViewLine))
             {
-                var line = TextViewLineContainingCaret;
-                offset = Math.Max(0.0, line.Baseline - _formattedText.Baseline);
+                offset = Math.Max(0.0, textViewLine.Baseline - _formattedText.Baseline);
             }
             return offset;
         }
 
-        private Tuple<Rect, double, string> CalculateCaretRectAndDisplayOffset()
+        private Tuple<Rect, double, string> CalculateCaretRectAndDisplayOffset(VirtualSnapshotPoint caretPoint)
         {
-            var size = CalculateCaretSize(out string caretCharacter);
-            var caretPoint = GetRealCaretVisualPoint();
-            var blockPoint = caretPoint;
+            var size = CalculateCaretSize(caretPoint, out string caretCharacter);
+            var point = GetRealCaretVisualPoint(caretPoint);
+            var blockPoint = point;
 
             switch (_caretDisplay)
             {
@@ -507,23 +570,25 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
                     throw new InvalidOperationException("Invalid enum value");
             }
             var rect = new Rect(blockPoint, size);
-            var offset = blockPoint.Y - caretPoint.Y;
+            var offset = blockPoint.Y - point.Y;
             return Tuple.Create(rect, offset, caretCharacter);
         }
 
-        private CaretData CreateCaretData()
+        private CaretData CreateCaretData(int caretIndex, int numberOfCarets)
         {
+            var caretPoint = _caretPoints[caretIndex];
             _formattedText = CreateFormattedText();
-            var color = TryCalculateCaretColor();
-            var tuple = CalculateCaretRectAndDisplayOffset();
-            var baselineOffset = CalculateBaselineOffset();
+            var color = TryCalculateCaretColor(caretIndex, numberOfCarets);
+            var tuple = CalculateCaretRectAndDisplayOffset(caretPoint);
+            var baselineOffset = CalculateBaselineOffset(caretPoint);
             var rect = tuple.Item1;
             var width = rect.Size.Width;
             var height = rect.Size.Height;
             var offset = tuple.Item2;
             var caretCharacter = tuple.Item3;
 
-            var properties = _editorFormatMap.GetProperties(BlockCaretFormatDefinition.Name);
+            var formatName = GetFormatName(caretIndex, numberOfCarets);
+            var properties = _editorFormatMap.GetProperties(formatName);
             var foregroundBrush = properties.GetForegroundBrush(SystemColors.WindowBrush);
             var backgroundBrush = properties.GetBackgroundBrush(SystemColors.WindowTextBrush);
             var textRunProperties = _classificationFormatMap.DefaultTextProperties;
@@ -581,6 +646,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             Canvas.SetLeft(textBlock, 0);
 
             return new CaretData(
+                caretIndex,
                 _caretDisplay,
                 _caretOpacity,
                 element,
@@ -595,19 +661,19 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         /// This determines if the image which is used to represent the caret is stale and needs
         /// to be recreated.  
         /// </summary>
-        private bool IsAdornmentStale(CaretData caretData)
+        private bool IsAdornmentStale(VirtualSnapshotPoint caretPoint, CaretData caretData, int numberOfCarets)
         {
             // Size is represented in floating point so strict equality comparison will almost 
             // always return false.  Use a simple epsilon to test the difference
 
-            if (caretData.Color != TryCalculateCaretColor() ||
-                caretData.CaretDisplay != _caretDisplay ||
-                caretData.CaretOpacity != _caretOpacity)
+            if (caretData.Color != TryCalculateCaretColor(caretData.CaretIndex, numberOfCarets)
+                || caretData.CaretDisplay != _caretDisplay
+                || caretData.CaretOpacity != _caretOpacity)
             {
                 return true;
             }
 
-            var tuple = CalculateCaretRectAndDisplayOffset();
+            var tuple = CalculateCaretRectAndDisplayOffset(caretPoint);
 
             var epsilon = 0.001;
             var size = tuple.Item1.Size;
@@ -632,32 +698,59 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             // let the normal caret win
             if (CaretDisplay == CaretDisplay.NormalCaret)
             {
-                EnsureAdornmentRemoved();
+                EnsureAdnormentsRemoved();
                 _textView.Caret.IsHidden = false;
                 return;
             }
 
             _textView.Caret.IsHidden = true;
 
-            if (_caretData == null || IsAdornmentStale(_caretData.Value))
+            var numberOfCarets = _caretPoints.Count;
+            for (var caretIndex = 0; caretIndex < numberOfCarets; caretIndex++)
             {
-                EnsureAdornmentRemoved();
-                _caretData = CreateCaretData();
+                if (caretIndex == _tags.Count)
+                {
+                    _tags.Add(new object());
+                }
+                var tag = _tags[caretIndex];
+
+                var caretPoint = _caretPoints[caretIndex];
+                if (_caretDataMap.TryGetValue(caretIndex, out CaretData value))
+                {
+                    if (IsAdornmentStale(caretPoint, value, numberOfCarets))
+                    {
+                        EnsureAdnormentRemoved(tag);
+                        _caretDataMap[caretIndex] = CreateCaretData(caretIndex, numberOfCarets);
+                    }
+                }
+                else
+                {
+                    _caretDataMap[caretIndex] = CreateCaretData(caretIndex, numberOfCarets);
+                }
+
+                var caretData = _caretDataMap[caretIndex];
+
+                MoveCaretElementToCaret(caretPoint, caretData);
+                if (!_adornmentsPresent.Contains(tag))
+                {
+                    var adornmentAdded =
+                        _adornmentLayer.AddAdornment(
+                            AdornmentPositioningBehavior.TextRelative,
+                            new SnapshotSpan(caretPoint.Position, 0),
+                            tag,
+                            caretData.Element,
+                            OnBlockCaretAdornmentRemoved);
+                    if (adornmentAdded)
+                    {
+                        _adornmentsPresent.Add(tag);
+                    }
+                }
             }
-
-            var caretData = _caretData.Value;
-
-            MoveCaretElementToCaret(caretData);
-            if (!_isAdornmentPresent)
+            while (_caretDataMap.Count > numberOfCarets)
             {
-                var caretPoint = _textView.Caret.Position.BufferPosition;
-                _isAdornmentPresent = true;
-                _adornmentLayer.AddAdornment(
-                    AdornmentPositioningBehavior.TextRelative,
-                    new SnapshotSpan(caretPoint, 0),
-                    _tag,
-                    caretData.Element,
-                    OnBlockCaretAdornmentRemoved);
+                var caretIndex = _caretDataMap.Count - 1;
+                EnsureAdnormentRemoved(_tags[caretIndex]);
+                _caretDataMap.Remove(caretIndex);
             }
 
             // When the caret display is changed (e.g. from normal to block) we
@@ -686,9 +779,29 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 
         private void UpdateCaretCore()
         {
-            if (!IsRealCaretVisible)
+            if (_selectionUtil.IsMultiSelectionSupported)
             {
-                EnsureAdornmentRemoved();
+                _caretPoints =
+                    _selectionUtil.GetSelectedSpans()
+                    .Select(span => span.CaretPoint)
+                    .ToList();
+            }
+            else
+            {
+                _caretPoints = new List<VirtualSnapshotPoint>
+                {
+                    _textView.Caret.Position.VirtualBufferPosition
+                };
+            }
+
+            var areAnyCaretsVisible =
+                _caretPoints
+                .Select(caretPoint => IsRealCaretVisible(caretPoint))
+                .Any(isVisible => isVisible);
+
+            if (!areAnyCaretsVisible)
+            {
+                EnsureAdnormentsRemoved();
             }
             else
             {
@@ -704,14 +817,14 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
         {
             _isDestroyed = true;
             _blinkTimer.IsEnabled = false;
-            EnsureAdornmentRemoved();
+            EnsureAdnormentsRemoved();
 
             if (!_textView.IsClosed)
             {
                 _textView.LayoutChanged -= OnCaretEvent;
                 _textView.GotAggregateFocus -= OnCaretEvent;
                 _textView.LostAggregateFocus -= OnCaretEvent;
-                _textView.Caret.PositionChanged -= OnCaretPositionChanged;
+                _textView.Selection.SelectionChanged -= OnCaretPositionOrSelectionChanged;
                 _textView.Caret.IsHidden = false;
                 _textView.Closed -= OnTextViewClosed;
             }

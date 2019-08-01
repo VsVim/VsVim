@@ -38,7 +38,6 @@ namespace Vim.UnitTest
         private readonly MockRepository _factory;
         private readonly Mock<IVimHost> _vimHost;
         private readonly Mock<IFileSystem> _fileSystem;
-        private readonly IKeyMap _keyMap;
         private readonly IVimGlobalSettings _globalSettings;
         private readonly SimpleListener _simpleListener;
         private readonly IVimBufferFactory _bufferFactory;
@@ -55,7 +54,6 @@ namespace Vim.UnitTest
             _simpleListener = new SimpleListener();
 
             _variableMap = new Dictionary<string, VariableValue>();
-            _keyMap = new KeyMap(_globalSettings, _variableMap);
             _vimHost = _factory.Create<IVimHost>(MockBehavior.Strict);
             _vimHost.Setup(x => x.ShouldIncludeRcFile(It.IsAny<VimRcPath>())).Returns(true);
             _vimHost.Setup(x => x.CreateHiddenTextView()).Returns(CreateTextView());
@@ -86,7 +84,6 @@ namespace Vim.UnitTest
                 creationListeners.ToFSharpList(),
                 _globalSettings,
                 markMap.Object,
-                _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _factory.Create<ISearchService>().Object,
                 _fileSystem.Object,

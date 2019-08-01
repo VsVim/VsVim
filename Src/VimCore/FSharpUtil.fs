@@ -581,7 +581,6 @@ module CharUtil =
     let IsLower x = System.Char.IsLower(x)
     let IsLowerLetter x = IsLower x && IsLetter x
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
-    let IsIdent x = IsLetterOrDigit x || x = '_'
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
     let IsPrintable x =
@@ -729,7 +728,7 @@ module internal OptionUtil =
         | None -> None
         | Some opt -> opt
 
-    /// Map an option ta a value which produces an option and then collapse the result
+    /// Map an option to a value which produces an option and then collapse the result
     let map2 mapFunc value =
         match value with
         | None -> None

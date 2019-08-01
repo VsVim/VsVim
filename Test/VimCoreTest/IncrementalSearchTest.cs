@@ -39,7 +39,8 @@ namespace Vim.UnitTest
             _vimData = Vim.VimData;
             var vimBufferData = CreateVimBufferData(vimTextBuffer, _textView);
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
-            _searchRaw = new IncrementalSearch(vimBufferData, operations);
+            var motionUtil = new MotionUtil(vimBufferData, operations);
+            _searchRaw = new IncrementalSearch(vimBufferData, operations, motionUtil);
             _search = _searchRaw;
         }
 

@@ -590,4 +590,10 @@ type IRegisterMap =
     /// Update the register with the specified value
     abstract SetRegisterValue: registerName: RegisterName -> value: RegisterValue -> unit
 
+/// Map containing the Vim registers associated with the current caret index
+type ICaretRegisterMap =
 
+    inherit IRegisterMap
+
+    /// The current caret index, zero for primary, positive for secondary
+    abstract CaretIndex: int with get, set

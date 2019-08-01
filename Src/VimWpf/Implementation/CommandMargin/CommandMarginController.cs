@@ -489,7 +489,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         e.Handled = true;
                     }
                     break;
+                case Key.Space:
+                    TryCompleteAbbreviation(KeyNotationUtil.StringToKeyInput(" "));
+                    break;
                 case Key.Return:
+                    TryCompleteAbbreviation(KeyInputUtil.EnterKey);
                     ExecuteCommand(_margin.CommandLineTextBox.Text);
                     e.Handled = true;
                     break;
@@ -619,6 +623,11 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         ChangeEditKind(EditKind.None);
                         e.Handled = true;
                         break;
+                    case (char)0x1D: // <C-]>
+                        _vimBuffer.Process(KeyNotationUtil.StringToKeyInput("<C-]>"));
+                        ChangeEditKind(EditKind.None);
+                        e.Handled = true;
+                        break;
                     case (char)0x1E: // <C-^>
                         ToggleLanguage();
                         e.Handled = true;
@@ -716,6 +725,20 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 _inUpdateVimBufferState = false;
             }
             return commandText;
+        }
+
+        private void TryCompleteAbbreviation(KeyInput keyInput)
+        {
+            var map = _vimBuffer.VimTextBuffer.LocalAbbreviationMap;
+            var text = _margin.CommandLineTextBox.Text;
+            var option = map.Abbreviate(text, keyInput, AbbreviationMode.Command);
+            if (option.IsSome())
+            {
+                var result = option.Value;
+                var newText = text.Substring(0, text.Length - result.ReplacedSpan.Length);
+                newText += result.Replacement.ToString();
+                UpdateCommandLine(newText, newText.Length);
+            }
         }
 
         /// <summary>
@@ -979,6 +1002,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
             {
                 ChangeEditKind(kind);
             }
+
             if (GetPrefixChar(kind).HasValue && textBox.SelectionStart == 0 && textBox.Text.Length > 0)
             {
                 textBox.SelectionStart = 1;

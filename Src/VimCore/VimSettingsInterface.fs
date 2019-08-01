@@ -74,6 +74,7 @@ module LocalSettingNames =
     let TextWidthName = "textwidth"
     let CommentsName = "comments"
     let IsKeywordName = "iskeyword"
+    let IsIdentName = "isident"
 
 module WindowSettingNames =
 
@@ -438,6 +439,12 @@ and IVimGlobalSettings =
     /// Is the Selection setting set to a value which permits the selection
     /// to extend past the line
     abstract IsSelectionPastLine: bool with get
+
+    /// The characters which represent an identifier
+    abstract IsIdent: string with get, set
+
+    /// Type safe representation of IsIdent
+    abstract IsIdentCharSet: VimCharSet with get, set
 
     /// Whether or not to insert two spaces after certain constructs in a 
     /// join operation

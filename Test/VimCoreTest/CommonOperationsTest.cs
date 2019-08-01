@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             var vim = MockObjectFactory.CreateVim(
                 registerMap: _registerMap,
                 host: _vimHost.Object,
-                settings: globalSettings,
+                globalSettings: globalSettings,
                 searchService: _searchService,
                 factory: _factory);
 
@@ -99,12 +99,14 @@ namespace Vim.UnitTest
                 .Returns<IEnumerable<ICollapsible>>(null);
 
             var commonOperationsFactory = _factory.Create<ICommonOperationsFactory>();
+            var bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _operationsRaw = new CommonOperations(
                 commonOperationsFactory.Object,
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
                 FSharpOption.Create(_outlining.Object),
-                MouseDevice);
+                MouseDevice,
+                bulkOperations);
             _operations = _operationsRaw;
             commonOperationsFactory.Setup(x => x.GetCommonOperations(vimBufferData)).Returns(_operations);
         }

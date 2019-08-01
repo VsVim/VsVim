@@ -21,6 +21,13 @@ open CollectionExtensions
 
 type SettingValueParseFunc = string -> SettingValue option
 
+module internal SettingsDefaults =
+    let Comments = ":*,://,:#,:;"
+    let IsIdentCharSet = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+    let IsKeywordCharSet = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+    let Paragraphs = "IPLPPPQPP TPHPLIPpLpItpplpipbp"
+    let Sections = "SHNHH HUnhsh"
+
 type internal SettingsMap
     (
         _rawData: Setting seq
@@ -163,12 +170,13 @@ type internal GlobalSettings() =
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
             (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
-            (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
             (IgnoreCaseName,"ic", SettingValue.Toggle false, SettingOptions.None)
             (ImeCommandName, "imc", SettingValue.Toggle false, SettingOptions.None)
             (ImeDisableName, "imd", SettingValue.Toggle false, SettingOptions.None)
             (ImeInsertName, "imi", SettingValue.Number 0, SettingOptions.None)
             (ImeSearchName, "ims", SettingValue.Number -1, SettingOptions.None)
+            (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
+            (IsIdentName, "isi", SettingValue.String SettingsDefaults.IsIdentCharSet.Text, SettingOptions.None)
             (JoinSpacesName, "js", SettingValue.Toggle true, SettingOptions.None)
             (KeyModelName, "km", SettingValue.String "", SettingOptions.None)
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
@@ -177,23 +185,23 @@ type internal GlobalSettings() =
             (ModeLineName, "ml", SettingValue.Toggle true, SettingOptions.None)
             (ModeLinesName, "mls", SettingValue.Number 5, SettingOptions.None)
             (MouseModelName, "mousem", SettingValue.String "popup", SettingOptions.None)
+            (ParagraphsName, "para", SettingValue.String SettingsDefaults.Paragraphs, SettingOptions.None)
             (PathName,"pa", SettingValue.String ".,,", SettingOptions.FileName)
-            (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp", SettingOptions.None)
-            (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh", SettingOptions.None)
-            (SelectionName, "sel", SettingValue.String "inclusive", SettingOptions.None)
-            (SelectModeName, "slm", SettingValue.String "", SettingOptions.None)
             (ScrollOffsetName, "so", SettingValue.Number 0, SettingOptions.None)
-            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
+            (SectionsName, "sect", SettingValue.String SettingsDefaults.Sections, SettingOptions.None)
+            (SelectModeName, "slm", SettingValue.String "", SettingOptions.None)
+            (SelectionName, "sel", SettingValue.String "inclusive", SettingOptions.None)
             (ShellFlagName, "shcf", SettingValue.String "/c", SettingOptions.None)
+            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
             (ShowCommandName, "sc", SettingValue.Toggle true, SettingOptions.None)
             (SmartCaseName, "scs", SettingValue.Toggle false, SettingOptions.None)
             (StartOfLineName, "sol", SettingValue.Toggle true, SettingOptions.None)
             (StatusLineName, "stl", SettingValue.String "", SettingOptions.None)
             (TildeOpName, "top", SettingValue.Toggle false, SettingOptions.None)
-            (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false, SettingOptions.None)
-            (TimeoutLengthName, "tm", SettingValue.Number 1000, SettingOptions.None)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1, SettingOptions.None)
+            (TimeoutLengthName, "tm", SettingValue.Number 1000, SettingOptions.None)
+            (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
             (VirtualEditName, "ve", SettingValue.String(StringUtil.Empty), SettingOptions.None)
@@ -390,6 +398,12 @@ type internal GlobalSettings() =
             | "exclusive" -> true
             | "inclusive" -> true
             | _ -> false
+        member x.IsIdent
+            with get() = _map.GetStringValue IsIdentName
+            and set value = _map.TrySetValue IsIdentName (SettingValue.String value) |> ignore
+        member x.IsIdentCharSet
+            with get() = match VimCharSet.TryParse (_map.GetStringValue IsIdentName) with Some s -> s | None -> SettingsDefaults.IsIdentCharSet
+            and set value = _map.TrySetValue IsIdentName (SettingValue.String value.Text) |> ignore
         member x.JoinSpaces 
             with get() = _map.GetBoolValue JoinSpacesName
             and set value = _map.TrySetValue JoinSpacesName (SettingValue.Toggle value) |> ignore
@@ -523,25 +537,23 @@ type internal LocalSettings
         _globalSettings: IVimGlobalSettings
     ) =
 
-    static let IsKeywordCharSetDefault = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
-
     static let LocalSettingInfoList =
         [|
             (AutoIndentName, "ai", SettingValue.Toggle false, SettingOptions.None)
-            (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
-            (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
-            (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
-            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
-            (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
-            (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
-            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
-            (ListName, "list", SettingValue.Toggle false, SettingOptions.None)
-            (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
+            (CommentsName, "com", SettingValue.String SettingsDefaults.Comments, SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
+            (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
+            (IsKeywordName, "isk", SettingValue.String SettingsDefaults.IsKeywordCharSet.Text, SettingOptions.None)
+            (ListName, "list", SettingValue.Toggle false, SettingOptions.None)
+            (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
+            (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
+            (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
+            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
+            (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
+            (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
+            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
-            (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
-            (IsKeywordName, "isk", SettingValue.String IsKeywordCharSetDefault.Text, SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -610,15 +622,36 @@ type internal LocalSettings
         member x.AutoIndent
             with get() = _map.GetBoolValue AutoIndentName
             and set value = _map.TrySetValue AutoIndentName (SettingValue.Toggle value) |> ignore
+        member x.Comments
+            with get() = _map.GetStringValue CommentsName
+            and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
+        member x.EndOfLine
+            with get() = _map.GetBoolValue EndOfLineName
+            and set value = _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
         member x.ExpandTab
             with get() = _map.GetBoolValue ExpandTabName
             and set value = _map.TrySetValue ExpandTabName (SettingValue.Toggle value) |> ignore
+        member x.FixEndOfLine
+            with get() = _map.GetBoolValue FixEndOfLineName
+            and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
+        member x.IsKeyword
+            with get() = _map.GetStringValue IsKeywordName
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
+        member x.IsKeywordCharSet
+            with get() = match VimCharSet.TryParse (_map.GetStringValue IsKeywordName) with Some s -> s | None -> SettingsDefaults.IsKeywordCharSet
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value.Text) |> ignore
+        member x.List
+            with get() = _map.GetBoolValue ListName
+            and set value = _map.TrySetValue ListName (SettingValue.Toggle value) |> ignore
         member x.Number
             with get() = _map.GetBoolValue NumberName
             and set value = _map.TrySetValue NumberName (SettingValue.Toggle value) |> ignore
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
             and set value = _map.TrySetValue NumberFormatsName (SettingValue.String value) |> ignore
+        member x.QuoteEscape
+            with get() = _map.GetStringValue QuoteEscapeName
+            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
         member x.RelativeNumber
             with get() = _map.GetBoolValue RelativeNumberName
             and set value = _map.TrySetValue RelativeNumberName (SettingValue.Toggle value) |> ignore
@@ -631,30 +664,9 @@ type internal LocalSettings
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (SettingValue.Number value) |> ignore
-        member x.List
-            with get() = _map.GetBoolValue ListName
-            and set value = _map.TrySetValue ListName (SettingValue.Toggle value) |> ignore
-        member x.QuoteEscape
-            with get() = _map.GetStringValue QuoteEscapeName
-            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
-        member x.EndOfLine
-            with get() = _map.GetBoolValue EndOfLineName
-            and set value = _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
-        member x.FixEndOfLine
-            with get() = _map.GetBoolValue FixEndOfLineName
-            and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
         member x.TextWidth
             with get() = _map.GetNumberValue TextWidthName
             and set value = _map.TrySetValue TextWidthName (SettingValue.Number value) |> ignore
-        member x.Comments
-            with get() = _map.GetStringValue CommentsName
-            and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
-        member x.IsKeyword
-            with get() = _map.GetStringValue IsKeywordName
-            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
-        member x.IsKeywordCharSet
-            with get() = match VimCharSet.TryParse (_map.GetStringValue IsKeywordName) with Some s -> s | None -> IsKeywordCharSetDefault
-            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value.Text) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 

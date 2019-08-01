@@ -176,6 +176,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         private static readonly ColorKey s_highlightIncrementalSearchColorKey = ColorKey.Background(VimConstants.HighlightIncrementalSearchTagName);
         private static readonly ColorKey s_blockCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.BlockCaretFormatDefinitionName);
         private static readonly ColorKey s_blockCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.BlockCaretFormatDefinitionName);
+        private static readonly ColorKey s_primaryCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.PrimaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_primaryCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.PrimaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_secondaryCaretForegroundColorKey = ColorKey.Foreground(VimWpfConstants.SecondaryCaretFormatDefinitionName);
+        private static readonly ColorKey s_secondaryCaretBackgroundColorKey = ColorKey.Background(VimWpfConstants.SecondaryCaretFormatDefinitionName);
         private static readonly ColorKey s_controlCharacterColorKey = ColorKey.Foreground(VimWpfConstants.ControlCharactersFormatDefinitionName);
         private static readonly ColorKey s_commandMarginForegroundColorKey = ColorKey.Foreground(VimWpfConstants.CommandMarginFormatDefinitionName);
         private static readonly ColorKey s_commandMarginBackgroundColorKey = ColorKey.Background(VimWpfConstants.CommandMarginFormatDefinitionName);
@@ -190,6 +194,10 @@ namespace Vim.VisualStudio.Implementation.OptionPages
                 s_highlightIncrementalSearchColorKey,
                 s_blockCaretForegroundColorKey,
                 s_blockCaretBackgroundColorKey,
+                s_primaryCaretForegroundColorKey,
+                s_primaryCaretBackgroundColorKey,
+                s_secondaryCaretForegroundColorKey,
+                s_secondaryCaretBackgroundColorKey,
                 s_controlCharacterColorKey,
                 s_commandMarginForegroundColorKey,
                 s_commandMarginBackgroundColorKey,
@@ -284,6 +292,38 @@ namespace Vim.VisualStudio.Implementation.OptionPages
         {
             get { return GetColor(s_blockCaretBackgroundColorKey); }
             set { SetColor(s_blockCaretBackgroundColorKey, value); }
+        }
+
+        [DisplayName("Primary Caret Foreground")]
+        [Category(CategoryColors)]
+        public Color PrimaryCaretForegroundColor
+        {
+            get { return GetColor(s_primaryCaretForegroundColorKey); }
+            set { SetColor(s_primaryCaretForegroundColorKey, value); }
+        }
+
+        [DisplayName("Primary Caret Background")]
+        [Category(CategoryColors)]
+        public Color PrimaryCaretBackgroundColor
+        {
+            get { return GetColor(s_primaryCaretBackgroundColorKey); }
+            set { SetColor(s_primaryCaretBackgroundColorKey, value); }
+        }
+
+        [DisplayName("Secondary Caret Foreground")]
+        [Category(CategoryColors)]
+        public Color SecondaryCaretForegroundColor
+        {
+            get { return GetColor(s_secondaryCaretForegroundColorKey); }
+            set { SetColor(s_secondaryCaretForegroundColorKey, value); }
+        }
+
+        [DisplayName("Secondary Caret Background")]
+        [Category(CategoryColors)]
+        public Color SecondaryCaretBackgroundColor
+        {
+            get { return GetColor(s_secondaryCaretBackgroundColorKey); }
+            set { SetColor(s_secondaryCaretBackgroundColorKey, value); }
         }
 
         [DisplayName("Incremental Search")]

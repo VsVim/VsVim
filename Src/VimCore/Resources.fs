@@ -72,6 +72,7 @@ module internal Resources =
 
     let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
     let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"
+    let VisualMode_NoMoreMatches = "No more matches"
 
     let Vim_TextBufferAlreadyHasVimTextBuffer = "ITextBuffer is already associated with an IVimTextBuffer"
     let Vim_TextViewAlreadyHasVimBuffer = "ITextView is already associated with an IVimBuffer"

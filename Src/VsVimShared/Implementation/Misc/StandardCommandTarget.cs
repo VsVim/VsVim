@@ -293,7 +293,8 @@ namespace Vim.VisualStudio.Implementation.Misc
             preAction = null;
             postAction = null;
 
-            // If the KeyInput was already handled then pretend we handled it here 
+            // If the KeyInput was already handled then pretend we handled it
+            // here.
             if (editCommand.HasKeyInput && _vimBufferCoordinator.IsDiscarded(editCommand.KeyInput))
             {
                 return true;
@@ -302,14 +303,16 @@ namespace Vim.VisualStudio.Implementation.Misc
             switch (editCommand.EditCommandKind)
             {
                 case EditCommandKind.Undo:
-                    // The user hit the undo button.  Don't attempt to map anything here and instead just 
-                    // run a single Vim undo operation
+                    // The user hit the undo button.  Don't attempt to map
+                    // anything here and instead just  run a single Vim undo
+                    // operation
                     _vimBuffer.UndoRedoOperations.Undo(1);
                     return true;
 
                 case EditCommandKind.Redo:
-                    // The user hit the redo button.  Don't attempt to map anything here and instead just 
-                    // run a single Vim redo operation
+                    // The user hit the redo button.  Don't attempt to map
+                    // anything here and instead just  run a single Vim redo
+                    // operation
                     _vimBuffer.UndoRedoOperations.Redo(1);
                     return true;
 
@@ -317,46 +320,24 @@ namespace Vim.VisualStudio.Implementation.Misc
                     return Paste();
 
                 case EditCommandKind.GoToDefinition:
-                    // The GoToDefinition command will often cause a selection to occur in the 
-                    // buffer.  We don't want that to cause us to enter Visual Mode so clear it
-                    // out.  This command can cause the active document to switch if the target
-                    // of the goto def is in another file.  This file won't be registered as the
-                    // active file yet so just clear out the active selections
-                    List<ITextView> selected = null;
-                    preAction = () =>
-                        {
-                            // Record which buffers have pre-existing selections.
-                            selected = _textManager
-                                .GetDocumentTextViews(DocumentLoad.RespectLazy)
-                                .Where(x => !x.Selection.IsEmpty)
-                                .ToList();
-                        };
-                    postAction = () =>
-                        {
-                            // Clear any new selections.
-                            _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
-                                .Where(x => !x.Selection.IsEmpty && !selected.Contains(x))
-                                .ForEach(x =>
-                                {
-                                    // Move the caret to the beginning of the selection.
-                                    var startPoint = x.Selection.Start;
-                                    x.Selection.Clear();
-                                    x.Caret.MoveTo(startPoint);
-                                });
-                        };
+                    // The GoToDefinition command will often cause a selection
+                    // to occur in the  buffer.
+                    {
+                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim, _textManager);
+                        preAction = handler.PreAction;
+                        postAction = handler.PostAction;
+                    }
                     return false;
 
                 case EditCommandKind.Comment:
                 case EditCommandKind.Uncomment:
-                    // The comment / uncomment command will often induce a selection on the 
-                    // editor even if there was no selection before the command was run (single line
-                    // case).  
+                    // The comment / uncomment command will often induce a
+                    // selection on the  editor even if there was no selection
+                    // before the command was run (single line case).
                     if (_textView.Selection.IsEmpty)
                     {
-                        postAction = () =>
-                            {
-                                _textView.Selection.Clear();
-                            };
+                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim, _textManager);
+                        postAction = () => handler.ClearSelection(_textView);
                     }
                     return false;
 
@@ -366,13 +347,14 @@ namespace Vim.VisualStudio.Implementation.Misc
                     {
                         var keyInput = editCommand.KeyInput;
 
-                        // Discard the input if it's been flagged by a previous QueryStatus
+                        // Discard the input if it's been flagged by a previous
+                        // QueryStatus.
                         if (_vimBufferCoordinator.IsDiscarded(keyInput))
                         {
                             return true;
                         }
 
-                        // Try and process the command with the IVimBuffer
+                        // Try and process the command with the IVimBuffer.
                         if (TryProcessWithBuffer(keyInput))
                         {
                             return true;

@@ -12,7 +12,6 @@ open System.Diagnostics
 open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
-open System.Collections.Generic
 open System.Threading.Tasks
 open Vim.Interpreter
 open System
@@ -127,6 +126,30 @@ type IFileSystem =
     abstract Read: filePath: string -> Stream option
 
     abstract Write: filePath: string -> stream: Stream -> bool
+
+/// Used for manipulating multiple selections
+type ISelectionUtil =
+
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
+
+    /// Get all the selected spans for the specified text view
+    abstract GetSelectedSpans: unit -> SelectionSpan seq
+
+    /// Set all the selected spans for the specified text view
+    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
+
+/// Factory service for creating ISelectionUtil instances
+type ISelectionUtilFactory = 
+
+    /// Get the selection utility interface
+    abstract GetSelectionUtil: textView: ITextView -> ISelectionUtil
+
+/// Service for creating ISelectionUtilFactory instances
+type ISelectionUtilFactoryService = 
+
+    /// Get the selection utility interface
+    abstract GetSelectionUtilFactory: unit -> ISelectionUtilFactory
 
 /// Used to display a word completion list to the user
 type IWordCompletionSession =
@@ -595,7 +618,7 @@ type SearchData
 
     override x.Equals(other: obj) = 
         match other with
-        | :? SearchData as otherSearchData -> x.Equals(otherSearchData);
+        | :? SearchData as otherSearchData -> x.Equals(otherSearchData)
         | _ -> false 
 
     override x.GetHashCode() =
@@ -1368,6 +1391,10 @@ type KeyInputSet
         let list = x.KeyInputs @ [keyInput] 
         KeyInputSet(list)
 
+    member x.AddRange (keyInputSet: KeyInputSet) =
+        let list = x.KeyInputs @ keyInputSet.KeyInputs
+        KeyInputSet(list)
+
     /// Does the name start with the given KeyInputSet
     member x.StartsWith (keyInputSet: KeyInputSet) = 
         let left = keyInputSet.KeyInputs 
@@ -1466,7 +1493,6 @@ module KeyInputSetUtil =
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-[<NoEquality>]
 type KeyMappingResult =
 
     /// The values were not mapped
@@ -1476,9 +1502,18 @@ type KeyMappingResult =
     | Mapped of KeyInputSet: KeyInputSet
 
     /// The values were partially mapped but further mapping is required once the
-    /// keys which were mapped are processed.  The values are 
+    /// keys which were mapped are processed.
     ///
-    ///  mapped KeyInputSet * remaining KeyInputSet
+    /// The majority of successful mappings will come back as PartiallyMapped because
+    /// key mappings can't be evaluated in isolation. The completely mapped keys need 
+    /// to be processed before the remaining can be evaluated for further remappings. 
+    ///
+    /// Consider the following example:
+    ///     :nmap qq if
+    ///     :imap f dog
+    /// Typing 'qq' in normal mode should produce insert mode with the text 'dog'. The 'f'
+    /// in the mapping of 'qq' can't be evaluated until the 'i' has gone back to normal 
+    /// mode, the mode changed and then insert mode can evaluate the mapping for 'f'
     | PartiallyMapped of MappedKeyInputSet: KeyInputSet * RemainingKeyInputSet: KeyInputSet
 
     /// The mapping encountered a recursive element that had to be broken 
@@ -1750,7 +1785,7 @@ type BlockSpan =
             else
                 VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
-        let height = SnapshotSpanUtil.GetLineCount span.Span
+        let height = VirtualSnapshotSpanUtil.GetLineCount span.VirtualSpan
         BlockSpan(startColumn, tabStop = tabStop, spaces = width, height = height, endOfLine = false)
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan
@@ -2034,35 +2069,24 @@ type VisualSpan =
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) path =
 
-        // Select the given SnapshotSpan
-        let selectSpan startPoint endPoint = 
-
-            textView.Selection.Mode <- TextSelectionMode.Stream
-
-            let startPoint, endPoint = 
-                match path with
-                | SearchPath.Forward -> startPoint, endPoint 
-                | SearchPath.Backward -> endPoint, startPoint
-
-            // The editor will normalize SnapshotSpan values here which extend into the line break
-            // portion of the line to not include the line break.  Must use VirtualSnapshotPoint 
-            // values to ensure the proper selection
-            let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-            let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
-
-            textView.Selection.Select(startPoint, endPoint);
-
         // Select the given VirtualSnapshotSpan
         let selectVirtualSpan startPoint endPoint =
 
             textView.Selection.Mode <- TextSelectionMode.Stream
 
-            let startPoint, endPoint =
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+            let anchorPoint, activePoint =
                 match path with
                 | SearchPath.Forward -> startPoint, endPoint
                 | SearchPath.Backward -> endPoint, startPoint
 
-            textView.Selection.Select(startPoint, endPoint);
+            TextViewUtil.Select textView caretPoint anchorPoint activePoint
+
+        // Select the given SnapshotSpan
+        let selectSpan startPoint endPoint = 
+            let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
+            selectVirtualSpan startPoint endPoint
 
         match x with
         | Character characterSpan ->
@@ -2103,7 +2127,8 @@ type VisualSpan =
                 else
                     blockSpan.VirtualStart.VirtualStartPoint
             textView.Selection.Mode <- TextSelectionMode.Box
-            textView.Selection.Select(startPoint, blockSpan.VirtualEnd.VirtualStartPoint)
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+            TextViewUtil.Select textView caretPoint startPoint blockSpan.VirtualEnd.VirtualStartPoint
 
     override x.ToString() =
         match x with
@@ -2208,6 +2233,12 @@ type VisualSelection =
     | Block of BlockSpan: BlockSpan * BlockCaretLocation: BlockCaretLocation
 
     with
+
+    member x.IsForward =
+        match x with
+        | Character (_, path) -> path.IsSearchPathForward
+        | Line (_, path, _) -> path.IsSearchPathForward
+        | Block _ -> true
 
     member x.IsCharacterForward =
         match x with
@@ -2368,6 +2399,19 @@ type VisualSelection =
     member x.GetCaretPoint selectionKind =
         let virtualCaretPoint = x.GetCaretVirtualPoint selectionKind
         virtualCaretPoint.Position
+
+    /// Get the primary selected span for the visual selection
+    member x.GetPrimarySelectedSpan selectionKind =
+        let caretPoint =
+            x.GetCaretVirtualPoint selectionKind
+        let span =
+            x.VisualSpan.Spans
+            |> Seq.head
+            |> VirtualSnapshotSpanUtil.OfSpan
+        if x.IsForward then
+            SelectionSpan(caretPoint, span.Start, span.End)
+        else
+            SelectionSpan(caretPoint, span.End, span.Start)
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) =
@@ -2630,8 +2674,8 @@ type VisualInsertKind =
     /// The visual insert should begin at the end of the primary span
     | End
 
-    /// The visual insert should begin at the end of the line that the contains
-    /// the start of the primary span
+    /// The visual insert should begin at the end of the line that contains the
+    /// start of the primary span
     | EndOfLine
 
 [<RequireQualifiedAccess>]
@@ -2672,20 +2716,25 @@ type ModeArgument =
 
 with
 
-    // Running linked commands will throw away the ModeSwitch value.  This can contain
-    // an open IUndoTransaction.  This must be completed here or it will break undo in the
-    // ITextBuffer
-    member x.CompleteAnyTransaction =
+    /// Extract any linked undo transaction from the mode argument
+    member x.LinkedUndoTransaction =
         match x with
-        | ModeArgument.None -> ()
-        | ModeArgument.InitialVisualSelection _ -> ()
-        | ModeArgument.InsertBlock (_, _, transaction) -> transaction.Complete()
-        | ModeArgument.InsertWithCount _ -> ()
-        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> transaction.Complete()
-        | ModeArgument.InsertWithTransaction transaction -> transaction.Complete()
-        | ModeArgument.Substitute _ -> ()
-        | ModeArgument.PartialCommand _ -> ()
-        | ModeArgument.CancelOperation _ -> ()
+        | ModeArgument.None -> Option.None
+        | ModeArgument.InitialVisualSelection _ -> Option.None
+        | ModeArgument.InsertBlock (_, _, transaction) -> Some transaction
+        | ModeArgument.InsertWithCount _ -> Option.None
+        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> Some transaction
+        | ModeArgument.InsertWithTransaction transaction -> Some transaction
+        | ModeArgument.Substitute _ -> Option.None
+        | ModeArgument.PartialCommand _ -> Option.None
+        | ModeArgument.CancelOperation _ -> Option.None
+
+
+    /// Complete any embedded linked undo transaction
+    member x.CompleteAnyTransaction () =
+        match x.LinkedUndoTransaction with
+        | Some transaction -> transaction.Complete()
+        | Option.None -> ()
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -2832,6 +2881,12 @@ type PingData (_func: CommandData -> CommandResult) =
 [<NoComparison>]
 [<StructuralEquality>]
 type NormalCommand = 
+
+    /// Add a new caret at the mouse point
+    | AddCaretAtMousePoint
+
+    /// Add a new caret on an adjacent line in the specified direction
+    | AddCaretOnAdjacentLine of Direction: Direction
 
     /// Add 'count' to the word close to the caret
     | AddToWord
@@ -3073,6 +3128,9 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput: KeyInput
 
+    /// Restore the most recent set of multiple selections
+    | RestoreMultiSelection
+
     /// Run an 'at' command for the specified character
     | RunAtCommand of Character: char
 
@@ -3133,8 +3191,11 @@ type NormalCommand =
     /// Select text for a mouse release
     | SelectTextForMouseRelease
 
-    /// Select the current word or matching token
+    /// Select the word or matching token under the caret
     | SelectWordOrMatchingToken
+
+    /// Select the word or matching token at the mouse point
+    | SelectWordOrMatchingTokenAtMousePoint
 
     /// Shift 'count' lines from the cursor left
     | ShiftLinesLeft
@@ -3163,7 +3224,7 @@ type NormalCommand =
     /// Switch modes with the specified information
     | SwitchMode of ModeKind: ModeKind * ModeArgument: ModeArgument
 
-    /// Switch to the visual mode specified by 'selectmode=cmd'
+    /// Switch to the specified kind of visual mode
     | SwitchModeVisualCommand of VisualKind: VisualKind
 
     /// Switch to the previous Visual Mode selection
@@ -3202,6 +3263,8 @@ type NormalCommand =
         | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
 
         // Non-motion commands
+        | NormalCommand.AddCaretAtMousePoint -> None
+        | NormalCommand.AddCaretOnAdjacentLine _ -> None
         | NormalCommand.AddToWord _ -> None
         | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
@@ -3271,6 +3334,7 @@ type NormalCommand =
         | NormalCommand.RepeatLastSubstitute _ -> None 
         | NormalCommand.ReplaceAtCaret -> None
         | NormalCommand.ReplaceChar _ -> None
+        | NormalCommand.RestoreMultiSelection -> None
         | NormalCommand.RunAtCommand _ -> None
         | NormalCommand.SetMarkToCaret _ -> None
         | NormalCommand.ScrollColumns _ -> None
@@ -3290,6 +3354,7 @@ type NormalCommand =
         | NormalCommand.SelectTextForMouseDrag -> None
         | NormalCommand.SelectTextForMouseRelease -> None
         | NormalCommand.SelectWordOrMatchingToken -> None
+        | NormalCommand.SelectWordOrMatchingTokenAtMousePoint -> None
         | NormalCommand.ShiftLinesLeft -> None
         | NormalCommand.ShiftLinesRight -> None
         | NormalCommand.SplitViewHorizontally -> None
@@ -3318,8 +3383,17 @@ type NormalCommand =
 [<StructuralEquality>]
 type VisualCommand = 
 
+    /// Add a new caret at the mouse point
+    | AddCaretAtMousePoint
+
+    /// Add a new selection on an adjacent line in the specified direction
+    | AddSelectionOnAdjacentLine of Direction: Direction
+
     /// Add count to the word in each line of the selection, optionally progressively
     | AddToSelection of IsProgressive: bool
+
+    /// Add word or matching token at the current mouse point to the selection
+    | AddWordOrMatchingTokenAtMousePointToSelection
 
     /// Cancel any in-progress operation
     | CancelOperation
@@ -3416,13 +3490,17 @@ type VisualCommand =
     | SelectLine
 
     /// Select current word or matching token
-    | SelectWordOrMatchingToken
+    | SelectWordOrMatchingTokenAtMousePoint
 
     /// Shift the selected lines left
     | ShiftLinesLeft
 
     /// Shift the selected lines to the right
     | ShiftLinesRight
+
+    /// Add the next occurrence of the primary selection or split the
+    /// selection into carets
+    | StartMultiSelection
 
     /// Subtract count from the word in each line of the selection, optionally progressively
     | SubtractFromSelection of IsProgressive: bool
@@ -4174,54 +4252,72 @@ type ICommandRunner =
     [<CLIEvent>]
     abstract CommandRan: IDelegateEvent<System.EventHandler<CommandRunDataEventArgs>>
 
-/// Information about a single key mapping
-[<NoComparison>]
-[<NoEquality>]
-type KeyMapping = {
+[<Struct>]
+type KeyMapping =
+    val private _left: KeyInputSet
+    val private _right: KeyInputSet
+    val private _allowRemap: bool
+    val private _mode: KeyRemapMode
 
-    // The LHS of the key mapping
-    Left: KeyInputSet
+    new (left: KeyInputSet, right: KeyInputSet, allowRemap: bool, mode: KeyRemapMode) =
+        { _left = left; _right = right; _allowRemap = allowRemap; _mode = mode }
 
-    // The RHS of the key mapping
-    Right: KeyInputSet 
+    member x.Left = x._left
+    member x.Right = x._right
+    member x.AllowRemap = x._allowRemap
+    member x.Mode = x._mode
 
-    // Does the expansion participate in remapping
-    AllowRemap: bool
-}
+    override x.ToString() = sprintf "%O - %O" x.Left x.Right
 
-/// Manages the key map for Vim.  Responsible for handling all key remappings
-type IKeyMap =
+type IVimKeyMap =
+
+    abstract KeyMappings: KeyMapping seq
+
+    /// Get the specified key mapping if it exists
+    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMapping option
+
+    /// Get all mappings for the specified mode
+    abstract GetKeyMappings: mode: KeyRemapMode -> KeyMapping seq
+
+    /// Map the given key sequence without allowing for remaping
+    abstract AddKeyMapping: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: KeyRemapMode -> unit
+
+    /// Unmap the specified key sequence for the specified mode
+    abstract RemoveKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> bool
+
+    /// Clear the Key mappings for the specified mode
+    abstract ClearKeyMappings: mode: KeyRemapMode -> unit
+
+    /// Clear the Key mappings for all modes
+    abstract ClearKeyMappings: unit -> unit
+
+    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider 
+    /// the <leader> notation as well.
+    abstract ParseKeyNotation: notation: string -> KeyInputSet option
+
+type IVimGlobalKeyMap =
+    inherit IVimKeyMap
+
+type IVimLocalKeyMap =
+    inherit IVimKeyMap
+
+    abstract GlobalKeyMap: IVimGlobalKeyMap
 
     /// Is the mapping of the 0 key currently enabled
     abstract IsZeroMappingEnabled: bool with get, set 
 
-    /// Get all mappings for the specified mode
-    abstract GetKeyMappingsForMode: KeyRemapMode -> KeyMapping list
+    /// Get the specified key mapping if it exists
+    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode * includeGlobal: bool -> KeyMapping option
 
-    /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
-    /// then a sequence of a single element containing the passed in key will be returned.  
-    /// If a recursive mapping is detected it will not be persued and treated instead as 
-    /// if the recursion did not exist
-    abstract GetKeyMapping: KeyInputSet -> KeyRemapMode -> KeyMappingResult
+    /// Get the specified key mappings if they exists
+    abstract GetKeyMappings: mode: KeyRemapMode * includeGlobal: bool -> KeyMapping seq
 
-    /// Map the given key sequence without allowing for remaping
-    abstract MapWithNoRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
+    /// Map the provided KeyInputSet for the given mode.
+    abstract Map: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
 
-    /// Map the given key sequence allowing for a remap 
-    abstract MapWithRemap: lhs: string -> rhs: string -> KeyRemapMode -> bool
-
-    /// Unmap the specified key sequence for the specified mode
-    abstract Unmap: lhs: string -> KeyRemapMode -> bool
-
-    /// Unmap the specified key sequence for the specified mode by considering
-    /// the passed in value to be an expansion
-    abstract UnmapByMapping: righs: string -> KeyRemapMode -> bool
-
-    /// Clear the Key mappings for the specified mode
-    abstract Clear: KeyRemapMode -> unit
-
-    /// Clear the Key mappings for all modes
-    abstract ClearAll: unit -> unit
+    /// Map the provided KeyInputSet for the given mode. The allowRemap parameter will override
+    /// the defined remapping behavior.
+    abstract Map: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
 
 /// Manages the digraph map for Vim
 type IDigraphMap =
@@ -4235,6 +4331,94 @@ type IDigraphMap =
     abstract Mappings: (char * char * int) seq
 
     abstract Clear: unit -> unit
+
+[<NoEquality>]
+[<NoComparison>]
+[<Struct>]
+type Abbreviation =
+    val private _abbreviation: KeyInputSet
+    val private _replacement: KeyInputSet
+    val private _allowRemap: bool
+    val private _mode: AbbreviationMode
+
+    new (abbreviation: KeyInputSet, replacement: KeyInputSet, allowRemap: bool, mode: AbbreviationMode) =
+        { _abbreviation = abbreviation; _replacement = replacement; _allowRemap = allowRemap; _mode = mode }
+
+    member x.Abbreviation = x._abbreviation
+    member x.Replacement = x._replacement
+    member x.AllowRemap = x._allowRemap
+    member x.Mode = x._mode
+
+    override x.ToString() = sprintf "%O - %O" x.Abbreviation x.Replacement
+
+/// Information about a single abbreviation replace
+[<NoComparison>]
+[<NoEquality>]
+type AbbreviationResult = {
+    /// The found Abbreviation that was replaced
+    Abbreviation: Abbreviation
+
+    /// The AbbreviationKind of the found abbrevitaion
+    AbbreviationKind: AbbreviationKind
+
+    /// The set of KeyInput values that should be used to replace the abbreviated text. 
+    /// Note: this can be different than Abbreviation.Replacement when key mappings are 
+    /// in play. AbbreviationResult.Replacement should be preferred.
+    Replacement: KeyInputSet
+
+    /// This contains the result of running the remap operation on Abbreviation.Replacement.
+    ReplacementRemapResult: KeyMappingResult option
+
+    /// The original text which was considered for the abbreviation
+    OriginalText: string
+
+    /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
+    /// character.
+    TriggerKeyInput: KeyInput
+
+    /// The Span inside OriginalText which should be replaced by the abbreviation
+    ReplacedSpan: Span
+} with
+
+    member x.Mode = x.Abbreviation.Mode
+
+    override x.ToString() =
+        let key = x.Abbreviation.ToString()
+        let value = (x.Replacement.Add x.TriggerKeyInput).ToString()
+        let text = x.OriginalText.Substring(0, x.OriginalText.Length - key.Length)
+        text + value
+
+type IVimAbbreviationMap =
+
+    abstract Abbreviations: Abbreviation seq
+
+    abstract AddAbbreviation: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: AbbreviationMode -> unit
+
+    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> Abbreviation option
+
+    abstract GetAbbreviations: mode: AbbreviationMode -> Abbreviation seq
+
+    abstract RemoveAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> bool
+
+    abstract ClearAbbreviations: mode: AbbreviationMode -> unit
+
+    abstract ClearAbbreviations: unit -> unit
+
+type IVimGlobalAbbreviationMap =
+    inherit IVimAbbreviationMap
+
+type IVimLocalAbbreviationMap =
+    inherit IVimAbbreviationMap
+
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
+
+    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode * includeGlobal: bool -> Abbreviation option
+
+    abstract GetAbbreviations: mode: AbbreviationMode * includeGlobal: bool -> Abbreviation seq
+
+    abstract Parse: text: string -> AbbreviationKind option
+
+    abstract Abbreviate: text: string * triggerKeyInput: KeyInput * mode: AbbreviationMode -> AbbreviationResult option
 
 type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()
@@ -4496,6 +4680,12 @@ type ProcessResult =
         match commandResult with
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
         | CommandResult.Error -> Error
+
+    /// Create a CommandResult from the given ProcessResult value
+    static member ToCommandResult processResult = 
+        match processResult with
+        | Handled modeSwitch -> CommandResult.Completed modeSwitch
+        | _ -> CommandResult.Error
 
 type StringEventArgs(_message: string) =
     inherit System.EventArgs()
@@ -5095,6 +5285,12 @@ type IVimHost =
 /// need the same data provided by IVimBuffer.
 and IVimBufferData =
 
+    /// The current caret index
+    abstract CaretIndex: int with get, set
+
+    /// The caret register map
+    abstract CaretRegisterMap: IRegisterMap
+
     /// The current directory for this particular buffer
     abstract CurrentDirectory: string option with get, set
 
@@ -5118,6 +5314,9 @@ and IVimBufferData =
     /// of the visual selection.  While the anchor point for visual mode selection may be in 
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
+
+    /// The last multi-selection recorded for this buffer
+    abstract LastMultiSelection: (ModeKind * SelectionSpan array) option with get, set
 
     /// The currently maintained caret column for up / down caret movements in
     /// the buffer
@@ -5146,6 +5345,9 @@ and IVimBufferData =
 
     /// The IWordUtil associated with the IVimBuffer
     abstract WordUtil: WordUtil
+
+    /// The ISelectionUtil associated with the IVimBuffer
+    abstract SelectionUtil: ISelectionUtil
 
     /// The IVimLocalSettings associated with the ITextBuffer
     abstract LocalSettings: IVimLocalSettings
@@ -5186,9 +5388,6 @@ and IVim =
     /// In the middle of a bulk operation such as a macro replay or repeat last command
     abstract InBulkOperation: bool
 
-    /// IKeyMap for this IVim instance
-    abstract KeyMap: IKeyMap
-
     /// Digraph map for this IVim instance
     abstract DigraphMap: IDigraphMap
 
@@ -5204,7 +5403,12 @@ and IVim =
     /// ISearchService for this IVim instance
     abstract SearchService: ISearchService
 
-    /// IGlobalSettings for this IVim instance
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
+
+    /// IVimGlobalKeyMap for this IVim instance
+    abstract GlobalKeyMap: IVimGlobalKeyMap
+
+    /// IVimGlobalSettings for this IVim instance
     abstract GlobalSettings: IVimGlobalSettings
 
     /// The variable map for this IVim instance
@@ -5219,6 +5423,9 @@ and IVim =
 
     /// Create an IVimBuffer for the given ITextView
     abstract CreateVimBuffer: textView: ITextView -> IVimBuffer
+
+    /// Create an IVimBuffer for the specified iVimBufferData
+    abstract CreateVimBufferWithData: vimBufferData: IVimBufferData -> IVimBuffer
 
     /// Create an IVimTextBuffer for the given ITextBuffer
     abstract CreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
@@ -5362,6 +5569,9 @@ and IVimTextBuffer =
     /// The associated IVimGlobalSettings instance
     abstract GlobalSettings: IVimGlobalSettings
 
+    /// The associated IVimGlobalAbbreviationMap instance
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
+
     /// The 'start' point of the current insert session.  This is relevant for settings like 
     /// 'backspace'
     abstract InsertStartPoint: SnapshotPoint option with get, set
@@ -5399,6 +5609,12 @@ and IVimTextBuffer =
 
     /// The associated IVimLocalSettings instance
     abstract LocalSettings: IVimLocalSettings
+
+    /// The associated abbreviation map
+    abstract LocalAbbreviationMap: IVimLocalAbbreviationMap
+
+    /// The associated key map
+    abstract LocalKeyMap: IVimLocalKeyMap
 
     /// ModeKind of the current mode of the IVimTextBuffer.  It may seem odd at first to put ModeKind
     /// at this level but it is indeed shared amongst all views.  This can be demonstrated by opening
@@ -5494,6 +5710,12 @@ and IVimBuffer =
 
     /// Local settings for the buffer
     abstract LocalSettings: IVimLocalSettings
+
+    /// The associated abbreviation map
+    abstract LocalAbbreviationMap: IVimLocalAbbreviationMap
+
+    /// The associated key map
+    abstract LocalKeyMap: IVimLocalKeyMap
 
     /// Associated IMarkMap
     abstract MarkMap: IMarkMap

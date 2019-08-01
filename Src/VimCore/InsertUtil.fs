@@ -607,7 +607,45 @@ type internal InsertUtil
             | _ -> None
         | _ -> None
 
-    member x.RunInsertCommandCore command addNewLines = 
+    /// Whether we should run the specified command for all carets
+    member x.ShouldRunForEachCaret command =
+        match command with
+        | InsertCommand.Back -> true
+        | InsertCommand.Combined _ -> true
+        | InsertCommand.Delete -> true
+        | InsertCommand.DeleteLeft _ -> true
+        | InsertCommand.DeleteRight _ -> true
+        | InsertCommand.DeleteAllIndent -> true
+        | InsertCommand.DeleteWordBeforeCursor -> true
+        | InsertCommand.InsertLiteral _ -> true
+        | InsertCommand.InsertCharacterAboveCaret -> true
+        | InsertCommand.InsertCharacterBelowCaret -> true
+        | InsertCommand.InsertNewLine -> true
+        | InsertCommand.InsertPreviouslyInsertedText _ -> true
+        | InsertCommand.InsertTab -> true
+        | InsertCommand.MoveCaret _ -> true
+        | InsertCommand.MoveCaretWithArrow _ -> true
+        | InsertCommand.MoveCaretByWord _ -> true
+        | InsertCommand.MoveCaretToEndOfLine -> true
+        | InsertCommand.Replace _ -> true
+        | InsertCommand.ReplaceCharacterAboveCaret -> true
+        | InsertCommand.ReplaceCharacterBelowCaret -> true
+        | InsertCommand.Overwrite _ -> true
+        | InsertCommand.ShiftLineLeft -> true
+        | InsertCommand.ShiftLineRight -> true
+        | InsertCommand.UndoReplace -> true
+        | InsertCommand.DeleteLineBeforeCursor -> true
+        | InsertCommand.Paste -> true
+        | _ -> false
+
+    member x.RunInsertCommand command = 
+        if x.ShouldRunForEachCaret command then
+            fun () -> x.RunInsertCommandCore command
+            |> _operations.RunForAllSelections
+        else
+            x.RunInsertCommandCore command
+
+    member x.RunInsertCommandCore command = 
 
         // Allow the host to custom process this message here.
         if _vimHost.TryCustomProcess _textView command then
@@ -643,9 +681,6 @@ type internal InsertUtil
             | InsertCommand.UndoReplace -> x.UndoReplace ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
             | InsertCommand.Paste -> x.Paste()
-
-    member x.RunInsertCommand command = 
-        x.RunInsertCommandCore command false
 
     /// Shift the caret line one 'shiftwidth' in a direction.  This is
     /// different than both normal and visual mode shifts because it will

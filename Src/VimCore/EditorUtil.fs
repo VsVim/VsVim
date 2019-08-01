@@ -2723,6 +2723,12 @@ module VirtualSnapshotSpanUtil =
         let virtualSpaces = StringUtil.RepeatChar span.End.VirtualSpaces ' '
         spanText + virtualSpaces
 
+    let Contains (span: VirtualSnapshotSpan) (point: VirtualSnapshotPoint) =
+        span.Contains(point)
+
+    let ContainsOrEndsWith (span: VirtualSnapshotSpan) (point: VirtualSnapshotPoint) =
+        Contains span point || span.End = point
+
 /// Contains operations to make it easier to use SnapshotLineRange from a type inference
 /// context
 module SnapshotLineRangeUtil = 
@@ -3166,11 +3172,22 @@ module TextViewUtil =
             | Some textViewLines -> doScrollToPoint textViewLines
             | _ -> ()
 
-    /// Clear out the selection
-    let ClearSelection (textView: ITextView) =
-        textView.Selection.Clear()
+    let IsSelectionEmpty (textView: ITextView) =
+        textView.Selection.IsEmpty
+        || textView.Selection.StreamSelectionSpan.Length = 0
 
-    let private MoveCaretToCommon textView flags = 
+    /// Clear out the selection if it isn't already cleared
+    let ClearSelection (textView: ITextView) =
+        if not (IsSelectionEmpty textView) then
+            textView.Selection.Clear()
+
+    /// Move the caret to the specified point if it isn't already there
+    let private MoveCaretToCommon (textView: ITextView) (point: VirtualSnapshotPoint) (flags: MoveCaretFlags) = 
+
+        // Don't change the caret position if it is correct.
+        if textView.Caret.Position.VirtualBufferPosition <> point then
+            textView.Caret.MoveTo(point) |> ignore
+
         if Util.IsFlagSet flags MoveCaretFlags.ClearSelection then
             ClearSelection textView
 
@@ -3181,20 +3198,17 @@ module TextViewUtil =
 
     /// Move the caret to the given point
     let MoveCaretToPointRaw textView (point: SnapshotPoint) flags = 
-        let caret = GetCaret textView
-        caret.MoveTo(point) |> ignore
-        MoveCaretToCommon textView flags
+        let point = VirtualSnapshotPoint(point)
+        MoveCaretToCommon textView point flags
 
     /// Move the caret to the given point, ensure it is on screen and clear out the previous 
     /// selection.  Will not expand any outlining regions
     let MoveCaretToPoint textView point =
         MoveCaretToPointRaw textView point MoveCaretFlags.All
 
-    /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
+    /// Move the caret to the given point with the specified flags
     let MoveCaretToVirtualPointRaw textView (point: VirtualSnapshotPoint) flags = 
-        let caret = GetCaret textView
-        caret.MoveTo(point) |> ignore
-        MoveCaretToCommon textView flags
+        MoveCaretToCommon textView point flags
 
     /// Move the caret to the given point, ensure it is on screen and clear out the previous 
     /// selection.  Will not expand any outlining regions
@@ -3221,6 +3235,21 @@ module TextViewUtil =
     /// selection.  Will not expand any outlining regions
     let MoveCaretToColumn textView column = 
         MoveCaretToColumnRaw textView column MoveCaretFlags.All
+
+    /// Apply the specified primary selection
+    let Select (textView: ITextView) caretPoint (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) =
+        MoveCaretToCommon textView caretPoint MoveCaretFlags.None
+
+        // Don't change the selection if it is correct.
+        if
+            textView.Selection.AnchorPoint <> anchorPoint
+            || textView.Selection.ActivePoint <> activePoint
+        then
+            textView.Selection.Select(anchorPoint, activePoint)
+
+    // Apply the specified primary selection
+    let SelectSpan (textView: ITextView) (selectedSpan: SelectionSpan) =
+        Select textView selectedSpan.CaretPoint selectedSpan.AnchorPoint selectedSpan.ActivePoint
 
     /// Get the SnapshotData value for the edit buffer.  Unlike the SnapshotData for the Visual Buffer this 
     /// can always be retrieved because the caret point is presented in terms of the edit buffer
@@ -3365,6 +3394,8 @@ module TrackingPointUtil =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point
         if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
             Some point
+        elif oldSnapshot.Version.ReiteratedVersionNumber = newSnapshot.Version.ReiteratedVersionNumber then
+            Some (SnapshotPoint(newSnapshot, point.Position))
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
             GetPoint newSnapshot trackingPoint
@@ -3373,6 +3404,8 @@ module TrackingPointUtil =
         let oldSnapshot = SnapshotPointUtil.GetSnapshot point.Position
         if oldSnapshot.Version.VersionNumber = newSnapshot.Version.VersionNumber then
             Some point
+        elif oldSnapshot.Version.ReiteratedVersionNumber = newSnapshot.Version.ReiteratedVersionNumber then
+            Some (VirtualSnapshotPoint(SnapshotPoint(newSnapshot, point.Position.Position), point.VirtualSpaces))
         else
             let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position.Position, mode)
             match GetPoint newSnapshot trackingPoint with

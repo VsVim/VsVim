@@ -63,7 +63,14 @@ namespace Vim.UnitTest
         public HistorySessionTest()
         {
             _client = new Client() { HistoryList = new HistoryList(), RegisterMap = Vim.RegisterMap };
-            _historySession = HistoryUtil.CreateHistorySession(_client, 0, EditableCommand.Empty, null);
+
+            var vimBuffer = CreateVimBuffer();
+            _historySession = HistoryUtil.CreateHistorySession(
+                _client,
+                0,
+                EditableCommand.Empty,
+                vimBuffer.VimTextBuffer.LocalAbbreviationMap,
+                vimBuffer.MotionUtil);
             _bindData = _historySession.CreateBindDataStorage().CreateMappedBindData();
         }
 

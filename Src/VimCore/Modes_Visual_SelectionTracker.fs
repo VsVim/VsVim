@@ -10,6 +10,7 @@ open Vim
 type internal SelectionTracker
     (
         _vimBufferData: IVimBufferData,
+        _commonOperations: ICommonOperations,
         _incrementalSearch: IIncrementalSearch,
         _visualKind: VisualKind
     ) as this =
@@ -47,8 +48,7 @@ type internal SelectionTracker
         _textChangedHandler.Add()
 
         let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
-        let selection = _textView.Selection
-        if selection.IsEmpty then
+        if TextViewUtil.IsSelectionEmpty _textView then
 
             // Set the selection.  If this is line mode we need to select the entire line 
             // here
@@ -67,14 +67,15 @@ type internal SelectionTracker
             // not when the selection is reversed.  We need to account for this when 
             // setting our anchor point unless the selection is exclusive
             _textView.Selection.Mode <- _visualKind.TextSelectionMode
-            let anchorPoint = selection.AnchorPoint
+            let primarySelectedSpan = _commonOperations.PrimarySelectedSpan
+            let anchorPoint = primarySelectedSpan.AnchorPoint
             let isInclusive =_globalSettings.SelectionKind = SelectionKind.Inclusive 
             _anchorPoint <- 
-                if selection.IsReversed && isInclusive then
+                if primarySelectedSpan.IsReversed && isInclusive then
                     VirtualSnapshotPointUtil.SubtractOneOrCurrent anchorPoint |> Some
                 else
                     Some anchorPoint
-            _extendIntoLineBreak <- _visualKind = VisualKind.Character && selection.AnchorPoint.IsInVirtualSpace
+            _extendIntoLineBreak <- _visualKind = VisualKind.Character && primarySelectedSpan.AnchorPoint.IsInVirtualSpace
 
             let visualSelection = VisualSelection.CreateForVirtualSelection _textView _visualKind _globalSettings.SelectionKind _vimBufferData.LocalSettings.TabStop useVirtualSpace
             let visualSelection = visualSelection.AdjustForSelectionKind _globalSettings.SelectionKind
@@ -86,6 +87,8 @@ type internal SelectionTracker
         if not x.IsRunning then invalidOp Resources.SelectionTracker_NotRunning
         _textChangedHandler.Remove()
         _anchorPoint <- None
+        _vimBufferData.VisualCaretStartPoint <- None
+        _vimBufferData.VisualAnchorPoint <- None
 
     member x.OnIncrementalSearchSessionCreated (session: IIncrementalSearchSession) =
         _lastIncrementalSearchResult <- None

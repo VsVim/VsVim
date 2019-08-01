@@ -9,7 +9,7 @@ param (
 
   # Settings
   [switch]$ci = $false,
-  [string]$config = "Release",
+  [string]$config = "Debug",
   [string]$testConfig = "",
 
   [parameter(ValueFromRemainingArguments=$true)][string[]]$properties)
@@ -104,6 +104,19 @@ function Upload-Vsix() {
       'FAIL' | Write-TaskError
       $_.Exception.Response.Headers["x-error"] | Write-TaskError
   }
+}
+
+function Get-PackagesDir() {
+  $d = $null
+  if ($env:NUGET_PACKAGES -ne $null) {
+    $d = $env:NUGET_PACKAGES
+  }
+  else {
+    $d = Join-Path $env:UserProfile ".nuget\packages\"
+  }
+
+  Create-Directory $d
+  return $d
 }
 
 function Get-MSBuildPath() {
@@ -227,7 +240,7 @@ function Test-UnitTests() {
     "VimWpfTest\net472\Vim.UI.Wpf.UnitTest.dll",
     "VsVimSharedTest\net472\Vim.VisualStudio.Shared.UnitTest.dll"
     "VsVimTestn\net472\VsVim.UnitTest.dll"
-  $xunit = Join-Path $rootDir "Tools\xunit.console.x86.exe"
+  $xunit = Join-Path (Get-PackagesDir) "xunit.runner.console\2.4.1\tools\net472\xunit.console.x86.exe"
   $anyFailed = $false
 
   foreach ($filePath in $all) { 

@@ -208,7 +208,7 @@ type internal SubstituteConfirmMode
 
         member x.OnClose() = ()
         member x.OnEnter arg =
-            arg.CompleteAnyTransaction
+            arg.CompleteAnyTransaction()
             x.ConfirmData <- 
                 match arg with
                 | ModeArgument.Substitute(span, range, data) ->
