@@ -2713,7 +2713,7 @@ type internal CommonOperations
         // Set a temporary visual anchor point.
         let setVisualAnchorPoint (anchorPoint: VirtualSnapshotPoint) =
             if Option.isSome visualModeKind then
-                let snapshot = _textBuffer.CurrentSnapshot
+                let snapshot = anchorPoint.Position.Snapshot
                 let position = anchorPoint.Position.Position
                 let trackingPoint =
                     snapshot.CreateTrackingPoint(position, PointTrackingMode.Negative)
@@ -2733,12 +2733,12 @@ type internal CommonOperations
                     // Set the buffer local caret index.
                     _vimBufferData.CaretIndex <- index
 
-                    // Set the visual anchor point.
-                    setVisualAnchorPoint oldSelectedSpan.AnchorPoint
-
-                    // Temporarily set the real caret and selection.
-                    x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
-                    |> x.SetTemporarySelectedSpan
+                    // Temporarily set the visual anchor point, the real caret
+                    // and the real selection.
+                    let selectedSpan =
+                        x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
+                    setVisualAnchorPoint selectedSpan.AnchorPoint
+                    x.SetTemporarySelectedSpan selectedSpan
 
                     // Run the action once and get the result.
                     let result = runActionAndCompleteTransaction action
