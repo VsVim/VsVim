@@ -116,8 +116,7 @@ type internal VisualMode
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
                 yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
-                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.AddNextOccurrenceOfPrimarySelection)
-                yield ("<C-A-i>", CommandFlags.Special, VisualCommand.SplitSelectionIntoCarets)
+                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.StartMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))

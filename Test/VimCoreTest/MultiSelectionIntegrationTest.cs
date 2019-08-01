@@ -606,7 +606,7 @@ namespace Vim.UnitTest
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
-                ProcessNotation("vjj<C-A-i>");
+                ProcessNotation("vjj<C-A-n>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 0), GetPoint(2, 0));
             }
 
@@ -743,7 +743,7 @@ namespace Vim.UnitTest
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
-                ProcessNotation("Vjj<C-A-i>");
+                ProcessNotation("Vjj<C-A-n>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
             }
 
@@ -769,7 +769,7 @@ namespace Vim.UnitTest
             {
                 Create("    abc def ghi", "    jkl mno pqr", "    stu vwx yz.", "");
                 SetCaretPoints(GetPoint(0, 4));
-                ProcessNotation("<C-V>jj<C-A-i>");
+                ProcessNotation("<C-V>jj<C-A-n>");
                 AssertCarets(GetPoint(0, 4), GetPoint(1, 4), GetPoint(2, 4));
             }
         }

@@ -3177,7 +3177,7 @@ type internal CommandUtil
             | VisualCommand.CutSelectionAndPaste -> false
             | VisualCommand.InvertSelection _ -> false
             | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> false
-            | VisualCommand.AddNextOccurrenceOfPrimarySelection -> false
+            | VisualCommand.StartMultiSelection -> false
             | _ -> true
 
         // Maybe clear the selection before actually running any Visual
@@ -3192,7 +3192,6 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.AddCaretAtMousePoint -> x.AddCaretAtMousePoint()
-        | VisualCommand.AddNextOccurrenceOfPrimarySelection -> x.AddNextOccurrenceOfPrimarySelection data.Count
         | VisualCommand.AddSelectionOnAdjacentLine direction -> x.AddSelectionOnAdjacentLine direction
         | VisualCommand.AddToSelection isProgressive -> x.AddToSelection visualSpan count isProgressive
         | VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection -> x.AddWordOrMatchingTokenAtMousePointToSelection()
@@ -3229,7 +3228,7 @@ type internal CommandUtil
         | VisualCommand.SelectWordOrMatchingTokenAtMousePoint -> x.SelectWordOrMatchingTokenAtMousePoint()
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
-        | VisualCommand.SplitSelectionIntoCarets -> x.SplitSelectionIntoCarets visualSpan
+        | VisualCommand.StartMultiSelection -> x.StartMultiSelection data.Count visualSpan
         | VisualCommand.SubtractFromSelection isProgressive -> x.SubtractFromSelection visualSpan count isProgressive
         | VisualCommand.SwitchModeInsert atEndOfLine -> x.SwitchModeInsert visualSpan atEndOfLine
         | VisualCommand.SwitchModePrevious -> x.SwitchPreviousMode()
@@ -3902,6 +3901,13 @@ type internal CommandUtil
         | None ->
             CommandResult.Error
 
+    /// Add the next occurrence of the primary selection or split the
+    /// selection into carets
+    member x.StartMultiSelection count visualSpan =
+        match Seq.length visualSpan.PerLineSpans with
+        | 1 -> x.AddNextOccurrenceOfPrimarySelection count
+        | _ -> x.SplitSelectionIntoCarets visualSpan
+
     /// Add the next occurrence of the primary selection
     member x.AddNextOccurrenceOfPrimarySelection count =
         let oldSelectedSpans =
@@ -4048,6 +4054,8 @@ type internal CommandUtil
         let getSpaceOnLine spaces line =
             let column = _commonOperations.GetColumnForSpacesOrEnd line spaces
             column.StartPoint
+
+        TextViewUtil.ClearSelection _textView
 
         match visualSpan.VisualKind with
         | VisualKind.Character ->

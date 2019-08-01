@@ -3386,9 +3386,6 @@ type VisualCommand =
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
 
-    /// Add the next occurrence of the primary selection
-    | AddNextOccurrenceOfPrimarySelection
-
     /// Add a new selection on an adjacent line in the specified direction
     | AddSelectionOnAdjacentLine of Direction: Direction
 
@@ -3501,8 +3498,9 @@ type VisualCommand =
     /// Shift the selected lines to the right
     | ShiftLinesRight
 
-    /// Shift the selection into carets
-    | SplitSelectionIntoCarets
+    /// Add the next occurrence of the primary selection or split the
+    /// selection into carets
+    | StartMultiSelection
 
     /// Subtract count from the word in each line of the selection, optionally progressively
     | SubtractFromSelection of IsProgressive: bool
