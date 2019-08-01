@@ -355,7 +355,7 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             [WpfFact]
-            public void DiscardUnprocessedInputInNonInputMode()
+            public void DiscardUnprocessedInput_Visual()
             {
                 _commonOperations.Setup(x => x.Beep()).Verifiable();
                 _vimBuffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
@@ -364,8 +364,8 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// Must be able discard non-ASCII characters or they will end up
-            /// as input
+            /// Must discard non-ASCII characters in normal mode or they
+            /// will end up as input
             /// </summary>
             [WpfTheory]
             [InlineData('¤')]
@@ -373,7 +373,7 @@ namespace Vim.VisualStudio.UnitTest
             [InlineData('£')]
             [InlineData('§')]
             [InlineData('´')]
-            public void CanProcessPrintableNonAscii(char c)
+            public void DiscardUnprocessedInput_Normal(char c)
             {
                 // Reported in issue #1793.
                 _commonOperations.Setup(x => x.Beep()).Verifiable();

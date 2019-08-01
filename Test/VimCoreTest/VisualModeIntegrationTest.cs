@@ -2158,6 +2158,19 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("vjra");
                     Assert.Equal(new[] { "aaa", "aog" }, _textBuffer.GetLines());
                 }
+
+                [WpfFact]
+                public void NonAscii()
+                {
+                    // Reported in issue #2702.
+                    Create("abc", "");
+                    _vimBuffer.Process("v");
+                    Assert.False(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                    _vimBuffer.Process("r");
+                    Assert.True(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                    _vimBuffer.Process("©");
+                    Assert.Equal(new[] { "©bc", "" }, _textBuffer.GetLines());
+                }
             }
 
             public sealed class LineWiseTest : ReplaceSelectionTest
