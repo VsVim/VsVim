@@ -137,7 +137,7 @@ type ISelectionUtil =
     abstract GetSelectedSpans: unit -> SelectionSpan seq
 
     /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: SelectionSpan seq -> unit
+    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
 
 /// Factory service for creating ISelectionUtil instances
 type ISelectionUtilFactory = 

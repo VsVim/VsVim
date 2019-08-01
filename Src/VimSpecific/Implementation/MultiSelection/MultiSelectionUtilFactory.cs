@@ -16,7 +16,9 @@ namespace Vim.Specific.Implementation.MultiSelection
     [Export(typeof(IVimSpecificService))]
     internal sealed class MultiSelectionUtilFactory : VimSpecificService, ISelectionUtilFactory
     {
-        private class MultiSelectionUtil : ISelectionUtil
+        private static readonly object s_key = new object();
+
+        private sealed class MultiSelectionUtil : ISelectionUtil
         {
             private readonly ITextView _textView;
 
@@ -95,7 +97,9 @@ namespace Vim.Specific.Implementation.MultiSelection
 
         ISelectionUtil ISelectionUtilFactory.GetSelectionUtil(ITextView textView)
         {
-            return new MultiSelectionUtil(textView);
+            var propertyCollection = textView.Properties;
+            return propertyCollection.GetOrCreateSingletonProperty(s_key,
+                () => new MultiSelectionUtil(textView));
         }
     }
 }

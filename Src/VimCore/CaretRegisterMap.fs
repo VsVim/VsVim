@@ -64,7 +64,7 @@ type internal CaretClipboardRegisterValueBacking
             with get () = x.RegisterValue
             and set value = x.SetRegisterValue value
 
-type CaretRegisterMap
+type internal CaretRegisterMap
     (
         _registerMap: IRegisterMap,
         _caretIndex: CaretIndex,

@@ -557,8 +557,12 @@ type internal SingleSelectionUtil(_textView: ITextView) =
 
 type internal SingleSelectionUtilFactory() =
 
-    member x.GetSelectionUtil textView =
-        SingleSelectionUtil(textView) :> ISelectionUtil
+    static let s_key = new obj()
+
+    member x.GetSelectionUtil (textView: ITextView) =
+        let propertyCollection = textView.Properties
+        propertyCollection.GetOrCreateSingletonProperty(s_key,
+            fun () -> SingleSelectionUtil(textView) :> ISelectionUtil)
 
     interface ISelectionUtilFactory with
         member x.GetSelectionUtil textView = x.GetSelectionUtil textView
@@ -570,10 +574,14 @@ type internal SelectionUtilService
         _vimSpecificServiceHost: IVimSpecificServiceHost
     ) =
 
+    static let s_singleSelectionUtilFactory =
+        SingleSelectionUtilFactory()
+        :> ISelectionUtilFactory
+
     member x.GetSelectionUtilFactory () =
         match _vimSpecificServiceHost.GetService<ISelectionUtilFactory>() with
         | Some selectionUtilFactory -> selectionUtilFactory
-        | None -> SingleSelectionUtilFactory() :> ISelectionUtilFactory
+        | None -> s_singleSelectionUtilFactory
 
     interface ISelectionUtilFactoryService with
         member x.GetSelectionUtilFactory () = x.GetSelectionUtilFactory()

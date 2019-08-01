@@ -535,7 +535,7 @@ type ICommonOperations =
     abstract ScrollLines: ScrollDirection -> count:int -> unit
 
     /// Set the current selected spans
-    abstract SetSelectedSpans: SelectionSpan seq -> unit
+    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
 
     /// Update the register with the specified value
     abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit

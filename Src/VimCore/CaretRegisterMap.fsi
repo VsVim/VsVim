@@ -2,6 +2,6 @@
 
 
 type internal CaretRegisterMap = 
-    new: IRegisterMap -> CaretRegisterMap
+    new: registerMap: IRegisterMap -> CaretRegisterMap
 
     interface ICaretRegisterMap
