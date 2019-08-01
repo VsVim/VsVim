@@ -16,12 +16,15 @@ type VimBufferData
         _textView: ITextView,
         _windowSettings: IVimWindowSettings,
         _jumpList: IJumpList,
-        _statusUtil: IStatusUtil
-    ) = 
+        _statusUtil: IStatusUtil,
+        _selectionUtil: ISelectionUtil,
+        _caretRegisterMap: ICaretRegisterMap
+    ) =
 
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
+    let mutable _lastMultiSelection: (ModeKind * SelectionSpan array) option = None
     let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
@@ -55,6 +58,13 @@ type VimBufferData
         member x.VisualAnchorPoint 
             with get() = _visualAnchorPoint
             and set value = _visualAnchorPoint <- value
+        member x.CaretIndex 
+            with get() = _caretRegisterMap.CaretIndex
+            and set value = _caretRegisterMap.CaretIndex <- value
+        member x.CaretRegisterMap = _caretRegisterMap :> IRegisterMap
+        member x.LastMultiSelection
+            with get() = _lastMultiSelection
+            and set value = _lastMultiSelection <- value
         member x.JumpList = _jumpList
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
@@ -63,6 +73,7 @@ type VimBufferData
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
         member x.WordUtil = _vimTextBuffer.WordUtil
+        member x.SelectionUtil = _selectionUtil
         member x.LocalSettings = _vimTextBuffer.LocalSettings
         member x.Vim = _vimTextBuffer.Vim
 

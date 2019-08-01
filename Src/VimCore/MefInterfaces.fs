@@ -305,6 +305,15 @@ type ICommonOperations =
     /// Associated IEditorOptions
     abstract EditorOptions: IEditorOptions
 
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
+
+    /// The primary selected span
+    abstract PrimarySelectedSpan: SelectionSpan
+
+    /// The current selected spans
+    abstract SelectedSpans: SelectionSpan seq
+
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
 
@@ -313,6 +322,15 @@ type ICommonOperations =
 
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
+
+    /// Add a new caret at the specified point
+    abstract AddCaretAtPoint: point: VirtualSnapshotPoint -> unit
+
+    /// Add a new caret at the mouse point
+    abstract AddCaretAtMousePoint: unit -> unit
+
+    /// Add a caret or selection on an adjacent line in the specified direction
+    abstract AddCaretOrSelectionOnAdjacentLine: direction: Direction -> unit
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
@@ -510,8 +528,14 @@ type ICommonOperations =
     /// Restore spaces to caret, or move to start of line if 'startofline' is set
     abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
+    /// Run the specified action for all selections
+    abstract RunForAllSelections: action: (unit -> CommandResult) -> CommandResult
+
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
+
+    /// Set the current selected spans
+    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
 
     /// Update the register with the specified value
     abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit
@@ -543,8 +567,18 @@ type ICommonOperations =
     /// Map the specified point with positive tracking to the current snapshot
     abstract MapPointPositiveToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
 
+    /// Map the specified virtual point to the current snapshot
+    abstract MapCaretPointToCurrentSnapshot: point: VirtualSnapshotPoint -> VirtualSnapshotPoint
+
+    /// Map the specified point with positive tracking to the current snapshot
+    abstract MapSelectedSpanToCurrentSnapshot: point: SelectionSpan -> SelectionSpan
+
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
+
+    /// Raised when the selected spans are set
+    [<CLIEvent>]
+    abstract SelectedSpansSet: IDelegateEvent<System.EventHandler<System.EventArgs>>
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =

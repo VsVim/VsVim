@@ -16,6 +16,7 @@ namespace Vim.UnitTest
         private ITextView _textView;
         private IVimGlobalSettings _globalSettings;
         private IVimBufferData _vimBufferData;
+        private ICommonOperations _commonOperations;
         private SelectionTracker _tracker;
         private Mock<IIncrementalSearch> _incrementalSearch;
 
@@ -34,7 +35,8 @@ namespace Vim.UnitTest
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             _vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, _textView);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
-            _tracker = new SelectionTracker(_vimBufferData, _incrementalSearch.Object, kind);
+            _commonOperations = CommonOperationsFactory.GetCommonOperations(_vimBufferData);
+            _tracker = new SelectionTracker(_vimBufferData, _commonOperations, _incrementalSearch.Object, kind);
             _tracker.Start();
         }
 
@@ -82,7 +84,11 @@ namespace Vim.UnitTest
             Create(VisualKind.Character, "");
             var realView = CreateTextView("foo bar baz");
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
+            var snapshot = new Mock<ITextSnapshot>(MockBehavior.Strict);
+            snapshot.SetupGet(x => x.Length).Returns(1);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            var nonEmptySpan = new VirtualSnapshotSpan(new SnapshotSpan(snapshot.Object, new Span(0, 1)));
+            selection.SetupGet(x => x.StreamSelectionSpan).Returns(nonEmptySpan).Verifiable();
             selection.SetupGet(x => x.IsReversed).Returns(false).Verifiable();
             selection.SetupGet(x => x.AnchorPoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 0));
             selection.SetupGet(x => x.ActivePoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 1));
@@ -98,7 +104,7 @@ namespace Vim.UnitTest
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view.Object);
-            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
+            var tracker = new SelectionTracker(vimBufferData, _commonOperations, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -113,11 +119,16 @@ namespace Vim.UnitTest
             var view = CreateTextView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
             var vimTextBuffer = new Mock<IVimTextBuffer>(MockBehavior.Strict);
-            vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(new LocalSettings(_globalSettings));
+            vimTextBuffer.SetupGet(x => x.Vim).Returns(Vim);
+            vimTextBuffer.SetupGet(x => x.UndoRedoOperations).Returns(_vimBufferData.VimTextBuffer.UndoRedoOperations);
+            vimTextBuffer.SetupGet(x => x.WordNavigator).Returns(_vimBufferData.VimTextBuffer.WordNavigator);
+            vimTextBuffer.SetupGet(x => x.WordUtil).Returns(_vimBufferData.VimTextBuffer.WordUtil);
+            vimTextBuffer.SetupGet(x => x.LocalSettings).Returns(_vimBufferData.VimTextBuffer.LocalSettings);
             vimTextBuffer.SetupGet(x => x.UseVirtualSpace).Returns(false);
             vimTextBuffer.SetupSet(x => x.LastVisualSelection = It.IsAny<Microsoft.FSharp.Core.FSharpOption<VisualSelection>>());
             var vimBufferData = MockObjectFactory.CreateVimBufferData(vimTextBuffer.Object, view);
-            var tracker = new SelectionTracker(vimBufferData, _incrementalSearch.Object, VisualKind.Character);
+            var commonOperations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
+            var tracker = new SelectionTracker(vimBufferData, commonOperations, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             Assert.Equal(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position);
         }

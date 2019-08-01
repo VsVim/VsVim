@@ -14,11 +14,15 @@ using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace VimApp
 {
     [Export(typeof(IVimHost))]
+    [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VimAppHost))]
+    [ContentType(VimConstants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
         private const string ErrorCouldNotFindVimViewInfo = "Could not find the associated IVimViewInfo";

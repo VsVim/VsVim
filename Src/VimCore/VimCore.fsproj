@@ -88,6 +88,8 @@
     <Compile Include="CaretChangeTracker.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
+    <Compile Include="MultiSelectionTracker.fsi" />
+    <Compile Include="MultiSelectionTracker.fs" />
     <Compile Include="FoldManager.fsi" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="ModeLineInterpreter.fsi" />
@@ -104,6 +106,8 @@
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fsi" />
     <Compile Include="RegisterMap.fs" />
+    <Compile Include="CaretRegisterMap.fsi" />
+    <Compile Include="CaretRegisterMap.fs" />
     <Compile Include="ExternalEdit.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fsi" />

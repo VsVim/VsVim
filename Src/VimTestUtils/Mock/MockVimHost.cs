@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Vim.EditorHost;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -7,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest.Mock
 {
@@ -345,9 +347,11 @@ namespace Vim.UnitTest.Mock
         {
             if (TryCustomProcessFunc != null)
             {
-                return TryCustomProcessFunc(textView, command);
+                if (TryCustomProcessFunc(textView, command))
+                {
+                    return true;
+                }
             }
-
             return false;
         }
 

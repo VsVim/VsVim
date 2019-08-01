@@ -627,6 +627,38 @@ namespace Vim.UnitTest
             return (InsertCommand.InsertLiteral)command;
         }
 
+        public static bool IsInsert(this InsertCommand command, char c)
+        {
+            return IsInsert(command, c.ToString());
+        }
+
+        public static bool IsInsert(this InsertCommand command, string text)
+        {
+            return command.IsInsert && command.AsInsert().Text == text;
+        }
+
+        public static bool TryGetInsertionText(this InsertCommand command, out string text)
+        {
+            text = null;
+            if (command.IsInsert)
+            {
+                text = command.AsInsert().Text;
+            }
+            else if (command.IsInsertLiteral)
+            {
+                text = command.AsInsertLiteral().Text;
+            }
+            else if (command.IsInsertNewLine)
+            {
+                text = Environment.NewLine;
+            }
+            else if (command.IsInsertTab)
+            {
+                text = "\t";
+            }
+            return text != null;
+        }
+
         #endregion
 
         #region IMotionCapture
@@ -925,6 +957,79 @@ namespace Vim.UnitTest
 
         #endregion
 
+        public static SelectionSpan GetSelectedSpan(
+            this SnapshotPoint point,
+            int startOffset,
+            int endOffset,
+            bool isReversed)
+        {
+            if (startOffset > endOffset)
+            {
+                throw new InvalidOperationException("start is after end");
+            }
+
+            // This is different than just converting the point to a virtual
+            // point and getting the virtual selected span because point
+            // addition adds within the buffer, but virtual point addition adds
+            // on the same line.
+            if (!isReversed)
+            {
+                return new SelectionSpan(
+                    new VirtualSnapshotPoint(point),
+                    new VirtualSnapshotPoint(point.Add(startOffset)),
+                    new VirtualSnapshotPoint(point.Add(endOffset)));
+            }
+            else
+            {
+                return new SelectionSpan(
+                    new VirtualSnapshotPoint(point),
+                    new VirtualSnapshotPoint(point.Add(endOffset)),
+                    new VirtualSnapshotPoint(point.Add(startOffset)));
+            }
+        }
+
+        #region VirtualSnapshotPoint
+
+        public static VirtualSnapshotPoint Add(this VirtualSnapshotPoint point, int offset)
+        {
+            if (offset == 0)
+            {
+                return point;
+            }
+            var line = point.Position.GetContainingLine();
+            var realPointOffset = point.Position.Position - line.Start.Position;
+            var newOffset = realPointOffset + point.VirtualSpaces + offset;
+            return new VirtualSnapshotPoint(line, newOffset);
+        }
+
+        public static SelectionSpan GetSelectedSpan(this VirtualSnapshotPoint point)
+        {
+            return new SelectionSpan(point);
+        }
+
+        public static SelectionSpan GetSelectedSpan(
+            this VirtualSnapshotPoint point,
+            int startOffset,
+            int endOffset,
+            bool isReversed)
+        {
+            if (startOffset > endOffset)
+            {
+                throw new InvalidOperationException("start is after end");
+            }
+
+            if (!isReversed)
+            {
+                return new SelectionSpan(point, point.Add(startOffset), point.Add(endOffset));
+            }
+            else
+            {
+                return new SelectionSpan(point, point.Add(endOffset), point.Add(startOffset));
+            }
+        }
+
+        #endregion
+
         #region ITextSnapshot
 
         public static ITextSnapshotLine GetLine(this ITextSnapshot snapshot, int lineNumber)
@@ -1099,6 +1204,11 @@ namespace Vim.UnitTest
             return textView.TextBuffer.GetPointInLine(lineNumber, column);
         }
 
+        public static VirtualSnapshotPoint GetVirtualPointInLine(this ITextView textView, int lineNumber, int column)
+        {
+            return textView.TextBuffer.GetVirtualPointInLine(lineNumber, column);
+        }
+
         public static SnapshotLineRange GetLineRange(this ITextView textView, int startLine, int endLine = -1)
         {
             return textView.TextBuffer.GetLineRange(startLine, endLine);
@@ -1271,6 +1381,34 @@ namespace Vim.UnitTest
         }
 
         #endregion
+
+        #region SelectionSpan
+
+        public static SelectionSpan AdjustCaretForInclusive(this SelectionSpan selectedSpan)
+        {
+            if (selectedSpan.CaretPoint == selectedSpan.Start)
+            {
+                return selectedSpan;
+            }
+            else
+            {
+                return new SelectionSpan(selectedSpan.End.Add(-1), selectedSpan.AnchorPoint, selectedSpan.ActivePoint);
+            }
+        }
+
+        public static SelectionSpan AdjustEndForInclusive(this SelectionSpan selectedSpan)
+        {
+            if (selectedSpan.CaretPoint == selectedSpan.Start && !selectedSpan.IsEmpty)
+            {
+                return new SelectionSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint.Add(1), selectedSpan.ActivePoint);
+            }
+            else
+            {
+                return new SelectionSpan(selectedSpan.CaretPoint, selectedSpan.AnchorPoint, selectedSpan.ActivePoint.Add(1));
+            }
+        }
+
+        #endregion SelectionSpan
 
         #region VisualSpan
 
@@ -1834,6 +1972,11 @@ namespace Vim.UnitTest
         public static SnapshotColumn GetCaretColumn(this ITextView textView)
         {
             return new SnapshotColumn(textView.GetCaretPoint());
+        }
+
+        public static VirtualSnapshotSpan GetVirtualSelectionSpan(this ITextView textView)
+        {
+            return textView.Selection.StreamSelectionSpan;
         }
 
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)

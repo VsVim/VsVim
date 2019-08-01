@@ -533,3 +533,55 @@ type internal VimWordCompletionSessionFactoryService
         member x.CreateWordCompletionSession textView wordSpan words isForward = x.CreateWordCompletionSession textView wordSpan words isForward     
         [<CLIEvent>]
         member x.Created = _created.Publish
+
+type internal SingleSelectionUtil(_textView: ITextView) =
+
+    member x.IsMultiSelectionSupported = false
+
+    member x.GetSelectedSpans () =
+        let caretPoint = _textView.Caret.Position.VirtualBufferPosition
+        let anchorPoint = _textView.Selection.AnchorPoint
+        let activePoint = _textView.Selection.ActivePoint
+        seq { yield SelectionSpan(caretPoint, anchorPoint, activePoint) }
+
+    member x.SetSelectedSpans (selectedSpans: SelectionSpan seq) =
+        let selectedSpan = Seq.head selectedSpans
+        _textView.Caret.MoveTo(selectedSpan.CaretPoint) |> ignore
+        if selectedSpan.Length <> 0 then
+            _textView.Selection.Select(selectedSpan.AnchorPoint, selectedSpan.ActivePoint)
+
+    interface ISelectionUtil with
+        member x.IsMultiSelectionSupported = x.IsMultiSelectionSupported
+        member x.GetSelectedSpans() = x.GetSelectedSpans()
+        member x.SetSelectedSpans selectedSpans = x.SetSelectedSpans selectedSpans
+
+type internal SingleSelectionUtilFactory() =
+
+    static let s_key = new obj()
+
+    member x.GetSelectionUtil (textView: ITextView) =
+        let propertyCollection = textView.Properties
+        propertyCollection.GetOrCreateSingletonProperty(s_key,
+            fun () -> SingleSelectionUtil(textView) :> ISelectionUtil)
+
+    interface ISelectionUtilFactory with
+        member x.GetSelectionUtil textView = x.GetSelectionUtil textView
+
+[<Export(typeof<ISelectionUtilFactoryService>)>]
+type internal SelectionUtilService 
+    [<ImportingConstructor>]
+    (
+        _vimSpecificServiceHost: IVimSpecificServiceHost
+    ) =
+
+    static let s_singleSelectionUtilFactory =
+        SingleSelectionUtilFactory()
+        :> ISelectionUtilFactory
+
+    member x.GetSelectionUtilFactory () =
+        match _vimSpecificServiceHost.GetService<ISelectionUtilFactory>() with
+        | Some selectionUtilFactory -> selectionUtilFactory
+        | None -> s_singleSelectionUtilFactory
+
+    interface ISelectionUtilFactoryService with
+        member x.GetSelectionUtilFactory () = x.GetSelectionUtilFactory()

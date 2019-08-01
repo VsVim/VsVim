@@ -107,9 +107,16 @@ type internal VisualMode
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+
+                // Multi-selection bindings not in Vim.
+                yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
+                yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
+                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.StartMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -281,7 +288,7 @@ type internal VisualMode
                 if result.IsAnySwitchToVisual then
                     _selectionTracker.UpdateSelection()
                 elif not result.IsAnySwitchToCommand then
-                    _textView.Selection.Clear()
+                    TextViewUtil.ClearSelection _textView
                     _textView.Selection.Mode <- TextSelectionMode.Stream
 
         result

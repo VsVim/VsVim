@@ -108,6 +108,11 @@ namespace Vim.EditorHost
             return textView.Caret.Position.BufferPosition;
         }
 
+        public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView textView)
+        {
+            return textView.Caret.Position.VirtualBufferPosition;
+        }
+
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)
         {
             return textView.Caret.Position.BufferPosition.GetContainingLine();
