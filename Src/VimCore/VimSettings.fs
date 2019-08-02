@@ -823,7 +823,12 @@ type internal EditorToSettingSynchronizer
                         |> localSettings.TrySetValue name
                         |> ignore
                     setSettingValue LocalSettingNames.NumberName enableNumber
-                    setSettingValue LocalSettingNames.RelativeNumberName enableRelativeNumber)
+                    setSettingValue LocalSettingNames.RelativeNumberName enableRelativeNumber
+                    let editorOptions = vimBuffer.TextView.Options
+                    if editorOptions <> null then
+                        let optionId = LineNumbersMarginOptions.LineNumbersMarginOptionId
+                        let optionValue = enableNumber || enableRelativeNumber
+                        EditorOptionsUtil.SetOptionValue editorOptions optionId optionValue)
                 IsLocal = true
             })
 
@@ -954,7 +959,6 @@ type internal EditorToSettingSynchronizer
     member x.CopyVimToEditorSettings vimBuffer =
         x.TrySync vimBuffer (fun vimBuffer editorOptions ->
             for data in _settingList do 
-                let settings = data.GetSettings vimBuffer
                 let value = data.GetVimValue vimBuffer
                 if value <> null then 
                     editorOptions.SetOptionValue(data.EditorOptionKey, value))

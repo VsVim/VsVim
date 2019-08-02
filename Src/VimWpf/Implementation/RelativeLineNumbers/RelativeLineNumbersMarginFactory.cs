@@ -13,7 +13,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     [TextViewRole(PredefinedTextViewRoles.EmbeddedPeekTextView)]
-    [DeferCreation(OptionName = DefaultTextViewHostOptions.LineNumberMarginName)]
+    [DeferCreation(OptionName = LineNumbersMarginOptions.LineNumbersMarginOptionName)]
     internal sealed class RelativeLineNumbersMarginFactory : IWpfTextViewMarginProvider
     {
         private readonly IClassificationFormatMapService _formatMapService;
