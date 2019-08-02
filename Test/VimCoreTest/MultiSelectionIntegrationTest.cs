@@ -342,11 +342,13 @@ namespace Vim.UnitTest
             public void RestoreCarets()
             {
                 Create("abc def ghi", "jkl mno pqr", "");
-                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                SetCaretPoints(GetPoint(0, 4));
+                ProcessNotation("<C-A-Down>");
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
                 ProcessNotation("<C-C>");
                 AssertCarets(GetPoint(0, 4));
                 ProcessNotation("<C-A-p>");
-                SetCaretPoints(GetPoint(0, 4), GetPoint(1, 4));
+                AssertCarets(GetPoint(0, 4), GetPoint(1, 4));
             }
 
             /// <summary>

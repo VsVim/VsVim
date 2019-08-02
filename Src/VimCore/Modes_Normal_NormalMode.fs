@@ -194,7 +194,7 @@ type internal NormalMode
                 yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)
                 yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<C-A-n>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
-                yield ("C-A-p>", CommandFlags.Special, NormalCommand.RestoreMultiSelection)
+                yield ("<C-A-p>", CommandFlags.Special, NormalCommand.RestoreMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
