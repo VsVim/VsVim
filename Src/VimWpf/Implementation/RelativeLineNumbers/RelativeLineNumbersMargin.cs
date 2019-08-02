@@ -26,8 +26,10 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private double _minWidth = 0.0;
         private double _maxWidth = double.PositiveInfinity;
 
+        // The VsVim line number margin is enabled whenever the native line
+        // number margin is enabled.
         public override bool Enabled =>
-            _textView.Options.GetOptionValue(LineNumbersMarginOptions.LineNumbersMarginOptionId);
+            _textView.Options.GetOptionValue(DefaultTextViewHostOptions.LineNumberMarginId);
 
         internal RelativeLineNumbersMargin(
             IWpfTextView textView,
@@ -35,7 +37,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             IVimLocalSettings localSettings,
             IWpfTextViewMargin marginContainer,
             IProtectedOperations protectedOperations)
-            : base(LineNumbersMarginOptions.LineNumbersMarginOptionName)
+            : base(VimWpfConstants.LineNumbersMarginName)
         {
             _textView = textView
                 ?? throw new ArgumentNullException(nameof(textView));
@@ -107,27 +109,19 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private void UpdateVimNumberSettings(SettingEventArgs eventArgs)
         {
-            if (_localSettings.RelativeNumber)
+            SetVisualStudioMarginVisibility(Visibility.Hidden);
+            if (_localSettings.Number || _localSettings.RelativeNumber)
             {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
                 RedrawLines();
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
             }
         }
 
         private void OnEditorOptionsChanged(EditorOptionChangedEventArgs eventArgs)
         {
+            SetVisualStudioMarginVisibility(Visibility.Hidden);
             if (Enabled)
             {
-                SetVisualStudioMarginVisibility(Visibility.Hidden);
                 RedrawLines();
-            }
-            else
-            {
-                SetVisualStudioMarginVisibility(Visibility.Visible);
             }
         }
 

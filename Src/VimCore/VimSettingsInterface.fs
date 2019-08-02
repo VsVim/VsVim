@@ -308,6 +308,12 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
+    /// The local settings specified in the vim rc file, if any
+    abstract VimRcLocalSettings: IVimLocalSettings option with get, set
+
+    /// The window settings specified in the vim rc file, if any
+    abstract VimRcWindowSettings: IVimWindowSettings option with get, set
+
     /// Add a custom setting to the current collection
     abstract AddCustomSetting: name: string -> abbrevation: string -> customSettingSource: IVimCustomSettingSource -> unit
 
@@ -558,6 +564,8 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
+    abstract Defaults: IVimLocalSettings with get
+
     /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set
 
@@ -616,6 +624,8 @@ and IVimLocalSettings =
 
 /// Settings which are local to a given window.
 and IVimWindowSettings = 
+
+    abstract Defaults: IVimWindowSettings with get
 
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine: bool with get, set
