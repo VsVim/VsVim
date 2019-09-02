@@ -323,7 +323,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     // The GoToDefinition command will often cause a selection
                     // to occur in the  buffer.
                     {
-                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim, _textManager);
+                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim);
                         preAction = handler.PreAction;
                         postAction = handler.PostAction;
                     }
@@ -336,7 +336,7 @@ namespace Vim.VisualStudio.Implementation.Misc
                     // before the command was run (single line case).
                     if (_textView.Selection.IsEmpty)
                     {
-                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim, _textManager);
+                        var handler = new UnwantedSelectionHandler(_vimBuffer.Vim);
                         postAction = () => handler.ClearSelection(_textView);
                     }
                     return false;
