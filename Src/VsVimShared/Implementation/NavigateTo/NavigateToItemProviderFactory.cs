@@ -39,7 +39,7 @@ namespace Vim.VisualStudio.Implementation.NavigateTo
             _vim = vim;
             _textManager = textManager;
             _synchronizationContext = WindowsFormsSynchronizationContext.Current;
-            _unwantedSelectionHandler = new UnwantedSelectionHandler(_vim, _textManager);
+            _unwantedSelectionHandler = new UnwantedSelectionHandler(_vim);
         }
 
         private void OnSearchStarted(string searchText)

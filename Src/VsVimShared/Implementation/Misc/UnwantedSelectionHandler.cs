@@ -13,22 +13,21 @@ namespace Vim.VisualStudio.Implementation.Misc
     internal sealed class UnwantedSelectionHandler
     {
         private readonly IVim _vim;
-        private readonly ITextManager _textManager;
 
         private List<WeakReference<ITextView>> _selected;
 
-        internal UnwantedSelectionHandler(IVim vim, ITextManager textManager)
+        internal UnwantedSelectionHandler(IVim vim)
         {
             _vim = vim;
-            _textManager = textManager;
             _selected = new List<WeakReference<ITextView>>();
         }
 
         internal void PreAction()
         {
             // Cautiously record which buffers have pre-existing selections.
-            _selected = _textManager
-                .GetDocumentTextViews(DocumentLoad.RespectLazy)
+            _selected = _vim
+                .VimBuffers
+                .Select(x => x.TextView)
                 .Where(x => !x.Selection.IsEmpty)
                 .Select(x => new WeakReference<ITextView>(x))
                 .ToList();
@@ -41,7 +40,9 @@ namespace Vim.VisualStudio.Implementation.Misc
             // into Visual Mode.  Don't force any document loads here.  If the
             // document isn't loaded then it can't have a selection which would
             // interfere with this.
-            _textManager.GetDocumentTextViews(DocumentLoad.RespectLazy)
+            _vim
+                .VimBuffers
+                .Select(x => x.TextView)
                 .Where(textView =>
                     !textView.Selection.IsEmpty && !HadPreExistingSelection(textView))
                 .ForEach(textView => ClearSelection(textView));
