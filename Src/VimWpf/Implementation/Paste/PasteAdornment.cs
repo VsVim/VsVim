@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -16,6 +17,7 @@ namespace Vim.UI.Wpf.Implementation.Paste
     {
         private readonly ITextView _textView;
         private readonly IProtectedOperations _protectedOperations;
+        private readonly IClassificationFormatMap _classificationFormatMap;
         private readonly IEditorFormatMap _editorFormatMap;
         private readonly IAdornmentLayer _adornmentLayer;
         private readonly Object _tag = new object();
@@ -53,12 +55,14 @@ namespace Vim.UI.Wpf.Implementation.Paste
             ITextView textView,
             IAdornmentLayer adornmentLayer,
             IProtectedOperations protectedOperations,
+            IClassificationFormatMap classificationFormatMap,
             IEditorFormatMap editorFormatMap)
         {
             _textView = textView;
-            _protectedOperations = protectedOperations;
-            _editorFormatMap = editorFormatMap;
             _adornmentLayer = adornmentLayer;
+            _protectedOperations = protectedOperations;
+            _classificationFormatMap = classificationFormatMap;
+            _editorFormatMap = editorFormatMap;
 
             _textView.Caret.PositionChanged += OnChangeEvent;
             _textView.LayoutChanged += OnChangeEvent;
@@ -79,30 +83,39 @@ namespace Vim.UI.Wpf.Implementation.Paste
         /// </summary>
         private UIElement CreateControl()
         {
+            var pasteCharacter = _pasteCharacter.ToString();
             var textViewProperties = _editorFormatMap.GetProperties("TextView Background");
             var backgroundBrush = textViewProperties.GetBackgroundBrush(SystemColors.WindowBrush);
             var properties = _editorFormatMap.GetProperties("Plain Text");
+            var foregroundBrush = properties.GetForegroundBrush(SystemColors.WindowBrush);
+            var textRunProperties = _classificationFormatMap.DefaultTextProperties;
+            var typeface = textRunProperties.Typeface;
+            var fontSize = textRunProperties.FontRenderingEmSize;
+            var lineHeight = _textView.LineHeight;
+            var formattedText = new FormattedText(
+                pasteCharacter,
+                CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                fontSize,
+                Brushes.Black);
+            var width = formattedText.Width;
+            var height = formattedText.Height;
 
             var textBlock = new TextBlock
             {
-                Text = _pasteCharacter.ToString(),
-                Foreground = properties.GetForegroundBrush(SystemColors.WindowTextBrush),
-                Background = backgroundBrush
+                Text = pasteCharacter,
+                Foreground = foregroundBrush,
+                Background = backgroundBrush,
+                FontFamily = typeface.FontFamily,
+                FontStretch = typeface.Stretch,
+                FontWeight = typeface.Weight,
+                FontStyle = typeface.Style,
+                FontSize = fontSize,
+                Width = width,
+                Height = height,
+                LineHeight = lineHeight,
             };
-
-            if (properties["Typeface"] is Typeface typeface)
-            {
-                textBlock.FontFamily = typeface.FontFamily;
-                textBlock.FontStretch = typeface.Stretch;
-                textBlock.FontWeight = typeface.Weight;
-                textBlock.FontStyle = typeface.Style;
-            }
-
-            var obj = properties["FontRenderingSize"];
-            if (obj is double)
-            {
-                textBlock.FontSize = (double)obj;
-            }
 
             var border = new Border
             {

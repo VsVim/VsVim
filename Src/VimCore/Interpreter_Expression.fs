@@ -460,6 +460,12 @@ and [<RequireQualifiedAccess>] Expression =
     | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
+   
+    /// Add a new abbreviation 
+    | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AllowRemap: bool * AbbreviationModes: AbbreviationMode list * IsLocal: bool
+
+    /// Remove all abbreviations for the specified modes 
+    | AbbreviateClear of AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
     | AddAutoCommand of AutoCommandDefinition: AutoCommandDefinition
@@ -530,6 +536,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Display the specified marks.  If no Mark values are provided then display 
     /// all marks
     | DisplayMarks of Marks: Mark list
+
+    /// Display the abbrevation for the given modes and left hand side if provided
+    | DisplayAbbreviation of AbbreviationModes: AbbreviationMode list * Notation: string option
 
     /// Display the keymap for the given modes.  Restrict the display to the provided
     /// key notation if it's provided
@@ -662,14 +671,11 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// LineRange (defaults to current)
     | PutBefore of LineRangeSpecifier: LineRangeSpecifier * RegisterName: RegisterName option
 
-    /// Display the quick fix window
-    | QuickFixWindow
+    /// Open the specified list window
+    | OpenListWindow of ListKind: ListKind
 
-    /// Next error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixNext of Count: int option * HasBang: bool
-
-    /// Previous error in the quick fix list.  int is for count and bool is for the bang option
-    | QuickFixPrevious of Count: int option * HasBang: bool
+    /// Navigate to the specified item in the specified list
+    | NavigateToListItem of ListKind: ListKind * NavigationKind: NavigationKind * Argument: int option * HasBang: bool
 
     /// Quit the curren window without writing it's content.  If the boolean option
     /// is present (for !) then don't warn about a dirty window
@@ -747,6 +753,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The version command
     | Version
 
+    /// Search for pattern in the specified files
+    | VimGrep of Count: int option * HasBang: bool * Pattern: string * Flags: VimGrepFlags * FilePattern: string
+
     /// Process the 'vsplit' command. Values are as per HorizontalSplit
     | VerticalSplit of LineRangeSpecifier: LineRangeSpecifier * FileOptions: FileOption list * CommandOption: CommandOption option
 
@@ -757,6 +766,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The variant of the :substitute command which repeats the last :subsitute with
     /// different flags and count
     | SubstituteRepeat of LineRangeSpecifier: LineRangeSpecifier * SubstituteFlags: SubstituteFlags
+
+    /// Unabbreviate the specified notations
+    | Unabbreviate of KeyNotation: string * AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Undo the last change
     | Undo

@@ -117,6 +117,7 @@ namespace Vim.UnitTest
             public void ExclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -141,6 +142,7 @@ namespace Vim.UnitTest
             public void InclusiveDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -165,6 +167,7 @@ namespace Vim.UnitTest
             public void InsertDrag()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -193,6 +196,7 @@ namespace Vim.UnitTest
             public void ExclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -210,6 +214,7 @@ namespace Vim.UnitTest
             public void InclusiveShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -227,6 +232,7 @@ namespace Vim.UnitTest
             public void InsertShiftClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 var startPoint = _textView.GetPointInLine(0, 4); // 'd' in 'dog'
                 _testableMouseDevice.Point = startPoint;
@@ -248,6 +254,7 @@ namespace Vim.UnitTest
             public void LinewiseShiftClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.ProcessNotation("V");
                 Assert.Equal(ModeKind.VisualLine, _vimBuffer.ModeKind);
                 Assert.Equal(_textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
@@ -265,6 +272,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -278,6 +286,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -291,6 +300,7 @@ namespace Vim.UnitTest
             public void ExclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "exclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -318,6 +328,7 @@ namespace Vim.UnitTest
             public void InclusiveDoubleClickAndDrag()
             {
                 Create("cat dog bear bat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse>");
@@ -345,6 +356,7 @@ namespace Vim.UnitTest
             public void TokenDoubleClick()
             {
                 Create("cat (dog) bear", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.Selection = "inclusive";
                 var point = _textView.GetPointInLine(0, 4); // open paren
                 _testableMouseDevice.Point = point;
@@ -358,6 +370,7 @@ namespace Vim.UnitTest
             public void DirectiveDoubleClick()
             {
                 Create("cat", "#if DEBUG", "xyzzy", "#endif", "dog", "");
+                _textView.SetVisibleLineCount(6);
                 _globalSettings.Selection = "inclusive";
                 var startPoint = _textView.GetPointInLine(1, 0); // '#' in '#if'
                 _testableMouseDevice.Point = startPoint;
@@ -373,6 +386,7 @@ namespace Vim.UnitTest
             public void TripleClick()
             {
                 Create("cat dog bear", "pig horse bat", "");
+                _textView.SetVisibleLineCount(3);
                 var point = _textView.GetPointInLine(1, 5); // 'o' in 'horse'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease>");
@@ -386,6 +400,7 @@ namespace Vim.UnitTest
             public void QuadrupleClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease><2-LeftMouse><LeftRelease><3-LeftMouse><LeftRelease><4-LeftMouse><LeftRelease>");
@@ -532,6 +547,35 @@ namespace Vim.UnitTest
                     Assert.Equal(ModeKind.VisualBlock, _vimBuffer.ModeKind);
                     var blockSpan = new BlockSpan(_textView.GetPoint(1), tabStop: _tabStop, spaces: 2, height: 2);
                     Assert.Equal(blockSpan, _vimBuffer.GetSelectionBlockSpan());
+                }
+
+                /// <summary>
+                /// A delete in end-of-line block mode should delete to the
+                /// end of all lines
+                /// </summary>
+                [WpfFact]
+                public void DeleteToEndOfLine()
+                {
+                    Create("abc def ghi", "jkl mno", "pqr", "");
+                    _vimBuffer.ProcessNotation("2l<C-Q>2j$d");
+                    Assert.Equal(new[] { "ab", "jk", "pq", "" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Block put should work even when using the clipboard as the
+                /// unnamed register
+                /// </summary>
+                [WpfTheory]
+                [InlineData("")]
+                [InlineData("unnamed")]
+                public void DeleteAndPut(string clipboard)
+                {
+                    // Reported in issue #2694.
+                    Create("abc def ghi jkl", "mno pqr stu vwx", "");
+                    _globalSettings.Clipboard = clipboard;
+                    _textView.MoveCaretToLine(0, 4);
+                    _vimBuffer.ProcessNotation("<C-Q>jeldwP");
+                    Assert.Equal(new[] { "abc ghi def jkl", "mno stu pqr vwx", "" }, _textBuffer.GetLines());
                 }
             }
 
@@ -1517,6 +1561,18 @@ namespace Vim.UnitTest
                 }
 
                 /// <summary>
+                /// The block insert should add the text to every column
+                /// </summary>
+                [WpfFact]
+                public void SimpleAfterDollar()
+                {
+                    Create("dog", "cat", "fish");
+                    _vimBuffer.ProcessNotation("<C-q>j$<S-i>the <Esc>");
+                    Assert.Equal("the dog", _textBuffer.GetLine(0).GetText());
+                    Assert.Equal("the cat", _textBuffer.GetLine(1).GetText());
+                }
+
+                /// <summary>
                 /// The caret should be positioned at the start of the block span when the insertion
                 /// starts
                 /// </summary>
@@ -1595,6 +1651,20 @@ namespace Vim.UnitTest
                     Create("dog", "x", "tree");
                     _vimBuffer.ProcessNotation(@"l<C-q>jjI#<Esc>");
                     Assert.Equal(new[] { "d#og", "x#", "t#ree" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// On completely empty lines a block insertion should apply to
+                /// all lines
+                /// </summary>
+                [WpfFact]
+                public void AllEmptyLines()
+                {
+                    // Reported in issue #2675.
+                    Create("", "", "", "");
+                    _vimBuffer.ProcessNotation(@"<C-q>jjI#<Esc>");
+                    Assert.Equal(new[] { "#", "#", "#", ""}, _textBuffer.GetLines());
+
                 }
             }
 
@@ -1789,7 +1859,37 @@ namespace Vim.UnitTest
                 }
             }
 
-            public sealed class AppendTabTest : BlockInsertTest
+            public sealed class AppendEndTest : BlockInsertTest
+            {
+                /// <summary>
+                /// Using shift-a from visual block mode appends starting at
+                /// the column of the end of the primary block span
+                /// </summary>
+                [WpfFact]
+                public void Basic()
+                {
+                    // Reported in issue #2667.
+                    Create("hot dog", "fat cat", "big bat", "");
+                    EnterBlock(_textView.GetBlockSpan(0, 4, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-a>x <Esc>");
+                    Assert.Equal(new[] { "hot x dog", "fat x cat", "big x bat", "" }, _textBuffer.GetLines());
+                }
+
+                /// <summary>
+                /// Using shift-a from visual block mode differs from shift-i
+                /// with respect to short lines, specifically it pads them
+                /// </summary>
+                [WpfFact]
+                public void ShortLine()
+                {
+                    Create("hot dog", "", "big bat", "");
+                    EnterBlock(_textView.GetBlockSpan(0, 4, 0, 3));
+                    _vimBuffer.ProcessNotation("<S-a>x <Esc>");
+                    Assert.Equal(new[] { "hot x dog", "    x ", "big x bat", "" }, _textBuffer.GetLines());
+                }
+            }
+
+            public sealed class AppendEndOfLineTabTest : BlockInsertTest
             {
                 /// <summary>
                 /// A block appended tab with 'expandtab' should obey the starting column
@@ -1801,7 +1901,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = true;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-a><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog    x", " cat    x", " bat    x", "", }, _textBuffer.GetLines());
                 }
 
@@ -1815,7 +1915,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = false;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-A><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog\tx", " cat\tx", " bat\tx", "", }, _textBuffer.GetLines());
                 }
 
@@ -1830,7 +1930,7 @@ namespace Vim.UnitTest
                     _vimBufferData.LocalSettings.TabStop = 4;
                     _vimBufferData.LocalSettings.ExpandTab = false;
                     EnterBlock(_textView.GetBlockSpan(1, 1, 0, 3));
-                    _vimBuffer.ProcessNotation("<S-A><Tab>x<Esc>");
+                    _vimBuffer.ProcessNotation("$<S-a><Tab>x<Esc>");
                     Assert.Equal(new[] { " dog_\tx", " cat__\tx", " bat___\tx", "", }, _textBuffer.GetLines());
                 }
             }
@@ -2057,6 +2157,19 @@ namespace Vim.UnitTest
                     Create("cat", "dog");
                     _vimBuffer.ProcessNotation("vjra");
                     Assert.Equal(new[] { "aaa", "aog" }, _textBuffer.GetLines());
+                }
+
+                [WpfFact]
+                public void NonAscii()
+                {
+                    // Reported in issue #2702.
+                    Create("abc", "");
+                    _vimBuffer.Process("v");
+                    Assert.False(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                    _vimBuffer.Process("r");
+                    Assert.True(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                    _vimBuffer.Process("©");
+                    Assert.Equal(new[] { "©bc", "" }, _textBuffer.GetLines());
                 }
             }
 

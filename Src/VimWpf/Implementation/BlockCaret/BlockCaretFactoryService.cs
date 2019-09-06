@@ -18,12 +18,16 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
 #pragma warning disable 169, IDE0044
         [Export(typeof(AdornmentLayerDefinition))]
         [Name(BlockCaretAdornmentLayerName)]
-        [Order(After = PredefinedAdornmentLayers.Text)]
+        [Order(After = PredefinedAdornmentLayers.Caret)]
         private AdornmentLayerDefinition _blockCaretAdornmentLayerDefinition;
 #pragma warning restore 169
 
         [ImportingConstructor]
-        internal BlockCaretFactoryService(IClassificationFormatMapService classificationFormatMapService, IEditorFormatMapService formatMapService, IControlCharUtil controlCharUtil, IProtectedOperations protectedOperations)
+        internal BlockCaretFactoryService(
+            IClassificationFormatMapService classificationFormatMapService,
+            IEditorFormatMapService formatMapService,
+            IControlCharUtil controlCharUtil,
+            IProtectedOperations protectedOperations)
         {
             _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
@@ -31,11 +35,18 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             _protectedOperations = protectedOperations;
         }
 
-        private IBlockCaret CreateBlockCaret(IWpfTextView textView)
+        private IBlockCaret CreateBlockCaret(IVimBufferData vimBufferData)
         {
+            var textView = vimBufferData.TextView;
             var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(textView);
-            var formatMap = _formatMapService.GetEditorFormatMap(textView);
-            return new BlockCaret(textView, BlockCaretAdornmentLayerName, classificationFormaptMap, formatMap, _controlCharUtil, _protectedOperations);
+            var editorFormatMap = _formatMapService.GetEditorFormatMap(textView);
+            return new BlockCaret(
+                vimBufferData,
+                BlockCaretAdornmentLayerName,
+                classificationFormaptMap,
+                editorFormatMap,
+                _controlCharUtil,
+                _protectedOperations);
         }
 
         #region IVimBufferCreationListener
@@ -49,7 +60,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             }
 
             // Setup the block caret 
-            var caret = CreateBlockCaret(textView);
+            var caret = CreateBlockCaret(vimBuffer.VimBufferData);
             var caretController = new BlockCaretController(vimBuffer, caret);
         }
 

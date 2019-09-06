@@ -25,16 +25,16 @@ type KeyRemapMode =
 
     with 
 
-    static member All = 
-        seq {
-            yield None
-            yield Normal
-            yield Visual 
-            yield Select
-            yield OperatorPending
-            yield Insert
-            yield Command
-            yield Language }
+    static member All = [ 
+        None
+        Normal
+        Visual 
+        Select
+        OperatorPending
+        Insert
+        Command
+        Language 
+    ]
 
     override x.ToString() =
         match x with 
@@ -47,10 +47,153 @@ type KeyRemapMode =
         | Command -> "Command"
         | Language -> "Language"
 
+
+/// The different types of abbreviations as described in `:help abbreviations`
+[<RequireQualifiedAccess>]
+type AbbreviationKind = 
+    | FullId
+    | EndId
+    | NonId
+
+/// The vim modes where a given abbreviation is valid
+[<RequireQualifiedAccess>]
+type AbbreviationMode =
+    | Insert
+    | Command
+
+    static member All = [Insert; Command]
+
+    override x.ToString() =
+        match x with
+        | Insert -> "Insert"
+        | Command -> "Command"
+
 [<RequireQualifiedAccess>]
 type JoinKind = 
     | RemoveEmptySpaces
     | KeepEmptySpaces
+
+/// A selection represented as a triple of caret, anchor and active points
+[<StructuralEquality>]
+[<NoComparison>]
+[<Struct>]
+[<DebuggerDisplay("{ToString(),nq}")>]
+type SelectionSpan =
+
+    val private _caretPoint: VirtualSnapshotPoint
+    val private _anchorPoint: VirtualSnapshotPoint
+    val private _activePoint: VirtualSnapshotPoint
+
+    /// Construct a zero-length selection representing a caret
+    new (caretPoint: VirtualSnapshotPoint) =
+        {
+            _caretPoint = caretPoint
+            _anchorPoint = caretPoint
+            _activePoint = caretPoint
+        }
+
+    /// Construct a selection from a triple of caret, anchor and active points
+    new (caretPoint: VirtualSnapshotPoint, anchorPoint: VirtualSnapshotPoint, activePoint: VirtualSnapshotPoint) =
+        {
+            _caretPoint = caretPoint
+            _anchorPoint = anchorPoint
+            _activePoint = activePoint
+        }
+
+    /// The selection's caret point
+    member x.CaretPoint = x._caretPoint
+
+    /// The selection's anchor point
+    member x.AnchorPoint = x._anchorPoint
+
+    /// The selection's active point
+    member x.ActivePoint = x._activePoint
+
+    /// Whether the selection is reversed
+    member x.IsReversed = x._anchorPoint.Position.Position > x._activePoint.Position.Position
+
+    /// The forward snapshot span corresponding to the selection
+    member x.Span =
+        if not x.IsReversed then
+            VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
+        else
+            VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
+
+    /// The snapshot point at the start of the forward span
+    member x.Start = x.Span.Start
+
+    /// The snapshot point at the end of the forward span
+    member x.End = x.Span.End
+
+    /// The length of the selection
+    member x.Length = x.Span.Length
+
+    /// Whether the selection is empty
+    member x.IsEmpty = x.Length = 0
+
+    /// Create a selection span from the specified caret point and forward or
+    /// reverse snapshot span
+    static member FromSpan(caretPoint: SnapshotPoint, span: SnapshotSpan, isReversed: bool) =
+        SelectionSpan.FromVirtualSpan(VirtualSnapshotPoint(caretPoint), VirtualSnapshotSpan(span), isReversed)
+
+    /// Create a selection span from the specified caret point and forward or
+    /// reverse virtual snapshot span
+    static member FromVirtualSpan(caretPoint: VirtualSnapshotPoint, span: VirtualSnapshotSpan, isReversed: bool) =
+        if not isReversed then
+            SelectionSpan(caretPoint, span.Start, span.End)
+        else
+            SelectionSpan(caretPoint, span.End, span.Start)
+
+    /// Convert a selection span to a helpful display string indicating the
+    /// selected characters, the caret point and the active point
+    override x.ToString() =
+        let reversedString =
+            if x.IsReversed then " (reversed)" else ""
+        let displayString =
+            let point = x.CaretPoint.Position
+            let span = x.Span.SnapshotSpan
+            let text =
+                span.GetText()
+                |> StringUtil.GetDisplayString
+            if span.Contains(point) || span.End = point then
+                let offset = point.Position - span.Start.Position
+                text.Substring(0, offset) + "|" + text.Substring(offset)
+            else
+                text
+        let displayString =
+            if x.ActivePoint = x.End then
+                displayString + "*"
+            elif x.ActivePoint = x.Start then
+                "*" + displayString
+            else
+                displayString
+        System.String.Format("{0}: [{1}-{2}){3} '{4}'",
+            x._caretPoint.Position.Position,
+            x.Span.Start.Position.Position,
+            x.Span.End.Position.Position,
+            reversedString,
+            displayString)
+
+type NavigationKind =
+    | First = 0
+    | Last = 1
+    | Next = 2
+    | Previous = 3
+
+type ListKind =
+    | Error = 0
+    | Location = 1
+
+/// One-based list item
+type ListItem
+    (
+        _itemNumber: int,
+        _listLength: int,
+        _message: string
+    ) =
+    member x.ItemNumber = _itemNumber
+    member x.ListLength = _listLength
+    member x.Message = _message
 
 /// Flags for the sort command
 [<System.Flags>]
@@ -113,6 +256,17 @@ type SubstituteFlags =
 
     /// Perform a literal replacement (not expanding special characters)
     | LiteralReplacement = 0x2000
+
+/// Flags for the vimgrep command
+[<System.Flags>]
+type VimGrepFlags = 
+    | None = 0
+
+    /// AllMatchesPerFile [g]
+    | AllMatchesPerFile = 0x1
+
+    /// NoJumpToFirst [j]
+    | NoJumpToFirst = 0x2
 
 type SubstituteData = {
     SearchPattern: string
@@ -408,25 +562,25 @@ type Mark =
             LocalMark.OfChar c |> Option.map LocalMark
 
 type Direction =
-    | Up        = 1
-    | Down      = 2
-    | Left      = 3
-    | Right     = 4
+    | Up        = 0
+    | Down      = 1
+    | Left      = 2
+    | Right     = 3
 
 type WindowKind =
-    | Up           = 1
-    | Down         = 2
-    | Left         = 3
-    | Right        = 4
-    | FarUp        = 5
-    | FarDown      = 6
-    | FarLeft      = 7
-    | FarRight     = 8
-    | Next         = 9
-    | Previous     = 10
-    | Recent       = 11
-    | Top          = 12
-    | Bottom       = 13
+    | Up           = 0
+    | Down         = 1
+    | Left         = 2
+    | Right        = 3
+    | FarUp        = 4
+    | FarDown      = 5
+    | FarLeft      = 6
+    | FarRight     = 7
+    | Next         = 8
+    | Previous     = 9
+    | Recent       = 10
+    | Top          = 11
+    | Bottom       = 12
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]

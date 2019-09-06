@@ -109,7 +109,7 @@ namespace Vim.UnitTest
             public void FieldCount()
             {
                 var type = typeof(BlockSpan);
-                Assert.Equal(4, type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
+                Assert.Equal(5, type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Length);
             }
 
             /// <summary>

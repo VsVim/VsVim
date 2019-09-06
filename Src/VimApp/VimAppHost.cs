@@ -14,11 +14,15 @@ using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace VimApp
 {
     [Export(typeof(IVimHost))]
+    [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VimAppHost))]
+    [ContentType(VimConstants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VimAppHost : Vim.UI.Wpf.VimHost
     {
         private const string ErrorCouldNotFindVimViewInfo = "Could not find the associated IVimViewInfo";
@@ -327,14 +331,13 @@ namespace VimApp
             _vim.ActiveStatusUtil.OnError(ErrorUnsupported);
         }
 
-        public override void OpenQuickFixWindow()
+        public override void OpenListWindow(ListKind listKind)
         {
-
         }
 
-        public override bool GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        public override FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            return false;
+            return FSharpOption<ListItem>.None;
         }
 
         private bool TryGetVimViewInfo(ITextView textView, out IVimViewInfo vimViewInfo)

@@ -129,3 +129,5 @@ module KeyInputUtil =
     /// Whether this key input could appear in vim's standard bindings
     val IsCore: keyInput: KeyInput -> bool
 
+    /// Whether this key input could be inserted into a text buffer
+    val IsTextInput: keyInput: KeyInput -> bool

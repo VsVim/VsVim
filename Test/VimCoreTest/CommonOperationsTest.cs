@@ -60,7 +60,7 @@ namespace Vim.UnitTest
             var vim = MockObjectFactory.CreateVim(
                 registerMap: _registerMap,
                 host: _vimHost.Object,
-                settings: globalSettings,
+                globalSettings: globalSettings,
                 searchService: _searchService,
                 factory: _factory);
 
@@ -71,6 +71,8 @@ namespace Vim.UnitTest
             _localSettings.SetupGet(x => x.ExpandTab).Returns(true);
             _localSettings.SetupGet(x => x.TabStop).Returns(4);
             _localSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _localSettings.SetupGet(x => x.IsKeyword).Returns("@,_,0-9");
+            _localSettings.SetupGet(x => x.IsKeywordCharSet).Returns(VimCharSet.TryParse("@,_,0-9").Value);
 
             _statusUtil = _factory.Create<IStatusUtil>();
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
@@ -97,12 +99,14 @@ namespace Vim.UnitTest
                 .Returns<IEnumerable<ICollapsible>>(null);
 
             var commonOperationsFactory = _factory.Create<ICommonOperationsFactory>();
+            var bulkOperations = CompositionContainer.GetExportedValue<IBulkOperations>();
             _operationsRaw = new CommonOperations(
                 commonOperationsFactory.Object,
                 vimBufferData,
                 EditorOperationsFactoryService.GetEditorOperations(_textView),
                 FSharpOption.Create(_outlining.Object),
-                MouseDevice);
+                MouseDevice,
+                bulkOperations);
             _operations = _operationsRaw;
             commonOperationsFactory.Setup(x => x.GetCommonOperations(vimBufferData)).Returns(_operations);
         }

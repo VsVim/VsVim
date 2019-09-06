@@ -108,6 +108,11 @@ namespace Vim.EditorHost
             return textView.Caret.Position.BufferPosition;
         }
 
+        public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView textView)
+        {
+            return textView.Caret.Position.VirtualBufferPosition;
+        }
+
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)
         {
             return textView.Caret.Position.BufferPosition.GetContainingLine();
@@ -239,11 +244,16 @@ namespace Vim.EditorHost
             return textBuffer.CurrentSnapshot.GetVirtualPointInLine(line, column, virtualSpaces);
         }
 
-        public static void SetText(this ITextBuffer buffer, params string[] lines)
+        public static void SetText(this ITextBuffer textBuffer, params string[] lines)
         {
-            var text = string.Join(Environment.NewLine, lines);
-            var edit = buffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null);
-            edit.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
+            var textContent = string.Join(Environment.NewLine, lines);
+            SetTextContent(textBuffer, textContent);
+        }
+
+        public static void SetTextContent(this ITextBuffer textBuffer, string textContent)
+        {
+            var edit = textBuffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null);
+            edit.Replace(new Span(0, textBuffer.CurrentSnapshot.Length), textContent);
             edit.Apply();
         }
 

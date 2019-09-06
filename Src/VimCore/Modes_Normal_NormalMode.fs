@@ -111,7 +111,7 @@ type internal NormalMode
                 yield ("ZZ", CommandFlags.Special, NormalCommand.WriteBufferAndQuit)
                 yield ("<Insert>", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("<C-a>", CommandFlags.Repeatable, NormalCommand.AddToWord)
-                yield ("<C-c>", CommandFlags.Repeatable, NormalCommand.CancelOperation)
+                yield ("<C-c>", CommandFlags.Special, NormalCommand.CancelOperation)
                 yield ("<C-g>", CommandFlags.Special, NormalCommand.PrintFileInformation)
                 yield ("<C-i>", CommandFlags.Movement, NormalCommand.JumpToNewerPosition)
                 yield ("<C-o>", CommandFlags.Movement, NormalCommand.JumpToOlderPosition)
@@ -120,7 +120,6 @@ type internal NormalMode
                 yield ("<C-q>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
                 yield ("<C-r>", CommandFlags.Special, NormalCommand.Redo)
                 yield ("<C-v>", CommandFlags.Special, NormalCommand.SwitchModeVisualCommand VisualKind.Block)
-                yield ("<C-w><C-c>", CommandFlags.None, NormalCommand.CloseWindow)
                 yield ("<C-w>c", CommandFlags.None, NormalCommand.CloseWindow)
                 yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToWindow WindowKind.Down)
                 yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToWindow WindowKind.Down)
@@ -163,7 +162,7 @@ type internal NormalMode
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("<C-LeftMouse>", CommandFlags.Special, NormalCommand.GoToDefinitionUnderMouse)
                 yield ("<C-LeftRelease>", CommandFlags.Special, NormalCommand.NoOperation)
-                yield ("<MiddleMouse>", CommandFlags.Repeatable, NormalCommand.PutAfterCaretMouse)
+                yield ("<MiddleMouse>", CommandFlags.Special, NormalCommand.PutAfterCaretMouse)
                 yield ("[p", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
@@ -185,9 +184,17 @@ type internal NormalMode
                 yield ("<LeftDrag>", CommandFlags.Special, NormalCommand.SelectTextForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, NormalCommand.SelectTextForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, NormalCommand.SelectTextForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, NormalCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, NormalCommand.SelectBlock)
+
+                // Multi-selection bindings not in Vim.
+                yield ("<C-A-LeftMouse>", CommandFlags.Special, NormalCommand.AddCaretAtMousePoint)
+                yield ("<C-A-Up>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, NormalCommand.AddCaretOnAdjacentLine Direction.Down)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingTokenAtMousePoint)
+                yield ("<C-A-n>", CommandFlags.Special, NormalCommand.SelectWordOrMatchingToken)
+                yield ("C-A-p>", CommandFlags.Special, NormalCommand.RestoreMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))
@@ -361,6 +368,7 @@ type internal NormalMode
     member x.CanProcess (keyInput: KeyInput) =
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         || _runner.DoesCommandStartWith keyInput
+        || x.KeyRemapMode = KeyRemapMode.Language && KeyInputUtil.IsTextInput keyInput
     
     member x.Process (keyInputData: KeyInputData) = 
 
@@ -370,6 +378,7 @@ type internal NormalMode
             let command = _data.Command + keyInput.Char.ToString()
             _data <- { _data with Command = command }
 
+        let wasWaitingForMoreInput = _runner.IsWaitingForMoreInput
         match _runner.Run keyInput with
         | BindResult.NeedMoreInput _ -> 
             ProcessResult.HandledNeedMoreInput
@@ -378,11 +387,16 @@ type internal NormalMode
             ProcessResult.OfCommandResult commandData.CommandResult
         | BindResult.Error -> 
             x.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            ProcessResult.NotHandled
         | BindResult.Cancelled -> 
             _incrementalSearch.CancelSession()
-            x.Reset()
-            ProcessResult.Handled ModeSwitch.NoSwitch
+            if wasWaitingForMoreInput then
+                x.Reset()
+                ProcessResult.Handled ModeSwitch.NoSwitch
+            else
+                (ModeKind.Normal, ModeArgument.CancelOperation)
+                |> ModeSwitch.SwitchModeWithArgument
+                |> ProcessResult.Handled
 
     member x.OnEnter (arg: ModeArgument) =
         x.EnsureCommands()
@@ -393,7 +407,7 @@ type internal NormalMode
             _operations.EnsureAtCaret ViewFlags.VirtualEdit
 
         // Process the argument if it's applicable
-        arg.CompleteAnyTransaction
+        arg.CompleteAnyTransaction()
 
     interface INormalMode with 
         member x.KeyRemapMode = x.KeyRemapMode

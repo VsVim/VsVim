@@ -86,8 +86,8 @@ type internal VisualMode
                 yield ("<C-c>", CommandFlags.Special, VisualCommand.CancelOperation)
                 yield ("<C-q>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
                 yield ("<C-v>", CommandFlags.Special, VisualCommand.SwitchModeVisual VisualKind.Block)
-                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert false)
-                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert true)
+                yield ("<S-i>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.Start)
+                yield ("<S-a>", CommandFlags.Special, VisualCommand.SwitchModeInsert VisualInsertKind.End)
                 yield ("<C-g>", CommandFlags.Special, VisualCommand.SwitchModeOtherVisual)
                 yield ("<C-w>gf", CommandFlags.None, VisualCommand.GoToFileInSelectionInNewWindow)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
@@ -107,16 +107,23 @@ type internal VisualMode
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+
+                // Multi-selection bindings not in Vim.
+                yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
+                yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
+                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.StartMultiSelection)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
 
         let complexSeq = 
             seq {
-                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForKeyInput KeyRemapMode.None VisualCommand.ReplaceSelection)
+                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForKeyInput KeyRemapMode.Language VisualCommand.ReplaceSelection)
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand
@@ -159,6 +166,7 @@ type internal VisualMode
     member x.CanProcess (keyInput: KeyInput) =
         KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         ||_runner.DoesCommandStartWith keyInput
+        || x.KeyRemapMode = KeyRemapMode.Language && KeyInputUtil.IsTextInput keyInput
 
     member x.CommandNames = 
         x.EnsureCommandsBuilt()
@@ -206,7 +214,10 @@ type internal VisualMode
         let selectionKind = _globalSettings.SelectionKind
         let tabStop = _vimBufferData.LocalSettings.TabStop
         let useVirtualSpace = _vimTextBuffer.UseVirtualSpace
-        VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        let visualSelection =
+            VisualSelection.CreateForVirtualSelection _textView _visualKind selectionKind tabStop useVirtualSpace
+        let isMaintainingEndOfLine = _vimBufferData.MaintainCaretColumn.IsMaintainingEndOfLine
+        visualSelection.AdjustWithEndOfLine isMaintainingEndOfLine
 
     member x.Process (keyInputData: KeyInputData) =  
         let keyInput = keyInputData.KeyInput
@@ -277,7 +288,7 @@ type internal VisualMode
                 if result.IsAnySwitchToVisual then
                     _selectionTracker.UpdateSelection()
                 elif not result.IsAnySwitchToCommand then
-                    _textView.Selection.Clear()
+                    TextViewUtil.ClearSelection _textView
                     _textView.Selection.Mode <- TextSelectionMode.Stream
 
         result

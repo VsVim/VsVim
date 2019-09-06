@@ -51,6 +51,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 	ProjectSection(SolutionItems) = preProject
 		Documentation\CodingGuidelines.md = Documentation\CodingGuidelines.md
 		Documentation\CSharp scripting.md = Documentation\CSharp scripting.md
+		Documentation\Multiple Selections.md = Documentation\Multiple Selections.md
 		Documentation\older-drops.md = Documentation\older-drops.md
 		Documentation\Project Goals.md = Documentation\Project Goals.md
 		Documentation\release-notes.md = Documentation\release-notes.md

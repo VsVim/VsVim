@@ -73,6 +73,8 @@ module LocalSettingNames =
     let FixEndOfLineName = "fixendofline"
     let TextWidthName = "textwidth"
     let CommentsName = "comments"
+    let IsKeywordName = "iskeyword"
+    let IsIdentName = "isident"
 
 module WindowSettingNames =
 
@@ -306,6 +308,12 @@ type IVimSettings =
 
 and IVimGlobalSettings = 
 
+    /// The local settings specified in the vim rc file, if any
+    abstract VimRcLocalSettings: IVimLocalSettings option with get, set
+
+    /// The window settings specified in the vim rc file, if any
+    abstract VimRcWindowSettings: IVimWindowSettings option with get, set
+
     /// Add a custom setting to the current collection
     abstract AddCustomSetting: name: string -> abbrevation: string -> customSettingSource: IVimCustomSettingSource -> unit
 
@@ -432,6 +440,12 @@ and IVimGlobalSettings =
     /// to extend past the line
     abstract IsSelectionPastLine: bool with get
 
+    /// The characters which represent an identifier
+    abstract IsIdent: string with get, set
+
+    /// Type safe representation of IsIdent
+    abstract IsIdentCharSet: VimCharSet with get, set
+
     /// Whether or not to insert two spaces after certain constructs in a 
     /// join operation
     abstract JoinSpaces: bool with get, set
@@ -550,6 +564,8 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
+    abstract Defaults: IVimLocalSettings with get
+
     /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set
 
@@ -564,6 +580,12 @@ and IVimLocalSettings =
 
     /// Formats that vim considers a number for CTRL-A and CTRL-X
     abstract NumberFormats: string with get, set
+
+    /// The characters which represent a keyword / WordKind.NormalWord
+    abstract IsKeyword: string with get, set
+
+    /// Type safe representation of IsKeyword
+    abstract IsKeywordCharSet: VimCharSet with get, set
 
     /// Whether or not to put relative line numbers on the left column of the display
     abstract RelativeNumber: bool with get, set
@@ -602,6 +624,8 @@ and IVimLocalSettings =
 
 /// Settings which are local to a given window.
 and IVimWindowSettings = 
+
+    abstract Defaults: IVimWindowSettings with get
 
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine: bool with get, set

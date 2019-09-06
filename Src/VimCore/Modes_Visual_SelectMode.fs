@@ -40,9 +40,16 @@ type internal SelectMode
                 yield ("<LeftDrag>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseDrag)
                 yield ("<LeftRelease>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseRelease)
                 yield ("<S-LeftMouse>", CommandFlags.Special, VisualCommand.ExtendSelectionForMouseClick)
-                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingToken)
+                yield ("<2-LeftMouse>", CommandFlags.Special, VisualCommand.SelectWordOrMatchingTokenAtMousePoint)
                 yield ("<3-LeftMouse>", CommandFlags.Special, VisualCommand.SelectLine)
                 yield ("<4-LeftMouse>", CommandFlags.Special, VisualCommand.SelectBlock)
+
+                // Multi-selection bindings not in Vim.
+                yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
+                yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
+                yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
+                yield ("<C-A-n>", CommandFlags.Special, VisualCommand.StartMultiSelection)
             } |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualBinding (keyInputSet, flags, command))
@@ -51,7 +58,8 @@ type internal SelectMode
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
     static let GetCaretMovement (keyInput: KeyInput) =
-        if not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Control) then
+        let nonShiftModifiers = keyInput.KeyModifiers &&& ~~~VimKeyModifiers.Shift
+        if nonShiftModifiers = VimKeyModifiers.None then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.Up
             | VimKey.Right -> Some CaretMovement.Right
@@ -62,7 +70,7 @@ type internal SelectMode
             | VimKey.PageUp -> Some CaretMovement.PageUp
             | VimKey.PageDown -> Some CaretMovement.PageDown
             | _ -> None
-        else
+        elif nonShiftModifiers = VimKeyModifiers.Control then
             match keyInput.Key with
             | VimKey.Up -> Some CaretMovement.ControlUp
             | VimKey.Right -> Some CaretMovement.ControlRight
@@ -71,10 +79,14 @@ type internal SelectMode
             | VimKey.Home -> Some CaretMovement.ControlHome
             | VimKey.End -> Some CaretMovement.ControlEnd
             | _ -> None
+        else
+            None
 
     /// Whether a key input corresponds to normal text
     static let IsTextKeyInput (keyInput: KeyInput) =
-        Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
+        Option.isSome keyInput.RawChar
+        && not (CharUtil.IsControl keyInput.Char)
+        && not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt)
 
     let mutable _builtCommands = false
 
@@ -122,44 +134,83 @@ type internal SelectMode
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
-        _textView.Selection.Clear()
-        _commonOperations.MoveCaretWithArrow caretMovement |> ignore
+        fun () ->
+            x.ProcessCaretMovementCore caretMovement keyInput
+            |> ProcessResult.ToCommandResult
+        |> _commonOperations.RunForAllSelections
+        |> ProcessResult.OfCommandResult
 
-        if x.ShouldStopSelection keyInput then
+    member x.ProcessCaretMovementCore caretMovement keyInput =
+        let shouldStopSelection = x.ShouldStopSelection keyInput
+        let isInclusive = _globalSettings.IsSelectionInclusive
+        let shouldMimicNative = shouldStopSelection && not isInclusive
+
+        let leaveSelectWithCaretAtPoint caretPoint =
+            TextViewUtil.ClearSelection _textView
+            _commonOperations.MoveCaretToVirtualPoint caretPoint ViewFlags.Standard
             ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-        else
-            // The caret moved so we need to update the selection 
-            _selectionTracker.UpdateSelection()
-            ProcessResult.Handled ModeSwitch.NoSwitch
 
-    /// The user hit an input key.  Need to replace the current selection with the given
-    /// text and put the caret just after the insert.  This needs to be a single undo
-    /// transaction
+        if shouldMimicNative && caretMovement = CaretMovement.Left then
+
+            // For a native exclusive selction, typing plain left leaves the
+            // caret at the selection start point.
+            leaveSelectWithCaretAtPoint _textView.Selection.Start
+
+        elif shouldMimicNative && caretMovement = CaretMovement.Right then
+
+            // For a native exclusive selction, typing plain right leaves the
+            // caret at the selection end point.
+            leaveSelectWithCaretAtPoint _textView.Selection.End
+
+        else
+            let anchorPoint = _textView.Selection.AnchorPoint
+            TextViewUtil.ClearSelection _textView
+            _commonOperations.MoveCaretWithArrow caretMovement |> ignore
+            if shouldStopSelection then
+                ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            else
+                // The caret moved so we need to update the selection 
+                _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
+                ProcessResult.Handled ModeSwitch.NoSwitch
+
+    /// Overwrite the selection with the specified text
     member x.ProcessInput text linked =
+        fun () ->
+            x.ProcessInputCore text linked
+            |> ProcessResult.ToCommandResult
+        |> _commonOperations.RunForAllSelections
+        |> ProcessResult.OfCommandResult
+
+    /// The user hit an input key.  Need to replace the current selection with
+    /// the given text and put the caret just after the insert.  This needs to
+    /// be a single undo transaction
+    member x.ProcessInputCore text linked =
 
         let replaceSelection (span: SnapshotSpan) text =
-            _undoRedoOperations.EditWithUndoTransaction "Replace" _textView <| fun () ->
-
+            fun () ->
                 use edit = _textBuffer.CreateEdit()
 
                 // First step is to replace the deleted text with the new one
                 edit.Delete(span.Span) |> ignore
                 edit.Insert(span.End.Position, text) |> ignore
 
-                // Now move the caret past the insert point in the new snapshot. We don't need to
-                // add one here (or even the length of the insert text).  The insert occurred at
-                // the exact point we are tracking and we chose PointTrackingMode.Positive so this
-                // will push the point past the insert
+                // Now move the caret past the insert point in the new
+                // snapshot. We don't need to add one here (or even the length
+                // of the insert text).  The insert occurred at the exact point
+                // we are tracking and we chose PointTrackingMode.Positive so
+                // this will push the point past the insert
                 edit.Apply() |> ignore
                 _commonOperations.MapPointPositiveToCurrentSnapshot span.End
                 |> TextViewUtil.MoveCaretToPoint _textView
 
-        // During undo we don't want the currently selected text to be reselected as that
-        // would put the editor back into select mode.  Clear the selection now so that
-        // it's not recorderd in the undo transaction and move the caret to the selection
-        // start
+            |> _undoRedoOperations.EditWithUndoTransaction "Replace" _textView
+
+        // During undo we don't want the currently selected text to be
+        // reselected as that would put the editor back into select mode.
+        // Clear the selection now so that it's not recorderd in the undo
+        // transaction and move the caret to the selection start
         let span = _textView.Selection.StreamSelectionSpan.SnapshotSpan
-        _textView.Selection.Clear()
+        TextViewUtil.ClearSelection _textView
         TextViewUtil.MoveCaretToPoint _textView span.Start
 
         if linked then
@@ -229,7 +280,7 @@ type internal SelectMode
         if processResult.IsAnySwitchToVisual then
             _selectionTracker.UpdateSelection()
         elif processResult.IsAnySwitch then
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
             _textView.Selection.Mode <- TextSelectionMode.Stream
 
         processResult

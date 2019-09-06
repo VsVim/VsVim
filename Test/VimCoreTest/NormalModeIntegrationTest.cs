@@ -27,7 +27,7 @@ namespace Vim.UnitTest
         protected IVimLocalSettings _localSettings;
         protected IVimWindowSettings _windowSettings;
         protected IJumpList _jumpList;
-        protected IKeyMap _keyMap;
+        protected IVimGlobalKeyMap _globalKeyMap;
         protected IVimData _vimData;
         protected IFoldManager _foldManager;
         protected INormalMode _normalMode;
@@ -61,7 +61,7 @@ namespace Vim.UnitTest
             _vimBufferData = _vimBuffer.VimBufferData;
             _vimTextBuffer = _vimBuffer.VimTextBuffer;
             _normalMode = _vimBuffer.NormalMode;
-            _keyMap = _vimBuffer.Vim.KeyMap;
+            _globalKeyMap = _vimBuffer.Vim.GlobalKeyMap;
             _localSettings = _vimBuffer.LocalSettings;
             _globalSettings = _localSettings.GlobalSettings;
             _windowSettings = _vimBuffer.WindowSettings;
@@ -96,6 +96,7 @@ namespace Vim.UnitTest
         {
             _testableMouseDevice.IsLeftButtonPressed = false;
             _testableMouseDevice.Point = null;
+            _testableMouseDevice.YOffset = 0;
             base.Dispose();
         }
 
@@ -105,6 +106,7 @@ namespace Vim.UnitTest
             public void MiddleOfLine()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 1); // 'a' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(1, _textView.GetCaretPoint().Position); // 'a' in 'cat'
@@ -114,6 +116,7 @@ namespace Vim.UnitTest
             public void AfterEndOfLine()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
                 Assert.Equal(2, _textView.GetCaretPoint().Position); // 't' in 'cat'
@@ -123,6 +126,7 @@ namespace Vim.UnitTest
             public void AfterEndOfLineOneMore()
             {
                 Create("cat", "");
+                _textView.SetVisibleLineCount(2);
                 _globalSettings.VirtualEdit = "onemore";
                 _testableMouseDevice.Point = _textView.GetPointInLine(0, 3); // after 't' in 'cat'
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
@@ -133,6 +137,7 @@ namespace Vim.UnitTest
             public void EmptyLine()
             {
                 Create("cat", "", "dog", "");
+                _textView.SetVisibleLineCount(4);
                 var point = _textView.GetPointInLine(1, 0); // empty line
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<LeftMouse><LeftRelease>");
@@ -197,6 +202,7 @@ namespace Vim.UnitTest
             public void DeleteToMouse()
             {
                 Create("cat dog mouse", "");
+                _textView.SetVisibleLineCount(2);
                 _textView.MoveCaretTo(4); // 'd' in 'dog'
                 var point = _textView.GetPointInLine(0, 8); // 'm' in 'mouse'
                 _testableMouseDevice.Point = point;
@@ -208,6 +214,7 @@ namespace Vim.UnitTest
             public void ControlClick()
             {
                 Create("cat dog bear", "");
+                _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<C-LeftMouse>");
@@ -2951,6 +2958,56 @@ namespace Vim.UnitTest
                     Assert.Equal(new[] { "cat", "dog", "", }, _textBuffer.GetLines());
                 }
             }
+
+            public sealed class LocalKeyMappingTest : KeyMappingTest
+            {
+                public readonly IVimBuffer _vimBuffer2;
+
+                public LocalKeyMappingTest()
+                {
+                    Create("");
+                    _vimBuffer2 = CreateVimBuffer();
+                }
+
+                [WpfFact]
+                public void LocalBufferOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                    _vimBuffer2.Process("idd");
+                    Assert.Equal("dd", _vimBuffer2.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void LocalOverGlobal()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void ClearGlobalOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process(":imapc", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("dog", _vimBuffer.TextBuffer.GetLineText(0));
+                }
+
+                [WpfFact]
+                public void ClearLocalOnly()
+                {
+                    _vimBuffer.Process(":imap <buffer> dd dog", enter: true);
+                    _vimBuffer.Process(":imap dd tree", enter: true);
+                    _vimBuffer.Process(":imapc <buffer>", enter: true);
+                    _vimBuffer.Process("idd");
+                    Assert.Equal("tree", _vimBuffer.TextBuffer.GetLineText(0));
+                }
+            }
         }
 
         public sealed class LineToLineMotionTest : NormalModeIntegrationTest
@@ -3924,6 +3981,36 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("."); // user
                 Assert.Equal("[Conditional(\"DEBUG\")]", _textBuffer.GetLine(1).GetText());
             }
+
+            /// <summary>
+            /// Detailed example of Visual Assist completion with repeat
+            /// </summary>
+            [WpfFact]
+            public void VisualAssistCompletion()
+            {
+                // Reported in issue #2692.
+                Create(
+                    "abc std::string def",
+                    "ghi std::string jkl",
+                    "");
+                _textView.MoveCaretToLine(0, 4); // user
+                _vimBuffer.ProcessNotation("cfg"); // user
+                _textBuffer.Insert(4, "Pho"); // user
+                _textView.MoveCaretTo(4); // assistant
+                _textView.MoveCaretTo(7); // assistant
+                _textBuffer.Replace(new Span(4, 3), "a"); // assistant
+                _textBuffer.Replace(new Span(4, 1), ""); // assistant
+                _textBuffer.Replace(new Span(4, 0), "PhotosStatStringType"); // assistant
+                _vimBuffer.ProcessNotation("<Esc>"); // user
+                _textView.MoveCaretToLine(1, 4); // user
+                _vimBuffer.ProcessNotation("."); // user
+                Assert.Equal(
+                    new[] {
+                        "abc PhotosStatStringType def",
+                        "ghi PhotosStatStringType jkl",
+                        ""
+                    }, _textBuffer.GetLines());
+            }
         }
 
         public sealed class UndoTest : NormalModeIntegrationTest
@@ -4853,6 +4940,29 @@ namespace Vim.UnitTest
                     _vimBuffer.Process(KeyInputUtil.CharToKeyInput('/'));
                     Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
                     Assert.True(_normalMode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
+                }
+
+                [WpfFact]
+                public void Abbreviation()
+                {
+                    Create("cat dog ");
+                    _vimBuffer.Process(":ab dd dog", enter: true);
+                    _vimBuffer.Process("/dd ");
+                    Assert.Equal("dog ", _vimBuffer.IncrementalSearch.ActiveSession.Value.SearchData.Pattern);
+                    _vimBuffer.Process(KeyInputUtil.EnterKey);
+                    Assert.Equal(4, _textView.GetCaretPoint().Position);
+                }
+
+                [WpfFact]
+                public void AbbreviationFromCommandOnly()
+                {
+                    Create("cat dog ");
+                    _vimBuffer.Process(":iab dd dog", enter: true);
+                    _vimBuffer.Process("/dd ");
+                    Assert.Equal("dd ", _vimBuffer.IncrementalSearch.ActiveSession.Value.SearchData.Pattern);
+                    _assertOnErrorMessage = false;
+                    _vimBuffer.Process(KeyInputUtil.EnterKey);
+                    Assert.Equal(0, _textView.GetCaretPoint().Position);
                 }
             }
         }
@@ -6524,6 +6634,18 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("r<Enter>");
                 Assert.Equal("\n", _textBuffer.GetLine(0).GetLineBreakText());
                 Assert.Equal("", _textBuffer.GetLine(0).GetText());
+            }
+
+            [WpfFact]
+            public void ReplaceNonAscii()
+            {
+                // Reported in issue #2702.
+                Create("abc", "");
+                Assert.False(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                _vimBuffer.Process("r");
+                Assert.True(_vimBuffer.CanProcess(KeyInputUtil.CharToKeyInput('©')));
+                _vimBuffer.Process("©");
+                Assert.Equal(new[] { "©bc", "" }, _textBuffer.GetLines());
             }
         }
 
@@ -8931,7 +9053,7 @@ namespace Vim.UnitTest
             public void Remap_EnterShouldNotMapDuringSearch()
             {
                 Create("cat dog");
-                _keyMap.MapWithNoRemap("<Enter>", "o<Esc>", KeyRemapMode.Normal);
+                _globalKeyMap.AddKeyMapping("<Enter>", "o<Esc>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process("/dog");
                 _vimBuffer.Process(VimKey.Enter);
                 Assert.Equal(4, _textView.GetCaretPoint().Position);
@@ -8945,7 +9067,7 @@ namespace Vim.UnitTest
             public void Remap_Nop()
             {
                 Create("cat");
-                _keyMap.MapWithNoRemap("$", "<nop>", KeyRemapMode.Normal);
+                _globalKeyMap.AddKeyMapping("$", "<nop>", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.Process('$');
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
             }
@@ -9536,6 +9658,7 @@ namespace Vim.UnitTest
             public void MouseDoesNotAffectLastCommand()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
+                _textView.SetVisibleLineCount(2);
                 _vimBuffer.ProcessNotation("yyp");
                 var point = _textView.GetPointInLine(0, 8);
                 var link = "";

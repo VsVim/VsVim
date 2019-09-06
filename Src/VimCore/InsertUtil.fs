@@ -184,7 +184,8 @@ type internal InsertUtil
         | None -> textEdit.Cancel()
 
     /// Apply the given TextChange to the specified BlockSpan
-    member x.ApplyBlockInsert (insertCommand: InsertCommand) atEndOfLine startLineNumber spaces height =
+    member x.ApplyBlockInsert (insertCommand: InsertCommand) padShortLines atEndOfLine startLineNumber spaces height =
+        let tabStop = _localSettings.TabStop
 
         // Don't edit past the end of the ITextBuffer.
         let height =
@@ -194,7 +195,7 @@ type internal InsertUtil
         // It is possible that a repeat of a block edit will begin part of the
         // way through a wide character (think a 4 space tab).  If any edits
         // have this behavior the first pass will break them up into the
-        // appropriate number of spaces
+        // appropriate number of spaces.
         let fixOverlapEdits () =
             use textEdit = _textBuffer.CreateEdit()
             let currentSnapshot = x.CurrentSnapshot
@@ -202,11 +203,17 @@ type internal InsertUtil
 
                 let lineNumber = startLineNumber + i
                 let line = SnapshotUtil.GetLine currentSnapshot lineNumber
-                let column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, spaces, _localSettings.TabStop)
+                let column = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, spaces, tabStop)
                 if column.SpacesBefore > 0 && column.Column.IsCharacter '\t' then
                     let text = StringUtil.RepeatChar column.TotalSpaces ' '
                     let span = column.Column.Span
                     textEdit.Replace(span.Span, text) |> ignore
+                elif padShortLines && column.Column.StartPoint = line.End then
+                    let endSpaces = SnapshotColumn(line.End).GetSpacesToColumn(tabStop)
+                    let padding = spaces - endSpaces
+                    if padding > 0 then
+                        let text = StringUtil.RepeatChar padding ' '
+                        textEdit.Insert(line.End.Position, text) |> ignore
 
             if textEdit.HasEffectiveChanges then
                 textEdit.Apply() |> ignore
@@ -223,14 +230,12 @@ type internal InsertUtil
 
                 // Only apply the edit to lines which were included in the
                 // original selection.
-                let tabStop = _localSettings.TabStop
                 let column =
                     if atEndOfLine then SnapshotColumn.GetLineEnd(currentLine) |> Some
                     else SnapshotColumn.GetColumnForSpaces(currentLine, spaces, tabStop)
                 match column with
                 | Some column ->
-                    SnapshotPoint(_textBuffer.CurrentSnapshot, column.StartPosition)
-                    |> TextViewUtil.MoveCaretToPoint _textView
+                    TextViewUtil.MoveCaretToPoint _textView column.StartPoint
                     x.RunInsertCommand insertCommand |> ignore
                 | None -> ()
 
@@ -244,10 +249,10 @@ type internal InsertUtil
 
     /// Block insert the specified text at the caret point over the specified
     /// number of lines
-    member x.BlockInsert text atEndOfLine height =
+    member x.BlockInsert text padShortLines atEndOfLine height =
         let column = x.CaretColumn
         let spaces = column.GetSpacesToColumn _localSettings.TabStop
-        x.ApplyBlockInsert text atEndOfLine column.LineNumber spaces height
+        x.ApplyBlockInsert text padShortLines atEndOfLine column.LineNumber spaces height
         CommandResult.Completed ModeSwitch.NoSwitch
 
     member x.Combined left right =
@@ -566,7 +571,7 @@ type internal InsertUtil
                 x.ApplyTextChange textChange addNewLines)
 
     /// Repeat the edits for the other lines in the block span.
-    member x.RepeatBlock (insertCommand: InsertCommand) (atEndOfLine: bool) (blockSpan: BlockSpan) =
+    member x.RepeatBlock (insertCommand: InsertCommand) (visualInsertKind: VisualInsertKind) (blockSpan: BlockSpan) =
 
         // Unfortunately the ITextEdit implementation doesn't properly reduce the changes that are
         // applied to it.  For example if you add 2 characters, delete them and then insert text
@@ -584,7 +589,15 @@ type internal InsertUtil
             | TextChange.Insert text -> 
                 x.EditWithUndoTransaction "Repeat Block Edit" (fun () ->
                     let startLineNumber = blockSpan.Start.LineNumber + 1
-                    x.ApplyBlockInsert insertCommand atEndOfLine startLineNumber blockSpan.BeforeSpaces (blockSpan.Height - 1)
+                    let padShortLines, atEndOfLine, spaces =
+                        match visualInsertKind with
+                        | VisualInsertKind.Start ->
+                            false, false, blockSpan.BeforeSpaces
+                        | VisualInsertKind.End ->
+                            true, false, blockSpan.BeforeSpaces + blockSpan.SpacesLength
+                        | VisualInsertKind.EndOfLine ->
+                            false, true, blockSpan.BeforeSpaces
+                    x.ApplyBlockInsert insertCommand padShortLines atEndOfLine startLineNumber spaces (blockSpan.Height - 1)
 
                     // insertion point which is the start of the BlockSpan.
                     _operations.MapPointNegativeToCurrentSnapshot blockSpan.Start.StartPoint
@@ -594,7 +607,45 @@ type internal InsertUtil
             | _ -> None
         | _ -> None
 
-    member x.RunInsertCommandCore command addNewLines = 
+    /// Whether we should run the specified command for all carets
+    member x.ShouldRunForEachCaret command =
+        match command with
+        | InsertCommand.Back -> true
+        | InsertCommand.Combined _ -> true
+        | InsertCommand.Delete -> true
+        | InsertCommand.DeleteLeft _ -> true
+        | InsertCommand.DeleteRight _ -> true
+        | InsertCommand.DeleteAllIndent -> true
+        | InsertCommand.DeleteWordBeforeCursor -> true
+        | InsertCommand.InsertLiteral _ -> true
+        | InsertCommand.InsertCharacterAboveCaret -> true
+        | InsertCommand.InsertCharacterBelowCaret -> true
+        | InsertCommand.InsertNewLine -> true
+        | InsertCommand.InsertPreviouslyInsertedText _ -> true
+        | InsertCommand.InsertTab -> true
+        | InsertCommand.MoveCaret _ -> true
+        | InsertCommand.MoveCaretWithArrow _ -> true
+        | InsertCommand.MoveCaretByWord _ -> true
+        | InsertCommand.MoveCaretToEndOfLine -> true
+        | InsertCommand.Replace _ -> true
+        | InsertCommand.ReplaceCharacterAboveCaret -> true
+        | InsertCommand.ReplaceCharacterBelowCaret -> true
+        | InsertCommand.Overwrite _ -> true
+        | InsertCommand.ShiftLineLeft -> true
+        | InsertCommand.ShiftLineRight -> true
+        | InsertCommand.UndoReplace -> true
+        | InsertCommand.DeleteLineBeforeCursor -> true
+        | InsertCommand.Paste -> true
+        | _ -> false
+
+    member x.RunInsertCommand command = 
+        if x.ShouldRunForEachCaret command then
+            fun () -> x.RunInsertCommandCore command
+            |> _operations.RunForAllSelections
+        else
+            x.RunInsertCommandCore command
+
+    member x.RunInsertCommandCore command = 
 
         // Allow the host to custom process this message here.
         if _vimHost.TryCustomProcess _textView command then
@@ -602,7 +653,7 @@ type internal InsertUtil
         else
             match command with
             | InsertCommand.Back -> x.Back()
-            | InsertCommand.BlockInsert (insertCommand, atEndOfLine, count) -> x.BlockInsert insertCommand atEndOfLine count
+            | InsertCommand.BlockInsert (insertCommand, padShortLines, atEndOfLine, count) -> x.BlockInsert insertCommand padShortLines atEndOfLine count
             | InsertCommand.Combined (left, right) -> x.Combined left right
             | InsertCommand.CompleteMode moveCaretLeft -> x.CompleteMode moveCaretLeft
             | InsertCommand.Delete -> x.Delete()
@@ -630,9 +681,6 @@ type internal InsertUtil
             | InsertCommand.UndoReplace -> x.UndoReplace ()
             | InsertCommand.DeleteLineBeforeCursor -> x.DeleteLineBeforeCursor()
             | InsertCommand.Paste -> x.Paste()
-
-    member x.RunInsertCommand command = 
-        x.RunInsertCommandCore command false
 
     /// Shift the caret line one 'shiftwidth' in a direction.  This is
     /// different than both normal and visual mode shifts because it will

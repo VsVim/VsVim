@@ -17,7 +17,7 @@ namespace Vim.UnitTest
         private VimBuffer _vimBufferRaw;
         private IVimBuffer _vimBuffer;
         private MockRepository _factory;
-        private IKeyMap _keyMap;
+        private IVimLocalKeyMap _localKeyMap;
 
         public VimBufferTest()
         {
@@ -25,7 +25,7 @@ namespace Vim.UnitTest
             _textView.MoveCaretTo(0);
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
-            _keyMap = _vimBuffer.Vim.KeyMap;
+            _localKeyMap = _vimBuffer.LocalKeyMap;
             _vimBufferRaw = (VimBuffer)_vimBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
         }
@@ -173,7 +173,7 @@ namespace Vim.UnitTest
             public void BufferedInput()
             {
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("lad", "rad", KeyRemapMode.Normal);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("lad", "rad", allowRemap: false, KeyRemapMode.Normal);
                 _textView.SetText("hello world");
 
                 var start = false;
@@ -417,8 +417,8 @@ namespace Vim.UnitTest
                       .Callback(() => { _vimBuffer.Close(); })
                       .Returns(ProcessResult.NewHandled(ModeSwitch.NoSwitch));
                 
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("Q", "A", KeyRemapMode.Normal);
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("QQ", "B", KeyRemapMode.Normal);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("Q", "A", allowRemap: false, KeyRemapMode.Normal);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("QQ", "B", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 
                 _vimBuffer.Process("Q");
@@ -911,7 +911,7 @@ namespace Vim.UnitTest
             {
                 var runCount = 0;
                 _textView.SetText("");
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("cat", "chase the cat", KeyRemapMode.Insert);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("cat", "chase the cat", allowRemap: false, KeyRemapMode.Insert);
                 _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
                 _vimBuffer.KeyInputProcessed += delegate { runCount++; };
                 _vimBuffer.Process("ca");
@@ -927,7 +927,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_OneToOne()
             {
-                _keyMap.MapWithNoRemap("a", "l", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("a", "l", allowRemap: false, KeyRemapMode.Normal);
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process('a');
@@ -941,7 +941,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_OneToMany()
             {
-                _keyMap.MapWithNoRemap("a", "dw", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("a", "dw", allowRemap: false, KeyRemapMode.Normal);
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process('a');
@@ -954,7 +954,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_WrongMode()
             {
-                _keyMap.MapWithNoRemap("l", "dw", KeyRemapMode.Insert);
+                _localKeyMap.AddKeyMapping("l", "dw", allowRemap: false, KeyRemapMode.Insert);
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process('l');
@@ -968,7 +968,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_OperatorPending()
             {
-                _keyMap.MapWithNoRemap("z", "w", KeyRemapMode.OperatorPending);
+                _localKeyMap.AddKeyMapping("z", "w", allowRemap: false, KeyRemapMode.OperatorPending);
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process("d");
@@ -983,8 +983,8 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_Recursive()
             {
-                _keyMap.MapWithRemap("a", "b", KeyRemapMode.Normal);
-                _keyMap.MapWithRemap("b", "a", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("a", "b", allowRemap: true, KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("b", "a", allowRemap: true, KeyRemapMode.Normal);
                 var didRun = false;
                 _vimBuffer.ErrorMessage +=
                     (notUsed, args) =>
@@ -1004,7 +1004,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void Remap_BufferedFailed()
             {
-                _keyMap.MapWithNoRemap("do", "cat", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("do", "cat", allowRemap: false, KeyRemapMode.Normal);
                 _textView.SetText("cat dog", 0);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process("d");
@@ -1033,7 +1033,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CanProcess_Mapped()
             {
-                _keyMap.MapWithRemap("a", "c", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("a", "c", allowRemap: true, KeyRemapMode.Normal);
                 var keyInput = KeyInputUtil.CharToKeyInput('c');
                 var normal = CreateAndAddNormalMode(MockBehavior.Loose);
                 normal.Setup(x => x.CanProcess(keyInput)).Returns(true).Verifiable();
@@ -1050,7 +1050,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CanProcess_BufferedInput()
             {
-                _keyMap.MapWithRemap("la", "iexample", KeyRemapMode.Normal);
+                _localKeyMap.AddKeyMapping("la", "iexample", allowRemap: true, KeyRemapMode.Normal);
                 _textView.SetText("dog cat");
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
 
@@ -1234,7 +1234,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void SimulateProcessed_DontMap()
             {
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("a", "b", KeyRemapMode.Normal);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("a", "b", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 var ranProcessed = false;
                 _vimBuffer.KeyInputProcessed +=
@@ -1255,7 +1255,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void SimulateProcessed_ClearBufferedInput()
             {
-                _vimBuffer.Vim.KeyMap.MapWithNoRemap("jj", "b", KeyRemapMode.Normal);
+                _vimBuffer.Vim.GlobalKeyMap.AddKeyMapping("jj", "b", allowRemap: false, KeyRemapMode.Normal);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 _vimBuffer.Process('j');
                 Assert.False(_vimBuffer.BufferedKeyInputs.IsEmpty);

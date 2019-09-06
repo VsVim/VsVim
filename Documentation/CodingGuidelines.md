@@ -11,7 +11,7 @@ The F# code is the following:
 - **DO** add a space between
     - Values and arithmic operators and comparisions
     - Names and Values in record initializer expressions
-    - Names and their types `(foo : bar)`
+    - Names and explicit types `(text: string)`
     - Keywords and open parens `with get (`, `if (`, `elif (`
     - Discriminated Union Names and open parens
 
@@ -23,7 +23,7 @@ The F# code is the following:
  the two code bases should use the same pattern to make it simpler to understand the code.
 
 - Last is inclusive
-- End is not inclusive
+- End is exclusive
 - Util classes should contain Create methods to create 
 - Editor APIs 
     - APIs taking a count should return an option or explicitly guard against count being too large.  Users

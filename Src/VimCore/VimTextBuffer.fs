@@ -10,10 +10,12 @@ open Microsoft.VisualStudio.Utilities
 type internal VimTextBuffer 
     (
         _textBuffer: ITextBuffer,
+        _localAbbreviationMap: IVimLocalAbbreviationMap,
+        _localKeyMap: IVimLocalKeyMap,
         _localSettings: IVimLocalSettings,
-        _wordNavigator: ITextStructureNavigator,
         _bufferTrackingService: IBufferTrackingService,
         _undoRedoOperations: IUndoRedoOperations,
+        _wordUtil: WordUtil,
         _vim: IVim
     ) =
 
@@ -22,6 +24,7 @@ type internal VimTextBuffer
     let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)
     let _switchedModeEvent = StandardEvent<SwitchModeKindEventArgs>()
     let _markSetEvent = StandardEvent<MarkTextBufferEventArgs>()
+    let _wordNavigator = _wordUtil.WordNavigator
 
     let mutable _modeKind = ModeKind.Normal
     let mutable _lastVisualSelection: ITrackingVisualSelection option = None
@@ -296,6 +299,7 @@ type internal VimTextBuffer
     interface IVimTextBuffer with
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
+        member x.GlobalAbbreviationMap = _localAbbreviationMap.GlobalAbbreviationMap
         member x.LastVisualSelection 
             with get() = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
@@ -324,11 +328,14 @@ type internal VimTextBuffer
             with get() = x.InSelectModeOneTimeCommand
             and set value = x.InSelectModeOneTimeCommand <- value
         member x.LocalMarks = x.LocalMarks
+        member x.LocalAbbreviationMap = _localAbbreviationMap
+        member x.LocalKeyMap = _localKeyMap
         member x.LocalSettings = _localSettings
         member x.ModeKind = _modeKind
         member x.Name = _vimHost.GetName _textBuffer
         member x.UndoRedoOperations = _undoRedoOperations
         member x.Vim = _vim
+        member x.WordUtil = _wordUtil
         member x.WordNavigator = _wordNavigator
         member x.UseVirtualSpace = x.UseVirtualSpace
         member x.CheckModeLine windowSettings = x.CheckModeLine windowSettings

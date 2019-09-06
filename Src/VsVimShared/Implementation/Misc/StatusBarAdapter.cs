@@ -54,7 +54,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
                 var vimBuffer = _vim.FocusedBuffer.SomeOrDefault(null);
                 var status = vimBuffer != null
-                    ? _commandMarginUtil.GetStatus(vimBuffer)
+                    ? _commandMarginUtil.GetStatus(vimBuffer).Text
                     : "";
 
                 if (status.Length == 0)

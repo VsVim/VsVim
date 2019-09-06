@@ -13,11 +13,16 @@ type HistoryState =
 [<NoComparison>]
 [<NoEquality>]
 type HistoryCommand =
+    | Home
+    | End
+    | Left
+    | Right
     | Previous
     | Next
     | Execute
     | Cancel
-    | Back
+    | Backspace
+    | Delete
     | Paste
     | PasteSpecial of WordKind: WordKind
     | Clear
@@ -26,8 +31,9 @@ type internal HistorySession<'TData, 'TResult>
     (
         _historyClient: IHistoryClient<'TData, 'TResult>,
         _initialClientData: 'TData,
-        _command: string,
-        _buffer: IVimBuffer option
+        _command: EditableCommand,
+        _localAbbreviationMap: IVimLocalAbbreviationMap,
+        _motionUtil: IMotionUtil
     ) =
 
     let _registerMap = _historyClient.RegisterMap
@@ -50,8 +56,7 @@ type internal HistorySession<'TData, 'TResult>
     member x.CreateBindDataStorage() = 
         MappedBindDataStorage.Complex (fun () -> { KeyRemapMode = _historyClient.RemapMode; MappedBindFunction = x.Process })
 
-    /// Process a single KeyInput value in the state machine. 
-    member x.Process (keyInputData: KeyInputData) =
+    member x.ProcessCore(keyInputData: KeyInputData, suppressAbbreviations: bool) =
         let keyInput = keyInputData.KeyInput
         let wasMapped = keyInputData.WasMapped
         match Map.tryFind keyInput HistoryUtil.KeyInputMap with
@@ -61,7 +66,7 @@ type internal HistorySession<'TData, 'TResult>
             // mapped.
             let result = _historyClient.Completed _clientData _command wasMapped
             if not wasMapped then
-                _historyClient.HistoryList.Add _command
+                _historyClient.HistoryList.Add _command.Text
             _inPasteWait <- false
             MappedBindResult.Complete result
         | Some HistoryCommand.Cancel ->
@@ -70,18 +75,38 @@ type internal HistorySession<'TData, 'TResult>
             // mapped.
             _historyClient.Cancelled _clientData
             if not wasMapped then
-                _historyClient.HistoryList.Add _command
+                _historyClient.HistoryList.Add _command.Text
             _inPasteWait <- false
             MappedBindResult.Cancelled
-        | Some HistoryCommand.Back ->
-            match _command.Length with
+        | Some HistoryCommand.Home ->
+            _command.Home()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.End ->
+            _command.End()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Left ->
+            _command.Left()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Right ->
+            _command.Right()
+            |> x.ResetCommand
+            x.CreateBindResult()
+        | Some HistoryCommand.Backspace ->
+            match _command.Text.Length with
             | 0 -> 
                 _historyClient.Cancelled _clientData
                 MappedBindResult.Cancelled
             | _ -> 
-                let command = _command.Substring(0, _command.Length - 1)
-                x.ResetCommand command
+                _command.Backspace()
+                |> x.ResetCommand
                 x.CreateBindResult()
+        | Some HistoryCommand.Delete ->
+            _command.Delete()
+            |> x.ResetCommand
+            x.CreateBindResult()
         | Some HistoryCommand.Previous ->
             x.ProcessPrevious()
         | Some HistoryCommand.Next ->
@@ -92,41 +117,46 @@ type internal HistorySession<'TData, 'TResult>
         | Some (HistoryCommand.PasteSpecial wordKind) ->
             x.ProcessPasteSpecial wordKind
         | Some HistoryCommand.Clear ->
-            x.ResetCommand ""
+            x.ResetCommand EditableCommand.Empty
             x.CreateBindResult()
         | None -> 
-            if _inPasteWait then
-                x.ProcessPaste keyInput
-            else
-                let command = _command + (keyInput.Char.ToString())
-                x.ResetCommand command
-                x.CreateBindResult()
+            x.ProcessNormal(keyInputData, suppressAbbreviations)
+            x.CreateBindResult()
 
-    member x.ProcessPaste keyInput = 
+    /// Process a single KeyInput value in the state machine. 
+    member x.Process (keyInputData: KeyInputData) = x.ProcessCore(keyInputData, suppressAbbreviations = false)
+
+    member x.ProcessPasteCore (keyInput: KeyInput) = 
         match RegisterName.OfChar keyInput.Char with
         | None -> ()
         | Some name -> 
             let register = _registerMap.GetRegister name
-            x.ResetCommand (_command + register.StringValue)
+            register.StringValue
+            |> _command.InsertText
+            |> x.ResetCommand
 
         _inPasteWait <- false
+
+    member x.ProcessPaste keyInput = 
+        x.ProcessPasteCore keyInput
         x.CreateBindResult()
 
     member x.ProcessPasteSpecial wordKind =
-        match _inPasteWait, _buffer with
-        | false, _
-        | _, None ->
-            x.ResetCommand ""
-            MappedBindResult<_>.Error
-        | true, Some buffer ->
+        if _inPasteWait then
             let motion = Motion.InnerWord wordKind
             let arg = MotionArgument(MotionContext.AfterOperator)
-            let currentWord = buffer.MotionUtil.GetMotion motion arg
+            let currentWord = _motionUtil.GetMotion motion arg
             match currentWord with
             | None -> x.ResetCommand _command
-            | Some cw -> x.ResetCommand (_command + cw.Span.GetText())
+            | Some cw ->
+                cw.Span.GetText()
+                |> _command.InsertText
+                |> x.ResetCommand
 
             x.CreateBindResult()
+        else
+            x.ResetCommand EditableCommand.Empty
+            MappedBindResult<_>.Error
 
     /// Run a history scroll at the specified index
     member x.DoHistoryScroll (historyList: string list) index =
@@ -135,7 +165,8 @@ type internal HistorySession<'TData, 'TResult>
             _historyClient.Beep()
         else
             // Update the search to be this specific item
-            _command <- List.item index historyList
+            let command = List.item index historyList
+            _command <- EditableCommand(command)
             _clientData <- _historyClient.ProcessCommand _clientData _command
             _historyState <- HistoryState.Index (historyList, index)
 
@@ -144,9 +175,9 @@ type internal HistorySession<'TData, 'TResult>
         match _historyState with 
         | HistoryState.Empty ->
             let list = 
-                if not (StringUtil.IsNullOrEmpty _command) then
+                if not (StringUtil.IsNullOrEmpty _command.Text) then
                     _historyClient.HistoryList
-                    |> Seq.filter (fun value -> StringUtil.StartsWith _command value)
+                    |> Seq.filter (fun value -> StringUtil.StartsWith _command.Text value)
                     |> List.ofSeq
                 else
                     _historyClient.HistoryList.Items
@@ -163,7 +194,7 @@ type internal HistorySession<'TData, 'TResult>
             _historyClient.Beep()
         | HistoryState.Index (list, index) -> 
             if index = 0 then
-                _command <- ""
+                _command <- EditableCommand.Empty
                 _clientData <- _historyClient.ProcessCommand _clientData _command
                 _historyState <- HistoryState.Empty
             else
@@ -171,12 +202,32 @@ type internal HistorySession<'TData, 'TResult>
 
         x.CreateBindResult()
 
+    member x.ProcessNormal(keyInputData: KeyInputData, suppressAbbreviations: bool) =
+        let keyInput = keyInputData.KeyInput
+        if _inPasteWait then
+            x.ProcessPasteCore keyInput
+        elif not suppressAbbreviations && _command.CaretPosition = _command.Text.Length then
+            match _localAbbreviationMap.Abbreviate(_command.Text, keyInput, AbbreviationMode.Command) with
+            | None -> ()
+            | Some result -> 
+                let text = _command.Text.Substring(0, _command.Text.Length - result.ReplacedSpan.Length)
+                x.ResetCommand (EditableCommand(text))
+                for keyInput in result.Replacement.KeyInputs do 
+                    let keyInputData = KeyInputData.Create keyInput false
+                    x.ProcessCore(keyInputData, suppressAbbreviations = true) |> ignore
+
+            x.ProcessCore(keyInputData, suppressAbbreviations = true) |> ignore
+        elif CharUtil.IsPrintable keyInput.Char && not keyInput.HasKeyModifiers then
+            keyInput.Char.ToString()
+            |> _command.InsertText
+            |> x.ResetCommand
+
     member x.Cancel() = 
         _historyClient.Cancelled _clientData
 
     interface IHistorySession<'TData, 'TResult> with 
         member x.HistoryClient = _historyClient
-        member x.Command = _command
+        member x.EditableCommand = _command
         member x.ClientData = _clientData
         member x.InPasteWait = _inPasteWait
         member x.CreateBindDataStorage() = x.CreateBindDataStorage()
@@ -189,6 +240,10 @@ and internal HistoryUtil ()  =
 
         let set1 = 
             seq { 
+                yield ("<Home>", HistoryCommand.Home)
+                yield ("<End>", HistoryCommand.End)
+                yield ("<Left>", HistoryCommand.Left)
+                yield ("<Right>", HistoryCommand.Right)
                 yield ("<C-p>", HistoryCommand.Previous)
                 yield ("<C-n>", HistoryCommand.Next)
                 yield ("<C-R>", HistoryCommand.Paste)
@@ -203,7 +258,8 @@ and internal HistoryUtil ()  =
                 yield ("<Enter>", HistoryCommand.Execute)
                 yield ("<Up>", HistoryCommand.Previous)
                 yield ("<Down>", HistoryCommand.Next)
-                yield ("<BS>", HistoryCommand.Back)
+                yield ("<BS>", HistoryCommand.Backspace)
+                yield ("<Del>", HistoryCommand.Delete)
                 yield ("<Esc>", HistoryCommand.Cancel)
             }
             |> Seq.map (fun (name, command) -> 
@@ -228,7 +284,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command buffer =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, buffer)
+    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command localAbbreviationMap motionUtil =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, localAbbreviationMap, motionUtil)
         historySession :> IHistorySession<'TData, 'TResult>
 

@@ -528,8 +528,9 @@ module CharUtil =
             yield UnicodeCategory.DecimalDigitNumber
             yield UnicodeCategory.LetterNumber
             yield UnicodeCategory.OtherNumber
-            // Not separators
-            //yield UnicodeCategory.SpaceSeparator
+            // Space separators
+            yield UnicodeCategory.SpaceSeparator
+            // Not other separators
             //yield UnicodeCategory.LineSeparator
             //yield UnicodeCategory.ParagraphSeparator
             // Not control, etc.
@@ -727,7 +728,7 @@ module internal OptionUtil =
         | None -> None
         | Some opt -> opt
 
-    /// Map an option ta a value which produces an option and then collapse the result
+    /// Map an option to a value which produces an option and then collapse the result
     let map2 mapFunc value =
         match value with
         | None -> None
@@ -1021,3 +1022,13 @@ module internal HashUtil =
         let hash = (hash * 31) + hash2
         let hash = (hash * 31) + hash3
         hash
+
+type internal OptionBuilder() =
+    member x.Bind (value, cont) = 
+        match value with 
+        | None -> None
+        | Some value -> cont value
+
+    member x.Return value = Some value
+    member x.ReturnFrom o = o
+    member x.Zero () = None

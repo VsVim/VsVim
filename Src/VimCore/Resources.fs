@@ -72,6 +72,7 @@ module internal Resources =
 
     let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
     let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"
+    let VisualMode_NoMoreMatches = "No more matches"
 
     let Vim_TextBufferAlreadyHasVimTextBuffer = "ITextBuffer is already associated with an IVimTextBuffer"
     let Vim_TextViewAlreadyHasVimBuffer = "ITextView is already associated with an IVimBuffer"
@@ -125,6 +126,7 @@ module internal Resources =
     let Interpreter_ModByZero = "Attempt to mod by zero. Not supported."
     let Interpreter_ErrorsSourcing path = sprintf "Errors sourcing \"%s\":" path
     let Interpreter_ErrorSettingEnvironmentVariable lhs rhs = sprintf "Error setting environment variable '%s' = %s" lhs rhs
+    let Interpreter_NoMoreItems = "No more items"
 
     let Regex_Unknown = "Unknown error building regex"
     let Regex_UnmatchedParen = "Unmatched ("

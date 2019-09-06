@@ -14,10 +14,19 @@ open StringBuilderExtensions
 open CollectionExtensions
 
 // TODO: We need to add verification for setting options which can contain
-// a finite list of values.  For example backspace, virtualedit, etc ...  Setting
-// them to an invalid value should produce an error
+// a finite list of values.  For example 
+//  - backspace, virtualedit:  Setting them to an invalid value should 
+//    produce an error
+//  - iskeyword: this can't contain a space 
 
 type SettingValueParseFunc = string -> SettingValue option
+
+module internal SettingsDefaults =
+    let Comments = ":*,://,:#,:;"
+    let IsIdentCharSet = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+    let IsKeywordCharSet = VimCharSet.TryParse("@,48-57,_,128-167,224-235") |> Option.get
+    let Paragraphs = "IPLPPPQPP TPHPLIPpLpItpplpipbp"
+    let Sections = "SHNHH HUnhsh"
 
 type internal SettingsMap
     (
@@ -138,6 +147,9 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
+    let mutable _vimRcLocalSettings: IVimLocalSettings option = None
+    let mutable _vimRcWindowSettings: IVimWindowSettings option = None
+
     /// Custom parsing for the old 'vi' style values of 'backspace'.  For normal values default
     /// to the standard parsing behavior
     static let ParseBackspaceValue str = 
@@ -158,12 +170,13 @@ type internal GlobalSettings() =
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
             (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
-            (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
             (IgnoreCaseName,"ic", SettingValue.Toggle false, SettingOptions.None)
             (ImeCommandName, "imc", SettingValue.Toggle false, SettingOptions.None)
             (ImeDisableName, "imd", SettingValue.Toggle false, SettingOptions.None)
             (ImeInsertName, "imi", SettingValue.Number 0, SettingOptions.None)
             (ImeSearchName, "ims", SettingValue.Number -1, SettingOptions.None)
+            (IncrementalSearchName, "is", SettingValue.Toggle false, SettingOptions.None)
+            (IsIdentName, "isi", SettingValue.String SettingsDefaults.IsIdentCharSet.Text, SettingOptions.None)
             (JoinSpacesName, "js", SettingValue.Toggle true, SettingOptions.None)
             (KeyModelName, "km", SettingValue.String "", SettingOptions.None)
             (LastStatusName, "ls", SettingValue.Number 0, SettingOptions.None)
@@ -172,23 +185,23 @@ type internal GlobalSettings() =
             (ModeLineName, "ml", SettingValue.Toggle true, SettingOptions.None)
             (ModeLinesName, "mls", SettingValue.Number 5, SettingOptions.None)
             (MouseModelName, "mousem", SettingValue.String "popup", SettingOptions.None)
+            (ParagraphsName, "para", SettingValue.String SettingsDefaults.Paragraphs, SettingOptions.None)
             (PathName,"pa", SettingValue.String ".,,", SettingOptions.FileName)
-            (ParagraphsName, "para", SettingValue.String "IPLPPPQPP TPHPLIPpLpItpplpipbp", SettingOptions.None)
-            (SectionsName, "sect", SettingValue.String "SHNHH HUnhsh", SettingOptions.None)
-            (SelectionName, "sel", SettingValue.String "inclusive", SettingOptions.None)
-            (SelectModeName, "slm", SettingValue.String "", SettingOptions.None)
             (ScrollOffsetName, "so", SettingValue.Number 0, SettingOptions.None)
-            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
+            (SectionsName, "sect", SettingValue.String SettingsDefaults.Sections, SettingOptions.None)
+            (SelectModeName, "slm", SettingValue.String "", SettingOptions.None)
+            (SelectionName, "sel", SettingValue.String "inclusive", SettingOptions.None)
             (ShellFlagName, "shcf", SettingValue.String "/c", SettingOptions.None)
+            (ShellName, "sh", "ComSpec" |> SystemUtil.GetEnvironmentVariable |> SettingValue.String, SettingOptions.FileName)
             (ShowCommandName, "sc", SettingValue.Toggle true, SettingOptions.None)
             (SmartCaseName, "scs", SettingValue.Toggle false, SettingOptions.None)
             (StartOfLineName, "sol", SettingValue.Toggle true, SettingOptions.None)
             (StatusLineName, "stl", SettingValue.String "", SettingOptions.None)
             (TildeOpName, "top", SettingValue.Toggle false, SettingOptions.None)
-            (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
             (TimeoutExName, TimeoutExName, SettingValue.Toggle false, SettingOptions.None)
-            (TimeoutLengthName, "tm", SettingValue.Number 1000, SettingOptions.None)
             (TimeoutLengthExName, "ttm", SettingValue.Number -1, SettingOptions.None)
+            (TimeoutLengthName, "tm", SettingValue.Number 1000, SettingOptions.None)
+            (TimeoutName, "to", SettingValue.Toggle true, SettingOptions.None)
             (VimRcName, VimRcName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
             (VimRcPathsName, VimRcPathsName, SettingValue.String(StringUtil.Empty), SettingOptions.FileName)
             (VirtualEditName, "ve", SettingValue.String(StringUtil.Empty), SettingOptions.None)
@@ -322,6 +335,13 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
+        member x.VimRcLocalSettings
+            with get() = _vimRcLocalSettings
+            and set value = _vimRcLocalSettings <- value
+        member x.VimRcWindowSettings
+            with get() = _vimRcWindowSettings
+            and set value = _vimRcWindowSettings <- value
+
         member x.AddCustomSetting name abbrevation customSettingSource = x.AddCustomSetting name abbrevation customSettingSource
         member x.AtomicInsert
             with get() = _map.GetBoolValue AtomicInsertName
@@ -378,6 +398,12 @@ type internal GlobalSettings() =
             | "exclusive" -> true
             | "inclusive" -> true
             | _ -> false
+        member x.IsIdent
+            with get() = _map.GetStringValue IsIdentName
+            and set value = _map.TrySetValue IsIdentName (SettingValue.String value) |> ignore
+        member x.IsIdentCharSet
+            with get() = match VimCharSet.TryParse (_map.GetStringValue IsIdentName) with Some s -> s | None -> SettingsDefaults.IsIdentCharSet
+            and set value = _map.TrySetValue IsIdentName (SettingValue.String value.Text) |> ignore
         member x.JoinSpaces 
             with get() = _map.GetBoolValue JoinSpacesName
             and set value = _map.TrySetValue JoinSpacesName (SettingValue.Toggle value) |> ignore
@@ -514,19 +540,20 @@ type internal LocalSettings
     static let LocalSettingInfoList =
         [|
             (AutoIndentName, "ai", SettingValue.Toggle false, SettingOptions.None)
-            (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
-            (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
-            (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
-            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
-            (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
-            (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
-            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
-            (ListName, "list", SettingValue.Toggle false, SettingOptions.None)
-            (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
+            (CommentsName, "com", SettingValue.String SettingsDefaults.Comments, SettingOptions.None)
             (EndOfLineName, "eol", SettingValue.Toggle true, SettingOptions.None)
+            (ExpandTabName, "et", SettingValue.Toggle false, SettingOptions.None)
             (FixEndOfLineName, "fixeol", SettingValue.Toggle false, SettingOptions.None)
+            (IsKeywordName, "isk", SettingValue.String SettingsDefaults.IsKeywordCharSet.Text, SettingOptions.None)
+            (ListName, "list", SettingValue.Toggle false, SettingOptions.None)
+            (NumberFormatsName, "nf", SettingValue.String "bin,octal,hex", SettingOptions.None)
+            (NumberName, "nu", SettingValue.Toggle false, SettingOptions.None)
+            (QuoteEscapeName, "qe", SettingValue.String @"\", SettingOptions.None)
+            (RelativeNumberName, "rnu", SettingValue.Toggle false, SettingOptions.None)
+            (ShiftWidthName, "sw", SettingValue.Number 8, SettingOptions.None)
+            (SoftTabStopName, "sts", SettingValue.Number 0, SettingOptions.None)
+            (TabStopName, "ts", SettingValue.Number 8, SettingOptions.None)
             (TextWidthName, "tw", SettingValue.Number 0, SettingOptions.None)
-            (CommentsName, "com", SettingValue.String ":*,://,:#,:;", SettingOptions.None)
         |]
 
     static let LocalSettingList = 
@@ -534,6 +561,11 @@ type internal LocalSettings
         |> Seq.map (fun (name, abbrev, defaultValue, options) -> { Name = name; Abbreviation = abbrev; LiveSettingValue = LiveSettingValue.Create defaultValue; IsGlobal = false; SettingOptions = options })
 
     let _map = SettingsMap(LocalSettingList)
+
+    member x.Defaults =
+        match _globalSettings.VimRcLocalSettings with
+        | Some localSettings -> localSettings
+        | None -> LocalSettings(_globalSettings) :> IVimLocalSettings
 
     member x.Map = _map
 
@@ -579,7 +611,8 @@ type internal LocalSettings
 
     interface IVimLocalSettings with 
         // IVimSettings
-        
+
+        member x.Defaults = x.Defaults
         member x.Settings = _map.Settings
         member x.TrySetValue settingName value = x.TrySetValue settingName value
         member x.TrySetValueFromString settingName strValue =  x.TrySetValueFromString settingName strValue
@@ -589,15 +622,36 @@ type internal LocalSettings
         member x.AutoIndent
             with get() = _map.GetBoolValue AutoIndentName
             and set value = _map.TrySetValue AutoIndentName (SettingValue.Toggle value) |> ignore
+        member x.Comments
+            with get() = _map.GetStringValue CommentsName
+            and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
+        member x.EndOfLine
+            with get() = _map.GetBoolValue EndOfLineName
+            and set value = _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
         member x.ExpandTab
             with get() = _map.GetBoolValue ExpandTabName
             and set value = _map.TrySetValue ExpandTabName (SettingValue.Toggle value) |> ignore
+        member x.FixEndOfLine
+            with get() = _map.GetBoolValue FixEndOfLineName
+            and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
+        member x.IsKeyword
+            with get() = _map.GetStringValue IsKeywordName
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value) |> ignore
+        member x.IsKeywordCharSet
+            with get() = match VimCharSet.TryParse (_map.GetStringValue IsKeywordName) with Some s -> s | None -> SettingsDefaults.IsKeywordCharSet
+            and set value = _map.TrySetValue IsKeywordName (SettingValue.String value.Text) |> ignore
+        member x.List
+            with get() = _map.GetBoolValue ListName
+            and set value = _map.TrySetValue ListName (SettingValue.Toggle value) |> ignore
         member x.Number
             with get() = _map.GetBoolValue NumberName
             and set value = _map.TrySetValue NumberName (SettingValue.Toggle value) |> ignore
         member x.NumberFormats
             with get() = _map.GetStringValue NumberFormatsName
             and set value = _map.TrySetValue NumberFormatsName (SettingValue.String value) |> ignore
+        member x.QuoteEscape
+            with get() = _map.GetStringValue QuoteEscapeName
+            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
         member x.RelativeNumber
             with get() = _map.GetBoolValue RelativeNumberName
             and set value = _map.TrySetValue RelativeNumberName (SettingValue.Toggle value) |> ignore
@@ -610,24 +664,9 @@ type internal LocalSettings
         member x.TabStop
             with get() = _map.GetNumberValue TabStopName
             and set value = _map.TrySetValue TabStopName (SettingValue.Number value) |> ignore
-        member x.List
-            with get() = _map.GetBoolValue ListName
-            and set value = _map.TrySetValue ListName (SettingValue.Toggle value) |> ignore
-        member x.QuoteEscape
-            with get() = _map.GetStringValue QuoteEscapeName
-            and set value = _map.TrySetValue QuoteEscapeName (SettingValue.String value) |> ignore
-        member x.EndOfLine
-            with get() = _map.GetBoolValue EndOfLineName
-            and set value = _map.TrySetValue EndOfLineName (SettingValue.Toggle value) |> ignore
-        member x.FixEndOfLine
-            with get() = _map.GetBoolValue FixEndOfLineName
-            and set value = _map.TrySetValue FixEndOfLineName (SettingValue.Toggle value) |> ignore
         member x.TextWidth
             with get() = _map.GetNumberValue TextWidthName
             and set value = _map.TrySetValue TextWidthName (SettingValue.Number value) |> ignore
-        member x.Comments
-            with get() = _map.GetStringValue CommentsName
-            and set value = _map.TrySetValue CommentsName (SettingValue.String value) |> ignore
 
         member x.IsNumberFormatSupported numberFormat = x.IsNumberFormatSupported numberFormat
 
@@ -662,6 +701,11 @@ type internal WindowSettings
     new (settings) = WindowSettings(settings, None)
     new (settings, textView: ITextView) = WindowSettings(settings, Some textView)
 
+    member x.Defaults =
+        match _globalSettings.VimRcWindowSettings with
+        | Some windowSettings -> windowSettings
+        | None -> WindowSettings(_globalSettings, _textView) :> IVimWindowSettings
+
     member x.Map = _map
 
     /// Calculate the scroll value as specified in the Vim documentation.  Should be half the number of 
@@ -680,6 +724,7 @@ type internal WindowSettings
         copy :> IVimWindowSettings
 
     interface IVimWindowSettings with 
+        member x.Defaults = x.Defaults
         member x.Settings = _map.Settings
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
@@ -721,8 +766,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.TabSizeOptionId.Name
                 GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.TabSizeOptionId
-                VimSettingName = LocalSettingNames.TabStopName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.TabStopName true
+                VimSettingNames = [LocalSettingNames.TabStopName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.TabStopName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.TabStopName true
                 IsLocal = true
             })
 
@@ -730,8 +776,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.IndentSizeOptionId.Name
                 GetEditorValue = SettingSyncData.GetNumberValueFunc DefaultOptions.IndentSizeOptionId
-                VimSettingName = LocalSettingNames.ShiftWidthName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ShiftWidthName true
+                VimSettingNames = [LocalSettingNames.ShiftWidthName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ShiftWidthName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ShiftWidthName true
                 IsLocal = true
             })
 
@@ -739,8 +786,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultOptions.ConvertTabsToSpacesOptionId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultOptions.ConvertTabsToSpacesOptionId
-                VimSettingName = LocalSettingNames.ExpandTabName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
+                VimSettingNames = [LocalSettingNames.ExpandTabName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ExpandTabName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ExpandTabName true
                 IsLocal = true
             })
 
@@ -748,17 +796,39 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultTextViewHostOptions.LineNumberMarginId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewHostOptions.LineNumberMarginId
-                VimSettingName = LocalSettingNames.NumberName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.NumberName true
-                IsLocal = true
-            })
-
-        _settingList.Add(
-            {
-                EditorOptionKey = LineNumbersMarginOptions.LineNumbersMarginOptionName 
-                GetEditorValue = SettingSyncData.GetBoolValueFunc LineNumbersMarginOptions.LineNumbersMarginOptionId
-                VimSettingName = LocalSettingNames.RelativeNumberName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.RelativeNumberName true
+                VimSettingNames = [LocalSettingNames.NumberName; LocalSettingNames.RelativeNumberName]
+                GetVimValue = (fun vimBuffer ->
+                    let localSettings = vimBuffer.LocalSettings
+                    (localSettings.Number || localSettings.RelativeNumber) |> box)
+                SetVimValue = (fun vimBuffer value ->
+                    let localSettings = vimBuffer.LocalSettings
+                    let enableNumber, enableRelativeNumber =
+                        match value with
+                        | SettingValue.Toggle true ->
+                            // The editor line number option is enabled. If
+                            // either or both of the user defaults for 'number'
+                            // and 'relativenumber' are set, then use those
+                            // defaults. Otherwise enable only 'number'.
+                            let localSettingDefaults = localSettings.Defaults
+                            let defaultNumber = localSettingDefaults.Number
+                            let defaultRelativeNumber = localSettingDefaults.RelativeNumber
+                            if defaultNumber || defaultRelativeNumber then
+                                defaultNumber, defaultRelativeNumber
+                            else
+                                true, false
+                        | _ ->
+                            false, false
+                    let setSettingValue name enableSetting =
+                        SettingValue.Toggle enableSetting
+                        |> localSettings.TrySetValue name
+                        |> ignore
+                    setSettingValue LocalSettingNames.NumberName enableNumber
+                    setSettingValue LocalSettingNames.RelativeNumberName enableRelativeNumber
+                    let editorOptions = vimBuffer.TextView.Options
+                    if editorOptions <> null then
+                        let optionId = LineNumbersMarginOptions.LineNumbersMarginOptionId
+                        let optionValue = enableNumber || enableRelativeNumber
+                        EditorOptionsUtil.SetOptionValue editorOptions optionId optionValue)
                 IsLocal = true
             })
 
@@ -769,8 +839,8 @@ type internal EditorToSettingSynchronizer
                     match EditorOptionsUtil.GetOptionValue editorOptions DefaultTextViewOptions.WordWrapStyleId with
                     | None -> None
                     | Some s -> Util.IsFlagSet s WordWrapStyles.WordWrap |> SettingValue.Toggle |> Option.Some)
-                VimSettingName = WindowSettingNames.WrapName
-                GetVimSettingValue = (fun vimBuffer ->
+                VimSettingNames = [WindowSettingNames.WrapName]
+                GetVimValue = (fun vimBuffer ->
                     let windowSettings = vimBuffer.WindowSettings
                     // Wrap is a difficult option because vim has wrap as on / off while the core editor has
                     // 3 different kinds of wrapping.  If we default to only one of them then we will constantly
@@ -782,6 +852,7 @@ type internal EditorToSettingSynchronizer
                         else
                             WordWrapStyles.None
                     box wordWrap)
+                SetVimValue = SettingSyncData.SetVimValueFunc WindowSettingNames.WrapName false
                 IsLocal = false
             })
 
@@ -789,8 +860,9 @@ type internal EditorToSettingSynchronizer
             {
                 EditorOptionKey = DefaultTextViewOptions.UseVisibleWhitespaceId.Name
                 GetEditorValue = SettingSyncData.GetBoolValueFunc DefaultTextViewOptions.UseVisibleWhitespaceId
-                VimSettingName = LocalSettingNames.ListName
-                GetVimSettingValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ListName true
+                VimSettingNames = [LocalSettingNames.ListName]
+                GetVimValue = SettingSyncData.GetSettingValueFunc LocalSettingNames.ListName true
+                SetVimValue = SettingSyncData.SetVimValueFunc LocalSettingNames.ListName true
                 IsLocal = true
             })
 
@@ -799,6 +871,9 @@ type internal EditorToSettingSynchronizer
         if not (properties.ContainsProperty _key) then
             properties.AddProperty(_key, _key)
             x.SetupSynchronization vimBuffer
+
+            // Vim doesn't consider folding an undo operation, and neither does VsVim (issue #2184).
+            vimBuffer.TextView.Options.SetOptionValue(DefaultTextViewOptions.OutliningUndoOptionId, false)
 
             match settingSyncSource with
             | SettingSyncSource.Editor -> x.CopyEditorToVimSettings vimBuffer
@@ -858,11 +933,11 @@ type internal EditorToSettingSynchronizer
 
     /// Is this a local setting of note
     member x.IsTrackedLocalSetting (setting: Setting) = 
-        _settingList |> Seq.exists (fun x -> x.IsLocal && x.VimSettingName = setting.Name)
+        _settingList |> Seq.exists (fun x -> x.IsLocal && List.contains setting.Name x.VimSettingNames)
 
     /// Is this a window setting of note
     member x.IsTrackedWindowSetting (setting: Setting) = 
-        _settingList |> Seq.exists (fun x -> not x.IsLocal && x.VimSettingName = setting.Name)
+        _settingList |> Seq.exists (fun x -> not x.IsLocal && List.contains setting.Name x.VimSettingNames)
 
     /// Is this an editor setting of note
     member x.IsTrackedEditorSetting optionId =
@@ -884,7 +959,7 @@ type internal EditorToSettingSynchronizer
     member x.CopyVimToEditorSettings vimBuffer =
         x.TrySync vimBuffer (fun vimBuffer editorOptions ->
             for data in _settingList do 
-                let value = data.GetVimSettingValue vimBuffer 
+                let value = data.GetVimValue vimBuffer
                 if value <> null then 
                     editorOptions.SetOptionValue(data.EditorOptionKey, value))
 
@@ -896,8 +971,7 @@ type internal EditorToSettingSynchronizer
                 match data.GetEditorValue editorOptions with
                 | None -> ()
                 | Some value -> 
-                    let settings = data.GetSettings vimBuffer
-                    settings.TrySetValue data.VimSettingName value |> ignore)
+                    data.SetVimValue vimBuffer value)
 
     interface IEditorToSettingsSynchronizer with
         member x.StartSynchronizing vimBuffer settingSyncSource = x.StartSynchronizing vimBuffer settingSyncSource

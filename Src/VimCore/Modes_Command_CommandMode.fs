@@ -23,19 +23,24 @@ type internal CommandMode
         MappedBindFunction = fun _ -> MappedBindResult.Error
     }
 
-    let mutable _command = StringUtil.Empty
+    let mutable _command = EditableCommand.Empty
     let mutable _historySession: IHistorySession<int, int> option = None
     let mutable _bindData = BindDataError
     let mutable _keepSelection = false
     let mutable _isPartialCommand = false
 
-    /// Currently queued up command string
-    member x.Command 
+    /// Currently queued up editable command
+    member x.EditableCommand 
         with get() = _command
         and set value = 
             if value <> _command then
                 _command <- value
                 _commandChangedEvent.Trigger x
+
+    /// Currently queued up command string
+    member x.Command 
+        with get() = x.EditableCommand.Text
+        and set value = x.EditableCommand <- EditableCommand(value)
 
     member x.InPasteWait = 
         match _historySession with
@@ -71,10 +76,10 @@ type internal CommandMode
         if not selection.IsEmpty && not _buffer.TextView.IsClosed && not _keepSelection then 
             if moveCaretToStart then
                 let point = selection.StreamSelectionSpan.SnapshotSpan.Start
-                selection.Clear()
+                TextViewUtil.ClearSelection _buffer.TextView
                 TextViewUtil.MoveCaretToPoint _buffer.TextView point
             else 
-                selection.Clear()
+                TextViewUtil.ClearSelection _buffer.TextView
 
     member x.Process (keyInputData: KeyInputData) =
         match _bindData.MappedBindFunction keyInputData with
@@ -104,19 +109,19 @@ type internal CommandMode
         // The ProcessCommand call back just means a new command state was reached.  Until it's
         // completed we just keep updating the current state 
         let processCommand command = 
-            x.Command <- command
+            x.EditableCommand <- command
             0
 
         /// Run the specified command
         let completed command wasMapped =
-            x.Command <- StringUtil.Empty
+            x.EditableCommand <- EditableCommand.Empty
             x.ParseAndRunInput command wasMapped
             x.MaybeClearSelection false
             0
 
         /// User cancelled input.  Reset the selection
         let cancelled () = 
-            x.Command <- StringUtil.Empty
+            x.EditableCommand <- EditableCommand.Empty
             x.MaybeClearSelection true
 
         // First key stroke.  Create a history client and get going
@@ -127,32 +132,33 @@ type internal CommandMode
                 member this.RemapMode = KeyRemapMode.Command
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand _ command = processCommand command
-                member this.Completed _ command wasMapped = completed command wasMapped
+                member this.Completed _ command wasMapped = completed command.Text wasMapped
                 member this.Cancelled _ = cancelled ()
             }
-        HistoryUtil.CreateHistorySession historyClient 0 _command (Some _buffer)
+        HistoryUtil.CreateHistorySession historyClient 0 _command _buffer.VimTextBuffer.LocalAbbreviationMap _buffer.MotionUtil
 
     member x.OnEnter (arg: ModeArgument) = 
         let historySession = x.CreateHistorySession()
 
-        _command <- ""
+        _command <- EditableCommand.Empty
         _historySession <- Some historySession
         _bindData <- historySession.CreateBindDataStorage().CreateMappedBindData()
         _keepSelection <- false
         _isPartialCommand <- false
 
-        arg.CompleteAnyTransaction
+        arg.CompleteAnyTransaction()
         let commandText = 
             match arg with
             | ModeArgument.PartialCommand command -> _isPartialCommand <- true; command
             | _ -> StringUtil.Empty
 
         if not (StringUtil.IsNullOrEmpty commandText) then
-            x.ChangeCommand commandText
+            EditableCommand(commandText)
+            |> x.ChangeCommand
 
     member x.OnLeave() = 
         x.MaybeClearSelection true
-        _command <- StringUtil.Empty
+        _command <- EditableCommand.Empty
         _historySession <- None
         _bindData <- BindDataError
         _keepSelection <- false
@@ -160,16 +166,19 @@ type internal CommandMode
 
     /// Called externally to update the command.  Do this by modifying the history 
     /// session.  If we aren't in command mode currently then this is a no-op 
-    member x.ChangeCommand command = 
+    member x.ChangeCommand (command: EditableCommand) = 
         match _historySession with
         | None -> ()
         | Some historySession -> historySession.ResetCommand command
 
     interface ICommandMode with
         member x.VimTextBuffer = _buffer.VimTextBuffer
-        member x.Command 
-            with get() = x.Command
+        member x.EditableCommand 
+            with get() = x.EditableCommand
             and set value = x.ChangeCommand value
+        member x.Command
+            with get() = x.Command
+            and set value = EditableCommand(value) |> x.ChangeCommand
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSetUtil.Single
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command

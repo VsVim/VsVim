@@ -31,6 +31,7 @@ type internal IncrementalSearchSession
     (
         _vimBufferData: IVimBufferData,
         _operations: ICommonOperations,
+        _motionUtil: IMotionUtil,
         _searchPath: SearchPath,
         _isWrap: bool
     ) =
@@ -89,7 +90,7 @@ type internal IncrementalSearchSession
     member x.ResetSearch pattern = 
         match _sessionState with
         | SessionState.NotStarted -> ()
-        | SessionState.Started historySession -> historySession.ResetCommand pattern
+        | SessionState.Started historySession -> EditableCommand(pattern) |> historySession.ResetCommand
         | SessionState.Completed -> ()
 
     /// Begin the incremental search along the specified path
@@ -100,7 +101,8 @@ type internal IncrementalSearchSession
         let start = TextViewUtil.GetCaretPoint _textView
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-        let historySession = HistoryUtil.CreateHistorySession x startPoint StringUtil.Empty vimBuffer
+        let command = EditableCommand.Empty
+        let historySession = HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap _motionUtil
         _sessionState <- SessionState.Started historySession
         historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
@@ -163,7 +165,7 @@ type internal IncrementalSearchSession
 
     member private x.RunSearchImplNotFound(searchData) = SearchResult.NotFound (_searchData, CanFindWithWrap=false)
 
-    member private x.RunSearchImplStart(searchPoint, searchText): (SnapshotPoint option * obj * SearchData * ISearchService * ITextStructureNavigator) =
+    member private x.RunSearchImplStart(searchPoint, searchText): (SnapshotPoint option * obj * SearchData * ISearchService * SnapshotWordNavigator) =
 
         // Don't update the view here. Let the next search do the view 
         // updating when it completes. Want to avoid chopiness here when
@@ -178,7 +180,8 @@ type internal IncrementalSearchSession
 
         // Get the data required to complete the search
         let point = TrackingPointUtil.GetPoint _textView.TextSnapshot searchPoint
-        (point, searchKey, _searchData, _vimBufferData.Vim.SearchService, _vimBufferData.VimTextBuffer.WordNavigator)
+        let navigator = _vimBufferData.WordUtil.SnapshotWordNavigator
+        (point, searchKey, _searchData, _vimBufferData.Vim.SearchService, navigator)
 
     member private x.RunSearchImplEnd(searchResult, updateView) =
         match _searchState with
@@ -262,9 +265,9 @@ type internal IncrementalSearchSession
         member x.RemapMode = x.RemapMode
         member x.Beep() = _operations.Beep()
         member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
-            x.RunSearchAsync searchPoint searchText
+            x.RunSearchAsync searchPoint searchText.Text
             searchPoint)
-        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText))
+        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText.Text))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with
@@ -287,7 +290,8 @@ type internal IncrementalSearchSession
 type internal IncrementalSearch
     (
         _vimBufferData: IVimBufferData,
-        _operations: ICommonOperations
+        _operations: ICommonOperations,
+        _motionUtil: IMotionUtil
     ) =
 
     // TODO: most of these aren't needed anymore.
@@ -329,7 +333,7 @@ type internal IncrementalSearch
 
         Debug.Assert(Option.isNone _session)
 
-        let session = IncrementalSearchSession(_vimBufferData, _operations, searchPath, _globalSettings.WrapScan)
+        let session = IncrementalSearchSession(_vimBufferData, _operations, _motionUtil, searchPath, _globalSettings.WrapScan)
 
         // When the session completes need to clear out the active info if this is still 
         // the active session.

@@ -281,25 +281,6 @@ type ViewFlags =
     /// Visible ||| TextExpanded ||| ScrollOffset ||| VirtualEdit
     | All = 0x0f
 
-/// When maintaining the caret column for motion moves this represents the desired 
-/// column to jump to if there is enough space on the line
-///
-[<RequireQualifiedAccess>]
-[<NoComparison>]
-[<NoEquality>]
-type MaintainCaretColumn = 
-
-    /// There is no saved caret column. 
-    | None
-
-    /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
-    /// this setting to a motion
-    | Spaces of Count: int
-
-    /// The caret was moved with the $ motion and the further moves should move to the end of 
-    /// the line 
-    | EndOfLine
-
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 type RegisterOperation = 
@@ -324,9 +305,14 @@ type ICommonOperations =
     /// Associated IEditorOptions
     abstract EditorOptions: IEditorOptions
 
-    /// The currently maintained caret column for up / down caret movements in the
-    /// buffer
-    abstract MaintainCaretColumn: MaintainCaretColumn with get, set
+    /// Whether multi-selection is supported
+    abstract IsMultiSelectionSupported: bool
+
+    /// The primary selected span
+    abstract PrimarySelectedSpan: SelectionSpan
+
+    /// The current selected spans
+    abstract SelectedSpans: SelectionSpan seq
 
     /// The snapshot point in the buffer under the mouse cursor
     abstract MousePoint: VirtualSnapshotPoint option
@@ -336,6 +322,15 @@ type ICommonOperations =
 
     /// Associated VimBufferData instance
     abstract VimBufferData: IVimBufferData
+
+    /// Add a new caret at the specified point
+    abstract AddCaretAtPoint: point: VirtualSnapshotPoint -> unit
+
+    /// Add a new caret at the mouse point
+    abstract AddCaretAtMousePoint: unit -> unit
+
+    /// Add a caret or selection on an adjacent line in the specified direction
+    abstract AddCaretOrSelectionOnAdjacentLine: direction: Direction -> unit
 
     /// Adjust the ITextView scrolling to account for the 'scrolloff' setting after a move operation
     /// completes
@@ -384,6 +379,9 @@ type ICommonOperations =
 
     /// Format the specified line range
     abstract FormatTextLines: SnapshotLineRange -> preserveCaretPosition: bool -> unit
+
+    /// Forward the specified action to the focused window
+    abstract ForwardToFocusedWindow: action: (ICommonOperations -> unit) -> unit
 
     /// Get the new line text which should be used for new lines at the given SnapshotPoint
     abstract GetNewLineText: SnapshotPoint -> string
@@ -506,6 +504,9 @@ type ICommonOperations =
     /// Normalize the set of spaces and tabs into spaces
     abstract NormalizeBlanksToSpaces: text: string -> spacesToColumn: int -> string
 
+    /// Display a status message and fit it to the size of the window
+    abstract OnStatusFitToWindow: message: string -> unit
+
     /// Open link under caret
     abstract OpenLinkUnderCaret: unit -> Result
 
@@ -527,8 +528,14 @@ type ICommonOperations =
     /// Restore spaces to caret, or move to start of line if 'startofline' is set
     abstract RestoreSpacesToCaret: spacesToCaret: int -> useStartOfLine: bool -> unit
 
+    /// Run the specified action for all selections
+    abstract RunForAllSelections: action: (unit -> CommandResult) -> CommandResult
+
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines: ScrollDirection -> count:int -> unit
+
+    /// Set the current selected spans
+    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
 
     /// Update the register with the specified value
     abstract SetRegisterValue: name: RegisterName option -> operation: RegisterOperation -> value: RegisterValue -> unit
@@ -560,8 +567,18 @@ type ICommonOperations =
     /// Map the specified point with positive tracking to the current snapshot
     abstract MapPointPositiveToCurrentSnapshot: point: SnapshotPoint -> SnapshotPoint
 
+    /// Map the specified virtual point to the current snapshot
+    abstract MapCaretPointToCurrentSnapshot: point: VirtualSnapshotPoint -> VirtualSnapshotPoint
+
+    /// Map the specified point with positive tracking to the current snapshot
+    abstract MapSelectedSpanToCurrentSnapshot: point: SelectionSpan -> SelectionSpan
+
     /// Undo the buffer changes "count" times
     abstract Undo: count: int -> unit
+
+    /// Raised when the selected spans are set
+    [<CLIEvent>]
+    abstract SelectedSpansSet: IDelegateEvent<System.EventHandler<System.EventArgs>>
 
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
@@ -590,8 +607,9 @@ type SettingSyncSource =
  type SettingSyncData = {
     EditorOptionKey: string 
     GetEditorValue: IEditorOptions -> SettingValue option
-    VimSettingName: string
-    GetVimSettingValue: IVimBuffer -> obj
+    VimSettingNames: string list
+    GetVimValue: IVimBuffer -> obj
+    SetVimValue: IVimBuffer -> SettingValue -> unit
     IsLocal: bool
 } with
 
@@ -632,6 +650,11 @@ type SettingSyncSource =
                 | SettingValue.Toggle value -> box value
                 | SettingValue.Number value -> box value)
 
+    static member SetVimValueFunc name isLocal =
+        fun (vimBuffer: IVimBuffer) value ->
+            let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal
+            settings.TrySetValue name value |> ignore
+
     static member Create (key: EditorOptionKey<'T>) (settingName: string) (isLocal: bool) (convertEditorValue: Func<'T, SettingValue>) (convertSettingValue: Func<SettingValue, obj>) =
         {
             EditorOptionKey = key.Name
@@ -639,12 +662,13 @@ type SettingSyncSource =
                 match EditorOptionsUtil.GetOptionValue editorOptions key with
                 | None -> None
                 | Some value -> convertEditorValue.Invoke value |> Some)
-            VimSettingName = settingName
-            GetVimSettingValue = (fun vimBuffer -> 
+            VimSettingNames = [settingName]
+            GetVimValue = (fun vimBuffer -> 
                 let settings = SettingSyncData.GetSettingsCore vimBuffer isLocal 
                 match settings.GetSetting settingName with
                 | None -> null
                 | Some setting -> convertSettingValue.Invoke setting.Value)
+            SetVimValue = SettingSyncData.SetVimValueFunc settingName isLocal
             IsLocal = isLocal
         }
 

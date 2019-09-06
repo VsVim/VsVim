@@ -10,12 +10,17 @@ namespace Vim.UI.Wpf.Implementation.Paste
     {
         internal const string PasteAdornmentLayerName = "VimPasteAdornmentLayer";
 
+        private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IEditorFormatMapService _formatMapService;
         private readonly IProtectedOperations _protectedOperations;
 
         [ImportingConstructor]
-        internal PasteFactoryService(IEditorFormatMapService formatMapService, IProtectedOperations protectedOperations)
+        internal PasteFactoryService(
+            IClassificationFormatMapService classificationFormatMapService,
+            IEditorFormatMapService formatMapService,
+            IProtectedOperations protectedOperations)
         {
+            _classificationFormatMapService = classificationFormatMapService;
             _formatMapService = formatMapService;
             _protectedOperations = protectedOperations;
         }
@@ -35,11 +40,14 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 return;
             }
 
+            var classificationFormaptMap = _classificationFormatMapService.GetClassificationFormatMap(wpfTextView);
+            var editorFormatMap = _formatMapService.GetEditorFormatMap(wpfTextView);
             var controller = new PasteController(
                 vimBuffer,
                 wpfTextView,
                 _protectedOperations,
-                _formatMapService.GetEditorFormatMap(wpfTextView));
+                classificationFormaptMap,
+                editorFormatMap);
         }
     }
 }

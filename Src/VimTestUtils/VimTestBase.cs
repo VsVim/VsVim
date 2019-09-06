@@ -151,11 +151,6 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.CommonOperationsFactory; }
         }
 
-        public IWordUtil WordUtil
-        {
-            get { return _vimEditorHost.WordUtil; }
-        }
-
         public IFoldManagerFactory FoldManagerFactory
         {
             get { return _vimEditorHost.FoldManagerFactory; }
@@ -166,9 +161,9 @@ namespace Vim.UnitTest
             get { return _vimEditorHost.BufferTrackingService; }
         }
 
-        public IKeyMap KeyMap
+        public IVimGlobalKeyMap GlobalKeyMap
         {
-            get { return _vimEditorHost.KeyMap; }
+            get { return _vimEditorHost.GlobalKeyMap; }
         }
 
         public IKeyUtil KeyUtil
@@ -286,9 +281,9 @@ namespace Vim.UnitTest
             Vim.VimData.AutoCommands = FSharpList<AutoCommand>.Empty;
             Vim.VimData.AutoCommandGroups = FSharpList<AutoCommandGroup>.Empty;
 
-            Vim.KeyMap.ClearAll();
             Vim.DigraphMap.Clear();
-            Vim.KeyMap.IsZeroMappingEnabled = true;
+            Vim.GlobalKeyMap.ClearKeyMappings();
+            Vim.GlobalAbbreviationMap.ClearAbbreviations();
 
             Vim.CloseAllVimBuffers();
             Vim.IsDisabled = false;
@@ -441,7 +436,8 @@ namespace Vim.UnitTest
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
             IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null)
+            ICaretRegisterMap caretRegisterMap = null,
+            ISelectionUtil selectionUtil = null)
         {
             return CreateVimBufferData(
                 Vim.GetOrCreateVimTextBuffer(textView.TextBuffer),
@@ -449,7 +445,8 @@ namespace Vim.UnitTest
                 statusUtil,
                 jumpList,
                 windowSettings,
-                wordUtil);
+                caretRegisterMap,
+                selectionUtil);
         }
 
         /// <summary>
@@ -462,19 +459,22 @@ namespace Vim.UnitTest
             IStatusUtil statusUtil = null,
             IJumpList jumpList = null,
             IVimWindowSettings windowSettings = null,
-            IWordUtil wordUtil = null)
+            ICaretRegisterMap caretRegisterMap = null,
+            ISelectionUtil selectionUtil = null)
         {
             jumpList = jumpList ?? new JumpList(textView, BufferTrackingService);
-            statusUtil = statusUtil ?? new StatusUtil();
+            statusUtil = statusUtil ?? CompositionContainer.GetExportedValue<IStatusUtilFactory>().GetStatusUtilForView(textView);
             windowSettings = windowSettings ?? new WindowSettings(vimTextBuffer.GlobalSettings);
-            wordUtil = wordUtil ?? WordUtil;
+            caretRegisterMap = caretRegisterMap ?? new CaretRegisterMap(Vim.RegisterMap);
+            selectionUtil = selectionUtil ?? new SingleSelectionUtil(textView);
             return new VimBufferData(
                 vimTextBuffer,
                 textView,
                 windowSettings,
                 jumpList,
                 statusUtil,
-                wordUtil);
+                selectionUtil,
+                caretRegisterMap);
         }
 
         /// <summary>
@@ -509,11 +509,6 @@ namespace Vim.UnitTest
             var textView = CreateTextView(lines);
             textView.TextBuffer.Properties[MockVimHost.FileNameKey] = fileName;
             return Vim.CreateVimBuffer(textView);
-        }
-
-        protected ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer, WordKind kind)
-        {
-            return WordUtil.CreateTextStructureNavigator(kind, textBuffer.ContentType);
         }
 
         protected WpfTextViewDisplay CreateTextViewDisplay(IWpfTextView textView, bool setFocus = true, bool show = true)

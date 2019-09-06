@@ -17,12 +17,15 @@ type VimBufferData
         _windowSettings: IVimWindowSettings,
         _jumpList: IJumpList,
         _statusUtil: IStatusUtil,
-        _wordUtil: IWordUtil
-    ) = 
+        _selectionUtil: ISelectionUtil,
+        _caretRegisterMap: ICaretRegisterMap
+    ) =
 
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
     let mutable _visualAnchorPoint: ITrackingPoint option = None 
+    let mutable _lastMultiSelection: (ModeKind * SelectionSpan array) option = None
+    let mutable _maintainCaretColumn = MaintainCaretColumn.None
 
     member x.CurrentFilePath : string option = _vimTextBuffer.Vim.VimHost.GetName _textView.TextBuffer |> Some
     member x.CurrentRelativeFilePath : string option =
@@ -49,9 +52,19 @@ type VimBufferData
         member x.VisualCaretStartPoint 
             with get() = _visualCaretStartPoint
             and set value = _visualCaretStartPoint <- value
+        member x.MaintainCaretColumn
+            with get() = _maintainCaretColumn
+            and set value = _maintainCaretColumn <- value
         member x.VisualAnchorPoint 
             with get() = _visualAnchorPoint
             and set value = _visualAnchorPoint <- value
+        member x.CaretIndex 
+            with get() = _caretRegisterMap.CaretIndex
+            and set value = _caretRegisterMap.CaretIndex <- value
+        member x.CaretRegisterMap = _caretRegisterMap :> IRegisterMap
+        member x.LastMultiSelection
+            with get() = _lastMultiSelection
+            and set value = _lastMultiSelection <- value
         member x.JumpList = _jumpList
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
@@ -59,7 +72,8 @@ type VimBufferData
         member x.UndoRedoOperations = _vimTextBuffer.UndoRedoOperations
         member x.VimTextBuffer = _vimTextBuffer
         member x.WindowSettings = _windowSettings
-        member x.WordUtil = _wordUtil
+        member x.WordUtil = _vimTextBuffer.WordUtil
+        member x.SelectionUtil = _selectionUtil
         member x.LocalSettings = _vimTextBuffer.LocalSettings
         member x.Vim = _vimTextBuffer.Vim
 
@@ -181,13 +195,13 @@ type internal VimBuffer
     let _textView = _vimBufferData.TextView
     let _jumpList = _vimBufferData.JumpList
     let _localSettings = _vimBufferData.LocalSettings
+    let _localKeyMap = _vimBufferData.VimTextBuffer.LocalKeyMap
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _statusUtil = _vimBufferData.StatusUtil
     let _properties = PropertyCollection()
     let _bag = DisposableBag()
     let _modeMap = ModeMap(_vimBufferData.VimTextBuffer, _incrementalSearch)
-    let _keyMap = _vim.KeyMap
     let mutable _lastMessage: string option = None
     let mutable _processingInputCount = 0
     let mutable _isClosed = false
@@ -407,10 +421,10 @@ type internal VimBuffer
     /// state the 0 key is not ever mapped
     member x.GetKeyMappingCore keyInputSet keyRemapMode = 
         try
-            _keyMap.IsZeroMappingEnabled <- not x.InCount
-            _keyMap.GetKeyMapping keyInputSet keyRemapMode
+            _localKeyMap.IsZeroMappingEnabled <- not x.InCount
+            _localKeyMap.Map(keyInputSet, keyRemapMode)
         finally
-            _keyMap.IsZeroMappingEnabled <- true
+            _localKeyMap.IsZeroMappingEnabled <- true
 
     /// Get the correct mapping of the given KeyInput value in the current state of the 
     /// IVimBuffer.  This will consider any buffered KeyInput values 
@@ -703,10 +717,7 @@ type internal VimBuffer
             //
             // Then type 'i' in insert mode and wait for the time out.  It will print 'short'
             let keyInputSet, wasMapped = 
-                let keyMapping = 
-                    _keyMap.GetKeyMappingsForMode x.KeyRemapMode
-                    |> Seq.tryFind (fun keyMapping -> keyMapping.Left = keyInputSet)
-                match keyMapping with
+                match _localKeyMap.GetKeyMapping(keyInputSet, x.KeyRemapMode, includeGlobal = true) with
                 | None -> keyInputSet, false
                 | Some keyMapping -> keyMapping.Right, true
 
@@ -808,6 +819,8 @@ type internal VimBuffer
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
         member x.GlobalSettings = _localSettings.GlobalSettings;
+        member x.LocalAbbreviationMap = _vimTextBuffer.LocalAbbreviationMap
+        member x.LocalKeyMap = _vimTextBuffer.LocalKeyMap
         member x.LocalSettings = _localSettings
         member x.WindowSettings = _windowSettings
         member x.RegisterMap = _vim.RegisterMap

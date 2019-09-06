@@ -67,7 +67,6 @@ namespace Vim.VisualStudio.UnitTest
             uint runningDocumentTableCookie = 86;
             vsRunningDocumentTable.Setup(x => x.AdviseRunningDocTableEvents(It.IsAny<IVsRunningDocTableEvents3>(), out runningDocumentTableCookie)).Returns(VSConstants.S_OK);
 
-
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
             sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_uiVSShell.Object);

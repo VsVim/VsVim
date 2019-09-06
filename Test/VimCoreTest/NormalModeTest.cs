@@ -56,7 +56,7 @@ namespace Vim.UnitTest
             var operations = CommonOperationsFactory.GetCommonOperations(vimBufferData);
             motionUtil = motionUtil ?? new MotionUtil(vimBufferData, operations);
             var lineChangeTracker = new LineChangeTracker(vimBufferData);
-            var incrementalSearch = new IncrementalSearch(vimBufferData, operations);
+            var incrementalSearch = new IncrementalSearch(vimBufferData, operations, motionUtil);
 
             var capture = new MotionCapture(vimBufferData, _incrementalSearch.Object);
             var runner = new CommandRunner(
@@ -156,16 +156,6 @@ namespace Vim.UnitTest
             Create(s_defaultLines);
             Assert.True(_mode.CanProcess(KeyInputUtil.EnterKey));
             Assert.True(_mode.CanProcess(KeyInputUtil.TabKey));
-        }
-
-        /// <summary>
-        /// WPF window level shortcuts shouldn't be processed (for the benefit of VimApp)
-        /// </summary>
-        [WpfFact]
-        public void CanProcess_DontHandleControlTab()
-        {
-            Create("");
-            Assert.False(_mode.CanProcess(KeyInputUtil.ApplyKeyModifiers(KeyInputUtil.TabKey, VimKeyModifiers.Control)));
         }
 
         /// <summary>

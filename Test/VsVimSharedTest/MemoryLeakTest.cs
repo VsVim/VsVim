@@ -23,6 +23,7 @@ using Xunit;
 using System.Threading;
 using EnvDTE;
 using Thread = System.Threading.Thread;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -234,6 +235,7 @@ namespace Vim.VisualStudio.UnitTest
             };
 
             editorHostFactory.Add(new TypeCatalog(types));
+            editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }
@@ -396,7 +398,6 @@ namespace Vim.VisualStudio.UnitTest
             vimBuffer.MarkMap.SetMark(Mark.OfChar('A').Value, vimBuffer.VimBufferData, 0, 0);
             var weakVimBuffer = new WeakReference(vimBuffer);
             var weakTextView = new WeakReference(vimBuffer.TextView);
-            var localSettings = vimBuffer.LocalSettings;
 
             // Clean up 
             vimBuffer.TextView.Close();
@@ -405,7 +406,6 @@ namespace Vim.VisualStudio.UnitTest
             RunGarbageCollector();
             Assert.Null(weakVimBuffer.Target);
             Assert.Null(weakTextView.Target);
-            Assert.NotNull(localSettings);
         }
 
         /// <summary>

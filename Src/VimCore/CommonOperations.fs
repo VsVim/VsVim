@@ -44,7 +44,8 @@ type internal CommonOperations
         _vimBufferData: IVimBufferData,
         _editorOperations: IEditorOperations,
         _outliningManager: IOutliningManager option,
-        _mouseDevice: IMouseDevice
+        _mouseDevice: IMouseDevice,
+        _bulkOperations: IBulkOperations
     ) as this =
 
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
@@ -55,15 +56,17 @@ type internal CommonOperations
     let _jumpList = _vimBufferData.JumpList
     let _wordUtil = _vimBufferData.WordUtil
     let _statusUtil = _vimBufferData.StatusUtil
+    let _selectionUtil = _vimBufferData.SelectionUtil
     let _vim = _vimBufferData.Vim
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
-    let _registerMap = _vim.RegisterMap
+    let _registerMap = _vimBufferData.CaretRegisterMap
     let _localSettings = _vimBufferData.LocalSettings
     let _undoRedoOperations = _vimBufferData.UndoRedoOperations
     let _globalSettings = _localSettings.GlobalSettings
     let _eventHandlers = new DisposableBag()
-    let mutable _maintainCaretColumn = MaintainCaretColumn.None
+
+    let _selectedSpansSetEvent = StandardEvent<EventArgs>()
 
     do
         _textView.Caret.PositionChanged
@@ -92,6 +95,8 @@ type internal CommonOperations
         | Some textViewLines, Some position ->
             let xCoordinate = position.X + _textView.ViewportLeft
             let yCoordinate = position.Y + _textView.ViewportTop
+            let yCoordinate = max yCoordinate _textView.ViewportTop
+            let yCoordinate = min yCoordinate _textView.ViewportBottom
             let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate(yCoordinate)
 
             // Use the last line when clicking below the end of the buffer.
@@ -131,7 +136,7 @@ type internal CommonOperations
             // Get the point in the line under the mouse cursor or the
             // start/end of the line.
             if textViewLine <> null then
-                match xCoordinate >= textViewLine.Left, xCoordinate <= textViewLine.Right with
+                match xCoordinate >= textViewLine.Left, xCoordinate < textViewLine.Right with
                 | true, true ->
                     textViewLine.GetBufferPositionFromXCoordinate(xCoordinate)
                     |> NullableUtil.ToOption
@@ -156,9 +161,47 @@ type internal CommonOperations
         | _ ->
             None
 
+    /// The currently maintained caret column for up / down caret movements in
+    /// the buffer
     member x.MaintainCaretColumn 
-        with get() = _maintainCaretColumn
-        and set value = _maintainCaretColumn <- value
+        with get() = _vimBufferData.MaintainCaretColumn
+        and set value = _vimBufferData.MaintainCaretColumn <- value
+
+    /// Whether multi-selection is supported
+    member x.IsMultiSelectionSupported =
+        _selectionUtil.IsMultiSelectionSupported
+
+    /// The primary selected span
+    member x.PrimarySelectedSpan =
+        x.SelectedSpans |> Seq.head
+
+    /// The current selected spans
+    member x.SelectedSpans =
+        _selectionUtil.GetSelectedSpans()
+
+    /// Set the current selected spans
+    member x.SetSelectedSpans spans =
+        let spans = Seq.toArray spans
+        if spans.Length > 1 then
+            let modeKind = _vimTextBuffer.ModeKind
+            _vimBufferData.LastMultiSelection <- Some (modeKind, spans)
+        _selectionUtil.SetSelectedSpans spans
+        _selectedSpansSetEvent.Trigger x EventArgs.Empty
+
+    /// Set a single selected span temporarily without raising the 'selected
+    /// spans set' event
+    member x.SetTemporarySelectedSpan span =
+        _selectionUtil.SetSelectedSpans [span]
+
+    /// Get the common operations for the specified text view
+    member x.TryGetCommonOperationsForTextView textView =
+        match _vim.TryGetOrCreateVimBufferForHost textView with
+        | true, vimBuffer ->
+            vimBuffer.VimBufferData
+            |> _commonOperationsFactory.GetCommonOperations
+            |> Some
+        | _ ->
+            None
 
     member x.CloseWindowUnlessDirty() = 
         if _vimHost.IsDirty _textView.TextBuffer then
@@ -180,6 +223,18 @@ type internal CommonOperations
     /// Perform the specified action when the text view is ready
     member x.DoActionWhenReady (action: unit -> unit) =
         _vimHost.DoActionWhenTextViewReady action _textView
+
+    /// Forward the specified action to the focused window
+    member x.ForwardToFocusedWindow (action: (ICommonOperations -> unit)) =
+        match _vimHost.GetFocusedTextView() with
+        | Some textView ->
+            match x.TryGetCommonOperationsForTextView textView with
+            | Some commonOperations ->
+                action commonOperations
+            | None ->
+                ()
+        | None ->
+            ()
 
     /// Create a possibly LineWise register value with the specified string value at the given 
     /// point.  This is factored out here because a LineWise value in vim should always
@@ -221,6 +276,10 @@ type internal CommonOperations
     member x.GetSpacesToPoint (point: SnapshotPoint) =
         SnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
 
+    /// Get the count of spaces to get to the specified point in it's line when tabs are expanded
+    member x.GetSpacesToVirtualPoint (point: VirtualSnapshotPoint) =
+        VirtualSnapshotPointUtil.GetSpacesToPoint point  _localSettings.TabStop
+
     // Get the point in the given line which is count "spaces" into the line.  Returns End if 
     // it goes beyond the last point in the string
     member x.GetColumnForSpacesOrEnd line spaces = 
@@ -238,6 +297,15 @@ type internal CommonOperations
     // it goes beyond the last point in the string
     member x.GetVirtualColumnForSpaces line spaces =
         VirtualSnapshotColumn.GetColumnForSpaces(line, spaces, _localSettings.TabStop)
+
+    // Get the appropriate column for spaces on the specified line depending on
+    // whether virtual space is in effect
+    member x.GetAppropriateColumnForSpaces line spaces =
+        if _vimTextBuffer.UseVirtualSpace then
+            x.GetVirtualColumnForSpaces line spaces
+        else
+            x.GetColumnForSpacesOrEnd line spaces
+            |> VirtualSnapshotColumn
 
     /// Get the new line text which should be used for inserts at the provided point.  This is done
     /// by looking at the current line and potentially the line above and simply re-using it's
@@ -991,12 +1059,8 @@ type internal CommonOperations
             // The CaretColumn union is expressed in a position offset not a space offset 
             // which can differ with tabs.  Recalculate as appropriate.  
             let caretColumn = 
-                if useVirtualSpace then
-                    let column = x.GetVirtualColumnForSpaces visualLastLine caretColumnSpaces
-                    column.VirtualColumnNumber
-                else
-                    let column = x.GetColumnForSpacesOrEnd visualLastLine caretColumnSpaces
-                    column.ColumnNumber
+                x.GetAppropriateColumnForSpaces visualLastLine caretColumnSpaces
+                |> (fun column -> column.VirtualColumnNumber)
                 |> CaretColumn.InLastLine
             let result = 
                 { result with CaretColumn = caretColumn }
@@ -1398,6 +1462,24 @@ type internal CommonOperations
 
                 let remainder = text.Substring(index)
                 gapText + x.NormalizeBlanks remainder 0
+
+    /// Display a status message and fit it to the window
+    member x.OnStatusFitToWindow (message: string) =
+
+        // Try to clip the message to fit into the command margin without
+        // wrapping. This doesn't need to be exact but ideally the command
+        // margin should display as much as possible without showing a
+        // horizontal scroll bar.
+        let spaceWidth =
+            match TextViewUtil.GetTextViewLineContainingCaret _textView with
+            | Some textViewLine ->
+                textViewLine.VirtualSpaceWidth
+            | None ->
+                _textView.LineHeight * 0.5
+        let columns = int(_textView.ViewportWidth / spaceWidth)
+        let columns = max 0 (columns - 5)
+        let message = message.Substring(0, min message.Length columns)
+        _statusUtil.OnStatus message
 
     /// Open link under caret
     member x.OpenLinkUnderCaret () =
@@ -1993,11 +2075,13 @@ type internal CommonOperations
         match _vimHost.LoadFileIntoNewWindow file lineNumber columnNumber with
         | Some textView ->
 
-            // Ensure that our view flags are enforced in the new window.
-            _vim.GetOrCreateVimBuffer textView
-            |> (fun vimBuffer -> vimBuffer.VimBufferData)
-            |> _commonOperationsFactory.GetCommonOperations
-            |> (fun otherCommonOperations -> otherCommonOperations.EnsureAtCaret ViewFlags.Standard)
+            // Try to ensure that our view flags are enforced in the new window.
+            match x.TryGetCommonOperationsForTextView textView with
+            | Some commonOperations ->
+                commonOperations.EnsureAtCaret ViewFlags.Standard
+            | None ->
+                ()
+
             Result.Succeeded
 
         | None ->
@@ -2127,15 +2211,16 @@ type internal CommonOperations
         x.RecordLastChangeOrYank oldSpan newSpan
 
     /// Record last yank start and end positions
-    member x.RecordLastYank span =
+    member x.RecordLastYank (span: SnapshotSpan) =
 
         // If ':set clipboard=unnamed' is in effect, copy the yanked span to
         // the clipboard using the editor to preserve formatting. Feature
         // requested in issue #1920.
         if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-            _textView.Selection.Select(span, false)
+            SelectionSpan.FromSpan(span.End, span, isReversed = false)
+            |> TextViewUtil.SelectSpan _textView
             _editorOperations.CopySelection() |> ignore
-            _textView.Selection.Clear()
+            TextViewUtil.ClearSelection _textView
 
         x.RecordLastChangeOrYank span span
 
@@ -2213,7 +2298,8 @@ type internal CommonOperations
     
     /// Ensure the view properties are met at the caret
     member x.EnsureAtCaret viewFlags = 
-        x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
+        if _vimBufferData.CaretIndex = 0 then
+            x.DoActionWhenReady (fun () -> x.EnsureAtPointSync x.CaretPoint viewFlags)
 
     /// Ensure that the given view properties are met at the given point
     member x.EnsureAtPoint point viewFlags = 
@@ -2311,9 +2397,9 @@ type internal CommonOperations
     /// Toggle the use of typing language characters for insert or search
     /// (see vim ':help i_CTRL-^' and ':help c_CTRL-^')
     member x.ToggleLanguage isForInsert =
-        let keyMap = _vimBufferData.Vim.KeyMap
-        let languageMappings = keyMap.GetKeyMappingsForMode KeyRemapMode.Language
-        let languageMappingsAreDefined = not languageMappings.IsEmpty
+        let keyMap = _vimBufferData.VimTextBuffer.LocalKeyMap
+        let languageMappings = keyMap.GetKeyMappings(KeyRemapMode.Language, includeGlobal = true)
+        let languageMappingsAreDefined = not (Seq.isEmpty languageMappings)
         if isForInsert || _globalSettings.ImeSearch = -1 then
             if languageMappingsAreDefined then
                 match _globalSettings.ImeInsert with
@@ -2344,22 +2430,419 @@ type internal CommonOperations
     /// Map the specified point with the specified tracking to the current snapshot
     member x.MapPointToCurrentSnapshot (point: SnapshotPoint) (pointTrackingMode: PointTrackingMode) =
         let snapshot = _textBuffer.CurrentSnapshot
-        if point.Snapshot = snapshot then
-            point
+        TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
+        |> Option.defaultValue (SnapshotPoint(snapshot, min point.Position snapshot.Length))
+
+    /// Map the specified caret point to the current snapshot
+    member x.MapCaretPointToCurrentSnapshot (point: VirtualSnapshotPoint) =
+        if _vimTextBuffer.UseVirtualSpace then
+            let snapshot = _textBuffer.CurrentSnapshot
+            let pointTrackingMode = PointTrackingMode.Negative
+            match TrackingPointUtil.GetVirtualPointInSnapshot point pointTrackingMode snapshot with
+            | Some point -> point
+            | None ->
+                let defaultPoint =
+                    SnapshotPoint(snapshot, min point.Position.Position snapshot.Length)
+                VirtualSnapshotPoint(defaultPoint, point.VirtualSpaces)
         else
-            TrackingPointUtil.GetPointInSnapshot point pointTrackingMode snapshot
-            |> OptionUtil.getOrDefault (SnapshotPoint(snapshot, min point.Position snapshot.Length))
+            point.Position
+            |> x.MapPointNegativeToCurrentSnapshot
+            |> VirtualSnapshotPointUtil.OfPoint
+
+    /// Map the specified selected span to the current snapshot
+    member x.MapSelectedSpanToCurrentSnapshot (span: SelectionSpan) =
+        let caretPoint = x.MapCaretPointToCurrentSnapshot span.CaretPoint
+        let anchorPoint = x.MapCaretPointToCurrentSnapshot span.AnchorPoint
+        let activcePoint = x.MapCaretPointToCurrentSnapshot span.ActivePoint
+        SelectionSpan(caretPoint, anchorPoint, activcePoint)
+
+    /// Add a new caret at the specified point
+    member x.AddCaretAtPoint (point: VirtualSnapshotPoint) =
+        let contains = VirtualSnapshotSpanUtil.ContainsOrEndsWith
+        let isContainedByExistingSpan =
+            x.SelectedSpans
+            |> Seq.exists (fun span -> contains span.Span point)
+        let remainingSpans =
+            x.SelectedSpans
+            |> Seq.filter (fun span -> not (contains span.Span point))
+            |> Seq.toArray
+        if
+            remainingSpans.Length > 0
+            || not isContainedByExistingSpan
+        then
+            seq {
+                yield! remainingSpans
+                if not isContainedByExistingSpan then
+                    yield SelectionSpan(point)
+            }
+            |> x.SetSelectedSpans
+
+    /// Add the specified selected span
+    member x.AddSelectedSpan selectedSpan =
+        seq {
+            yield! x.SelectedSpans
+            yield selectedSpan
+        }
+        |> x.SetSelectedSpans
+
+    /// Add a new caret at the mouse point
+    member x.AddCaretAtMousePoint () =
+        match x.MousePoint with
+        | Some mousePoint ->
+            x.AddCaretAtPoint mousePoint
+        | None ->
+            ()
+
+    /// Add a caret or selection on an adjacent line in the specified direction
+    member x.AddCaretOrSelectionOnAdjacentLine direction =
+
+        // Get the selected spans sorted by caret point.
+        let selectedSpans =
+            x.SelectedSpans
+            |> Seq.sortBy (fun span -> span.CaretPoint.Position.Position)
+            |> Seq.toList
+
+        // Add a selection on the specified line number in the same column as
+        // the primary caret.
+        let addSelectionOnLineNumber lineNumber =
+            let primarySelectedSpan = x.PrimarySelectedSpan
+            let snapshot = primarySelectedSpan.CaretPoint.Position.Snapshot
+            let line = SnapshotUtil.GetLine snapshot lineNumber
+
+            let getRelativePoint point =
+                let spaces = x.GetSpacesToVirtualPoint point
+                let column = x.GetAppropriateColumnForSpaces line spaces
+                column.VirtualStartPoint
+
+            let caretPoint = getRelativePoint primarySelectedSpan.CaretPoint
+            let anchorPoint = getRelativePoint primarySelectedSpan.AnchorPoint
+            let activePoint = getRelativePoint primarySelectedSpan.ActivePoint
+            SelectionSpan(caretPoint, anchorPoint, activePoint)
+            |> x.AddSelectedSpan
+
+        // Choose an appropriate line to add the caret on.
+        match direction with
+        | Direction.Up ->
+            let firstLine =
+                selectedSpans.[0].CaretPoint
+                |> VirtualSnapshotPointUtil.GetContainingLine
+            if firstLine.LineNumber > 0 then
+                addSelectionOnLineNumber (firstLine.LineNumber - 1)
+        | Direction.Down ->
+            let lastLine =
+                selectedSpans.[selectedSpans.Length - 1].CaretPoint
+                |> VirtualSnapshotPointUtil.GetContainingLine
+            let lastLineNumber = SnapshotUtil.GetLastNormalizedLineNumber lastLine.Snapshot
+            if lastLine.LineNumber < lastLineNumber then
+                addSelectionOnLineNumber (lastLine.LineNumber + 1)
+        | _ ->
+            ()
+
+    /// Run the specified action for all selections
+    member x.RunForAllSelections action =
+
+        // Unless there are multiple selections just do the action once and
+        // return its result normally.
+        if x.IsMultiSelectionSupported then
+            let selectedSpans = x.SelectedSpans |> Seq.toList
+            if selectedSpans.Length > 1 then
+                x.RunForAllSelectionsCore action selectedSpans
+            else
+                action()
+        else
+            action()
+
+    /// Run the specified action for the specified selected spans
+    member x.RunForAllSelectionsCore action selectedSpans =
+
+        // Get the current kind of visual mode, if any.
+        let visualModeKind =
+            _vimTextBuffer.ModeKind
+            |> VisualKind.OfModeKind
+
+        // Get any mode argument from the specified command result.
+        let getModeArgument result =
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchModeWithArgument (_, modeArgument) ->
+                    Some modeArgument
+                | _ ->
+                    None
+            | _ ->
+                None
+
+        // Get any linked transaction from the specified command result.
+        let getLinkedTransaction result =
+            match getModeArgument result with
+            | Some modeArgument ->
+                modeArgument.LinkedUndoTransaction
+            | _ ->
+                None
+
+        // Get any visual selection from the specified command result.
+        let getVisualSelection result =
+            match getModeArgument result with
+            | Some (ModeArgument.InitialVisualSelection (visualSelection, _)) ->
+                _globalSettings.SelectionKind
+                |> visualSelection.GetPrimarySelectedSpan
+                |> Some
+            | _ ->
+                None
+
+        // Get any switch to mode kind
+        let getSwitchToModeKind result =
+            match result with
+            | CommandResult.Completed modeSwitch ->
+                match modeSwitch with
+                | ModeSwitch.SwitchMode modeKind ->
+                    Some modeKind
+                | ModeSwitch.SwitchModeWithArgument (modeKind, _) ->
+                    Some modeKind
+                | _ ->
+                    None
+            | _ ->
+                None
+
+        // Get any switch to visual mode from the specifed command result.
+        let getSwitchToVisualKind result =
+            match getSwitchToModeKind result with
+            | Some modeKind ->
+                match modeKind with
+                | ModeKind.VisualCharacter -> Some VisualKind.Character
+                | ModeKind.VisualLine -> Some VisualKind.Line
+                | ModeKind.VisualBlock -> Some VisualKind.Block
+                | _ -> None
+            | _ ->
+                None
+
+        // Create a linked undo transaction.
+        let createTransaction () =
+            let name = "MultiSelection"
+            let flags = LinkedUndoTransactionFlags.CanBeEmpty
+            _undoRedoOperations.CreateLinkedUndoTransactionWithFlags name flags
+
+        // Run the action and complete any embedded linked transaction.
+        let runActionAndCompleteTransaction action =
+            let result = action()
+            match getLinkedTransaction result with
+            | Some linkedTransaction ->
+                linkedTransaction.Complete()
+            | None ->
+                ()
+            result
+
+        // Get the effective selected span.
+        let getVisualSelectedSpan visualKind (oldSelectedSpan: SelectionSpan) =
+            let oldSelectedSpan = x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
+            let snapshot = _textView.TextSnapshot
+            let oldAnchorPoint = oldSelectedSpan.AnchorPoint
+            let anchorPoint =
+                match _vimBufferData.VisualAnchorPoint with
+                | Some trackingPoint ->
+                    match TrackingPointUtil.GetPoint snapshot trackingPoint with
+                    | Some point ->
+                        VirtualSnapshotPointUtil.OfPoint point
+                    | None ->
+                        oldAnchorPoint
+                | None ->
+                    oldAnchorPoint
+            let anchorPointChanged = oldAnchorPoint <> anchorPoint
+            let caretPoint = x.CaretVirtualPoint
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let selectionKind = _globalSettings.SelectionKind
+            let tabStop = _localSettings.TabStop
+            let visualSelection =
+                VisualSelection.CreateForVirtualPoints
+                    visualKind anchorPoint caretPoint tabStop useVirtualSpace
+            let adjustSelection =
+                match selectionKind with
+                | SelectionKind.Exclusive ->
+                    true
+                | SelectionKind.Inclusive ->
+                    oldSelectedSpan.IsReversed
+                    && oldSelectedSpan.Length <> 1
+                    && not anchorPointChanged
+            let visualSelection =
+                if adjustSelection then
+                    visualSelection.AdjustForSelectionKind SelectionKind.Exclusive
+                else
+                    visualSelection
+            let span =
+                visualSelection.GetPrimarySelectedSpan selectionKind
+            if
+                selectionKind = SelectionKind.Inclusive
+                && span.Length = 1 &&
+                span.CaretPoint = span.Start
+            then
+                SelectionSpan(span.CaretPoint, span.Start, span.End)
+            else
+                span
+
+        // Get the initial selected span for specified kind of visual mode.
+        let getInitialSelection visualKind =
+            let caretPoint = TextViewUtil.GetCaretVirtualPoint _textView
+            let tabStop = _localSettings.TabStop
+            let selectionKind = _globalSettings.SelectionKind
+            let useVirtualSpace = _vimBufferData.VimTextBuffer.UseVirtualSpace
+            let visualSelection =
+                VisualSelection.CreateInitial visualKind caretPoint tabStop selectionKind useVirtualSpace
+            visualSelection.GetPrimarySelectedSpan selectionKind
+
+        // Collect the command result and new selected span or any embedded
+        // visual span, if present.
+        let getResultingSpan oldSelectedSpan result =
+            match getSwitchToModeKind result with
+            | Some modeKind when VisualKind.OfModeKind modeKind |> Option.isNone ->
+                SelectionSpan(x.CaretVirtualPoint)
+            | _ ->
+                match getSwitchToVisualKind result with
+                | Some visualKind ->
+                    getInitialSelection visualKind
+                | None ->
+                    match visualModeKind with
+                    | Some modeKind ->
+                        getVisualSelectedSpan modeKind oldSelectedSpan
+                    | None ->
+                        match getVisualSelection result with
+                        | Some selectedSpan ->
+                            selectedSpan
+                        | None ->
+                            x.PrimarySelectedSpan
+
+        // Set a temporary visual anchor point.
+        let setVisualAnchorPoint (anchorPoint: VirtualSnapshotPoint) =
+            if Option.isSome visualModeKind then
+                let snapshot = anchorPoint.Position.Snapshot
+                let position = anchorPoint.Position.Position
+                let trackingPoint =
+                    snapshot.CreateTrackingPoint(position, PointTrackingMode.Negative)
+                    |> Some
+                _vimBufferData.VisualAnchorPoint <- trackingPoint
+
+        // Get the results for all actions.
+        let getResults () =
+            seq {
+                let indexedSpans =
+                    selectedSpans
+                    |> Seq.mapi (fun index span -> index, span)
+
+                // Iterate over all selections.
+                for index, oldSelectedSpan in indexedSpans do
+
+                    // Set the buffer local caret index.
+                    _vimBufferData.CaretIndex <- index
+
+                    // Temporarily set the visual anchor point, the real caret
+                    // and the real selection.
+                    let selectedSpan =
+                        x.MapSelectedSpanToCurrentSnapshot oldSelectedSpan
+                    setVisualAnchorPoint selectedSpan.AnchorPoint
+                    x.SetTemporarySelectedSpan selectedSpan
+
+                    // Run the action once and get the result.
+                    let result = runActionAndCompleteTransaction action
+
+                    // Get the resulting span.
+                    let newSelectedSpan =
+                        getResultingSpan oldSelectedSpan result
+
+                    let newAnchorPoint =
+                        _vimBufferData.VisualAnchorPoint
+
+                    yield result, newSelectedSpan, newAnchorPoint
+            }
+            |> Seq.toList
+
+        // Do the action for all selections
+        let doActions () =
+
+            // Create a linked transaction for the overall operation, but
+            // protect against leaving it open if it isn't used.
+            let transaction = createTransaction()
+            let mutable usedTransaction = false
+
+            try
+
+                // Run the action for each selected span.
+                let results = getResults()
+
+                // Extract the resulting selected spans and set them.
+                results
+                |> Seq.map (fun (_, selectedSpan, _) -> selectedSpan)
+                |> Seq.map x.MapSelectedSpanToCurrentSnapshot
+                |> x.SetSelectedSpans
+
+                // Extract the first command result and anchor point.
+                let firstResult, _, firstAnchorPoint =
+                    results
+                    |> Seq.head
+
+                // Update the real visual anchor point.
+                _vimBufferData.VisualAnchorPoint <- firstAnchorPoint
+
+                // Translate any mode argument with a transaction.
+                let newModeArgument =
+                    match getModeArgument firstResult with
+                    | Some (ModeArgument.InsertWithCountAndNewLine (count, _)) ->
+                        Some (ModeArgument.InsertWithCountAndNewLine (count, transaction))
+                    | Some (ModeArgument.InsertWithTransaction _) ->
+                        Some (ModeArgument.InsertWithTransaction transaction)
+                    | _ ->
+                        None
+
+                // Handle command result.
+                match newModeArgument with
+                | Some modeArgument ->
+
+                    // The individual command ended in a linked transaction. Enter
+                    // insert mode with the overall linked transaction instead.
+                    usedTransaction <- true
+                    (ModeKind.Insert, modeArgument)
+                    |> ModeSwitch.SwitchModeWithArgument
+                    |> CommandResult.Completed
+
+                | None ->
+
+                    // Otherwise just return the first result.
+                    firstResult
+
+            finally
+
+                // Maybe complete the transaction.
+                if not usedTransaction then
+                    transaction.Complete()
+
+        // Do the actions for each selection being sure to restore the old
+        // caret index at the end.
+        let wrapDoActions () =
+            let oldCaretIndex = _vimBufferData.CaretIndex
+
+            try
+                use bulkOperation = _bulkOperations.BeginBulkOperation()
+                doActions()
+            finally
+                _vimBufferData.CaretIndex <- oldCaretIndex
+
+                // Ensure view properties at the primary caret.
+                x.EnsureAtCaret ViewFlags.Standard
+
+        // Body starts here.
+        wrapDoActions()
 
     interface ICommonOperations with
         member x.VimBufferData = _vimBufferData
         member x.TextView = _textView 
-        member x.MaintainCaretColumn 
-            with get() = x.MaintainCaretColumn
-            and set value = x.MaintainCaretColumn <- value
+        member x.IsMultiSelectionSupported = x.IsMultiSelectionSupported
+        member x.PrimarySelectedSpan = x.PrimarySelectedSpan
+        member x.SelectedSpans = x.SelectedSpans
         member x.EditorOperations = _editorOperations
         member x.EditorOptions = _editorOptions
         member x.MousePoint = x.MousePoint
 
+        member x.AddCaretAtPoint point = x.AddCaretAtPoint point
+        member x.AddCaretAtMousePoint() = x.AddCaretAtMousePoint()
+        member x.AddCaretOrSelectionOnAdjacentLine direction = x.AddCaretOrSelectionOnAdjacentLine direction
         member x.AdjustTextViewForScrollOffset() = x.AdjustTextViewForScrollOffset()
         member x.AdjustCaretForScrollOffset() = x.AdjustCaretForScrollOffset()
         member x.AdjustCaretForVirtualEdit() = x.AdjustCaretForVirtualEdit()
@@ -2375,6 +2858,7 @@ type internal CommonOperations
         member x.FilterLines range command = x.FilterLines range command
         member x.FormatCodeLines range = x.FormatCodeLines range
         member x.FormatTextLines range preserveCaretPosition = x.FormatTextLines range preserveCaretPosition
+        member x.ForwardToFocusedWindow action = x.ForwardToFocusedWindow action
         member x.GetRegister registerName = x.GetRegister registerName
         member x.GetNewLineText point = x.GetNewLineText point
         member x.GetNewLineIndent contextLine newLine = x.GetNewLineIndent contextLine newLine
@@ -2408,6 +2892,7 @@ type internal CommonOperations
         member x.NormalizeBlanksAtColumn text column = x.NormalizeBlanksAtColumn text column
         member x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop = x.NormalizeBlanksForNewTabStop text spacesToColumn tabStop
         member x.NormalizeBlanksToSpaces text spacesToColumn = x.NormalizeBlanksToSpaces text spacesToColumn
+        member x.OnStatusFitToWindow message = x.OnStatusFitToWindow message
         member x.OpenLinkUnderCaret() = x.OpenLinkUnderCaret()
         member x.Put point stringData opKind = x.Put point stringData opKind
         member x.RaiseSearchResultMessage searchResult = x.RaiseSearchResultMessage searchResult
@@ -2415,6 +2900,8 @@ type internal CommonOperations
         member x.RecordLastYank span = x.RecordLastYank span
         member x.Redo count = x.Redo count
         member x.RestoreSpacesToCaret spacesToCaret useStartOfLine = x.RestoreSpacesToCaret spacesToCaret useStartOfLine
+        member x.RunForAllSelections action = x.RunForAllSelections action
+        member x.SetSelectedSpans spans = x.SetSelectedSpans spans
         member x.SetRegisterValue name operation value = x.SetRegisterValue name operation value
         member x.ScrollLines dir count = x.ScrollLines dir count
         member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
@@ -2426,7 +2913,12 @@ type internal CommonOperations
         member x.ToggleLanguage isForInsert = x.ToggleLanguage isForInsert
         member x.MapPointNegativeToCurrentSnapshot point = x.MapPointNegativeToCurrentSnapshot point
         member x.MapPointPositiveToCurrentSnapshot point = x.MapPointPositiveToCurrentSnapshot point
+        member x.MapCaretPointToCurrentSnapshot point = x.MapCaretPointToCurrentSnapshot point
+        member x.MapSelectedSpanToCurrentSnapshot span = x.MapSelectedSpanToCurrentSnapshot span
         member x.Undo count = x.Undo count
+
+        [<CLIEvent>]
+        member x.SelectedSpansSet = _selectedSpansSetEvent.Publish
 
 [<Export(typeof<ICommonOperationsFactory>)>]
 type CommonOperationsFactory
@@ -2435,7 +2927,8 @@ type CommonOperationsFactory
         _editorOperationsFactoryService: IEditorOperationsFactoryService,
         _outliningManagerService: IOutliningManagerService,
         _undoManagerProvider: ITextBufferUndoManagerProvider,
-        _mouseDevice: IMouseDevice
+        _mouseDevice: IMouseDevice,
+        _bulkOperations: IBulkOperations
     ) as this = 
 
     /// Use an object instance as a key.  Makes it harder for components to ignore this
@@ -2453,7 +2946,7 @@ type CommonOperationsFactory
             let ret = _outliningManagerService.GetOutliningManager(textView)
             if ret = null then None else Some ret
 
-        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice) :> ICommonOperations
+        CommonOperations(this, vimBufferData, editorOperations, outlining, _mouseDevice, _bulkOperations) :> ICommonOperations
 
     /// Get or create the ICommonOperations for the given buffer
     member x.GetCommonOperations (bufferData: IVimBufferData) = 

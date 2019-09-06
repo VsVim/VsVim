@@ -9,13 +9,19 @@ namespace Vim.UI.Wpf.Implementation.Paste
         private readonly IVimBuffer _vimBuffer;
         private readonly PasteAdornment _pasteAdornment;
 
-        internal PasteController(IVimBuffer vimBuffer, IWpfTextView wpfTextView, IProtectedOperations protectedOperations, IEditorFormatMap editorFormatMap)
+        internal PasteController(
+            IVimBuffer vimBuffer,
+            IWpfTextView wpfTextView,
+            IProtectedOperations protectedOperations,
+            IClassificationFormatMap classificationFormatMap,
+            IEditorFormatMap editorFormatMap)
         {
             _vimBuffer = vimBuffer;
             _pasteAdornment = new PasteAdornment(
                 wpfTextView,
                 wpfTextView.GetAdornmentLayer(PasteFactoryService.PasteAdornmentLayerName),
                 protectedOperations,
+                classificationFormatMap,
                 editorFormatMap);
 
             _vimBuffer.KeyInputProcessed += OnKeyInputProcessed;

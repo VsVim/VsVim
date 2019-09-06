@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Vim.EditorHost;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -7,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio.Specific;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest.Mock
 {
@@ -29,6 +31,7 @@ namespace Vim.UnitTest.Mock
         public int BeepCount { get; set; }
         public bool ClosedOtherWindows { get; private set; }
         public bool ClosedOtherTabs { get; private set; }
+        public Action<string, bool, string, VimGrepFlags, FSharpFunc<Unit, Unit>> FindInFilesFunc { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -51,8 +54,8 @@ namespace Vim.UnitTest.Mock
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
-        public Action<QuickFix, int, bool> RunQuickFixFunc { get; set; }
-        public Action OpenQuickFixWindowFunc { get; set; }
+        public Func<ListKind, NavigationKind, FSharpOption<int>, bool, FSharpOption<ListItem>> NavigateToListItemFunc { get; set; }
+        public Action<ListKind> OpenListWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
         public Func<string, string, bool> RunSaveTextAs { get; set; }
         public ITextBuffer LastSaved { get; set; }
@@ -110,8 +113,8 @@ namespace Vim.UnitTest.Mock
             RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
             RunHostCommandFunc = delegate { throw new NotImplementedException(); };
             LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
-            RunQuickFixFunc = delegate { throw new NotImplementedException(); };
-            OpenQuickFixWindowFunc = delegate { throw new NotImplementedException(); };
+            OpenListWindowFunc = delegate { throw new NotImplementedException(); };
+            NavigateToListItemFunc = delegate { throw new NotImplementedException(); };
             RunSaveTextAs = delegate { throw new NotImplementedException(); };
             ReloadFunc = delegate { return true; };
             IsDirtyFunc = null;
@@ -217,6 +220,11 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.GoToLocalDeclaration(ITextView value, string target)
         {
             return GoToLocalDeclarationFunc(value, target);
+        }
+
+        void IVimHost.FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> onFindDone)
+        {
+            FindInFilesFunc(pattern, matchCase, filesOfType, flags, onFindDone);
         }
 
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)
@@ -339,9 +347,11 @@ namespace Vim.UnitTest.Mock
         {
             if (TryCustomProcessFunc != null)
             {
-                return TryCustomProcessFunc(textView, command);
+                if (TryCustomProcessFunc(textView, command))
+                {
+                    return true;
+                }
             }
-
             return false;
         }
 
@@ -381,9 +391,9 @@ namespace Vim.UnitTest.Mock
             return ShouldIncludeRcFile;
         }
 
-        void IVimHost.OpenQuickFixWindow()
+        void IVimHost.OpenListWindow(ListKind listKind)
         {
-            OpenQuickFixWindowFunc();
+            OpenListWindowFunc(listKind);
         }
 
         bool IVimHost.OpenLink(string link)
@@ -391,10 +401,9 @@ namespace Vim.UnitTest.Mock
             return OpenLinkFunc(link);
         }
 
-        bool IVimHost.GoToQuickFix(QuickFix quickFix, int count, bool hasBang)
+        FSharpOption<ListItem> IVimHost.NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-            RunQuickFixFunc(quickFix, count, hasBang);
-            return false;
+            return NavigateToListItemFunc(listKind, navigationKind, argument, hasBang);
         }
 
         void IVimHost.VimCreated(IVim vim)

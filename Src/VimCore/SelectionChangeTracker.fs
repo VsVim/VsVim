@@ -47,6 +47,9 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun _ -> this.OnKeyInputFinished())
         |> _bag.Add
 
+    member x.HasSecondarySelections =
+        Seq.length _commonOperations.SelectedSpans > 1
+
     member x.ShouldIgnoreSelectionChange() = 
         _selectionOverrideList
         |> Seq.exists (fun x -> x.IsInsertModePreferred _textView)
@@ -61,18 +64,7 @@ type internal SelectionChangeTracker
             // ITextView.  If it deleted text for example it would cause a selection event in 
             // every ITextView which had a caret in the area.  Only the active one should be the
             // one responding to it.
-
-            // However, it's also possible that VsVim itself programmatically cleared the
-            // selection elsewere, e.g. during 'go to definition' command handling.
-            // Avoid leaving the buffer in any kind of visual or select mode
-            // with a zero-width selection.
-            if
-                _textView.Selection.IsEmpty
-                && VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind
-                && not _vimBuffer.IsSwitchingMode
-            then
-                _vimBuffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
-
+            ()
         elif _vimBuffer.ModeKind = ModeKind.Insert && x.ShouldIgnoreSelectionChange() then
             // If one of the IVisualModeSelectionOverride instances wants us to ignore the
             // event then we will
@@ -80,6 +72,10 @@ type internal SelectionChangeTracker
         elif _vimBuffer.ModeKind = ModeKind.Disabled || _vimBuffer.ModeKind = ModeKind.ExternalEdit then
             // If the selection changes while Vim is disabled then don't update
             () 
+        elif x.HasSecondarySelections then
+            // If there are secondary selections, the multi-selection
+            // support is responsible for setting the correct mode.
+            _selectionDirty <- false
         elif _vimBuffer.IsProcessingInput then
             if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                 // Do nothing.  Selection changes that occur while processing input during
@@ -92,6 +88,15 @@ type internal SelectionChangeTracker
             // of the mode switching logic to properly update the mode here. 
             ()
         else
+            // Adjust the caret for the external selection.
+            if
+                x.NeedInclusiveAdjustmentForSelection
+                && not (TextViewUtil.IsSelectionEmpty _textView)
+                && _textView.Caret.Position.VirtualBufferPosition = _textView.Selection.End
+            then
+                x.SyncSelection (fun () -> x.AdjustCaretToSelection())
+
+            // Set the appropriate mode for the external selection.
             x.SetModeForSelection()
 
     member x.OnBufferClosed() = 
@@ -104,6 +109,12 @@ type internal SelectionChangeTracker
             _selectionDirty <- false
             x.SetModeForSelection()
 
+    /// Whether an externally applied selection needs an inclusive adjustment
+    member x.NeedInclusiveAdjustmentForSelection =
+        _globalSettings.SelectionKind = SelectionKind.Inclusive
+        && _textView.Selection.Mode = TextSelectionMode.Stream
+        && not _textView.Selection.IsReversed
+
     /// Update the mode based on the current Selection
     member x.SetModeForSelection() = 
 
@@ -113,8 +124,12 @@ type internal SelectionChangeTracker
         let getDesiredNewMode () = 
             let isSelectModeMouse =
                 Util.IsFlagSet _globalSettings.SelectModeOptions SelectModeOptions.Mouse 
-            let inner = 
-                if _textView.Selection.IsEmpty then 
+            let desiredNewMode = 
+                if x.HasSecondarySelections then
+                    // If there are secondary selections, it is the responsibility of
+                    // the multi-selection tracker to set the mode.
+                    None
+                elif TextViewUtil.IsSelectionEmpty _textView then
                     if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind then
                         Some ModeKind.Normal
                     else 
@@ -156,7 +171,7 @@ type internal SelectionChangeTracker
                         Some ModeKind.SelectBlock
                     else
                         Some ModeKind.VisualBlock
-            match inner with 
+            match desiredNewMode with 
             | None -> None
             | Some kind -> if kind <> _vimBuffer.ModeKind then Some kind else None 
 
@@ -170,7 +185,11 @@ type internal SelectionChangeTracker
                 // If vim was disabled between the posting of this event and the callback then do
                 // nothing
                 ()
-            elif not _vimBuffer.IsClosed && not _selectionDirty then 
+            elif x.HasSecondarySelections then
+                // If there are secondary selections, it is the responsibility
+                // of the multi-selection tracker to set the mode.
+                ()
+            elif not _vimBuffer.IsClosed && not _selectionDirty then
                 match getDesiredNewMode() with
                 | None -> ()
                 | Some modeKind -> 
@@ -181,10 +200,7 @@ type internal SelectionChangeTracker
 
         match getDesiredNewMode() with
         | None ->
-
-            try
-                _syncingSelection <- true
-
+            fun () ->
                 x.AdjustSelectionToCaret()
 
                 // No mode change is desired.  However the selection has changed and Visual Mode 
@@ -196,10 +212,18 @@ type internal SelectionChangeTracker
                     let mode = _vimBuffer.Mode :?> ISelectMode
                     mode.SyncSelection()
 
-            finally
-                _syncingSelection <- false
+            |> x.SyncSelection
         | Some _ -> 
             _commonOperations.DoActionAsync doUpdate
+
+    /// Suppress events while syncing the caret and the selection by performing
+    /// the specified action
+    member x.SyncSelection action =
+        try
+            _syncingSelection <- true
+            action()
+        finally
+            _syncingSelection <- false
 
     /// In a normal character style selection vim extends the selection to include the value
     /// under the caret.  The editor by default does an exclusive selection.  Adjust the selection
@@ -207,26 +231,32 @@ type internal SelectionChangeTracker
     member x.AdjustSelectionToCaret() =
         Contract.Assert _syncingSelection
 
-        if (_mouseDevice.InDragOperation(_textView) && 
-            _globalSettings.SelectionKind = SelectionKind.Inclusive &&
-            _textView.Selection.IsActive && 
-            _textView.Selection.Mode = TextSelectionMode.Stream && 
-            not _textView.Selection.IsReversed && 
-            (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)) then
-
-            match TextViewUtil.GetTextViewLines _textView, _mouseDevice.GetPosition _textView with
-            | Some textViewLines, Some vimPoint ->
-                let x = vimPoint.X
-                let y = vimPoint.Y
-                let textViewLine = textViewLines.GetTextViewLineContainingYCoordinate (y + _textView.ViewportTop)
-                if textViewLine <> null then
-                    let point = textViewLine.GetBufferPositionFromXCoordinate x 
-                    VimTrace.TraceInfo("Caret {0} Point = {1}", x, if point.HasValue then point.Value.GetChar() else ' ')
-                    if point.HasValue && point.Value.Position >= _textView.Selection.ActivePoint.Position.Position && point.Value.Position < point.Value.Snapshot.Length then
-                        let activePoint = VirtualSnapshotPoint(point.Value.Add(1))
-                        let anchorPoint = _textView.Selection.AnchorPoint
-                        _textView.Selection.Select(anchorPoint, activePoint)
+        if
+            _mouseDevice.InDragOperation(_textView)
+            && _textView.Selection.IsActive
+            && x.NeedInclusiveAdjustmentForSelection
+            && (_vimBuffer.ModeKind = ModeKind.VisualCharacter || _vimBuffer.ModeKind = ModeKind.SelectCharacter)
+        then
+            match _commonOperations.MousePoint with
+            | Some mousePoint ->
+                let activePoint =
+                    mousePoint
+                    |> VirtualSnapshotPointUtil.AddOneOnSameLine
+                let anchorPoint = _textView.Selection.AnchorPoint
+                SelectionSpan(mousePoint, anchorPoint, activePoint)
+                |> TextViewUtil.SelectSpan _textView
             | _ -> ()
+
+    /// When an non-empty external selection occurs with an inclusive selection,
+    /// move the caret back one position.
+    member x.AdjustCaretToSelection() =
+        Contract.Assert _syncingSelection
+
+        _textView.Caret.Position.BufferPosition
+        |> SnapshotPointUtil.SubtractOneOrCurrent
+        |> VirtualSnapshotPointUtil.OfPoint
+        |> (fun point ->
+            TextViewUtil.MoveCaretToVirtualPointRaw _textView point MoveCaretFlags.None)
 
 [<Export(typeof<IVimBufferCreationListener>)>]
 type internal SelectionChangeTrackerFactory
@@ -248,5 +278,3 @@ type internal SelectionChangeTrackerFactory
             let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
             let selectionTracker = SelectionChangeTracker(vimBuffer, commonOperations, _selectionOverrideList, _mouseDevice)
             ()
-
-

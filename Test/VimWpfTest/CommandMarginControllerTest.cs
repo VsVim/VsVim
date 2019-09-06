@@ -225,9 +225,11 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void SwitchMode6()
             {
+                var command = "foo";
                 var mode = new Mock<ICommandMode>();
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
-                mode.SetupGet(x => x.Command).Returns("foo");
+                mode.SetupGet(x => x.Command).Returns(command);
+                mode.SetupGet(x => x.EditableCommand).Returns(new EditableCommand(command));
                 _vimBuffer.CommandModeImpl = mode.Object;
                 _vimBuffer.RaiseSwitchedMode(_vimBuffer.CommandModeImpl);
                 Assert.Equal(":foo", _marginControl.CommandLineTextBox.Text);
@@ -435,8 +437,10 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void NoEvents2()
             {
+                var command = "foo";
                 var mode = new Mock<ICommandMode>();
-                mode.SetupGet(x => x.Command).Returns("foo");
+                mode.SetupGet(x => x.Command).Returns(command);
+                mode.SetupGet(x => x.EditableCommand).Returns(new EditableCommand(command));
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
                 _vimBuffer.ModeKindImpl = ModeKind.Command;
                 _vimBuffer.ModeImpl = mode.Object;
