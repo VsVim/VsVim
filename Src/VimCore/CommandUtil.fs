@@ -179,7 +179,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "Add to selection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            visualSpan.PerLineSpans |> Seq.iteri (fun index span ->
+            let AddToWordAtPointInSpanAndIncrementIndex index (span:SnapshotSpan) = 
                 let countForIndex =
                     if isProgressive then
                         count * (index + 1)
@@ -188,8 +188,11 @@ type internal CommandUtil
                 match x.AddToWordAtPointInSpan span.Start span countForIndex with
                 | Some (span, text) ->
                     edit.Replace(span.Span, text) |> ignore
+                    index + 1
                 | None ->
-                    ())
+                    index
+
+            Seq.fold AddToWordAtPointInSpanAndIncrementIndex 0 visualSpan.PerLineSpans |> ignore
 
             let position = x.ApplyEditAndMapPosition edit startPoint.Position
             TextViewUtil.MoveCaretToPosition _textView position)
