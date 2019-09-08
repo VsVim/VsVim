@@ -3112,7 +3112,7 @@ type internal CommandUtil
         | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
         | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
         | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
-        | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind modeArgument
+        | NormalCommand.SwitchMode (modeKind, modeArgument) -> x.SwitchMode modeKind (modeArgument.GetModeArgument data.Count)
         | NormalCommand.SwitchModeVisualCommand visualKind -> x.SwitchModeVisualCommand visualKind data.Count
         | NormalCommand.SwitchPreviousVisualMode -> x.SwitchPreviousVisualMode()
         | NormalCommand.SwitchToSelection caretMovement -> x.SwitchToSelection caretMovement

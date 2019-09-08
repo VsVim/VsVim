@@ -2737,6 +2737,32 @@ with
         | Option.None -> ()
 
 [<RequireQualifiedAccess>]
+type SwitchCommandModeArgument =
+    | None
+    ///Switched from normal mode to command mode
+    | FromNormalMode
+    ///Switched from visual mode to command mode
+    | FromVisual
+
+with
+    static member GetCommandFromNormalModeString (count:int option) = 
+        match count with
+            | Some c ->
+                if c = 1 then
+                    "." 
+                elif 1 < c then
+                    sprintf ".,.+%i" (c - 1)
+                else
+                    StringUtil.Empty
+            | Option.None -> StringUtil.Empty
+    member x.GetModeArgument (count:int option) = 
+        match x with
+            | SwitchCommandModeArgument.None -> ModeArgument.None
+            | SwitchCommandModeArgument.FromNormalMode -> ModeArgument.PartialCommand (SwitchCommandModeArgument.GetCommandFromNormalModeString count)
+            | SwitchCommandModeArgument.FromVisual -> ModeArgument.PartialCommand "'<,'>"
+             
+
+[<RequireQualifiedAccess>]
 [<NoComparison>]
 [<NoEquality>]
 type ModeSwitch =
@@ -3222,7 +3248,7 @@ type NormalCommand =
     | SubtractFromWord
 
     /// Switch modes with the specified information
-    | SwitchMode of ModeKind: ModeKind * ModeArgument: ModeArgument
+    | SwitchMode of ModeKind: ModeKind * ModeArgument: SwitchCommandModeArgument
 
     /// Switch to the specified kind of visual mode
     | SwitchModeVisualCommand of VisualKind: VisualKind
