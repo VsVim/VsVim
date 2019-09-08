@@ -136,7 +136,7 @@ type internal VisualMode
                 yield ("[P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
                 yield ("]p", CommandFlags.Repeatable, NormalCommand.PutAfterCaretWithIndent)
                 yield ("]P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaretWithIndent)
-                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, SwitchCommandModeArgument.FromVisual))
+                yield (":", CommandFlags.Special, NormalCommand.SwitchMode (ModeKind.Command, SwitchCommandModeArgument.FromVisualMode))
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalBinding (keyInputSet, flags, command))

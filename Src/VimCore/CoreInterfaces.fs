@@ -2742,7 +2742,7 @@ type SwitchCommandModeArgument =
     ///Switched from normal mode to command mode
     | FromNormalMode
     ///Switched from visual mode to command mode
-    | FromVisual
+    | FromVisualMode
 
 with
     static member GetCommandFromNormalModeString (count:int option) = 
@@ -2759,7 +2759,7 @@ with
         match x with
             | SwitchCommandModeArgument.None -> ModeArgument.None
             | SwitchCommandModeArgument.FromNormalMode -> ModeArgument.PartialCommand (SwitchCommandModeArgument.GetCommandFromNormalModeString count)
-            | SwitchCommandModeArgument.FromVisual -> ModeArgument.PartialCommand "'<,'>"
+            | SwitchCommandModeArgument.FromVisualMode -> ModeArgument.PartialCommand "'<,'>"
              
 
 [<RequireQualifiedAccess>]
