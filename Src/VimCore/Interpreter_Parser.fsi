@@ -37,4 +37,6 @@ type internal Parser =
 
     member ParseLineCommands: lines: string[] -> LineCommand list
 
-    member TryExpand: command: string -> string option
+    /// This will expand out an abbreviated command name to the full name. For example 
+    /// will expand 'e' to 'edit'.
+    member TryExpandCommandName: shortCommandName: string -> string option

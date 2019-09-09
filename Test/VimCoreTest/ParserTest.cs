@@ -1946,7 +1946,7 @@ let x = 42
             public void TryExpand_Full()
             {
                 var parser = CreateParser("");
-                Assert.Equal("close", parser.TryExpand("close"));
+                Assert.Equal("close", parser.TryExpandCommandName("close"));
             }
 
             /// <summary>
@@ -1960,7 +1960,7 @@ let x = 42
                 {
                     if (!string.IsNullOrEmpty(tuple.Item2))
                     {
-                        Assert.Equal(tuple.Item1, parser.TryExpand(tuple.Item2));
+                        Assert.Equal(tuple.Item1, parser.TryExpandCommandName(tuple.Item2));
                     }
                 }
             }

@@ -850,9 +850,10 @@ namespace Vim.UnitTest
                 Create();
                 RunCommand(typed);
                 Assert.Equal(1, _commandRanCount);
-                Assert.Equal(expectedCommandRan, _lastCommandRanEventArgs.Command);
+                Assert.Equal(expectedCommandRan, _lastCommandRanEventArgs.RawCommand);
                 Assert.True(_vimInterpreter.TryExpandCommandName(expectedCommandRan, out string fullCommandName));
                 Assert.Equal(expectedFullCommandName, fullCommandName);
+                Assert.Equal(expectedFullCommandName, _lastCommandRanEventArgs.Command);
             }
         }
 

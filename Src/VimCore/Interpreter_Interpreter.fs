@@ -2584,7 +2584,7 @@ type VimInterpreter
 
     member x.TryExpandCommandName(shortCommandName, commandName: outref<string>) =
         let parser = Parser(_globalSettings, _vimData)
-        match parser.TryExpand shortCommandName with
+        match parser.TryExpandCommandName shortCommandName with
         | Some fullCommandName -> 
             commandName <- fullCommandName
             true

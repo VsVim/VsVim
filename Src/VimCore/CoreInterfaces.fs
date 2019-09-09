@@ -4176,9 +4176,14 @@ type CommandRunDataEventArgs(_commandRunData: CommandRunData) =
 
     member x.CommandRunData = _commandRunData
 
-type CommandEventArgs(_command: string, _wasMapped: bool, _lineCommand: LineCommand) =
+type CommandEventArgs(_rawCommand: string, _command: string, _wasMapped: bool, _lineCommand: LineCommand) =
     inherit System.EventArgs()
 
+    /// This is provided text that was executed. This can be both the abbreviated form of a command, say 'e',
+    /// or the expanded form 'edit'.
+    member x.RawCommand = _rawCommand
+
+    /// This is the expanded command name which was executed. It will never be the abbreviated form.
     member x.Command = _command
 
     member x.LineCommand = _lineCommand

@@ -69,7 +69,11 @@ type internal CommandMode
             _vimData.LastCommandLine <- command
             _vimData.LastLineCommand <- Some lineCommand
 
-        _commandRanEvent.Trigger x (CommandEventArgs(command, wasMapped, lineCommand))
+        let fullCommand = 
+            match _parser.TryExpandCommandName command with
+            | Some c -> c
+            | None -> command
+        _commandRanEvent.Trigger x (CommandEventArgs(command, fullCommand, wasMapped, lineCommand))
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving

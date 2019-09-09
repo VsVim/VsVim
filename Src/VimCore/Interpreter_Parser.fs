@@ -459,7 +459,7 @@ and [<Sealed>] internal Parser
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
-    member x.TryExpand name =
+    member x.TryExpandCommandName name =
 
         // Is 'name' an abbreviation of the given command name and abbreviation
         let isAbbreviation (fullName: string) (abbreviation: string) = 
@@ -2744,7 +2744,7 @@ and [<Sealed>] internal Parser
             handleParseResult parseResult
 
         let expandOrCurrent name = 
-            match x.TryExpand name with
+            match x.TryExpandCommandName name with
             | Some expanded -> expanded
             | None -> name
 
