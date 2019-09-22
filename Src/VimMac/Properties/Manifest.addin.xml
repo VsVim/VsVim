@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionModel>
+    <!-- Register with Visual Studio for Mac -->
+    <Runtime>
+        <Import assembly="Vim.Mac.dll" />
+        <Import assembly="Vim.Core.dll" />
+    </Runtime>
+    <!-- Register with Managed Extensibility Framework (MEF) -->
+    <Extension path="/MonoDevelop/Ide/Composition">
+        <Assembly file="Vim.Mac.dll" />
+        <Assembly file="Vim.Core.dll" />
+    </Extension>
+</ExtensionModel>
+
