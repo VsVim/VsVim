@@ -1,17 +1,35 @@
 ﻿using System;
+using System.ComponentModel.Composition;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Interpreter;
 
 namespace Vim.Mac
 {
-    public class VimHost : IVimHost
+    [Export(typeof(IVimHost))]
+    [Export(typeof(VimCocoaHost))]
+    [ContentType(VimConstants.ContentType)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
+    public class VimCocoaHost : IVimHost
     {
+        private IVim _vim;
+
+        [ImportingConstructor]
+        public VimCocoaHost(ITextBufferFactoryService textBufferFactoryService)
+        {
+            Console.WriteLine("Loaded");
+        }
+
+        //[Import]
+        //VimHost _host;
         public bool AutoSynchronizeSettings => throw new NotImplementedException();
 
         public DefaultSettings DefaultSettings => throw new NotImplementedException();
 
-        public string HostIdentifier => throw new NotImplementedException();
+        public string HostIdentifier => "VsVim Test Host ";
 
         public bool IsAutoCommandEnabled => throw new NotImplementedException();
 
@@ -257,7 +275,7 @@ namespace Vim.Mac
 
         public void VimCreated(IVim vim)
         {
-            throw new NotImplementedException();
+            _vim = vim;
         }
 
         public void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
