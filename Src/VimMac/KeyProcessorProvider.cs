@@ -7,33 +7,6 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.Mac
 {
-    //[Export(typeof(IKeyProcessorProvider))]
-    //[ContentType("text")]
-    //[TextViewRole(PredefinedTextViewRoles.Interactive)]
-    //[Name(VimConstants.MainKeyProcessorName)]
-    //internal sealed class KeyProcessorProvider2 : IKeyProcessorProvider
-    //{
-    //    private readonly IVim _vim;
-    //    //private readonly IKeyUtil _keyUtil;
-
-    //    [ImportingConstructor]
-    //    internal KeyProcessorProvider2(IVim vim)
-    //    {
-    //        _vim = vim;
-    //    }
-
-    //    public KeyProcessor GetAssociatedProcessor(ICocoaTextView wpfTextView)
-    //    {
-    //        var vimTextBuffer = _vim.GetOrCreateVimBuffer(wpfTextView);
-    //        return new VimKeyProcessor(vimTextBuffer, _keyUtil);
-    //    }
-
-    //}
-
-    /// <summary>
-    /// Passes commands to the IBraceCompletionManager found in the
-    /// property bag of the view.
-    /// </summary>
     [Export]
     [Export(typeof(ICommandHandler))]
     [ContentType(VimConstants.AnyContentType)]
@@ -58,10 +31,9 @@ namespace Vim.Mac
         public void ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext context)
         {
             var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
-            var keyInput = KeyInputUtil.CharToKeyInput(args.TypedChar);
+            var keyInput = KeyInputUtil.CharToKeyInput(args.SubjectBuffer.TypedChar);
             var process = vimBuffer.Process(keyInput);
             var notHandled = process.IsNotHandled;
-            //return vimBuffer.CanProcess(keyInput) && vimBuffer.Process(keyInput).IsAnyHandled;
 
             if (notHandled)
             {
@@ -82,7 +54,6 @@ namespace Vim.Mac
 
         public void ExecuteCommand(ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-
             nextCommandHandler();
         }
 
@@ -128,7 +99,6 @@ namespace Vim.Mac
             var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
             var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
             var notHandled = vimBuffer.Process(keyInput).IsNotHandled;
-            //return vimBuffer.CanProcess(keyInput) && vimBuffer.Process(keyInput).IsAnyHandled;
 
             if (notHandled)
             {
@@ -137,8 +107,6 @@ namespace Vim.Mac
         }
 
         public string DisplayName => "VsVim key handler";
-
-
     }
 }
 
