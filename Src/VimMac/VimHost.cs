@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Interpreter;
+using MonoDevelop.Core;
+using MonoDevelop.Ide;
 
 namespace Vim.Mac
 {
@@ -20,18 +22,17 @@ namespace Vim.Mac
         [ImportingConstructor]
         public VimCocoaHost(ITextBufferFactoryService textBufferFactoryService)
         {
+            VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
             Console.WriteLine("Loaded");
         }
 
-        //[Import]
-        //VimHost _host;
-        public bool AutoSynchronizeSettings => throw new NotImplementedException();
+        public bool AutoSynchronizeSettings => false;
 
-        public DefaultSettings DefaultSettings => throw new NotImplementedException();
+        public DefaultSettings DefaultSettings => DefaultSettings.GVim74;
 
-        public string HostIdentifier => "VsVim Test Host ";
+        public string HostIdentifier => "VsVim MacOS Host";
 
-        public bool IsAutoCommandEnabled => throw new NotImplementedException();
+        public bool IsAutoCommandEnabled => false;
 
         public bool IsUndoRedoExpected => throw new NotImplementedException();
 
@@ -45,7 +46,7 @@ namespace Vim.Mac
 
         public void Beep()
         {
-            throw new NotImplementedException();
+            LoggingService.LogDebug("Beep");
         }
 
         public void BeginBulkOperation()
@@ -75,7 +76,7 @@ namespace Vim.Mac
 
         public void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, Microsoft.VisualStudio.Text.Editor.ITextView textView)
         {
-            throw new NotImplementedException();
+            action.Invoke(null);
         }
 
         public void EndBulkOperation()
@@ -85,7 +86,7 @@ namespace Vim.Mac
 
         public void EnsurePackageLoaded()
         {
-            throw new NotImplementedException();
+            LoggingService.LogDebug("EnsurePackageLoaded");
         }
 
         public void EnsureVisible(Microsoft.VisualStudio.Text.Editor.ITextView textView, Microsoft.VisualStudio.Text.SnapshotPoint point)
@@ -110,7 +111,7 @@ namespace Vim.Mac
 
         public string GetName(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            return "";
         }
 
         public FSharpOption<int> GetNewLineIndent(Microsoft.VisualStudio.Text.Editor.ITextView textView, Microsoft.VisualStudio.Text.ITextSnapshotLine contextLine, Microsoft.VisualStudio.Text.ITextSnapshotLine newLine, IVimLocalSettings localSettings)
@@ -160,17 +161,17 @@ namespace Vim.Mac
 
         public bool IsFocused(Microsoft.VisualStudio.Text.Editor.ITextView textView)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool IsReadOnly(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public bool IsVisible(Microsoft.VisualStudio.Text.Editor.ITextView textView)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool LoadFileIntoExistingWindow(string filePath, Microsoft.VisualStudio.Text.Editor.ITextView textView)
@@ -210,7 +211,7 @@ namespace Vim.Mac
 
         public void Quit()
         {
-            throw new NotImplementedException();
+            IdeApp.Exit();
         }
 
         public bool Reload(Microsoft.VisualStudio.Text.Editor.ITextView textView)
@@ -245,12 +246,12 @@ namespace Vim.Mac
 
         public bool ShouldCreateVimBuffer(Microsoft.VisualStudio.Text.Editor.ITextView textView)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool ShouldIncludeRcFile(VimRcPath vimRcPath)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public void SplitViewHorizontally(Microsoft.VisualStudio.Text.Editor.ITextView value)

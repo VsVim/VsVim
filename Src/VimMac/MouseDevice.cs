@@ -12,9 +12,9 @@ namespace Vim.Mac
     [Name("Mouse Device")]
     internal class MouseDevice : IMouseDevice
     {
-        public bool IsLeftButtonPressed => throw new NotImplementedException();
+        public bool IsLeftButtonPressed => false;
 
-        public bool IsRightButtonPressed => throw new NotImplementedException();
+        public bool IsRightButtonPressed => false;
 
         public FSharpOption<VimPoint> GetPosition(ITextView textView)
         {
@@ -23,7 +23,7 @@ namespace Vim.Mac
 
         public bool InDragOperation(ITextView textView)
         {
-            throw new NotImplementedException();
+            return false;
         }
     }
 }

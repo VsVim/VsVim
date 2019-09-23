@@ -74,7 +74,7 @@ namespace Vim.UI.Wpf
             get { return false; }
         }
 
-        public virtual DefaultSettings DefaultSettings
+        public virtual Settings DefaultSettings
         {
             get { return DefaultSettings.GVim74; }
         }

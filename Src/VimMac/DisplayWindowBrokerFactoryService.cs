@@ -9,6 +9,28 @@ namespace Vim.Mac
     {
         public IDisplayWindowBroker GetDisplayWindowBroker(ITextView textView)
         {
+            return new DisplayWindowBroker(textView);
+        }
+    }
+
+    internal sealed class DisplayWindowBroker : IDisplayWindowBroker
+    {
+        private readonly ITextView _textView;
+
+        public DisplayWindowBroker(ITextView textView)
+        {
+            _textView = textView;
+        }
+        public ITextView TextView => _textView;
+
+        public bool IsCompletionActive => false;
+
+        public bool IsSignatureHelpActive => false;
+
+        public bool IsQuickInfoActive => false;
+
+        public void DismissDisplayWindows()
+        {
             throw new NotImplementedException();
         }
     }
