@@ -54,27 +54,27 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public void Close(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        public void Close(ITextView value)
         {
             throw new NotImplementedException();
         }
 
-        public void CloseAllOtherTabs(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        public void CloseAllOtherTabs(ITextView value)
         {
             throw new NotImplementedException();
         }
 
-        public void CloseAllOtherWindows(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        public void CloseAllOtherWindows(ITextView value)
         {
             throw new NotImplementedException();
         }
 
-        public Microsoft.VisualStudio.Text.Editor.ITextView CreateHiddenTextView()
+        public ITextView CreateHiddenTextView()
         {
             throw new NotImplementedException();
         }
 
-        public void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
             action.Invoke(null);
         }
@@ -89,7 +89,7 @@ namespace Vim.Mac
             LoggingService.LogDebug("EnsurePackageLoaded");
         }
 
-        public void EnsureVisible(Microsoft.VisualStudio.Text.Editor.ITextView textView, Microsoft.VisualStudio.Text.SnapshotPoint point)
+        public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
             throw new NotImplementedException();
         }
@@ -99,32 +99,32 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public void FormatLines(Microsoft.VisualStudio.Text.Editor.ITextView textView, SnapshotLineRange range)
+        public void FormatLines(ITextView textView, SnapshotLineRange range)
         {
             throw new NotImplementedException();
         }
 
-        public FSharpOption<Microsoft.VisualStudio.Text.Editor.ITextView> GetFocusedTextView()
+        public FSharpOption<ITextView> GetFocusedTextView()
         {
             throw new NotImplementedException();
         }
 
-        public string GetName(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
+        public string GetName(ITextBuffer textBuffer)
         {
             return "";
         }
 
-        public FSharpOption<int> GetNewLineIndent(Microsoft.VisualStudio.Text.Editor.ITextView textView, Microsoft.VisualStudio.Text.ITextSnapshotLine contextLine, Microsoft.VisualStudio.Text.ITextSnapshotLine newLine, IVimLocalSettings localSettings)
+        public FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
         {
             throw new NotImplementedException();
         }
 
-        public int GetTabIndex(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public int GetTabIndex(ITextView textView)
         {
             throw new NotImplementedException();
         }
 
-        public Microsoft.VisualStudio.Text.Editor.WordWrapStyles GetWordWrapStyle(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public WordWrapStyles GetWordWrapStyle(ITextView textView)
         {
             throw new NotImplementedException();
         }
@@ -134,12 +134,12 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public bool GoToGlobalDeclaration(Microsoft.VisualStudio.Text.Editor.ITextView tetxView, string identifier)
+        public bool GoToGlobalDeclaration(ITextView tetxView, string identifier)
         {
             throw new NotImplementedException();
         }
 
-        public bool GoToLocalDeclaration(Microsoft.VisualStudio.Text.Editor.ITextView textView, string identifier)
+        public bool GoToLocalDeclaration(ITextView textView, string identifier)
         {
             throw new NotImplementedException();
         }
@@ -149,37 +149,37 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public void GoToWindow(Microsoft.VisualStudio.Text.Editor.ITextView textView, WindowKind direction, int count)
+        public void GoToWindow(ITextView textView, WindowKind direction, int count)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsDirty(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
+        public bool IsDirty(ITextBuffer textBuffer)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsFocused(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public bool IsFocused(ITextView textView)
         {
             return true;
         }
 
-        public bool IsReadOnly(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
+        public bool IsReadOnly(ITextBuffer textBuffer)
         {
             return false;
         }
 
-        public bool IsVisible(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public bool IsVisible(ITextView textView)
         {
             return true;
         }
 
-        public bool LoadFileIntoExistingWindow(string filePath, Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
             throw new NotImplementedException();
         }
 
-        public FSharpOption<Microsoft.VisualStudio.Text.Editor.ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
+        public FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
             throw new NotImplementedException();
         }
@@ -214,7 +214,7 @@ namespace Vim.Mac
             IdeApp.Exit();
         }
 
-        public bool Reload(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public bool Reload(ITextView textView)
         {
             throw new NotImplementedException();
         }
@@ -229,12 +229,12 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public void RunHostCommand(Microsoft.VisualStudio.Text.Editor.ITextView textView, string commandName, string argument)
+        public void RunHostCommand(ITextView textView, string commandName, string argument)
         {
             throw new NotImplementedException();
         }
 
-        public bool Save(Microsoft.VisualStudio.Text.ITextBuffer textBuffer)
+        public bool Save(ITextBuffer textBuffer)
         {
             throw new NotImplementedException();
         }
@@ -244,7 +244,7 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public bool ShouldCreateVimBuffer(Microsoft.VisualStudio.Text.Editor.ITextView textView)
+        public bool ShouldCreateVimBuffer(ITextView textView)
         {
             return true;
         }
@@ -254,12 +254,12 @@ namespace Vim.Mac
             return false;
         }
 
-        public void SplitViewHorizontally(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        public void SplitViewHorizontally(ITextView value)
         {
             throw new NotImplementedException();
         }
 
-        public void SplitViewVertically(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        public void SplitViewVertically(ITextView value)
         {
             throw new NotImplementedException();
         }
@@ -269,7 +269,7 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public bool TryCustomProcess(Microsoft.VisualStudio.Text.Editor.ITextView textView, InsertCommand command)
+        public bool TryCustomProcess(ITextView textView, InsertCommand command)
         {
             throw new NotImplementedException();
         }

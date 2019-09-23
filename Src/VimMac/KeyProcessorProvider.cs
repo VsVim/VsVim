@@ -31,7 +31,7 @@ namespace Vim.Mac
         public void ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext context)
         {
             var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
-            var keyInput = KeyInputUtil.CharToKeyInput(args.SubjectBuffer.TypedChar);
+            var keyInput = KeyInputUtil.CharToKeyInput(args.TypedChar);
             var process = vimBuffer.Process(keyInput);
             var notHandled = process.IsNotHandled;
 
