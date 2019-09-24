@@ -12,7 +12,7 @@ namespace Vim.Mac
     [ContentType(VimConstants.AnyContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [Name("Key Processor Provider")]
-    internal class KeyProcessorProvider :
+    internal class BypassKeyProcessorProvider :
             IChainedCommandHandler<TypeCharCommandArgs>,
             IChainedCommandHandler<ReturnKeyCommandArgs>,
             IChainedCommandHandler<TabKeyCommandArgs>,
@@ -23,7 +23,7 @@ namespace Vim.Mac
         private IVim _vim;
 
         [ImportingConstructor]
-        internal KeyProcessorProvider(IVim vim)
+        internal BypassKeyProcessorProvider(IVim vim)
         {
             _vim = vim;
         }
@@ -31,15 +31,17 @@ namespace Vim.Mac
         public void ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext context)
         {
             var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
+            //vimBuffer.Mode
             var keyInput = KeyInputUtil.CharToKeyInput(args.TypedChar);
-            var process = vimBuffer.Process(keyInput);
-            var notHandled = process.IsNotHandled;
-
-            if (notHandled)
+            //
+            if (vimBuffer.CanProcess(keyInput))
             {
-                nextCommandHandler();
+                // bypass the typed char here
+                VimTrace.TraceDebug("Bypass typed char");
+                return;
             }
-
+            VimTrace.TraceDebug("Typed char next command");
+            nextCommandHandler();
         }
 
         public CommandState GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
