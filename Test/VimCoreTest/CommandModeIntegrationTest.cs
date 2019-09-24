@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 using Xunit;
+using Vim.Interpreter;
+using Vim.Modes.Command;
 
 namespace Vim.UnitTest
 {
@@ -16,16 +18,20 @@ namespace Vim.UnitTest
         private ITextBuffer _textBuffer;
         private ICommandMode _commandMode;
         private MockVimHost _vimHost;
+        private IVimInterpreter _vimInterpreter;
         private string _lastStatus;
+        private string _lastError;
 
         internal virtual void Create(params string[] lines)
         {
             _vimBuffer = CreateVimBuffer(lines);
             _vimBuffer.StatusMessage += (sender, args) => { _lastStatus = args.Message; };
+            _vimBuffer.ErrorMessage += (sender, args) => { _lastError = args.Message; };
             _textView = _vimBuffer.TextView;
             _textBuffer = _textView.TextBuffer;
             _vimHost = VimHost;
             _commandMode = _vimBuffer.CommandMode;
+            _vimInterpreter = Vim.GetVimInterpreter(_vimBuffer);
         }
 
         /// <summary>
@@ -59,6 +65,42 @@ namespace Vim.UnitTest
                 RunCommand(abbreviation);
                 RunCommand(command);
                 Assert.Equal(expectedText, _textBuffer.GetLineText(0));
+            }
+        }
+
+        public sealed class CloseTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void NoDirtyBuffers()
+            {
+                Create("");
+                var didClose = false;
+                VimHost.IsDirtyFunc = _ => false;
+                VimHost.CloseFunc = _ => didClose = true;
+                RunCommand(":close");
+                Assert.True(didClose);
+            }
+
+            [WpfFact]
+            public void DirtyBuffersNoForce()
+            {
+                Create("");
+                var didClose = false;
+                VimHost.IsDirtyFunc = _ => true;
+                VimHost.CloseFunc = _ => didClose = true;
+                RunCommand(":close");
+                Assert.False(didClose);
+                Assert.Equal(Resources.Common_NoWriteSinceLastChange, _lastError);
+            }
+
+            [WpfFact]
+            public void DirtyBuffersWithForce()
+            {
+                Create("");
+                var didClose = false;
+                VimHost.CloseFunc = _ => didClose = true;
+                RunCommand(":close");
+                Assert.True(didClose);
             }
         }
 
@@ -442,6 +484,75 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class EditTest : CommandModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData("e")]
+            [InlineData("edi")]
+            public void NoArgumentsShouldReload(string command)
+            {
+                Create("");
+                var didReload = false;
+                VimHost.ReloadFunc = _ =>
+                {
+                    didReload = true;
+                    return true;
+                };
+
+                VimHost.IsDirtyFunc = _ => false;
+                RunCommand(command);
+                Assert.True(didReload);
+            }
+
+            [WpfFact]
+            public void NoArgumentsButDirtyShouldError()
+            {
+                Create("");
+                VimHost.ReloadFunc = _ => throw new Exception("");
+                VimHost.IsDirtyFunc = _ => true;
+                RunCommand("e");
+                Assert.Equal(Resources.Common_NoWriteSinceLastChange, _lastError);
+            }
+
+            [WpfFact]
+            public void FilePathButDirtyShouldError()
+            {
+                Create("foo");
+                VimHost.IsDirtyFunc = _ => true;
+                RunCommand("e cat.txt");
+                Assert.Equal(Resources.Common_NoWriteSinceLastChange, _lastError);
+            }
+
+            /// <summary>
+            /// Can't figure out how to make this fail so just beeping now
+            /// </summary>
+            [WpfFact]
+            public void NoArgumentsReloadFailsShouldBeep()
+            {
+                Create("foo");
+                VimHost.ReloadFunc = _ => false;
+                VimHost.IsDirtyFunc = _ => false;
+                RunCommand("e");
+                Assert.Equal(1, VimHost.BeepCount);
+            }
+
+            [WpfFact]
+            public void FilePathShouldLoadIntoExisting()
+            {
+                Create("");
+                var didLoad = false;
+                VimHost.LoadFileIntoExistingWindowFunc = (path, _) =>
+                {
+                    Assert.Equal("cat.txt", path);
+                    didLoad = true;
+                    return true;
+                };
+                VimHost.IsDirtyFunc = _ => false;
+                RunCommand("e cat.txt");
+                Assert.True(didLoad);
+            }
+        }
+
         public sealed class GlobalTest : CommandModeIntegrationTest
         {
             [WpfFact]
@@ -701,7 +812,8 @@ namespace Vim.UnitTest
             /// Specifying "line 0" should move to before the first line.
             /// </summary>
             [WpfFact]
-            public void MoveToBeforeFirstLineInFile() {
+            public void MoveToBeforeFirstLineInFile()
+            {
                 Create("cat", "dog", "bear");
 
                 _textView.MoveCaretToLine(2);
@@ -710,6 +822,38 @@ namespace Vim.UnitTest
                 Assert.Equal("bear", _textBuffer.GetLine(0).GetText());
                 Assert.Equal("cat", _textBuffer.GetLine(1).GetText());
                 Assert.Equal("dog", _textBuffer.GetLine(2).GetText());
+            }
+        }
+
+        public sealed class ParseAndRunTest : CommandModeIntegrationTest
+        {
+            private CommandEventArgs _lastCommandRanEventArgs;
+            private int _commandRanCount; 
+
+            internal override void Create(params string[] lines)
+            {
+                base.Create(lines);
+                _commandMode.CommandRan += (_, e) =>
+                {
+                    _lastCommandRanEventArgs = e;
+                    _commandRanCount++;
+                };
+            }
+
+            [WpfTheory]
+            [InlineData("red", "red", "redo")]
+            [InlineData("redo", "redo", "redo")]
+            [InlineData("u", "u", "undo")]
+            [InlineData("undo", "undo", "undo")]
+            public void ParseAndRun(string typed, string expectedCommandRan, string expectedFullCommandName)
+            {
+                Create();
+                RunCommand(typed);
+                Assert.Equal(1, _commandRanCount);
+                Assert.Equal(expectedCommandRan, _lastCommandRanEventArgs.RawCommand);
+                Assert.True(_vimInterpreter.TryExpandCommandName(expectedCommandRan, out string fullCommandName));
+                Assert.Equal(expectedFullCommandName, fullCommandName);
+                Assert.Equal(expectedFullCommandName, _lastCommandRanEventArgs.Command);
             }
         }
 
@@ -1588,7 +1732,7 @@ namespace Vim.UnitTest
             internal override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _vimHost.RunSaveTextAs = (text, filePath) =>
+                _vimHost.SaveTextAsFunc = (text, filePath) =>
                     {
                         _saveTextAsText = text;
                         _saveTextAsFilePath = filePath;
@@ -1619,6 +1763,60 @@ namespace Vim.UnitTest
                 RunCommand("2,3w animals.txt");
                 Assert.Equal("animals.txt", _saveTextAsFilePath);
                 Assert.Equal(String.Join(Environment.NewLine, new[] { "bat", "dog", "" }), _saveTextAsText);
+            }
+        }
+
+        public sealed class WriteQuitTest : CommandModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData("wq")]
+            [InlineData("wq!")]
+            public void NoArguments(string command)
+            {
+                Create("");
+                var didClose = false;
+                VimHost.SaveFunc = _ => true;
+                VimHost.CloseFunc = _ => { didClose = true; };
+                RunCommand(command);
+                Assert.True(didClose);
+            }
+
+            [WpfFact]
+            public void FileName()
+            {
+                Create("bar");
+                var didSave = false;
+                var didClose = false;
+                VimHost.SaveTextAsFunc = (text, path) =>
+                {
+                    didSave = true;
+                    Assert.Equal("bar", text);
+                    Assert.Equal("foo.txt", path);
+                    return true;
+                };
+                VimHost.CloseFunc = _ => { didClose = true; };
+                RunCommand("wq foo.txt");
+                Assert.True(didClose);
+                Assert.True(didSave);
+            }
+
+            [WpfFact]
+            public void Range()
+            {
+                Create("dog", "cat", "bear");
+                var didSave = false;
+                var didClose = false;
+                VimHost.SaveTextAsFunc = (text, path) =>
+                {
+                    didSave = true;
+                    Assert.Equal("dog" + Environment.NewLine + "cat" + Environment.NewLine, text);
+                    Assert.Equal("foo.txt", path);
+                    return true;
+                };
+                VimHost.CloseFunc = _ => { didClose = true; };
+                RunCommand("1,2wq foo.txt");
+                Assert.True(didClose);
+                Assert.True(didSave);
             }
         }
 
@@ -1743,6 +1941,77 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class QuitTest : CommandModeIntegrationTest
+        {
+            [WpfTheory]
+            [InlineData("quit")]
+            [InlineData("q")]
+            public void QuitUnlessDirty(string command)
+            {
+                Create("");
+                var didClose = false;
+                VimHost.IsDirtyFunc = _ => false;
+                VimHost.CloseFunc = textView => { didClose = true; };
+                RunCommand(command);
+                Assert.True(didClose);
+            }
+
+            [WpfFact]
+            public void QuitWhenDirty()
+            {
+                Create("");
+                var didClose = false;
+                VimHost.CloseFunc = textView => { didClose = true; };
+                RunCommand("q!");
+                Assert.True(didClose);
+            }
+        }
+
+        public sealed class QuitAllTest : CommandModeIntegrationTest
+        {
+            /// <summary>
+            /// When provided the ! bang option the application should just rudely exit
+            /// </summary>
+            [WpfFact]
+            public void WithBang()
+            {
+                Create("");
+                var didQuit = false;
+                VimHost.QuitFunc = () => { didQuit = true; };
+                RunCommand("qall!");
+                Assert.True(didQuit);
+            }
+
+            /// <summary>
+            /// If there are no dirty files then we should just be exiting and not raising any messages
+            /// </summary>
+            [WpfFact]
+            public void WithNoDirty()
+            {
+                Create("");
+                var didQuit = false;
+                VimHost.QuitFunc = () => { didQuit = true; };
+                VimHost.IsDirtyFunc = _ => false;
+                RunCommand("qall");
+                Assert.True(didQuit);
+            }
+
+            /// <summary>
+            /// If there are dirty buffers and the ! option is missing then an error needs to be raised
+            /// </summary>
+            [WpfFact]
+            public void WithDirty()
+            {
+                Create("");
+                var didQuit = false;
+                VimHost.QuitFunc = () => { didQuit = true; };
+                VimHost.IsDirtyFunc = _ => true;
+                RunCommand("qall");
+                Assert.False(didQuit);
+                Assert.Equal(Resources.Common_NoWriteSinceLastChange, _lastError);
+            }
+        }
+
         public sealed class RangeTest : CommandModeIntegrationTest
         {
             [WpfFact]
@@ -1761,6 +2030,62 @@ namespace Vim.UnitTest
                 _vimBuffer.LocalSettings.ShiftWidth = 2;
                 RunCommand(".,.1>");
                 Assert.Equal(new[] { "  dog", "  cat", "tree" }, _textBuffer.GetLines());
+            }
+        }
+
+        public sealed class JoinTest : CommandModeIntegrationTest
+        {
+            [WpfFact]
+            public void NoArguments()
+            {
+                Create("dog", "cat", "tree", "rabbit");
+                RunCommand("j");
+                Assert.Equal(
+                    new[] { "dog cat", "tree", "rabbit" },
+                    _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void WithBang()
+            {
+                Create("dog", "cat", "tree", "rabbit");
+                RunCommand("j!");
+                Assert.Equal(
+                    new[] { "dogcat", "tree", "rabbit" },
+                    _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void WithCount()
+            {
+                Create("dog", "cat", "tree", "rabbit");
+                RunCommand("j 3");
+                Assert.Equal(
+                    new[] { "dog cat tree", "rabbit" },
+                    _textBuffer.GetLines());
+            }
+
+            [WpfFact]
+            public void WithRangeAndCount()
+            {
+                Create("dog", "cat", "tree", "rabbit");
+                RunCommand("2j 3");
+                Assert.Equal(
+                    new[] { "dog", "cat tree rabbit" },
+                    _textBuffer.GetLines());
+            }
+
+            /// <summary>
+            /// Final count overrides the range and in case of 1 does nothing
+            /// </summary>
+            [WpfFact]
+            public void WithRangeAndCountOfOne()
+            {
+                Create("dog", "cat", "tree", "rabbit");
+                RunCommand("3j 1");
+                Assert.Equal(
+                    new[] { "dog", "cat", "tree", "rabbit" },
+                    _textBuffer.GetLines());
             }
         }
 
@@ -1969,6 +2294,7 @@ namespace Vim.UnitTest
             public void SwitchOut()
             {
                 Create("");
+                VimHost.LoadFileIntoExistingWindowFunc = delegate { return true; };
                 RunCommand("e foo");
                 Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
             }
@@ -2014,12 +2340,42 @@ namespace Vim.UnitTest
                 Assert.Equal(1, _textView.GetCaretLine().LineNumber);
             }
 
+            [WpfTheory]
+            [InlineData("fo", "fo")]
+            [InlineData("tree<BS>", "tre")]
+            [InlineData("tree<Esc>", "")]
+            [InlineData("c<BS><BS>", "")]
+            [InlineData("BS", "BS")]
+            public void Input(string typedNotation, string expectedCommand)
+            {
+                Create("");
+                _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
+                _vimBuffer.ProcessNotation(typedNotation);
+                Assert.Equal(expectedCommand, _commandMode.Command);
+            }
+
+            [WpfFact]
+            public void Split()
+            {
+                Create("");
+                var didSplit = false;
+                VimHost.SplitViewHorizontallyFunc = _ => { didSplit = true; };
+                RunCommand("split");
+                Assert.True(didSplit);
+            }
+
             [WpfFact]
             public void Issue1327()
             {
                 Create("cat", "dog");
                 _textView.MoveCaretTo(3);
+                var didSave = false;
+                var didClose = false;
+                VimHost.SaveFunc = _ => didSave = true;
+                VimHost.CloseFunc = _ => didClose = true;
                 RunCommand("wq");
+                Assert.True(didSave);
+                Assert.True(didClose);
             }
 
             [WpfFact]

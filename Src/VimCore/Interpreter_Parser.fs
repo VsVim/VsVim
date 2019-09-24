@@ -6,12 +6,12 @@ open System.Collections.Generic
 open StringBuilderExtensions
 
 [<RequireQualifiedAccess>]
-type ParseRegisterName =
+type internal ParseRegisterName =
     | All
     | NoNumbered
 
 [<RequireQualifiedAccess>]
-type ParseResult<'T> = 
+type internal ParseResult<'T> = 
     | Succeeded of Value: 'T
     | Failed of Error: string
 
@@ -22,7 +22,7 @@ type ParseResult<'T> =
         | ParseResult.Failed msg -> ParseResult.Failed msg
         | ParseResult.Succeeded value -> mapFunc value
 
-module ParseResultUtil =
+module internal ParseResultUtil =
 
     let Map (parseResult: ParseResult<'T>) mapFunc = 
         parseResult.Map mapFunc
@@ -32,7 +32,7 @@ module ParseResultUtil =
         | ParseResult.Failed msg -> LineCommand.ParseError msg
         | ParseResult.Succeeded lineCommand -> lineCommand
 
-type ParseResultBuilder
+type internal ParseResultBuilder
     (
         _parser: Parser,
         _errorMessage: string
@@ -106,7 +106,7 @@ and LineCommandBuilder
     member x.Zero () = 
         _parser.ParseError _errorMessage
 
-and [<Sealed>] Parser
+and [<Sealed>] internal Parser
     (
         _globalSettings: IVimGlobalSettings,
         _vimData: IVimData
@@ -459,7 +459,7 @@ and [<Sealed>] Parser
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
-    member x.TryExpand name =
+    member x.TryExpandCommandName name =
 
         // Is 'name' an abbreviation of the given command name and abbreviation
         let isAbbreviation (fullName: string) (abbreviation: string) = 
@@ -471,7 +471,7 @@ and [<Sealed>] Parser
         s_LineCommandNamePair
         |> Seq.filter (fun (name, abbreviation) -> isAbbreviation name abbreviation)
         |> Seq.map fst
-        |> SeqUtil.headOrDefault name
+        |> Seq.tryHead
 
     /// Parse out the '!'.  Returns true if a ! was found and consumed
     /// actually skipped
@@ -2743,15 +2743,20 @@ and [<Sealed>] Parser
 
             handleParseResult parseResult
 
+        let expandOrCurrent name = 
+            match x.TryExpandCommandName name with
+            | Some expanded -> expanded
+            | None -> name
+
         // Get the command name and make sure to expand it to it's possible
         // full name.
         match _tokenizer.CurrentTokenKind with
         | TokenKind.Word word ->
             _tokenizer.MoveNextToken()
-            x.TryExpand word |> doParse
+            expandOrCurrent word |> doParse
         | TokenKind.Character c ->
             _tokenizer.MoveNextToken()
-            c |> StringUtil.OfChar |> x.TryExpand |> doParse
+            c |> StringUtil.OfChar |> expandOrCurrent |> doParse
         | TokenKind.EndOfLine ->
             match lineRange with
             | LineRangeSpecifier.None -> handleParseResult LineCommand.Nop

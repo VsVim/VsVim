@@ -2147,9 +2147,17 @@ namespace Vim.UnitTest
                 _vimRaw.OnFocus(vimBuffers[0]);
                 _vimRaw.OnFocus(vimBuffers[1]);
                 _vimRaw.OnFocus(vimBuffers[2]);
-                vimBuffers[2].ProcessNotation(command);
+                _vimHost.NavigateToFunc = _ => true;
                 var expectedData = vimBuffers[bufferIndex].TextView.Caret.Position.VirtualBufferPosition;
-                Assert.Equal(expectedData, _vimHost.NavigateToData);
+                var didNavigate = false;
+                VimHost.NavigateToFunc = point =>
+                {
+                    Assert.Equal(vimBuffers[bufferIndex].TextView.GetCaretVirtualPoint(), point);
+                    didNavigate = true;
+                    return true;
+                };
+                vimBuffers[2].ProcessNotation(command);
+                Assert.True(didNavigate);
             }
 
             [WpfTheory]
@@ -9618,6 +9626,17 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("dd");
                 Assert.Equal("cat", RegisterMap.GetRegister(0).StringValue);
                 Assert.Equal("penny" + Environment.NewLine, RegisterMap.GetRegister(1).StringValue);
+            }
+
+            [WpfFact]
+            public void LinewiseYank_ClipboardUnnamed()
+            {
+                // Reported in issue #2707 (migrated to issue #2735).
+                Create("dog", "tree");
+                _globalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("yy");
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
             }
 
             [WpfFact]

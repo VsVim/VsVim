@@ -4202,6 +4202,20 @@ type CommandRunDataEventArgs(_commandRunData: CommandRunData) =
 
     member x.CommandRunData = _commandRunData
 
+type CommandEventArgs(_rawCommand: string, _command: string, _wasMapped: bool, _lineCommand: LineCommand) =
+    inherit System.EventArgs()
+
+    /// This is provided text that was executed. This can be both the abbreviated form of a command, say 'e',
+    /// or the expanded form 'edit'.
+    member x.RawCommand = _rawCommand
+
+    /// This is the expanded command name which was executed. It will never be the abbreviated form.
+    member x.Command = _command
+
+    member x.LineCommand = _lineCommand
+
+    member x.WasMapped = _wasMapped
+
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
 /// not actually run the motions
 type IMotionCapture =
@@ -5483,10 +5497,10 @@ and IVim =
     abstract RemoveVimBuffer: ITextView -> bool
 
     /// Get the IVimBuffer associated with the given ITextView
-    abstract TryGetVimBuffer: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
+    abstract TryGetVimBuffer: textView: ITextView * vimBuffer: outref<IVimBuffer> -> bool
 
     /// Get the IVimTextBuffer associated with the given ITextBuffer
-    abstract TryGetVimTextBuffer: textBuffer: ITextBuffer * [<Out>] vimTextBuffer: IVimTextBuffer byref -> bool
+    abstract TryGetVimTextBuffer: textBuffer: ITextBuffer * vimTextBuffer: outref<IVimTextBuffer> -> bool
 
     /// This implements a cached version of IVimHost::ShouldCreateVimBuffer.  Code should prefer 
     /// this method wherever possible 
@@ -5499,7 +5513,7 @@ and IVim =
     /// ITagger implementations will be called long before the host has a chance to create the 
     /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
     /// creation in the IVimHost
-    abstract TryGetOrCreateVimBufferForHost: textView: ITextView * [<Out>] vimBuffer: IVimBuffer byref -> bool
+    abstract TryGetOrCreateVimBufferForHost: textView: ITextView * vimBuffer: outref<IVimBuffer> -> bool
 
     /// Get the nth most recent IVimBuffer
     abstract TryGetRecentBuffer: n: int -> IVimBuffer option
@@ -6039,6 +6053,10 @@ and ICommandMode =
     /// Raised when the command string is changed
     [<CLIEvent>]
     abstract CommandChanged: IDelegateEvent<System.EventHandler>
+
+    /// Raised when the command is run
+    [<CLIEvent>]
+    abstract CommandRan: IDelegateEvent<System.EventHandler<CommandEventArgs>>
 
     inherit IMode
 
