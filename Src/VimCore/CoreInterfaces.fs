@@ -2682,6 +2682,11 @@ type VisualInsertKind =
 type ModeArgument =
     | None
 
+    /// Begins command mode with a specified count.
+    /// When giving a count before entering ":", this is translated into:
+    /// :.,.+(count - 1)
+    | CommandWithCount of Count: int option
+
     /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
     /// option provided is meant to be the initial caret point.  If not provided the actual 
     /// caret point is used
@@ -2720,6 +2725,7 @@ with
     member x.LinkedUndoTransaction =
         match x with
         | ModeArgument.None -> Option.None
+        | ModeArgument.CommandWithCount _ -> Option.None
         | ModeArgument.InitialVisualSelection _ -> Option.None
         | ModeArgument.InsertBlock (_, _, transaction) -> Some transaction
         | ModeArgument.InsertWithCount _ -> Option.None
@@ -2735,32 +2741,6 @@ with
         match x.LinkedUndoTransaction with
         | Some transaction -> transaction.Complete()
         | Option.None -> ()
-
-[<RequireQualifiedAccess>]
-type SwitchCommandModeArgument =
-    | None
-    ///Switched from normal mode to command mode
-    | FromNormalMode
-    ///Switched from visual mode to command mode
-    | FromVisualMode
-
-with
-    static member GetCommandFromNormalModeString (count:int option) = 
-        match count with
-            | Some c ->
-                if c = 1 then
-                    "." 
-                elif 1 < c then
-                    sprintf ".,.+%i" (c - 1)
-                else
-                    StringUtil.Empty
-            | Option.None -> StringUtil.Empty
-    member x.GetModeArgument (count:int option) = 
-        match x with
-            | SwitchCommandModeArgument.None -> ModeArgument.None
-            | SwitchCommandModeArgument.FromNormalMode -> ModeArgument.PartialCommand (SwitchCommandModeArgument.GetCommandFromNormalModeString count)
-            | SwitchCommandModeArgument.FromVisualMode -> ModeArgument.PartialCommand "'<,'>"
-             
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
@@ -3248,7 +3228,7 @@ type NormalCommand =
     | SubtractFromWord
 
     /// Switch modes with the specified information
-    | SwitchMode of ModeKind: ModeKind * ModeArgument: SwitchCommandModeArgument
+    | SwitchMode of ModeKind: ModeKind * ModeArgument: ModeArgument
 
     /// Switch to the specified kind of visual mode
     | SwitchModeVisualCommand of VisualKind: VisualKind

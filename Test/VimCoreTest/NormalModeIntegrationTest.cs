@@ -8987,8 +8987,7 @@ namespace Vim.UnitTest
             public void SwitchToCommandMode_CountOne()
             {
                 Create("");
-                _vimBuffer.Process("1");
-                _vimBuffer.Process(":");
+                _vimBuffer.Process("1:");
                 Assert.Equal(ModeKind.Command, _vimBuffer.Mode.ModeKind);
                 Assert.Equal(".", _vimBuffer.CommandMode.Command);
             }
@@ -8997,8 +8996,7 @@ namespace Vim.UnitTest
             public void SwitchToCommandMode_CountTwo()
             {
                 Create("");
-                _vimBuffer.Process("2");
-                _vimBuffer.Process(":");
+                _vimBuffer.Process("2:");
                 Assert.Equal(ModeKind.Command, _vimBuffer.Mode.ModeKind);
                 Assert.Equal(".,.+1", _vimBuffer.CommandMode.Command);
             }

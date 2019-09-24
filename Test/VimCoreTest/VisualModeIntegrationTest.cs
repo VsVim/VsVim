@@ -1080,8 +1080,7 @@ namespace Vim.UnitTest
                 {
                     Create("cat");
                     _textView.MoveCaretTo(0);
-                    _vimBuffer.Process("V");
-                    _vimBuffer.Process(":");
+                    _vimBuffer.Process("V:");
                     Assert.Equal(ModeKind.Command, _vimBuffer.Mode.ModeKind);
                     Assert.Equal("'<,'>", _vimBuffer.CommandMode.Command);
                 }
