@@ -2217,10 +2217,14 @@ type internal CommonOperations
         // the clipboard using the editor to preserve formatting. Feature
         // requested in issue #1920.
         if Util.IsFlagSet _globalSettings.ClipboardOptions ClipboardOptions.Unnamed then
-            SelectionSpan.FromSpan(span.End, span, isReversed = false)
-            |> TextViewUtil.SelectSpan _textView
-            _editorOperations.CopySelection() |> ignore
-            TextViewUtil.ClearSelection _textView
+            let caretPoint = x.CaretPoint
+            try
+                SelectionSpan.FromSpan(span.End, span, isReversed = false)
+                |> TextViewUtil.SelectSpan _textView
+                _editorOperations.CopySelection() |> ignore
+                TextViewUtil.ClearSelection _textView
+            finally
+                TextViewUtil.MoveCaretToPoint _textView caretPoint
 
         x.RecordLastChangeOrYank span span
 

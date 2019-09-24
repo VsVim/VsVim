@@ -9592,6 +9592,17 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void LinewiseYank_ClipboardUnnamed()
+            {
+                // Reported in issue #2707 (migrated to issue #2735).
+                Create("dog", "tree");
+                _globalSettings.ClipboardOptions = ClipboardOptions.Unnamed;
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+                _vimBuffer.Process("yy");
+                Assert.Equal(_textView.GetPointInLine(0, 0), _textView.GetCaretPoint());
+            }
+
+            [WpfFact]
             public void OpenLink()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
