@@ -4,9 +4,11 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
+using Vim.Modes.Insert;
 using Xunit;
 using Vim.VisualStudio.Specific;
 using Vim.UnitTest.Exports;
+using System.Linq;
 
 namespace Vim.UnitTest
 {
@@ -15,13 +17,15 @@ namespace Vim.UnitTest
     /// </summary>
     public abstract class InsertModeIntegrationTest : VimTestBase
     {
-        protected IVimBuffer _vimBuffer;
-        protected IWpfTextView _textView;
-        protected ITextBuffer _textBuffer;
-        protected IVimGlobalSettings _globalSettings;
-        protected IVimLocalSettings _localSettings;
-        protected TestableMouseDevice _testableMouseDevice;
-        protected Register _register;
+        private IVimBuffer _vimBuffer;
+        private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
+        private TestableMouseDevice _testableMouseDevice;
+        private Register _register;
+        private IInsertMode _insertMode;
+        private InsertMode _insertModeRaw;
 
         protected void Create(params string[] lines)
         {
@@ -34,6 +38,8 @@ namespace Vim.UnitTest
             _textBuffer = _textView.TextBuffer;
             _vimBuffer = Vim.CreateVimBuffer(_textView);
             _vimBuffer.SwitchMode(ModeKind.Insert, argument);
+            _insertMode = _vimBuffer.InsertMode;
+            _insertModeRaw = (InsertMode)_insertMode;
             _register = Vim.RegisterMap.GetRegister('c');
             _globalSettings = Vim.GlobalSettings;
             _localSettings = _vimBuffer.LocalSettings;
@@ -385,6 +391,48 @@ namespace Vim.UnitTest
                 {
                     Assert.Equal(Environment.NewLine, _textBuffer.GetLine(i).GetLineBreakText());
                 }
+            }
+
+            [WpfFact]
+            public void IsInPaste_Normal()
+            {
+                Create("");
+                _insertMode.ProcessNotation("<C-R>");
+                Assert.True(_insertMode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('"'), _insertMode.PasteCharacter);
+            }
+
+            [WpfFact]
+            public void IsInPaste_Special()
+            {
+                Create();
+                var all = new[] { "R", "O", "P" };
+                foreach (var suffix in all)
+                {
+                    var command = $"<C-R><C-{suffix}>";
+                    _insertMode.ProcessNotation(command);
+                    Assert.True(_insertMode.IsInPaste);
+                    Assert.Equal(FSharpOption<char>.Some('"'), _insertMode.PasteCharacter);
+                    _insertMode.ProcessNotation("<Esc>");
+                }
+            }
+
+            [WpfFact]
+            public void IsInPaste_Digraph1()
+            {
+                Create("");
+                _insertMode.ProcessNotation("<C-k>");
+                Assert.True(_insertMode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('?'), _insertMode.PasteCharacter);
+            }
+
+            [WpfFact]
+            public void IsInPaste_Digraph2()
+            {
+                Create("");
+                _insertMode.ProcessNotation("<C-k>e");
+                Assert.True(_insertMode.IsInPaste);
+                Assert.Equal(FSharpOption<char>.Some('e'), _insertMode.PasteCharacter);
             }
         }
 
@@ -1688,6 +1736,11 @@ namespace Vim.UnitTest
             }
         }
 
+        public sealed class WordCompletionTest : InsertModeIntegrationTest
+        {
+
+        }
+
         public sealed class OneTimeCommandTests : InsertModeIntegrationTest
         {
             [WpfFact]
@@ -2841,6 +2894,272 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetLine(1).Start.Add(3), _textView.GetCaretPoint());
             }
 
+            /// <summary>
+            /// Make sure we can process escape
+            /// </summary>
+            [WpfFact]
+            public void CanProcess_Escape()
+            {
+                Create("");
+                Assert.True(_insertMode.CanProcess(KeyInputUtil.EscapeKey));
+            }
+
+            /// <summary>
+            /// If the active IWordCompletionSession is dismissed via the API it should cause the 
+            /// ActiveWordCompletionSession value to be reset as well
+            /// </summary>
+            [WpfFact]
+            public void ActiveWordCompletionSession_Dismissed()
+            {
+                Create("c cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Assert.True(_insertMode.ActiveWordCompletionSession.IsSome());
+                _insertMode.ActiveWordCompletionSession.Value.Dismiss();
+                Assert.True(_insertMode.ActiveWordCompletionSession.IsNone());
+            }
+
+            /// <summary>
+            /// When there is an active IWordCompletionSession we should still process all input even though 
+            /// the word completion session can only process a limited set of key strokes.  The extra key 
+            /// strokes are used to cancel the session and then be processed as normal
+            /// </summary>
+            [WpfFact]
+            public void CanProcess_ActiveWordCompletion()
+            {
+                Create("c cat");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Assert.True(_insertMode.CanProcess(KeyInputUtil.CharToKeyInput('a')));
+            }
+
+            /// <summary>
+            /// After a word should return the entire word 
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletionSpan_AfterWord()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(3);
+                Assert.Equal("cat", _insertModeRaw.GetWordCompletionSpan().Value.GetText());
+            }
+
+            /// <summary>
+            /// In the middle of the word should only consider the word up till the caret for the 
+            /// completion section
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletionSpan_MiddleOfWord()
+            {
+                Create("cat dog");
+                _textView.MoveCaretTo(1);
+                Assert.Equal("c", _insertModeRaw.GetWordCompletionSpan().Value.GetText());
+            }
+
+            /// <summary>
+            /// When the caret is on a closing paren and after a word the completion should be for the
+            /// word and not for the paren
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletionSpan_OnParen()
+            {
+                Create("m(arg)");
+                _textView.MoveCaretTo(5);
+                Assert.Equal(')', _textView.GetCaretPoint().GetChar());
+                Assert.Equal("arg", _insertModeRaw.GetWordCompletionSpan().Value.GetText());
+            }
+
+            /// <summary>
+            /// This is a sanity check to make sure we don't try anything like jumping backwards.  The 
+            /// test should be for the character immediately preceding the caret position.  Here it's 
+            /// a blank and there should be nothing returned
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletionSpan_OnParenWithBlankBefore()
+            {
+                Create("m(arg )");
+                _textView.MoveCaretTo(6);
+                Assert.Equal(')', _textView.GetCaretPoint().GetChar());
+                Assert.True(_insertModeRaw.GetWordCompletionSpan().IsNone());
+            }
+
+            /// <summary>
+            /// When provided an empty SnapshotSpan the words should be returned in order from the given
+            /// point
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletions_All()
+            {
+                Create("cat dog tree");
+                var words = _insertModeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                Assert.Equal(
+                    new[] { "dog", "tree", "cat" },
+                    words.ToList());
+            }
+
+            /// <summary>
+            /// Don't include any comments or non-words when getting the words from the buffer
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletions_All_JustWords()
+            {
+                Create("cat dog // tree &&");
+                var words = _insertModeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 3, 0));
+                Assert.Equal(
+                    new[] { "dog", "tree", "cat" },
+                    words.ToList());
+            }
+
+            /// <summary>
+            /// When given a word span only include strings which start with the given prefix
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletions_Prefix()
+            {
+                Create("c cat dog // tree && copter");
+                var words = _insertModeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                Assert.Equal(
+                    new[] { "cat", "copter" },
+                    words.ToList());
+            }
+
+            /// <summary>
+            /// Starting from the middle of a word should consider the part of the word to the right of 
+            /// the caret as a word
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletions_MiddleOfWord()
+            {
+                Create("test", "ccrook cat caturday");
+                var words = _insertModeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.GetLine(1).Start, 1));
+                Assert.Equal(
+                    new[] { "crook", "cat", "caturday" },
+                    words.ToList());
+            }
+
+            /// <summary>
+            /// Don't include any one length values in the return because Vim doesn't include them
+            /// </summary>
+            [WpfFact]
+            public void GetWordCompletions_ExcludeOneLengthValues()
+            {
+                Create("c cat dog // tree && copter a b c");
+                var words = _insertModeRaw.WordCompletionUtil.GetWordCompletions(new SnapshotSpan(_textView.TextSnapshot, 0, 1));
+                Assert.Equal(
+                    new[] { "cat", "copter" },
+                    words.ToList());
+            }
+
+            /// <summary>
+            /// Ensure that all known character values are considered direct input.  They cause direct
+            /// edits to the buffer.  They are not commands.
+            /// </summary>
+            [WpfFact]
+            public void IsDirectInput_Chars()
+            {
+                Create();
+                foreach (var cur in KeyInputUtilTest.CharAll)
+                {
+                    var input = KeyInputUtil.CharToKeyInput(cur);
+                    Assert.True(_insertMode.CanProcess(input));
+                    Assert.True(_insertMode.IsDirectInsert(input));
+                }
+            }
+
+            /// <summary>
+            /// Certain keys do cause buffer edits but are not direct input.  They are interpreted by Vim
+            /// and given specific values based on settings.  While they cause edits the values passed down
+            /// don't directly go to the buffer
+            /// </summary>
+            [WpfFact]
+            public void IsDirectInput_SpecialKeys()
+            {
+                Create();
+                Assert.False(_insertMode.IsDirectInsert(KeyInputUtil.EnterKey));
+                Assert.False(_insertMode.IsDirectInsert(KeyInputUtil.CharToKeyInput('\t')));
+            }
+
+            /// <summary>
+            /// Make sure that Escape in insert mode runs a command even if the caret is in virtual 
+            /// space
+            /// </summary>
+            [WpfFact]
+            public void Escape_RunCommand()
+            {
+                Create();
+                _textView.SetText("hello world", "", "again");
+                _textView.MoveCaretTo(_textView.GetLine(1).Start.Position, 4);
+                var didRun = false;
+                _insertMode.CommandRan += (sender, e) => didRun = true;
+                _insertMode.Process(KeyInputUtil.EscapeKey);
+                Assert.True(didRun);
+            }
+
+            /// <summary>
+            /// Make sure to dismiss any active completion windows when exiting.  We had the choice
+            /// between having escape cancel only the window and escape canceling and returning
+            /// to presambly normal mode.  The unanimous user feedback is that Escape should leave 
+            /// insert mode no matter what.  
+            /// </summary>
+            [WpfTheory]
+            [InlineData("<Esc>")]
+            [InlineData("<C-[>")]
+            public void Escape_DismissCompletionWindows(string notation)
+            {
+                Create();
+                _textView.SetText("h hello world", 1);
+                _vimBuffer.ProcessNotation("<C-N>");
+                Assert.True(_insertMode.ActiveWordCompletionSession.IsSome());
+                _vimBuffer.ProcessNotation(notation);
+                Assert.True(_insertMode.ActiveWordCompletionSession.IsNone());
+                Assert.Equal(ModeKind.Normal, _vimBuffer.ModeKind);
+            }
+
+            [WpfFact]
+            public void Control_OpenBracket1()
+            {
+                Create();
+                var ki = KeyInputUtil.CharWithControlToKeyInput('[');
+                var name = new KeyInputSet(ki);
+                Assert.Contains(name, _insertMode.CommandNames);
+            }
+
+            /// <summary>
+            /// The CTRL-O command should bind to a one time command for normal mode
+            /// </summary>
+            [WpfFact]
+            public void OneTimeCommand()
+            {
+                Create();
+                var res = _insertMode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
+                Assert.True(res.IsSwitchModeOneTimeCommand());
+            }
+
+            /// <summary>
+            /// Ensure that Enter maps to the appropriate InsertCommand and shows up as the LastCommand
+            /// after processing
+            /// </summary>
+            [WpfFact]
+            public void Process_InsertNewLine()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("<CR>");
+                Assert.True(_insertModeRaw._sessionData.CombinedEditCommand.IsSome());
+                Assert.True(_insertModeRaw._sessionData.CombinedEditCommand.Value.IsInsertNewLine);
+            }
+
+            /// <summary>
+            /// Ensure that a character maps to the DirectInsert and shows up as the LastCommand
+            /// after processing
+            /// </summary>
+            [WpfFact]
+            public void Process_DirectInsert()
+            {
+                Create("");
+                _vimBuffer.ProcessNotation("c");
+                Assert.True(_insertModeRaw._sessionData.CombinedEditCommand.IsSome());
+                Assert.True(_insertModeRaw._sessionData.CombinedEditCommand.Value.IsInsert);
+            }
         }
 
         public abstract class TabSettingsTest : InsertModeIntegrationTest

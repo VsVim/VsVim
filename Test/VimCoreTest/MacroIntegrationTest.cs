@@ -70,6 +70,7 @@ namespace Vim.UnitTest
             [WpfFact]
             public void CloseBufferDuringRecord()
             {
+                VimHost.CloseFunc = textView => textView.Close();
                 var textView2 = CreateTextView("another buffer");
                 var vimBuffer2 = Vim.CreateVimBuffer(textView2);
                 vimBuffer2.SwitchMode(ModeKind.Normal, ModeArgument.None);

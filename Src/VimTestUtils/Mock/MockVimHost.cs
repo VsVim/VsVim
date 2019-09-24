@@ -41,8 +41,7 @@ namespace Vim.UnitTest.Mock
         public Func<ITextView, bool> ReloadFunc { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
-        public VirtualSnapshotPoint NavigateToData { get; set; }
-        public bool NavigateToReturn { get; set; }
+        public Func<VirtualSnapshotPoint, bool> NavigateToFunc { get; set; }
         public ITextView FocusedTextView { get; set; }
         public FSharpList<IVimBuffer> Buffers { get; set; }
         public bool? IsTextViewVisible { get; set; }
@@ -54,15 +53,18 @@ namespace Vim.UnitTest.Mock
         public Action<IVimBuffer, CallInfo, bool> RunCSharpScriptFunc { get; set; }
         public Action<ITextView, string, string> RunHostCommandFunc { get; set; }
         public Func<string, FSharpOption<int>, FSharpOption<int>, FSharpOption<ITextView>> LoadIntoNewWindowFunc { get; set; }
+        public Func<string, ITextView, bool> LoadFileIntoExistingWindowFunc { get; set; }
         public Func<ListKind, NavigationKind, FSharpOption<int>, bool, FSharpOption<ListItem>> NavigateToListItemFunc { get; set; }
         public Action<ListKind> OpenListWindowFunc { get; set; }
         public Func<string, bool> OpenLinkFunc { get; set; }
-        public Func<string, string, bool> RunSaveTextAs { get; set; }
-        public ITextBuffer LastSaved { get; set; }
-        public ITextView LastClosed { get; set; }
+        public Func<string, string, bool> SaveTextAsFunc { get; set; }
+        public Action<ITextView> CloseFunc { get; set; }
+        public Func<ITextBuffer, bool> SaveFunc { get; set; }
+        public Action<ITextView> SplitViewHorizontallyFunc { get; set; }
         public bool ShouldCreateVimBufferImpl { get; set; }
         public bool ShouldIncludeRcFile { get; set; }
         public VimRcState VimRcState { get; private set; }
+        public Action QuitFunc { get; set; }
         public int TabCount { get; set; }
         public int GoToTabData { get; set; }
         public int GetTabIndexData { get; set; }
@@ -90,41 +92,44 @@ namespace Vim.UnitTest.Mock
         public void Clear()
         {
             AutoSynchronizeSettings = true;
-            IsAutoCommandEnabled = true;
-            IsUndoRedoExpected = false;
-            DefaultSettings = DefaultSettings.GVim74;
-            GoToDefinitionReturn = true;
-            IsCompletionWindowActive = false;
-            NavigateToReturn = false;
-            Buffers = FSharpList<IVimBuffer>.Empty;
             BeepCount = 0;
-            ClosedOtherWindows = false;
+            Buffers = FSharpList<IVimBuffer>.Empty;
+            CloseFunc = delegate { throw new NotImplementedException(); };
             ClosedOtherTabs = false;
-            GoToDefinitionCount = 0;
-            FocusedTextView = null;
-            IsTextViewVisible = null;
-            _isVisibleChanged = null;
-            TryCustomProcessFunc = null;
-            GetNewLineIndentFunc = delegate { return FSharpOption<int>.None; };
-            GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
-            GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
+            ClosedOtherWindows = false;
             CreateHiddenTextViewFunc = delegate { throw new NotImplementedException(); };
-            RunCommandFunc = delegate { throw new NotImplementedException(); };
-            RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
-            RunHostCommandFunc = delegate { throw new NotImplementedException(); };
-            LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
-            OpenListWindowFunc = delegate { throw new NotImplementedException(); };
-            NavigateToListItemFunc = delegate { throw new NotImplementedException(); };
-            RunSaveTextAs = delegate { throw new NotImplementedException(); };
-            ReloadFunc = delegate { return true; };
-            IsDirtyFunc = null;
+            DefaultSettings = DefaultSettings.GVim74;
             DoActionWhenTextViewReadyFunc = null;
-            LastClosed = null;
-            LastSaved = null;
+            FocusedTextView = null;
+            GetNewLineIndentFunc = delegate { return FSharpOption<int>.None; };
+            GoToDefinitionCount = 0;
+            GoToDefinitionReturn = true;
+            GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
+            GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
+            IsAutoCommandEnabled = true;
+            IsCompletionWindowActive = false;
+            IsDirtyFunc = null;
+            IsTextViewVisible = null;
+            IsUndoRedoExpected = false;
+            LoadFileIntoExistingWindowFunc = delegate { throw new NotImplementedException(); };
+            LoadIntoNewWindowFunc = delegate { throw new NotImplementedException(); };
+            NavigateToListItemFunc = delegate { throw new NotImplementedException(); };
+            NavigateToFunc = delegate { throw new NotImplementedException(); };
+            OpenListWindowFunc = delegate { throw new NotImplementedException(); };
+            QuitFunc = delegate { throw new NotImplementedException(); };
+            ReloadFunc = delegate { return true; };
+            RunCSharpScriptFunc = delegate { throw new NotImplementedException(); };
+            RunCommandFunc = delegate { throw new NotImplementedException(); };
+            RunHostCommandFunc = delegate { throw new NotImplementedException(); };
+            SaveFunc = delegate { throw new NotImplementedException(); };
+            SaveTextAsFunc = delegate { throw new NotImplementedException(); };
             ShouldCreateVimBufferImpl = false;
             ShouldIncludeRcFile = true;
-            WordWrapStyle = WordWrapStyles.WordWrap;
+            SplitViewHorizontallyFunc = delegate { throw new NotImplementedException(); };
+            TryCustomProcessFunc = null;
             UseDefaultCaret = false;
+            WordWrapStyle = WordWrapStyles.WordWrap;
+            _isVisibleChanged = null;
         }
 
         void IVimHost.EnsurePackageLoaded()
@@ -145,8 +150,7 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {
-            NavigateToData = point;
-            return NavigateToReturn;
+            return NavigateToFunc(point);
         }
 
         string IVimHost.GetName(ITextBuffer textBuffer)
@@ -162,8 +166,7 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.Close(ITextView textView)
         {
-            LastClosed = textView;
-            textView.Close();
+            CloseFunc(textView);
         }
 
         void IVimHost.CloseAllOtherWindows(ITextView textView)
@@ -183,18 +186,17 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.Save(ITextBuffer textBuffer)
         {
-            LastSaved = textBuffer;
-            return true;
+            return SaveFunc(textBuffer);
         }
 
         bool IVimHost.SaveTextAs(string text, string filePath)
         {
-            return RunSaveTextAs(text, filePath);
+            return SaveTextAsFunc(text, filePath);
         }
 
         void IVimHost.SplitViewHorizontally(ITextView textView)
         {
-            throw new NotImplementedException();
+            SplitViewHorizontallyFunc(textView);
         }
 
         void IVimHost.Make(bool jumpToFirstError, string arguments)
@@ -270,7 +272,7 @@ namespace Vim.UnitTest.Mock
 
         bool IVimHost.LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            return true;
+            return LoadFileIntoExistingWindowFunc(filePath, textView);
         }
 
         bool IVimHost.Reload(ITextView textView)
@@ -330,7 +332,7 @@ namespace Vim.UnitTest.Mock
 
         void IVimHost.Quit()
         {
-            throw new NotImplementedException();
+            QuitFunc();
         }
 
         bool IVimHost.IsVisible(ITextView textView)

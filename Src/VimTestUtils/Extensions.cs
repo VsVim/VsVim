@@ -381,7 +381,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Get the suceeded version of the ParseResult
         /// </summary>
-        public static ParseResult<T>.Succeeded AsSucceeded<T>(this ParseResult<T> parseResult)
+        internal static ParseResult<T>.Succeeded AsSucceeded<T>(this ParseResult<T> parseResult)
         {
             return (ParseResult<T>.Succeeded)parseResult;
         }
@@ -389,7 +389,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Get the failed version of the ParseResult
         /// </summary>
-        public static ParseResult<T>.Failed AsFailed<T>(this ParseResult<T> parseResult)
+        internal static ParseResult<T>.Failed AsFailed<T>(this ParseResult<T> parseResult)
         {
             return (ParseResult<T>.Failed)parseResult;
         }
@@ -397,7 +397,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Is this a failed ParseResult with the given error message?
         /// </summary>
-        public static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
+        internal static bool IsFailed<T>(this ParseResult<T> parseResult, string message)
         {
             return parseResult.IsFailed && message == parseResult.AsFailed().Error;
         }

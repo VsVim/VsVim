@@ -107,7 +107,7 @@ module public EditorExtensions =
     open System.Runtime.InteropServices
 
     [<Extension>]
-    let TryGetPropertySafe<'T> propertyCollection (key: obj) ([<Out>] value: byref<'T>) =
+    let TryGetPropertySafe<'T> propertyCollection (key: obj) (value: outref<'T>) =
         match PropertyCollectionUtil.GetValue<'T> key propertyCollection with
         | Some v ->
             value <- v
