@@ -32,6 +32,8 @@ namespace Vim.UnitTest
         private readonly LocalMark _localMarkA = LocalMark.NewLetter(Letter.A);
         private IOutliningManager _outliningManager;
         internal CommandUtil _commandUtil;
+        private ITextBuffer _lastSaved;
+        private ITextView _lastClosed;
 
         protected void Create(params string[] lines)
         {
@@ -72,6 +74,13 @@ namespace Vim.UnitTest
 
             var outliningManagerService = CompositionContainer.GetExportedValue<IOutliningManagerService>();
             _outliningManager = outliningManagerService.GetOutliningManager(_textView);
+
+            VimHost.SaveFunc = textBuffer => 
+            {
+                _lastSaved = textBuffer;
+                return true;
+            };
+            VimHost.CloseFunc = textView => { _lastClosed = textView; };
         }
 
         protected virtual IVimTextBuffer CreateVimTextBufferCore(ITextBuffer textBuffer)
@@ -1169,8 +1178,8 @@ namespace Vim.UnitTest
                 Create("");
                 _vimHost.IsDirtyFunc = _ => true;
                 _commandUtil.CloseBuffer();
-                Assert.Null(_vimHost.LastSaved);
-                Assert.Equal(_textView, _vimHost.LastClosed);
+                Assert.Null(_lastSaved);
+                Assert.Equal(_textView, _lastClosed);
             }
 
             /// <summary>
@@ -1182,8 +1191,8 @@ namespace Vim.UnitTest
                 Create("");
                 _vimHost.IsDirtyFunc = _ => false;
                 _commandUtil.CloseBuffer();
-                Assert.Null(_vimHost.LastSaved);
-                Assert.Equal(_textView, _vimHost.LastClosed);
+                Assert.Null(_lastSaved);
+                Assert.Equal(_textView, _lastClosed);
             }
 
             [WpfFact]
@@ -2809,8 +2818,8 @@ namespace Vim.UnitTest
                 Create("");
                 _vimHost.IsDirtyFunc = _ => true;
                 _commandUtil.WriteBufferAndQuit();
-                Assert.Equal(_textBuffer, _vimHost.LastSaved);
-                Assert.Equal(_textView, _vimHost.LastClosed);
+                Assert.Equal(_textBuffer, _lastSaved);
+                Assert.Equal(_textView, _lastClosed);
             }
 
             /// <summary>
@@ -2823,8 +2832,8 @@ namespace Vim.UnitTest
                 Create("");
                 _vimHost.IsDirtyFunc = _ => false;
                 _commandUtil.WriteBufferAndQuit();
-                Assert.Null(_vimHost.LastSaved);
-                Assert.Equal(_textView, _vimHost.LastClosed);
+                Assert.Null(_lastSaved);
+                Assert.Equal(_textView, _lastClosed);
             }
 
             /// <summary>

@@ -2582,6 +2582,15 @@ type VimInterpreter
         inner builder symbolicPath
         builder.ToString()
 
+    member x.TryExpandCommandName(shortCommandName, commandName: outref<string>) =
+        let parser = Parser(_globalSettings, _vimData)
+        match parser.TryExpandCommandName shortCommandName with
+        | Some fullCommandName -> 
+            commandName <- fullCommandName
+            true
+        | None ->
+            false
+
     member x.ApplyFileNameModifiers path modifiers : string =
         let rec inner path modifiers : string =
             match path with
@@ -2610,12 +2619,13 @@ type VimInterpreter
         | Some path -> inner path modifiers
 
     interface IVimInterpreter with
-        member x.GetLine lineSpecifier = x.GetLine lineSpecifier
-        member x.GetLineRange lineRange = x.GetLineRange lineRange
-        member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
-        member x.RunExpression expression = x.RunExpression expression
-        member x.EvaluateExpression text = x.EvaluateExpression text
-        member x.RunScript lines = x.RunScript lines
+        member x.GetLine(lineSpecifier) = x.GetLine lineSpecifier
+        member x.GetLineRange(lineRange) = x.GetLineRange lineRange
+        member x.RunLineCommand(lineCommand) = x.RunLineCommand lineCommand
+        member x.RunExpression(expression) = x.RunExpression expression
+        member x.EvaluateExpression(text) = x.EvaluateExpression text
+        member x.RunScript(lines) = x.RunScript lines
+        member x.TryExpandCommandName(shortCommandName, commandName: outref<string>) = x.TryExpandCommandName(shortCommandName, &commandName)
 
 [<Export(typeof<IVimInterpreterFactory>)>]
 type VimInterpreterFactory
