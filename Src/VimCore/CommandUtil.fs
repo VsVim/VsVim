@@ -179,7 +179,7 @@ type internal CommandUtil
         TextViewUtil.MoveCaretToPoint _textView startPoint
         x.EditWithUndoTransaction "Add to selection" (fun () ->
             use edit = _textBuffer.CreateEdit()
-            let AddToWordAtPointInSpanAndIncrementIndex index (span:SnapshotSpan) = 
+            let AddToWordAtPointInSpanAndIncrementIndex index (span: SnapshotSpan) = 
                 let countForIndex =
                     if isProgressive then
                         count * (index + 1)
