@@ -403,7 +403,7 @@ namespace Vim.UI.Wpf.Implementation.BlockCaret
             {
                 var bounds = textViewLine.GetCharacterBounds(caretPoint);
                 var left = bounds.Left;
-                var top = bounds.Top;
+                var top = bounds.TextTop;
 
                 if (_caretDisplay == CaretDisplay.Block ||
                     _caretDisplay == CaretDisplay.HalfBlock ||
