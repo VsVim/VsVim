@@ -128,6 +128,10 @@ namespace Vim.UI.Cocoa.Implementation.Misc
             {
                 res = res | VimKeyModifiers.Control;
             }
+            if (keys.HasFlag(NSEventModifierMask.CommandKeyMask))
+            {
+                res = res | VimKeyModifiers.Command;
+            }
             return res;
         }
 
@@ -145,6 +149,10 @@ namespace Vim.UI.Cocoa.Implementation.Misc
             if (0 != (keys & VimKeyModifiers.Control))
             {
                 res = res | NSEventModifierMask.ControlKeyMask;
+            }
+            if (0 != (keys & VimKeyModifiers.Command))
+            {
+                res = res | NSEventModifierMask.CommandKeyMask;
             }
             return res;
         }
