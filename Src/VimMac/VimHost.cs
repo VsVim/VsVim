@@ -1,16 +1,18 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using AppKit;
+using Foundation;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Vim;
-using Vim.Interpreter;
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
-
+using MonoDevelop.Ide.CodeFormatting;
+using MonoDevelop.Ide.Commands;
 using Vim.Extensions;
-using Microsoft.VisualStudio.TextManager.Interop;
+using Vim.Interpreter;
+using Export = System.ComponentModel.Composition.ExportAttribute ;
 
 namespace Vim.Mac
 {
@@ -61,19 +63,19 @@ namespace Vim.Mac
             
         }
 
-        public void Close(ITextView value)
+        public void Close(ITextView textView)
         {
-
+            textView.Close();
         }
 
-        public void CloseAllOtherTabs(ITextView value)
+        public void CloseAllOtherTabs(ITextView textView)
         {
-
+            IdeApp.CommandService.DispatchCommand(FileTabCommands.CloseAllButThis);
         }
 
-        public void CloseAllOtherWindows(ITextView value)
+        public void CloseAllOtherWindows(ITextView textView)
         {
-
+            IdeApp.CommandService.DispatchCommand(FileTabCommands.CloseAllButThis);
         }
 
         public ITextView CreateHiddenTextView()
@@ -108,7 +110,15 @@ namespace Vim.Mac
 
         public void FormatLines(ITextView textView, SnapshotLineRange range)
         {
+            var startedWithSelection = !textView.Selection.IsEmpty;
+            textView.Selection.Clear();
+            textView.Selection.Select(range.ExtentIncludingLineBreak, false);
 
+            Dispatch(CodeFormattingCommands.FormatBuffer);
+            if (!startedWithSelection)
+            {
+                textView.Selection.Clear();
+            }
         }
 
         public FSharpOption<ITextView> GetFocusedTextView()
@@ -167,7 +177,7 @@ namespace Vim.Mac
 
         public bool GoToDefinition()
         {
-            throw new NotImplementedException();
+            return Dispatch("MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration");
         }
 
         public bool GoToGlobalDeclaration(ITextView textView, string identifier)
@@ -237,7 +247,7 @@ namespace Vim.Mac
 
         public bool OpenLink(string link)
         {
-            throw new NotImplementedException();
+            return NSWorkspace.SharedWorkspace.OpenUrl(new NSUrl(link));
         }
 
         public void OpenListWindow(ListKind listKind)
@@ -297,7 +307,7 @@ namespace Vim.Mac
 
         public void SplitViewVertically(ITextView value)
         {
-            throw new NotImplementedException();
+            Dispatch("MonoDevelop.Ide.Commands.ViewCommands.SideBySideMode");
         }
 
         public void StartShell(string workingDirectory, string file, string arguments)
@@ -319,6 +329,19 @@ namespace Vim.Mac
         public void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             throw new NotImplementedException();
+        
+        }
+
+        bool Dispatch(object command)
+        {
+            try
+            {
+                return IdeApp.CommandService.DispatchCommand(command);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
