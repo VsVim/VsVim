@@ -9,6 +9,7 @@ using Vim.Interpreter;
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
 
+using Vim.Extensions;
 namespace Vim.Mac
 {
     [Export(typeof(IVimHost))]
@@ -17,13 +18,17 @@ namespace Vim.Mac
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     public class VimCocoaHost : IVimHost
     {
+        private readonly ISmartIndentationService _smartIndentationService;
         private IVim _vim;
 
         [ImportingConstructor]
-        public VimCocoaHost(ITextBufferFactoryService textBufferFactoryService)
+        public VimCocoaHost(
+            ITextBufferFactoryService textBufferFactoryService,
+            ISmartIndentationService smartIndentationService)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
             Console.WriteLine("Loaded");
+            _smartIndentationService = smartIndentationService;
         }
 
         public bool AutoSynchronizeSettings => false;
@@ -56,7 +61,7 @@ namespace Vim.Mac
 
         public void Close(ITextView value)
         {
-            value.Close();
+
         }
 
         public void CloseAllOtherTabs(ITextView value)
@@ -114,9 +119,30 @@ namespace Vim.Mac
             return "";
         }
 
+        //TODO: Copied from VsVimHost
         public FSharpOption<int> GetNewLineIndent(ITextView textView, ITextSnapshotLine contextLine, ITextSnapshotLine newLine, IVimLocalSettings localSettings)
         {
-            throw new NotImplementedException();
+            //if (_vimApplicationSettings.UseEditorIndent)
+            //{
+                var indent = _smartIndentationService.GetDesiredIndentation(textView, newLine);
+                if (indent.HasValue)
+                {
+                    return FSharpOption.Create(indent.Value);
+                }
+                else
+                {
+                    // If the user wanted editor indentation but the editor doesn't support indentation
+                    // even though it proffers an indentation service then fall back to what auto
+                    // indent would do if it were enabled (don't care if it actually is)
+                    //
+                    // Several editors like XAML offer the indentation service but don't actually 
+                    // provide information.  User clearly wants indent there since the editor indent
+                    // is enabled.  Do a best effort and use Vim style indenting
+                    return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine, localSettings.TabStop));
+                }
+            //}
+
+            //return FSharpOption<int>.None;
         }
 
         public int GetTabIndex(ITextView textView)
