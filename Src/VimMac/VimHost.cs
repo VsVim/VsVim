@@ -38,7 +38,7 @@ namespace Vim.Mac
 
         public int TabCount => throw new NotImplementedException();
 
-        public bool UseDefaultCaret => throw new NotImplementedException();
+        public bool UseDefaultCaret => true;
 
         public event EventHandler<TextViewEventArgs> IsVisibleChanged;
         public event EventHandler<TextViewChangedEventArgs> ActiveTextViewChanged;
@@ -51,22 +51,22 @@ namespace Vim.Mac
 
         public void BeginBulkOperation()
         {
-            throw new NotImplementedException();
+            
         }
 
         public void Close(ITextView value)
         {
-            throw new NotImplementedException();
+
         }
 
         public void CloseAllOtherTabs(ITextView value)
         {
-            throw new NotImplementedException();
+
         }
 
         public void CloseAllOtherWindows(ITextView value)
         {
-            throw new NotImplementedException();
+
         }
 
         public ITextView CreateHiddenTextView()
@@ -81,7 +81,7 @@ namespace Vim.Mac
 
         public void EndBulkOperation()
         {
-            throw new NotImplementedException();
+
         }
 
         public void EnsurePackageLoaded()
@@ -91,17 +91,17 @@ namespace Vim.Mac
 
         public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
-            throw new NotImplementedException();
+
         }
 
         public void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
         {
-            throw new NotImplementedException();
+
         }
 
         public void FormatLines(ITextView textView, SnapshotLineRange range)
         {
-            throw new NotImplementedException();
+
         }
 
         public FSharpOption<ITextView> GetFocusedTextView()
@@ -134,7 +134,7 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public bool GoToGlobalDeclaration(ITextView tetxView, string identifier)
+        public bool GoToGlobalDeclaration(ITextView textView, string identifier)
         {
             throw new NotImplementedException();
         }
@@ -146,12 +146,12 @@ namespace Vim.Mac
 
         public void GoToTab(int index)
         {
-            throw new NotImplementedException();
+
         }
 
         public void GoToWindow(ITextView textView, WindowKind direction, int count)
         {
-            throw new NotImplementedException();
+
         }
 
         public bool IsDirty(ITextBuffer textBuffer)
@@ -271,7 +271,8 @@ namespace Vim.Mac
 
         public bool TryCustomProcess(ITextView textView, InsertCommand command)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            return false;
         }
 
         public void VimCreated(IVim vim)

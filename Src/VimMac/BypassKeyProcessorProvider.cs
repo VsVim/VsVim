@@ -31,10 +31,9 @@ namespace Vim.Mac
         public void ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext context)
         {
             var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
-            //vimBuffer.Mode
             var keyInput = KeyInputUtil.CharToKeyInput(args.TypedChar);
             //
-            if (vimBuffer.CanProcess(keyInput))
+            if (vimBuffer.Mode.ModeKind != ModeKind.Insert && vimBuffer.CanProcess(keyInput))
             {
                 // bypass the typed char here
                 VimTrace.TraceDebug("Bypass typed char");
@@ -46,7 +45,8 @@ namespace Vim.Mac
 
         public CommandState GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            return new CommandState(false, false, false, false);
+            //return nextCommandHandler();
         }
 
         public CommandState GetCommandState(ReturnKeyCommandArgs args, Func<CommandState> nextCommandHandler)
@@ -87,7 +87,6 @@ namespace Vim.Mac
 
         public void ExecuteCommand(DeleteKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-
             nextCommandHandler();
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 //using System.Windows.Input;
 using AppKit;
@@ -33,6 +34,8 @@ namespace Vim.UI.Cocoa
         {
             get { return VimBuffer.TextView; }
         }
+
+        public bool ModeChanged { get; private set; }
 
         public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
         {
@@ -147,6 +150,8 @@ namespace Vim.UI.Cocoa
             //}
             //else
             {
+                var oldMode = VimBuffer.Mode.ModeKind;
+                VimTrace.TraceDebug(oldMode.ToString());
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this works and the key is processed then the input is considered
                 // to be handled
@@ -158,23 +163,23 @@ namespace Vim.UI.Cocoa
                 {
                     handled = false;
                 }
+                var newMode = VimBuffer.Mode.ModeKind;
+                VimTrace.TraceDebug(newMode.ToString());
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
-            //args.Handled = handled;
-            if(!handled)
-            {
-                base.KeyDown(theEvent);
-            }
-            //theEvent.
+
+            //if(!handled)
+            //{
+            //    base.KeyDown(theEvent);
+            //}
         }
 
         public override void KeyUp(NSEvent theEvent)
         {
             var key = (NSKey)theEvent.KeyCode;
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0}", key);
-            //VimTrace.TraceInfo("VimKeyProcessor::KeyUp Handled = {0}", args.Handled);
-            //base.KeyUp(theEvent);
+            base.KeyUp(theEvent);
 
         }
     }
