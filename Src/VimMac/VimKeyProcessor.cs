@@ -5,8 +5,12 @@ using System.Text;
 using AppKit;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.FSharp.Core;
 using Vim.Mac;
+using MonoDevelop.Core;
+using MonoDevelop.Ide;
 
+using Vim.Extensions;
 namespace Vim.UI.Cocoa
 {
     /// <summary>
@@ -168,7 +172,17 @@ namespace Vim.UI.Cocoa
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
+            if (VimBuffer.LastMessage.IsSome())
+            {
+                IdeApp.Workbench.StatusBar.ShowMessage(VimBuffer.LastMessage.Value);
+            }
+            else
+            {
+                IdeApp.Workbench.StatusBar.ShowReady();
+            }
 
+            var message = Mac.StatusBar.GetStatus(VimBuffer).Text;
+            IdeApp.Workbench.StatusBar.ShowMessage(message);
             //if(!handled)
             //{
             //    base.KeyDown(theEvent);

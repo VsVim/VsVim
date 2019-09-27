@@ -56,7 +56,7 @@ namespace Vim.Mac
 
         public void Close(ITextView value)
         {
-
+            value.Close();
         }
 
         public void CloseAllOtherTabs(ITextView value)
