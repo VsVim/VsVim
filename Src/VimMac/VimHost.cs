@@ -10,6 +10,8 @@ using MonoDevelop.Core;
 using MonoDevelop.Ide;
 
 using Vim.Extensions;
+using Microsoft.VisualStudio.TextManager.Interop;
+
 namespace Vim.Mac
 {
     [Export(typeof(IVimHost))]
@@ -116,7 +118,15 @@ namespace Vim.Mac
 
         public string GetName(ITextBuffer textBuffer)
         {
-            return "";
+            if (textBuffer.Properties.TryGetProperty(typeof(ITextDocument), out ITextDocument textDocument) && textDocument.FilePath != null)
+            {
+                return textDocument.FilePath;
+            }
+            else
+            {
+                LoggingService.LogWarning("VsVim: Failed to get filename of textbuffer.");
+                return "";
+            }
         }
 
         //TODO: Copied from VsVimHost
