@@ -2004,6 +2004,14 @@ namespace Vim.UnitTest
                     _vimBuffer.ProcessNotation("<C-q>j<S-i>x<Esc>.");
                     Assert.Equal(new[] { "xxcat", "xxdog" }, _textBuffer.GetLines());
                 }
+
+                [WpfFact]
+                public void HandlesDontBreakUndo()
+                {
+                    Create("cat", "dog", "fish", "store");
+                    _vimBuffer.ProcessNotation("<C-q>j<S-i>b<C-g>U<Left>a<Esc>jj.");
+                    Assert.Equal(new[] { "abcat", "abdog", "abfish", "abstore" }, _textBuffer.GetLines());
+                }
             }
         }
 
