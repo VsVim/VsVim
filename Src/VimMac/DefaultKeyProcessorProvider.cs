@@ -7,7 +7,7 @@ using Vim.UI.Cocoa;
 namespace VimHost
 {
     [Export(typeof(IKeyProcessorProvider))]
-    [ContentType("text")]
+    [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     [Name(VimConstants.MainKeyProcessorName)]
     internal sealed class DefaultKeyProcessorProvider : IKeyProcessorProvider

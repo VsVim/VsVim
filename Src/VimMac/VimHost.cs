@@ -20,7 +20,7 @@ namespace Vim.Mac
     [Export(typeof(VimCocoaHost))]
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    public class VimCocoaHost : IVimHost
+    internal sealed class VimCocoaHost : IVimHost
     {
         private readonly ISmartIndentationService _smartIndentationService;
         private IVim _vim;
