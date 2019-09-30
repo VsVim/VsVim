@@ -84,7 +84,7 @@ namespace Vim.Mac
         public CommandState GetCommandState(DeleteKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
             // Bypass <C-d>
-            // Unfortunately, this skips Delete key processing
+            // Unfortunately, this skips Delete key processing too
             return new CommandState(false, false, false, false);
         }
 

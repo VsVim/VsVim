@@ -57,13 +57,14 @@ namespace Vim.UI.Cocoa
         }
 
 
+        /// **** KeyProcessor does not contain a TextInput method on Mac ****
+
         /// <summary>
         /// Last chance at custom handling of user input.  At this point we have the 
         /// advantage that WPF has properly converted the user input into a char which 
         /// can be effeciently mapped to a KeyInput value.  
         /// </summary>
         /// 
-        /// **** KeyProcessor does not contain a TextInput method on Mac ****
         /// 
         //public override void TextInput(NSEvent args)
         //{
@@ -178,11 +179,11 @@ namespace Vim.UI.Cocoa
                 ITextViewLine textLine = TextView.GetTextViewLineContainingBufferPosition(TextView.Caret.Position.BufferPosition);
                 TextView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, textLine.VirtualSpaceWidth);
             }
-
             //if(!handled)
             //{
-            //    base.KeyDown(theEvent);
+            base.KeyDown(theEvent);
             //}
+
         }
 
         public override void KeyUp(NSEvent theEvent)

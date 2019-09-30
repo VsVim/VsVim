@@ -235,7 +235,7 @@ namespace Vim.Mac
             throw new NotImplementedException();
         }
 
-        public bool NavigateTo(Microsoft.VisualStudio.Text.VirtualSnapshotPoint point)
+        public bool NavigateTo(VirtualSnapshotPoint point)
         {
             throw new NotImplementedException();
         }
