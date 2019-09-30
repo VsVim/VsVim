@@ -18,6 +18,7 @@ namespace Vim.Mac
             IChainedCommandHandler<TabKeyCommandArgs>,
             IChainedCommandHandler<BackspaceKeyCommandArgs>,
             IChainedCommandHandler<DeleteKeyCommandArgs>,
+            IChainedCommandHandler<PageDownKeyCommandArgs>,
             IChainedCommandHandler<EscapeKeyCommandArgs>
     {
         private IVim _vim;
@@ -46,12 +47,12 @@ namespace Vim.Mac
         public CommandState GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
         {
             return new CommandState(false, false, false, false);
-            //return nextCommandHandler();
         }
 
         public CommandState GetCommandState(ReturnKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            // Bypass <ret>
+            return new CommandState(false, false, false, false);
         }
 
         public void ExecuteCommand(ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
@@ -82,7 +83,9 @@ namespace Vim.Mac
 
         public CommandState GetCommandState(DeleteKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            // Bypass <C-d>
+            // Unfortunately, this skips Delete key processing
+            return new CommandState(false, false, false, false);
         }
 
         public void ExecuteCommand(DeleteKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
@@ -105,6 +108,17 @@ namespace Vim.Mac
             {
                 nextCommandHandler();
             }
+        }
+
+        public CommandState GetCommandState(PageDownKeyCommandArgs args, Func<CommandState> nextCommandHandler)
+        {
+            // Bypass <C-v>
+            return new CommandState(false, false, false, false);
+        }
+
+        public void ExecuteCommand(PageDownKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
+        {
+            nextCommandHandler();
         }
 
         public string DisplayName => "VsVim key handler";
