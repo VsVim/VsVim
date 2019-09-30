@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-//using System.Windows.Input;
-using AppKit;
+﻿using AppKit;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.FSharp.Core;
-using Vim.Mac;
-using MonoDevelop.Core;
+using Microsoft.VisualStudio.Text.Formatting;
 using MonoDevelop.Ide;
 
 using Vim.Extensions;
@@ -23,7 +17,7 @@ namespace Vim.UI.Cocoa
     ///
     /// Or simply read the keyboard feed on the same blog page.  It will humble you
     /// </summary>
-    public class VimKeyProcessor : KeyProcessor
+    internal sealed class VimKeyProcessor : KeyProcessor
     {
         private readonly IKeyUtil _keyUtil;
 
@@ -57,7 +51,7 @@ namespace Vim.UI.Cocoa
         /// derived classes in order for them to prevent any KeyInput from reaching the 
         /// IVimBuffer
         /// </summary>
-        protected virtual bool TryProcess(KeyInput keyInput)
+        private bool TryProcess(KeyInput keyInput)
         {
             return VimBuffer.CanProcess(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
         }
@@ -172,17 +166,19 @@ namespace Vim.UI.Cocoa
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
-            if (VimBuffer.LastMessage.IsSome())
-            {
-                IdeApp.Workbench.StatusBar.ShowMessage(VimBuffer.LastMessage.Value);
-            }
-            else
-            {
-                IdeApp.Workbench.StatusBar.ShowReady();
-            }
 
             var message = Mac.StatusBar.GetStatus(VimBuffer).Text;
             IdeApp.Workbench.StatusBar.ShowMessage(message);
+            if (VimBuffer.Mode.ModeKind == ModeKind.Insert)
+            {
+                TextView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, 1.0);
+            }
+            else
+            {
+                ITextViewLine textLine = TextView.GetTextViewLineContainingBufferPosition(TextView.Caret.Position.BufferPosition);
+                TextView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, textLine.VirtualSpaceWidth);
+            }
+
             //if(!handled)
             //{
             //    base.KeyDown(theEvent);
@@ -194,7 +190,6 @@ namespace Vim.UI.Cocoa
             var key = (NSKey)theEvent.KeyCode;
             VimTrace.TraceInfo("VimKeyProcessor::KeyUp {0}", key);
             base.KeyUp(theEvent);
-
         }
     }
 }
