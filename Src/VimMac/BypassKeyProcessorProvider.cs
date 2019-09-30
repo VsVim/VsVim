@@ -23,6 +23,7 @@ namespace Vim.Mac
     {
         private IVim _vim;
 
+        private readonly CommandState BypassCommandState = new CommandState(false, false, false, false);
         [ImportingConstructor]
         internal BypassKeyProcessorProvider(IVim vim)
         {
@@ -46,79 +47,79 @@ namespace Vim.Mac
 
         public CommandState GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return new CommandState(false, false, false, false);
+            return BypassCommandState;
         }
 
         public CommandState GetCommandState(ReturnKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
             // Bypass <ret>
-            return new CommandState(false, false, false, false);
+            return BypassCommandState;
         }
 
         public void ExecuteCommand(ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            nextCommandHandler();
+            //nextCommandHandler();
         }
 
         public CommandState GetCommandState(TabKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            return BypassCommandState;
+            //return nextCommandHandler();
         }
 
         public void ExecuteCommand(TabKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            nextCommandHandler();
+            //nextCommandHandler();
         }
 
         public CommandState GetCommandState(BackspaceKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            return BypassCommandState;
         }
 
         public void ExecuteCommand(BackspaceKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-
-            nextCommandHandler();
+            //nextCommandHandler();
         }
 
         public CommandState GetCommandState(DeleteKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
             // Bypass <C-d>
             // Unfortunately, this skips Delete key processing too
-            return new CommandState(false, false, false, false);
+            return BypassCommandState;
         }
 
         public void ExecuteCommand(DeleteKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            nextCommandHandler();
+            //nextCommandHandler();
         }
 
         public CommandState GetCommandState(EscapeKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            return nextCommandHandler();
+            return BypassCommandState;
         }
 
         public void ExecuteCommand(EscapeKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
-            var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
-            var notHandled = vimBuffer.Process(keyInput).IsNotHandled;
+            //var vimBuffer = _vim.GetOrCreateVimBuffer(args.TextView);
+            //var keyInput = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            //var notHandled = vimBuffer.Process(keyInput).IsNotHandled;
 
-            if (notHandled)
-            {
-                nextCommandHandler();
-            }
+            //if (notHandled)
+            //{
+            //    nextCommandHandler();
+            //}
         }
 
         public CommandState GetCommandState(PageDownKeyCommandArgs args, Func<CommandState> nextCommandHandler)
         {
             // Bypass <C-v>
-            return new CommandState(false, false, false, false);
+            return BypassCommandState;
         }
 
         public void ExecuteCommand(PageDownKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            nextCommandHandler();
+            //nextCommandHandler();
         }
 
         public string DisplayName => "VsVim key handler";

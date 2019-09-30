@@ -232,7 +232,7 @@ namespace Vim.Mac
 
         public void Make(bool jumpToFirstError, string arguments)
         {
-            throw new NotImplementedException();
+            Dispatch(ProjectCommands.Build);
         }
 
         public bool NavigateTo(VirtualSnapshotPoint point)
