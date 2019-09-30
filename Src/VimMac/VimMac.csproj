@@ -6,12 +6,20 @@
     <AssemblyName>Vim.Mac</AssemblyName>
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'DebugMac|AnyCPU' ">
+    <IntermediateOutputPath>..\..\Binaries\obj\VimMac\Debug\net472</IntermediateOutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;NETFRAMEWORK;NET472</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ReleaseMac|AnyCPU' ">
+    <IntermediateOutputPath>..\..\Binaries\obj\VimMac\Release\net472</IntermediateOutputPath>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE;RELEASE;NETFRAMEWORK;NET472</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <!--<Reference Include="Microsoft.VisualStudio.Text.UI, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />-->
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="Microsoft.VisualStudio.Text.UI.Cocoa">
       <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\Microsoft.VisualStudio.Text.UI.Cocoa.dll</HintPath>
