@@ -25,6 +25,8 @@ namespace Vim.Mac
         private readonly ISmartIndentationService _smartIndentationService;
         private IVim _vim;
 
+        internal const string CommandNameGoToDefinition = "MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration";
+
         [ImportingConstructor]
         public VimCocoaHost(
             ITextBufferFactoryService textBufferFactoryService,
@@ -70,12 +72,12 @@ namespace Vim.Mac
 
         public void CloseAllOtherTabs(ITextView textView)
         {
-            IdeApp.CommandService.DispatchCommand(FileTabCommands.CloseAllButThis);
+            Dispatch(FileTabCommands.CloseAllButThis);
         }
 
         public void CloseAllOtherWindows(ITextView textView)
         {
-            IdeApp.CommandService.DispatchCommand(FileTabCommands.CloseAllButThis);
+            Dispatch(FileTabCommands.CloseAllButThis);
         }
 
         public ITextView CreateHiddenTextView()
@@ -174,20 +176,20 @@ namespace Vim.Mac
         {
             throw new NotImplementedException();
         }
-
+	
         public bool GoToDefinition()
         {
-            return Dispatch("MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration");
+            return Dispatch(CommandNameGoToDefinition);
         }
 
         public bool GoToGlobalDeclaration(ITextView textView, string identifier)
         {
-            throw new NotImplementedException();
+            return Dispatch(CommandNameGoToDefinition);
         }
 
         public bool GoToLocalDeclaration(ITextView textView, string identifier)
         {
-            throw new NotImplementedException();
+            return Dispatch(CommandNameGoToDefinition);
         }
 
         public void GoToTab(int index)
@@ -262,7 +264,7 @@ namespace Vim.Mac
 
         public bool Reload(ITextView textView)
         {
-            throw new NotImplementedException();
+            return Dispatch(FileCommands.ReloadFile);
         }
 
         public RunCommandResults RunCommand(string workingDirectory, string file, string arguments, string input)
@@ -282,7 +284,7 @@ namespace Vim.Mac
 
         public bool Save(ITextBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            return Dispatch(FileCommands.Save);
         }
 
         public bool SaveTextAs(string text, string filePath)
