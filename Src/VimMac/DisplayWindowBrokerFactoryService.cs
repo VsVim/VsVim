@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 namespace Vim.Mac
 {
     //TODO: This file is identical to Vim.UI.Wpf.Implementation.Misc.DisplayWindoBroker.cs
+    // _except_ for IAsyncQuickInfoBroker vs IQuickInfoBroker
 
     /// <summary>
     /// Standard implementation of the IDisplayWindowBroker interface.  This acts as a single
@@ -15,13 +16,13 @@ namespace Vim.Mac
         private readonly ITextView _textView;
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
-        private readonly IQuickInfoBroker _quickInfoBroker;
+        private readonly IAsyncQuickInfoBroker _quickInfoBroker;
 
         internal DisplayWindowBroker(
             ITextView textView,
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            IQuickInfoBroker quickInfoBroker)
+            IAsyncQuickInfoBroker quickInfoBroker)
         {
             _textView = textView;
             _completionBroker = completionBroker;
@@ -65,10 +66,7 @@ namespace Vim.Mac
 
             if (_quickInfoBroker.IsQuickInfoActive(_textView))
             {
-                foreach (var session in _quickInfoBroker.GetSessions(_textView))
-                {
-                    session.Dismiss();
-                }
+                _quickInfoBroker.GetSession(_textView).DismissAsync();
             }
         }
 
@@ -82,13 +80,13 @@ namespace Vim.Mac
 
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
-        private readonly IQuickInfoBroker _quickInfoBroker;
+        private readonly IAsyncQuickInfoBroker _quickInfoBroker;
 
         [ImportingConstructor]
         internal DisplayWindowBrokerFactoryService(
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            IQuickInfoBroker quickInfoBroker)
+            IAsyncQuickInfoBroker quickInfoBroker)
         {
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
