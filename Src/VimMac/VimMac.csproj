@@ -27,6 +27,9 @@
     <Reference Include="Xamarin.Mac">
       <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\Xamarin.Mac.dll</HintPath>
     </Reference>
+    <Reference Include="MacPlatform">
+      <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\MacPlatform.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />

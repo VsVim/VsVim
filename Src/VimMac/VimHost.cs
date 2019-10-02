@@ -57,7 +57,7 @@ namespace Vim.Mac
 
         public void Beep()
         {
-            LoggingService.LogDebug("Beep");
+            MonoDevelop.MacInterop.AppleScript.Run("beep");
         }
 
         public void BeginBulkOperation()
@@ -67,7 +67,7 @@ namespace Vim.Mac
 
         public void Close(ITextView textView)
         {
-            textView.Close();
+            Dispatch(FileCommands.CloseFile);
         }
 
         public void CloseAllOtherTabs(ITextView textView)
@@ -118,6 +118,7 @@ namespace Vim.Mac
 
             Dispatch(CodeFormattingCommands.FormatBuffer);
             if (!startedWithSelection)
+
             {
                 textView.Selection.Clear();
             }
