@@ -92,6 +92,7 @@ namespace Vim.Mac
 
         public void ExecuteCommand(BackspaceKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
+            nextCommandHandler();
         }
 
         public CommandState GetCommandState(DeleteKeyCommandArgs args, Func<CommandState> nextCommandHandler)

@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using MonoDevelop.Ide;
@@ -20,8 +21,9 @@ namespace Vim.UI.Cocoa
 		private readonly IKeyUtil _keyUtil;
 
 		public IVimBuffer VimBuffer { get; }
-		
-		public ITextBuffer TextBuffer
+        public ICompletionBroker CompletionBroker { get; }
+
+        public ITextBuffer TextBuffer
         {
             get { return VimBuffer.TextBuffer; }
         }
@@ -33,10 +35,11 @@ namespace Vim.UI.Cocoa
 
         public bool ModeChanged { get; private set; }
 
-        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil)
+        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil, ICompletionBroker completionBroker)
         {
             VimBuffer = vimBuffer;
             _keyUtil = keyUtil;
+            CompletionBroker = completionBroker;
             SetCaret();
         }
 
@@ -82,6 +85,10 @@ namespace Vim.UI.Cocoa
                 //
                 // All of these should be ignored.  They will produce a TextInput value which
                 // we can process in the TextInput event
+                handled = false;
+            }
+            else if(CompletionBroker.IsCompletionActive(TextView))
+            {
                 handled = false;
             }
             else
