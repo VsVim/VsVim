@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
-//using System.Windows.Input;
-using System.Text;
 using AppKit;
 
 namespace Vim.UI.Cocoa.Implementation.Misc
@@ -198,7 +196,7 @@ namespace Vim.UI.Cocoa.Implementation.Misc
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
-            // We just have to be careful not to shadow any keys that produce text when
+            // We just haijsshhhyuusdgdfve to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
             if (modifierKeys != 0
                 && modifierKeys != NSEventModifierMask.AlternateKeyMask
@@ -213,7 +211,6 @@ namespace Vim.UI.Cocoa.Implementation.Misc
                     case NSKey.Shift:
                     case NSKey.RightShift:
                     case NSKey.Command:
-
                         // Avoid work for common cases.
                         break;
 
