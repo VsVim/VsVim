@@ -11,6 +11,7 @@ using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeFormatting;
 using MonoDevelop.Ide.Commands;
+using MonoDevelop.Ide.Gui;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Export = System.ComponentModel.Composition.ExportAttribute ;
@@ -242,7 +243,23 @@ namespace Vim.Mac
 
         public bool NavigateTo(VirtualSnapshotPoint point)
         {
-            throw new NotImplementedException();
+            var tuple = SnapshotPointUtil.GetLineNumberAndOffset(point.Position);
+            var line = tuple.Item1;
+            var column = tuple.Item2;
+            var buffer = point.Position.Snapshot.TextBuffer;
+            var fileName = GetName(buffer);
+            var options = new OpenDocumentOptions(); //?
+            
+            var info = new FileOpenInformation(fileName, null, line, column, options);
+            try
+            {
+                IdeApp.Workbench.OpenDocument(info).Wait(System.Threading.CancellationToken.None);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
