@@ -11,6 +11,7 @@ namespace VimHost
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     [Name(VimConstants.MainKeyProcessorName)]
+    [Order(After = "CtrlClickGoToDefKeyProcessor")]
     internal sealed class DefaultKeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IVim _vim;

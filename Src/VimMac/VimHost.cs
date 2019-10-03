@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.IO;
 using AppKit;
 using Foundation;
 using Microsoft.FSharp.Core;
@@ -33,7 +34,7 @@ namespace Vim.Mac
             ISmartIndentationService smartIndentationService)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
-            Console.WriteLine("Loaded");
+            Console.WriteLine("Loaded"); 
             _smartIndentationService = smartIndentationService;
         }
 
@@ -116,6 +117,7 @@ namespace Vim.Mac
             textView.Selection.Clear();
             textView.Selection.Select(range.ExtentIncludingLineBreak, false);
 
+            // FormatBuffer command actually formats the selection
             Dispatch(CodeFormattingCommands.FormatBuffer);
             if (!startedWithSelection)
 
@@ -290,7 +292,15 @@ namespace Vim.Mac
 
         public bool SaveTextAs(string text, string filePath)
         {
-            throw new NotImplementedException();
+            try
+            {
+                File.WriteAllText(filePath, text);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public bool ShouldCreateVimBuffer(ITextView textView)
