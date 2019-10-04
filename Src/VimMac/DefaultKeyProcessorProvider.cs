@@ -17,19 +17,21 @@ namespace VimHost
         private readonly IVim _vim;
         private readonly IKeyUtil _keyUtil;
         private readonly ICompletionBroker _completionBroker;
+        private readonly ISignatureHelpBroker _signatureHelpBroker;
 
         [ImportingConstructor]
-        internal DefaultKeyProcessorProvider(IVim vim, IKeyUtil keyUtil, ICompletionBroker completionBroker)
+        internal DefaultKeyProcessorProvider(IVim vim, IKeyUtil keyUtil, ICompletionBroker completionBroker, ISignatureHelpBroker signatureHelpBroker)
         {
             _vim = vim;
             _keyUtil = keyUtil;
             _completionBroker = completionBroker;
+            _signatureHelpBroker = signatureHelpBroker;
         }
 
         public KeyProcessor GetAssociatedProcessor(ICocoaTextView cocoaTextView)
         {
             var vimTextBuffer = _vim.GetOrCreateVimBuffer(cocoaTextView);
-            return new VimKeyProcessor(vimTextBuffer, _keyUtil, _completionBroker);
+            return new VimKeyProcessor(vimTextBuffer, _keyUtil, _completionBroker, _signatureHelpBroker);
         }
     }
 }

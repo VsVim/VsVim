@@ -20,8 +20,9 @@ namespace Vim.UI.Cocoa
     {
 		private readonly IKeyUtil _keyUtil;
 
-		public IVimBuffer VimBuffer { get; }
-        public ICompletionBroker CompletionBroker { get; }
+		private IVimBuffer VimBuffer { get; }
+        private readonly ICompletionBroker _completionBroker;
+        private readonly ISignatureHelpBroker _signatureHelpBroker;
 
         public ITextBuffer TextBuffer
         {
@@ -35,11 +36,16 @@ namespace Vim.UI.Cocoa
 
         public bool ModeChanged { get; private set; }
 
-        public VimKeyProcessor(IVimBuffer vimBuffer, IKeyUtil keyUtil, ICompletionBroker completionBroker)
+        public VimKeyProcessor(
+            IVimBuffer vimBuffer,
+            IKeyUtil keyUtil,
+            ICompletionBroker completionBroker,
+            ISignatureHelpBroker signatureHelpBroker)
         {
             VimBuffer = vimBuffer;
             _keyUtil = keyUtil;
-            CompletionBroker = completionBroker;
+            _completionBroker = completionBroker;
+            _signatureHelpBroker = signatureHelpBroker;
             SetCaret();
         }
 
@@ -87,7 +93,7 @@ namespace Vim.UI.Cocoa
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if(CompletionBroker.IsCompletionActive(TextView))
+            else if(_completionBroker.IsCompletionActive(TextView) || _signatureHelpBroker.IsSignatureHelpActive(TextView))
             {
                 handled = false;
             }
