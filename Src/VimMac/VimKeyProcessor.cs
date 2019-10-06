@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Language.Intellisense;
+﻿using AppKit;
+using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
@@ -59,9 +60,9 @@ namespace Vim.UI.Cocoa
             return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
         }
 
-        private bool KeyEventIsDeadChar(KeyEvent e)
+        private bool KeyEventIsDeadChar(NSEvent e)
         {
-            return string.IsNullOrEmpty(e.Event.Characters);
+            return string.IsNullOrEmpty(e.Characters);
 		}
 
 	    /// <summary>
@@ -77,9 +78,9 @@ namespace Vim.UI.Cocoa
 	    /// combination that we do want to handle.  Hence we override here specifically
 	    /// to capture those circumstances
 	    /// </summary>
-        public override void KeyDown(KeyEvent e)
+        public override void KeyDown(NSEvent e)
         {
-            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Event.Characters, e.Event.CharactersIgnoringModifiers);
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
 
             bool handled;
             if (KeyEventIsDeadChar(e))
@@ -105,7 +106,7 @@ namespace Vim.UI.Cocoa
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this works and the key is processed then the input is considered
                 // to be handled
-                if (_keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(e, out KeyInput keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }
@@ -115,7 +116,7 @@ namespace Vim.UI.Cocoa
                 }
                 var newMode = VimBuffer.Mode.ModeKind;
                 VimTrace.TraceDebug(newMode.ToString());
-                e.Handled = handled;
+                //e.Handled = handled;
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
@@ -124,6 +125,8 @@ namespace Vim.UI.Cocoa
             IdeApp.Workbench.StatusBar.ShowMessage(message);
             //TODO: Hack so that ByPassKeyProcessorProvider can prevent
             // the editor from receiving the typed character
+            // For VSMac 8.4, the editor should be able to stop propogation to
+            // the editor from this event
             TextView.Properties["Handled"] = handled;
             SetCaret();
         }

@@ -24,12 +24,6 @@
     <Reference Include="Microsoft.VisualStudio.Text.UI.Cocoa">
       <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\Microsoft.VisualStudio.Text.UI.Cocoa.dll</HintPath>
     </Reference>
-    <Reference Include="Xamarin.Mac">
-      <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\Xamarin.Mac.dll</HintPath>
-    </Reference>
-    <Reference Include="MacPlatform">
-      <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\MacPlatform.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />

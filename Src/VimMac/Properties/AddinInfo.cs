@@ -13,3 +13,5 @@ using Mono.Addins.Description;
 [assembly: AddinUrl("https://github.com/VsVim/VsVim")]
 [assembly: AddinDescription("VIM emulation layer for Visual Studio")]
 [assembly: AddinAuthor("Jared Parsons")]
+[assembly: AddinDependency("::MonoDevelop.Core", "8.3")]
+[assembly: AddinDependency("::MonoDevelop.Ide", "8.3")]

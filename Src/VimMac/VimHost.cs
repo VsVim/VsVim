@@ -34,7 +34,7 @@ namespace Vim.Mac
             ISmartIndentationService smartIndentationService)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
-            Console.WriteLine("Loaded"); 
+            Console.WriteLine("Loaded");
             _smartIndentationService = smartIndentationService;
         }
 
@@ -58,7 +58,7 @@ namespace Vim.Mac
 
         public void Beep()
         {
-            MonoDevelop.MacInterop.AppleScript.Run("beep");
+            //MonoDevelop.MacInterop.AppleScript.Run("beep");
         }
 
         public void BeginBulkOperation()
