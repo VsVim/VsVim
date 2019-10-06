@@ -18,12 +18,10 @@
     <DefineConstants>TRACE;RELEASE;NETFRAMEWORK;NET472</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <AddinReference Include="MonoDevelop.TextEditor.Cocoa" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="Microsoft.VisualStudio.Text.UI.Cocoa">
-      <HintPath>..\..\..\..\..\..\Applications\Visual Studio.app\Contents\Resources\lib\monodevelop\bin\Microsoft.VisualStudio.Text.UI.Cocoa.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
