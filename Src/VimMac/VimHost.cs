@@ -27,6 +27,8 @@ namespace Vim.Mac
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class VimCocoaHost : IVimHost
     {
+        private readonly ITextBufferFactoryService _textBufferFactoryService;
+        private readonly ICocoaTextEditorFactoryService _textEditorFactoryService;
         private readonly ISmartIndentationService _smartIndentationService;
         private IVim _vim;
 
@@ -35,10 +37,13 @@ namespace Vim.Mac
         [ImportingConstructor]
         public VimCocoaHost(
             ITextBufferFactoryService textBufferFactoryService,
+            ICocoaTextEditorFactoryService textEditorFactoryService,
             ISmartIndentationService smartIndentationService)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
             Console.WriteLine("Loaded");
+            _textBufferFactoryService = textBufferFactoryService;
+            _textEditorFactoryService = textEditorFactoryService;
             _smartIndentationService = smartIndentationService;
         }
 
@@ -100,9 +105,16 @@ namespace Vim.Mac
             Dispatch(FileTabCommands.CloseAllButThis);
         }
 
+        //TODO: Same as WPF version (_except_ _textEditorFactoryService is an instance of ICocoaTextEditorFactoryService)
+        /// <summary>
+        /// Create a hidden ITextView.  It will have no roles in order to keep it out of 
+        /// most plugins
+        /// </summary>
         public ITextView CreateHiddenTextView()
         {
-            throw new NotImplementedException();
+            return _textEditorFactoryService.CreateTextView(
+                _textBufferFactoryService.CreateTextBuffer(),
+                _textEditorFactoryService.NoRoles);
         }
 
         public void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
@@ -522,7 +534,7 @@ namespace Vim.Mac
 
         public bool ShouldIncludeRcFile(VimRcPath vimRcPath)
         {
-            return false;
+            return File.Exists(vimRcPath.FilePath);
         }
 
         public void SplitViewHorizontally(ITextView value)

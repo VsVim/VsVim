@@ -3,7 +3,7 @@ using Microsoft.FSharp.Core;
 using Vim.Extensions;
 namespace Vim.Mac
 {
-    // Mostly copied from Vim.UI.Wpf.Implementation.CommandMargin.CommandMarginUtil
+    // TODO: Mostly copied from Vim.UI.Wpf.Implementation.CommandMargin.CommandMarginUtil
     internal static class StatusBar
     {
         internal static bool InPasteWait(IVimBuffer vimBuffer)
