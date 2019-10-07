@@ -418,6 +418,18 @@ namespace Vim.Mac
 
         public FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
+        //    public enum ListKind
+        //{
+        //    Error,
+        //    Location
+        //}
+        //public enum NavigationKind
+        //{
+        //    First,
+        //    Last,
+        //    Next,
+        //    Previous
+        //}
             throw new NotImplementedException();
         }
 
@@ -428,9 +440,27 @@ namespace Vim.Mac
 
         public void OpenListWindow(ListKind listKind)
         {
-            throw new NotImplementedException();
+            if (listKind == ListKind.Error)
+            {
+                GotoPad("MonoDevelop.Ide.Gui.Pads.ErrorListPad");
+                return;
+            }
+
+            if (listKind == ListKind.Location)
+            {
+                // This abstraction is not quite right as VSMac can have multiple search results pads open
+                GotoPad("SearchPad - Search Results - 0");
+                return;
+            }
+
         }
 
+        private void GotoPad(string padId)
+        {
+            var pad = IdeApp.Workbench.Pads.FirstOrDefault(p => p.Id == padId);
+            pad?.BringToFront(true);
+        }
+        
         public void Quit()
         {
             IdeApp.Exit();
