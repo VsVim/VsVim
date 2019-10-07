@@ -455,7 +455,7 @@ namespace Vim.Mac
 
         public void RunHostCommand(ITextView textView, string commandName, string argument)
         {
-            throw new NotImplementedException();
+            Dispatch(commandName);
         }
 
         public bool Save(ITextBuffer textBuffer)
