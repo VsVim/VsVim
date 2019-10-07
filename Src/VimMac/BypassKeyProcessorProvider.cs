@@ -44,7 +44,7 @@ namespace Vim.Mac
 
         private CommandState CommonGetCommandState(EditorCommandArgs args, Func<CommandState> nextCommandHandler)
         {
-            var handled = (bool)args.TextView.Properties["Handled"];
+            var handled = (bool)args.TextView.Properties["Handled"]; // Did VimKeyProcessor already handle this key?
             LoggingService.LogDebug(handled.ToString());
             if (handled)
             {
@@ -66,7 +66,7 @@ namespace Vim.Mac
 
         public void ExecuteCommand(ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
-            var handled = (bool)args.TextView.Properties["Handled"];
+            var handled = (bool)args.TextView.Properties["Handled"]; // Did VimKeyProcessor already handle this key?
             {
                 LoggingService.LogDebug(handled.ToString());
                 if (!handled)

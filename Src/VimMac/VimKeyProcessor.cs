@@ -38,17 +38,17 @@ namespace Vim.UI.Cocoa
         public bool ModeChanged { get; private set; }
 
         public VimKeyProcessor(
-            IVimBuffer vimBuffer,
-            IKeyUtil keyUtil,
-            ICompletionBroker completionBroker,
-            ISignatureHelpBroker signatureHelpBroker)
-        {
-            VimBuffer = vimBuffer;
-            _keyUtil = keyUtil;
-            _completionBroker = completionBroker;
-            _signatureHelpBroker = signatureHelpBroker;
-            SetCaret();
-        }
+		    IVimBuffer vimBuffer,
+		    IKeyUtil keyUtil,
+		    ICompletionBroker completionBroker,
+		    ISignatureHelpBroker signatureHelpBroker)
+		{
+		    VimBuffer = vimBuffer;
+		    _keyUtil = keyUtil;
+		    _completionBroker = completionBroker;
+		    _signatureHelpBroker = signatureHelpBroker;
+		    SetCaret();
+		}
 
 	    /// <summary>
 	    /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
@@ -141,6 +141,8 @@ namespace Vim.UI.Cocoa
             else
             {
                 var caretWidth = 10.0;
+                //TODO: Is there another way to figure out the caret width?
+                // TextViewLines == null when the view is first loaded
                 if (TextView.TextViewLines != null)
                 {
                     ITextViewLine textLine = TextView.GetTextViewLineContainingBufferPosition(TextView.Caret.Position.BufferPosition);

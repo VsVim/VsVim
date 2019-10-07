@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using AppKit;
 using Foundation;
 using Microsoft.FSharp.Core;
@@ -11,6 +12,8 @@ using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeFormatting;
 using MonoDevelop.Ide.Commands;
+using MonoDevelop.Ide.Gui;
+using MonoDevelop.Projects;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Export = System.ComponentModel.Composition.ExportAttribute ;
@@ -48,13 +51,28 @@ namespace Vim.Mac
 
         public bool IsUndoRedoExpected => throw new NotImplementedException();
 
-        public int TabCount => throw new NotImplementedException();
+        public int TabCount => IdeApp.Workbench.Documents.Count;
 
         public bool UseDefaultCaret => true;
 
         public event EventHandler<TextViewEventArgs> IsVisibleChanged;
         public event EventHandler<TextViewChangedEventArgs> ActiveTextViewChanged;
         public event EventHandler<BeforeSaveEventArgs> BeforeSave;
+
+        private ITextView TextViewFromDocument(Document document)
+        {
+            return document.GetContent<ITextView>();
+        }
+
+        private Document DocumentFromTextView(ITextView textView)
+        {
+            return IdeApp.Workbench.Documents.FirstOrDefault(doc => TextViewFromDocument(doc) == textView);
+        }
+
+        private Document DocumentFromTextBuffer(ITextBuffer textBuffer)
+        {
+            return IdeApp.Workbench.Documents.FirstOrDefault(doc => doc.TextBuffer == textBuffer);
+        }
 
         public void Beep()
         {
@@ -63,7 +81,7 @@ namespace Vim.Mac
 
         public void BeginBulkOperation()
         {
-            
+
         }
 
         public void Close(ITextView textView)
@@ -103,7 +121,8 @@ namespace Vim.Mac
 
         public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
-
+            var doc = DocumentFromTextView(textView);
+            doc.Select();
         }
 
         public void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
@@ -149,22 +168,22 @@ namespace Vim.Mac
         {
             //if (_vimApplicationSettings.UseEditorIndent)
             //{
-                var indent = _smartIndentationService.GetDesiredIndentation(textView, newLine);
-                if (indent.HasValue)
-                {
-                    return FSharpOption.Create(indent.Value);
-                }
-                else
-                {
-                    // If the user wanted editor indentation but the editor doesn't support indentation
-                    // even though it proffers an indentation service then fall back to what auto
-                    // indent would do if it were enabled (don't care if it actually is)
-                    //
-                    // Several editors like XAML offer the indentation service but don't actually 
-                    // provide information.  User clearly wants indent there since the editor indent
-                    // is enabled.  Do a best effort and use Vim style indenting
-                    return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine, localSettings.TabStop));
-                }
+            var indent = _smartIndentationService.GetDesiredIndentation(textView, newLine);
+            if (indent.HasValue)
+            {
+                return FSharpOption.Create(indent.Value);
+            }
+            else
+            {
+                // If the user wanted editor indentation but the editor doesn't support indentation
+                // even though it proffers an indentation service then fall back to what auto
+                // indent would do if it were enabled (don't care if it actually is)
+                //
+                // Several editors like XAML offer the indentation service but don't actually 
+                // provide information.  User clearly wants indent there since the editor indent
+                // is enabled.  Do a best effort and use Vim style indenting
+                return FSharpOption.Create(EditUtil.GetAutoIndent(contextLine, localSettings.TabStop));
+            }
             //}
 
             //return FSharpOption<int>.None;
@@ -172,14 +191,23 @@ namespace Vim.Mac
 
         public int GetTabIndex(ITextView textView)
         {
-            throw new NotImplementedException();
+            var notebooks = WindowManagement.GetNotebooks();
+            foreach (var notebook in notebooks)
+            {
+                var index = notebook.FileNames.IndexOf(GetName(textView.TextBuffer));
+                if (index != -1)
+                {
+                    return index;
+                }
+            }
+            return -1;
         }
 
         public WordWrapStyles GetWordWrapStyle(ITextView textView)
         {
             throw new NotImplementedException();
         }
-	
+
         public bool GoToDefinition()
         {
             return Dispatch(CommandNameGoToDefinition);
@@ -195,19 +223,44 @@ namespace Vim.Mac
             return Dispatch(CommandNameGoToDefinition);
         }
 
+        private void OpenTab(string fileName)
+        {
+            Project project = null;
+            IdeApp.Workbench.OpenDocument(fileName, project).Wait(System.Threading.CancellationToken.None);
+        }
+
         public void GoToTab(int index)
         {
+            var activeNotebook = WindowManagement.GetNotebooks().First(n => n.IsActive);
+            var fileName = activeNotebook.FileNames[index];
+            OpenTab(fileName);
+        }
 
+        private void SwitchToNotebook(Notebook notebook)
+        {
+            OpenTab(notebook.FileNames[notebook.ActiveTab]);
         }
 
         public void GoToWindow(ITextView textView, WindowKind direction, int count)
         {
+            // In VSMac, there are just 2 windows, left and right
+            var notebooks = WindowManagement.GetNotebooks();
 
+            if (notebooks.Length > 0 && notebooks[0].IsActive && (direction == WindowKind.Right || direction == WindowKind.Previous || direction == WindowKind.Next))
+            {
+                SwitchToNotebook(notebooks[1]);
+            }
+
+            if (notebooks.Length > 0 && notebooks[1].IsActive && (direction == WindowKind.Left || direction == WindowKind.Previous || direction == WindowKind.Next))
+            {
+                SwitchToNotebook(notebooks[0]);
+            }
         }
 
         public bool IsDirty(ITextBuffer textBuffer)
         {
-            throw new NotImplementedException();
+            var doc = DocumentFromTextBuffer(textBuffer);
+            return doc.IsDirty;
         }
 
         public bool IsFocused(ITextView textView)
@@ -217,7 +270,8 @@ namespace Vim.Mac
 
         public bool IsReadOnly(ITextBuffer textBuffer)
         {
-            return false;
+            var doc = DocumentFromTextBuffer(textBuffer);
+            return doc.IsViewOnly;
         }
 
         public bool IsVisible(ITextView textView)
@@ -281,7 +335,9 @@ namespace Vim.Mac
 
         public bool Reload(ITextView textView)
         {
-            return Dispatch(FileCommands.ReloadFile);
+            var doc = DocumentFromTextView(textView);
+            doc.Reload();
+            return true;
         }
 
         public RunCommandResults RunCommand(string workingDirectory, string file, string arguments, string input)
@@ -301,7 +357,16 @@ namespace Vim.Mac
 
         public bool Save(ITextBuffer textBuffer)
         {
-            return Dispatch(FileCommands.Save);
+            var doc = DocumentFromTextBuffer(textBuffer);
+            try
+            {
+                doc.Save();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public bool SaveTextAs(string text, string filePath)
@@ -356,7 +421,7 @@ namespace Vim.Mac
         public void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
             throw new NotImplementedException();
-        
+
         }
 
         bool Dispatch(object command)
