@@ -24,7 +24,7 @@ static class OsxClipboard
         generalPasteboard = objc_msgSend(nsPasteboard, generalPasteboardRegister);
     }
 
-    public static string? GetText()
+    public static string GetText()
     {
         var ptr = objc_msgSend(generalPasteboard, stringForTypeRegister, nsStringPboardType);
         var charArray = objc_msgSend(ptr, utf8Register);
