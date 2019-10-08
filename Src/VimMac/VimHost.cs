@@ -105,7 +105,6 @@ namespace Vim.Mac
             Dispatch(FileTabCommands.CloseAllButThis);
         }
 
-        //TODO: Same as WPF version (_except_ _textEditorFactoryService is an instance of ICocoaTextEditorFactoryService)
         /// <summary>
         /// Create a hidden ITextView.  It will have no roles in order to keep it out of 
         /// most plugins
@@ -149,7 +148,7 @@ namespace Vim.Mac
             }
             catch (Exception)
             {
-                // The ITextViewLine implementation canq throw if this code runs in the middle of 
+                // The ITextViewLine implementation can throw if this code runs in the middle of 
                 // a layout or if the line believes itself to be invalid.  Hard to completely guard
                 // against this
             }

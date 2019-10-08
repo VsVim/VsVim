@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using MonoDevelop.Ide;
 using System.Reflection;
+using MonoDevelop.Ide;
 
 namespace Vim.Mac
 {
@@ -37,22 +37,25 @@ namespace Vim.Mac
             var children = (object[])childrenProperty.GetValue(obj);
             bool isActiveNotebook = false;
             int currentTab = 0;
+
             if (children.Length > 0)
             {
                 var tabstrip = children[0];
                 var tabstripType = tabstrip.GetType();
                 isActiveNotebook = (bool)tabstripType.GetProperty("IsActiveNotebook").GetValue(tabstrip);
-
             }
+
             currentTab = (int)notebookType.GetProperty("CurrentTabIndex", instanceFlags).GetValue(obj);
 
             var tabs = (IEnumerable<object>)notebookType.GetProperty("Tabs", instanceFlags).GetValue(obj);
+
             var files = tabs.Select(tab =>
                                         {
                                             var tabType = tab.GetType();
                                             var fileName = (string)tabType.GetProperty("Tooltip", instanceFlags).GetValue(tab);
                                             return fileName;
                                         }).ToImmutableArray();
+
             return new Notebook(isActiveNotebook, currentTab, files);
         }
 
