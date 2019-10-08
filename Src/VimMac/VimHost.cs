@@ -149,7 +149,7 @@ namespace Vim.Mac
             }
             catch (Exception)
             {
-                // The ITextViewLine implementation can throw if this code runs in the middle of 
+                // The ITextViewLine implementation canq throw if this code runs in the middle of 
                 // a layout or if the line believes itself to be invalid.  Hard to completely guard
                 // against this
             }
@@ -565,8 +565,7 @@ namespace Vim.Mac
 
         public void VimRcLoaded(VimRcState vimRcState, IVimLocalSettings localSettings, IVimWindowSettings windowSettings)
         {
-            throw new NotImplementedException();
-
+            //throw new NotImplementedException();
         }
 
         bool Dispatch(object command)
