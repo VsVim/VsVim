@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using MonoDevelop.Ide;
+using Vim.Mac;
 
 namespace Vim.UI.Cocoa
 {
@@ -47,7 +48,6 @@ namespace Vim.UI.Cocoa
             _keyUtil = keyUtil;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
-            SetCaret();
         }
 
         /// <summary>
@@ -63,6 +63,11 @@ namespace Vim.UI.Cocoa
         private bool KeyEventIsDeadChar(NSEvent e)
         {
             return string.IsNullOrEmpty(e.Characters);
+        }
+
+        private bool IsEscapeKey(NSEvent e)
+        {
+            return (NSKey)e.KeyCode == NSKey.Escape;
         }
 
         /// <summary>
@@ -94,7 +99,7 @@ namespace Vim.UI.Cocoa
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (_completionBroker.IsCompletionActive(TextView) && (NSKey)e.KeyCode != NSKey.Escape)
+            else if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
             {
                 handled = false;
             }
@@ -136,28 +141,7 @@ namespace Vim.UI.Cocoa
             // For VSMac 8.4, the editor should be able to stop propogation to
             // the editor from this event
             TextView.Properties["Handled"] = handled;
-            SetCaret();
-        }
-
-        private void SetCaret()
-        {
-            if (VimBuffer.Mode.ModeKind == ModeKind.Insert)
-            {
-                //TODO: what's the minimum caret width for accessibility?
-                TextView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, 1.0);
-            }
-            else
-            {
-                var caretWidth = 10.0;
-                //TODO: Is there another way to figure out the caret width?
-                // TextViewLines == null when the view is first loaded
-                if (TextView.TextViewLines != null)
-                {
-                    ITextViewLine textLine = TextView.GetTextViewLineContainingBufferPosition(TextView.Caret.Position.BufferPosition);
-                    caretWidth = textLine.VirtualSpaceWidth;
-                }
-                TextView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, caretWidth);
-            }
+            CaretUtil.SetCaret(VimBuffer, TextView);
         }
     }
 }
