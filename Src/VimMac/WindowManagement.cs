@@ -46,14 +46,14 @@ namespace Vim.Mac
             return notebooks.Select(ToNotebook).ToImmutableArray();
         }
 
-        private static string GetTabFileName(object tab)
-        {
-            var tabType = tab.GetType();
-            var fileName = (string)tabType.GetProperty("Tooltip", instanceFlags).GetValue(tab);
-            return fileName;
-        }
+		private static string GetTabFileName(object tab)
+		{
+			var tabType = tab.GetType();
+			var fileName = (string)tabType.GetProperty("Tooltip", instanceFlags).GetValue(tab);
+			return fileName;
+		}
 
-        private static Notebook ToNotebook(object obj)
+		private static Notebook ToNotebook(object obj)
         {
             var notebookType = obj.GetType();
             var childrenProperty = notebookType.GetProperty("Children", instanceFlags);

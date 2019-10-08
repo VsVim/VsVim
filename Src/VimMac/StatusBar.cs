@@ -87,7 +87,6 @@ namespace Vim.Mac
                     oneTimeArgument = "replace";
                 }
             }
-
             // Check if we can enable the command line to accept user input
             string status;
             switch (currentMode.ModeKind)
@@ -150,6 +149,11 @@ namespace Vim.Mac
                 default:
                     status = string.Empty;
                     break;
+            }
+
+            if (vimBuffer.Vim.MacroRecorder.IsRecording)
+            {
+                status += " recording";
             }
 
             return new EditableCommand(status);
