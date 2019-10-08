@@ -261,7 +261,11 @@ namespace Vim.Mac
 
         public FSharpOption<ITextView> GetFocusedTextView()
         {
-            throw new NotImplementedException();
+            var windows = WindowManagement.GetNotebooks();
+            var active = windows.First(n => n.IsActive);
+            var fileName = active.FileNames[active.ActiveTab];
+            var doc = IdeServices.DocumentManager.GetDocument(fileName);
+            return FSharpOption.CreateForReference(TextViewFromDocument(doc));
         }
 
         public string GetName(ITextBuffer textBuffer)
