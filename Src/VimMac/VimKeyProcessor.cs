@@ -94,7 +94,11 @@ namespace Vim.UI.Cocoa
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if (_completionBroker.IsCompletionActive(TextView) || _signatureHelpBroker.IsSignatureHelpActive(TextView))
+            else if (_completionBroker.IsCompletionActive(TextView) && (NSKey)e.KeyCode != NSKey.Escape)
+            {
+                handled = false;
+            }
+            else if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
             {
                 handled = false;
             }
