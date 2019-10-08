@@ -19,9 +19,9 @@ namespace Vim.UI.Cocoa
     /// </summary>
     internal sealed class VimKeyProcessor : KeyProcessor
     {
-		private readonly IKeyUtil _keyUtil;
+        private readonly IKeyUtil _keyUtil;
 
-		private IVimBuffer VimBuffer { get; }
+        private IVimBuffer VimBuffer { get; }
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
 
@@ -38,23 +38,23 @@ namespace Vim.UI.Cocoa
         public bool ModeChanged { get; private set; }
 
         public VimKeyProcessor(
-		    IVimBuffer vimBuffer,
-		    IKeyUtil keyUtil,
-		    ICompletionBroker completionBroker,
-		    ISignatureHelpBroker signatureHelpBroker)
-		{
-		    VimBuffer = vimBuffer;
-		    _keyUtil = keyUtil;
-		    _completionBroker = completionBroker;
-		    _signatureHelpBroker = signatureHelpBroker;
-		    SetCaret();
-		}
+            IVimBuffer vimBuffer,
+            IKeyUtil keyUtil,
+            ICompletionBroker completionBroker,
+            ISignatureHelpBroker signatureHelpBroker)
+        {
+            VimBuffer = vimBuffer;
+            _keyUtil = keyUtil;
+            _completionBroker = completionBroker;
+            _signatureHelpBroker = signatureHelpBroker;
+            SetCaret();
+        }
 
-	    /// <summary>
-	    /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
-	    /// derived classes in order for them to prevent any KeyInput from reaching the 
-	    /// IVimBuffer
-	    /// </summary>
+        /// <summary>
+        /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
+        /// derived classes in order for them to prevent any KeyInput from reaching the 
+        /// IVimBuffer
+        /// </summary>
         private bool TryProcess(KeyInput keyInput)
         {
             return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
@@ -63,21 +63,21 @@ namespace Vim.UI.Cocoa
         private bool KeyEventIsDeadChar(NSEvent e)
         {
             return string.IsNullOrEmpty(e.Characters);
-		}
+        }
 
-	    /// <summary>
-	    /// This handler is necessary to intercept keyboard input which maps to Vim
-	    /// commands but doesn't map to text input.  Any combination which can be 
-	    /// translated into actual text input will be done so much more accurately by
-	    /// WPF and will end up in the TextInput event.
-	    /// 
-	    /// An example of why this handler is needed is for key combinations like 
-	    /// Shift+Escape.  This combination won't translate to an actual character in most
-	    /// (possibly all) keyboard layouts.  This means it won't ever make it to the
-	    /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
-	    /// combination that we do want to handle.  Hence we override here specifically
-	    /// to capture those circumstances
-	    /// </summary>
+        /// <summary>
+        /// This handler is necessary to intercept keyboard input which maps to Vim
+        /// commands but doesn't map to text input.  Any combination which can be 
+        /// translated into actual text input will be done so much more accurately by
+        /// WPF and will end up in the TextInput event.
+        /// 
+        /// An example of why this handler is needed is for key combinations like 
+        /// Shift+Escape.  This combination won't translate to an actual character in most
+        /// (possibly all) keyboard layouts.  This means it won't ever make it to the
+        /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
+        /// combination that we do want to handle.  Hence we override here specifically
+        /// to capture those circumstances
+        /// </summary>
         public override void KeyDown(NSEvent e)
         {
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
@@ -94,7 +94,7 @@ namespace Vim.UI.Cocoa
                 // we can process in the TextInput event
                 handled = false;
             }
-            else if(_completionBroker.IsCompletionActive(TextView) || _signatureHelpBroker.IsSignatureHelpActive(TextView))
+            else if (_completionBroker.IsCompletionActive(TextView) || _signatureHelpBroker.IsSignatureHelpActive(TextView))
             {
                 handled = false;
             }
@@ -116,6 +116,10 @@ namespace Vim.UI.Cocoa
                 }
                 var newMode = VimBuffer.Mode.ModeKind;
                 VimTrace.TraceDebug(newMode.ToString());
+                if (oldMode != ModeKind.Insert)
+                {
+                    handled = true;
+                }
                 //e.Handled = handled;
             }
 
