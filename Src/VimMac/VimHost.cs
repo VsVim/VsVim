@@ -390,7 +390,7 @@ namespace Vim.Mac
 
         public bool IsVisible(ITextView textView)
         {
-            return true;
+            return IdeServices.DocumentManager.Documents.Select(TextViewFromDocument).Any(v => v == textView);
         }
 
         public bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
