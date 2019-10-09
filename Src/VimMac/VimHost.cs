@@ -379,7 +379,7 @@ namespace Vim.Mac
 
         public bool IsFocused(ITextView textView)
         {
-            return true;
+            return TextViewFromDocument(IdeServices.DocumentManager.ActiveDocument) == textView;
         }
 
         public bool IsReadOnly(ITextBuffer textBuffer)
