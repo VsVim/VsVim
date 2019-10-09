@@ -48,6 +48,9 @@ namespace Vim.UI.Cocoa
             _keyUtil = keyUtil;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
+            // TODO: We need to set the caret only after the text view has fully loaded
+            // so that we can measure the text width
+            CaretUtil.SetCaret(VimBuffer);
         }
 
         /// <summary>
@@ -141,7 +144,7 @@ namespace Vim.UI.Cocoa
             // For VSMac 8.4, the editor should be able to stop propogation to
             // the editor from this event
             TextView.Properties["Handled"] = handled;
-            CaretUtil.SetCaret(VimBuffer, TextView);
+            CaretUtil.SetCaret(VimBuffer);
         }
     }
 }

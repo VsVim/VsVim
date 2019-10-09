@@ -253,7 +253,6 @@ namespace Vim.Mac
             // FormatBuffer command actually formats the selection
             Dispatch(CodeFormattingCommands.FormatBuffer);
             if (!startedWithSelection)
-
             {
                 textView.Selection.Clear();
             }

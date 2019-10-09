@@ -6,8 +6,9 @@ namespace Vim.Mac
 {
     internal static class CaretUtil
     {
-        public static void SetCaret(IVimBuffer vimBuffer, ITextView textView)
+        public static void SetCaret(IVimBuffer vimBuffer)
         {
+            var textView = vimBuffer.TextView;
             if (vimBuffer.Mode.ModeKind == ModeKind.Insert)
             {
                 //TODO: what's the minimum caret width for accessibility?
