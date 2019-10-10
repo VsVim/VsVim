@@ -80,9 +80,20 @@ namespace Vim.Mac
             return IdeApp.Workbench.Documents.FirstOrDefault(doc => doc.TextBuffer == textBuffer);
         }
 
+        private static NSSound GetBeepSound()
+        {
+            using (var stream = typeof(VimCocoaHost).Assembly.GetManifestResourceStream("Vim.Mac.Resources.beep.wav"))
+            {
+                NSData data = NSData.FromStream(stream);
+                return new NSSound(data);
+            }
+        }
+
+        readonly Lazy<NSSound> beep = new Lazy<NSSound>(() => GetBeepSound());
+
         public void Beep()
         {
-            //MonoDevelop.MacInterop.AppleScript.Run("beep");
+            beep.Value.Play();
         }
 
         public void BeginBulkOperation()
