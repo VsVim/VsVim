@@ -511,22 +511,22 @@ namespace Vim.UnitTest
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
                 // set an upper and lower mark
-                //_vimBuffer.ProcessNotation("kmzkmZ");
+                _vimBuffer.ProcessNotation("kmzkmZ");
 
-                //_vimBuffer.ProcessNotation("1G");
-                //interpreter.RunDisplayMarks(s_emptyList);
-                //expectedMarks = new[] {
-                //    @"mark line  col file/text",
-                //    @" '      8    0 8",
-                //    @" z      9    0 9",
-                //    @" Z      8    0 VimBufferTest.cs",
-                //   @" ""      1    0 1",
-                //    @" [      1    0 1",
-                //    @" ]     10    1 0",
-                //    @" ^     10    1 0",
-                //    @" .     10    0 0",
-                //};
-                //Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+                _vimBuffer.ProcessNotation("1G");
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      8    0 8",
+                    @" z      9    0 9",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]     10    1 0",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
                 //_vimBuffer.ProcessNotation("yy");
                 //interpreter.RunDisplayMarks(s_emptyList);
