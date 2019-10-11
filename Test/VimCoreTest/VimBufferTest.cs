@@ -501,12 +501,12 @@ namespace Vim.UnitTest
                 interpreter.RunDisplayMarks(s_emptyList);
                 var expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      1    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      1    0 VimBufferTest.cs",
-                    @" ]     10    1 VimBufferTest.cs",
-                    @" ^     10    1 VimBufferTest.cs",
-                    @" .     10    0 VimBufferTest.cs",
+                    @" '      1    0 1",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]     10    1 0",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
@@ -517,14 +517,14 @@ namespace Vim.UnitTest
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      8    0 VimBufferTest.cs",
-                    @" z      9    0 VimBufferTest.cs",
-                    @" Z      8    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      1    0 VimBufferTest.cs",
-                    @" ]     10    1 VimBufferTest.cs",
-                    @" ^     10    1 VimBufferTest.cs",
-                    @" .     10    0 VimBufferTest.cs",
+                    @" '      8    0 8",
+                    @" z      9    0 9",
+                    @" Z      8    0 8",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]     10    1 0",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
