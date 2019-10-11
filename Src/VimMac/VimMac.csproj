@@ -35,8 +35,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\beep.wav" />
+    <None Remove="Resources\KeyBindingSchemeVim.xml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\beep.wav" />
+    <EmbeddedResource Include="Resources\KeyBindingSchemeVim.xml" />
   </ItemGroup>
 </Project>

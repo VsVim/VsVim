@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<scheme version="1.0">
+    <!-- Vim keybinding scheme containing all the keys that
+         conflict with keybindings in the Visual Studio keybinding scheme
+    
+         We set the shortcuts to "" to allow VsVim to manage those keybindings -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.LineUp" shortcut="" /> <!-- <C-p> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.LineDown" shortcut="" /> <!-- <C-n> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.InsertNewLinePreserveCaretPosition" shortcut="" /> <!-- <C-o> -->
+    <binding command="MonoDevelop.Ide.CodeFormatting.CodeFormattingCommands.FormatBuffer" shortcut="" /> <!-- <C-i> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.LineStart" shortcut = "Meta+Left"/> <!-- <C-a> -->
+</scheme>

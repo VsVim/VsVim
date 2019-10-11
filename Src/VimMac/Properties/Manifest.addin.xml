@@ -10,5 +10,8 @@
         <Assembly file="Vim.Mac.dll" />
         <Assembly file="Vim.Core.dll" />
     </Extension>
+    <Extension path = "/MonoDevelop/Ide/KeyBindingSchemes">
+        <Scheme id="Vim" _name = "Visual Studio + VsVim" resource="Vim.Mac.Resources.KeyBindingSchemeVim.xml" forMac="true" />
+    </Extension>
 </ExtensionModel>
 
