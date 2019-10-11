@@ -510,10 +510,10 @@ namespace Vim.UnitTest
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
-                // set an upper and lower mark
+                // set an upper (line 8) and lower mark (line 9)
                 _vimBuffer.ProcessNotation("kmzkmZ");
 
-                // jump to line 1 and yank it.
+                // jump from line 8 to line 1 and yank it.
                 // jump mark and [ ] must be set
                 _vimBuffer.ProcessNotation("1Gyy");
                 interpreter.RunDisplayMarks(s_emptyList);
@@ -524,9 +524,28 @@ namespace Vim.UnitTest
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
                     @" [      1    0 1",
-                    @" ]      0    1 1",
+                    @" ]      1    1 1",
                     @" ^     10    1 0",
                     @" .     10    0 0",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                // visual line mode to test these marks
+                _vimBuffer.ProcessNotation("jjVj<ESC>");
+                interpreter.RunDisplayMarks(s_emptyList);
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      8    0 8",
+                    @" z      9    0 9",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]      1    1 1",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
+                    @" <      3    0 3",
+                    @" >      4    2 4",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
