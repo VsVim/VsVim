@@ -547,22 +547,22 @@ namespace Vim.UnitTest
                 //_vimBuffer.ProcessNotation("jmajmA2k");
 
                 // we paste one first line, so we know : text = line + 1
-                _vimBuffer.ProcessNotation("P");
-                interpreter.RunDisplayMarks(s_emptyList);
-                expectedMarks = new[] {
-                    @"mark line  col file/text",
-                    @" '      9    0 8",
-                    @" a      3    0 2",
-                    @" z     10    0 9",
-                    @" A      4    0 VimBufferTest.cs",
-                    @" Z      9    0 VimBufferTest.cs",
-                   @" ""      1    0 1",
-                    @" [      7    0 1",
-                    @" ]      7    1 1",
-                    @" ^     11    1 0",
-                    @" .      1    1 1",
-                };
-                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+                //_vimBuffer.ProcessNotation("P");
+                //interpreter.RunDisplayMarks(s_emptyList);
+                //expectedMarks = new[] {
+                //    @"mark line  col file/text",
+                //    @" '      9    0 8",
+                //    @" a      3    0 2",
+                //    @" z     10    0 9",
+                //    @" A      4    0 VimBufferTest.cs",
+                //    @" Z      9    0 VimBufferTest.cs",
+                //   @" ""      1    0 1",
+                //    @" [      7    0 1",
+                //    @" ]      7    1 1",
+                //    @" ^     11    1 0",
+                //    @" .      1    1 1",
+                //};
+                //Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
                 //_vimBuffer.ProcessNotation("kV<ESC>");
                 //interpreter.RunDisplayMarks(s_emptyList);
