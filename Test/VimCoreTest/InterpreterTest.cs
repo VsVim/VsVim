@@ -203,7 +203,6 @@ namespace Vim.UnitTest
             protected override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _textBuffer.Properties[MockVimHost.FileNameKey] = "test.txt";
             }
 
             internal void Verify(char mark, int line, int column, int index = 1)

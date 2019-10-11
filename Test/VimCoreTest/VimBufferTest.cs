@@ -519,7 +519,7 @@ namespace Vim.UnitTest
                     @"mark line  col file/text",
                     @" '      8    0 8",
                     @" z      9    0 9",
-                    @" Z      8    0 8",
+                    @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
                     @" [      1    0 1",
                     @" ]     10    1 0",
