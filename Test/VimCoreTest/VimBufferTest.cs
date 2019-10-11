@@ -513,7 +513,9 @@ namespace Vim.UnitTest
                 // set an upper and lower mark
                 _vimBuffer.ProcessNotation("kmzkmZ");
 
-                _vimBuffer.ProcessNotation("1G");
+                // jump to line 1 and yank it.
+                // jump mark and [ ] must be set
+                _vimBuffer.ProcessNotation("1Gyy");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
@@ -522,7 +524,7 @@ namespace Vim.UnitTest
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
                     @" [      1    0 1",
-                    @" ]     10    1 0",
+                    @" ]      0    1 1",
                     @" ^     10    1 0",
                     @" .     10    0 0",
                 };
