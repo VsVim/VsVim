@@ -545,7 +545,7 @@ namespace Vim.UnitTest
                     @" ^     10    1 0",
                     @" .     10    0 0",
                     @" <      3    0 3",
-                    @" >      4    2 4",
+                    @" >      4    1 4",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
