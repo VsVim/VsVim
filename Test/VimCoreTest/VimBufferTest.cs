@@ -514,7 +514,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("kmzkmZ");
 
                 // jump from line 8 to line 1 and yank it.
-                // jump mark and [ ] must be set
+                // jump mark and [ ] must be updated
                 _vimBuffer.ProcessNotation("1Gyy");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
@@ -530,9 +530,8 @@ namespace Vim.UnitTest
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
-                // visual line mode to test these marks
+                // select lines 3,4 in visual line mode to test marks <, >
                 _vimBuffer.ProcessNotation("jjVj<ESC>");
-                interpreter.RunDisplayMarks(s_emptyList);
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
@@ -544,6 +543,24 @@ namespace Vim.UnitTest
                     @" ]      1    1 1",
                     @" ^     10    1 0",
                     @" .     10    0 0",
+                    @" <      3    0 3",
+                    @" >      4    1 4",
+                };
+                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
+
+                // jump to last line and paste before to check that marks [ ] are updated
+                _vimBuffer.ProcessNotation("GP");
+                interpreter.RunDisplayMarks(s_emptyList);
+                expectedMarks = new[] {
+                    @"mark line  col file/text",
+                    @" '      3    0 8",
+                    @" z      9    0 9",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [     10    0 1",
+                    @" ]     10    1 1",
+                    @" ^     11    1 0",
+                    @" .     10    1 1",
                     @" <      3    0 3",
                     @" >      4    1 4",
                 };
