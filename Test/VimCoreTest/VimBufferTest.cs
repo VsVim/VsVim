@@ -553,7 +553,7 @@ namespace Vim.UnitTest
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      4    0 8",
+                    @" '      4    0 4",
                     @" z      9    0 9",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
