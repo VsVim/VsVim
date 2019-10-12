@@ -26,7 +26,7 @@ namespace Vim.Mac
 
     internal static class WindowManagement
     {
-        static BindingFlags instanceFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        const BindingFlags instanceFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
         static object[] emptyArray = Array.Empty<object>();
 
