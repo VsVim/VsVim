@@ -139,11 +139,7 @@ namespace Vim.UI.Cocoa
 
             var message = Mac.StatusBar.GetStatus(VimBuffer).Text;
             IdeApp.Workbench.StatusBar.ShowMessage(message);
-            //TODO: Hack so that ByPassKeyProcessorProvider can prevent
-            // the editor from receiving the typed character
-            // For VSMac 8.4, the editor should be able to stop propogation to
-            // the editor from this event
-            TextView.Properties["Handled"] = handled;
+            e.Handled = handled;
             CaretUtil.SetCaret(VimBuffer);
         }
     }
