@@ -28,7 +28,7 @@ static class OsxClipboard
     {
         var ptr = objc_msgSend(generalPasteboard, stringForTypeRegister, nsStringPboardType);
         var charArray = objc_msgSend(ptr, utf8Register);
-        return Marshal.PtrToStringAnsi(charArray);
+        return Marshal.PtrToStringUTF8(charArray);
     }
 
     public static void SetText(string text)
