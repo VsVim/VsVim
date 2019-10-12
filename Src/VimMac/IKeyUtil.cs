@@ -1,4 +1,5 @@
 ﻿using AppKit;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Cocoa
 {

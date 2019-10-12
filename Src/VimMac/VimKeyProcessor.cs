@@ -63,14 +63,14 @@ namespace Vim.UI.Cocoa
             return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
         }
 
-        private bool KeyEventIsDeadChar(NSEvent e)
+        private bool KeyEventIsDeadChar(KeyEventArgs e)
         {
             return string.IsNullOrEmpty(e.Characters);
         }
 
-        private bool IsEscapeKey(NSEvent e)
+        private bool IsEscapeKey(KeyEventArgs e)
         {
-            return (NSKey)e.KeyCode == NSKey.Escape;
+            return (NSKey)e.Event.KeyCode == NSKey.Escape;
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Vim.UI.Cocoa
         /// combination that we do want to handle.  Hence we override here specifically
         /// to capture those circumstances
         /// </summary>
-        public override void KeyDown(NSEvent e)
+        public override void KeyDown(KeyEventArgs e)
         {
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
 
@@ -118,7 +118,7 @@ namespace Vim.UI.Cocoa
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this works and the key is processed then the input is considered
                 // to be handled
-                if (_keyUtil.TryConvertSpecialToKeyInput(e, out KeyInput keyInput))
+                if (_keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput))
                 {
                     handled = TryProcess(keyInput);
                 }
