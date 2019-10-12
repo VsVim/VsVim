@@ -32,6 +32,7 @@
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Resources\" />
+    <Folder Include="FPFExtensions\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\beep.wav" />
@@ -40,5 +41,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\beep.wav" />
     <EmbeddedResource Include="Resources\KeyBindingSchemeVim.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\VimWpf\Implementation\Misc\ClipboardDevice.cs">
+      <Link>ClipboardDevice.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>
