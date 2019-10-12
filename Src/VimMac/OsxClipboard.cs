@@ -13,6 +13,7 @@ static class OsxClipboard
 
     public static void SetText(string text)
     {
+        NSPasteboard.GeneralPasteboard.ClearContents();
         NSPasteboard.GeneralPasteboard.SetStringForType(text, textType);
     }
 }
