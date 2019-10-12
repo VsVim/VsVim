@@ -83,8 +83,8 @@ namespace Vim.Mac
         private static NSSound GetBeepSound()
         {
             using (var stream = typeof(VimCocoaHost).Assembly.GetManifestResourceStream("Vim.Mac.Resources.beep.wav"))
+            using (NSData data = NSData.FromStream(stream))
             {
-                NSData data = NSData.FromStream(stream);
                 return new NSSound(data);
             }
         }
