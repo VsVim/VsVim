@@ -3643,6 +3643,9 @@ type InsertCommand  =
     /// Paste clipboard
     | Paste
 
+    | LiteralPaste of Register: char
+    /// | LiteralPaste of Register: char * Text: string
+
     with
 
     member x.RightMostCommand =
@@ -3704,6 +3707,7 @@ type InsertCommand  =
         | InsertCommand.UndoReplace -> None
         | InsertCommand.DeleteLineBeforeCursor -> None
         | InsertCommand.Paste -> None
+        | InsertCommand.LiteralPaste _ -> None
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
