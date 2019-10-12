@@ -549,12 +549,11 @@ namespace Vim.UnitTest
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
                 // jump from line 4 to last line and paste before to check that marks [ ] are updated
-                _vimBuffer.ProcessNotation("7j");
-                _vimBuffer.ProcessNotation("P");
+                _vimBuffer.ProcessNotation("GP");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      8    0 8",
+                    @" '      4    0 4",
                     @" z      9    0 9",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
@@ -566,62 +565,6 @@ namespace Vim.UnitTest
                     @" >      4    1 4",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
-
-                //_vimBuffer.ProcessNotation("yy");
-                //interpreter.RunDisplayMarks(s_emptyList);
-                //expectedMarks = new[] {
-                //    @"mark line  col file/text",
-                //    @" '      8    0 8",
-                //    @" z      9    0 9",
-                //    @" Z      8    0 VimBufferTest.cs",
-                //   @" ""      1    0 1",
-                //    @" [      1    0 1",
-                //    @" ]      1    1 1",
-                //    @" ^     10    1 0",
-                //    @" .     10    0 0",
-                //};
-                //Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
-
-                // set an upper and lower mark one line 2 and 3
-                //_vimBuffer.ProcessNotation("jmajmA2k");
-
-                // we paste one first line, so we know : text = line + 1
-                //_vimBuffer.ProcessNotation("P");
-                //interpreter.RunDisplayMarks(s_emptyList);
-                //expectedMarks = new[] {
-                //    @"mark line  col file/text",
-                //    @" '      9    0 8",
-                //    @" a      3    0 2",
-                //    @" z     10    0 9",
-                //    @" A      4    0 VimBufferTest.cs",
-                //    @" Z      9    0 VimBufferTest.cs",
-                //   @" ""      1    0 1",
-                //    @" [      7    0 1",
-                //    @" ]      7    1 1",
-                //    @" ^     11    1 0",
-                //    @" .      1    1 1",
-                //};
-                //Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
-
-                //_vimBuffer.ProcessNotation("kV<ESC>");
-                //interpreter.RunDisplayMarks(s_emptyList);
-
-                //expectedMarks = new[] {
-                //    @"mark line  col file/text",
-                //    @" '      9    0 VimBufferTest.cs",
-                //    @" a      2    0 VimBufferTest.cs",
-                //    @" z     10    0 VimBufferTest.cs",
-                //    @" A      3    0 VimBufferTest.cs",
-                //    @" Z      9    0 VimBufferTest.cs",
-                //   @" ""      1    0 VimBufferTest.cs",
-                //    @" [      7    0 VimBufferTest.cs",
-                //    @" ]      7    1 VimBufferTest.cs",
-                //    @" ^     11    1 VimBufferTest.cs",
-                //    @" .      7    1 VimBufferTest.cs",
-                //    @" <      6    0 VimBufferTest.cs",
-                //    @" >      6    1 VimBufferTest.cs",
-                //};
-                //Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
             }
         }
 
