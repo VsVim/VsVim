@@ -549,11 +549,12 @@ namespace Vim.UnitTest
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
                 // jump from line 4 to last line and paste before to check that marks [ ] are updated
-                _vimBuffer.ProcessNotation("GP");
+                _vimBuffer.ProcessNotation("7j");
+                _vimBuffer.ProcessNotation("P");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      4    0 4",
+                    @" '      8    0 8",
                     @" z      9    0 9",
                     @" Z      8    0 VimBufferTest.cs",
                    @" ""      1    0 1",
