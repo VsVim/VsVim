@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.Composition;
-using MonoDevelop.Core;
 using MonoDevelop.Core.Execution;
+using MonoDevelop.Ide;
 using MonoDevelop.Ide.Gui;
 
 namespace Vim.UI.Cocoa
@@ -13,8 +13,7 @@ namespace Vim.UI.Cocoa
         [ImportingConstructor]
         internal VimConsoleFactoryService()
         {
-            var monitors = (IdeProgressMonitorManager)Runtime.GetService<ProgressMonitorManager>().Result;
-            console = monitors.GetOutputProgressMonitor("Vim Output", Stock.Console, true, false, true);
+            console = IdeServices.ProgressMonitorManager.GetOutputProgressMonitor("Vim Output", Stock.Console, true, false, true);
         }
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
