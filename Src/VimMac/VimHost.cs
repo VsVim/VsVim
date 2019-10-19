@@ -67,7 +67,7 @@ namespace Vim.Mac
 
         private ITextView TextViewFromDocument(Document document)
         {
-            return document.GetContent<ITextView>();
+            return document?.GetContent<ITextView>();
         }
 
         private Document DocumentFromTextView(ITextView textView)
