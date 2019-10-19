@@ -1,7 +1,9 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using AppKit;
 using Foundation;
 using Microsoft.FSharp.Core;
@@ -508,9 +510,67 @@ namespace Vim.Mac
             return true;
         }
 
-        public RunCommandResults RunCommand(string workingDirectory, string file, string arguments, string input)
+        /// <summary>
+        /// Run the specified command on the supplied input, capture it's output and
+        /// return it to the caller
+        /// </summary>
+        public RunCommandResults RunCommand(string workingDirectory, string command, string arguments, string input)
         {
-            throw new NotImplementedException();
+            // Use a (generous) timeout since we have no way to interrupt it.
+            var timeout = 30 * 1000;
+
+            // Avoid redirection for the 'open' command.
+            var doRedirect = !arguments.StartsWith("/c open ", StringComparison.CurrentCulture);
+
+            //TODO: '/c is CMD.exe specific'
+            if(arguments.StartsWith("/c ", StringComparison.CurrentCulture))
+            {
+                arguments = "-c " + arguments.Substring(3);
+            }
+
+            // Populate the start info.
+            var startInfo = new ProcessStartInfo
+            {
+                WorkingDirectory = workingDirectory,
+                FileName = "zsh",
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardInput = doRedirect,
+                RedirectStandardOutput = doRedirect,
+                RedirectStandardError = doRedirect,
+                CreateNoWindow = true,
+            };
+
+            // Start the process and tasks to manage the I/O.
+            try
+            {
+                var process = Process.Start(startInfo);
+                if (doRedirect)
+                {
+                    var stdin = process.StandardInput;
+                    var stdout = process.StandardOutput;
+                    var stderr = process.StandardError;
+                    var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                    var stdoutTask = Task.Run(stdout.ReadToEnd);
+                    var stderrTask = Task.Run(stderr.ReadToEnd);
+                    if (process.WaitForExit(timeout))
+                    {
+                        return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                    }
+                }
+                else
+                {
+                    if (process.WaitForExit(timeout))
+                    {
+                        return new RunCommandResults(process.ExitCode, String.Empty, String.Empty);
+                    }
+                }
+                throw new TimeoutException();
+            }
+            catch (Exception ex)
+            {
+                return new RunCommandResults(-1, "", ex.Message);
+            }
         }
 
         public void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
