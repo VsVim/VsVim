@@ -348,10 +348,10 @@ namespace Vim.Mac
             return Dispatch(CommandNameGoToDefinition);
         }
 
-        private void OpenTab(string fileName)
+        private Document OpenTab(string fileName)
         {
             Project project = null;
-            IdeApp.Workbench.OpenDocument(fileName, project).Wait(System.Threading.CancellationToken.None);
+            return IdeApp.Workbench.OpenDocument(fileName, project).Result;
         }
 
         public void GoToTab(int index)
@@ -406,12 +406,25 @@ namespace Vim.Mac
 
         public bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            throw new NotImplementedException();
+            // AFAICT, it's not possible to reuse a tab in VSMac for a new file
+            // but we still want e: filename to work
+            if (File.Exists(filePath))
+            {
+                OpenTab(filePath);
+                return true;
+            }
+            return false;
         }
 
         public FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
         {
-            throw new NotImplementedException();
+            if (File.Exists(filePath))
+            {
+                var document = IdeApp.Workbench.OpenDocument(filePath, null, line.SomeOrDefault(0), column.SomeOrDefault(0)).Result;
+                var textView = TextViewFromDocument(document);
+                return FSharpOption.CreateForReference(textView);
+            }
+            return FSharpOption<ITextView>.None;
         }
 
         public void Make(bool jumpToFirstError, string arguments)
