@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +11,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Utilities;
+using MonoDevelop.Components.Commands;
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeFormatting;
@@ -619,7 +619,7 @@ namespace Vim.Mac
 
         public void RunHostCommand(ITextView textView, string commandName, string argument)
         {
-            Dispatch(commandName);
+            Dispatch(commandName, argument);
         }
 
         public bool Save(ITextBuffer textBuffer)
@@ -690,11 +690,11 @@ namespace Vim.Mac
             //throw new NotImplementedException();
         }
 
-        bool Dispatch(object command)
+        bool Dispatch(object command, string argument = null)
         {
             try
             {
-                return IdeApp.CommandService.DispatchCommand(command);
+                return IdeApp.CommandService.DispatchCommand(command, argument);
             }
             catch
             {

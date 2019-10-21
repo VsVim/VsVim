@@ -13,5 +13,15 @@
     <Extension path = "/MonoDevelop/Ide/KeyBindingSchemes">
         <Scheme id="Vim" _name = "Visual Studio + VsVim" resource="Vim.Mac.Resources.KeyBindingSchemeVim.xml" forMac="true" />
     </Extension>
+    <Extension path = "/MonoDevelop/Ide/Commands">
+        <Category _name = "VsVim" id = "VsVim">
+            <Command id="VsVim.ShowPadById" _label="Shows a pad"
+                _description="Helper command to make it possible to bind keys to show a pad via .vimrc"
+                defaultHandler = "Vim.Mac.ShowPadByIdHandler" />
+             <Command id="VsVim.ShowPadByTitle" _label="Shows a pad"
+                _description="Helper command to make it possible to bind keys to show a pad via .vimrc"
+                defaultHandler = "Vim.Mac.ShowPadByTitleHandler" />
+        </Category>
+    </Extension>
 </ExtensionModel>
 
