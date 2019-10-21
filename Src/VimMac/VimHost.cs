@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +16,7 @@ using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeFormatting;
 using MonoDevelop.Ide.Commands;
+using MonoDevelop.Ide.FindInFiles;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Projects;
 using Vim.Extensions;
@@ -254,7 +256,27 @@ namespace Vim.Mac
 
         public void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
         {
+            var find = new FindReplace();
 
+            var options = new FilterOptions
+            {
+                CaseSensitive = matchCase,
+                RegexSearch = true,
+            };
+
+            var scope = new ShellWildcardSearchScope(filesOfType);
+
+            using (var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor(true))
+            {
+                var results = find.FindAll(scope, monitor, pattern, null, options, System.Threading.CancellationToken.None);
+                foreach (var result in results)
+                {
+                    //TODO: Cancellation?
+                    monitor.ReportResult(result);
+                }
+            }
+
+            action.Invoke(null);
         }
 
         public void FormatLines(ITextView textView, SnapshotLineRange range)
@@ -455,19 +477,37 @@ namespace Vim.Mac
 
         public FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
         {
-        //    public enum ListKind
-        //{
-        //    Error,
-        //    Location
-        //}
-        //public enum NavigationKind
-        //{
-        //    First,
-        //    Last,
-        //    Next,
-        //    Previous
-        //}
-            throw new NotImplementedException();
+            //    public enum ListKind
+            //{
+            //    Error,
+            //    Location
+            //}
+            //public enum NavigationKind
+            //{
+            //    First,
+            //    Last,
+            //    Next,
+            //    Previous
+            //}
+
+            //public class ListItem
+            //{
+            //    internal string _message;
+
+            //    internal int _listLength;
+
+            //    internal int _itemNumber;
+
+            //    public int ItemNumber => _itemNumber;
+
+            //    public int ListLength => _listLength;
+
+            //    public string Message => _message;
+
+            //    public ListItem(int _itemNumber, int _listLength, string _message)
+            //        : this();
+            //}
+            return FSharpOption<ListItem>.None;
         }
 
         public bool OpenLink(string link)
