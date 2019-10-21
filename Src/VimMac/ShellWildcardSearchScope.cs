@@ -14,7 +14,7 @@ namespace Vim.Mac
     {
         private ImmutableArray<FileProvider> files;
 
-        public ShellWildcardSearchScope(string wildcard)
+        public ShellWildcardSearchScope(string workingDirectory, string wildcard)
         {
             var args = "echo " + wildcard;
             var proc = new Process();
@@ -23,6 +23,7 @@ namespace Vim.Mac
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.CreateNoWindow = true;
+            proc.StartInfo.WorkingDirectory = workingDirectory;
             proc.Start();
             var output = proc.StandardOutput.ReadToEnd().TrimEnd('\n');
             proc.WaitForExit();

@@ -263,8 +263,7 @@ namespace Vim.Mac
                 CaseSensitive = matchCase,
                 RegexSearch = true,
             };
-
-            var scope = new ShellWildcardSearchScope(filesOfType);
+            var scope = new ShellWildcardSearchScope(_vim.VimData.CurrentDirectory, filesOfType);
 
             using (var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor(true))
             {
