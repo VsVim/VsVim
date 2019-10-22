@@ -137,8 +137,14 @@ namespace Vim.UI.Cocoa
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
 
-            var message = Mac.StatusBar.GetStatus(VimBuffer).Text;
-            IdeApp.Workbench.StatusBar.ShowMessage(message);
+            var status = Mac.StatusBar.GetStatus(VimBuffer);
+            var text = status.Text;
+            if(status.CaretPosition != 0)
+            {
+                // Add a fake 'caret'
+                text = text.Insert(status.CaretPosition, "|");
+            }
+            IdeApp.Workbench.StatusBar.ShowMessage(text);
             e.Handled = handled;
             CaretUtil.SetCaret(VimBuffer);
         }
