@@ -429,14 +429,21 @@ namespace Vim.Mac
 
         public bool LoadFileIntoExistingWindow(string filePath, ITextView textView)
         {
-            // AFAICT, it's not possible to reuse a tab in VSMac for a new file
-            // but we still want e: filename to work
-            if (File.Exists(filePath))
+            // filePath can be a wildcard representing multiple files
+            // e.g. :e ~/src/**/*.cs
+            var files = ShellWildcardExpansion.ExpandWildcard(filePath, _vim.VimData.CurrentDirectory);
+            try
             {
-                OpenTab(filePath);
+                foreach (var file in files)
+                {
+                    OpenTab(file);
+                }
                 return true;
             }
-            return false;
+            catch
+            {
+                return false;
+            }
         }
 
         public FSharpOption<ITextView> LoadFileIntoNewWindow(string filePath, FSharpOption<int> line, FSharpOption<int> column)
