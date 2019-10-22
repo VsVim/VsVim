@@ -9,4 +9,7 @@
     <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.InsertNewLinePreserveCaretPosition" shortcut="" /> <!-- <C-o> -->
     <binding command="MonoDevelop.Ide.CodeFormatting.CodeFormattingCommands.FormatBuffer" shortcut="" /> <!-- <C-i> -->
     <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.LineStart" shortcut = "Meta+Left"/> <!-- <C-a> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.DeleteRightChar" shortcut="" /> <!-- <C-d> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.CharRight" shortcut="" /> <!-- <C-f> -->
+    <binding command="MonoDevelop.Ide.Commands.TextEditorCommands.CharLeft" shortcut="" /> <!-- <C-b> -->
 </scheme>
