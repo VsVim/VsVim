@@ -678,7 +678,7 @@ namespace Vim.Mac
 
         public void StartShell(string workingDirectory, string file, string arguments)
         {
-            throw new NotImplementedException();
+            IdeServices.DesktopService.OpenTerminal(workingDirectory);
         }
 
         public bool TryCustomProcess(ITextView textView, InsertCommand command)
