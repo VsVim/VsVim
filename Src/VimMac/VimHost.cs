@@ -371,10 +371,10 @@ namespace Vim.Mac
             return Dispatch(CommandNameGoToDefinition);
         }
 
-        private Document OpenTab(string fileName)
+        private void OpenTab(string fileName)
         {
             Project project = null;
-            return IdeApp.Workbench.OpenDocument(fileName, project).Result;
+            IdeApp.Workbench.OpenDocument(fileName, project);
         }
 
         public void GoToTab(int index)
