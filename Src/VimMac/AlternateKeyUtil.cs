@@ -136,19 +136,19 @@ namespace Vim.UI.Cocoa.Implementation.Misc
         internal static NSEventModifierMask ConvertToModifierKeys(VimKeyModifiers keys)
         {
             NSEventModifierMask res = 0;
-            if (0 != (keys & VimKeyModifiers.Shift))
+            if (keys.HasFlag(VimKeyModifiers.Shift))
             {
                 res |= NSEventModifierMask.ShiftKeyMask;
             }
-            if (0 != (keys & VimKeyModifiers.Alt))
+            if (keys.HasFlag(VimKeyModifiers.Alt))
             {
                 res |= NSEventModifierMask.AlternateKeyMask;
             }
-            if (0 != (keys & VimKeyModifiers.Control))
+            if (keys.HasFlag(VimKeyModifiers.Control))
             {
                 res |= NSEventModifierMask.ControlKeyMask;
             }
-            if (0 != (keys & VimKeyModifiers.Command))
+            if (keys.HasFlag(VimKeyModifiers.Command))
             {
                 res |= NSEventModifierMask.CommandKeyMask;
             }
