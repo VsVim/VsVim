@@ -1454,14 +1454,16 @@ type VimInterpreter
                 if System.IO.Directory.Exists(vimFolder) then
                     let latest =
                         System.IO.Directory.EnumerateDirectories vimFolder
-                        |> Seq.map (fun pathName -> System.IO.Path.GetFileName(pathName))
-                        |> Seq.filter (fun folder ->
-                            folder.StartsWith("vim", System.StringComparison.OrdinalIgnoreCase))
-                        |> Seq.sortByDescending (fun folder ->
-                            folder.Substring(3)
-                            |> Seq.takeWhile CharUtil.IsDigit
-                            |> System.String.Concat
-                            |> int)
+                        |> Seq.map (fun pathName ->
+                            let folder = System.IO.Path.GetFileName(pathName)
+                            let m = System.Text.RegularExpressions.Regex.Match(folder, "^vim(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+                            if m.Success then
+                                (folder, m.Groups.[1].Value |> int)
+                            else
+                                ("", 0))
+                        |> Seq.filter (fun (folder, version) -> folder <> "" && version <> 0)
+                        |> Seq.sortByDescending (fun (_, version) -> version)
+                        |> Seq.map (fun (folder, _) -> folder)
                         |> Seq.tryHead
                     match latest with
                     | Some folder -> System.IO.Path.Combine(vimFolder, folder) |> Some
