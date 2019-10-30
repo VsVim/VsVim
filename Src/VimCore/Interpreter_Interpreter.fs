@@ -1440,6 +1440,13 @@ type VimInterpreter
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
+        let extractFolderVersion = fun pathName ->
+            let folder = System.IO.Path.GetFileName(pathName)
+            let m = System.Text.RegularExpressions.Regex.Match(folder, "^vim(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+            match m with
+            | x when x.Success -> Some(folder, m.Groups.[1].Value |> int)
+            | _ -> None
+
         // Function to find a vim installation folder
         let findVimFolder specialFolder =
             try
@@ -1454,14 +1461,7 @@ type VimInterpreter
                 if System.IO.Directory.Exists(vimFolder) then
                     let latest =
                         System.IO.Directory.EnumerateDirectories vimFolder
-                        |> Seq.map (fun pathName ->
-                            let folder = System.IO.Path.GetFileName(pathName)
-                            let m = System.Text.RegularExpressions.Regex.Match(folder, "^vim(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
-                            if m.Success then
-                                (folder, m.Groups.[1].Value |> int)
-                            else
-                                ("", 0))
-                        |> Seq.filter (fun (folder, version) -> folder <> "" && version <> 0)
+                        |> Seq.choose (extractFolderVersion)
                         |> Seq.sortByDescending (fun (_, version) -> version)
                         |> Seq.map (fun (folder, _) -> folder)
                         |> Seq.tryHead
