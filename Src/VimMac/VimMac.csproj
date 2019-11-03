@@ -33,6 +33,7 @@
     <Folder Include="Properties\" />
     <Folder Include="Resources\" />
     <Folder Include="FPFExtensions\" />
+    <Folder Include="InlineRename\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\beep.wav" />

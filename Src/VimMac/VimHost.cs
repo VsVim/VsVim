@@ -21,6 +21,7 @@ using MonoDevelop.Ide.Gui;
 using MonoDevelop.Projects;
 using Vim.Extensions;
 using Vim.Interpreter;
+using Vim.VisualStudio;
 using Export = System.ComponentModel.Composition.ExportAttribute ;
 
 namespace Vim.Mac
@@ -34,6 +35,7 @@ namespace Vim.Mac
         private readonly ITextBufferFactoryService _textBufferFactoryService;
         private readonly ICocoaTextEditorFactoryService _textEditorFactoryService;
         private readonly ISmartIndentationService _smartIndentationService;
+        private readonly IExtensionAdapterBroker _extensionAdapterBroker;
         private IVim _vim;
 
         internal const string CommandNameGoToDefinition = "MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration";
@@ -42,13 +44,15 @@ namespace Vim.Mac
         public VimCocoaHost(
             ITextBufferFactoryService textBufferFactoryService,
             ICocoaTextEditorFactoryService textEditorFactoryService,
-            ISmartIndentationService smartIndentationService)
+            ISmartIndentationService smartIndentationService,
+            IExtensionAdapterBroker extensionAdapterBroker)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
             Console.WriteLine("Loaded");
             _textBufferFactoryService = textBufferFactoryService;
             _textEditorFactoryService = textEditorFactoryService;
             _smartIndentationService = smartIndentationService;
+            _extensionAdapterBroker = extensionAdapterBroker;
         }
 
         public bool AutoSynchronizeSettings => false;
@@ -59,7 +63,7 @@ namespace Vim.Mac
 
         public bool IsAutoCommandEnabled => false;
 
-        public bool IsUndoRedoExpected => throw new NotImplementedException();
+        public bool IsUndoRedoExpected => _extensionAdapterBroker.IsUndoRedoExpected ?? false;
 
         public int TabCount => IdeApp.Workbench.Documents.Count;
 

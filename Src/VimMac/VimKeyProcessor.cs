@@ -43,6 +43,7 @@ namespace Vim.UI.Cocoa
             IKeyUtil keyUtil,
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker)
+            
         {
             VimBuffer = vimBuffer;
             _keyUtil = keyUtil;
