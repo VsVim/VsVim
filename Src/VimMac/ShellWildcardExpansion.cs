@@ -11,7 +11,7 @@ namespace Vim.Mac
     {
         public static IEnumerable<string> ExpandWildcard(string wildcard, string workingDirectory)
         {
-            var args = "echo " + wildcard;
+            var args = $"for f in {wildcard}; do echo $f; done;";
             var proc = new Process();
             proc.StartInfo.FileName = "zsh";
             proc.StartInfo.Arguments = "-c " + EscapeAndQuote(args);
@@ -23,8 +23,7 @@ namespace Vim.Mac
             var output = proc.StandardOutput.ReadToEnd().TrimEnd('\n');
             proc.WaitForExit();
 
-            //TODO: handle filenames containing spaces
-            var files = output.Split(' ')
+            var files = output.Split('\n')
                         .SelectMany(GetFiles)
                         .Where(f => IdeServices.DesktopService.GetFileIsText(f));
             return files;
