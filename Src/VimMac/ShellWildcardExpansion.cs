@@ -11,13 +11,14 @@ namespace Vim.Mac
     {
         public static IEnumerable<string> ExpandWildcard(string wildcard, string workingDirectory)
         {
-            var args = $"for f in {wildcard}; do echo $f; done;";
+            var args = $"for f in $~vimwildcard; do echo $f; done;";
             var proc = new Process();
             proc.StartInfo.FileName = "zsh";
             proc.StartInfo.Arguments = "-c " + EscapeAndQuote(args);
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.CreateNoWindow = true;
+            proc.StartInfo.Environment.Add("vimwildcard", wildcard);
             proc.StartInfo.WorkingDirectory = workingDirectory;
             proc.Start();
             var output = proc.StandardOutput.ReadToEnd().TrimEnd('\n');
