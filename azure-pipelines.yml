@@ -11,7 +11,10 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   steps:
-  - script: msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU"
+  - task: Bash@3
+    displayName: Build 
+    inputs:
+      filePath: Scripts/build.sh
 
 - job: VsVim_Build_Test
   pool: 
