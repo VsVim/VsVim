@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2019
+﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,8 +30,8 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
     internal sealed class WordAsyncCompletionSessionFactory
     {
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
+#if VS_SPECIFIC_2019
         private readonly IVsEditorAdaptersFactoryService _vsEditorAdaptersFactoryService;
-
         internal WordAsyncCompletionSessionFactory(
             IAsyncCompletionBroker asyncCompletionBroker,
             IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
@@ -39,7 +39,13 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             _asyncCompletionBroker = asyncCompletionBroker;
             _vsEditorAdaptersFactoryService = vsEditorAdaptersFactoryService;
         }
-
+#elif VS_SPECIFIC_MAC
+        internal WordAsyncCompletionSessionFactory(
+            IAsyncCompletionBroker asyncCompletionBroker)
+        {
+            _asyncCompletionBroker = asyncCompletionBroker;
+        }
+#endif
         internal FSharpOption<IWordCompletionSession> CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
         {
             // Dismiss any active ICompletionSession instances.  It's possible and possibly common for 
@@ -73,7 +79,11 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             }
 
             asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);
+#if VS_SPECIFIC_2019
             return new WordAsyncCompletionSession(asyncCompletionSession, _vsEditorAdaptersFactoryService);
+#elif VS_SPECIFIC_MAC
+            return new WordAsyncCompletionSession(asyncCompletionSession);
+#endif
         }
     }
 }

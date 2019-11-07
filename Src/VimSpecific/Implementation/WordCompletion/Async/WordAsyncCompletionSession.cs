@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2019
+﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using System;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
@@ -6,8 +6,10 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using System.Threading;
 using System.Windows.Threading;
+#if VS_SPECIFIC_2019
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
+#endif
 using System.Reflection;
 
 namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
@@ -23,6 +25,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         private bool _isDismissed;
         private event EventHandler _dismissed;
         private readonly DispatcherTimer _tipTimer;
+#if VS_SPECIFIC_2019
         private readonly IVsTextView _vsTextView;
 
         internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
@@ -37,7 +40,15 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
                 _tipTimer.Start();
             }
         }
-
+#endif
+#if VS_SPECIFIC_MAC
+        internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession)
+        {
+            _textView = asyncCompletionSession.TextView;
+            _asyncCompletionSession = asyncCompletionSession;
+            _asyncCompletionSession.Dismissed += delegate { OnDismissed(); };
+        }
+#endif
         /// <summary>
         /// Called when the session is dismissed.  Need to alert any consumers that we have been
         /// dismissed 
@@ -74,6 +85,8 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         {
             try
             {
+#if VS_SPECIFIC_2019
+
                 var methodInfo = _vsTextView.GetType().BaseType.GetMethod(
                     "SetTipOpacity",
                     BindingFlags.NonPublic | BindingFlags.Instance,
@@ -84,6 +97,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
                 {
                     methodInfo.Invoke(_vsTextView, new object[] { (double)1.0 });
                 }
+#endif
             }
             catch (Exception ex)
             {
@@ -91,7 +105,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             }
         }
 
-        #region IWordCompletionSession
+#region IWordCompletionSession
 
         ITextView IWordCompletionSession.TextView => _textView;
         bool IWordCompletionSession.IsDismissed => _isDismissed;
@@ -111,13 +125,13 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         bool IWordCompletionSession.MovePrevious() => MoveUp();
         void IWordCompletionSession.Commit() => Commit();
 
-        #endregion
+#endregion
 
-        #region IPropertyOwner 
+#region IPropertyOwner 
 
         PropertyCollection IPropertyOwner.Properties => _asyncCompletionSession.Properties;
 
-        #endregion 
+#endregion
     }
 }
 

@@ -5,18 +5,9 @@
     <RootNamespace>Vim.Mac</RootNamespace>
     <AssemblyName>Vim.Mac</AssemblyName>
     <TargetFramework>net472</TargetFramework>
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_MAC</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'DebugMac|AnyCPU' ">
-    <IntermediateOutputPath>..\..\Binaries\obj\VimMac\Debug\net472</IntermediateOutputPath>
-    <DebugSymbols>true</DebugSymbols>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG;NETFRAMEWORK;NET472</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ReleaseMac|AnyCPU' ">
-    <IntermediateOutputPath>..\..\Binaries\obj\VimMac\Release\net472</IntermediateOutputPath>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE;RELEASE;NETFRAMEWORK;NET472</DefineConstants>
-  </PropertyGroup>
+      
   <ItemGroup>
     <AddinReference Include="MonoDevelop.TextEditor.Cocoa" />
   </ItemGroup>
@@ -48,4 +39,5 @@
       <Link>ClipboardDevice.cs</Link>
     </Compile>
   </ItemGroup>
+  <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" Condition="Exists('..\VimSpecific\VimSpecific.projitems')" />
 </Project>

@@ -1,13 +1,9 @@
-﻿#if VS_SPECIFIC_2019
+﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Text;
-using Vim;
 
 namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
 {

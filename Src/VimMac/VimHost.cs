@@ -22,6 +22,7 @@ using MonoDevelop.Projects;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Vim.VisualStudio;
+using Vim.VisualStudio.Specific;
 using Export = System.ComponentModel.Composition.ExportAttribute ;
 
 namespace Vim.Mac
@@ -59,7 +60,7 @@ namespace Vim.Mac
 
         public DefaultSettings DefaultSettings => DefaultSettings.GVim74;
 
-        public string HostIdentifier => "VsVim MacOS Host";
+        public string HostIdentifier => VimSpecificUtil.HostIdentifier;
 
         public bool IsAutoCommandEnabled => false;
 
