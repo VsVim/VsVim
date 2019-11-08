@@ -14,7 +14,7 @@ namespace Vim.Mac
             var args = $"for f in $~vimwildcard; do echo $f; done;";
             var proc = new Process();
             proc.StartInfo.FileName = "zsh";
-            proc.StartInfo.Arguments = "-c " + EscapeAndQuote(args);
+            proc.StartInfo.Arguments = "-c " + args;
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.CreateNoWindow = true;
@@ -41,13 +41,6 @@ namespace Vim.Mac
             {
                 yield return directoryOrFile;
             }
-        }
-
-        static string EscapeAndQuote(string s)
-        {
-            var argBuilder = new ProcessArgumentBuilder();
-            argBuilder.AddQuoted(s);
-            return argBuilder.ToString();
         }
     }
 }
