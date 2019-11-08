@@ -12,7 +12,7 @@ namespace Vim.Mac
 
         public ShellWildcardSearchScope(string workingDirectory, string wildcard)
         {
-            files = ShellWildcardExpansion.ExpandWildcard(wildcard, workingDirectory)
+            files = ShellWildcardExpansion.ExpandWildcard(wildcard, workingDirectory, enumerateDirectories: true)
                         .Select(f => new FileProvider(f))
                         .ToImmutableArray();
         }
