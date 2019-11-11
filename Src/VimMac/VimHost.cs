@@ -486,39 +486,74 @@ namespace Vim.Mac
             }
         }
 
-        public FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argument, bool hasBang)
+        public FSharpOption<ListItem> NavigateToListItem(ListKind listKind, NavigationKind navigationKind, FSharpOption<int> argumentOption, bool hasBang)
         {
-            //    public enum ListKind
-            //{
-            //    Error,
-            //    Location
-            //}
-            //public enum NavigationKind
-            //{
-            //    First,
-            //    Last,
-            //    Next,
-            //    Previous
-            //}
+            if (listKind == ListKind.Error)
+            {
+                var errors = IdeServices.TaskService.Errors;
+                if (errors.Count > 0)
+                {
+                    var argument = argumentOption.IsSome() ? new int?(argumentOption.Value) : null;
 
-            //public class ListItem
-            //{
-            //    internal string _message;
+                    var currentIndex = errors.CurrentLocationTask == null ? -1 : errors.IndexOf(errors.CurrentLocationTask);
+                    var index = GetListItemIndex(navigationKind, argument, currentIndex, errors.Count);
 
-            //    internal int _listLength;
+                    if (index.HasValue)
+                    {
+                        var errorItem = errors.ElementAt(index.Value);
+                        errors.CurrentLocationTask = errorItem;
+                        errorItem.SelectInPad();
+                        errorItem.JumpToPosition();
 
-            //    internal int _itemNumber;
-
-            //    public int ItemNumber => _itemNumber;
-
-            //    public int ListLength => _listLength;
-
-            //    public string Message => _message;
-
-            //    public ListItem(int _itemNumber, int _listLength, string _message)
-            //        : this();
-            //}
+                        // Item number is one-based.
+                        var listItem = new ListItem(index.Value + 1, errors.Count, errorItem.Message);
+                        return FSharpOption.CreateForReference(listItem);
+                    }
+                }
+            }
             return FSharpOption<ListItem>.None;
+        }
+
+        /// <summary>
+        /// Convert the specified navigation instructions into an index for the
+        /// new list item
+        /// </summary>
+        /// <param name="navigationKind">the kind of navigation</param>
+        /// <param name="argument">an optional argument for the navigation</param>
+        /// <param name="current">the zero-based index of the current list item</param>
+        /// <param name="length">the length of the list</param>
+        /// <returns>a zero-based index into the list</returns>
+        private static int? GetListItemIndex(NavigationKind navigationKind, int? argument, int? current, int length)
+        {
+            var argumentOffset = argument ?? 1;
+            var currentIndex = current ?? -1;
+            var newIndex = -1;
+
+            // The 'first' and 'last' navigation kinds are one-based.
+            switch (navigationKind)
+            {
+                case NavigationKind.First:
+                    newIndex = argument.HasValue ? argument.Value - 1 : 0;
+                    break;
+                case NavigationKind.Last:
+                    newIndex = argument.HasValue ? argument.Value - 1 : length - 1;
+                    break;
+                case NavigationKind.Next:
+                    newIndex = currentIndex + argumentOffset;
+                    break;
+                case NavigationKind.Previous:
+                    newIndex = currentIndex - argumentOffset;
+                    break;
+                default:
+                    Contract.Assert(false);
+                    break;
+            }
+
+            if (newIndex >= 0 && newIndex < length)
+            {
+                return newIndex;
+            }
+            return null;
         }
 
         public bool OpenLink(string link)
