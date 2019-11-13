@@ -65,15 +65,26 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             string subKey;
             switch (version)
             {
+                // Visual Assist settings stored in registry using the Visual Studio major version number
                 case VisualStudioVersion.Vs2012:
-                case VisualStudioVersion.Vs2013:
-                case VisualStudioVersion.Vs2015:
                     subKey = "VANet11";
+                    break;
+                case VisualStudioVersion.Vs2013:
+                    subKey = "VANet12";
+                    break;
+                case VisualStudioVersion.Vs2015:
+                    subKey = "VANet14";
+                    break;
+                case VisualStudioVersion.Vs2017:
+                    subKey = "VANet15";
+                    break;
+                case VisualStudioVersion.Vs2019:
+                    subKey = "VANet16";
                     break;
                 case VisualStudioVersion.Unknown:
                 default:
-                    // Default to the Vs2012 version
-                    subKey = "VANet11";
+                    // Default to the latest version
+                    subKey = "VANet16";
                     break;
             }
 
