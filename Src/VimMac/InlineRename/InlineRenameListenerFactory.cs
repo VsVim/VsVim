@@ -11,6 +11,7 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
 {
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IExtensionAdapter))]
+    [Export(typeof(InlineRenameListenerFactory))]
     [ContentType(VimConstants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class InlineRenameListenerFactory : VimExtensionAdapter, IVimBufferCreationListener
@@ -18,7 +19,6 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
         private readonly IVimApplicationSettings _vimApplicationSettings;
 
         private IInlineRenameUtil _inlineRenameUtil;
-        private bool _inRename;
         private List<IVimBuffer> _vimBufferList = new List<IVimBuffer>();
 
         // Undo-redo is expected when the inline rename window is active.
@@ -27,7 +27,7 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
 
         internal IInlineRenameUtil RenameUtil
         {
-            //get { return _inlineRenameUtil; }
+            get { return _inlineRenameUtil; }
             set
             {
                 if (_inlineRenameUtil != null)
@@ -50,6 +50,8 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
         /// </summary>
         internal bool IsActive => _inlineRenameUtil != null && _inlineRenameUtil.IsRenameActive;
 
+        internal bool InRename { get; private set; }
+
         [ImportingConstructor]
         internal InlineRenameListenerFactory(
             IVimApplicationSettings vimApplicationSettings)
@@ -64,9 +66,9 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
 
         private void OnIsRenameActiveChanged(object sender, EventArgs e)
         {
-            if (_inRename && !_inlineRenameUtil.IsRenameActive)
+            if (InRename && !_inlineRenameUtil.IsRenameActive)
             {
-                _inRename = false;
+                InRename = false;
                 foreach (var vimBuffer in _vimBufferList)
                 {
                     vimBuffer.SwitchedMode -= OnModeChange;
@@ -76,9 +78,9 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
                     }
                 }
             }
-            else if (!_inRename && _inlineRenameUtil.IsRenameActive)
+            else if (!InRename && _inlineRenameUtil.IsRenameActive)
             {
-                _inRename = true;
+                InRename = true;
                 foreach (var vimBuffer in _vimBufferList)
                 {
                     // Respect the user's edit monitoring setting.
@@ -93,7 +95,7 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
 
         private void OnModeChange(object sender, SwitchModeEventArgs args)
         {
-            if (_inRename && _inlineRenameUtil.IsRenameActive && args.ModeArgument.IsCancelOperation)
+            if (InRename && _inlineRenameUtil.IsRenameActive && args.ModeArgument.IsCancelOperation)
             {
                 _inlineRenameUtil.Cancel();
             }

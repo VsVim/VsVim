@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using MonoDevelop.Ide;
 using Vim.Mac;
+using Vim.UI.Cocoa.Implementation.InlineRename;
 
 namespace Vim.UI.Cocoa
 {
@@ -25,6 +26,7 @@ namespace Vim.UI.Cocoa
         private IVimBuffer VimBuffer { get; }
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
+        private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
 
         public ITextBuffer TextBuffer
         {
@@ -42,16 +44,15 @@ namespace Vim.UI.Cocoa
             IVimBuffer vimBuffer,
             IKeyUtil keyUtil,
             ICompletionBroker completionBroker,
-            ISignatureHelpBroker signatureHelpBroker)
-            
+            ISignatureHelpBroker signatureHelpBroker,
+            InlineRenameListenerFactory inlineRenameListenerFactory)
+
         {
             VimBuffer = vimBuffer;
             _keyUtil = keyUtil;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
-            // TODO: We need to set the caret only after the text view has fully loaded
-            // so that we can measure the text width
-            CaretUtil.SetCaret(VimBuffer);
+            _inlineRenameListenerFactory = inlineRenameListenerFactory;
         }
 
         /// <summary>
@@ -111,6 +112,10 @@ namespace Vim.UI.Cocoa
             {
                 handled = false;
             }
+            else if (_inlineRenameListenerFactory.InRename)
+            {
+                handled = false;
+            }
             else
             {
                 var oldMode = VimBuffer.Mode.ModeKind;
@@ -145,7 +150,6 @@ namespace Vim.UI.Cocoa
             }
             IdeApp.Workbench.StatusBar.ShowMessage(text);
             e.Handled = handled;
-            CaretUtil.SetCaret(VimBuffer);
         }
     }
 }

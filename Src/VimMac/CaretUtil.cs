@@ -1,15 +1,17 @@
 ﻿using System;
+using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Vim.Mac
 {
-    internal static class CaretUtil
+    [Export(typeof(IVimBufferCreationListener))]
+    internal class CaretUtil : IVimBufferCreationListener
     {
-        public static void SetCaret(IVimBuffer vimBuffer)
+        private void SetCaret(IVimBuffer vimBuffer)
         {
             var textView = vimBuffer.TextView;
-            if (vimBuffer.Mode.ModeKind == ModeKind.Insert)
+            if (vimBuffer.Mode.ModeKind == ModeKind.Insert || vimBuffer.Mode.ModeKind == ModeKind.ExternalEdit)
             {
                 //TODO: what's the minimum caret width for accessibility?
                 textView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, 1.0);
@@ -26,6 +28,12 @@ namespace Vim.Mac
                 }
                 textView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, caretWidth);
             }
+        }
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
+        {
+            SetCaret(vimBuffer);
+            vimBuffer.SwitchedMode += (_,__) => SetCaret(vimBuffer);
         }
     }
 }
