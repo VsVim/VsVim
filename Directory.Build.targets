@@ -3,6 +3,8 @@
   <PropertyGroup>
     <!-- Disable the preview warning when building -->
     <_NETCoreSdkIsPreview>false</_NETCoreSdkIsPreview>
+
+    <LangVersion Condition="'$(Language)' == 'C#'">Latest</LangVersion>
   </PropertyGroup>
 
   <!-- 
