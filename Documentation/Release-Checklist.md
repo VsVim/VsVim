@@ -12,13 +12,15 @@ is the desired version.
 with the features and issues from the milestone
     1. **Commit** the changes.
     1. Tag the commit with `VsVim-[version number]`. 
-1. Increment `VersionNumber` in [Constants.fs](https://github.com/VsVim/VsVim/blob/master/Src/VimCore/Constants.fs)
+1. Increment `VersionNumber` to next version in
+    1. [Constants.fs](https://github.com/VsVim/VsVim/blob/master/Src/VimCore/Constants.fs)
+    1. [source.extension.vsixmanifest](https://github.com/VsVim/VsVim/blob/master/Src/VsVim/source.extension.vsixmanifest)
 and **commit** the changes.
-1. Create a pull request on VsVim with the changes and merge when passing
-1. Create a Release on GitHub
-    1. Use the tag created above 
-    1. Upload the VSIX for the tag
-1. Upload the VSIX to the [Visual Studio Gallery](https://marketplace.visualstudio.com/items?itemName=JaredParMSFT.VsVim)
+1. Create a pull request on VsVim and wait for it to go green. 
+1. Actually release the binaries
+    1. Merge the pull request once approved
+    1. Upload the VSIX to the [Visual Studio Gallery](https://marketplace.visualstudio.com/items?itemName=JaredParMSFT.VsVim)
+    1. Create a Release on GitHub using the tab above and attaching the VSIX
 
 The last few steps can be done in different orders. For example if the PR is 
 passing but lacking sign off to merge I will usually go ahead and upload the 
