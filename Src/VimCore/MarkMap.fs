@@ -134,25 +134,29 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     /// Get the buffer name, line and offset associated with a mark
     member x.GetMarkInfo (mark: Mark) (vimBufferData: IVimBufferData) =
 
-        let getPointInfo (point: VirtualSnapshotPoint) =
+        let getPointInfo (point: VirtualSnapshotPoint, useBuffername: bool) =
             let textLine = point.Position.GetContainingLine()
             let line = textLine.LineNumber
+            let text = textLine.GetText()
             let offset = point.Position.Position - textLine.Start.Position
             let offset = if point.IsInVirtualSpace then offset + point.VirtualSpaces else offset
             let name = vimBufferData.Vim.VimHost.GetName point.Position.Snapshot.TextBuffer
-            MarkInfo(mark.Char, name, line, offset) |> Some
+            /// distinguish what info we show. buffername(filename) for GlobalMarks,
+            /// text at the mark for marks in the current buffer/tab
+            let markInfo = if useBuffername then name else text
+            MarkInfo(mark.Char, markInfo, line, offset) |> Some
 
         match mark with
         | Mark.GlobalMark letter ->
             match x.GetGlobalMark letter with
-            | Some point -> getPointInfo point
+            | Some point -> getPointInfo (point, true)
             | None ->
                 match _globalUnloadedMarkMap.TryFind letter with
                 | Some (name, line, offset) -> MarkInfo(mark.Char, name, line, offset) |> Some
                 | None -> None
         |_ ->
             match x.GetMark mark vimBufferData with
-            | Some point -> getPointInfo point
+            | Some point -> getPointInfo (point, false)
             | None -> None
 
     /// Set the given mark to the specified line and offset in the context of the specified IVimBufferData
