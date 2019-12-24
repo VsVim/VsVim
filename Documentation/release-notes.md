@@ -1,5 +1,67 @@
 # Release Notes
 
+### Version 2.8.0
+[Issues closed in 2.8.0 Milestone](https://github.com/VsVim/VsVim/milestone/49?closed=1)
+Features
+* Integrated multiple caret support #2656
+* Interact with multi-caret selections #2362
+* Support 'isident' option #2645
+* Support 'iskeyword' option #1823
+
+Primary Issues Addressed
+* Making a list of numbers, adds the empty line #2718 
+* Yanking with ':set clipboard=unnamed' misplaces the caret #2735
+* Caret is misplaced in lines that display codelens bug #2709
+* VsVim causes UI delay in Navigate To provider bug #2715
+* Prevent displaying a line number for the phantom line #2687
+* Using 'f', 't', 'F', 'T' to find multi-byte characters fails #2702
+* Paste of multi-line visual block selection inserts into one line #2694
+* Visual Assist X and "cf<some char>" repitition #2692
+* Mouse select and drag does not scroll #2661
+* visual block prepend/append (C-V, I) on empty lines will skip last line #2675
+* Giant caret with inline breakpoint conditions dialog #2649
+* Development builds inadvertently being published to the Open VSIX Gallery project #2685
+* Mapping <Left> produces invalid characters #2683
+* Support command line cursor movement by mappings #1103
+* Pressing 'A' when in Visual Block mode moves caret to wrong position #2667
+* Highlighting text with the mouse in split view causes the other view to move #2664
+* VsVim should not process external caret movements when disabled #2643
+* F1 to open MSDN documentation only works in insert mode #2671
+* Caret sized incorrectly at end of line following Code Lens annotation Visual Studio 2019 #2657
+* VS 2019 : Exception on start #2646
+* VsVim fell for the trap some users fall for: <C-w> <C-c> #2623
+* Support initiating find in files and navigating find results using ':vimgrep' #2641
+* Implement :cr[ewind] #2637
+* Exception encountered in visual selection tracker #2618
+* TargetInvocationException while editing at the bottom of a git diff #2640
+* Command margin focus problems #2625
+* Incremental search as a motion from visual mode misbehaves #2617
+* Strange intermittent hybrid focus state #2627
+* Relative line numbers not updated correctly for large caret jumps #2634
+* Block caret overlay misaligned with underlying text #2615
+* Macro leaves text object selection behavior out of sync with cursor position #2632
+* Problem with Completion (C-n) in VS2017: Picking completion with space #2619
+* Window settings specified in the modeline are not applied #2613
+* Caret position changed handler running before layout is complete #2629
+* Map command does not display all mappings #2612
+* <ESC> in insert mode in inline rename is exiting inline rename #2587
+* Implement nowrap-specific cursor and scroll commands #787
+* VsVim copy does not include syntax highlighting #1920
+* Toggle all folds generates an exception when there are no folds #2607
+* Add a UI option to disable VsVim #1545
+* Imap to delete <del> does not work (anymore) #2608
+* Host command does not allow double quotes #2622
+* Chaining _vsvimrc to _vimrc to *real* _vimrc #1355
+* Go up / down a line in insert mode and reset the caret #2596
+* VS2017 crash : GetTextViewLineRelativeToPoint #2601
+* Possible exception calling Caret.ContainingTextViewLine #2583
+* Combine the benefits of atomic insert and effective change #2593
+* System.ArgumentOutOfRangeException when pasting in VS2019 #2591
+* Clicking past end of file doesn't move cursor to end of file anymore #2586
+* hlsearch highlighting doesn't match search matches because of universe negation #1471
+* v2.7.0.0 - vimrc errors reported despite setting being off #2585
+* Selection not cleared after control-click to go to #2580
+
 ### Version 2.7.0
 [Issues closed in 2.7.0 Milestone](https://github.com/VsVim/VsVim/milestone/48)
 Primary Issues Addressed
