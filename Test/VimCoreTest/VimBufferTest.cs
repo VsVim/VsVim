@@ -501,85 +501,68 @@ namespace Vim.UnitTest
                 interpreter.RunDisplayMarks(s_emptyList);
                 var expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      1    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      1    0 VimBufferTest.cs",
-                    @" ]     10    1 VimBufferTest.cs",
-                    @" ^     10    1 VimBufferTest.cs",
-                    @" .     10    0 VimBufferTest.cs",
+                    @" '      1    0 1",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]     10    1 0",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
-                // set an upper and lower mark
+                // set an upper (line 8) and lower mark (line 9)
                 _vimBuffer.ProcessNotation("kmzkmZ");
 
-                _vimBuffer.ProcessNotation("1G");
+                // jump from line 8 to line 1 and yank it.
+                // jump mark and [ ] must be updated
+                _vimBuffer.ProcessNotation("1Gyy");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      8    0 VimBufferTest.cs",
-                    @" z      9    0 VimBufferTest.cs",
+                    @" '      8    0 8",
+                    @" z      9    0 9",
                     @" Z      8    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      1    0 VimBufferTest.cs",
-                    @" ]     10    1 VimBufferTest.cs",
-                    @" ^     10    1 VimBufferTest.cs",
-                    @" .     10    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]      1    1 1",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
-                _vimBuffer.ProcessNotation("yy");
+                // select lines 3,4 in visual line mode to test marks <, >
+                _vimBuffer.ProcessNotation("jjVj<ESC>");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      8    0 VimBufferTest.cs",
-                    @" z      9    0 VimBufferTest.cs",
+                    @" '      8    0 8",
+                    @" z      9    0 9",
                     @" Z      8    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      1    0 VimBufferTest.cs",
-                    @" ]      1    1 VimBufferTest.cs",
-                    @" ^     10    1 VimBufferTest.cs",
-                    @" .     10    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [      1    0 1",
+                    @" ]      1    1 1",
+                    @" ^     10    1 0",
+                    @" .     10    0 0",
+                    @" <      3    0 3",
+                    @" >      4    1 4",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
 
-                // set an upper and lower mark
-                _vimBuffer.ProcessNotation("jmajmA2k");
-
-                _vimBuffer.ProcessNotation("5jp");
+                // jump from line 4 to last line and paste before to check that marks [ ] are updated
+                _vimBuffer.ProcessNotation("GP");
                 interpreter.RunDisplayMarks(s_emptyList);
                 expectedMarks = new[] {
                     @"mark line  col file/text",
-                    @" '      9    0 VimBufferTest.cs",
-                    @" a      2    0 VimBufferTest.cs",
-                    @" z     10    0 VimBufferTest.cs",
-                    @" A      3    0 VimBufferTest.cs",
-                    @" Z      9    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      7    0 VimBufferTest.cs",
-                    @" ]      7    1 VimBufferTest.cs",
-                    @" ^     11    1 VimBufferTest.cs",
-                    @" .      7    1 VimBufferTest.cs",
-                };
-                Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
-
-                _vimBuffer.ProcessNotation("kV<ESC>");
-                interpreter.RunDisplayMarks(s_emptyList);
-
-                expectedMarks = new[] {
-                    @"mark line  col file/text",
-                    @" '      9    0 VimBufferTest.cs",
-                    @" a      2    0 VimBufferTest.cs",
-                    @" z     10    0 VimBufferTest.cs",
-                    @" A      3    0 VimBufferTest.cs",
-                    @" Z      9    0 VimBufferTest.cs",
-                   @" ""      1    0 VimBufferTest.cs",
-                    @" [      7    0 VimBufferTest.cs",
-                    @" ]      7    1 VimBufferTest.cs",
-                    @" ^     11    1 VimBufferTest.cs",
-                    @" .      7    1 VimBufferTest.cs",
-                    @" <      6    0 VimBufferTest.cs",
-                    @" >      6    1 VimBufferTest.cs",
+                    @" '      4    0 4",
+                    @" z      9    0 9",
+                    @" Z      8    0 VimBufferTest.cs",
+                   @" ""      1    0 1",
+                    @" [     10    0 1",
+                    @" ]     10    1 1",
+                    @" ^     11    1 0",
+                    @" .     10    1 1",
+                    @" <      3    0 3",
+                    @" >      4    1 4",
                 };
                 Assert.Equal(string.Join(Environment.NewLine, expectedMarks), _statusUtil.LastStatus);
             }

@@ -657,11 +657,11 @@ namespace Vim.UnitTest
             [InlineData("<C-v>")]
             public void Basic(string visualKey)
             {
-                Create("1", "2", "3", "");
+                Create("1", "2", "", "3", "");
                 _vimBuffer.ProcessNotation(visualKey);
-                _vimBuffer.ProcessNotation("2j$");
+                _vimBuffer.ProcessNotation("3j$");
                 _vimBuffer.ProcessNotation("<C-a>");
-                Assert.Equal(new[] { "2", "3", "4", "" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "2", "3", "", "4", "" }, _textBuffer.GetLines());
             }
 
             [WpfTheory]
@@ -670,11 +670,11 @@ namespace Vim.UnitTest
             [InlineData("<C-v>")]
             public void Progressive(string visualKey)
             {
-                Create("1", "2", "3", "");
+                Create("1", "2", "", "3", "");
                 _vimBuffer.ProcessNotation(visualKey);
-                _vimBuffer.ProcessNotation("2j$");
+                _vimBuffer.ProcessNotation("3j$");
                 _vimBuffer.ProcessNotation("g<C-a>");
-                Assert.Equal(new[] { "2", "4", "6", "" }, _textBuffer.GetLines());
+                Assert.Equal(new[] { "2", "4", "", "6", "" }, _textBuffer.GetLines());
             }
         }
 

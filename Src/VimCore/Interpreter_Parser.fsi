@@ -4,13 +4,13 @@ namespace Vim.Interpreter
 open Vim
 
 [<RequireQualifiedAccess>]
-type ParseResult<'T> = 
+type internal ParseResult<'T> = 
     | Succeeded of Value: 'T
     | Failed of Error: string
 
 [<Sealed>]
 [<Class>]
-type Parser = 
+type internal Parser = 
 
     new: vimData: IVimGlobalSettings * IVimData -> Parser
 
@@ -36,3 +36,7 @@ type Parser =
     member ParseLineCommand: commandText: string -> LineCommand
 
     member ParseLineCommands: lines: string[] -> LineCommand list
+
+    /// This will expand out an abbreviated command name to the full name. For example 
+    /// will expand 'e' to 'edit'.
+    member TryExpandCommandName: shortCommandName: string -> string option

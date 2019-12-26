@@ -1440,6 +1440,13 @@ type VimInterpreter
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
+        let extractFolderVersion = fun pathName ->
+            let folder = System.IO.Path.GetFileName(pathName)
+            let m = System.Text.RegularExpressions.Regex.Match(folder, "^vim(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+            match m with
+            | x when x.Success -> Some(folder, m.Groups.[1].Value |> int)
+            | _ -> None
+
         // Function to find a vim installation folder
         let findVimFolder specialFolder =
             try
@@ -1454,14 +1461,9 @@ type VimInterpreter
                 if System.IO.Directory.Exists(vimFolder) then
                     let latest =
                         System.IO.Directory.EnumerateDirectories vimFolder
-                        |> Seq.map (fun pathName -> System.IO.Path.GetFileName(pathName))
-                        |> Seq.filter (fun folder ->
-                            folder.StartsWith("vim", System.StringComparison.OrdinalIgnoreCase))
-                        |> Seq.sortByDescending (fun folder ->
-                            folder.Substring(3)
-                            |> Seq.takeWhile CharUtil.IsDigit
-                            |> System.String.Concat
-                            |> int)
+                        |> Seq.choose (extractFolderVersion)
+                        |> Seq.sortByDescending (fun (_, version) -> version)
+                        |> Seq.map (fun (folder, _) -> folder)
                         |> Seq.tryHead
                     match latest with
                     | Some folder -> System.IO.Path.Combine(vimFolder, folder) |> Some
@@ -2582,6 +2584,15 @@ type VimInterpreter
         inner builder symbolicPath
         builder.ToString()
 
+    member x.TryExpandCommandName(shortCommandName, commandName: outref<string>) =
+        let parser = Parser(_globalSettings, _vimData)
+        match parser.TryExpandCommandName shortCommandName with
+        | Some fullCommandName -> 
+            commandName <- fullCommandName
+            true
+        | None ->
+            false
+
     member x.ApplyFileNameModifiers path modifiers : string =
         let rec inner path modifiers : string =
             match path with
@@ -2610,12 +2621,13 @@ type VimInterpreter
         | Some path -> inner path modifiers
 
     interface IVimInterpreter with
-        member x.GetLine lineSpecifier = x.GetLine lineSpecifier
-        member x.GetLineRange lineRange = x.GetLineRange lineRange
-        member x.RunLineCommand lineCommand = x.RunLineCommand lineCommand
-        member x.RunExpression expression = x.RunExpression expression
-        member x.EvaluateExpression text = x.EvaluateExpression text
-        member x.RunScript lines = x.RunScript lines
+        member x.GetLine(lineSpecifier) = x.GetLine lineSpecifier
+        member x.GetLineRange(lineRange) = x.GetLineRange lineRange
+        member x.RunLineCommand(lineCommand) = x.RunLineCommand lineCommand
+        member x.RunExpression(expression) = x.RunExpression expression
+        member x.EvaluateExpression(text) = x.EvaluateExpression text
+        member x.RunScript(lines) = x.RunScript lines
+        member x.TryExpandCommandName(shortCommandName, commandName: outref<string>) = x.TryExpandCommandName(shortCommandName, &commandName)
 
 [<Export(typeof<IVimInterpreterFactory>)>]
 type VimInterpreterFactory

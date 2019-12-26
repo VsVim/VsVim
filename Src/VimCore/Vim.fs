@@ -10,7 +10,6 @@ open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.IO
-open System.Runtime.InteropServices
 open System.Runtime.Serialization
 open System.Runtime.Serialization.Json
 open Vim.Modes
@@ -892,7 +891,7 @@ type internal Vim
             bag.DisposeAll()
         _vimBufferMap.Remove textView
 
-    member x.TryGetVimBuffer(textView: ITextView, [<Out>] vimBuffer: IVimBuffer byref) =
+    member x.TryGetVimBuffer(textView: ITextView, vimBuffer: outref<IVimBuffer>) =
         let tuple = _vimBufferMap.TryGetValue textView
         match tuple with 
         | (true, (buffer, _, _)) -> 
@@ -919,7 +918,7 @@ type internal Vim
             textView.Properties.AddProperty(ShouldCreateVimBufferKey, (box value))
             value
 
-    member x.TryGetOrCreateVimBufferForHost(textView: ITextView, [<Out>] vimBuffer: IVimBuffer byref) =
+    member x.TryGetOrCreateVimBufferForHost(textView: ITextView, vimBuffer: outref<IVimBuffer>) =
         if x.TryGetVimBuffer(textView, &vimBuffer) then
             true
         elif x.ShouldCreateVimBuffer textView then
@@ -929,7 +928,7 @@ type internal Vim
         else
             false
 
-    member x.TryGetVimTextBuffer (textBuffer: ITextBuffer, [<Out>] vimTextBuffer: IVimTextBuffer byref) =
+    member x.TryGetVimTextBuffer (textBuffer: ITextBuffer, vimTextBuffer: outref<IVimTextBuffer>) =
         match PropertyCollectionUtil.GetValue<IVimTextBuffer> _vimTextBufferKey textBuffer.Properties with
         | Some found ->
             vimTextBuffer <- found

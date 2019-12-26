@@ -203,12 +203,11 @@ namespace Vim.UnitTest
             protected override void Create(params string[] lines)
             {
                 base.Create(lines);
-                _textBuffer.Properties[MockVimHost.FileNameKey] = "test.txt";
             }
 
             internal void Verify(char mark, int line, int column, int index = 1)
             {
-                var msg = $" {mark}  {line,5}{column,5} test.txt";
+                var msg = $" {mark}  {line,5}{column,5} cat dog";
                 Assert.Equal(msg, _statusUtil.LastStatusLong[index]);
             }
 
@@ -1587,7 +1586,7 @@ namespace Vim.UnitTest
 
             public WriteTest()
             {
-                VimHost.RunSaveTextAs = (text, filePath) =>
+                VimHost.SaveTextAsFunc = (text, filePath) =>
                     {
                         _text = text;
                         _filePath = filePath;
@@ -1608,20 +1607,11 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
-            public void NoPath()
-            {
-                Create("cat");
-                ParseAndRun("w");
-                Assert.Same(_textBuffer, VimHost.LastSaved);
-                Assert.Null(_filePath);
-            }
-
-            [WpfFact]
             public void InvalidCharacters()
             {
                 Create("cat");
                 var filePath = "file<name>.txt";
-                VimHost.RunSaveTextAs = delegate { return false; };
+                VimHost.SaveTextAsFunc = delegate { return false; };
                 ParseAndRun($"w {filePath}");
             }
 
@@ -1629,7 +1619,7 @@ namespace Vim.UnitTest
             public void Issue1699()
             {
                 Create("cat");
-                VimHost.RunSaveTextAs = delegate { return false; };
+                VimHost.SaveTextAsFunc = delegate { return false; };
                 ParseAndRun("w'");
             }
         }
