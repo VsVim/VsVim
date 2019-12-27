@@ -802,10 +802,13 @@ type internal CommonOperations
                 // If we couldn't map back down raise an error
                 _statusUtil.OnError Resources.Internal_ErrorMappingToVisual
 
-        // First we need to remap the 'startLine' value.  To do the delete we need to know the 
-        // correct start line in the edit buffer.  What we are provided is a value in the edit
+        // First we need to remap the 'startLine','count' value.  To do the delete we need to know the 
+        // correct start line and line count in the edit buffer.  What we are provided is a value in the edit
         // buffer but it may be a line further down in the buffer due to folding.
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startLine count
+        let lastLine = x.AdjustEditLineForVisualSnapshotLine range.LastLine
         let startLine = x.AdjustEditLineForVisualSnapshotLine startLine
+        let count = lastLine.LineNumber - startLine.LineNumber + 1
 
         // The span should be calculated using the visual snapshot if available.  Binding 
         // it as 'x' here will help prevent us from accidentally mixing the visual and text
@@ -837,7 +840,6 @@ type internal CommonOperations
                 doDelete span range.StartLine.Start true
             else 
                 // Simpler case.  Get the line range and delete
-                let stringData = range.ExtentIncludingLineBreak |> StringData.OfSpan
                 doDelete range.ExtentIncludingLineBreak range.StartLine.Start false
 
     /// Move the caret in the given direction

@@ -969,7 +969,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear", "fish", "tree");
                 _foldManager.CreateFold(_textView.GetLineRange(1, 2));
-                _commonOperations.DeleteLines(_textBuffer.GetLine(0), 3, VimUtil.MissingRegisterName);
+                _commonOperations.DeleteLines(_textBuffer.GetLine(0), 4, VimUtil.MissingRegisterName);
                 Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear", "fish"), UnnamedRegister.StringValue);
                 Assert.Equal("tree", _textView.GetLine(0).GetText());
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
@@ -984,7 +984,7 @@ namespace Vim.UnitTest
             {
                 Create("cat", "dog", "bear", "fish", "tree");
                 _foldManager.CreateFold(_textView.GetLineRange(0, 1));
-                _commonOperations.DeleteLines(_textBuffer.GetLine(0), 2, VimUtil.MissingRegisterName);
+                _commonOperations.DeleteLines(_textBuffer.GetLine(0), 3, VimUtil.MissingRegisterName);
                 Assert.Equal(CreateLinesWithLineBreak("cat", "dog", "bear"), UnnamedRegister.StringValue);
                 Assert.Equal("fish", _textView.GetLine(0).GetText());
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);

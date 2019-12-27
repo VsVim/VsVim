@@ -325,7 +325,7 @@ try {
 
   if ($testExtra) {
     Test-VsixContents
-    Test-version
+    Test-Version
   }
 
   if ($uploadVsix) {
