@@ -191,15 +191,14 @@ namespace Vim.UI.Cocoa.Implementation.Misc
             {
                 return true;
             }
-            var noModifiers = (NSEventModifierMask)256;
+
             // If the key is not a pure alt or shift key combination and doesn't
             // correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
             // We just have to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
-            if (modifierKeys != 0
-                && modifierKeys != NSEventModifierMask.AlternateKeyMask
+            if (modifierKeys != NSEventModifierMask.AlternateKeyMask
                 && modifierKeys != NSEventModifierMask.ShiftKeyMask)
             {
                 switch (key)
