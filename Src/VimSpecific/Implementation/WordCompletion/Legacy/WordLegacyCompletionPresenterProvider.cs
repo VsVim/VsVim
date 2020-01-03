@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !VS_SPECIFIC_MAC
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -458,3 +459,4 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
         }
     }
 }
+#endif

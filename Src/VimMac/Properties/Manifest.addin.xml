@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionModel>
+    <!-- Register with Visual Studio for Mac -->
+    <Runtime>
+        <Import assembly="Vim.Mac.dll" />
+        <Import assembly="Vim.Core.dll" />
+    </Runtime>
+    <!-- Register with Managed Extensibility Framework (MEF) -->
+    <Extension path="/MonoDevelop/Ide/Composition">
+        <Assembly file="Vim.Mac.dll" />
+        <Assembly file="Vim.Core.dll" />
+    </Extension>
+    <Extension path = "/MonoDevelop/Ide/KeyBindingSchemes">
+        <Scheme id="Vim" _name = "Visual Studio + VsVim" resource="Vim.Mac.Resources.KeyBindingSchemeVim.xml" forMac="true" />
+    </Extension>
+    <Extension path = "/MonoDevelop/Ide/Commands">
+        <Category _name = "VsVim" id = "VsVim">
+            <Command id="VsVim.ShowPadById" _label="Shows a pad"
+                _description="Helper command to make it possible to bind keys to show a pad via .vimrc"
+                defaultHandler = "Vim.Mac.ShowPadByIdHandler" />
+             <Command id="VsVim.ShowPadByTitle" _label="Shows a pad"
+                _description="Helper command to make it possible to bind keys to show a pad via .vimrc"
+                defaultHandler = "Vim.Mac.ShowPadByTitleHandler" />
+        </Category>
+    </Extension>
+</ExtensionModel>
+

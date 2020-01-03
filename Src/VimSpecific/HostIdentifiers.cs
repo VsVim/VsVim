@@ -11,6 +11,7 @@ namespace Vim.VisualStudio.Specific
         internal const string VisualStudio2015 = "VsVim 2015";
         internal const string VisualStudio2017 = "VsVim 2017";
         internal const string VisualStudio2019 = "VsVim 2019";
+        internal const string VisualStudioMac = "VsVim Mac";
         internal const string TestHost = "VsVim Test Host ";
     }
 }

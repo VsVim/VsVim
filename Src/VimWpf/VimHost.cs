@@ -516,6 +516,7 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Do the vertical scrolling necessary to make sure the line is visible
         /// </summary>
+
         private void EnsureLineVisible(ITextView textView, SnapshotPoint point)
         {
             const double roundOff = 0.01;
