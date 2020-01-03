@@ -105,7 +105,7 @@ namespace Vim.UI.Cocoa.Implementation.InlineRename
         {
             return
                 contentType.IsCSharp() ||
-                //contentType.IsFSharp() ||
+                contentType.IsFSharp() ||
                 contentType.IsVisualBasic();
         }
 
