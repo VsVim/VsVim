@@ -21,6 +21,10 @@ namespace Vim.Mac
         private void SetCaret(IVimBuffer vimBuffer)
         {
             var textView = vimBuffer.TextView;
+
+            if (textView.IsClosed)
+                return;
+
             if (vimBuffer.Mode.ModeKind == ModeKind.Insert || _inlineRenameListenerFactory.InRename)
             {
                 //TODO: what's the minimum caret width for accessibility?
