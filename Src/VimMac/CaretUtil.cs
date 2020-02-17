@@ -2,16 +2,30 @@
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
+using Vim.UI.Cocoa.Implementation.InlineRename;
 
 namespace Vim.Mac
 {
     [Export(typeof(IVimBufferCreationListener))]
     internal class CaretUtil : IVimBufferCreationListener
     {
+        private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
+
+        [ImportingConstructor]
+        public CaretUtil(InlineRenameListenerFactory inlineRenameListenerFactory)
+        {
+            _inlineRenameListenerFactory = inlineRenameListenerFactory;
+        }
+
+
         private void SetCaret(IVimBuffer vimBuffer)
         {
             var textView = vimBuffer.TextView;
-            if (vimBuffer.Mode.ModeKind == ModeKind.Insert || vimBuffer.Mode.ModeKind == ModeKind.ExternalEdit)
+
+            if (textView.IsClosed)
+                return;
+
+            if (vimBuffer.Mode.ModeKind == ModeKind.Insert || _inlineRenameListenerFactory.InRename)
             {
                 //TODO: what's the minimum caret width for accessibility?
                 textView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, 1.0);
@@ -34,6 +48,7 @@ namespace Vim.Mac
         {
             SetCaret(vimBuffer);
             vimBuffer.SwitchedMode += (_,__) => SetCaret(vimBuffer);
+            _inlineRenameListenerFactory.RenameUtil.IsRenameActiveChanged += (_, __) => SetCaret(vimBuffer);
         }
     }
 }

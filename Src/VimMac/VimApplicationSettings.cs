@@ -124,7 +124,7 @@ namespace Vim.VisualStudio.Implementation.Settings
 
         bool IVimApplicationSettings.EnableExternalEditMonitoring
         {
-            get { return GetBoolean(EnableExternalEditMonitoringName, defaultValue: true); }
+            get { return GetBoolean(EnableExternalEditMonitoringName, defaultValue: false); }
             set { SetBoolean(EnableExternalEditMonitoringName, value); }
         }
 

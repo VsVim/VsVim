@@ -3,17 +3,18 @@ using System.Collections.Immutable;
 using System.Linq;
 using MonoDevelop.Core;
 using MonoDevelop.Ide.FindInFiles;
+using Provider = MonoDevelop.Ide.FindInFiles.FileProvider;
 
 namespace Vim.Mac
 {
     internal class ShellWildcardSearchScope : Scope
     {
-        private ImmutableArray<FileProvider> files;
+        private ImmutableArray<Provider> files;
 
         public ShellWildcardSearchScope(string workingDirectory, string wildcard)
         {
             files = ShellWildcardExpansion.ExpandWildcard(wildcard, workingDirectory, enumerateDirectories: true)
-                        .Select(f => new FileProvider(f))
+                        .Select(f => new Provider(f))
                         .ToImmutableArray();
         }
 
@@ -22,7 +23,7 @@ namespace Vim.Mac
             return "Vim wildcard search scope";
         }
 
-        public override IEnumerable<FileProvider> GetFiles(ProgressMonitor monitor, FilterOptions filterOptions)
+        public override IEnumerable<Provider> GetFiles(ProgressMonitor monitor, FilterOptions filterOptions)
         {
             return files;
         }
