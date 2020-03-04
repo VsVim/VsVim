@@ -15,8 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVim", "Src\VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimCoreTest", "Test\VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimSharedTest", "Test\VsVimSharedTest\VsVimSharedTest.csproj", "{0C79E8E6-EBBF-4342-B4C2-DCCF212A776B}"
@@ -56,8 +54,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		Documentation\Supported Features.md = Documentation\Supported Features.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest", "Test\VsVimTest\VsVimTest.csproj", "{1B6583BD-A59E-44EE-98DA-29B18E99443B}"
-EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimSpecific", "Src\VimSpecific\VimSpecific.shproj", "{DE7E4031-D2E8-450E-8558-F00A6F19FA5C}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "Src\VimCore\VimCore.fsproj", "{333D15E0-96F8-4B87-8B03-467220EED275}"
@@ -82,18 +78,6 @@ Global
 		ReleaseMac|Any CPU = ReleaseMac|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.Release|x86.ActiveCfg = Release|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4FC7C81-E500-47C8-A884-2DBB7CA77123}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -255,20 +239,6 @@ Global
 		{6819AD26-901E-4261-95AA-9913D435296A}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
 		{6819AD26-901E-4261-95AA-9913D435296A}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
 		{6819AD26-901E-4261-95AA-9913D435296A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Debug|x86.Build.0 = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|x86.ActiveCfg = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.Release|x86.Build.0 = Release|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B6583BD-A59E-44EE-98DA-29B18E99443B}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
 		{333D15E0-96F8-4B87-8B03-467220EED275}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{333D15E0-96F8-4B87-8B03-467220EED275}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{333D15E0-96F8-4B87-8B03-467220EED275}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
