@@ -17,7 +17,7 @@ jobs:
       filePath: Scripts/build.sh
   - task: PublishBuildArtifacts@1
     inputs:
-      pathToPublish: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_2.8.0.2.mpack
+      pathToPublish: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_2.8.0.3.mpack
       artifactName: VSMacExtension
 
 - job: VsVim_Build_Test
