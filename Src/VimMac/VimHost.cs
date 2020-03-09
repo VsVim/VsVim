@@ -138,7 +138,11 @@ namespace Vim.Mac
 
         public void DoActionWhenTextViewReady(FSharpFunc<Unit, Unit> action, ITextView textView)
         {
-            action.Invoke(null);
+            // Perform action if the text view is still open.
+            if (!textView.IsClosed && !textView.InLayout)
+            {
+                action.Invoke(null);
+            }
         }
 
         public void EndBulkOperation()
