@@ -28,18 +28,6 @@ namespace Vim.UI.Cocoa
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
 
-        public ITextBuffer TextBuffer
-        {
-            get { return VimBuffer.TextBuffer; }
-        }
-
-        public ITextView TextView
-        {
-            get { return VimBuffer.TextView; }
-        }
-
-        public bool ModeChanged { get; private set; }
-
         public VimKeyProcessor(
             IVimBuffer vimBuffer,
             IKeyUtil keyUtil,
@@ -55,25 +43,11 @@ namespace Vim.UI.Cocoa
             _inlineRenameListenerFactory = inlineRenameListenerFactory;
         }
 
-        /// <summary>
-        /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
-        /// derived classes in order for them to prevent any KeyInput from reaching the 
-        /// IVimBuffer
-        /// </summary>
-        private bool TryProcess(KeyInput keyInput)
-        {
-            return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
-        }
+        public ITextBuffer TextBuffer => VimBuffer.TextBuffer;
 
-        private bool KeyEventIsDeadChar(KeyEventArgs e)
-        {
-            return string.IsNullOrEmpty(e.Characters);
-        }
+        public ITextView TextView => VimBuffer.TextView;
 
-        private bool IsEscapeKey(KeyEventArgs e)
-        {
-            return (NSKey)e.Event.KeyCode == NSKey.Escape;
-        }
+        public bool ModeChanged { get; private set; }
 
         /// <summary>
         /// This handler is necessary to intercept keyboard input which maps to Vim
@@ -92,31 +66,8 @@ namespace Vim.UI.Cocoa
         {
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
 
-            bool handled;
-            if (KeyEventIsDeadChar(e))
-            {
-                // When a dead key combination is pressed we will get the key down events in 
-                // sequence after the combination is complete.  The dead keys will come first
-                // and be followed the final key which produces the char.  That final key 
-                // is marked as DeadCharProcessed.
-                //
-                // All of these should be ignored.  They will produce a TextInput value which
-                // we can process in the TextInput event
-                handled = false;
-            }
-            else if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
-            {
-                handled = false;
-            }
-            else if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
-            {
-                handled = false;
-            }
-            else if (_inlineRenameListenerFactory.InRename)
-            {
-                handled = false;
-            }
-            else
+            bool handled = false;
+            if (ShouldBeProcessedByVim(e))
             {
                 var oldMode = VimBuffer.Mode.ModeKind;
 
@@ -143,13 +94,61 @@ namespace Vim.UI.Cocoa
 
             var status = Mac.StatusBar.GetStatus(VimBuffer);
             var text = status.Text;
-            if(VimBuffer.ModeKind == ModeKind.Command)
+            if (VimBuffer.ModeKind == ModeKind.Command)
             {
                 // Add a fake 'caret'
                 text = text.Insert(status.CaretPosition, "|");
             }
             IdeApp.Workbench.StatusBar.ShowMessage(text);
             e.Handled = handled;
+        }
+
+        /// <summary>
+        /// Try and process the given KeyInput with the IVimBuffer.  This is overridable by 
+        /// derived classes in order for them to prevent any KeyInput from reaching the 
+        /// IVimBuffer
+        /// </summary>
+        private bool TryProcess(KeyInput keyInput)
+        {
+            return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
+        }
+
+        private bool KeyEventIsDeadChar(KeyEventArgs e)
+        {
+            return string.IsNullOrEmpty(e.Characters);
+        }
+
+        private bool IsEscapeKey(KeyEventArgs e)
+        {
+            return (NSKey)e.Event.KeyCode == NSKey.Escape;
+        }
+
+        private bool ShouldBeProcessedByVim(KeyEventArgs e)
+        {
+            if (KeyEventIsDeadChar(e))
+                // When a dead key combination is pressed we will get the key down events in 
+                // sequence after the combination is complete.  The dead keys will come first
+                // and be followed the final key which produces the char.  That final key 
+                // is marked as DeadCharProcessed.
+                //
+                // All of these should be ignored.  They will produce a TextInput value which
+                // we can process in the TextInput event
+                return false;
+
+            if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
+                return false;
+
+            if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
+                return false;
+
+            if (_inlineRenameListenerFactory.InRename)
+                return false;
+
+            if (VimBuffer.Mode.ModeKind == ModeKind.Insert && e.Characters == "\t")
+                // Allow tab key to work for snippet completion
+                return false;
+
+            return true;
         }
     }
 }
