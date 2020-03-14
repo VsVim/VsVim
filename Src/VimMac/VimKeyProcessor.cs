@@ -132,11 +132,6 @@ namespace Vim.UI.Cocoa
                 {
                     handled = false;
                 }
-
-                if (oldMode != ModeKind.Insert)
-                {
-                    handled = true;
-                }
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
