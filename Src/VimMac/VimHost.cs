@@ -702,7 +702,7 @@ namespace Vim.Mac
 
         public bool ShouldCreateVimBuffer(ITextView textView)
         {
-            return true;
+            return !textView.TextBuffer.ContentType.IsDebuggerWindow();
         }
 
         public bool ShouldIncludeRcFile(VimRcPath vimRcPath)

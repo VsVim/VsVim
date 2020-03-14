@@ -50,6 +50,11 @@ namespace Vim.Mac
             return contentType.IsOfType("HTMLXProjection");
         }
 
+        public static bool IsDebuggerWindow(this IContentType contentType)
+        {
+            return contentType.IsOfType("DebuggerCompletion");
+        }
+
         /// <summary>
         /// Is this IContentType of any of the specified types
         /// </summary>
