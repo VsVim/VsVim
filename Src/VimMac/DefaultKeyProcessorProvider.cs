@@ -38,6 +38,9 @@ namespace VimHost
 
         public KeyProcessor GetAssociatedProcessor(ICocoaTextView cocoaTextView)
         {
+            if (!_vim.VimHost.ShouldCreateVimBuffer(cocoaTextView))
+                return null;
+
             var vimTextBuffer = _vim.GetOrCreateVimBuffer(cocoaTextView);
             return new VimKeyProcessor(vimTextBuffer, _keyUtil, _completionBroker, _signatureHelpBroker, _inlineRenameListenerFactory);
         }
