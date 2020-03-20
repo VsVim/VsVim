@@ -28,18 +28,6 @@ namespace Vim.UI.Cocoa
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
 
-        public ITextBuffer TextBuffer
-        {
-            get { return VimBuffer.TextBuffer; }
-        }
-
-        public ITextView TextView
-        {
-            get { return VimBuffer.TextView; }
-        }
-
-        public bool ModeChanged { get; private set; }
-
         public VimKeyProcessor(
             IVimBuffer vimBuffer,
             IKeyUtil keyUtil,
@@ -53,6 +41,61 @@ namespace Vim.UI.Cocoa
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _inlineRenameListenerFactory = inlineRenameListenerFactory;
+        }
+
+        public ITextBuffer TextBuffer => VimBuffer.TextBuffer;
+
+        public ITextView TextView => VimBuffer.TextView;
+
+        public bool ModeChanged { get; private set; }
+
+        /// <summary>
+        /// This handler is necessary to intercept keyboard input which maps to Vim
+        /// commands but doesn't map to text input.  Any combination which can be 
+        /// translated into actual text input will be done so much more accurately by
+        /// WPF and will end up in the TextInput event.
+        /// 
+        /// An example of why this handler is needed is for key combinations like 
+        /// Shift+Escape.  This combination won't translate to an actual character in most
+        /// (possibly all) keyboard layouts.  This means it won't ever make it to the
+        /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
+        /// combination that we do want to handle.  Hence we override here specifically
+        /// to capture those circumstances
+        /// </summary>
+        public override void KeyDown(KeyEventArgs e)
+        {
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
+
+            bool handled = false;
+            if (ShouldBeProcessedByVim(e))
+            {
+                var oldMode = VimBuffer.Mode.ModeKind;
+
+                VimTrace.TraceDebug(oldMode.ToString());
+                // Attempt to map the key information into a KeyInput value which can be processed
+                // by Vim.  If this works and the key is processed then the input is considered
+                // to be handled
+                if (_keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput))
+                {
+                    handled = TryProcess(keyInput);
+                }
+                else
+                {
+                    handled = false;
+                }
+            }
+
+            VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
+
+            var status = Mac.StatusBar.GetStatus(VimBuffer);
+            var text = status.Text;
+            if (VimBuffer.ModeKind == ModeKind.Command)
+            {
+                // Add a fake 'caret'
+                text = text.Insert(status.CaretPosition, "|");
+            }
+            IdeApp.Workbench.StatusBar.ShowMessage(text);
+            e.Handled = handled;
         }
 
         /// <summary>
@@ -75,26 +118,9 @@ namespace Vim.UI.Cocoa
             return (NSKey)e.Event.KeyCode == NSKey.Escape;
         }
 
-        /// <summary>
-        /// This handler is necessary to intercept keyboard input which maps to Vim
-        /// commands but doesn't map to text input.  Any combination which can be 
-        /// translated into actual text input will be done so much more accurately by
-        /// WPF and will end up in the TextInput event.
-        /// 
-        /// An example of why this handler is needed is for key combinations like 
-        /// Shift+Escape.  This combination won't translate to an actual character in most
-        /// (possibly all) keyboard layouts.  This means it won't ever make it to the
-        /// TextInput event.  But it can translate to a Vim command or mapped keyboard 
-        /// combination that we do want to handle.  Hence we override here specifically
-        /// to capture those circumstances
-        /// </summary>
-        public override void KeyDown(KeyEventArgs e)
+        private bool ShouldBeProcessedByVim(KeyEventArgs e)
         {
-            VimTrace.TraceInfo("VimKeyProcessor::KeyDown {0} {1}", e.Characters, e.CharactersIgnoringModifiers);
-
-            bool handled;
             if (KeyEventIsDeadChar(e))
-            {
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first
                 // and be followed the final key which produces the char.  That final key 
@@ -102,49 +128,22 @@ namespace Vim.UI.Cocoa
                 //
                 // All of these should be ignored.  They will produce a TextInput value which
                 // we can process in the TextInput event
-                handled = false;
-            }
-            else if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
-            {
-                handled = false;
-            }
-            else if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
-            {
-                handled = false;
-            }
-            else if (_inlineRenameListenerFactory.InRename)
-            {
-                handled = false;
-            }
-            else
-            {
-                var oldMode = VimBuffer.Mode.ModeKind;
+                return false;
 
-                VimTrace.TraceDebug(oldMode.ToString());
-                // Attempt to map the key information into a KeyInput value which can be processed
-                // by Vim.  If this works and the key is processed then the input is considered
-                // to be handled
-                if (_keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput))
-                {
-                    handled = TryProcess(keyInput);
-                }
-                else
-                {
-                    handled = false;
-                }
-            }
+            if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
+                return false;
 
-            VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
+            if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
+                return false;
 
-            var status = Mac.StatusBar.GetStatus(VimBuffer);
-            var text = status.Text;
-            if(VimBuffer.ModeKind == ModeKind.Command)
-            {
-                // Add a fake 'caret'
-                text = text.Insert(status.CaretPosition, "|");
-            }
-            IdeApp.Workbench.StatusBar.ShowMessage(text);
-            e.Handled = handled;
+            if (_inlineRenameListenerFactory.InRename)
+                return false;
+
+            if (VimBuffer.Mode.ModeKind == ModeKind.Insert && e.Characters == "\t")
+                // Allow tab key to work for snippet completion
+                return false;
+
+            return true;
         }
     }
 }
