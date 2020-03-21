@@ -246,6 +246,11 @@ type internal VimBuffer
         |> Observable.subscribe (fun args -> this.OnBeforeSave args.TextBuffer)
         |> _bag.Add
 
+        // Close the buffer when the TextView closes
+        _textView.Closed
+        |> Observable.subscribe (fun args -> this.Close())
+        |> _bag.Add
+
     member x.IsReadOnly
         with get() = _vim.VimHost.IsReadOnly _vimBufferData.TextBuffer
 

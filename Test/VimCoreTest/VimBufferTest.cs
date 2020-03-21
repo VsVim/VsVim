@@ -1273,7 +1273,6 @@ namespace Vim.UnitTest
                 finally
                 {
                     altTextView.Close();
-                    altVimBuffer.Close();
                 }
             }
 
@@ -1303,7 +1302,6 @@ namespace Vim.UnitTest
                 finally
                 {
                     altTextView.Close();
-                    altVimBuffer.Close();
                 }
             }
         }
