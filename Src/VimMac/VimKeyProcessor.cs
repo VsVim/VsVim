@@ -79,10 +79,6 @@ namespace Vim.UI.Cocoa
                 {
                     handled = TryProcess(keyInput);
                 }
-                else
-                {
-                    handled = false;
-                }
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);

@@ -203,7 +203,6 @@ namespace Vim.VisualStudio
             var textView = vimBuffer.TextView;
             textView.Closed += (x, y) =>
             {
-                vimBuffer.Close();
                 _toSyncSet.Remove(vimBuffer);
                 _vimBufferToCommandTargetMap.Remove(vimBuffer);
             };

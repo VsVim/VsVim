@@ -77,11 +77,6 @@ namespace Vim.UnitTest
 
                 Create("hello world");
 
-                // Stand-in for HostFactory which calls IVimBuffer.Close in response to the associated ITextView.Closed.
-                // The root cause of the referenced issue was that MacroRecorder disposed its buffer event handlers on IVimBuffer.Close.
-                // Since IVimBuffer.Close is raised before the final IVimBuffer.KeyInputEnd is raised, the last keystroke failed to record.
-                _textView.Closed += (s, e) => _vimBuffer.Close();
-
                 _vimBuffer.Process("qaZQ");
                 Assert.True(_vimBuffer.IsClosed);
             
