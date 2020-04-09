@@ -5,7 +5,7 @@ using Mono.Addins.Description;
 [assembly: Addin(
     "VsVim",
     Namespace = "Vim.Mac",
-    Version = "2.8.0.5"
+    Version = "2.8.0.6"
 )]
 
 [assembly: AddinName("VsVim")]
