@@ -198,6 +198,7 @@ and [<Sealed>] internal Parser
         ("vsplit", "vs")
         ("wqall", "wqa")
         ("write","w")
+        ("update", "up")
         ("wq", "")
         ("wall", "wa")
         ("xall", "xa")
@@ -2709,6 +2710,7 @@ and [<Sealed>] internal Parser
                 | "undo" -> noRange (fun () -> LineCommand.Undo)
                 | "unlet" -> noRange x.ParseUnlet
                 | "unmap" -> noRange (fun () -> x.ParseMapUnmap true [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Select; KeyRemapMode.OperatorPending])
+                | "update" -> x.ParseWrite lineRange
                 | "version" -> noRange (fun () -> LineCommand.Version)
                 | "vimhelp" -> noRange x.ParseVimHelp
                 | "vimgrep" -> handleCount x.ParseVimGrep
@@ -2739,7 +2741,7 @@ and [<Sealed>] internal Parser
                 | "!" -> x.ParseShellCommand lineRange
                 | "@" -> x.ParseAtCommand lineRange
                 | "#" -> x.ParseDisplayLines lineRange LineCommandFlags.AddLineNumber
-                | _ -> x.ParseError Resources.Parser_Error
+                | _ -> x.ParseError (sprintf "%s: %s" Resources.Parser_Error name)
 
             handleParseResult parseResult
 
