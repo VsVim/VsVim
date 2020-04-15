@@ -60,7 +60,7 @@ function Exec-CommandCore([string]$command, [string]$commandArgs, [switch]$useCo
 
         $finished = $true
         if ($process.ExitCode -ne 0) { 
-            throw "Command failed to execute: $command $commandArgs" 
+            throw "Command failed to execute with exit code $($process.ExitCode): $command $commandArgs" 
         }
     }
     finally {
