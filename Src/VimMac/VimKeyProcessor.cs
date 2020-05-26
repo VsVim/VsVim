@@ -101,7 +101,7 @@ namespace Vim.UI.Cocoa
         /// </summary>
         private bool TryProcess(KeyInput keyInput)
         {
-            return VimBuffer.CanProcessAsCommand(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
+            return VimBuffer.CanProcess(keyInput) && VimBuffer.Process(keyInput).IsAnyHandled;
         }
 
         private bool KeyEventIsDeadChar(KeyEventArgs e)
