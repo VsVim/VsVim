@@ -129,7 +129,7 @@ namespace Vim.UI.Cocoa
             if (_completionBroker.IsCompletionActive(TextView) && !IsEscapeKey(e))
                 return false;
 
-            if (_signatureHelpBroker.IsSignatureHelpActive(TextView))
+            if (_signatureHelpBroker.IsSignatureHelpActive(TextView) && !IsEscapeKey(e))
                 return false;
 
             if (_inlineRenameListenerFactory.InRename)
