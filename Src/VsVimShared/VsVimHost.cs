@@ -960,9 +960,16 @@ namespace Vim.VisualStudio
             return null;
         }
 
-        public override void Make(bool jumpToFirstError, string arguments)
+        public override void Make(bool buildSolution, string arguments)
         {
-            SafeExecuteCommand(null, "Build.BuildSolution");
+            if (buildSolution)
+            {
+                SafeExecuteCommand(null, "Build.BuildSolution");
+            }
+            else
+            {
+                SafeExecuteCommand(null, "Build.BuildOnlyProject");
+            }
         }
 
         public override bool TryGetFocusedTextView(out ITextView textView)

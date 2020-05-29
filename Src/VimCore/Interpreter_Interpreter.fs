@@ -1592,7 +1592,7 @@ type VimInterpreter
 
     /// Run the host make command 
     member x.RunMake hasBang arguments = 
-        _vimHost.Make (not hasBang) arguments 
+        _vimHost.Make (hasBang) arguments 
 
     /// Run the map keys command
     member x.RunMapKeys leftKeyNotation rightKeyNotation keyRemapModes allowRemap mapArgumentList =
