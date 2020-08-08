@@ -1,5 +1,3 @@
-﻿#light 
-
 namespace Vim
 
 module VimConstants =
@@ -34,7 +32,7 @@ module VimConstants =
     /// Name of the main Key Processor
     /// </summary>
     [<Literal>]
-    let MainKeyProcessorName = "VsVim";
+    let MainKeyProcessorName = "VsVim"
 
 #if DEBUG
     [<Literal>]
@@ -43,5 +41,3 @@ module VimConstants =
     [<Literal>]
     let VersionNumber = "2.9.0.0"
 #endif
-
-

@@ -1,4 +1,3 @@
-﻿#light
 namespace Vim
 
 type MarkMap =

@@ -1,6 +1,5 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -34,8 +33,6 @@ type CaretMovement =
     | ControlHome
     | ControlEnd
 
-    with 
-
     static member OfDirection direction =
         match direction with
         | Direction.Up -> CaretMovement.Up
@@ -50,17 +47,17 @@ type TextViewEventArgs(_textView: ITextView) =
     member x.TextView = _textView
 
 type VimRcKind =
-    | VimRc     = 0
-    | VsVimRc   = 1
+    | VimRc = 0
+    | VsVimRc = 1
 
-type VimRcPath = { 
+type VimRcPath =
+    {
 
-    /// Which type of file was loaded 
-    VimRcKind: VimRcKind 
+      /// Which type of file was loaded
+      VimRcKind: VimRcKind
 
-    /// Full path to the file which the contents were loaded from
-    FilePath: string
-}
+      /// Full path to the file which the contents were loaded from
+      FilePath: string }
 
 [<RequireQualifiedAccess>]
 type VimRcState =
@@ -69,10 +66,10 @@ type VimRcState =
 
     /// The load succeeded of the specified file.  If there were any errors actually
     /// processing the load they will be captured in the string[] parameter.
-    /// The load succeeded and the specified file was used 
-    | LoadSucceeded of VimRcPath: VimRcPath * Errors: string[]
+    /// The load succeeded and the specified file was used
+    | LoadSucceeded of VimRcPath: VimRcPath * Errors: string []
 
-    /// The load failed 
+    /// The load failed
     | LoadFailed
 
 [<RequireQualifiedAccess>]
@@ -96,36 +93,36 @@ type IStatusUtil =
     abstract OnStatus: string -> unit
 
     /// Raised when there is a long status message that needs to be reported
-    abstract OnStatusLong: string seq -> unit 
+    abstract OnStatusLong: string seq -> unit
 
     /// Raised when there is an error message that needs to be reported
-    abstract OnError: string -> unit 
+    abstract OnError: string -> unit
 
     /// Raised when there is a warning message that needs to be reported
-    abstract OnWarning: string -> unit 
+    abstract OnWarning: string -> unit
 
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
     /// Create the specified directory, returns true if it was actually created
-    abstract CreateDirectory: path: string -> bool 
+    abstract CreateDirectory: path:string -> bool
 
     /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories: unit -> string[]
+    abstract GetVimRcDirectories: unit -> string []
 
-    /// Get the possible paths for a vimrc file in the order they should be 
-    /// considered 
-    abstract GetVimRcFilePaths: unit -> VimRcPath[]
+    /// Get the possible paths for a vimrc file in the order they should be
+    /// considered
+    abstract GetVimRcFilePaths: unit -> VimRcPath []
 
-    /// Attempt to read all of the lines from the given file 
-    abstract ReadAllLines: filePath: string -> string[] option
+    /// Attempt to read all of the lines from the given file
+    abstract ReadAllLines: filePath:string -> string [] option
 
-    /// Read the contents of the directory 
-    abstract ReadDirectoryContents: directoryPath: string -> string[] option
+    /// Read the contents of the directory
+    abstract ReadDirectoryContents: directoryPath:string -> string [] option
 
-    abstract Read: filePath: string -> Stream option
+    abstract Read: filePath:string -> Stream option
 
-    abstract Write: filePath: string -> stream: Stream -> bool
+    abstract Write: filePath:string -> stream:Stream -> bool
 
 /// Used for manipulating multiple selections
 type ISelectionUtil =
@@ -137,16 +134,16 @@ type ISelectionUtil =
     abstract GetSelectedSpans: unit -> SelectionSpan seq
 
     /// Set all the selected spans for the specified text view
-    abstract SetSelectedSpans: selectedSpans: SelectionSpan seq -> unit
+    abstract SetSelectedSpans: selectedSpans:SelectionSpan seq -> unit
 
 /// Factory service for creating ISelectionUtil instances
-type ISelectionUtilFactory = 
+type ISelectionUtilFactory =
 
     /// Get the selection utility interface
-    abstract GetSelectionUtil: textView: ITextView -> ISelectionUtil
+    abstract GetSelectionUtil: textView:ITextView -> ISelectionUtil
 
 /// Service for creating ISelectionUtilFactory instances
-type ISelectionUtilFactoryService = 
+type ISelectionUtilFactoryService =
 
     /// Get the selection utility interface
     abstract GetSelectionUtilFactory: unit -> ISelectionUtilFactory
@@ -171,7 +168,7 @@ type IWordCompletionSession =
     /// Commit the current session
     abstract Commit: unit -> unit
 
-    /// Dismiss the completion session 
+    /// Dismiss the completion session
     abstract Dismiss: unit -> unit
 
     /// Raised when the session is dismissed
@@ -185,17 +182,19 @@ type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSessi
 
 /// Factory for creating a IWordCompletionSession instance. This type cannot be MEF imported
 /// but instead is available via IVimHost
-type IWordCompletionSessionFactory = 
+type IWordCompletionSessionFactory =
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
+    abstract CreateWordCompletionSession: textView:ITextView
+     -> wordSpan:SnapshotSpan -> words:string seq -> isForward:bool -> IWordCompletionSession option
 
-/// Factory service for creating IWordCompletionSession instances. This type is available as 
+/// Factory service for creating IWordCompletionSession instances. This type is available as
 /// a MEF import
-type IWordCompletionSessionFactoryService = 
+type IWordCompletionSessionFactoryService =
 
     /// Create a session with the given set of words
-    abstract CreateWordCompletionSession: textView: ITextView -> wordSpan: SnapshotSpan -> words: string seq -> isForward: bool -> IWordCompletionSession option
+    abstract CreateWordCompletionSession: textView:ITextView
+     -> wordSpan:SnapshotSpan -> words:string seq -> isForward:bool -> IWordCompletionSession option
 
     /// Raised when the session is created
     [<CLIEvent>]
@@ -227,12 +226,12 @@ type ITextViewUndoTransaction =
 
 /// Flags controlling the linked undo transaction behavior
 [<System.Flags>]
-type LinkedUndoTransactionFlags = 
-    | None = 0x0
+type LinkedUndoTransactionFlags =
+    | None = 0
 
-    | CanBeEmpty = 0x1
+    | CanBeEmpty = 1
 
-    | EndsWithInsert = 0x2
+    | EndsWithInsert = 2
 
 /// Wraps a set of IUndoTransaction items such that they undo and redo as a single
 /// entity.
@@ -244,7 +243,7 @@ type ILinkedUndoTransaction =
     inherit System.IDisposable
 
 /// Wraps all of the undo and redo operations
-type IUndoRedoOperations = 
+type IUndoRedoOperations =
 
     abstract TextUndoHistory: ITextUndoHistory option
 
@@ -258,22 +257,23 @@ type IUndoRedoOperations =
     abstract Close: unit -> unit
 
     /// Creates an Undo Transaction
-    abstract CreateUndoTransaction: name: string -> IUndoTransaction
+    abstract CreateUndoTransaction: name:string -> IUndoTransaction
 
     /// Creates an Undo Transaction specific to the given ITextView.  Use when operations
     /// like caret position need to be a part of the undo / redo stack
-    abstract CreateTextViewUndoTransaction: name: string -> textView: ITextView -> ITextViewUndoTransaction
+    abstract CreateTextViewUndoTransaction: name:string -> textView:ITextView -> ITextViewUndoTransaction
 
     /// Creates a linked undo transaction
-    abstract CreateLinkedUndoTransaction: name: string -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransaction: name:string -> ILinkedUndoTransaction
 
     /// Creates a linked undo transaction with flags
-    abstract CreateLinkedUndoTransactionWithFlags: name: string -> flags: LinkedUndoTransactionFlags -> ILinkedUndoTransaction
+    abstract CreateLinkedUndoTransactionWithFlags: name:string
+     -> flags:LinkedUndoTransactionFlags -> ILinkedUndoTransaction
 
     /// Wrap the passed in "action" inside an undo transaction.  This is needed
-    /// when making edits such as paste so that the cursor will move properly 
+    /// when making edits such as paste so that the cursor will move properly
     /// during an undo operation
-    abstract EditWithUndoTransaction: name: string -> textView: ITextView -> action: (unit -> 'T) -> 'T
+    abstract EditWithUndoTransaction: name:string -> textView:ITextView -> action:(unit -> 'T) -> 'T
 
     /// Redo the last "count" operations
     abstract Redo: count:int -> unit
@@ -281,28 +281,25 @@ type IUndoRedoOperations =
     /// Undo the last "count" operations
     abstract Undo: count:int -> unit
 
-/// Represents a set of changes to a contiguous region. 
+/// Represents a set of changes to a contiguous region.
 [<RequireQualifiedAccess>]
-type TextChange = 
+type TextChange =
     | DeleteLeft of Count: int
     | DeleteRight of Count: int
     | Insert of Text: string
     | Combination of Left: TextChange * Right: TextChange
 
-    with 
-
     /// Get the insert text resulting from the change if there is any
-    member x.InsertText = 
-        let rec inner textChange (text: string) = 
-            match textChange with 
+    member x.InsertText =
+        let rec inner textChange (text: string) =
+            match textChange with
             | Insert data -> text + data |> Some
-            | DeleteLeft count -> 
-                if count > text.Length then
-                    None
-                else 
-                    text.Substring(0, text.Length - count) |> Some
+            | DeleteLeft count ->
+                if count > text.Length
+                then None
+                else text.Substring(0, text.Length - count) |> Some
             | DeleteRight _ -> None
-            | Combination (left, right) ->
+            | Combination(left, right) ->
                 match inner left text with
                 | None -> None
                 | Some text -> inner right text
@@ -310,90 +307,89 @@ type TextChange =
         inner x StringUtil.Empty
 
     /// Get the last / most recent change in the TextChange tree
-    member x.LastChange = 
+    member x.LastChange =
         match x with
         | DeleteLeft _ -> x
         | DeleteRight _ -> x
         | Insert _ -> x
-        | Combination (_, right) -> right.LastChange
+        | Combination(_, right) -> right.LastChange
 
-    member x.IsEmpty = 
-        match x with 
+    member x.IsEmpty =
+        match x with
         | Insert text -> StringUtil.IsNullOrEmpty text
         | DeleteLeft count -> count = 0
         | DeleteRight count -> count = 0
-        | Combination (left, right) -> left.IsEmpty && right.IsEmpty
+        | Combination(left, right) -> left.IsEmpty && right.IsEmpty
 
-    member x.Reduce = 
-        match x with 
-        | Combination (left, right) -> 
+    member x.Reduce =
+        match x with
+        | Combination(left, right) ->
             match TextChange.ReduceCore left right with
             | Some reduced -> reduced
             | None -> x
         | _ -> x
 
     /// Merge two TextChange values together.  The goal is to produce a the smallest TextChange
-    /// value possible.  This will return Some if a reduction is made and None if there is 
+    /// value possible.  This will return Some if a reduction is made and None if there is
     /// no possible reduction
     static member private ReduceCore left right =
 
         // This is called for combination merges.  Some progress was made but it's possible further
         // progress could be made by reducing the specified values.  If further progress can be made
         // keep it else keep at least the progress already made
-        let tryReduceAgain left right = 
-            Some (TextChange.CreateReduced left right)
+        let tryReduceAgain left right = Some(TextChange.CreateReduced left right)
 
-        // Insert can only merge with a previous insert operation.  It can't 
+        // Insert can only merge with a previous insert operation.  It can't
         // merge with any deletes that came before it
         let reduceInsert before (text: string) =
             match before with
-            | Insert otherText -> Some (Insert (otherText + text))
-            | _ -> None 
+            | Insert otherText -> Some(Insert(otherText + text))
+            | _ -> None
 
-        // DeleteLeft can merge with deletes and previous insert operations. 
-        let reduceDeleteLeft before count = 
+        // DeleteLeft can merge with deletes and previous insert operations.
+        let reduceDeleteLeft before count =
             match before with
-            | Insert otherText -> 
+            | Insert otherText ->
                 if count <= otherText.Length then
                     let text = otherText.Substring(0, otherText.Length - count)
-                    Some (Insert text)
+                    Some(Insert text)
                 else
                     let count = count - otherText.Length
-                    Some (DeleteLeft count)
-            | DeleteLeft beforeCount -> Some (DeleteLeft (count + beforeCount))
+                    Some(DeleteLeft count)
+            | DeleteLeft beforeCount -> Some(DeleteLeft(count + beforeCount))
             | _ -> None
 
         // Delete right can merge only with other DeleteRight operations
-        let reduceDeleteRight before count = 
-            match before with 
-            | DeleteRight beforeCount -> Some (DeleteRight (beforeCount + count))
-            | _ -> None 
+        let reduceDeleteRight before count =
+            match before with
+            | DeleteRight beforeCount -> Some(DeleteRight(beforeCount + count))
+            | _ -> None
 
         // The item on the left isn't a Combination item.  So do simple merge semantics
-        let simpleMerge () = 
+        let simpleMerge() =
             match right with
             | Insert text -> reduceInsert left text
             | DeleteLeft count -> reduceDeleteLeft left count
-            | DeleteRight count -> reduceDeleteRight left count 
-            | Combination (rightSubLeft, rightSubRight) ->
-                // First just see if the combination itself can be reduced 
+            | DeleteRight count -> reduceDeleteRight left count
+            | Combination(rightSubLeft, rightSubRight) ->
+                // First just see if the combination itself can be reduced
                 match TextChange.ReduceCore rightSubLeft rightSubRight with
                 | Some reducedTextChange -> tryReduceAgain left reducedTextChange
-                | None -> 
+                | None ->
                     match TextChange.ReduceCore left rightSubLeft with
                     | None -> None
                     | Some reducedTextChange -> tryReduceAgain reducedTextChange rightSubRight
 
-        // The item on the left is a Combination item.  
-        let complexMerge leftSubLeft leftSubRight = 
+        // The item on the left is a Combination item.
+        let complexMerge leftSubLeft leftSubRight =
 
             // First check if the left can be merged against itself.  This can easily happen
             // for hand built trees
             match TextChange.ReduceCore leftSubLeft leftSubRight with
             | Some reducedTextChange -> tryReduceAgain reducedTextChange right
-            | None -> 
-                // It can't be reduced.  Still a change that the right can be reduced against 
-                // the subRight value 
+            | None ->
+                // It can't be reduced.  Still a change that the right can be reduced against
+                // the subRight value
                 match TextChange.ReduceCore leftSubRight right with
                 | None -> None
                 | Some reducedTextChange -> tryReduceAgain leftSubLeft reducedTextChange
@@ -404,19 +400,23 @@ type TextChange =
             Some left
         else
             match left with
-            | Insert _ -> simpleMerge ()
-            | DeleteLeft _ -> simpleMerge ()
-            | DeleteRight _ -> simpleMerge ()
-            | Combination (leftSubLeft, leftSubRight) -> complexMerge leftSubLeft leftSubRight
+            | Insert _ -> simpleMerge()
+            | DeleteLeft _ -> simpleMerge()
+            | DeleteRight _ -> simpleMerge()
+            | Combination(leftSubLeft, leftSubRight) -> complexMerge leftSubLeft leftSubRight
 
     static member Replace str =
-        let left = str |> StringUtil.Length |> TextChange.DeleteLeft
-        let right = TextChange.Insert str
-        TextChange.Combination (left, right)
+        let left =
+            str
+            |> StringUtil.Length
+            |> TextChange.DeleteLeft
 
-    static member CreateReduced left right = 
+        let right = TextChange.Insert str
+        TextChange.Combination(left, right)
+
+    static member CreateReduced left right =
         match TextChange.ReduceCore left right with
-        | None -> Combination (left, right)
+        | None -> Combination(left, right)
         | Some textChange -> textChange
 
 type TextChangeEventArgs(_textChange: TextChange) =
@@ -425,30 +425,30 @@ type TextChangeEventArgs(_textChange: TextChange) =
     member x.TextChange = _textChange
 
 [<System.Flags>]
-type SearchOptions = 
-    | None = 0x0
+type SearchOptions =
+    | None = 0
 
     /// Consider the "ignorecase" option when doing the search
-    | ConsiderIgnoreCase = 0x1
+    | ConsiderIgnoreCase = 1
 
     /// Consider the "smartcase" option when doing the search
-    | ConsiderSmartCase = 0x2
+    | ConsiderSmartCase = 2
 
     /// Whether to include the start point when doing the search
-    | IncludeStartPoint = 0x4
+    | IncludeStartPoint = 4
 
     /// ConsiderIgnoreCase ||| ConsiderSmartCase
-    | Default = 0x3
+    | Default = 3
 
 /// Information about a search of a pattern
-type PatternData = {
+type PatternData =
+    {
 
-    /// The Pattern to search for
-    Pattern: string
+      /// The Pattern to search for
+      Pattern: string
 
-    /// The direction in which the pattern was searched for
-    Path: SearchPath
-}
+      /// The direction in which the pattern was searched for
+      Path: SearchPath }
 
 type PatternDataEventArgs(_patternData: PatternData) =
     inherit System.EventArgs()
@@ -468,17 +468,16 @@ type SearchOffsetData =
     | End of End: int
     | Search of PatternData: PatternData
 
-    with 
-
-    static member private ParseCore (offset: string) =
-        Contract.Requires (offset.Length > 0)
+    static member private ParseCore(offset: string) =
+        Contract.Requires(offset.Length > 0)
 
         let index = ref 0
         let isForward = ref true
-        let movePastPlusOrMinus () = 
+
+        let movePastPlusOrMinus() =
             if index.Value < offset.Length then
                 match offset.[index.Value] with
-                | '+' -> 
+                | '+' ->
                     isForward := true
                     index := index.Value + 1
                     true
@@ -490,93 +489,83 @@ type SearchOffsetData =
             else
                 false
 
-        let parseNumber () = 
-            if movePastPlusOrMinus () && index.Value = offset.Length then
+        let parseNumber() =
+            if movePastPlusOrMinus() && index.Value = offset.Length then
                 // a single + or - counts as a value if it's not followed by
-                // a number 
-                if isForward.Value then 1
-                else -1
+                // a number
+                if isForward.Value then 1 else -1
             else
                 // parse out the digits after the value
                 let mutable num = 0
                 let mutable isBad = index.Value >= offset.Length
                 while index.Value < offset.Length do
                     num <- num * 10
-                    match CharUtil.GetDigitValue (offset.[index.Value]) with
-                    | Option.None -> 
+                    match CharUtil.GetDigitValue(offset.[index.Value]) with
+                    | Option.None ->
                         isBad <- true
                         index := offset.Length
                     | Option.Some d ->
                         num <- num + d
                         index := index.Value + 1
-                if isBad then
-                    0
-                elif isForward.Value then
-                    num
-                else    
-                    -num
+                if isBad then 0
+                elif isForward.Value then num
+                else -num
 
-        let parseLine () = 
-            let number = parseNumber ()
+        let parseLine() =
+            let number = parseNumber()
             SearchOffsetData.Line number
 
-        let parseEnd () = 
+        let parseEnd() =
             index := index.Value + 1
-            let number = parseNumber ()
+            let number = parseNumber()
             SearchOffsetData.End number
-            
-        let parseStart () = 
+
+        let parseStart() =
             index := index.Value + 1
-            let number = parseNumber ()
+            let number = parseNumber()
             SearchOffsetData.Start number
 
-        let parseSearch () = 
+        let parseSearch() =
             index := index.Value + 1
             match StringUtil.CharAtOption index.Value offset with
-            | Option.Some '/' -> 
+            | Option.Some '/' ->
                 let path = SearchPath.Forward
                 let pattern = offset.Substring(index.Value + 1)
-                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
-            | Option.Some '?' -> 
+                SearchOffsetData.Search
+                    ({ Pattern = pattern
+                       Path = path })
+            | Option.Some '?' ->
                 let path = SearchPath.Backward
                 let pattern = offset.Substring(index.Value + 1)
-                SearchOffsetData.Search ({ Pattern = pattern; Path = path})
-            | _ ->
-                SearchOffsetData.None
-
-        if CharUtil.IsDigit (offset.[0]) then
-            parseLine ()
-        else
-            match offset.[0] with
-            | '-' -> parseLine ()
-            | '+' -> parseLine ()
-            | 'e' -> parseEnd ()
-            | 's' -> parseStart ()
-            | 'b' -> parseStart ()
-            | ';' -> parseSearch () 
+                SearchOffsetData.Search
+                    ({ Pattern = pattern
+                       Path = path })
             | _ -> SearchOffsetData.None
 
-    static member Parse (offset: string) =
-        if StringUtil.IsNullOrEmpty offset then
-            SearchOffsetData.None
+        if CharUtil.IsDigit(offset.[0]) then
+            parseLine()
         else
-            SearchOffsetData.ParseCore offset
+            match offset.[0] with
+            | '-' -> parseLine()
+            | '+' -> parseLine()
+            | 'e' -> parseEnd()
+            | 's' -> parseStart()
+            | 'b' -> parseStart()
+            | ';' -> parseSearch()
+            | _ -> SearchOffsetData.None
+
+    static member Parse(offset: string) =
+        if StringUtil.IsNullOrEmpty offset then SearchOffsetData.None else SearchOffsetData.ParseCore offset
 
 [<Sealed>]
 [<DebuggerDisplay("{ToString(),nq}")>]
-type SearchData
-    (
-        _pattern: string,
-        _offset: SearchOffsetData,
-        _kind: SearchKind,
-        _options: SearchOptions
-    ) = 
+type SearchData(_pattern: string, _offset: SearchOffsetData, _kind: SearchKind, _options: SearchOptions) =
 
-    new (pattern: string, path: SearchPath, isWrap: bool) =
+    new(pattern: string, path: SearchPath, isWrap: bool) =
         let kind = SearchKind.OfPathAndWrap path isWrap
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
-    new (pattern: string, path: SearchPath) = 
+    new(pattern: string, path: SearchPath) =
         let kind = SearchKind.OfPathAndWrap path true
         SearchData(pattern, SearchOffsetData.None, kind, SearchOptions.Default)
 
@@ -594,52 +583,51 @@ type SearchData
 
     /// The PatternData which was searched for.  This does not include the pattern searched
     /// for in the offset
-    member x.PatternData = { Pattern = x.Pattern; Path = x.Kind.Path }
+    member x.PatternData =
+        { Pattern = x.Pattern
+          Path = x.Kind.Path }
 
     /// The SearchData which should be used for IVimData.LastSearchData if this search needs
     /// to update that value.  It takes into account the search pattern in an offset string
     /// as specified in ':help //;'
     member x.LastSearchData =
         let path = x.Path
-        let pattern = 
+
+        let pattern =
             match x.Offset with
             | SearchOffsetData.Search patternData -> patternData.Pattern
             | _ -> x.Pattern
         SearchData(pattern, x.Offset, x.Kind, x.Options)
 
     member x.Equals(other: SearchData) =
-        if obj.ReferenceEquals(other, null) then
-            false
-        else
-            _pattern = other.Pattern &&
-            _offset = other.Offset &&
-            _kind = other.Kind &&
-            _options = other.Options
+        if obj.ReferenceEquals(other, null)
+        then false
+        else _pattern = other.Pattern && _offset = other.Offset && _kind = other.Kind && _options = other.Options
 
-    override x.Equals(other: obj) = 
+    override x.Equals(other: obj) =
         match other with
         | :? SearchData as otherSearchData -> x.Equals(otherSearchData)
-        | _ -> false 
+        | _ -> false
 
-    override x.GetHashCode() =
-        _pattern.GetHashCode()
+    override x.GetHashCode() = _pattern.GetHashCode()
 
-    override x.ToString() =
-        x.Pattern
+    override x.ToString() = x.Pattern
 
-    static member op_Equality(this, other) = System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
-    static member op_Inequality(this, other) = not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
+    static member op_Equality (this, other) =
+        System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other)
+    static member op_Inequality (this, other) =
+        not (System.Collections.Generic.EqualityComparer<SearchData>.Default.Equals(this, other))
 
     /// Parse out a SearchData value given the specific pattern and SearchKind.  The pattern should
     /// not include a beginning / or ?.  That should be removed by this point
     static member Parse (pattern: string) (searchKind: SearchKind) searchOptions =
         let mutable index = -1
         let mutable i = 1
-        let targetChar = 
-            if searchKind.IsAnyForward then '/'
-            else '?'
+
+        let targetChar =
+            if searchKind.IsAnyForward then '/' else '?'
         while i < pattern.Length do
-            if pattern.[i] = targetChar && pattern.[i-1] <> '\\' then
+            if pattern.[i] = targetChar && pattern.[i - 1] <> '\\' then
                 index <- i
                 i <- pattern.Length
             else
@@ -648,7 +636,7 @@ type SearchData
         if index < 0 then
             SearchData(pattern, SearchOffsetData.None, searchKind, searchOptions)
         else
-            let offset = SearchOffsetData.Parse (pattern.Substring(index + 1))
+            let offset = SearchOffsetData.Parse(pattern.Substring(index + 1))
             let pattern = pattern.Substring(0, index)
             SearchData(pattern, offset, searchKind, searchOptions)
 
@@ -665,13 +653,13 @@ type SearchDataEventArgs(_searchData: SearchData) =
 type SearchResult =
 
     /// The pattern was found.  The two spans here represent the following pieces of data
-    /// respectively 
+    /// respectively
     ///
     ///     - the span of the pattern + the specified offset
-    ///     - the span of the found pattern 
+    ///     - the span of the found pattern
     ///
     /// In general the first should be used by consumers.  The second is only interesting
-    /// to items that need to tag the value 
+    /// to items that need to tag the value
     ///
     /// The bool at the end of the tuple represents whether not
     /// a wrap occurred while searching for the value
@@ -688,44 +676,44 @@ type SearchResult =
     /// error message
     | Error of SearchData: SearchData * Error: string
 
-    with
-
     /// Returns the SearchData which was searched for
-    member x.SearchData = 
-        match x with 
-        | SearchResult.Found (searchData, _, _, _) -> searchData
-        | SearchResult.NotFound (searchData, _) -> searchData
-        | SearchResult.Cancelled (searchData) -> searchData
-        | SearchResult.Error (searchData, _) -> searchData
+    member x.SearchData =
+        match x with
+        | SearchResult.Found(searchData, _, _, _) -> searchData
+        | SearchResult.NotFound(searchData, _) -> searchData
+        | SearchResult.Cancelled(searchData) -> searchData
+        | SearchResult.Error(searchData, _) -> searchData
 
-type SearchResultEventArgs(_searchResult: SearchResult) = 
+type SearchResultEventArgs(_searchResult: SearchResult) =
     inherit System.EventArgs()
 
     member x.SearchResult = _searchResult
 
-/// Global information about searches within Vim.  
+/// Global information about searches within Vim.
 ///
 /// This interface is usable from any thread
-[<UsedInBackgroundThread()>]
-type ISearchService = 
+[<UsedInBackgroundThread>]
+type ISearchService =
 
-    /// Find the next occurrence of the pattern in the buffer starting at the 
+    /// Find the next occurrence of the pattern in the buffer starting at the
     /// given SnapshotPoint
-    abstract FindNext: searchPoint: SnapshotPoint -> searchData: SearchData -> navigator: SnapshotWordNavigator -> SearchResult
+    abstract FindNext: searchPoint:SnapshotPoint
+     -> searchData:SearchData -> navigator:SnapshotWordNavigator -> SearchResult
 
     /// Find the next 'count' occurrence of the specified pattern.  Note: The first occurrence won't
     /// match anything at the provided start point.  That will be adjusted appropriately
-    abstract FindNextPattern: searchPoint: SnapshotPoint -> searchPoint: SearchData -> navigator: SnapshotWordNavigator -> count: int -> SearchResult
+    abstract FindNextPattern: searchPoint:SnapshotPoint
+     -> searchPoint:SearchData -> navigator:SnapshotWordNavigator -> count:int -> SearchResult
 
 /// Column information about the caret in relation to this Motion Result
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-type CaretColumn = 
+type CaretColumn =
 
     /// No column information was provided
     | None
 
-    /// Caret should be placed in the specified character on the last line in 
+    /// Caret should be placed in the specified character on the last line in
     /// the MotionResult
     ///
     /// This column should be specified in terms of a character offset in the ITextBuffer
@@ -733,10 +721,10 @@ type CaretColumn =
     /// character
     | InLastLine of ColumnNumber: int
 
-    /// Caret should be placed in the specified column on the last line in 
+    /// Caret should be placed in the specified column on the last line in
     /// the MotionResult
     ///
-    /// This column should be specified in terms number of screen columns, where 
+    /// This column should be specified in terms number of screen columns, where
     /// some characters like tabs may span many columns.
     | ScreenColumn of ColumnNumber: int
 
@@ -746,36 +734,36 @@ type CaretColumn =
 
 /// These are the types of motions which must be handled separately
 [<RequireQualifiedAccess>]
-type MotionResultFlags = 
+type MotionResultFlags =
 
     /// No special information for this motion
     | None = 0
 
     /// Any of the word motions
-    | AnyWord = 0x1
+    | AnyWord = 1
 
     /// This motion was promoted under rule #2 to a line wise motion
-    | ExclusiveLineWise = 0x2
+    | ExclusiveLineWise = 2
 
     /// This motion when used as a movement should maintain the caret column
     /// setting.
-    | MaintainCaretColumn = 0x4
+    | MaintainCaretColumn = 4
 
     /// This flag is needed to disambiguate the cases which come up when there
-    /// is an empty last line in the buffer.  When that happens it's ambiguous 
-    /// if a line wise motion meant to include the last line or merely just 
+    /// is an empty last line in the buffer.  When that happens it's ambiguous
+    /// if a line wise motion meant to include the last line or merely just
     /// the line above.  The End is the same in both cases.
-    | IncludeEmptyLastLine = 0x8
+    | IncludeEmptyLastLine = 8
 
     /// Marker for the end of line motion.  This affects how the caret column
     /// is maintained
-    | EndOfLine = 0x10
+    | EndOfLine = 16
 
     /// When used as a delete argument force a big delete
-    | BigDelete = 0x20
+    | BigDelete = 32
 
-    /// Suppress 'exclusive linewise' adjustment 
-    | SuppressAdjustment = 0x40
+    /// Suppress 'exclusive linewise' adjustment
+    | SuppressAdjustment = 64
 
 /// Information about the type of the motion this was.
 [<RequireQualifiedAccess>]
@@ -788,51 +776,50 @@ type MotionKind =
 
     | LineWise
 
-/// Data about a complete motion operation. 
-type MotionResult = {
+/// Data about a complete motion operation.
+type MotionResult =
+    {
 
-    /// Span of the motion.
-    Span: SnapshotSpan
+      /// Span of the motion.
+      Span: SnapshotSpan
 
-    /// In the case this MotionResult is the result of an exclusive promotion, this will 
-    /// hold the original SnapshotSpan
-    SpanBeforeExclusivePromotion: SnapshotSpan option
+      /// In the case this MotionResult is the result of an exclusive promotion, this will
+      /// hold the original SnapshotSpan
+      SpanBeforeExclusivePromotion: SnapshotSpan option
 
-    /// A linewise motion may also have a logical characterwise counter part. Consider for 
-    /// example motions like j and k. The motion can be described by the caret point and 
-    /// column above / below. This is useful when converting between linewise and characterwise
-    /// motions using v or V (:help o_v).
-    SpanBeforeLineWise: SnapshotSpan option
+      /// A linewise motion may also have a logical characterwise counter part. Consider for
+      /// example motions like j and k. The motion can be described by the caret point and
+      /// column above / below. This is useful when converting between linewise and characterwise
+      /// motions using v or V (:help o_v).
+      SpanBeforeLineWise: SnapshotSpan option
 
-    /// Is the motion forward
-    IsForward: bool
+      /// Is the motion forward
+      IsForward: bool
 
-    /// Kind of the motion
-    MotionKind: MotionKind
+      /// Kind of the motion
+      MotionKind: MotionKind
 
-    /// The flags on the MotionRelult
-    MotionResultFlags: MotionResultFlags
+      /// The flags on the MotionRelult
+      MotionResultFlags: MotionResultFlags
 
-    /// In addition to recording the Span, certain motions like j, k, and | also
-    /// record data about the desired column within the span.  This value may or may not
-    /// be a valid point within the line
-    CaretColumn: CaretColumn
+      /// In addition to recording the Span, certain motions like j, k, and | also
+      /// record data about the desired column within the span.  This value may or may not
+      /// be a valid point within the line
+      CaretColumn: CaretColumn }
 
-} with
-
-    member x.ColumnSpan = SnapshotColumnSpan(x.Span) 
+    member x.ColumnSpan = SnapshotColumnSpan(x.Span)
 
     /// The Span as an EditSpan value
     member x.EditSpan = EditSpan.Single x.ColumnSpan
 
     /// The OperationKind of the MotionResult
-    member x.OperationKind = 
+    member x.OperationKind =
         match x.MotionKind with
         | MotionKind.CharacterWiseExclusive -> OperationKind.CharacterWise
         | MotionKind.CharacterWiseInclusive -> OperationKind.CharacterWise
         | MotionKind.LineWise _ -> OperationKind.LineWise
 
-    /// Is this a word motion 
+    /// Is this a word motion
     member x.IsAnyWordMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnyWord
 
     /// Is this an exclusive motion
@@ -845,17 +832,18 @@ type MotionResult = {
     /// Is this an inclusive motion
     member x.IsInclusive = not x.IsExclusive
 
-    /// The Span as a SnapshotLineRange value 
+    /// The Span as a SnapshotLineRange value
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
 
     /// The Start or Last line depending on whether the motion is forward or not.  The returned
-    /// line will be in the document <see cref="ITextSnapshot">.  
-    member x.DirectionLastLine = 
+    /// line will be in the document <see cref="ITextSnapshot">.
+    member x.DirectionLastLine =
         if x.IsForward then
             // Need to handle the empty last line case here.  If the flag to include
             // the empty last line is set and we are at the empty line then it gets
             // included as the last line
-            if SnapshotPointUtil.IsEndPoint x.Span.End && Util.IsFlagSet x.MotionResultFlags MotionResultFlags.IncludeEmptyLastLine then
+            if SnapshotPointUtil.IsEndPoint x.Span.End
+               && Util.IsFlagSet x.MotionResultFlags MotionResultFlags.IncludeEmptyLastLine then
                 SnapshotPointUtil.GetContainingLine x.Span.End
             else
                 SnapshotSpanUtil.GetLastLine x.Span
@@ -870,60 +858,62 @@ type MotionResult = {
 
     member x.LastOrStart = x.Last |> OptionUtil.getOrDefault x.Start
 
-    /// This will map every Span inside the MotionResult using the provided mapFunc value and 
+    /// This will map every Span inside the MotionResult using the provided mapFunc value and
     /// return the resulting MotionResult.
-    member x.MapSpans mapFunc = 
+    member x.MapSpans mapFunc =
         let map s =
             match s with
             | None -> (true, None)
-            | Some s -> 
+            | Some s ->
                 match mapFunc s with
                 | Some s -> (true, Some s)
                 | None -> (false, None)
 
         match mapFunc x.Span, map x.SpanBeforeExclusivePromotion, map x.SpanBeforeLineWise with
-        | Some s, (true, e), (true, l) -> Some { x with Span = s; SpanBeforeExclusivePromotion = e; SpanBeforeLineWise = l }
+        | Some s, (true, e), (true, l) ->
+            Some
+                { x with
+                      Span = s
+                      SpanBeforeExclusivePromotion = e
+                      SpanBeforeLineWise = l }
         | _ -> None
 
     static member Create(span: SnapshotSpan, motionKind: MotionKind, ?isForward, ?motionResultFlags, ?caretColumn): MotionResult =
         let isForward = defaultArg isForward true
         let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
         let caretColumn = defaultArg caretColumn CaretColumn.None
-        {
-            Span = span
-            SpanBeforeExclusivePromotion = None
-            SpanBeforeLineWise = None
-            IsForward = isForward
-            MotionKind = motionKind
-            MotionResultFlags = motionResultFlags
-            CaretColumn = caretColumn
-        }
+        { Span = span
+          SpanBeforeExclusivePromotion = None
+          SpanBeforeLineWise = None
+          IsForward = isForward
+          MotionKind = motionKind
+          MotionResultFlags = motionResultFlags
+          CaretColumn = caretColumn }
 
-    static member Create(span: SnapshotSpan, motionKind: MotionKind, isForward: bool) = MotionResult.Create(span, motionKind, isForward, MotionResultFlags.None, CaretColumn.None)
+    static member Create(span: SnapshotSpan, motionKind: MotionKind, isForward: bool) =
+        MotionResult.Create(span, motionKind, isForward, MotionResultFlags.None, CaretColumn.None)
 
-    static member CreateCharacterWise(span, ?isForward, ?isExclusive, ?motionResultFlags, ?caretColumn) = 
+    static member CreateCharacterWise(span, ?isForward, ?isExclusive, ?motionResultFlags, ?caretColumn) =
         let isForward = defaultArg isForward true
         let isExclusive = defaultArg isExclusive true
         let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
         let caretColumn = defaultArg caretColumn CaretColumn.None
-        let kind = 
-            if isExclusive then MotionKind.CharacterWiseExclusive
-            else MotionKind.CharacterWiseInclusive
+
+        let kind =
+            if isExclusive then MotionKind.CharacterWiseExclusive else MotionKind.CharacterWiseInclusive
         MotionResult.Create(span, kind, isForward, motionResultFlags, caretColumn)
 
     static member CreateLineWise(span, ?spanBeforeLineWise, ?isForward, ?motionResultFlags, ?caretColumn) =
         let isForward = defaultArg isForward true
-        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None 
+        let motionResultFlags = defaultArg motionResultFlags MotionResultFlags.None
         let caretColumn = defaultArg caretColumn CaretColumn.None
-        {
-            Span = span
-            SpanBeforeExclusivePromotion = None
-            SpanBeforeLineWise = spanBeforeLineWise
-            IsForward = isForward
-            MotionKind = MotionKind.LineWise
-            MotionResultFlags = motionResultFlags
-            CaretColumn = caretColumn
-        }
+        { Span = span
+          SpanBeforeExclusivePromotion = None
+          SpanBeforeLineWise = spanBeforeLineWise
+          IsForward = isForward
+          MotionKind = MotionKind.LineWise
+          MotionResultFlags = motionResultFlags
+          CaretColumn = caretColumn }
 
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
@@ -934,12 +924,7 @@ type MotionContext =
     | AfterOperator
 
 /// Arguments necessary to building a Motion
-type MotionArgument
-    (
-        motionContext: MotionContext,
-        operatorCount: int option,
-        motionCount: int option
-    ) =
+type MotionArgument(motionContext: MotionContext, operatorCount: int option, motionCount: int option) =
 
     /// Context of the Motion
     member x.MotionContext = motionContext
@@ -947,21 +932,21 @@ type MotionArgument
     /// Count passed to the operator
     member x.OperatorCount = operatorCount
 
-    /// Count passed to the motion 
+    /// Count passed to the motion
     member x.MotionCount = motionCount
 
     /// Provides the raw count which is a combination of the OperatorCount
-    /// and MotionCount values.  
-    member x.Count = 
+    /// and MotionCount values.
+    member x.Count =
         match x.MotionCount, x.OperatorCount with
         | None, None -> None
         | Some c, None -> Some c
-        | None, Some c  -> Some c
-        | Some l, Some r -> Some (l*r)
+        | None, Some c -> Some c
+        | Some l, Some r -> Some(l * r)
 
-    /// Resolves the count to a value.  It will use the default 1 for 
-    /// any count which is not provided 
-    member x.CountOrDefault = 
+    /// Resolves the count to a value.  It will use the default 1 for
+    /// any count which is not provided
+    member x.CountOrDefault =
         match x.Count with
         | Some c -> c
         | None -> 1
@@ -969,14 +954,14 @@ type MotionArgument
     new(motionContext) = MotionArgument(motionContext, None, None)
 
 /// Char searches are interesting because they are defined in one IVimBuffer
-/// and can be repeated in any IVimBuffer.  Use a discriminated union here 
-/// to name the motion without binding it to a given IVimBuffer or ITextView 
+/// and can be repeated in any IVimBuffer.  Use a discriminated union here
+/// to name the motion without binding it to a given IVimBuffer or ITextView
 /// which would increase the chance of an accidental memory leak
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-type CharSearchKind  =
+type CharSearchKind =
 
-    /// Used for the 'f' and 'F' motion.  To the specified char 
+    /// Used for the 'f' and 'F' motion.  To the specified char
     | ToChar
 
     /// Used for the 't' and 'T' motion.  Till the specified char
@@ -986,7 +971,7 @@ type CharSearchKind  =
 type BlockKind =
 
     /// A [] block
-    | Bracket 
+    | Bracket
 
     /// A () block
     | Paren
@@ -997,10 +982,8 @@ type BlockKind =
     /// A {} block
     | CurlyBracket
 
-    with
-
-    member x.Characters = 
-        match x with 
+    member x.Characters =
+        match x with
         | Bracket -> '[', ']'
         | Paren -> '(', ')'
         | AngleBracket -> '<', '>'
@@ -1018,8 +1001,8 @@ type TagBlockKind =
     | All
 
 /// A discriminated union of the Motion types supported.  These are the primary
-/// repeat mechanisms for Motion arguments so it's very important that these 
-/// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
+/// repeat mechanisms for Motion arguments so it's very important that these
+/// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion
 /// item to be stored and then applied to many IVimBuffer instances.
 [<RequireQualifiedAccess>]
 type Motion =
@@ -1031,34 +1014,34 @@ type Motion =
     | AllWord of WordKind: WordKind
 
     /// Implement the 'ap' motion
-    | AllParagraph 
+    | AllParagraph
 
     /// Gets count full sentences from the cursor.  If used on a blank line this will
     /// not return a value
     | AllSentence
 
-    /// Move to the beginning of the line.  Interestingly since this command is bound to the '0' it 
-    /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
+    /// Move to the beginning of the line.  Interestingly since this command is bound to the '0' it
+    /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3
     /// for command '0'
     | BeginingOfLine
 
-    /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word 
+    /// Implement the 'ge' / 'gE' motion.  Goes backward to the end of the previous word
     | BackwardEndOfWord of WordKind: WordKind
 
     /// The left motion for h
-    | CharLeft 
+    | CharLeft
 
     /// The right motion for l
     | CharRight
 
     /// The backspace motion
-    | SpaceLeft 
+    | SpaceLeft
 
     /// The space motion
     | SpaceRight
 
     /// The arrow motion for <Left>
-    | ArrowLeft 
+    | ArrowLeft
 
     /// The arrow motion for <Right>
     | ArrowRight
@@ -1074,25 +1057,25 @@ type Motion =
     /// wrap is enabled
     | DisplayLineDown
 
-    /// Start of the display line 
-    | DisplayLineStart 
+    /// Start of the display line
+    | DisplayLineStart
 
-    /// End of the display line 
+    /// End of the display line
     | DisplayLineEnd
 
     /// First non blank character on the display line
     | DisplayLineFirstNonBlank
 
-    /// Get the point in the middle of the screen.  This looks at the entire screen not just 
+    /// Get the point in the middle of the screen.  This looks at the entire screen not just
     /// the width of the current line
     | DisplayLineMiddleOfScreen
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
     | EndOfWord of WordKind: WordKind
-    
+
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
-    /// this motion deals with lines, it's still a character wise motion motion. 
+    /// this motion deals with lines, it's still a character wise motion motion.
     | EndOfLine
 
     /// Find the first non-blank character as the start of the span.  This is an exclusive
@@ -1103,7 +1086,7 @@ type Motion =
     /// Find the first non-blank character on the (count - 1) line below this line
     | FirstNonBlankOnLine
 
-    /// Forces a line wise version of the specified motion 
+    /// Forces a line wise version of the specified motion
     | ForceLineWise of Motion: Motion
 
     /// Forces a characterwise version of the specified motion
@@ -1126,7 +1109,7 @@ type Motion =
     /// should be in the opposite direction
     | LastSearch of UseOppositeDirection: bool
 
-    /// Handle the lines down to first non-blank motion.  This is one of the motions which 
+    /// Handle the lines down to first non-blank motion.  This is one of the motions which
     /// can accept a count of 0.
     | LineDownToFirstNonBlank
 
@@ -1141,7 +1124,7 @@ type Motion =
     /// buffer.  Implementation of the "j" motion
     | LineDown
 
-    /// Go to the specified line number or the first line if no line number is provided 
+    /// Go to the specified line number or the first line if no line number is provided
     | LineOrFirstToFirstNonBlank
 
     /// Go to the specified line number or the last line of no line number is provided
@@ -1151,11 +1134,11 @@ type Motion =
     /// the number of visible lines it will end on the last visible line
     | LineFromTopOfVisibleWindow
 
-    /// Go to the "count -1" line from the bottom of the visible window.  If the count 
+    /// Go to the "count -1" line from the bottom of the visible window.  If the count
     /// exceeds the number of visible lines it will end on the first visible line
     | LineFromBottomOfVisibleWindow
 
-    /// Go to the middle line in the visible window.  
+    /// Go to the middle line in the visible window.
     | LineInMiddleOfVisibleWindow
 
     /// Get the motion to the specified mark.  This is typically accessed via
@@ -1163,14 +1146,14 @@ type Motion =
     | Mark of LocalMark: LocalMark
 
     /// Get the motion to the line of the specified mark.  This is typically
-    /// accessed via the ' (single quote) operator and results in a 
+    /// accessed via the ' (single quote) operator and results in a
     /// line wise motion
     | MarkLine of LocalMark: LocalMark
 
     /// Get the matching token from the next token on the line.  This is used to implement
     /// the % motion
     /// If a number is specified, go to {count} percentage in the file
-    | MatchingTokenOrDocumentPercent 
+    | MatchingTokenOrDocumentPercent
 
     /// Move the caret to the position of the mouse
     | MoveCaretToMouse
@@ -1213,7 +1196,7 @@ type Motion =
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
-    
+
     /// Backward a section in the editor or to an open brace
     | SectionBackwardOrOpenBrace
 
@@ -1223,13 +1206,13 @@ type Motion =
     /// Forward a section in the editor
     | SectionForward
 
-    /// Count sentences backward 
+    /// Count sentences backward
     | SentenceBackward
 
     /// Count sentences forward
     | SentenceForward
 
-    /// Move the the specific column of the current line. Typically in response to the | key. 
+    /// Move the the specific column of the current line. Typically in response to the | key.
     | ScreenColumn
 
     /// Matching xml / html tags
@@ -1242,7 +1225,7 @@ type Motion =
     | WordBackward of WordKind: WordKind
 
     /// Implement the w/W motion
-    | WordForward of WordKind: WordKind 
+    | WordForward of WordKind: WordKind
 
 /// Interface for running Motion instances against an ITextView
 and IMotionUtil =
@@ -1250,16 +1233,17 @@ and IMotionUtil =
     /// The associated ITextView instance
     abstract TextView: ITextView
 
-    /// Get the specified Motion value 
-    abstract GetMotion: motion: Motion -> motionArgument: MotionArgument -> MotionResult option 
+    /// Get the specified Motion value
+    abstract GetMotion: motion:Motion -> motionArgument:MotionArgument -> MotionResult option
 
     /// Get the specific text object motion from the given SnapshotPoint
-    abstract GetTextObject: motion: Motion -> point: SnapshotPoint -> MotionResult option
+    abstract GetTextObject: motion:Motion -> point:SnapshotPoint -> MotionResult option
 
     /// Get the expanded tag point for the given tag block kind
-    abstract GetExpandedTagBlock: startPoint: SnapshotPoint -> endPoint: SnapshotPoint -> kind: TagBlockKind -> SnapshotSpan option
+    abstract GetExpandedTagBlock: startPoint:SnapshotPoint
+     -> endPoint:SnapshotPoint -> kind:TagBlockKind -> SnapshotSpan option
 
-type ModeKind = 
+type ModeKind =
 
     /// Initial mode for an IVimBuffer.  It will maintain this mode until the
     /// underlying ITextView completes it's initialization and allows the
@@ -1272,11 +1256,11 @@ type ModeKind =
     | Command = 3
     | VisualCharacter = 4
     | VisualLine = 5
-    | VisualBlock = 6 
+    | VisualBlock = 6
     | Replace = 7
     | SubstituteConfirm = 8
     | SelectCharacter = 9
-    | SelectLine = 10 
+    | SelectLine = 10
     | SelectBlock = 11
     | ExternalEdit = 12
 
@@ -1289,22 +1273,21 @@ type VisualKind =
     | Character
     | Line
     | Block
-    with 
 
     /// The TextSelectionMode this VisualKind would require
-    member x.TextSelectionMode = 
+    member x.TextSelectionMode =
         match x with
         | Character _ -> TextSelectionMode.Stream
         | Line _ -> TextSelectionMode.Stream
         | Block _ -> TextSelectionMode.Box
 
-    member x.VisualModeKind = 
+    member x.VisualModeKind =
         match x with
         | Character _ -> ModeKind.VisualCharacter
         | Line _ -> ModeKind.VisualLine
         | Block _ -> ModeKind.VisualBlock
 
-    member x.SelectModeKind = 
+    member x.SelectModeKind =
         match x with
         | Character _ -> ModeKind.SelectCharacter
         | Line _ -> ModeKind.SelectLine
@@ -1314,9 +1297,12 @@ type VisualKind =
 
     static member OfModeKind kind =
         match kind with
-        | ModeKind.VisualCharacter | ModeKind.SelectCharacter -> VisualKind.Character |> Some
-        | ModeKind.VisualLine | ModeKind.SelectLine -> VisualKind.Line |> Some
-        | ModeKind.VisualBlock | ModeKind.SelectBlock -> VisualKind.Block |> Some
+        | ModeKind.VisualCharacter
+        | ModeKind.SelectCharacter -> VisualKind.Character |> Some
+        | ModeKind.VisualLine
+        | ModeKind.SelectLine -> VisualKind.Line |> Some
+        | ModeKind.VisualBlock
+        | ModeKind.SelectBlock -> VisualKind.Block |> Some
         | _ -> None
 
     static member IsAnyVisual kind =
@@ -1336,31 +1322,27 @@ type VisualKind =
 
     static member IsAnyVisualOrSelect kind = VisualKind.IsAnyVisual kind || VisualKind.IsAnySelect kind
 
-/// The actual command name.  This is a wrapper over the collection of KeyInput 
-/// values which make up a command name.  
+/// The actual command name.  This is a wrapper over the collection of KeyInput
+/// values which make up a command name.
 ///
-/// The intent of this type is that two values are equal if the sequence of 
-/// KeyInputs are Equal.  
+/// The intent of this type is that two values are equal if the sequence of
+/// KeyInputs are Equal.
 ///
-/// It is not possible to simple store this as a string as it is possible, and 
+/// It is not possible to simple store this as a string as it is possible, and
 /// in fact likely due to certain virtual key codes which are unable to be mapped,
 /// for KeyInput values will map to a single char.  Hence to maintain proper semantics
 /// we have to use KeyInput values directly.
 [<DebuggerDisplay("{ToString(),nq}")>]
-type KeyInputSet
-    (
-        _keyInputs: KeyInput list
-    ) =
+type KeyInputSet(_keyInputs: KeyInput list) =
 
-    let _length = _keyInputs.Length 
+    let _length = _keyInputs.Length
 
     static let s_empty = KeyInputSet([])
 
-    new (keyInput: KeyInput) = 
-        KeyInputSet([keyInput])
+    new(keyInput: KeyInput) = KeyInputSet([ keyInput ])
 
-    new (keyInput1: KeyInput, keyInput2: KeyInput) = 
-        let list = keyInput1 :: [keyInput2]
+    new(keyInput1: KeyInput, keyInput2: KeyInput) =
+        let list = keyInput1 :: [ keyInput2 ]
         KeyInputSet(list)
 
     /// Get the list of KeyInput which represent this KeyInputSet
@@ -1370,44 +1352,51 @@ type KeyInputSet
     member x.Length = _length
 
     /// Returns the first KeyInput if present
-    member x.FirstKeyInput = 
+    member x.FirstKeyInput =
         match x.KeyInputs with
         | head :: _ -> Some head
         | [] -> None
 
     /// Returns the rest of the KeyInput values after the first
-    member x.Rest = 
-        match x.KeyInputs with 
+    member x.Rest =
+        match x.KeyInputs with
         | [] -> KeyInputSet.Empty
         | _ :: tail -> KeyInputSet(tail)
 
     /// A string representation of the name.  It is unreliable to use this for anything
     /// other than display as two distinct KeyInput values can map to a single char
-    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
+    member x.Name =
+        x.KeyInputs
+        |> Seq.map (fun ki -> ki.Char)
+        |> StringUtil.OfCharSeq
 
-    /// Add a KeyInput to the end of this KeyInputSet and return the 
+    /// Add a KeyInput to the end of this KeyInputSet and return the
     /// resulting value
     member x.Add keyInput =
-        let list = x.KeyInputs @ [keyInput] 
+        let list = x.KeyInputs @ [ keyInput ]
         KeyInputSet(list)
 
-    member x.AddRange (keyInputSet: KeyInputSet) =
+    member x.AddRange(keyInputSet: KeyInputSet) =
         let list = x.KeyInputs @ keyInputSet.KeyInputs
         KeyInputSet(list)
 
     /// Does the name start with the given KeyInputSet
-    member x.StartsWith (keyInputSet: KeyInputSet) = 
-        let left = keyInputSet.KeyInputs 
+    member x.StartsWith(keyInputSet: KeyInputSet) =
+        let left = keyInputSet.KeyInputs
         let right = x.KeyInputs
         if left.Length <= right.Length then
-            SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
-        else false
+            SeqUtil.contentsEqual (left |> Seq.ofList)
+                (right
+                 |> Seq.ofList
+                 |> Seq.take left.Length)
+        else
+            false
 
     static member Empty = s_empty
 
-    member x.CompareTo (other: KeyInputSet) = 
+    member x.CompareTo(other: KeyInputSet) =
         if x.Length <> other.Length then
-            x.Length - other.Length 
+            x.Length - other.Length
         else
             let mutable left = x.KeyInputs
             let mutable right = other.KeyInputs
@@ -1421,12 +1410,13 @@ type KeyInputSet
                     right <- right.Tail
             value
 
-    override x.GetHashCode() = 
+    override x.GetHashCode() =
         let mutable hashCode = 1
         let mutable current = x.KeyInputs
         while not current.IsEmpty do
-            hashCode <- 
-                if hashCode = 1 then current.Head.GetHashCode()
+            hashCode <-
+                if hashCode = 1
+                then current.Head.GetHashCode()
                 else HashUtil.Combine2 hashCode (current.Head.GetHashCode())
             current <- current.Tail
         hashCode
@@ -1436,19 +1426,21 @@ type KeyInputSet
         | :? KeyInputSet as y -> (x.CompareTo y) = 0
         | _ -> false
 
-    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this,other))
+    static member op_Equality (this, other) =
+        System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this, other)
+    static member op_Inequality (this, other) =
+        not (System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this, other))
 
     override x.ToString() =
         x.KeyInputs
         |> Seq.map (fun ki ->
             if ki.Key = VimKey.RawCharacter then ki.Char.ToString()
             elif ki.Key = VimKey.None then "<None>"
-            else System.String.Format("<{0}>", ki.Key)  )
+            else System.String.Format("<{0}>", ki.Key))
         |> StringUtil.OfStringSeq
 
     interface System.IComparable with
-        member x.CompareTo yobj = 
+        member x.CompareTo yobj =
             match yobj with
             | :? KeyInputSet as y -> x.CompareTo y
             | _ -> failwith "Cannot compare values of different types"
@@ -1457,35 +1449,36 @@ module KeyInputSetUtil =
 
     let Empty = KeyInputSet([])
 
-    let OfSeq sequence = 
+    let OfSeq sequence =
         let list = List.ofSeq sequence
         KeyInputSet(list)
 
-    let OfList (list: KeyInput list) = 
-        KeyInputSet(list)
+    let OfList(list: KeyInput list) = KeyInputSet(list)
 
-    let OfChar c = 
+    let OfChar c =
         let keyInput = KeyInputUtil.CharToKeyInput c
-        KeyInputSet([keyInput])
+        KeyInputSet([ keyInput ])
 
-    let OfCharArray ([<System.ParamArray>] arr) = 
-        let list = 
+    let OfCharArray([<System.ParamArray>] arr) =
+        let list =
             arr
             |> Seq.ofArray
             |> Seq.map KeyInputUtil.CharToKeyInput
             |> List.ofSeq
         KeyInputSet(list)
 
-    let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
+    let OfString(str: string) =
+        str
+        |> Seq.map KeyInputUtil.CharToKeyInput
+        |> OfSeq
 
-    let OfVimKeyArray ([<System.ParamArray>] arr) = 
-        arr 
-        |> Seq.ofArray 
+    let OfVimKeyArray([<System.ParamArray>] arr) =
+        arr
+        |> Seq.ofArray
         |> Seq.map KeyInputUtil.VimKeyToKeyInput
         |> OfSeq
 
-    let Single (keyInput: KeyInput) =
-        KeyInputSet(keyInput)
+    let Single(keyInput: KeyInput) = KeyInputSet(keyInput)
 
     let Combine (left: KeyInputSet) (right: KeyInputSet) =
         let all = left.KeyInputs @ right.KeyInputs
@@ -1505,98 +1498,92 @@ type KeyMappingResult =
     /// keys which were mapped are processed.
     ///
     /// The majority of successful mappings will come back as PartiallyMapped because
-    /// key mappings can't be evaluated in isolation. The completely mapped keys need 
-    /// to be processed before the remaining can be evaluated for further remappings. 
+    /// key mappings can't be evaluated in isolation. The completely mapped keys need
+    /// to be processed before the remaining can be evaluated for further remappings.
     ///
     /// Consider the following example:
     ///     :nmap qq if
     ///     :imap f dog
     /// Typing 'qq' in normal mode should produce insert mode with the text 'dog'. The 'f'
-    /// in the mapping of 'qq' can't be evaluated until the 'i' has gone back to normal 
+    /// in the mapping of 'qq' can't be evaluated until the 'i' has gone back to normal
     /// mode, the mode changed and then insert mode can evaluate the mapping for 'f'
     | PartiallyMapped of MappedKeyInputSet: KeyInputSet * RemainingKeyInputSet: KeyInputSet
 
-    /// The mapping encountered a recursive element that had to be broken 
+    /// The mapping encountered a recursive element that had to be broken
     | Recursive
 
     /// More input is needed to resolve this mapping.
     | NeedsMoreInput of KeyInputSet: KeyInputSet
 
-    with 
-
     /// This will returned the mapped KeyInputSet or KeyInputSet.Empty if no mapping
-    /// was possible 
-    member x.KeyInputSet = 
+    /// was possible
+    member x.KeyInputSet =
         match x with
         | Unmapped keyInputSet -> keyInputSet
         | Mapped keyInputSet -> keyInputSet
-        | PartiallyMapped (keyInputSet, _) -> keyInputSet
+        | PartiallyMapped(keyInputSet, _) -> keyInputSet
         | Recursive -> KeyInputSet.Empty
         | NeedsMoreInput _ -> KeyInputSet.Empty
 
 /// Represents the span for a Visual Character mode selection.  If it weren't for the
 /// complications of tracking a visual character selection across edits to the buffer
-/// there would really be no need for this and we could instead just represent it as 
+/// there would really be no need for this and we could instead just represent it as
 /// a SnapshotSpan
 ///
-/// The other reason this type is necessary is to differentiate several empty line 
-/// cases.  Essentially how empty line should be handled when the span includes the 
-/// line break of the line above 
+/// The other reason this type is necessary is to differentiate several empty line
+/// cases.  Essentially how empty line should be handled when the span includes the
+/// line break of the line above
 [<StructuralEquality>]
 [<NoComparison>]
 [<Struct>]
 [<DebuggerDisplay("{ToString()}")>]
-type CharacterSpan = 
+type CharacterSpan =
 
     val private _start: VirtualSnapshotPoint
     val private _lineCount: int
     val private _lastLineMaxPositionCount: int
     val private _useVirtualSpace: bool
 
-    new (start: SnapshotPoint, lineCount: int, lastLineMaxPositionCount: int) =
+    new(start: SnapshotPoint, lineCount: int, lastLineMaxPositionCount: int) =
         let virtualStart = VirtualSnapshotPointUtil.OfPoint start
         CharacterSpan(virtualStart, lineCount, lastLineMaxPositionCount, false)
 
-    new (start: VirtualSnapshotPoint, lineCount: int, lastLineMaxPositionCount: int, useVirtualSpace: bool) =
+    new(start: VirtualSnapshotPoint, lineCount: int, lastLineMaxPositionCount: int, useVirtualSpace: bool) =
         Contract.Requires(lineCount > 0)
-        { 
-            _start = start
-            _lineCount = lineCount
-            _lastLineMaxPositionCount = lastLineMaxPositionCount
-            _useVirtualSpace = useVirtualSpace }
+        { _start = start
+          _lineCount = lineCount
+          _lastLineMaxPositionCount = lastLineMaxPositionCount
+          _useVirtualSpace = useVirtualSpace }
 
-    new (span: SnapshotSpan) = 
+    new(span: SnapshotSpan) =
         let lineCount = SnapshotSpanUtil.GetLineCount span
         let lastLine = SnapshotSpanUtil.GetLastLine span
+
         let startPoint =
-            if lineCount = 1 then
-                span.Start
-            else
-                lastLine.Start
+            if lineCount = 1 then span.Start else lastLine.Start
         let endPoint =
 
             // Don't let the last line of the CharacterSpan end partially into a line
             // break.  Encompass the entire line break instead
-            if span.End.Position > lastLine.End.Position then
-                lastLine.EndIncludingLineBreak
-            else
-                span.End
+            if span.End.Position > lastLine.End.Position
+            then lastLine.EndIncludingLineBreak
+            else span.End
+
         let lastLineLength = endPoint.Position - startPoint.Position
         CharacterSpan(span.Start, lineCount, lastLineLength)
 
-    new (span: VirtualSnapshotSpan, useVirtualSpace: bool) =
+    new(span: VirtualSnapshotSpan, useVirtualSpace: bool) =
         if span.Start.IsInVirtualSpace || span.End.IsInVirtualSpace then
             let lineCount = VirtualSnapshotSpanUtil.GetLineCount span
             let lastLine = VirtualSnapshotSpanUtil.GetLastLine span
             let endOffset = VirtualSnapshotPointUtil.GetLineOffset span.End
+
             let lastLineLength =
                 if lineCount = 1 then
                     let startOffset = VirtualSnapshotPointUtil.GetLineOffset span.Start
+
                     let endOffsetInLastLine =
-                        if span.Length <> 0 && endOffset = 0 then
-                            lastLine.LengthIncludingLineBreak
-                        else
-                            endOffset
+                        if span.Length <> 0 && endOffset = 0 then lastLine.LengthIncludingLineBreak else endOffset
                     endOffsetInLastLine - startOffset
                 else
                     endOffset
@@ -1604,11 +1591,11 @@ type CharacterSpan =
         else
             CharacterSpan(span.SnapshotSpan)
 
-    new (startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
+    new(startPoint: SnapshotPoint, endPoint: SnapshotPoint) =
         let span = SnapshotSpan(startPoint, endPoint)
         CharacterSpan(span)
 
-    new (startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint, useVirtualSpace: bool) =
+    new(startPoint: VirtualSnapshotPoint, endPoint: VirtualSnapshotPoint, useVirtualSpace: bool) =
         let span = VirtualSnapshotSpan(startPoint, endPoint)
         CharacterSpan(span, useVirtualSpace)
 
@@ -1618,9 +1605,9 @@ type CharacterSpan =
 
     member x.StartLine = SnapshotPointUtil.GetContainingLine x.Start
 
-    member x.Start =  x._start.Position
+    member x.Start = x._start.Position
 
-    member x.VirtualStart =  x._start
+    member x.VirtualStart = x._start
 
     member x.LineCount = x._lineCount
 
@@ -1630,25 +1617,23 @@ type CharacterSpan =
     member x.LastLineMaxPositionCount = x._lastLineMaxPositionCount
 
     /// Actual number of positions in the last line
-    member x.LastLinePositionCount = 
-        let lastLineStart = 
+    member x.LastLinePositionCount =
+        let lastLineStart =
             let lastLine = x.LastLine
-            if x.LineCount = 1 then x.Start
-            else lastLine.Start
+            if x.LineCount = 1 then x.Start else lastLine.Start
         x.End.Position - lastLineStart.Position
 
     /// The last line in the CharacterSpan
-    member x.LastLine: ITextSnapshotLine = 
+    member x.LastLine: ITextSnapshotLine =
         let number = x.StartLine.LineNumber + (x._lineCount - 1)
         SnapshotUtil.GetLineOrLast x.Snapshot number
 
     /// The last point included in the CharacterSpan
-    member x.Last = 
+    member x.Last =
         let endPoint: SnapshotPoint = x.End
-        if endPoint.Position = x.Start.Position then
-            None
-        else
-            SnapshotPoint(x.Snapshot, endPoint.Position - 1) |> Some
+        if endPoint.Position = x.Start.Position
+        then None
+        else SnapshotPoint(x.Snapshot, endPoint.Position - 1) |> Some
 
     /// The last virtual point included in the CharacterSpan
     member x.VirtualLast =
@@ -1657,18 +1642,16 @@ type CharacterSpan =
         if endPoint = startPoint then
             None
         else
-            let point =
-                endPoint
-                |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
-            if point.Position.Position < startPoint.Position.Position then
-                None
-            else
-                Some point
+            let point = endPoint |> VirtualSnapshotPointUtil.GetPreviousCharacterSpanWithWrap
+            if point.Position.Position < startPoint.Position.Position
+            then None
+            else Some point
 
     /// Get the End point of the Character Span.
     member x.End: SnapshotPoint =
         let lastLine = x.LastLine
-        let offset = 
+
+        let offset =
             if x._lineCount = 1 then
                 // For a single line we need to apply the offset past the start point
                 SnapshotPointUtil.GetLineOffset x._start.Position + x.LastLineMaxPositionCount
@@ -1684,15 +1667,15 @@ type CharacterSpan =
         // Make sure that we don't create a negative SnapshotSpan.  Really we should
         // be verifying the arguments to ensure we don't but until we do fix up
         // potential errors here
-        if x._start.Position.Position <= endPoint.Position then
-            endPoint
-        else
-            x._start.Position
+        if x._start.Position.Position <= endPoint.Position
+        then endPoint
+        else x._start.Position
 
     /// Get the End point of the Character Span.
     member x.VirtualEnd =
         if x.UseVirtualSpace then
             let lastLine = x.LastLine
+
             let offset =
                 if x._lineCount = 1 then
                     // For a single line we need to apply the offset past the start point
@@ -1719,7 +1702,7 @@ type CharacterSpan =
 
     member x.IncludeLastLineLineBreak = x.End.Position > x.LastLine.End.Position
 
-    member internal x.MaybeAdjustToIncludeLastLineLineBreak() = 
+    member internal x.MaybeAdjustToIncludeLastLineLineBreak() =
         if x.UseVirtualSpace then
             x
         elif x.End.Position >= x.LastLine.End.Position then
@@ -1728,11 +1711,12 @@ type CharacterSpan =
         else
             x
 
-    override x.ToString() =
-        x.VirtualSpan.ToString()
+    override x.ToString() = x.VirtualSpan.ToString()
 
-    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this,other))
+    static member op_Equality (this, other) =
+        System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this, other)
+    static member op_Inequality (this, other) =
+        not (System.Collections.Generic.EqualityComparer<CharacterSpan>.Default.Equals(this, other))
 
 /// Represents the span for a Visual Block mode selection. Because Visual
 /// Studio cannot display a ragged box selection, when 'end-of-line' is true,
@@ -1750,18 +1734,34 @@ type BlockSpan =
 
     new(startPoint: SnapshotPoint, tabStop, spaces, height) =
         let startColumn = VirtualSnapshotColumn(startPoint)
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = false }
+        { _startColumn = startColumn
+          _tabStop = tabStop
+          _spaces = spaces
+          _height = height
+          _endOfLine = false }
 
     new(startPoint: SnapshotPoint, tabStop, spaces, height, endOfLine) =
         let startColumn = VirtualSnapshotColumn(startPoint)
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
+        { _startColumn = startColumn
+          _tabStop = tabStop
+          _spaces = spaces
+          _height = height
+          _endOfLine = endOfLine }
 
     new(startPoint: VirtualSnapshotPoint, tabStop, spaces, height, endOfLine) =
         let startColumn = VirtualSnapshotColumn(startPoint)
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
+        { _startColumn = startColumn
+          _tabStop = tabStop
+          _spaces = spaces
+          _height = height
+          _endOfLine = endOfLine }
 
     new(startColumn: VirtualSnapshotColumn, tabStop, spaces, height, endOfLine) =
-        { _startColumn = startColumn; _tabStop = tabStop; _spaces = spaces; _height = height; _endOfLine = endOfLine }
+        { _startColumn = startColumn
+          _tabStop = tabStop
+          _spaces = spaces
+          _height = height
+          _endOfLine = endOfLine }
 
     /// Create a BlockSpan for the given SnapshotSpan.  The returned BlockSpan
     /// will have a minimum of 1 for height and width.  The start of the
@@ -1778,12 +1778,11 @@ type BlockSpan =
             let endColumnSpaces = span.End.GetSpacesToColumn tabStop
             let width = endColumnSpaces - startColumnSpaces
 
-            if width = 0 then
-                span.Start, 1
-            elif width > 0 then
-                span.Start, width
-            else
-                VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
+            if width = 0
+            then span.Start, 1
+            elif width > 0
+            then span.Start, width
+            else VirtualSnapshotColumn.GetColumnForSpaces(span.Start.Line, endColumnSpaces, tabStop), -width
 
         let height = VirtualSnapshotSpanUtil.GetLineCount span.VirtualSpan
         BlockSpan(startColumn, tabStop = tabStop, spaces = width, height = height, endOfLine = false)
@@ -1824,14 +1823,14 @@ type BlockSpan =
         let line =
             let lineNumber = x.Start.LineNumber
             SnapshotUtil.GetLineOrLast x.Snapshot (lineNumber + (x._height - 1))
+
         let totalSpaces = x.BeforeSpaces + x.SpacesLength
         SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, totalSpaces, x.TabStop)
 
     /// Get the end column (exclusive) of the BlockSpan
     member x.End =
         let column = x.OverlapEnd
-        if column.SpacesBefore > 0 then column.Column.AddOneOrCurrent()
-        else column.Column
+        if column.SpacesBefore > 0 then column.Column.AddOneOrCurrent() else column.Column
 
     /// Get the virtual end point (exclusive) of the BlockSpan
     member x.VirtualEnd =
@@ -1848,17 +1847,16 @@ type BlockSpan =
 
     member x.Snapshot = x.Start.Snapshot
 
-    member x.TextBuffer =  x.Start.Snapshot.TextBuffer
+    member x.TextBuffer = x.Start.Snapshot.TextBuffer
 
-    member private x.GetBlockSpansCore (makeSpan: ITextSnapshotLine -> int -> 'T): NonEmptyCollection<'T> =
+    member private x.GetBlockSpansCore(makeSpan: ITextSnapshotLine -> int -> 'T): NonEmptyCollection<'T> =
         let x = x
         seq {
             for i = 0 to x.Height - 1 do
                 let lineNumber = x.Start.LineNumber + i
                 match SnapshotUtil.TryGetLine x.Snapshot lineNumber with
                 | None -> ()
-                | Some line ->
-                    yield makeSpan line x.BeforeSpaces
+                | Some line -> yield makeSpan line x.BeforeSpaces
         }
         |> NonEmptyCollectionUtil.OfSeq
         |> Option.get
@@ -1869,26 +1867,26 @@ type BlockSpan =
     /// information
     member x.BlockColumnSpans: NonEmptyCollection<SnapshotColumnSpan> =
         let x = x
-        x.GetBlockSpansCore (fun line beforeSpaces ->
+        x.GetBlockSpansCore(fun line beforeSpaces ->
             let startColumn = SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
+
             let endColumn =
-                if x.EndOfLine then
-                    x.GetEndColumn line
-                else
-                    SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
+                if x.EndOfLine
+                then x.GetEndColumn line
+                else SnapshotColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotColumnSpan(startColumn, endColumn))
 
     /// Get the NonEmptyCollection<VirtualSnapshotSpan> for the given block
     /// information
     member x.BlockVirtualColumnSpans: NonEmptyCollection<VirtualSnapshotColumnSpan> =
         let x = x
-        x.GetBlockSpansCore (fun line beforeSpaces ->
+        x.GetBlockSpansCore(fun line beforeSpaces ->
             let startColumn = VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces, x.TabStop)
+
             let endColumn =
-                if x.EndOfLine then
-                    VirtualSnapshotColumn(x.GetEndColumn line)
-                else
-                    VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
+                if x.EndOfLine
+                then VirtualSnapshotColumn(x.GetEndColumn line)
+                else VirtualSnapshotColumn.GetColumnForSpaces(line, beforeSpaces + x.SpacesLength, x.TabStop)
             VirtualSnapshotColumnSpan(startColumn, endColumn))
 
     /// Get a NonEmptyCollection indicating of the SnapshotOverlapColumnSpan
@@ -1896,28 +1894,29 @@ type BlockSpan =
     /// cells) of the block with respect to the start point and end point
     member x.BlockOverlapColumnSpans: NonEmptyCollection<SnapshotOverlapColumnSpan> =
         let x = x
-        x.GetBlockSpansCore (fun line beforeSpaces ->
+        x.GetBlockSpansCore(fun line beforeSpaces ->
             let startColumn = SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces, x.TabStop)
+
             let endColumn =
-                if x.EndOfLine then
-                    SnapshotOverlapColumn(x.GetEndColumn line, x.TabStop)
-                else
-                    SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
+                if x.EndOfLine
+                then SnapshotOverlapColumn(x.GetEndColumn line, x.TabStop)
+                else SnapshotOverlapColumn.GetColumnForSpacesOrEnd(line, beforeSpaces + x.SpacesLength, x.TabStop)
             SnapshotOverlapColumnSpan(startColumn, endColumn, x.TabStop))
 
-    member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.Span)
+    member x.BlockSpans = x.BlockColumnSpans |> NonEmptyCollectionUtil.Map(fun s -> s.Span)
 
-    member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map (fun s -> s.VirtualSpan)
+    member x.BlockVirtualSpans = x.BlockVirtualColumnSpans |> NonEmptyCollectionUtil.Map(fun s -> s.VirtualSpan)
 
     /// Adjust the block span for the specified 'end-of-line' setting
-    member x.AdjustWithEndOfLine endOfLine =
-        BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
+    member x.AdjustWithEndOfLine endOfLine = BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
 
     override x.ToString() =
         sprintf "Point: %s Spaces: %d Height: %d EndOfLine: %b" (x.Start.ToString()) x._spaces x._height x._endOfLine
 
-    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))
+    static member op_Equality (this, other) =
+        System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this, other)
+    static member op_Inequality (this, other) =
+        not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this, other))
 
     static member CreateForSpan (span: SnapshotSpan) tabStop =
         let virtualSpan = VirtualSnapshotSpanUtil.OfSpan span
@@ -1931,7 +1930,7 @@ type BlockCaretLocation =
     | BottomLeft
     | BottomRight
 
-/// Represents a visual span of text in the form Vim understands.  This type understands 
+/// Represents a visual span of text in the form Vim understands.  This type understands
 /// nothing about the intricacies of Visual Mode selection.  It simply understands how
 /// to represent the Spans it can occupy.
 ///
@@ -1950,16 +1949,14 @@ type VisualSpan =
     /// A line wise span
     | Line of LineRange: SnapshotLineRange
 
-    /// A block span.  
+    /// A block span.
     | Block of BlockSpan: BlockSpan
 
-    with
-
     /// Return the Spans which make up this VisualSpan instance
-    member x.Spans = 
-        match x with 
-        | VisualSpan.Character characterSpan -> [characterSpan.Span] |> Seq.ofList
-        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
+    member x.Spans =
+        match x with
+        | VisualSpan.Character characterSpan -> [ characterSpan.Span ] |> Seq.ofList
+        | VisualSpan.Line range -> [ range.ExtentIncludingLineBreak ] |> Seq.ofList
         | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
     /// Return the per line spans which make up this VisualSpan instance
@@ -1967,37 +1964,32 @@ type VisualSpan =
         match x with
         | VisualSpan.Character characterSpan ->
             seq {
-                let leadingEdge, middle, trailingEdge =
-                    SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
+                let leadingEdge, middle, trailingEdge = SnapshotSpanUtil.GetLinesAndEdges characterSpan.Span
                 match leadingEdge with
                 | Some span -> yield span
                 | None -> ()
                 match middle with
                 | Some lineRange ->
-                    let spans =
-                        lineRange.Lines
-                        |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+                    let spans = lineRange.Lines |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
                     yield! spans
                 | None -> ()
                 match trailingEdge with
                 | Some span -> yield span
                 | None -> ()
             }
-        | VisualSpan.Line lineRange ->
-            lineRange.Lines
-            |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
-        | VisualSpan.Block blockSpan ->
-            blockSpan.BlockSpans
-            :> SnapshotSpan seq
+        | VisualSpan.Line lineRange -> lineRange.Lines |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+        | VisualSpan.Block blockSpan -> blockSpan.BlockSpans :> SnapshotSpan seq
 
     member x.GetOverlapColumnSpans(tabStop: int): SnapshotOverlapColumnSpan seq =
         match x with
-        | VisualSpan.Character characterSpan -> Seq.singleton (SnapshotOverlapColumnSpan(characterSpan.ColumnSpan, tabStop))
-        | VisualSpan.Line range -> Seq.singleton (SnapshotOverlapColumnSpan(range.ColumnExtentIncludingLineBreak, tabStop))
+        | VisualSpan.Character characterSpan ->
+            Seq.singleton (SnapshotOverlapColumnSpan(characterSpan.ColumnSpan, tabStop))
+        | VisualSpan.Line range ->
+            Seq.singleton (SnapshotOverlapColumnSpan(range.ColumnExtentIncludingLineBreak, tabStop))
         | VisualSpan.Block blockSpan -> blockSpan.BlockOverlapColumnSpans :> SnapshotOverlapColumnSpan seq
 
     /// Returns the EditSpan for this VisualSpan
-    member x.EditSpan = 
+    member x.EditSpan =
         match x with
         | VisualSpan.Character characterSpan -> EditSpan.Single characterSpan.ColumnSpan
         | VisualSpan.Line range -> EditSpan.Single range.ColumnExtentIncludingLineBreak
@@ -2006,7 +1998,7 @@ type VisualSpan =
     /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
     /// just expand out the Span.  For Line this is an identity.  For Block it will
     /// return the overarching span
-    member x.LineRange = 
+    member x.LineRange =
         match x with
         | VisualSpan.Character characterSpan -> SnapshotLineRangeUtil.CreateForSpan characterSpan.Span
         | VisualSpan.Line range -> range
@@ -2017,11 +2009,11 @@ type VisualSpan =
     member x.Start =
         match x with
         | Character characterSpan -> characterSpan.Start
-        | Line range ->  range.Start
+        | Line range -> range.Start
         | Block blockSpan -> blockSpan.Start.StartPoint
 
     /// Get the end of the Visual Span
-    member x.End = 
+    member x.End =
         match x with
         | VisualSpan.Character characterSpan -> characterSpan.End
         | VisualSpan.Line lineRange -> lineRange.End
@@ -2042,13 +2034,13 @@ type VisualSpan =
         | VisualSpan.Block _ -> ModeKind.VisualBlock
 
     /// VisualKind of the VisualSpan
-    member x.VisualKind = 
+    member x.VisualKind =
         match x with
         | VisualSpan.Character _ -> VisualKind.Character
         | VisualSpan.Block _ -> VisualKind.Block
         | VisualSpan.Line _ -> VisualKind.Line
 
-    member x.AdjustForExtendIntoLineBreak extendIntoLineBreak = 
+    member x.AdjustForExtendIntoLineBreak extendIntoLineBreak =
         if extendIntoLineBreak then
             match x with
             | Character characterSpan -> characterSpan.MaybeAdjustToIncludeLastLineLineBreak() |> VisualSpan.Character
@@ -2063,8 +2055,7 @@ type VisualSpan =
         | Block blockSpan ->
             let blockSpan = blockSpan.AdjustWithEndOfLine endOfLine
             VisualSpan.Block blockSpan
-        | _ ->
-            x
+        | _ -> x
 
     /// Select the given VisualSpan in the ITextView
     member x.Select (textView: ITextView) path =
@@ -2075,6 +2066,7 @@ type VisualSpan =
             textView.Selection.Mode <- TextSelectionMode.Stream
 
             let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
+
             let anchorPoint, activePoint =
                 match path with
                 | SearchPath.Forward -> startPoint, endPoint
@@ -2083,7 +2075,7 @@ type VisualSpan =
             TextViewUtil.Select textView caretPoint anchorPoint activePoint
 
         // Select the given SnapshotSpan
-        let selectSpan startPoint endPoint = 
+        let selectSpan startPoint endPoint =
             let startPoint = startPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
             let endPoint = endPoint |> VirtualSnapshotPointUtil.OfPointConsiderLineBreak
             selectVirtualSpan startPoint endPoint
@@ -2094,13 +2086,11 @@ type VisualSpan =
                 selectVirtualSpan characterSpan.VirtualStart characterSpan.VirtualEnd
             else
                 let endPoint =
-                    if characterSpan.IncludeLastLineLineBreak then
-                        SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
-                    else
-                        characterSpan.End
+                    if characterSpan.IncludeLastLineLineBreak
+                    then SnapshotPointUtil.AddOneOrCurrent characterSpan.LastLine.End
+                    else characterSpan.End
                 selectSpan characterSpan.Start endPoint
-        | Line lineRange ->
-            selectSpan lineRange.Start lineRange.EndIncludingLineBreak
+        | Line lineRange -> selectSpan lineRange.Start lineRange.EndIncludingLineBreak
         | Block blockSpan ->
             // In general the Start and End accurately represent the selection points.  The cases where
             // it doesn't is when the caret ends inside of a point when spaces are considered. The
@@ -2109,21 +2099,21 @@ type VisualSpan =
             //  truck
             //  \t  cat
             //
-            // In this example if the anchor point is 'r' and the caret is under 'u' (2 space selection) then 
-            // the block span of the second line is the 2nd and 3rd space.  The tab itself is a single 
+            // In this example if the anchor point is 'r' and the caret is under 'u' (2 space selection) then
+            // the block span of the second line is the 2nd and 3rd space.  The tab itself is a single
             // SnapshotPoint numbering 4 spaces.  Hence the caret will be in the middle of a SnapshotPoint
             //
             // When this happens the anchor point is reset to min of the column of the SnapshotPoint the
             // caret resides in or the column of the anchor point
             let endPoint = blockSpan.OverlapEnd
+
             let startPoint =
                 if endPoint.SpacesBefore > 0 then
                     let startOffset = SnapshotPointUtil.GetLineOffset blockSpan.Start.StartPoint
                     let endOffset = SnapshotPointUtil.GetLineOffset endPoint.Column.StartPoint
                     let offset = min startOffset endOffset
                     let startLine = blockSpan.Start.Line
-                    SnapshotLineUtil.GetOffsetOrEnd offset startLine
-                    |> VirtualSnapshotPointUtil.OfPoint
+                    SnapshotLineUtil.GetOffsetOrEnd offset startLine |> VirtualSnapshotPointUtil.OfPoint
                 else
                     blockSpan.VirtualStart.VirtualStartPoint
             textView.Selection.Mode <- TextSelectionMode.Box
@@ -2137,9 +2127,10 @@ type VisualSpan =
         | VisualSpan.Block blockSpan -> sprintf "Block: %O" blockSpan
 
     /// Create the VisualSpan based on the specified points.  The activePoint is assumed
-    /// to be the end of the selection and hence not included (exclusive) just as it is 
+    /// to be the end of the selection and hence not included (exclusive) just as it is
     /// in ITextSelection
-    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint) (activePoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
+    static member CreateForVirtualSelectionPoints visualKind (anchorPoint: VirtualSnapshotPoint)
+                  (activePoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
 
         match visualKind with
         | VisualKind.Character ->
@@ -2152,9 +2143,9 @@ type VisualSpan =
             let startPoint, endPoint = SnapshotPointUtil.OrderAscending anchorPoint.Position activePoint.Position
             let startLine = SnapshotPointUtil.GetContainingLine startPoint
 
-            // If endPoint is EndIncludingLineBreak we would get the line after and be 
+            // If endPoint is EndIncludingLineBreak we would get the line after and be
             // one line too big.  Go back on point to ensure we don't expand the span
-            let endLine = 
+            let endLine =
                 if startPoint = endPoint then
                     startLine
                 else
@@ -2162,7 +2153,7 @@ type VisualSpan =
                     SnapshotPointUtil.GetContainingLine endPoint
             SnapshotLineRangeUtil.CreateForLineRange startLine endLine |> Line
 
-        | VisualKind.Block -> 
+        | VisualKind.Block ->
             let startPoint, endPoint = VirtualSnapshotPointUtil.OrderAscending anchorPoint activePoint
             let span = VirtualSnapshotSpan(startPoint, endPoint)
             BlockSpan(span, tabStop) |> Block
@@ -2183,23 +2174,21 @@ type VisualSpan =
             let anchorPoint = selection.AnchorPoint
             let activePoint = selection.ActivePoint
 
-            // Need to special case the selection ending in, and encompassing, an empty line.  Once you 
-            // get rid of the virtual points here it's impossible to distinguish from the case where the 
-            // selection ends in the line above instead.  
-            if
-                not useVirtualSpace
-                && visualKind = VisualKind.Character
-                && selection.End.Position.GetContainingLine().Length = 0
-            then
-                let endPoint = SnapshotPointUtil.AddOneOrCurrent selection.End.Position 
+            // Need to special case the selection ending in, and encompassing, an empty line.  Once you
+            // get rid of the virtual points here it's impossible to distinguish from the case where the
+            // selection ends in the line above instead.
+            if not useVirtualSpace && visualKind = VisualKind.Character
+               && selection.End.Position.GetContainingLine().Length = 0 then
+                let endPoint = SnapshotPointUtil.AddOneOrCurrent selection.End.Position
                 let characterSpan = CharacterSpan(selection.Start.Position, endPoint)
                 Character characterSpan
             else
-                let visualSpan = VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop useVirtualSpace
-                if visualKind <> VisualKind.Line && useVirtualSpace then
-                    visualSpan
-                else
-                    visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
+                let visualSpan =
+                    VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop
+                        useVirtualSpace
+                if visualKind <> VisualKind.Line && useVirtualSpace
+                then visualSpan
+                else visualSpan.AdjustForExtendIntoLineBreak selection.End.IsInVirtualSpace
 
     static member CreateForSelection (textView: ITextView) visualKind tabStop =
         VisualSpan.CreateForVirtualSelection textView visualKind tabStop false
@@ -2207,50 +2196,51 @@ type VisualSpan =
     static member CreateForSpan (span: SnapshotSpan) visualKind tabStop =
         match visualKind with
         | VisualKind.Character -> CharacterSpan(span) |> Character
-        | VisualKind.Line -> span |> SnapshotLineRangeUtil.CreateForSpan |> Line
+        | VisualKind.Line ->
+            span
+            |> SnapshotLineRangeUtil.CreateForSpan
+            |> Line
         | VisualKind.Block -> BlockSpan.CreateForSpan span tabStop |> Block
 
 /// Represents the information for a visual mode selection.  All of the values are expressed
 /// in terms of an inclusive selection.
 ///
 /// Note: It's intentional that inclusive and exclusive are not included in this particular
-/// structure.  Whether or not the selection is inclusive or exclusive doesn't change the 
-/// anchor / caret point.  It just changes what is operated on and what is actually 
+/// structure.  Whether or not the selection is inclusive or exclusive doesn't change the
+/// anchor / caret point.  It just changes what is operated on and what is actually
 /// physically selected by visual mode
-[<RequireQualifiedAccess>] 
+[<RequireQualifiedAccess>]
 [<StructuralEquality>]
-[<NoComparison>] 
+[<NoComparison>]
 type VisualSelection =
 
-    /// The underlying span and whether or not this is a forward looking span.  
+    /// The underlying span and whether or not this is a forward looking span.
     | Character of CharacterSpan: CharacterSpan * SearchPath: SearchPath
 
-    /// The underlying range, whether or not is forwards or backwards and the int 
+    /// The underlying range, whether or not is forwards or backwards and the int
     /// is which column in the range the caret should be placed in
-    | Line of LineRange: SnapshotLineRange * SearchPath: SearchPath * ColumnNumber: int 
+    | Line of LineRange: SnapshotLineRange * SearchPath: SearchPath * ColumnNumber: int
 
     /// Just keep the BlockSpan and the caret information for the block
     | Block of BlockSpan: BlockSpan * BlockCaretLocation: BlockCaretLocation
 
-    with
-
     member x.IsForward =
         match x with
-        | Character (_, path) -> path.IsSearchPathForward
-        | Line (_, path, _) -> path.IsSearchPathForward
+        | Character(_, path) -> path.IsSearchPathForward
+        | Line(_, path, _) -> path.IsSearchPathForward
         | Block _ -> true
 
     member x.IsCharacterForward =
         match x with
-        | Character (_, path) -> path.IsSearchPathForward
+        | Character(_, path) -> path.IsSearchPathForward
         | _ -> false
 
-    member x.IsLineForward = 
+    member x.IsLineForward =
         match x with
-        | Line (_, path, _) -> path.IsSearchPathForward
+        | Line(_, path, _) -> path.IsSearchPathForward
         | _ -> false
 
-    member x.VisualKind = 
+    member x.VisualKind =
         match x with
         | Character _ -> VisualKind.Character
         | Line _ -> VisualKind.Line
@@ -2258,78 +2248,73 @@ type VisualSelection =
 
     /// The underlying VisualSpan
     member x.VisualSpan =
-        match x with 
-        | Character (characterSpan, _) -> VisualSpan.Character characterSpan
-        | Line (lineRange, _, _) -> VisualSpan.Line lineRange
-        | Block (blockSpan, _) -> VisualSpan.Block blockSpan
+        match x with
+        | Character(characterSpan, _) -> VisualSpan.Character characterSpan
+        | Line(lineRange, _, _) -> VisualSpan.Line lineRange
+        | Block(blockSpan, _) -> VisualSpan.Block blockSpan
 
-    member x.AdjustForExtendIntoLineBreak extendIntoLineBreak = 
+    member x.AdjustForExtendIntoLineBreak extendIntoLineBreak =
         if extendIntoLineBreak then
             match x with
-            | Character (characterSpan, path) -> 
+            | Character(characterSpan, path) ->
                 let characterSpan = characterSpan.MaybeAdjustToIncludeLastLineLineBreak()
-                VisualSelection.Character (characterSpan, path)
+                VisualSelection.Character(characterSpan, path)
             | Line _ -> x
             | Block _ -> x
         else
             x
 
-    /// Get the VisualSelection information adjusted for the given selection kind.  This is only useful 
+    /// Get the VisualSelection information adjusted for the given selection kind.  This is only useful
     /// when a VisualSelection is created from the caret position and the selection needs to be adjusted
-    /// to include or exclude the caret.  
-    /// 
+    /// to include or exclude the caret.
+    ///
     /// It's incorrect to use when creating from an actual physical selection
-    member x.AdjustForSelectionKind selectionKind = 
+    member x.AdjustForSelectionKind selectionKind =
         match selectionKind with
         | SelectionKind.Inclusive -> x
-        | SelectionKind.Exclusive -> 
+        | SelectionKind.Exclusive ->
             match x with
-            | Character (characterSpan, path) -> 
-                if
-                    not characterSpan.UseVirtualSpace
-                    && SnapshotPointUtil.IsEndPoint characterSpan.End
-                then
+            | Character(characterSpan, path) ->
+                if not characterSpan.UseVirtualSpace && SnapshotPointUtil.IsEndPoint characterSpan.End then
                     x
                 else
                     // The span decreases by a single character in exclusive
                     let characterSpan =
                         let endPoint = characterSpan.VirtualLast |> OptionUtil.getOrDefault characterSpan.VirtualStart
-                        CharacterSpan(VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
-                    VisualSelection.Character (characterSpan, path)
+                        CharacterSpan
+                            (VirtualSnapshotSpan(characterSpan.VirtualStart, endPoint), characterSpan.UseVirtualSpace)
+                    VisualSelection.Character(characterSpan, path)
             | Line _ ->
                 // The span isn't effected
                 x
-            | Block (blockSpan, blockCaretLocation) -> 
+            | Block(blockSpan, blockCaretLocation) ->
                 // The width of a block span decreases by 1 in exclusive.  The minimum though
                 // is still 1
                 let width = max (blockSpan.SpacesLength - 1) 1
-                let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, blockSpan.EndOfLine)
-                VisualSelection.Block (blockSpan, blockCaretLocation)
+                let blockSpan =
+                    BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, blockSpan.EndOfLine)
+                VisualSelection.Block(blockSpan, blockCaretLocation)
 
     /// Adjust the visual selection for a new 'end-of-line' setting
     member x.AdjustWithEndOfLine endOfLine =
         match x with
-        | Block (blockSpan, blockCaretLocation) ->
+        | Block(blockSpan, blockCaretLocation) ->
             let blockSpan = blockSpan.AdjustWithEndOfLine endOfLine
-            VisualSelection.Block (blockSpan, blockCaretLocation)
-        | _ ->
-            x
+            VisualSelection.Block(blockSpan, blockCaretLocation)
+        | _ -> x
 
-    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the 
-    /// specified SelectionKind.  
+    /// Gets the SnapshotPoint for the caret as it should appear in the given VisualSelection with the
+    /// specified SelectionKind.
     member x.GetCaretVirtualPoint selectionKind =
 
-        let getAdjustedEnd (span: SnapshotSpan) = 
+        let getAdjustedEnd (span: SnapshotSpan) =
             if span.Length = 0 then
                 span.Start
             else
                 match selectionKind with
                 | SelectionKind.Exclusive -> span.End
-                | SelectionKind.Inclusive -> 
-                    if span.Length > 0 then
-                        SnapshotPointUtil.SubtractOne span.End
-                    else
-                        span.End
+                | SelectionKind.Inclusive ->
+                    if span.Length > 0 then SnapshotPointUtil.SubtractOne span.End else span.End
 
         let getAdjustedVirtualEnd (span: VirtualSnapshotSpan) =
             if span.Length = 0 then
@@ -2338,13 +2323,12 @@ type VisualSelection =
                 match selectionKind with
                 | SelectionKind.Exclusive -> span.End
                 | SelectionKind.Inclusive ->
-                    if span.Length > 0 then
-                        VirtualSnapshotPointUtil.SubtractOneOrCurrent span.End
-                    else
-                        span.End
+                    if span.Length > 0
+                    then VirtualSnapshotPointUtil.SubtractOneOrCurrent span.End
+                    else span.End
 
         match x with
-        | Character (characterSpan, path) ->
+        | Character(characterSpan, path) ->
             // The caret is either positioned at the start or the end of the selected
             // SnapshotSpan
             match path with
@@ -2358,23 +2342,19 @@ type VisualSelection =
             | SearchPath.Backward -> characterSpan.Start
             |> VirtualSnapshotPointUtil.OfPoint
 
-        | Line (snapshotLineRange, path, column) ->
+        | Line(snapshotLineRange, path, column) ->
 
             // The caret is either positioned at the start or the end of the selected range
             // and can be on any column in either
-            let line = 
-                if path.IsSearchPathForward then
-                    snapshotLineRange.LastLine
-                else
-                    snapshotLineRange.StartLine
+            let line =
+                if path.IsSearchPathForward then snapshotLineRange.LastLine else snapshotLineRange.StartLine
 
-            if column <= line.LengthIncludingLineBreak then
-                SnapshotPointUtil.Add column line.Start
-            else
-                line.End
+            if column <= line.LengthIncludingLineBreak
+            then SnapshotPointUtil.Add column line.Start
+            else line.End
             |> VirtualSnapshotPointUtil.OfPoint
 
-        | Block (blockSpan, blockCaretLocation) ->
+        | Block(blockSpan, blockCaretLocation) ->
 
             match blockCaretLocation with
             | BlockCaretLocation.TopLeft ->
@@ -2402,51 +2382,47 @@ type VisualSelection =
 
     /// Get the primary selected span for the visual selection
     member x.GetPrimarySelectedSpan selectionKind =
-        let caretPoint =
-            x.GetCaretVirtualPoint selectionKind
+        let caretPoint = x.GetCaretVirtualPoint selectionKind
+
         let span =
             x.VisualSpan.Spans
             |> Seq.head
             |> VirtualSnapshotSpanUtil.OfSpan
-        if x.IsForward then
-            SelectionSpan(caretPoint, span.Start, span.End)
-        else
-            SelectionSpan(caretPoint, span.End, span.Start)
+        if x.IsForward
+        then SelectionSpan(caretPoint, span.Start, span.End)
+        else SelectionSpan(caretPoint, span.End, span.Start)
 
     /// Select the given VisualSpan in the ITextView
-    member x.Select (textView: ITextView) =
+    member x.Select(textView: ITextView) =
         let path =
             match x with
-            | Character (_, path) -> path
-            | Line (_, path, _) -> path
+            | Character(_, path) -> path
+            | Line(_, path, _) -> path
             | Block _ -> SearchPath.Forward
         x.VisualSpan.Select textView path
 
     /// Create for the given VisualSpan.  Assumes this was a forward created VisualSpan
-    static member CreateForward visualSpan = 
+    static member CreateForward visualSpan =
         match visualSpan with
-        | VisualSpan.Character span -> 
-            VisualSelection.Character (span, SearchPath.Forward)
+        | VisualSpan.Character span -> VisualSelection.Character(span, SearchPath.Forward)
         | VisualSpan.Line lineRange ->
             let offset = SnapshotPointUtil.GetLineOffset lineRange.LastLine.End
-            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
-        | VisualSpan.Block blockSpan ->
-            VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
+            VisualSelection.Line(lineRange, SearchPath.Forward, offset)
+        | VisualSpan.Block blockSpan -> VisualSelection.Block(blockSpan, BlockCaretLocation.BottomRight)
 
     /// Create the VisualSelection over the VisualSpan with the specified caret location
     static member Create (visualSpan: VisualSpan) path (caretPoint: VirtualSnapshotPoint) =
         match visualSpan with
-        | VisualSpan.Character characterSpan ->
-            Character (characterSpan, path)
+        | VisualSpan.Character characterSpan -> Character(characterSpan, path)
         | VisualSpan.Line lineRange ->
             let offset = VirtualSnapshotPointUtil.GetLineOffset caretPoint
-            Line (lineRange, path, offset)
+            Line(lineRange, path, offset)
 
         | VisualSpan.Block blockSpan ->
 
             // Need to calculate the caret location.  Do this based on the initial anchor and
             // caret locations
-            let blockCaretLocation = 
+            let blockCaretLocation =
                 let startLineNumber, startOffset = SnapshotPointUtil.GetLineNumberAndOffset blockSpan.Start.StartPoint
                 let caretLineNumber, caretOffset = VirtualSnapshotPointUtil.GetLineNumberAndOffset caretPoint
                 match caretLineNumber > startLineNumber, caretOffset > startOffset with
@@ -2455,49 +2431,49 @@ type VisualSelection =
                 | false, true -> BlockCaretLocation.TopRight
                 | false, false -> BlockCaretLocation.TopLeft
 
-            Block (blockSpan, blockCaretLocation)
+            Block(blockSpan, blockCaretLocation)
 
-    /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or 
+    /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or
     /// caretPoint, which is greater position wise is the last point included in the selection.  It
     /// is inclusive
-    static member CreateForVirtualPoints visualKind (anchorPoint: VirtualSnapshotPoint) (caretPoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
+    static member CreateForVirtualPoints visualKind (anchorPoint: VirtualSnapshotPoint)
+                  (caretPoint: VirtualSnapshotPoint) tabStop useVirtualSpace =
 
         let addOne point =
             if visualKind <> VisualKind.Line && useVirtualSpace then
-                point
-                |> VirtualSnapshotPointUtil.AddOneOnSameLine
+                point |> VirtualSnapshotPointUtil.AddOneOnSameLine
             else
                 point.Position
                 |> SnapshotPointUtil.AddOneOrCurrent
                 |> VirtualSnapshotPointUtil.OfPoint
 
-        let createBlock () =
+        let createBlock() =
             let anchorSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint anchorPoint tabStop
             let caretSpaces = VirtualSnapshotPointUtil.GetSpacesToPoint caretPoint tabStop
             let spaces = (abs (caretSpaces - anchorSpaces)) + 1
             let column = min anchorSpaces caretSpaces
-            
-            let startColumn = 
+
+            let startColumn =
                 let first, _ = VirtualSnapshotPointUtil.OrderAscending anchorPoint caretPoint
                 let line = VirtualSnapshotPointUtil.GetContainingLine first
                 VirtualSnapshotColumn.GetColumnForSpaces(line, column, tabStop)
 
-            let height = 
+            let height =
                 let anchorLine = anchorPoint.Position.GetContainingLine()
                 let caretLine = caretPoint.Position.GetContainingLine()
                 (abs (anchorLine.LineNumber - caretLine.LineNumber)) + 1
 
-            let path = 
-                if anchorSpaces <= caretSpaces then SearchPath.Forward
-                else SearchPath.Backward
+            let path =
+                if anchorSpaces <= caretSpaces then SearchPath.Forward else SearchPath.Backward
 
             let blockSpan = BlockSpan(startColumn, tabStop, spaces, height, endOfLine = false)
             VisualSpan.Block blockSpan, path
 
-        let createNormal () = 
+        let createNormal() =
 
             let isForward = anchorPoint.Position.Position <= caretPoint.Position.Position
-            let anchorPoint, activePoint = 
+
+            let anchorPoint, activePoint =
                 if isForward then
                     let activePoint = addOne caretPoint
                     anchorPoint, activePoint
@@ -2508,25 +2484,26 @@ type VisualSelection =
             let path = SearchPath.Create isForward
             VisualSpan.CreateForVirtualSelectionPoints visualKind anchorPoint activePoint tabStop useVirtualSpace, path
 
-        let visualSpan, path = 
+        let visualSpan, path =
             match visualKind with
-            | VisualKind.Block -> createBlock ()
-            | VisualKind.Line -> createNormal ()
-            | VisualKind.Character -> createNormal ()
+            | VisualKind.Block -> createBlock()
+            | VisualKind.Line -> createNormal()
+            | VisualKind.Character -> createNormal()
 
         VisualSelection.Create visualSpan path caretPoint
 
-    /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or 
+    /// Create a VisualSelection for the given anchor point and caret.  The position, anchorPoint or
     /// caretPoint, which is greater position wise is the last point included in the selection.  It
     /// is inclusive
-    static member CreateForPoints (visualKind : VisualKind) (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint) (tabStop: int) =
+    static member CreateForPoints (visualKind: VisualKind) (anchorPoint: SnapshotPoint) (caretPoint: SnapshotPoint)
+                  (tabStop: int) =
         let virtualAnchorPoint = VirtualSnapshotPointUtil.OfPoint anchorPoint
         let virtualCaretPoint = VirtualSnapshotPointUtil.OfPoint caretPoint
         let useVirtualSpace = false
         VisualSelection.CreateForVirtualPoints visualKind virtualAnchorPoint virtualCaretPoint tabStop useVirtualSpace
 
     /// Create a VisualSelection based off of the current selection and position of the caret.  The
-    /// SelectionKind should specify what the current mode is (or the mode which produced the 
+    /// SelectionKind should specify what the current mode is (or the mode which produced the
     /// active ITextSelection)
     static member CreateForVirtualSelection (textView: ITextView) visualKind selectionKind tabStop useVirtualSpace =
         let caretPoint = TextViewUtil.GetCaretVirtualPoint textView
@@ -2534,7 +2511,7 @@ type VisualSelection =
 
         // Get the proper VisualSpan based off of the way in which it was created.  VisualSelection
         // represents all values internally as inclusive
-        let visualSpan = 
+        let visualSpan =
             match selectionKind with
             | SelectionKind.Inclusive -> visualSpan
             | SelectionKind.Exclusive ->
@@ -2545,47 +2522,45 @@ type VisualSelection =
                 | VisualSpan.Line _ -> visualSpan
                 | VisualSpan.Block blockSpan ->
                     let width = blockSpan.SpacesLength + 1
-                    let blockSpan = BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, endOfLine = false)
+                    let blockSpan =
+                        BlockSpan(blockSpan.VirtualStart, blockSpan.TabStop, width, blockSpan.Height, endOfLine = false)
                     VisualSpan.Block blockSpan
 
-        let path = 
-            if textView.Selection.IsReversed then
-                SearchPath.Backward
-            else
-                SearchPath.Forward
+        let path =
+            if textView.Selection.IsReversed then SearchPath.Backward else SearchPath.Forward
 
-        VisualSelection.Create visualSpan path caretPoint 
+        VisualSelection.Create visualSpan path caretPoint
 
     static member CreateForSelection (textView: ITextView) visualKind selectionKind tabStop =
         VisualSelection.CreateForVirtualSelection textView visualKind selectionKind tabStop false
 
-    /// Create the initial Visual Selection information for the specified Kind started at 
+    /// Create the initial Visual Selection information for the specified Kind started at
     /// the specified point
-    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind useVirtualSpace =
+    static member CreateInitial visualKind (caretVirtualPoint: VirtualSnapshotPoint) tabStop selectionKind
+                  useVirtualSpace =
         let caretPoint = caretVirtualPoint.Position
         match visualKind with
         | VisualKind.Character ->
-            let characterSpan = 
-                let endPoint = 
+            let characterSpan =
+                let endPoint =
                     match selectionKind with
                     | SelectionKind.Inclusive ->
-                        if useVirtualSpace then
-                            VirtualSnapshotPointUtil.AddOneOnSameLine caretVirtualPoint
-                        else
-                            SnapshotPointUtil.AddOneOrCurrent caretPoint
-                            |> VirtualSnapshotPointUtil.OfPoint
+                        if useVirtualSpace
+                        then VirtualSnapshotPointUtil.AddOneOnSameLine caretVirtualPoint
+                        else SnapshotPointUtil.AddOneOrCurrent caretPoint |> VirtualSnapshotPointUtil.OfPoint
                     | SelectionKind.Exclusive -> caretVirtualPoint
                 CharacterSpan(caretVirtualPoint, endPoint, useVirtualSpace)
-            VisualSelection.Character (characterSpan, SearchPath.Forward)
+            VisualSelection.Character(characterSpan, SearchPath.Forward)
         | VisualKind.Line ->
-            let lineRange = 
+            let lineRange =
                 let line = SnapshotPointUtil.GetContainingLine caretPoint
                 SnapshotLineRangeUtil.CreateForLine line
+
             let offset = SnapshotPointUtil.GetLineOffset caretPoint
-            VisualSelection.Line (lineRange, SearchPath.Forward, offset)
+            VisualSelection.Line(lineRange, SearchPath.Forward, offset)
         | VisualKind.Block ->
             let blockSpan = BlockSpan(caretVirtualPoint, tabStop, 1, 1, endOfLine = false)
-            VisualSelection.Block (blockSpan, BlockCaretLocation.BottomRight)
+            VisualSelection.Block(blockSpan, BlockCaretLocation.BottomRight)
 
 /// This is used for commands like [count]v and [count]V to hold a visual selection
 /// without any specific buffer information.
@@ -2593,21 +2568,19 @@ type VisualSelection =
 [<NoComparison>]
 type StoredVisualSelection =
     | Character of Width: int
-    | CharacterLine of LineCount: int * LastLineMaxOffset : int 
+    | CharacterLine of LineCount: int * LastLineMaxOffset: int
     | Line of LineCount: int
-
-    with 
 
     member x.GetVisualSelection (point: SnapshotPoint) count =
 
         // Get the point which is 'count' columns forward from the passed in point (exclusive). If the point
         // extends past the line break the point past the line break will be returned if possible.
-        let addOrEntireLine (point: SnapshotPoint) count = 
+        let addOrEntireLine (point: SnapshotPoint) count =
             let column = SnapshotColumn(point)
             match column.TryAddInLine(count, includeLineBreak = true) with
             | Some column -> column.StartPoint
-            | None -> 
-                match SnapshotPointUtil.TryAddOne column.Line.EndIncludingLineBreak with 
+            | None ->
+                match SnapshotPointUtil.TryAddOne column.Line.EndIncludingLineBreak with
                 | Some p -> p
                 | None -> column.Line.EndIncludingLineBreak
 
@@ -2616,48 +2589,49 @@ type StoredVisualSelection =
             // For a single line count only moves the caret on the current line
             let endPoint = addOrEntireLine point (width * count)
             let characterSpan = CharacterSpan(point, endPoint)
-            VisualSelection.Character (characterSpan, SearchPath.Forward)
-        | StoredVisualSelection.CharacterLine (lineCount, offset)  ->
+            VisualSelection.Character(characterSpan, SearchPath.Forward)
+        | StoredVisualSelection.CharacterLine(lineCount, offset) ->
             let startColumn = SnapshotColumn(point)
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount startColumn.Line (count * lineCount)
             let lastLine = range.LastLine
+
             let endPoint =
-                let column = 
-                    if offset >= 0 then startColumn.ColumnNumber + offset + 1
-                    else startColumn.ColumnNumber + offset
+                let column =
+                    if offset >= 0 then startColumn.ColumnNumber + offset + 1 else startColumn.ColumnNumber + offset
                 addOrEntireLine lastLine.Start column
-                        
-            let characterSpan, searchPath = 
-                if point.Position < endPoint.Position then 
+
+            let characterSpan, searchPath =
+                if point.Position < endPoint.Position then
                     CharacterSpan(point, endPoint), SearchPath.Forward
-                else 
+                else
                     let point = SnapshotPointUtil.AddOneOrCurrent point
                     CharacterSpan(endPoint, point), SearchPath.Backward
 
-            VisualSelection.Character (characterSpan, searchPath)
+            VisualSelection.Character(characterSpan, searchPath)
         | StoredVisualSelection.Line c ->
             let line = SnapshotPointUtil.GetContainingLine point
             let count = c * count
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
-            VisualSelection.Line (range, SearchPath.Forward, 0)
+            VisualSelection.Line(range, SearchPath.Forward, 0)
 
     static member CreateFromVisualSpan visualSpan =
         match visualSpan with
         | VisualSpan.Character span ->
-            if span.LineCount = 1 then StoredVisualSelection.Character span.Length |> Some
+            if span.LineCount = 1 then
+                StoredVisualSelection.Character span.Length |> Some
             else
                 let startOffset = SnapshotPointUtil.GetLineOffset span.Start
                 let endOffset = max 0 (span.LastLineMaxPositionCount - 1)
                 let offset = endOffset - startOffset
-                StoredVisualSelection.CharacterLine (LineCount = span.LineCount, LastLineMaxOffset = offset) |> Some
+                StoredVisualSelection.CharacterLine(LineCount = span.LineCount, LastLineMaxOffset = offset) |> Some
         | VisualSpan.Line range -> StoredVisualSelection.Line range.Count |> Some
         | VisualSpan.Block _ -> None
 
-/// Most text object entries have specific effects on Visual Mode.  They are 
+/// Most text object entries have specific effects on Visual Mode.  They are
 /// described below
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-type TextObjectKind = 
+type TextObjectKind =
     | None
     | LineToCharacter
     | AlwaysCharacter
@@ -2683,7 +2657,7 @@ type ModeArgument =
     | None
 
     /// Passed to visual mode to indicate what the initial selection should be.  The SnapshotPoint
-    /// option provided is meant to be the initial caret point.  If not provided the actual 
+    /// option provided is meant to be the initial caret point.  If not provided the actual
     /// caret point is used
     | InitialVisualSelection of Selection: VisualSelection * CaretPoint: SnapshotPoint option
 
@@ -2700,7 +2674,7 @@ type ModeArgument =
     /// should be on a new line
     | InsertWithCountAndNewLine of Count: int * LinkedUndoTransaction: ILinkedUndoTransaction
 
-    /// Begins insert mode with an existing UndoTransaction.  This is used to link 
+    /// Begins insert mode with an existing UndoTransaction.  This is used to link
     /// change commands with text changes.  For example C, c, etc ...
     | InsertWithTransaction of LinkedUndoTransaction: ILinkedUndoTransaction
 
@@ -2714,16 +2688,14 @@ type ModeArgument =
     /// Cancel any operation that is in-progress, such as refactoring
     | CancelOperation
 
-with
-
     /// Extract any linked undo transaction from the mode argument
     member x.LinkedUndoTransaction =
         match x with
         | ModeArgument.None -> Option.None
         | ModeArgument.InitialVisualSelection _ -> Option.None
-        | ModeArgument.InsertBlock (_, _, transaction) -> Some transaction
+        | ModeArgument.InsertBlock(_, _, transaction) -> Some transaction
         | ModeArgument.InsertWithCount _ -> Option.None
-        | ModeArgument.InsertWithCountAndNewLine (_, transaction) -> Some transaction
+        | ModeArgument.InsertWithCountAndNewLine(_, transaction) -> Some transaction
         | ModeArgument.InsertWithTransaction transaction -> Some transaction
         | ModeArgument.Substitute _ -> Option.None
         | ModeArgument.PartialCommand _ -> Option.None
@@ -2731,7 +2703,7 @@ with
 
 
     /// Complete any embedded linked undo transaction
-    member x.CompleteAnyTransaction () =
+    member x.CompleteAnyTransaction() =
         match x.LinkedUndoTransaction with
         | Some transaction -> transaction.Complete()
         | Option.None -> ()
@@ -2743,7 +2715,7 @@ type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind: ModeKind
     | SwitchModeWithArgument of ModeKind: ModeKind * ModeArgument: ModeArgument
-    | SwitchPreviousMode 
+    | SwitchPreviousMode
 
     /// Switch to the given mode for a single command.  After the command is processed switch
     /// back to the original mode
@@ -2751,9 +2723,9 @@ type ModeSwitch =
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-type CommandResult =   
+type CommandResult =
 
-    /// The command completed and requested a switch to the provided Mode which 
+    /// The command completed and requested a switch to the provided Mode which
     /// may just be a no-op
     | Completed of ModeSwitch: ModeSwitch
 
@@ -2771,101 +2743,102 @@ type VimResult<'T> =
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
-    | None = 0x0000
+    | None = 0
 
-    /// Relates to the movement of the cursor.  A movement command does not alter the 
+    /// Relates to the movement of the cursor.  A movement command does not alter the
     /// last command
-    | Movement = 0x0001
+    | Movement = 1
 
     /// A Command which can be repeated
-    | Repeatable = 0x0002
+    | Repeatable = 2
 
     /// A Command which should not be considered when looking at last changes
-    | Special = 0x0004
+    | Special = 4
 
     /// Can handle the escape key if provided as part of a Motion or Long command extra
     /// input
-    | HandlesEscape = 0x0008
+    | HandlesEscape = 8
 
     /// For the purposes of change repeating the command is linked with the following
     /// text change
-    | LinkedWithNextCommand = 0x0010
+    | LinkedWithNextCommand = 16
 
     /// For the purposes of change repeating the command is linked with the previous
     /// text change if it exists
-    | LinkedWithPreviousCommand = 0x0020
+    | LinkedWithPreviousCommand = 32
 
     /// For Visual mode commands which should reset the cursor to the original point
     /// after completing
-    | ResetCaret = 0x0040
+    | ResetCaret = 64
 
     /// For Visual mode commands which should reset the anchor point to the current
     /// anchor point of the selection
-    | ResetAnchorPoint = 0x0080
+    | ResetAnchorPoint = 128
 
     /// Vim allows for special handling of the 'd' command in normal mode such that it can
     /// have the pattern 'd#d'.  This flag is used to tag the 'd' command to allow such
     /// a pattern
-    | Delete = 0x0100
+    | Delete = 256
 
     /// Vim allows for special handling of the 'y' command in normal mode such that it can
     /// have the pattern 'y#y'.  This flag is used to tag the 'y' command to allow such
     /// a pattern
-    | Yank = 0x0200
+    | Yank = 512
 
     /// Vim allows for special handling of the '>' command in normal mode such that it can
     /// have the pattern '>#>'.  This flag is used to tag the '>' command to allow such
     /// a pattern
-    | ShiftRight = 0x0400
+    | ShiftRight = 1024
 
     /// Vim allows for special handling of the '<' command in normal mode such that it can
     /// have the pattern '<#<'.  This flag is used to tag the '<' command to allow such
     /// a pattern
-    | ShiftLeft = 0x0800
+    | ShiftLeft = 2048
 
     /// Vim allows for special handling of the 'c' command in normal mode such that it can
     /// have the pattern 'c#c'.  This flag is used to tag the 'c' command to allow such
     /// a pattern
-    | Change = 0x1000
+    | Change = 4096
 
     /// Represents an insert edit action which can be linked with other insert edit actions and
     /// hence acts with them in a repeat
-    | InsertEdit = 0x2000
+    | InsertEdit = 8192
 
     /// Whether the command depends on the context, e.g. a tab insertion
-    | ContextSensitive = 0x4000
+    | ContextSensitive = 16384
 
 /// Data about the run of a given MotionResult
-type MotionData = {
+type MotionData =
+    {
 
-    /// The associated Motion value
-    Motion: Motion
+      /// The associated Motion value
+      Motion: Motion
 
-    /// The argument which should be supplied to the given Motion
-    MotionArgument: MotionArgument
-}
+      /// The argument which should be supplied to the given Motion
+      MotionArgument: MotionArgument }
 
 /// Data needed to execute a command
-type CommandData = {
+type CommandData =
+    {
 
-    /// The raw count provided to the command
-    Count: int option 
+      /// The raw count provided to the command
+      Count: int option
 
-    /// The register name specified for the command 
-    RegisterName: RegisterName option
-
-} with
+      /// The register name specified for the command
+      RegisterName: RegisterName option }
 
     /// Return the provided count or the default value of 1
     member x.CountOrDefault = Util.CountOrDefault x.Count
 
-    static member Default = { Count = None; RegisterName = None }
+    static member Default =
+        { Count = None
+          RegisterName = None }
 
 /// We want the NormalCommand discriminated union to have structural equality in order
-/// to ease testing requirements.  In order to do this and support Ping we need a 
-/// separate type here to wrap the Func to be comparable.  Does so in a reference 
+/// to ease testing requirements.  In order to do this and support Ping we need a
+/// separate type here to wrap the Func to be comparable.  Does so in a reference
 /// fashion
-type PingData (_func: CommandData -> CommandResult) = 
+type PingData(_func: CommandData -> CommandResult) =
 
     member x.Function = _func
 
@@ -2880,7 +2853,7 @@ type PingData (_func: CommandData -> CommandResult) =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<StructuralEquality>]
-type NormalCommand = 
+type NormalCommand =
 
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
@@ -2894,14 +2867,14 @@ type NormalCommand =
     /// Cancel any in-progress operation such as external edit
     | CancelOperation
 
-    /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
+    /// Deletes the text specified by the motion and begins insert mode. Implements the "c"
     /// command
     | ChangeMotion of MotionData: MotionData
 
-    /// Change the characters on the caret line 
+    /// Change the characters on the caret line
     | ChangeCaseCaretLine of ChangeCharacterKind: ChangeCharacterKind
 
-    /// Change the characters on the caret line 
+    /// Change the characters on the caret line
     | ChangeCaseCaretPoint of ChangeCharacterKind: ChangeCharacterKind
 
     /// Change case of the specified motion
@@ -2968,7 +2941,7 @@ type NormalCommand =
     /// Filter the specified motion
     | FilterMotion of MotionData: MotionData
 
-    /// Create a fold over the specified motion 
+    /// Create a fold over the specified motion
     | FoldMotion of MotionData: MotionData
 
     /// Format the code in the specified lines
@@ -3032,7 +3005,7 @@ type NormalCommand =
     /// Join the specified lines
     | JoinLines of JoinKind: JoinKind
 
-    /// Jump to the specified mark 
+    /// Jump to the specified mark
     | JumpToMark of Mark: Mark
 
     /// Jump to the start of the line for the specified mark
@@ -3077,27 +3050,27 @@ type NormalCommand =
     /// Toggle all folds under the caret
     | ToggleAllFolds
 
-    /// Not actually a Vim Command.  This is a simple ping command which makes 
+    /// Not actually a Vim Command.  This is a simple ping command which makes
     /// testing items like complex repeats significantly easier
     | Ping of PingData: PingData
 
-    /// Put the contents of the register into the buffer after the cursor.  The bool is 
+    /// Put the contents of the register into the buffer after the cursor.  The bool is
     /// whether or not the caret should be placed after the inserted text
     | PutAfterCaret of PlaceCaretAfterInsertedText: bool
 
-    /// Put the contents of the register into the buffer after the cursor and respecting 
+    /// Put the contents of the register into the buffer after the cursor and respecting
     /// the indent of the current line
     | PutAfterCaretWithIndent
 
     /// Put the contents of the register after the current mouse position.  This will move
-    /// the mouse to that position before inserting 
+    /// the mouse to that position before inserting
     | PutAfterCaretMouse
 
-    /// Put the contents of the register into the buffer before the cursor.  The bool is 
+    /// Put the contents of the register into the buffer before the cursor.  The bool is
     /// whether or not the caret should be placed after the inserted text
     | PutBeforeCaret of PlaceCaretAfterInsertedText: bool
 
-    /// Put the contents of the register into the buffer before the cursor and respecting 
+    /// Put the contents of the register into the buffer before the cursor and respecting
     /// the indent of the current line
     | PutBeforeCaretWithIndent
 
@@ -3242,25 +3215,25 @@ type NormalCommand =
     /// Yank the specified number of lines
     | YankLines
 
-    with 
-
-    member x.MotionData = 
+    member x.MotionData =
         match x.GetMotionDataCore() with
-        | Some (_, motionData) -> Some motionData
+        | Some(_, motionData) -> Some motionData
         | None -> None
 
-    member private x.GetMotionDataCore() = 
+    member private x.GetMotionDataCore() =
         match x with
-        | NormalCommand.ChangeCaseMotion (changeCharacterKind, motion) -> Some ((fun motion -> NormalCommand.ChangeCaseMotion (changeCharacterKind, motion)), motion)
-        | NormalCommand.ChangeMotion motion -> Some (NormalCommand.ChangeMotion, motion)
-        | NormalCommand.DeleteMotion motion -> Some (NormalCommand.DeleteMotion, motion)
-        | NormalCommand.FilterMotion motion -> Some (NormalCommand.FilterMotion, motion)
-        | NormalCommand.FoldMotion motion -> Some (NormalCommand.FoldMotion, motion)
-        | NormalCommand.FormatCodeMotion motion -> Some (NormalCommand.FormatCodeMotion, motion)
-        | NormalCommand.FormatTextMotion (preserveCaretPosition, motion) -> Some ((fun motion -> NormalCommand.FormatTextMotion (preserveCaretPosition, motion)), motion)
-        | NormalCommand.ShiftMotionLinesLeft motion -> Some (NormalCommand.ShiftMotionLinesLeft, motion)
-        | NormalCommand.ShiftMotionLinesRight motion -> Some (NormalCommand.ShiftMotionLinesRight, motion)
-        | NormalCommand.Yank motion -> Some (NormalCommand.Yank, motion)
+        | NormalCommand.ChangeCaseMotion(changeCharacterKind, motion) ->
+            Some((fun motion -> NormalCommand.ChangeCaseMotion(changeCharacterKind, motion)), motion)
+        | NormalCommand.ChangeMotion motion -> Some(NormalCommand.ChangeMotion, motion)
+        | NormalCommand.DeleteMotion motion -> Some(NormalCommand.DeleteMotion, motion)
+        | NormalCommand.FilterMotion motion -> Some(NormalCommand.FilterMotion, motion)
+        | NormalCommand.FoldMotion motion -> Some(NormalCommand.FoldMotion, motion)
+        | NormalCommand.FormatCodeMotion motion -> Some(NormalCommand.FormatCodeMotion, motion)
+        | NormalCommand.FormatTextMotion(preserveCaretPosition, motion) ->
+            Some((fun motion -> NormalCommand.FormatTextMotion(preserveCaretPosition, motion)), motion)
+        | NormalCommand.ShiftMotionLinesLeft motion -> Some(NormalCommand.ShiftMotionLinesLeft, motion)
+        | NormalCommand.ShiftMotionLinesRight motion -> Some(NormalCommand.ShiftMotionLinesRight, motion)
+        | NormalCommand.Yank motion -> Some(NormalCommand.Yank, motion)
 
         // Non-motion commands
         | NormalCommand.AddCaretAtMousePoint -> None
@@ -3284,7 +3257,7 @@ type NormalCommand =
         | NormalCommand.DeleteLines -> None
         | NormalCommand.DeleteTillEndOfLine -> None
         | NormalCommand.DisplayCharacterBytes -> None
-        | NormalCommand.DisplayCharacterCodePoint ->None
+        | NormalCommand.DisplayCharacterCodePoint -> None
         | NormalCommand.FilterLines -> None
         | NormalCommand.FoldLines -> None
         | NormalCommand.FormatCodeLines -> None
@@ -3331,7 +3304,7 @@ type NormalCommand =
         | NormalCommand.RecordMacroStop -> None
         | NormalCommand.Redo -> None
         | NormalCommand.RepeatLastCommand -> None
-        | NormalCommand.RepeatLastSubstitute _ -> None 
+        | NormalCommand.RepeatLastSubstitute _ -> None
         | NormalCommand.ReplaceAtCaret -> None
         | NormalCommand.ReplaceChar _ -> None
         | NormalCommand.RestoreMultiSelection -> None
@@ -3368,20 +3341,20 @@ type NormalCommand =
         | NormalCommand.WriteBufferAndQuit -> None
         | NormalCommand.YankLines -> None
 
-    /// Change the MotionData associated with this command if it's a part of the command. Otherwise it 
+    /// Change the MotionData associated with this command if it's a part of the command. Otherwise it
     /// returns the original command unchanged
-    member x.ChangeMotionData changeMotionFunc = 
+    member x.ChangeMotionData changeMotionFunc =
         match x.GetMotionDataCore() with
-        | Some (createCommandFunc, motionData) ->
+        | Some(createCommandFunc, motionData) ->
             let motionData = changeMotionFunc motionData
             createCommandFunc motionData
         | None -> x
 
-/// Visual mode commands which can be executed by the user 
+/// Visual mode commands which can be executed by the user
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<StructuralEquality>]
-type VisualCommand = 
+type VisualCommand =
 
     /// Add a new caret at the mouse point
     | AddCaretAtMousePoint
@@ -3457,14 +3430,14 @@ type VisualCommand =
     | JoinSelection of JoinKind: JoinKind
 
     /// Invert the selection by swapping the caret and anchor points.  When true it means that block mode should
-    /// be special cased to invert the column only 
+    /// be special cased to invert the column only
     | InvertSelection of ColumnOnlyInBlock: bool
 
     /// Move the caret to the mouse position
     | MoveCaretToMouse
 
-    /// Move the caret to the result of the given Motion.  This movement is from a 
-    /// text-object selection.  Certain motions 
+    /// Move the caret to the result of the given Motion.  This movement is from a
+    /// text-object selection.  Certain motions
     | MoveCaretToTextObject of Motion: Motion * TextObjectKind: TextObjectKind
 
     /// Open all folds in the selection
@@ -3546,7 +3519,7 @@ type VisualCommand =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<StructuralEquality>]
-type InsertCommand  =
+type InsertCommand =
 
     /// Backspace at the current caret position
     | Back
@@ -3561,7 +3534,7 @@ type InsertCommand  =
     /// This is an insert command which is a combination of other insert commands
     | Combined of Left: InsertCommand * Right: InsertCommand
 
-    /// Complete the Insert Mode session.  This is done as a command so that it will 
+    /// Complete the Insert Mode session.  This is done as a command so that it will
     /// be a bookend of insert mode for the repeat infrastructure
     ///
     /// The bool value represents whether or not the caret needs to be moved to the
@@ -3572,7 +3545,7 @@ type InsertCommand  =
     | Delete
 
     /// Delete count characters to the left of the caret
-    | DeleteLeft of ColumnCount: int 
+    | DeleteLeft of ColumnCount: int
 
     /// Delete count characters to the right of the caret
     | DeleteRight of ColumnCount: int
@@ -3598,10 +3571,10 @@ type InsertCommand  =
     /// Insert a tab into the ITextBuffer
     | InsertTab
 
-    /// Insert of text into the ITextBuffer at the caret position 
+    /// Insert of text into the ITextBuffer at the caret position
     | Insert of Text: string
 
-    /// Insert of literal text into the ITextBuffer at the caret position 
+    /// Insert of literal text into the ITextBuffer at the caret position
     | InsertLiteral of Text: string
 
     /// Move the caret in the given direction
@@ -3629,7 +3602,7 @@ type InsertCommand  =
     | Overwrite of Text: string
 
     /// Shift the current line one indent width to the left
-    | ShiftLineLeft 
+    | ShiftLineLeft
 
     /// Shift the current line one indent width to the right
     | ShiftLineRight
@@ -3643,62 +3616,61 @@ type InsertCommand  =
     /// Paste clipboard
     | Paste
 
-    with
-
     member x.RightMostCommand =
         match x with
-        | InsertCommand.Combined (_, right) -> right.RightMostCommand
+        | InsertCommand.Combined(_, right) -> right.RightMostCommand
         | _ -> x
 
     member x.SecondRightMostCommand =
         match x with
-        | InsertCommand.Combined (left, right) ->
+        | InsertCommand.Combined(left, right) ->
             match right with
-            | InsertCommand.Combined (_, right) -> right.SecondRightMostCommand
+            | InsertCommand.Combined(_, right) -> right.SecondRightMostCommand
             | _ -> Some left
         | _ -> None
 
     /// Convert a TextChange value into the appropriate InsertCommand structure
-    static member OfTextChange textChange = 
+    static member OfTextChange textChange =
         match textChange with
         | TextChange.Insert text -> InsertCommand.Insert text
         | TextChange.DeleteLeft count -> InsertCommand.DeleteLeft count
         | TextChange.DeleteRight count -> InsertCommand.DeleteRight count
-        | TextChange.Combination (left, right) ->
+        | TextChange.Combination(left, right) ->
             let leftCommand = InsertCommand.OfTextChange left
             let rightCommand = InsertCommand.OfTextChange right
-            InsertCommand.Combined (leftCommand, rightCommand)
+            InsertCommand.Combined(leftCommand, rightCommand)
 
     /// Convert this InsertCommand to a TextChange object
-    member x.TextChange editorOptions textBuffer = 
-        match x with 
-        | InsertCommand.Back ->  Some (TextChange.DeleteLeft 1)
+    member x.TextChange editorOptions textBuffer =
+        match x with
+        | InsertCommand.Back -> Some(TextChange.DeleteLeft 1)
         | InsertCommand.BlockInsert _ -> None
-        | InsertCommand.Combined (left, right) -> 
+        | InsertCommand.Combined(left, right) ->
             match left.TextChange editorOptions textBuffer, right.TextChange editorOptions textBuffer with
-            | Some l, Some r -> TextChange.Combination (l, r) |> Some
+            | Some l, Some r -> TextChange.Combination(l, r) |> Some
             | _ -> None
         | InsertCommand.CompleteMode _ -> None
-        | InsertCommand.Delete -> Some (TextChange.DeleteRight 1)
-        | InsertCommand.DeleteLeft count -> Some (TextChange.DeleteLeft count)
-        | InsertCommand.DeleteRight count -> Some (TextChange.DeleteRight count)
+        | InsertCommand.Delete -> Some(TextChange.DeleteRight 1)
+        | InsertCommand.DeleteLeft count -> Some(TextChange.DeleteLeft count)
+        | InsertCommand.DeleteRight count -> Some(TextChange.DeleteRight count)
         | InsertCommand.DeleteAllIndent -> None
         | InsertCommand.DeleteWordBeforeCursor -> None
-        | InsertCommand.Insert text -> Some (TextChange.Insert text)
-        | InsertCommand.InsertLiteral text -> Some (TextChange.Insert text)
+        | InsertCommand.Insert text -> Some(TextChange.Insert text)
+        | InsertCommand.InsertLiteral text -> Some(TextChange.Insert text)
         | InsertCommand.InsertCharacterAboveCaret -> None
         | InsertCommand.InsertCharacterBelowCaret -> None
-        | InsertCommand.InsertNewLine -> Some (TextChange.Insert (EditUtil.NewLine editorOptions textBuffer))
+        | InsertCommand.InsertNewLine -> Some(TextChange.Insert(EditUtil.NewLine editorOptions textBuffer))
         | InsertCommand.InsertPreviouslyInsertedText _ -> None
-        | InsertCommand.InsertTab -> Some (TextChange.Insert "\t")
+        | InsertCommand.InsertTab -> Some(TextChange.Insert "\t")
         | InsertCommand.MoveCaret _ -> None
         | InsertCommand.MoveCaretWithArrow _ -> None
         | InsertCommand.MoveCaretByWord _ -> None
         | InsertCommand.MoveCaretToEndOfLine -> None
-        | InsertCommand.Replace c -> Some (TextChange.Combination ((TextChange.DeleteRight 1), (TextChange.Insert (c.ToString()))))
+        | InsertCommand.Replace c ->
+            Some(TextChange.Combination((TextChange.DeleteRight 1), (TextChange.Insert(c.ToString()))))
         | InsertCommand.ReplaceCharacterAboveCaret -> None
         | InsertCommand.ReplaceCharacterBelowCaret -> None
-        | InsertCommand.Overwrite s -> Some (TextChange.Replace s)
+        | InsertCommand.Overwrite s -> Some(TextChange.Replace s)
         | InsertCommand.ShiftLineLeft -> None
         | InsertCommand.ShiftLineRight -> None
         | InsertCommand.UndoReplace -> None
@@ -3721,12 +3693,12 @@ type Command =
     | InsertCommand of InsertCommand: InsertCommand
 
 /// This is the result of attemping to bind a series of KeyInput values into a Motion
-/// Command, etc ... 
+/// Command, etc ...
 [<RequireQualifiedAccess>]
-type BindResult<'T> = 
+type BindResult<'T> =
 
     /// Successfully bound to a value
-    | Complete of Result: 'T 
+    | Complete of Result: 'T
 
     /// More input is needed to complete the binding operation
     | NeedMoreInput of BindData: BindData<'T>
@@ -3737,94 +3709,92 @@ type BindResult<'T> =
     /// Motion was cancelled via user input
     | Cancelled
 
-    with
-
     /// Used to compose to BindResult<'T> functions together by forwarding from
     /// one to the other once the value is completed
-    member x.Map (mapFunc: 'T -> BindResult<'U>): BindResult<'U> =
+    member x.Map(mapFunc: 'T -> BindResult<'U>): BindResult<'U> =
         match x with
-        | Complete value -> mapFunc value 
-        | NeedMoreInput (bindData: BindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
+        | Complete value -> mapFunc value
+        | NeedMoreInput(bindData: BindData<'T>) -> NeedMoreInput(bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
 
     /// Used to convert a BindResult<'T>.Completed to BindResult<'U>.Completed through a conversion
     /// function
-    member x.Convert (convertFunc: 'T -> 'U): BindResult<'U> = 
-        x.Map (fun value -> convertFunc value |> BindResult.Complete)
+    member x.Convert(convertFunc: 'T -> 'U): BindResult<'U> =
+        x.Map(fun value -> convertFunc value |> BindResult.Complete)
 
-and BindData<'T> = {
+and BindData<'T> =
+    {
 
-    /// The optional KeyRemapMode which should be used when binding
-    /// the next KeyInput in the sequence
-    KeyRemapMode: KeyRemapMode 
+      /// The optional KeyRemapMode which should be used when binding
+      /// the next KeyInput in the sequence
+      KeyRemapMode: KeyRemapMode
 
-    /// Function to call to get the BindResult for this data
-    BindFunction: KeyInput -> BindResult<'T>
-
-} with
+      /// Function to call to get the BindResult for this data
+      BindFunction: KeyInput -> BindResult<'T> }
 
     member x.CreateBindResult() = BindResult.NeedMoreInput x
 
-    /// Used for BindData where there can only be a complete result for a given 
+    /// Used for BindData where there can only be a complete result for a given
     /// KeyInput.
     static member CreateForKeyInput keyRemapMode valueFunc =
-        let bindFunc keyInput = 
+        let bindFunc keyInput =
             let value = valueFunc keyInput
             BindResult<_>.Complete value
-        { KeyRemapMode = keyRemapMode; BindFunction = bindFunc } 
+        { KeyRemapMode = keyRemapMode
+          BindFunction = bindFunc }
 
-    /// Used for BindData where there can only be a complete result for a given 
+    /// Used for BindData where there can only be a complete result for a given
     /// char
     static member CreateForChar keyRemapMode valueFunc =
         BindData<_>.CreateForKeyInput keyRemapMode (fun keyInput -> valueFunc keyInput.Char)
 
     /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
-    /// to a BindData<'U> of any form 
-    member x.Map<'U> (mapFunc: 'T -> BindResult<'U>): BindData<'U> = 
+    /// to a BindData<'U> of any form
+    member x.Map<'U>(mapFunc: 'T -> BindResult<'U>): BindData<'U> =
         let originalBindFunc = x.BindFunction
-        let bindFunc keyInput = 
+
+        let bindFunc keyInput =
             match originalBindFunc keyInput with
             | BindResult.Cancelled -> BindResult.Cancelled
             | BindResult.Complete value -> mapFunc value
             | BindResult.Error -> BindResult.Error
-            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Map mapFunc)
-        { KeyRemapMode = x.KeyRemapMode; BindFunction = bindFunc }
+            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput(bindData.Map mapFunc)
+        { KeyRemapMode = x.KeyRemapMode
+          BindFunction = bindFunc }
 
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
     /// to translate a BindResult<'T>.Completed -> BindResult<'U>.Completed
-    member x.Convert (convertFunc: 'T -> 'U): BindData<'U> = 
-        x.Map (fun value -> convertFunc value |> BindResult.Complete)
+    member x.Convert(convertFunc: 'T -> 'U): BindData<'U> =
+        x.Map(fun value -> convertFunc value |> BindResult.Complete)
 
 /// Several types of BindData<'T> need to take an action when a binding begins against
 /// themselves. This action needs to occur before the first KeyInput value is processed
-/// and hence they need a jump start. The most notable is IncrementalSearch which 
+/// and hence they need a jump start. The most notable is IncrementalSearch which
 /// needs to enter 'Search' mode before processing KeyInput values so the cursor can
 /// be updated
 [<RequireQualifiedAccess>]
 type BindDataStorage<'T> =
 
     /// Simple BindData<'T> which doesn't require activation
-    | Simple of BindData: BindData<'T> 
+    | Simple of BindData: BindData<'T>
 
     /// Complex BindData<'T> which does require activation
     | Complex of CreateBindDataFunc: (unit -> BindData<'T>)
 
-    with
-
     /// Creates the BindData
-    member x.CreateBindData () = 
+    member x.CreateBindData() =
         match x with
         | Simple bindData -> bindData
         | Complex func -> func()
 
     /// Convert from a BindDataStorage<'T> -> BindDataStorage<'U>.  The 'mapFunc' value
     /// will run on the final 'T' data if it eventually is completed
-    member x.Convert mapFunc = 
+    member x.Convert mapFunc =
         match x with
-        | Simple bindData -> Simple (bindData.Convert mapFunc)
-        | Complex func -> Complex (fun () -> func().Convert mapFunc)
+        | Simple bindData -> Simple(bindData.Convert mapFunc)
+        | Complex func -> Complex(fun () -> func().Convert mapFunc)
 
 /// This is the result of attemping to bind a series of KeyInputData values
 /// into a Motion Command, etc ...
@@ -3843,72 +3813,71 @@ type MappedBindResult<'T> =
     /// Motion was cancelled via user input
     | Cancelled
 
-    with
-
     /// Used to compose to MappedBindResult<'T> functions together by
     /// forwarding from one to the other once the value is completed
-    member x.Map (mapFunc: 'T -> MappedBindResult<'U>): MappedBindResult<'U> =
+    member x.Map(mapFunc: 'T -> MappedBindResult<'U>): MappedBindResult<'U> =
         match x with
         | Complete value -> mapFunc value
-        | NeedMoreInput (bindData: MappedBindData<'T>) -> NeedMoreInput (bindData.Map mapFunc)
+        | NeedMoreInput(bindData: MappedBindData<'T>) -> NeedMoreInput(bindData.Map mapFunc)
         | Error -> Error
         | Cancelled -> Cancelled
 
     /// Used to convert a MappedBindResult<'T>.Completed to
     /// MappedBindResult<'U>.Completed through a conversion function
-    member x.Convert (convertFunc: 'T -> 'U): MappedBindResult<'U> =
-        x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
+    member x.Convert(convertFunc: 'T -> 'U): MappedBindResult<'U> =
+        x.Map(fun value -> convertFunc value |> MappedBindResult.Complete)
 
     /// Convert this MappedBindResult<'T> to a BindResult<'T>
-    member x.ConvertToBindResult (): BindResult<'T> =
+    member x.ConvertToBindResult(): BindResult<'T> =
         match x with
         | MappedBindResult.Complete result -> BindResult.Complete result
-        | MappedBindResult.NeedMoreInput mappedBindData ->
-            BindResult.NeedMoreInput (mappedBindData.ConvertToBindData())
+        | MappedBindResult.NeedMoreInput mappedBindData -> BindResult.NeedMoreInput(mappedBindData.ConvertToBindData())
         | MappedBindResult.Error -> BindResult.Error
         | MappedBindResult.Cancelled -> BindResult.Cancelled
 
-and MappedBindData<'T> = {
+and MappedBindData<'T> =
+    {
 
-    /// The optional KeyRemapMode which should be used when binding the next
-    /// KeyInput in the sequence
-    KeyRemapMode: KeyRemapMode
+      /// The optional KeyRemapMode which should be used when binding the next
+      /// KeyInput in the sequence
+      KeyRemapMode: KeyRemapMode
 
-    /// Function to call to get the MappedBindResult for this data
-    MappedBindFunction: KeyInputData -> MappedBindResult<'T>
-
-} with
+      /// Function to call to get the MappedBindResult for this data
+      MappedBindFunction: KeyInputData -> MappedBindResult<'T> }
 
     member x.CreateBindResult() = MappedBindResult.NeedMoreInput x
 
     /// Very similar to the Convert function.  This will instead map a
     /// MappedBindData<'T>.Completed to a MappedBindData<'U> of any form
-    member x.Map<'U> (mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> =
+    member x.Map<'U>(mapFunc: 'T -> MappedBindResult<'U>): MappedBindData<'U> =
         let originalBindFunc = x.MappedBindFunction
+
         let bindFunc keyInputData =
             match originalBindFunc keyInputData with
             | MappedBindResult.Complete value -> mapFunc value
             | MappedBindResult.NeedMoreInput mappedBindData ->
-                MappedBindResult.NeedMoreInput (mappedBindData.Map mapFunc)
+                MappedBindResult.NeedMoreInput(mappedBindData.Map mapFunc)
             | MappedBindResult.Error -> MappedBindResult.Error
             | MappedBindResult.Cancelled -> MappedBindResult.Cancelled
-        { KeyRemapMode = x.KeyRemapMode; MappedBindFunction = bindFunc }
+        { KeyRemapMode = x.KeyRemapMode
+          MappedBindFunction = bindFunc }
 
     /// Often types bindings need to compose together because we need an inner
     /// binding to succeed so we can create a projected value.  This function
     /// will allow us to translate a MappedBindResult<'T>.Completed ->
     /// MappedBindResult<'U>.Completed
-    member x.Convert (convertFunc: 'T -> 'U): MappedBindData<'U> =
-        x.Map (fun value -> convertFunc value |> MappedBindResult.Complete)
+    member x.Convert(convertFunc: 'T -> 'U): MappedBindData<'U> =
+        x.Map(fun value -> convertFunc value |> MappedBindResult.Complete)
 
     /// Convert this MappedBindData<'T> to a BindData<'T> (note that as a
     /// result of the conversion all key inputs will all appear to be unmapped)
-    member x.ConvertToBindData (): BindData<'T> =
+    member x.ConvertToBindData(): BindData<'T> =
         let bindFunc keyInput =
             KeyInputData.Create keyInput false
             |> x.MappedBindFunction
             |> (fun mappedBindResult -> mappedBindResult.ConvertToBindResult())
-        { KeyRemapMode = x.KeyRemapMode; BindFunction = bindFunc }
+        { KeyRemapMode = x.KeyRemapMode
+          BindFunction = bindFunc }
 
 /// Several types of MappedBindData<'T> need to take an action when a binding
 /// begins against themselves. This action needs to occur before the first
@@ -3919,15 +3888,13 @@ and MappedBindData<'T> = {
 type MappedBindDataStorage<'T> =
 
     /// Simple MappedBindData<'T> which doesn't require activation
-    | Simple of MappedBindData: MappedBindData<'T> 
+    | Simple of MappedBindData: MappedBindData<'T>
 
     /// Complex MappedBindData<'T> which does require activation
     | Complex of CreateBindDataFunc: (unit -> MappedBindData<'T>)
 
-    with
-
     /// Creates the MappedBindData
-    member x.CreateMappedBindData () = 
+    member x.CreateMappedBindData() =
         match x with
         | Simple bindData -> bindData
         | Complex func -> func()
@@ -3935,16 +3902,16 @@ type MappedBindDataStorage<'T> =
     /// Convert from a MappedBindDataStorage<'T> -> MappedBindDataStorage<'U>.
     /// The 'mapFunc' value will run on the final 'T' data if it eventually is
     /// completed
-    member x.Convert mapFunc = 
+    member x.Convert mapFunc =
         match x with
-        | Simple bindData -> Simple (bindData.Convert mapFunc)
-        | Complex func -> Complex (fun () -> func().Convert mapFunc)
+        | Simple bindData -> Simple(bindData.Convert mapFunc)
+        | Complex func -> Complex(fun () -> func().Convert mapFunc)
 
 /// Representation of binding of Command's to KeyInputSet values and flags which correspond
 /// to the execution of the command
 [<DebuggerDisplay("{ToString(),nq}")>]
 [<RequireQualifiedAccess>]
-type CommandBinding = 
+type CommandBinding =
 
     /// KeyInputSet bound to a particular NormalCommand instance
     | NormalBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * NormalCommand: NormalCommand
@@ -3964,27 +3931,25 @@ type CommandBinding =
     /// KeyInputSet bound to a complex VisualCommand instance
     | ComplexVisualBinding of KeyInputSet: KeyInputSet * CommandFlags: CommandFlags * BindDataStorage: BindDataStorage<VisualCommand>
 
-    with 
-
     /// The raw command inputs
-    member x.KeyInputSet = 
+    member x.KeyInputSet =
         match x with
-        | NormalBinding (value, _, _) -> value
-        | MotionBinding (value, _, _) -> value
-        | VisualBinding (value, _, _) -> value
-        | InsertBinding (value, _, _) -> value
-        | ComplexNormalBinding (value, _, _) -> value
-        | ComplexVisualBinding (value, _, _) -> value
+        | NormalBinding(value, _, _) -> value
+        | MotionBinding(value, _, _) -> value
+        | VisualBinding(value, _, _) -> value
+        | InsertBinding(value, _, _) -> value
+        | ComplexNormalBinding(value, _, _) -> value
+        | ComplexVisualBinding(value, _, _) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
         match x with
-        | NormalBinding (_, value, _) -> value
-        | MotionBinding (_, value, _) -> value
-        | VisualBinding (_, value, _) -> value
-        | InsertBinding (_, value, _) -> value
-        | ComplexNormalBinding (_, value, _) -> value
-        | ComplexVisualBinding (_, value, _) -> value
+        | NormalBinding(_, value, _) -> value
+        | MotionBinding(_, value, _) -> value
+        | VisualBinding(_, value, _) -> value
+        | InsertBinding(_, value, _) -> value
+        | ComplexNormalBinding(_, value, _) -> value
+        | ComplexVisualBinding(_, value, _) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
@@ -4001,42 +3966,44 @@ type CommandBinding =
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
 /// Used to execute commands
-and ICommandUtil = 
+and ICommandUtil =
 
     /// Run a normal command
-    abstract RunNormalCommand: command: NormalCommand -> commandData: CommandData -> CommandResult
+    abstract RunNormalCommand: command:NormalCommand -> commandData:CommandData -> CommandResult
 
     /// Run a visual command
-    abstract RunVisualCommand: command: VisualCommand -> commandData: CommandData -> visualSpan: VisualSpan -> CommandResult
+    abstract RunVisualCommand: command:VisualCommand
+     -> commandData:CommandData -> visualSpan:VisualSpan -> CommandResult
 
     /// Run a insert command
-    abstract RunInsertCommand: command: InsertCommand -> CommandResult
+    abstract RunInsertCommand: command:InsertCommand -> CommandResult
 
     /// Run a command
-    abstract RunCommand: command: Command -> CommandResult
+    abstract RunCommand: command:Command -> CommandResult
 
-type internal IInsertUtil = 
+type internal IInsertUtil =
 
     /// Run a insert command
-    abstract RunInsertCommand: insertCommand: InsertCommand -> CommandResult
+    abstract RunInsertCommand: insertCommand:InsertCommand -> CommandResult
 
-    /// Repeat the given edit series. 
-    abstract RepeatEdit: textChange: TextChange -> addNewLines: bool -> count: int -> unit
+    /// Repeat the given edit series.
+    abstract RepeatEdit: textChange:TextChange -> addNewLines:bool -> count:int -> unit
 
-    /// Repeat the given edit series. 
-    abstract RepeatBlock: command: InsertCommand -> visualInsertKind: VisualInsertKind -> blockSpan: BlockSpan -> string option
+    /// Repeat the given edit series.
+    abstract RepeatBlock: command:InsertCommand
+     -> visualInsertKind:VisualInsertKind -> blockSpan:BlockSpan -> string option
 
     /// Signal that a new undo sequence is in effect
     abstract NewUndoSequence: unit -> unit
 
-/// Contains the stored information about a Visual Span.  This instance *will* be 
+/// Contains the stored information about a Visual Span.  This instance *will* be
 /// stored for long periods of time and used to repeat a Command instance across
 /// multiple IVimBuffer instances so it must be buffer agnostic
 [<RequireQualifiedAccess>]
-type StoredVisualSpan = 
+type StoredVisualSpan =
 
-    /// Storing a character wise span.  Need to know the line count and the offset 
-    /// in the last line for the end.  
+    /// Storing a character wise span.  Need to know the line count and the offset
+    /// in the last line for the end.
     | Character of LineCount: int * LastLineMaxPositionCount: int
 
     /// Storing a line wise span just stores the count of lines
@@ -4046,19 +4013,19 @@ type StoredVisualSpan =
     /// lines which should be affected by the Span
     | Block of Width: int * Height: int * EndOfLine: bool
 
-    with
-
     /// Create a StoredVisualSpan from the provided VisualSpan value
-    static member OfVisualSpan visualSpan = 
+    static member OfVisualSpan visualSpan =
         match visualSpan with
-        | VisualSpan.Character characterSpan -> StoredVisualSpan.Character (characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
+        | VisualSpan.Character characterSpan ->
+            StoredVisualSpan.Character(characterSpan.LineCount, characterSpan.LastLineMaxPositionCount)
         | VisualSpan.Line range -> StoredVisualSpan.Line range.Count
-        | VisualSpan.Block blockSpan -> StoredVisualSpan.Block (blockSpan.SpacesLength, blockSpan.Height, blockSpan.EndOfLine)
+        | VisualSpan.Block blockSpan ->
+            StoredVisualSpan.Block(blockSpan.SpacesLength, blockSpan.Height, blockSpan.EndOfLine)
 
 /// Contains information about an executed Command.  This instance *will* be stored
 /// for long periods of time and used to repeat a Command instance across multiple
-/// IVimBuffer instances so it simply cannot store any state specific to an 
-/// ITextView instance.  It must be completely agnostic of such information 
+/// IVimBuffer instances so it simply cannot store any state specific to an
+/// ITextView instance.  It must be completely agnostic of such information
 [<RequireQualifiedAccess>]
 type StoredCommand =
 
@@ -4075,101 +4042,96 @@ type StoredCommand =
     /// can be repeated together.
     | LinkedCommand of Left: StoredCommand * Right: StoredCommand
 
-    with
-
     /// The CommandFlags associated with this StoredCommand
     member x.CommandFlags =
-        match x with 
-        | NormalCommand (_, _, flags) -> flags
-        | VisualCommand (_, _, _, flags) -> flags
-        | InsertCommand (_, flags) -> flags
-        | LinkedCommand (_, rightCommand) -> rightCommand.CommandFlags
+        match x with
+        | NormalCommand(_, _, flags) -> flags
+        | VisualCommand(_, _, _, flags) -> flags
+        | InsertCommand(_, flags) -> flags
+        | LinkedCommand(_, rightCommand) -> rightCommand.CommandFlags
 
-    /// Returns the last command.  For most StoredCommand values this is just an identity 
+    /// Returns the last command.  For most StoredCommand values this is just an identity
     /// function but for LinkedCommand values it returns the right most
     member x.LastCommand =
         match x with
         | NormalCommand _ -> x
         | VisualCommand _ -> x
         | InsertCommand _ -> x
-        | LinkedCommand (_, right) -> right.LastCommand
+        | LinkedCommand(_, right) -> right.LastCommand
 
     /// Create a StoredCommand instance from the given Command value
-    static member OfCommand command (commandBinding: CommandBinding) = 
-        match command with 
-        | Command.NormalCommand (command, data) -> 
-            StoredCommand.NormalCommand (command, data, commandBinding.CommandFlags)
-        | Command.VisualCommand (command, data, visualSpan) ->
+    static member OfCommand command (commandBinding: CommandBinding) =
+        match command with
+        | Command.NormalCommand(command, data) ->
+            StoredCommand.NormalCommand(command, data, commandBinding.CommandFlags)
+        | Command.VisualCommand(command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
-            StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
-        | Command.InsertCommand command ->
-            StoredCommand.InsertCommand (command, commandBinding.CommandFlags)
+            StoredCommand.VisualCommand(command, data, storedVisualSpan, commandBinding.CommandFlags)
+        | Command.InsertCommand command -> StoredCommand.InsertCommand(command, commandBinding.CommandFlags)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
 [<System.Flags>]
 type MotionFlags =
 
-    | None = 0x0
+    | None = 0
 
     /// This type of motion can be used to move the caret
-    | CaretMovement = 0x1 
+    | CaretMovement = 1
 
-    /// The motion function wants to specially handle the esape function.  This is used 
-    /// on Complex motions such as / and ? 
-    | HandlesEscape = 0x2
+    /// The motion function wants to specially handle the esape function.  This is used
+    /// on Complex motions such as / and ?
+    | HandlesEscape = 2
 
-    /// Text object selection motions.  These can be used for cursor movement inside of 
-    /// Visual Mode but otherwise need to be used only after operators.  
+    /// Text object selection motions.  These can be used for cursor movement inside of
+    /// Visual Mode but otherwise need to be used only after operators.
     /// :help text-objects
-    | TextObject = 0x4
+    | TextObject = 4
 
     /// Text object with line to character.  Requires TextObject
-    | TextObjectWithLineToCharacter = 0x8
+    | TextObjectWithLineToCharacter = 8
 
     /// Text object with always character.  Requires TextObject
-    | TextObjectWithAlwaysCharacter = 0x10
+    | TextObjectWithAlwaysCharacter = 16
 
     /// Text objcet with always line.  Requires TextObject
-    | TextObjectWithAlwaysLine = 0x20
+    | TextObjectWithAlwaysLine = 32
 
 /// Represents the types of MotionCommands which exist
 [<RequireQualifiedAccess>]
 type MotionBinding =
 
-    /// Simple motion which comprises of a single KeyInput and a function which given 
-    /// a start point and count will produce the motion.  None is returned in the 
+    /// Simple motion which comprises of a single KeyInput and a function which given
+    /// a start point and count will produce the motion.  None is returned in the
     /// case the motion is not valid
     | Static of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * Motion: Motion
 
-    /// Complex motion commands take more than one KeyInput to complete.  For example 
+    /// Complex motion commands take more than one KeyInput to complete.  For example
     /// the f,t,F and T commands all require at least one additional input.
     | Dynamic of KeyInputSet: KeyInputSet * MotionFlags: MotionFlags * BindDataStorage: BindDataStorage<Motion>
 
-    with
-
-    member x.KeyInputSet = 
+    member x.KeyInputSet =
         match x with
-        | Static (keyInputSet, _, _) -> keyInputSet
-        | Dynamic (keyInputSet, _, _) -> keyInputSet
+        | Static(keyInputSet, _, _) -> keyInputSet
+        | Dynamic(keyInputSet, _, _) -> keyInputSet
 
     member x.MotionFlags =
-        match x with 
-        | Static (_, flags, _) -> flags
-        | Dynamic (_, flags, _) -> flags
+        match x with
+        | Static(_, flags, _) -> flags
+        | Dynamic(_, flags, _) -> flags
 
 /// The information about the particular run of a Command
-type CommandRunData = {
+type CommandRunData =
+    {
 
-    /// The binding which the command was invoked from
-    CommandBinding: CommandBinding
+      /// The binding which the command was invoked from
+      CommandBinding: CommandBinding
 
-    /// The Command which was run
-    Command: Command
+      /// The Command which was run
+      Command: Command
 
-    /// The result of the Command Run
-    CommandResult: CommandResult
-}
+      /// The result of the Command Run
+      CommandResult: CommandResult }
 
 type CommandRunDataEventArgs(_commandRunData: CommandRunData) =
     inherit System.EventArgs()
@@ -4196,7 +4158,7 @@ type IMotionCapture =
 
     /// Associated ITextView
     abstract TextView: ITextView
-    
+
     /// Set of MotionBinding values supported
     abstract MotionBindings: MotionBinding list
 
@@ -4215,10 +4177,10 @@ type ICommandRunner =
     /// Count of commands currently supported.
     abstract CommandCount: int
 
-    /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
+    /// In certain circumstances a specific type of key remapping needs to occur for input.  This
     /// option will have the appropriate value in those circumstances.  For example while processing
     /// the {char} argument to f,F,t or T the Language mapping will be used
-    abstract KeyRemapMode: KeyRemapMode 
+    abstract KeyRemapMode: KeyRemapMode
 
     /// True when in the middle of a count operation
     abstract InCount: bool
@@ -4229,21 +4191,21 @@ type ICommandRunner =
     /// True if waiting on more input
     abstract IsWaitingForMoreInput: bool
 
-    /// True if the current command has a register associated with it 
-    abstract HasRegisterName: bool 
+    /// True if the current command has a register associated with it
+    abstract HasRegisterName: bool
 
-    /// True if the current command has a count associated with it 
+    /// True if the current command has a count associated with it
     abstract HasCount: bool
 
-    /// When HasRegister is true this has the associated RegisterName 
+    /// When HasRegister is true this has the associated RegisterName
     abstract RegisterName: RegisterName
 
     /// When HasCount is true this has the associated count
-    abstract Count: int 
+    abstract Count: int
 
     /// List of processed KeyInputs in the order in which they were typed
     abstract Inputs: KeyInput list
-    
+
     /// Whether a command starts with the specified key input
     abstract DoesCommandStartWith: KeyInput -> bool
 
@@ -4258,7 +4220,7 @@ type ICommandRunner =
     /// None value implies more input is needed to finish the operation
     abstract Run: KeyInput -> BindResult<CommandRunData>
 
-    /// If currently waiting for more input on a Command, reset to the 
+    /// If currently waiting for more input on a Command, reset to the
     /// initial state
     abstract ResetState: unit -> unit
 
@@ -4273,8 +4235,11 @@ type KeyMapping =
     val private _allowRemap: bool
     val private _mode: KeyRemapMode
 
-    new (left: KeyInputSet, right: KeyInputSet, allowRemap: bool, mode: KeyRemapMode) =
-        { _left = left; _right = right; _allowRemap = allowRemap; _mode = mode }
+    new(left: KeyInputSet, right: KeyInputSet, allowRemap: bool, mode: KeyRemapMode) =
+        { _left = left
+          _right = right
+          _allowRemap = allowRemap
+          _mode = mode }
 
     member x.Left = x._left
     member x.Right = x._right
@@ -4288,26 +4253,26 @@ type IVimKeyMap =
     abstract KeyMappings: KeyMapping seq
 
     /// Get the specified key mapping if it exists
-    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMapping option
+    abstract GetKeyMapping: lhs:KeyInputSet * mode:KeyRemapMode -> KeyMapping option
 
     /// Get all mappings for the specified mode
-    abstract GetKeyMappings: mode: KeyRemapMode -> KeyMapping seq
+    abstract GetKeyMappings: mode:KeyRemapMode -> KeyMapping seq
 
     /// Map the given key sequence without allowing for remaping
-    abstract AddKeyMapping: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: KeyRemapMode -> unit
+    abstract AddKeyMapping: lhs:KeyInputSet * rhs:KeyInputSet * allowRemap:bool * mode:KeyRemapMode -> unit
 
     /// Unmap the specified key sequence for the specified mode
-    abstract RemoveKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode -> bool
+    abstract RemoveKeyMapping: lhs:KeyInputSet * mode:KeyRemapMode -> bool
 
     /// Clear the Key mappings for the specified mode
-    abstract ClearKeyMappings: mode: KeyRemapMode -> unit
+    abstract ClearKeyMappings: mode:KeyRemapMode -> unit
 
     /// Clear the Key mappings for all modes
     abstract ClearKeyMappings: unit -> unit
 
-    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider 
+    /// This operates similar to KeyNotationUtil.TryStringToKeyInputSet except that it will consider
     /// the <leader> notation as well.
-    abstract ParseKeyNotation: notation: string -> KeyInputSet option
+    abstract ParseKeyNotation: notation:string -> KeyInputSet option
 
 type IVimGlobalKeyMap =
     inherit IVimKeyMap
@@ -4318,20 +4283,20 @@ type IVimLocalKeyMap =
     abstract GlobalKeyMap: IVimGlobalKeyMap
 
     /// Is the mapping of the 0 key currently enabled
-    abstract IsZeroMappingEnabled: bool with get, set 
+    abstract IsZeroMappingEnabled: bool with get, set
 
     /// Get the specified key mapping if it exists
-    abstract GetKeyMapping: lhs: KeyInputSet * mode: KeyRemapMode * includeGlobal: bool -> KeyMapping option
+    abstract GetKeyMapping: lhs:KeyInputSet * mode:KeyRemapMode * includeGlobal:bool -> KeyMapping option
 
     /// Get the specified key mappings if they exists
-    abstract GetKeyMappings: mode: KeyRemapMode * includeGlobal: bool -> KeyMapping seq
+    abstract GetKeyMappings: mode:KeyRemapMode * includeGlobal:bool -> KeyMapping seq
 
     /// Map the provided KeyInputSet for the given mode.
-    abstract Map: lhs: KeyInputSet * mode: KeyRemapMode -> KeyMappingResult
+    abstract Map: lhs:KeyInputSet * mode:KeyRemapMode -> KeyMappingResult
 
     /// Map the provided KeyInputSet for the given mode. The allowRemap parameter will override
     /// the defined remapping behavior.
-    abstract Map: lhs: KeyInputSet * allowRemap: bool * mode:KeyRemapMode -> KeyMappingResult
+    abstract Map: lhs:KeyInputSet * allowRemap:bool * mode:KeyRemapMode -> KeyMappingResult
 
 /// Manages the digraph map for Vim
 type IDigraphMap =
@@ -4355,8 +4320,11 @@ type Abbreviation =
     val private _allowRemap: bool
     val private _mode: AbbreviationMode
 
-    new (abbreviation: KeyInputSet, replacement: KeyInputSet, allowRemap: bool, mode: AbbreviationMode) =
-        { _abbreviation = abbreviation; _replacement = replacement; _allowRemap = allowRemap; _mode = mode }
+    new(abbreviation: KeyInputSet, replacement: KeyInputSet, allowRemap: bool, mode: AbbreviationMode) =
+        { _abbreviation = abbreviation
+          _replacement = replacement
+          _allowRemap = allowRemap
+          _mode = mode }
 
     member x.Abbreviation = x._abbreviation
     member x.Replacement = x._replacement
@@ -4368,31 +4336,31 @@ type Abbreviation =
 /// Information about a single abbreviation replace
 [<NoComparison>]
 [<NoEquality>]
-type AbbreviationResult = {
-    /// The found Abbreviation that was replaced
-    Abbreviation: Abbreviation
+type AbbreviationResult =
+    {
+      /// The found Abbreviation that was replaced
+      Abbreviation: Abbreviation
 
-    /// The AbbreviationKind of the found abbrevitaion
-    AbbreviationKind: AbbreviationKind
+      /// The AbbreviationKind of the found abbrevitaion
+      AbbreviationKind: AbbreviationKind
 
-    /// The set of KeyInput values that should be used to replace the abbreviated text. 
-    /// Note: this can be different than Abbreviation.Replacement when key mappings are 
-    /// in play. AbbreviationResult.Replacement should be preferred.
-    Replacement: KeyInputSet
+      /// The set of KeyInput values that should be used to replace the abbreviated text.
+      /// Note: this can be different than Abbreviation.Replacement when key mappings are
+      /// in play. AbbreviationResult.Replacement should be preferred.
+      Replacement: KeyInputSet
 
-    /// This contains the result of running the remap operation on Abbreviation.Replacement.
-    ReplacementRemapResult: KeyMappingResult option
+      /// This contains the result of running the remap operation on Abbreviation.Replacement.
+      ReplacementRemapResult: KeyMappingResult option
 
-    /// The original text which was considered for the abbreviation
-    OriginalText: string
+      /// The original text which was considered for the abbreviation
+      OriginalText: string
 
-    /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
-    /// character.
-    TriggerKeyInput: KeyInput
+      /// The KeyInput which triggered the abbreviation attempt. This will always be a non-keyword
+      /// character.
+      TriggerKeyInput: KeyInput
 
-    /// The Span inside OriginalText which should be replaced by the abbreviation
-    ReplacedSpan: Span
-} with
+      /// The Span inside OriginalText which should be replaced by the abbreviation
+      ReplacedSpan: Span }
 
     member x.Mode = x.Abbreviation.Mode
 
@@ -4406,15 +4374,15 @@ type IVimAbbreviationMap =
 
     abstract Abbreviations: Abbreviation seq
 
-    abstract AddAbbreviation: lhs: KeyInputSet * rhs: KeyInputSet * allowRemap: bool * mode: AbbreviationMode -> unit
+    abstract AddAbbreviation: lhs:KeyInputSet * rhs:KeyInputSet * allowRemap:bool * mode:AbbreviationMode -> unit
 
-    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> Abbreviation option
+    abstract GetAbbreviation: lhs:KeyInputSet * mode:AbbreviationMode -> Abbreviation option
 
-    abstract GetAbbreviations: mode: AbbreviationMode -> Abbreviation seq
+    abstract GetAbbreviations: mode:AbbreviationMode -> Abbreviation seq
 
-    abstract RemoveAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode -> bool
+    abstract RemoveAbbreviation: lhs:KeyInputSet * mode:AbbreviationMode -> bool
 
-    abstract ClearAbbreviations: mode: AbbreviationMode -> unit
+    abstract ClearAbbreviations: mode:AbbreviationMode -> unit
 
     abstract ClearAbbreviations: unit -> unit
 
@@ -4424,17 +4392,17 @@ type IVimGlobalAbbreviationMap =
 type IVimLocalAbbreviationMap =
     inherit IVimAbbreviationMap
 
-    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap 
+    abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
 
-    abstract GetAbbreviation: lhs: KeyInputSet * mode: AbbreviationMode * includeGlobal: bool -> Abbreviation option
+    abstract GetAbbreviation: lhs:KeyInputSet * mode:AbbreviationMode * includeGlobal:bool -> Abbreviation option
 
-    abstract GetAbbreviations: mode: AbbreviationMode * includeGlobal: bool -> Abbreviation seq
+    abstract GetAbbreviations: mode:AbbreviationMode * includeGlobal:bool -> Abbreviation seq
 
-    abstract Parse: text: string -> AbbreviationKind option
+    abstract Parse: text:string -> AbbreviationKind option
 
-    abstract Abbreviate: text: string * triggerKeyInput: KeyInput * mode: AbbreviationMode -> AbbreviationResult option
+    abstract Abbreviate: text:string * triggerKeyInput:KeyInput * mode:AbbreviationMode -> AbbreviationResult option
 
-type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
+type MarkTextBufferEventArgs(_mark: Mark, _textBuffer: ITextBuffer) =
     inherit System.EventArgs()
 
     member x.Mark = _mark
@@ -4442,7 +4410,7 @@ type MarkTextBufferEventArgs (_mark: Mark, _textBuffer: ITextBuffer) =
 
     override x.ToString() = _mark.ToString()
 
-type MarkTextViewEventArgs (_mark: Mark, _textView: ITextView) =
+type MarkTextViewEventArgs(_mark: Mark, _textView: ITextView) =
     inherit System.EventArgs()
 
     member x.Mark = _mark
@@ -4454,10 +4422,10 @@ type MarkTextViewEventArgs (_mark: Mark, _textView: ITextView) =
 /// and backwards traversable list of points with which to navigate to
 ///
 /// Technically Vim's implementation of a jump list can span across different
-/// buffers  This is limited to just a single ITextBuffer.  This is mostly due to Visual 
+/// buffers  This is limited to just a single ITextBuffer.  This is mostly due to Visual
 /// Studio's limitations in swapping out an ITextBuffer contents for a different file.  It
 /// is possible but currently not a high priority here
-type IJumpList = 
+type IJumpList =
 
     /// Associated ITextView instance
     abstract TextView: ITextView
@@ -4479,7 +4447,7 @@ type IJumpList =
     /// The SnapshotPoint when the last jump occurred
     abstract LastJumpLocation: VirtualSnapshotPoint option
 
-    /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to 
+    /// Add a given SnapshotPoint to the jump list.  This will reset Current to point to
     /// the begining of the jump list
     abstract Add: VirtualSnapshotPoint -> unit
 
@@ -4488,7 +4456,7 @@ type IJumpList =
     abstract Clear: unit -> unit
 
     /// Move to the previous point in the jump list.  This will fail if we are not traversing
-    /// the list or at the end 
+    /// the list or at the end
     abstract MoveOlder: int -> bool
 
     /// Move to the next point in the jump list.  This will fail if we are not traversing
@@ -4496,7 +4464,7 @@ type IJumpList =
     abstract MoveNewer: int -> bool
 
     /// Set the last jump location to the given line and column
-    abstract SetLastJumpLocation: lineNumber: int -> offset: int -> unit
+    abstract SetLastJumpLocation: lineNumber:int -> offset:int -> unit
 
     /// Start a traversal of the list
     abstract StartTraversal: unit -> unit
@@ -4505,7 +4473,7 @@ type IJumpList =
     [<CLIEvent>]
     abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextViewEventArgs>>
 
-type IIncrementalSearchSession = 
+type IIncrementalSearchSession =
 
     /// Key that uniquely identifies this session
     abstract Key: obj
@@ -4517,9 +4485,9 @@ type IIncrementalSearchSession =
     /// or was cancelled.
     abstract IsCompleted: bool
 
-    /// When in the middle of a search this will return the SearchData for 
+    /// When in the middle of a search this will return the SearchData for
     /// the search
-    abstract SearchData: SearchData 
+    abstract SearchData: SearchData
 
     /// When a search is complete within the session this will hold the result
     abstract SearchResult: SearchResult option
@@ -4528,7 +4496,7 @@ type IIncrementalSearchSession =
     abstract Start: unit -> BindData<SearchResult>
 
     /// Reset the search to the specified text
-    abstract ResetSearch: searchText: string -> unit
+    abstract ResetSearch: searchText:string -> unit
 
     /// Cancel the session without completing
     abstract Cancel: unit -> unit
@@ -4546,12 +4514,12 @@ type IIncrementalSearchSession =
     [<CLIEvent>]
     abstract SessionComplete: IDelegateEvent<System.EventHandler<EventArgs>>
 
-type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) = 
+type IncrementalSearchSessionEventArgs(_session: IIncrementalSearchSession) =
     inherit System.EventArgs()
 
     member x.Session = _session
 
-type IIncrementalSearch = 
+type IIncrementalSearch =
 
     /// The active IIncrementalSearchSession
     abstract ActiveSession: IIncrementalSearchSession option
@@ -4569,7 +4537,7 @@ type IIncrementalSearch =
 
     abstract CurrentSearchText: string
 
-    abstract CreateSession: searchPath: SearchPath -> IIncrementalSearchSession
+    abstract CreateSession: searchPath:SearchPath -> IIncrementalSearchSession
 
     /// Cancel the active session if there is one.
     abstract CancelSession: unit -> unit
@@ -4579,15 +4547,15 @@ type IIncrementalSearch =
 
 type RecordRegisterEventArgs(_register: Register, _isAppend: bool) =
     inherit System.EventArgs()
-    
+
     member x.Register = _register
 
     member x.IsAppend = _isAppend
 
-/// Used to record macros in a Vim 
+/// Used to record macros in a Vim
 type IMacroRecorder =
 
-    /// The current recording 
+    /// The current recording
     abstract CurrentRecording: KeyInput list option
 
     /// Is a macro currently recording
@@ -4595,7 +4563,7 @@ type IMacroRecorder =
 
     /// Start recording a macro into the specified Register.  Will fail if the recorder
     /// is already recording
-    abstract StartRecording: register: Register -> isAppend: bool -> unit
+    abstract StartRecording: register:Register -> isAppend:bool -> unit
 
     /// Stop recording a macro.  Will fail if it's not actually recording
     abstract StopRecording: unit -> unit
@@ -4610,7 +4578,7 @@ type IMacroRecorder =
     abstract RecordingStopped: IDelegateEvent<System.EventHandler>
 
 [<RequireQualifiedAccess>]
-type ProcessResult = 
+type ProcessResult =
 
     /// The input was processed and provided the given ModeSwitch
     | Handled of ModeSwitch: ModeSwitch
@@ -4635,28 +4603,20 @@ type ProcessResult =
             | ModeSwitch.SwitchModeWithArgument _ -> true
             | ModeSwitch.SwitchPreviousMode -> true
             | ModeSwitch.SwitchModeOneTimeCommand _ -> true
-        | HandledNeedMoreInput ->
-            false
-        | NotHandled -> 
-            false
-        | Error -> 
-            false
+        | HandledNeedMoreInput -> false
+        | NotHandled -> false
+        | Error -> false
 
     /// Is this any type of switch to a visual mode
     member x.IsAnySwitchToVisual =
         match x with
         | ProcessResult.Handled modeSwitch ->
             match modeSwitch with
-            | ModeSwitch.SwitchMode modeKind ->
-                VisualKind.IsAnyVisualOrSelect modeKind
-            | ModeSwitch.SwitchModeWithArgument(modeKind, _) ->
-                VisualKind.IsAnyVisualOrSelect modeKind
-            | ModeSwitch.SwitchModeOneTimeCommand modeKind ->
-                VisualKind.IsAnyVisualOrSelect modeKind
-            | _ ->
-                false
-        | _ ->
-            false
+            | ModeSwitch.SwitchMode modeKind -> VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeWithArgument(modeKind, _) -> VisualKind.IsAnyVisualOrSelect modeKind
+            | ModeSwitch.SwitchModeOneTimeCommand modeKind -> VisualKind.IsAnyVisualOrSelect modeKind
+            | _ -> false
+        | _ -> false
 
     // Is this a switch to command mode?
     member x.IsAnySwitchToCommand =
@@ -4664,13 +4624,12 @@ type ProcessResult =
         | ProcessResult.Handled modeSwitch ->
             match modeSwitch with
             | ModeSwitch.SwitchMode modeKind -> modeKind = ModeKind.Command
-            | ModeSwitch.SwitchModeWithArgument (modeKind, _) -> modeKind = ModeKind.Command
+            | ModeSwitch.SwitchModeWithArgument(modeKind, _) -> modeKind = ModeKind.Command
             | _ -> false
-        | _ ->
-            false
+        | _ -> false
 
     /// Did this actually handle the KeyInput
-    member x.IsAnyHandled = 
+    member x.IsAnyHandled =
         match x with
         | Handled _ -> true
         | HandledNeedMoreInput -> true
@@ -4685,18 +4644,18 @@ type ProcessResult =
         | Error -> false
         | NotHandled -> false
 
-    static member OfModeKind kind = 
+    static member OfModeKind kind =
         let switch = ModeSwitch.SwitchMode kind
         Handled switch
 
     /// Create a ProcessResult from the given CommandResult value
-    static member OfCommandResult commandResult = 
+    static member OfCommandResult commandResult =
         match commandResult with
         | CommandResult.Completed modeSwitch -> Handled modeSwitch
         | CommandResult.Error -> Error
 
     /// Create a CommandResult from the given ProcessResult value
-    static member ToCommandResult processResult = 
+    static member ToCommandResult processResult =
         match processResult with
         | Handled modeSwitch -> CommandResult.Completed modeSwitch
         | _ -> CommandResult.Error
@@ -4708,25 +4667,25 @@ type StringEventArgs(_message: string) =
 
     override x.ToString() = _message
 
-type KeyInputEventArgs (_keyInput: KeyInput) = 
+type KeyInputEventArgs(_keyInput: KeyInput) =
     inherit System.EventArgs()
 
     member x.KeyInput = _keyInput
 
     override x.ToString() = _keyInput.ToString()
 
-type KeyInputStartEventArgs (_keyInput: KeyInput) =
+type KeyInputStartEventArgs(_keyInput: KeyInput) =
     inherit KeyInputEventArgs(_keyInput)
 
     let mutable _handled = false
 
-    member x.Handled 
-        with get() = _handled 
+    member x.Handled
+        with get () = _handled
         and set value = _handled <- value
 
     override x.ToString() = _keyInput.ToString()
 
-type KeyInputSetEventArgs (_keyInputSet: KeyInputSet) = 
+type KeyInputSetEventArgs(_keyInputSet: KeyInputSet) =
     inherit System.EventArgs()
 
     member x.KeyInputSet = _keyInputSet
@@ -4743,18 +4702,16 @@ type KeyInputProcessedEventArgs(_keyInput: KeyInput, _processResult: ProcessResu
     override x.ToString() = _keyInput.ToString()
 
 /// Implements a list for storing history items.  This is used for the 5 types
-/// of history lists in Vim (:help history).  
-type HistoryList () = 
+/// of history lists in Vim (:help history).
+type HistoryList() =
 
     let mutable _list: string list = List.empty
     let mutable _limit = VimConstants.DefaultHistoryLength
     let mutable _totalCount = 0
 
-    /// Limit of the items stored in the list
-    member x.Limit 
-        with get () = 
-            _limit
-        and set value = 
+    member x.Limit
+        with get () = _limit
+        and set value =
             _limit <- value
             x.MaybeTruncateList()
 
@@ -4769,7 +4726,7 @@ type HistoryList () =
     member x.Items = _list
 
     /// Adds an item to the top of the history list
-    member x.Add value = 
+    member x.Add value =
         if not (StringUtil.IsNullOrEmpty value) then
             let list =
                 _list
@@ -4780,7 +4737,7 @@ type HistoryList () =
             _totalCount <- _totalCount + 1
 
     /// Remove an item from the history list
-    member x.Remove value = 
+    member x.Remove value =
         if not (StringUtil.IsNullOrEmpty value) then
             _list <-
                 _list
@@ -4788,12 +4745,12 @@ type HistoryList () =
                 |> List.ofSeq
 
     /// Reset the list back to it's original state
-    member x.Reset () = 
+    member x.Reset() =
         _list <- List.empty
         _totalCount <- 0
         _limit <- VimConstants.DefaultHistoryLength
 
-    member private x.MaybeTruncateList () = 
+    member private x.MaybeTruncateList() =
         if _list.Length > _limit then
             _list <-
                 _list
@@ -4801,12 +4758,12 @@ type HistoryList () =
                 |> List.ofSeq
 
     interface System.Collections.IEnumerable with
-        member x.GetEnumerator () = 
+        member x.GetEnumerator() =
             let seq = _list :> string seq
             seq.GetEnumerator() :> System.Collections.IEnumerator
 
     interface System.Collections.Generic.IEnumerable<string> with
-        member x.GetEnumerator () = 
+        member x.GetEnumerator() =
             let seq = _list :> string seq
             seq.GetEnumerator()
 
@@ -4821,12 +4778,14 @@ type EditableCommand =
     val private _caretPosition: int
 
     /// Constructor for initial text with the caret at the end
-    new (text: string) =
-        { _text = text; _caretPosition = text.Length }
+    new(text: string) =
+        { _text = text
+          _caretPosition = text.Length }
 
     /// Constructor for text and caret position
-    new (text: string, caretPosition: int) =
-        { _text = text; _caretPosition = caretPosition }
+    new(text: string, caretPosition: int) =
+        { _text = text
+          _caretPosition = caretPosition }
 
     /// The text of the command
     member x.Text = x._text
@@ -4835,44 +4794,36 @@ type EditableCommand =
     member x.CaretPosition = x._caretPosition
 
     /// Home key operation
-    member x.Home () =
-        if x.CaretPosition <> 0 then
-            EditableCommand(x.Text, 0)
-        else
-            x
+    member x.Home() =
+        if x.CaretPosition <> 0 then EditableCommand(x.Text, 0) else x
 
     /// End key operation
-    member x.End () =
-        if x.CaretPosition <> x.Text.Length then
-            EditableCommand(x.Text, x.Text.Length)
-        else
-            x
+    member x.End() =
+        if x.CaretPosition <> x.Text.Length then EditableCommand(x.Text, x.Text.Length) else x
 
     /// Left arrow key operation
-    member x.Left () =
-        if x.CaretPosition > 0 then
-            EditableCommand(x.Text, x.CaretPosition - 1)
-        else
-            x
+    member x.Left() =
+        if x.CaretPosition > 0
+        then EditableCommand(x.Text, x.CaretPosition - 1)
+        else x
 
     /// Right arrow key operation
-    member x.Right () =
-        if x.CaretPosition < x.Text.Length then
-            EditableCommand(x.Text, x.CaretPosition + 1)
-        else
-            x
+    member x.Right() =
+        if x.CaretPosition < x.Text.Length
+        then EditableCommand(x.Text, x.CaretPosition + 1)
+        else x
 
     /// Backspace key operation
-    member x.Backspace () =
+    member x.Backspace() =
         if x.CaretPosition > 0 then
             let before = x.Text.Substring(0, x.CaretPosition - 1)
             let after = x.Text.Substring(x.CaretPosition)
-            EditableCommand(before + after, x.CaretPosition  - 1)
+            EditableCommand(before + after, x.CaretPosition - 1)
         else
             x
 
     /// Delete key operation
-    member x.Delete () =
+    member x.Delete() =
         if x.CaretPosition < x.Text.Length - 1 then
             let before = x.Text.Substring(0, x.CaretPosition)
             let after = x.Text.Substring(x.CaretPosition + 1)
@@ -4887,20 +4838,18 @@ type EditableCommand =
         EditableCommand(before + text + after, x.CaretPosition + text.Length)
 
     /// Display representation of an editable command
-    override x.ToString() =
-        sprintf "Text = %s, CaretPosition = %i" x.Text x.CaretPosition
+    override x.ToString() = sprintf "Text = %s, CaretPosition = %i" x.Text x.CaretPosition
 
     /// The empty editable command
-    static member Empty =
-        EditableCommand(StringUtil.Empty, 0)
+    static member Empty = EditableCommand(StringUtil.Empty, 0)
 
-/// Used for helping history editing 
+/// Used for helping history editing
 type internal IHistoryClient<'TData, 'TResult> =
 
     /// History list used by this client
     abstract HistoryList: HistoryList
 
-    /// Get the register map 
+    /// Get the register map
     abstract RegisterMap: IRegisterMap
 
     /// What remapping mode if any should be used for key input
@@ -4910,29 +4859,29 @@ type internal IHistoryClient<'TData, 'TResult> =
     abstract Beep: unit -> unit
 
     /// Process the new command with the previous TData value
-    abstract ProcessCommand: data: 'TData -> command: EditableCommand -> 'TData
+    abstract ProcessCommand: data:'TData -> command:EditableCommand -> 'TData
 
     /// Called when the command is completed.  The last valid TData and command
     /// string will be provided
-    abstract Completed: data: 'TData -> command: EditableCommand -> wasMapped: bool -> 'TResult
+    abstract Completed: data:'TData -> command:EditableCommand -> wasMapped:bool -> 'TResult
 
     /// Called when the command is cancelled.  The last valid TData value will
     /// be provided
-    abstract Cancelled: data: 'TData -> unit
+    abstract Cancelled: data:'TData -> unit
 
-/// An active use of an IHistoryClient instance 
+/// An active use of an IHistoryClient instance
 type internal IHistorySession<'TData, 'TResult> =
 
-    /// The IHistoryClient this session is using 
+    /// The IHistoryClient this session is using
     abstract HistoryClient: IHistoryClient<'TData, 'TResult>
 
-    /// The current command that is being edited 
-    abstract EditableCommand: EditableCommand 
+    /// The current command that is being edited
+    abstract EditableCommand: EditableCommand
 
     /// Is the session currently waiting for a register paste operation to complete
     abstract InPasteWait: bool
 
-    /// The current client data 
+    /// The current client data
     abstract ClientData: 'TData
 
     /// Cancel the IHistorySession
@@ -4946,7 +4895,7 @@ type internal IHistorySession<'TData, 'TResult> =
     abstract CreateBindDataStorage: unit -> MappedBindDataStorage<'TResult>
 
 /// Represents shared state which is available to all IVimBuffer instances.
-type IVimData = 
+type IVimData =
 
     /// The set of supported auto command groups
     abstract AutoCommandGroups: AutoCommandGroup list with get, set
@@ -4970,15 +4919,15 @@ type IVimData =
     /// The ordered list of incremental search values
     abstract SearchHistory: HistoryList with get, set
 
-    /// Motion function used with the last f, F, t or T motion.  The 
+    /// Motion function used with the last f, F, t or T motion.  The
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
     abstract LastCharSearch: (CharSearchKind * SearchPath * char) option with get, set
 
-    /// The last line command which was run 
+    /// The last line command which was run
     abstract LastLineCommand: LineCommand option with get, set
 
-    /// The last command which was run 
+    /// The last command which was run
     abstract LastCommand: StoredCommand option with get, set
 
     /// The last command line which was run
@@ -5017,11 +4966,7 @@ type IVimData =
     [<CLIEvent>]
     abstract DisplayPatternChanged: IDelegateEvent<System.EventHandler>
 
-type TextViewChangedEventArgs
-    (
-        _oldTextView: ITextView option,
-        _newTextView: ITextView option
-    ) =
+type TextViewChangedEventArgs(_oldTextView: ITextView option, _newTextView: ITextView option) =
 
     inherit System.EventArgs()
 
@@ -5029,20 +4974,15 @@ type TextViewChangedEventArgs
 
     member x.NewTextView = _newTextView
 
-/// What settings default should VsVim use when there is not a _vimrc file present 
-/// on the users machine?  There is a significant difference between gVim 7.3 and 
-/// 7.4.  
+/// What settings default should VsVim use when there is not a _vimrc file present
+/// on the users machine?  There is a significant difference between gVim 7.3 and
+/// 7.4.
 [<RequireQualifiedAccess>]
 type DefaultSettings =
     | GVim73 = 0
     | GVim74 = 1
 
-type RunCommandResults
-    (
-        _exitCode: int,
-        _output: string,
-        _error: string
-    ) =
+type RunCommandResults(_exitCode: int, _output: string, _error: string) =
 
     member x.ExitCode = _exitCode
 
@@ -5051,13 +4991,7 @@ type RunCommandResults
     member x.Error = _error
 
 /// Information associated with a mark
-type MarkInfo
-    (
-        _ident: char,
-        _name: string,
-        _line: int,
-        _column: int
-    ) =
+type MarkInfo(_ident: char, _name: string, _line: int, _column: int) =
 
     /// The character used to identify the mark
     member x.Ident = _ident
@@ -5071,38 +5005,36 @@ type MarkInfo
     /// The column of the mark
     member x.Column = _column
 
-/// When maintaining the caret column for motion moves this represents the desired 
+/// When maintaining the caret column for motion moves this represents the desired
 /// column to jump to if there is enough space on the line
 ///
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<NoEquality>]
-type MaintainCaretColumn = 
+type MaintainCaretColumn =
 
-    /// There is no saved caret column. 
+    /// There is no saved caret column.
     | None
 
     /// This number is kept as a count of spaces.  Tabs need to be adjusted for when applying
     /// this setting to a motion
     | Spaces of Count: int
 
-    /// The caret was moved with the $ motion and the further moves should move to the end of 
-    /// the line 
+    /// The caret was moved with the $ motion and the further moves should move to the end of
+    /// the line
     | EndOfLine
 
-    with 
-
     /// Whether we are maintaining end-of-line
-    member x.IsMaintainingEndOfLine = 
+    member x.IsMaintainingEndOfLine =
         match x with
         | EndOfLine -> true
         | _ -> false
 
 type IVimHost =
 
-    /// Should vim automatically start synchronization of IVimBuffer instances when they are 
+    /// Should vim automatically start synchronization of IVimBuffer instances when they are
     /// created
-    abstract AutoSynchronizeSettings: bool 
+    abstract AutoSynchronizeSettings: bool
 
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings: DefaultSettings
@@ -5114,10 +5046,10 @@ type IVimHost =
     abstract IsAutoCommandEnabled: bool
 
     /// Is undo / redo expected at this point in time due to a host operation.
-    abstract IsUndoRedoExpected: bool 
+    abstract IsUndoRedoExpected: bool
 
-    /// Get the count of window tabs that are active in the host. This refers to tabs for actual 
-    /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported 
+    /// Get the count of window tabs that are active in the host. This refers to tabs for actual
+    /// edit windows, not anything to do with tabs in the text file.  If window tabs are not supported
     /// then -1 should be returned
     abstract TabCount: int
 
@@ -5147,118 +5079,121 @@ type IVimHost =
     abstract CreateHiddenTextView: unit -> ITextView
 
     /// Perform the specified action when the specified text view is ready
-    abstract DoActionWhenTextViewReady: action: (unit -> unit) -> textView: ITextView -> unit
+    abstract DoActionWhenTextViewReady: action:(unit -> unit) -> textView:ITextView -> unit
 
     /// Called at the end of a bulk operation such as a macro replay or a repeat of
     /// a last command
     abstract EndBulkOperation: unit -> unit
 
     /// Ensure that the given point is visible
-    abstract EnsureVisible: textView: ITextView -> point: SnapshotPoint -> unit
+    abstract EnsureVisible: textView:ITextView -> point:SnapshotPoint -> unit
 
     /// Perform the "find in files" operation
-    abstract FindInFiles: pattern: string -> matchCase: bool -> filesOfType: string -> flags: VimGrepFlags -> action: (unit -> unit) -> unit
+    abstract FindInFiles: pattern:string
+     -> matchCase:bool -> filesOfType:string -> flags:VimGrepFlags -> action:(unit -> unit) -> unit
 
     /// Format the provided lines
-    abstract FormatLines: textView: ITextView -> range: SnapshotLineRange -> unit
+    abstract FormatLines: textView:ITextView -> range:SnapshotLineRange -> unit
 
     /// Get the ITextView which currently has keyboard focus
     abstract GetFocusedTextView: unit -> ITextView option
 
     /// Get the tab index of the tab containing the given ITextView.  A number less
     /// than 0 indicates the value couldn't be determined
-    abstract GetTabIndex: textView: ITextView -> int
+    abstract GetTabIndex: textView:ITextView -> int
 
     /// Get the indent for the new line.  This has precedence over the 'autoindent'
     /// setting
-    abstract GetNewLineIndent: textView: ITextView -> contextLine: ITextSnapshotLine -> newLine: ITextSnapshotLine -> localSettings: IVimLocalSettings -> int option
+    abstract GetNewLineIndent: textView:ITextView
+     -> contextLine:ITextSnapshotLine -> newLine:ITextSnapshotLine -> localSettings:IVimLocalSettings -> int option
 
-    /// Get the WordWrap style which should be used for the specified ITextView if word 
+    /// Get the WordWrap style which should be used for the specified ITextView if word
     /// wrap is enabled
-    abstract GetWordWrapStyle: textView: ITextView -> WordWrapStyles
+    abstract GetWordWrapStyle: textView:ITextView -> WordWrapStyles
 
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition: unit -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToLocalDeclaration: textView: ITextView -> identifier: string -> bool
+    abstract GoToLocalDeclaration: textView:ITextView -> identifier:string -> bool
 
     /// Go to the local declaration of the value under the cursor
-    abstract GoToGlobalDeclaration: tetxView: ITextView -> identifier: string -> bool
+    abstract GoToGlobalDeclaration: tetxView:ITextView -> identifier:string -> bool
 
-    /// Go to the nth tab in the tab list.  This value is always a 0 based index 
+    /// Go to the nth tab in the tab list.  This value is always a 0 based index
     /// into the set of tabs.  It does not correspond to vim's handling of tab
     /// values which is not a standard 0 based index
-    abstract GoToTab: index: int -> unit
+    abstract GoToTab: index:int -> unit
 
     /// Go to the specified item in the specified list
-    abstract NavigateToListItem: listKind: ListKind -> navigationKind: NavigationKind -> argument: int option -> hasBang: bool -> ListItem option
+    abstract NavigateToListItem: listKind:ListKind
+     -> navigationKind:NavigationKind -> argument:int option -> hasBang:bool -> ListItem option
 
     /// Get the name of the given ITextBuffer
-    abstract GetName: textBuffer: ITextBuffer -> string
+    abstract GetName: textBuffer:ITextBuffer -> string
 
     /// Is the ITextBuffer in a dirty state?
-    abstract IsDirty: textBuffer: ITextBuffer -> bool
+    abstract IsDirty: textBuffer:ITextBuffer -> bool
 
     /// Is the ITextBuffer read only
-    abstract IsReadOnly: textBuffer: ITextBuffer -> bool
+    abstract IsReadOnly: textBuffer:ITextBuffer -> bool
 
     /// Is the ITextView visible to the user
-    abstract IsVisible: textView: ITextView -> bool
+    abstract IsVisible: textView:ITextView -> bool
 
     /// Is the ITextView in focus
-    abstract IsFocused: textView: ITextView -> bool
+    abstract IsFocused: textView:ITextView -> bool
 
     /// Loads the new file into the existing window
-    abstract LoadFileIntoExistingWindow: filePath: string -> textView: ITextView -> bool
+    abstract LoadFileIntoExistingWindow: filePath:string -> textView:ITextView -> bool
 
     /// Load a file into a new window, optionally moving the caret to the first
     /// non-blank on a specific line or to a specific line and column
-    abstract LoadFileIntoNewWindow: filePath: string -> line: int option -> column: int option -> ITextView option
+    abstract LoadFileIntoNewWindow: filePath:string -> line:int option -> column:int option -> ITextView option
 
     /// Run the host specific make operation
-    abstract Make: jumpToFirstError: bool -> arguments: string -> unit
+    abstract Make: jumpToFirstError:bool -> arguments:string -> unit
 
     /// Move the focus to the ITextView in the open document in the specified direction
-    abstract GoToWindow: textView: ITextView -> direction: WindowKind -> count: int -> unit
+    abstract GoToWindow: textView:ITextView -> direction:WindowKind -> count:int -> unit
 
-    abstract NavigateTo: point: VirtualSnapshotPoint -> bool
+    abstract NavigateTo: point:VirtualSnapshotPoint -> bool
 
     // Open the specified kind of list window (:cwindow, :lwindow)
-    abstract OpenListWindow: listKind: ListKind -> unit
+    abstract OpenListWindow: listKind:ListKind -> unit
 
     /// Open the the specified link
-    abstract OpenLink: link: string -> bool
+    abstract OpenLink: link:string -> bool
 
     /// Quit the application
     abstract Quit: unit -> unit
 
     /// Reload the contents of the ITextView discarding any changes
-    abstract Reload: textView: ITextView -> bool
+    abstract Reload: textView:ITextView -> bool
 
     /// Run the specified command with the given arguments and return the textual
     /// output
-    abstract RunCommand: workingDirectory: string -> file: string -> arguments: string -> input: string -> RunCommandResults
+    abstract RunCommand: workingDirectory:string -> file:string -> arguments:string -> input:string -> RunCommandResults
 
     /// Run C# Script
-    abstract RunCSharpScript: vimBuffer:IVimBuffer -> callInfo: CallInfo -> createEachTime: bool -> unit
+    abstract RunCSharpScript: vimBuffer:IVimBuffer -> callInfo:CallInfo -> createEachTime:bool -> unit
 
     /// Run the Visual studio command in the context of the given ITextView
-    abstract RunHostCommand: textView: ITextView -> commandName: string -> argument: string -> unit
+    abstract RunHostCommand: textView:ITextView -> commandName:string -> argument:string -> unit
 
     /// Save the provided ITextBuffer instance
-    abstract Save: textBuffer: ITextBuffer -> bool 
+    abstract Save: textBuffer:ITextBuffer -> bool
 
     /// Save the current document as a new file with the specified name
-    abstract SaveTextAs: text: string -> filePath: string -> bool 
+    abstract SaveTextAs: text:string -> filePath:string -> bool
 
-    /// Called by Vim when it encounters a new ITextView and needs to know if it should 
+    /// Called by Vim when it encounters a new ITextView and needs to know if it should
     /// create an IVimBuffer for it
-    abstract ShouldCreateVimBuffer: textView: ITextView -> bool
+    abstract ShouldCreateVimBuffer: textView:ITextView -> bool
 
     /// Called by Vim when it is loading vimrc files.  This gives the host the chance to
     /// filter out vimrc files it doesn't want to consider
-    abstract ShouldIncludeRcFile: vimRcPath: VimRcPath -> bool
+    abstract ShouldIncludeRcFile: vimRcPath:VimRcPath -> bool
 
     /// Split the views horizontally
     abstract SplitViewHorizontally: ITextView -> unit
@@ -5267,21 +5202,22 @@ type IVimHost =
     abstract SplitViewVertically: ITextView -> unit
 
     /// Start a shell window
-    abstract StartShell: workingDirectory: string -> file: string -> arguments: string -> unit
+    abstract StartShell: workingDirectory:string -> file:string -> arguments:string -> unit
 
     /// Called when IVim is fully created.  This callback gives the host the oppurtunity
     /// to customize various aspects of vim including IVimGlobalSettings, IVimData, etc ...
-    abstract VimCreated: vim: IVim -> unit
+    abstract VimCreated: vim:IVim -> unit
 
-    /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded 
-    /// then the resulting settings are passed into the method.  If the load failed it is 
+    /// Called when VsVim attempts to load the user _vimrc file.  If the load succeeded
+    /// then the resulting settings are passed into the method.  If the load failed it is
     /// the defaults.  Either way, they are the default settings used for new buffers
-    abstract VimRcLoaded: vimRcState: VimRcState -> localSettings: IVimLocalSettings -> windowSettings: IVimWindowSettings -> unit
+    abstract VimRcLoaded: vimRcState:VimRcState
+     -> localSettings:IVimLocalSettings -> windowSettings:IVimWindowSettings -> unit
 
     /// Allow the host to custom process the insert command.  Hosts often have
-    /// special non-vim semantics for certain types of edits (Enter for 
+    /// special non-vim semantics for certain types of edits (Enter for
     /// example).  This override allows them to do this processing
-    abstract TryCustomProcess: textView: ITextView -> command: InsertCommand -> bool
+    abstract TryCustomProcess: textView:ITextView -> command:InsertCommand -> bool
 
     /// Raised when the visibility of an ITextView changes
     [<CLIEvent>]
@@ -5309,11 +5245,11 @@ and IVimBufferData =
     abstract CurrentDirectory: string option with get, set
 
     /// The current (rooted) file path for this buffer
-    abstract CurrentFilePath : string option
+    abstract CurrentFilePath: string option
 
     /// The current file path for this buffer, relative to CurrentDirectory
-    abstract CurrentRelativeFilePath : string option
-    
+    abstract CurrentRelativeFilePath: string option
+
     /// The working directory to use for this particular buffer,
     /// either the current directory for the buffer, if set, or the
     /// global current directory
@@ -5325,7 +5261,7 @@ and IVimBufferData =
 
     /// This is the anchor point for the visual mode selection.  It is different than the anchor
     /// point in ITextSelection.  The ITextSelection anchor point is always the start or end
-    /// of the visual selection.  While the anchor point for visual mode selection may be in 
+    /// of the visual selection.  While the anchor point for visual mode selection may be in
     /// the middle (in say line wise mode)
     abstract VisualAnchorPoint: ITrackingPoint option with get, set
 
@@ -5354,7 +5290,7 @@ and IVimBufferData =
     /// The IVimTextBuffer associated with the IVimBuffer
     abstract VimTextBuffer: IVimTextBuffer
 
-    /// The IVimWindowSettings associated with the ITextView 
+    /// The IVimWindowSettings associated with the ITextView
     abstract WindowSettings: IVimWindowSettings
 
     /// The IWordUtil associated with the IVimBuffer
@@ -5372,11 +5308,11 @@ and IVimBufferData =
 and IVim =
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
-    /// which has focus 
+    /// which has focus
     abstract ActiveBuffer: IVimBuffer option
 
     /// The IStatusUtil for the active IVimBuffer.  If there is currently no active IVimBuffer
-    /// then a silent one will be returned 
+    /// then a silent one will be returned
     abstract ActiveStatusUtil: IStatusUtil
 
     /// Whether to auto load digraphs
@@ -5386,7 +5322,7 @@ and IVim =
     /// is created
     abstract AutoLoadVimRc: bool with get, set
 
-    /// Whether or not saved data like macros shuold be autoloaded before the first IVimBuffer 
+    /// Whether or not saved data like macros shuold be autoloaded before the first IVimBuffer
     // is created
     abstract AutoLoadSessionData: bool with get, set
 
@@ -5396,7 +5332,7 @@ and IVim =
     /// Get the IVimBuffer which currently has KeyBoard focus
     abstract FocusedBuffer: IVimBuffer option
 
-    /// Is Vim currently disabled 
+    /// Is Vim currently disabled
     abstract IsDisabled: bool with get, set
 
     /// In the middle of a bulk operation such as a macro replay or repeat last command
@@ -5428,7 +5364,7 @@ and IVim =
     /// The variable map for this IVim instance
     abstract VariableMap: VariableMap
 
-    abstract VimData: IVimData 
+    abstract VimData: IVimData
 
     abstract VimHost: IVimHost
 
@@ -5436,31 +5372,31 @@ and IVim =
     abstract VimRcState: VimRcState
 
     /// Create an IVimBuffer for the given ITextView
-    abstract CreateVimBuffer: textView: ITextView -> IVimBuffer
+    abstract CreateVimBuffer: textView:ITextView -> IVimBuffer
 
     /// Create an IVimBuffer for the specified iVimBufferData
-    abstract CreateVimBufferWithData: vimBufferData: IVimBufferData -> IVimBuffer
+    abstract CreateVimBufferWithData: vimBufferData:IVimBufferData -> IVimBuffer
 
     /// Create an IVimTextBuffer for the given ITextBuffer
-    abstract CreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
+    abstract CreateVimTextBuffer: textBuffer:ITextBuffer -> IVimTextBuffer
 
     /// Close all IVimBuffer instances in the system
     abstract CloseAllVimBuffers: unit -> unit
 
     /// Get the IVimInterpreter for the specified IVimBuffer
-    abstract GetVimInterpreter: vimBuffer: IVimBuffer -> IVimInterpreter
+    abstract GetVimInterpreter: vimBuffer:IVimBuffer -> IVimInterpreter
 
     /// Get or create an IVimBuffer for the given ITextView
-    abstract GetOrCreateVimBuffer: textView: ITextView -> IVimBuffer
+    abstract GetOrCreateVimBuffer: textView:ITextView -> IVimBuffer
 
     /// Get or create an IVimTextBuffer for the given ITextBuffer
-    abstract GetOrCreateVimTextBuffer: textBuffer: ITextBuffer -> IVimTextBuffer
+    abstract GetOrCreateVimTextBuffer: textBuffer:ITextBuffer -> IVimTextBuffer
 
-    /// Load the VimRc file.  If the file was previously loaded a new load will be 
+    /// Load the VimRc file.  If the file was previously loaded a new load will be
     /// attempted.  Returns true if a VimRc was actually loaded.
     abstract LoadVimRc: unit -> VimRcState
 
-    /// Load the saved data file. 
+    /// Load the saved data file.
     abstract LoadSessionData: unit -> unit
 
     /// Save out the current session data.
@@ -5471,56 +5407,44 @@ and IVim =
     abstract RemoveVimBuffer: ITextView -> bool
 
     /// Get the IVimBuffer associated with the given ITextView
-    abstract TryGetVimBuffer: textView: ITextView * vimBuffer: outref<IVimBuffer> -> bool
+    abstract TryGetVimBuffer: textView:ITextView * vimBuffer:outref<IVimBuffer> -> bool
 
     /// Get the IVimTextBuffer associated with the given ITextBuffer
-    abstract TryGetVimTextBuffer: textBuffer: ITextBuffer * vimTextBuffer: outref<IVimTextBuffer> -> bool
+    abstract TryGetVimTextBuffer: textBuffer:ITextBuffer * vimTextBuffer:outref<IVimTextBuffer> -> bool
 
-    /// This implements a cached version of IVimHost::ShouldCreateVimBuffer.  Code should prefer 
-    /// this method wherever possible 
-    abstract ShouldCreateVimBuffer: textView: ITextView -> bool
+    /// This implements a cached version of IVimHost::ShouldCreateVimBuffer.  Code should prefer
+    /// this method wherever possible
+    abstract ShouldCreateVimBuffer: textView:ITextView -> bool
 
     /// Get or create an IVimBuffer for the given ITextView.  The creation of the IVimBuffer will
-    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.  
+    /// only occur if the host returns true from IVimHost::ShouldCreateVimBuffer.
     ///
-    /// MEF component load ordering isn't defined and it's very possible that components like the 
-    /// ITagger implementations will be called long before the host has a chance to create the 
-    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of 
+    /// MEF component load ordering isn't defined and it's very possible that components like the
+    /// ITagger implementations will be called long before the host has a chance to create the
+    /// IVimBuffer instance.  This method removes the ordering concerns and maintains control of
     /// creation in the IVimHost
-    abstract TryGetOrCreateVimBufferForHost: textView: ITextView * vimBuffer: outref<IVimBuffer> -> bool
+    abstract TryGetOrCreateVimBufferForHost: textView:ITextView * vimBuffer:outref<IVimBuffer> -> bool
 
     /// Get the nth most recent IVimBuffer
-    abstract TryGetRecentBuffer: n: int -> IVimBuffer option
+    abstract TryGetRecentBuffer: n:int -> IVimBuffer option
 
-and BeforeSaveEventArgs
-    (
-        _textBuffer: ITextBuffer
-    ) =
+and BeforeSaveEventArgs(_textBuffer: ITextBuffer) =
     inherit System.EventArgs()
 
     member x.TextBuffer = _textBuffer
 
-and SwitchModeKindEventArgs
-    (
-        _modeKind: ModeKind,
-        _modeArgument: ModeArgument
-    ) =
+and SwitchModeKindEventArgs(_modeKind: ModeKind, _modeArgument: ModeArgument) =
     inherit System.EventArgs()
 
     member x.ModeKind = _modeKind
 
     member x.ModeArgument = _modeArgument
 
-and SwitchModeEventArgs 
-    (
-        _previousMode: IMode,
-        _currentMode: IMode,
-        _modeArgument: ModeArgument
-    ) = 
+and SwitchModeEventArgs(_previousMode: IMode, _currentMode: IMode, _modeArgument: ModeArgument) =
 
     inherit System.EventArgs()
 
-    /// Current IMode 
+    /// Current IMode
     member x.CurrentMode = _currentMode
 
     /// Previous IMode
@@ -5535,34 +5459,34 @@ and IMarkMap =
     abstract GlobalMarks: (Letter * VirtualSnapshotPoint) seq
 
     /// Get the mark for the given char for the IVimTextBuffer
-    abstract GetMark: mark: Mark -> vimBufferData: IVimBufferData -> VirtualSnapshotPoint option
+    abstract GetMark: mark:Mark -> vimBufferData:IVimBufferData -> VirtualSnapshotPoint option
 
     /// Get the mark info for the given mark for the IVimTextBuffer
-    abstract GetMarkInfo: mark: Mark -> vimBufferData: IVimBufferData -> MarkInfo option
+    abstract GetMarkInfo: mark:Mark -> vimBufferData:IVimBufferData -> MarkInfo option
 
     /// Get the current value of the specified global mark
-    abstract GetGlobalMark: letter: Letter -> VirtualSnapshotPoint option
+    abstract GetGlobalMark: letter:Letter -> VirtualSnapshotPoint option
 
     /// Set the global mark to the given line and column in the provided IVimTextBuffer
-    abstract SetGlobalMark: letter: Letter -> vimTextBuffer: IVimTextBuffer -> lineNumber: int -> offset: int -> unit
+    abstract SetGlobalMark: letter:Letter -> vimTextBuffer:IVimTextBuffer -> lineNumber:int -> offset:int -> unit
 
     /// Set the mark for the given char for the IVimTextBuffer
-    abstract SetMark: mark: Mark -> vimBufferData: IVimBufferData -> lineNumber: int -> offset: int -> bool
+    abstract SetMark: mark:Mark -> vimBufferData:IVimBufferData -> lineNumber:int -> offset:int -> bool
 
     /// Delete the mark for the IVimTextBuffer
-    abstract DeleteMark: mark: Mark -> vimBufferData: IVimBufferData -> bool
+    abstract DeleteMark: mark:Mark -> vimBufferData:IVimBufferData -> bool
 
     /// Unload the buffer recording the last exited position
-    abstract UnloadBuffer: vimBufferData: IVimBufferData -> name: string -> lineNumber: int -> offset: int -> bool
+    abstract UnloadBuffer: vimBufferData:IVimBufferData -> name:string -> lineNumber:int -> offset:int -> bool
 
     /// Reload the marks associated with a buffer
-    abstract ReloadBuffer: vimBufferData: IVimBufferData -> name: string -> bool
+    abstract ReloadBuffer: vimBufferData:IVimBufferData -> name:string -> bool
 
     /// Remove the specified mark and return whether or not a mark was actually
     /// removed
-    abstract RemoveGlobalMark: letter: Letter -> bool
+    abstract RemoveGlobalMark: letter:Letter -> bool
 
-    /// Delete all of the global marks 
+    /// Delete all of the global marks
     abstract Clear: unit -> unit
 
     /// Raised when a mark is set
@@ -5575,7 +5499,7 @@ and IMarkMap =
 
 /// This is the interface which represents the parts of a vim buffer which are shared amongst all
 /// of it's views
-and IVimTextBuffer = 
+and IVimTextBuffer =
 
     /// The associated ITextBuffer instance
     abstract TextBuffer: ITextBuffer
@@ -5586,7 +5510,7 @@ and IVimTextBuffer =
     /// The associated IVimGlobalAbbreviationMap instance
     abstract GlobalAbbreviationMap: IVimGlobalAbbreviationMap
 
-    /// The 'start' point of the current insert session.  This is relevant for settings like 
+    /// The 'start' point of the current insert session.  This is relevant for settings like
     /// 'backspace'
     abstract InsertStartPoint: SnapshotPoint option with get, set
 
@@ -5594,7 +5518,7 @@ and IVimTextBuffer =
     /// mode
     abstract IsSoftTabStopValidForBackspace: bool with get, set
 
-    /// The point the caret occupied when Insert mode was exited 
+    /// The point the caret occupied when Insert mode was exited
     abstract LastInsertExitPoint: SnapshotPoint option with get, set
 
     /// The last VisualSpan selection for the IVimTextBuffer.  This is a combination of a VisualSpan
@@ -5613,7 +5537,7 @@ and IVimTextBuffer =
     /// If we are in the middle of processing a "one time command" (<c-o>) then this will
     /// hold the ModeKind which will be switched back to after it's completed
     abstract InOneTimeCommand: ModeKind option with get, set
-    
+
     /// True if we are processing a "one time command" initiated from a select mode,
     /// or from a select mode initiated from within another "one time command", e.g. "(insert) SELECT".
     abstract InSelectModeOneTimeCommand: bool with get, set
@@ -5658,26 +5582,26 @@ and IVimTextBuffer =
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    abstract CheckModeLine: WindowSettings: IVimWindowSettings -> string option * string option
+    abstract CheckModeLine: WindowSettings:IVimWindowSettings -> string option * string option
 
     /// Clear out all of the cached information in the IVimTextBuffer.  It will reset to it's startup
-    /// state 
+    /// state
     abstract Clear: unit -> unit
 
-    /// Get the local mark value 
-    abstract GetLocalMark: localMark: LocalMark -> VirtualSnapshotPoint option
+    /// Get the local mark value
+    abstract GetLocalMark: localMark:LocalMark -> VirtualSnapshotPoint option
 
-    /// Set the local mark value to the specified line and column.  Returns false if the given 
+    /// Set the local mark value to the specified line and column.  Returns false if the given
     /// mark cannot be set
-    abstract SetLocalMark: localMark: LocalMark -> lineNumber: int -> offset: int -> bool
+    abstract SetLocalMark: localMark:LocalMark -> lineNumber:int -> offset:int -> bool
 
     /// Remove the specified local mark.  Returns whether a mark was actually removed
-    abstract RemoveLocalMark: localMark: LocalMark -> bool
+    abstract RemoveLocalMark: localMark:LocalMark -> bool
 
     /// Switch the current mode to the provided value
     abstract SwitchMode: ModeKind -> ModeArgument -> unit
 
-    /// Raised when the mode is switched.  Returns the old and new mode 
+    /// Raised when the mode is switched.  Returns the old and new mode
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeKindEventArgs>>
 
@@ -5685,14 +5609,14 @@ and IVimTextBuffer =
     [<CLIEvent>]
     abstract MarkSet: IDelegateEvent<System.EventHandler<MarkTextBufferEventArgs>>
 
-/// Main interface for the Vim editor engine so to speak. 
+/// Main interface for the Vim editor engine so to speak.
 and IVimBuffer =
 
     /// Sequence of available Modes
     abstract AllModes: seq<IMode>
 
-    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
-    /// is buffered until it is completed or the ambiguity is removed.  
+    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input
+    /// is buffered until it is completed or the ambiguity is removed.
     abstract BufferedKeyInputs: KeyInput list
 
     /// The current directory for this particular buffer
@@ -5788,7 +5712,7 @@ and IVimBuffer =
     abstract NormalMode: INormalMode
 
     /// ICommandMode instance for command mode
-    abstract CommandMode: ICommandMode 
+    abstract CommandMode: ICommandMode
 
     /// IDisabledMode instance for disabled mode
     abstract DisabledMode: IDisabledMode
@@ -5831,7 +5755,7 @@ and IVimBuffer =
 
     /// Get the KeyInput value produced by this KeyInput in the current state of the
     /// IVimBuffer.  This will consider any buffered KeyInput values.
-    abstract GetKeyInputMapping: keyInput: KeyInput -> KeyMappingResult
+    abstract GetKeyInputMapping: keyInput:KeyInput -> KeyMappingResult
 
     /// Process the KeyInput and return whether or not the input was completely handled
     abstract Process: KeyInput -> ProcessResult
@@ -5858,44 +5782,44 @@ and IVimBuffer =
     /// Switch the buffer back to the previous mode which is returned
     abstract SwitchPreviousMode: unit -> IMode
 
-    /// Add a processed KeyInput value.  This is a way for a host which is intercepting 
-    /// KeyInput and custom processing it to still participate in items like Macro 
+    /// Add a processed KeyInput value.  This is a way for a host which is intercepting
+    /// KeyInput and custom processing it to still participate in items like Macro
     /// recording.  The provided value will not go through any remapping
     abstract SimulateProcessed: KeyInput -> unit
 
     /// Called when the view is closed and the IVimBuffer should uninstall itself
     /// and it's modes
     abstract Close: unit -> unit
-    
-    /// Whether the buffer is readonly
-    abstract IsReadOnly: bool with get
 
-    /// Raised when the mode is switched.  Returns the old and new mode 
+    /// Whether the buffer is readonly
+    abstract IsReadOnly: bool
+
+    /// Raised when the mode is switched.  Returns the old and new mode
     [<CLIEvent>]
     abstract SwitchedMode: IDelegateEvent<System.EventHandler<SwitchModeEventArgs>>
 
-    /// Raised when a KeyInput is received by the buffer.  This will be raised for the 
+    /// Raised when a KeyInput is received by the buffer.  This will be raised for the
     /// KeyInput which was received and does not consider any mappings
     [<CLIEvent>]
     abstract KeyInputStart: IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
-    /// This is raised just before the IVimBuffer attempts to process a KeyInput 
+    /// This is raised just before the IVimBuffer attempts to process a KeyInput
     /// value.  This will not necessarily be the KeyInput which was raised in KeyInputStart
     /// because a mapping could have changed it to one or many other different KeyInput
-    /// values.  
+    /// values.
     ///
-    /// If this event is marked as Handled then the KeyInput will never actually be 
-    /// processed by the IVimBuffer.  It will instead immediately move to the 
+    /// If this event is marked as Handled then the KeyInput will never actually be
+    /// processed by the IVimBuffer.  It will instead immediately move to the
     /// KeyInputProcessed event
     [<CLIEvent>]
     abstract KeyInputProcessing: IDelegateEvent<System.EventHandler<KeyInputStartEventArgs>>
 
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
-    /// processed by Vim, not when it is received.  
+    /// processed by Vim, not when it is received.
     ///
     /// Typically this occurs immediately after a Start command and is followed by an
-    /// End command.  One case this doesn't happen is in a key remapping where the source 
-    /// mapping contains more than one key.  In this case the input is buffered until the 
+    /// End command.  One case this doesn't happen is in a key remapping where the source
+    /// mapping contains more than one key.  In this case the input is buffered until the
     /// second key is read and then the inputs are processed
     [<CLIEvent>]
     abstract KeyInputProcessed: IDelegateEvent<System.EventHandler<KeyInputProcessedEventArgs>>
@@ -5905,7 +5829,7 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract KeyInputBuffered: IDelegateEvent<System.EventHandler<KeyInputSetEventArgs>>
 
-    /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
+    /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens
     /// if the KeyInput is buffered or processed.  This will be raised for the KeyInput which
     /// was initially considered (came from KeyInputStart).  It won't consider any mappings
     [<CLIEvent>]
@@ -5936,19 +5860,19 @@ and IVimBuffer =
     /// It can also be closed externally, which will raise Closed -> PostClosed.
     [<CLIEvent>]
     abstract PostClosed: IDelegateEvent<System.EventHandler>
-    
+
     inherit IPropertyOwner
 
 /// Interface for a given Mode of Vim.  For example normal, insert, etc ...
 and IMode =
 
     /// Associated IVimTextBuffer
-    abstract VimTextBuffer: IVimTextBuffer 
+    abstract VimTextBuffer: IVimTextBuffer
 
     /// What type of Mode is this
     abstract ModeKind: ModeKind
 
-    /// Sequence of commands handled by the Mode.  
+    /// Sequence of commands handled by the Mode.
     abstract CommandNames: seq<KeyInputSet>
 
     /// Can the mode process this particular KeyIput at the current time
@@ -5963,17 +5887,17 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave: unit -> unit
 
-    /// Called when the owning IVimBuffer is closed so that the mode can free up 
+    /// Called when the owning IVimBuffer is closed so that the mode can free up
     /// any resources including event handlers
     abstract OnClose: unit -> unit
 
 and INormalMode =
 
     /// Buffered input for the current command
-    abstract Command: string 
+    abstract Command: string
 
     /// The ICommandRunner implementation associated with NormalMode
-    abstract CommandRunner: ICommandRunner 
+    abstract CommandRunner: ICommandRunner
 
     /// Mode keys need to be remapped with currently
     abstract KeyRemapMode: KeyRemapMode
@@ -6000,7 +5924,7 @@ and IInsertMode =
 
     /// Is this KeyInput value considered to be a direct insert command in the current
     /// state of the IVimBuffer.  This does not apply to commands which edit the buffer
-    /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the 
+    /// like 'CTRL-D' but instead commands like 'a', 'b' which directly edit the
     /// ITextBuffer
     abstract IsDirectInsert: KeyInput -> bool
 
@@ -6010,7 +5934,7 @@ and IInsertMode =
 
     inherit IMode
 
-and ICommandMode = 
+and ICommandMode =
 
     /// Buffered editable input for the current command
     abstract EditableCommand: EditableCommand with get, set
@@ -6034,13 +5958,13 @@ and ICommandMode =
 
     inherit IMode
 
-and IVisualMode = 
+and IVisualMode =
 
     /// The ICommandRunner implementation associated with NormalMode
-    abstract CommandRunner: ICommandRunner 
+    abstract CommandRunner: ICommandRunner
 
     /// Mode keys need to be remapped with currently
-    abstract KeyRemapMode: KeyRemapMode 
+    abstract KeyRemapMode: KeyRemapMode
 
     /// Is visual mode in the middle of a count operation
     abstract InCount: bool
@@ -6048,20 +5972,20 @@ and IVisualMode =
     /// The current Visual Selection
     abstract VisualSelection: VisualSelection
 
-    /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it 
+    /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it
     /// views the current selection as the original selection for entering the mode
     abstract SyncSelection: unit -> unit
 
-    inherit IMode 
-    
+    inherit IMode
+
 and IDisabledMode =
-    
-    /// Help message to display 
-    abstract HelpMessage: string 
+
+    /// Help message to display
+    abstract HelpMessage: string
 
     inherit IMode
 
-and ISelectMode = 
+and ISelectMode =
 
     /// Sync the selection with the current state
     abstract SyncSelection: unit -> unit
@@ -6078,65 +6002,54 @@ and ISubstituteConfirmMode =
 
     /// Raised when the current match changes
     [<CLIEvent>]
-    abstract CurrentMatchChanged: IEvent<SnapshotSpan option> 
+    abstract CurrentMatchChanged: IEvent<SnapshotSpan option>
 
-    inherit IMode 
+    inherit IMode
 
 [<Extension>]
-module VimExtensions = 
-    
+module VimExtensions =
+
     /// Is this ModeKind any type of Insert: Insert or Replace
     [<Extension>]
-    let IsAnyInsert modeKind = 
-        modeKind = ModeKind.Insert ||
-        modeKind = ModeKind.Replace
+    let IsAnyInsert modeKind = modeKind = ModeKind.Insert || modeKind = ModeKind.Replace
 
     /// Is this ModeKind any type of Visual
     [<Extension>]
-    let IsAnyVisual modeKind = 
-        modeKind = ModeKind.VisualCharacter ||
-        modeKind = ModeKind.VisualLine ||
-        modeKind = ModeKind.VisualBlock
+    let IsAnyVisual modeKind =
+        modeKind = ModeKind.VisualCharacter || modeKind = ModeKind.VisualLine || modeKind = ModeKind.VisualBlock
 
     /// Is this ModeKind any type of Select
     [<Extension>]
-    let IsAnySelect modeKind = 
-        modeKind = ModeKind.SelectCharacter ||
-        modeKind = ModeKind.SelectLine ||
-        modeKind = ModeKind.SelectBlock
+    let IsAnySelect modeKind =
+        modeKind = ModeKind.SelectCharacter || modeKind = ModeKind.SelectLine || modeKind = ModeKind.SelectBlock
 
 module internal VimCoreExtensions =
-    
+
     type IVim with
+
         member x.GetVimBuffer textView =
             let found, vimBuffer = x.TryGetVimBuffer textView
-            if found then
-                Some vimBuffer
-            else
-                None
+            if found then Some vimBuffer else None
 
         member x.GetOrCreateVimBufferForHost textView =
             let found, vimBuffer = x.TryGetOrCreateVimBufferForHost textView
-            if found then
-                Some vimBuffer
-            else
-                None
+            if found then Some vimBuffer else None
 
 /// Alternate method of dispatching calls.  This wraps the Dispatcher type and will
-/// gracefully handle dispatch errors.  Without this layer exceptions coming from a 
+/// gracefully handle dispatch errors.  Without this layer exceptions coming from a
 /// dispatched operation will go directly to the dispatch loop and crash the host
 /// application
-type IProtectedOperations = 
+type IProtectedOperations =
 
     /// Get an Action delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values
-    abstract member GetProtectedAction: action: Action -> Action
+    abstract GetProtectedAction: action:Action -> Action
 
     /// Get an EventHandler delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values
-    abstract member GetProtectedEventHandler: eventHandler: EventHandler -> EventHandler
+    abstract GetProtectedEventHandler: eventHandler:EventHandler -> EventHandler
 
     /// Report an Exception to the IExtensionErrorHandlers
-    abstract member Report: ex: Exception -> unit
+    abstract Report: ex:Exception -> unit

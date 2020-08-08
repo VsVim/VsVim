@@ -1,9 +1,7 @@
-﻿#light
-
 namespace Vim
 
+
+
 [<Sealed>]
-type internal BufferTrackingService = 
-
+type internal BufferTrackingService =
     interface IBufferTrackingService
-

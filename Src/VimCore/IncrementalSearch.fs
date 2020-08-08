@@ -1,4 +1,4 @@
-﻿namespace Vim
+namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
@@ -13,31 +13,24 @@ open System.Threading.Tasks
 open Vim.VimCoreExtensions
 
 [<RequireQualifiedAccess>]
-type SearchState = 
+type SearchState =
     | NeverRun of SearchResult: SearchResult
     | InProgress of Key: obj * TaskCompletionSource: TaskCompletionSource<SearchResult>
     | Complete of SearchResult: SearchResult
 
 [<RequireQualifiedAccess>]
-type SessionState = 
+type SessionState =
     | NotStarted
     | Started of HistorySession: IHistorySession<ITrackingPoint, SearchResult>
     | Completed
 
-/// Represents an incremental search session. The session is created when the initial 
-/// `/` key is pressed and is updated until the session is completed, with enter, or 
+/// Represents an incremental search session. The session is created when the initial
+/// `/` key is pressed and is updated until the session is completed, with enter, or
 /// cancelled.
-type internal IncrementalSearchSession
-    (
-        _vimBufferData: IVimBufferData,
-        _operations: ICommonOperations,
-        _motionUtil: IMotionUtil,
-        _searchPath: SearchPath,
-        _isWrap: bool
-    ) =
+type internal IncrementalSearchSession(_vimBufferData: IVimBufferData, _operations: ICommonOperations, _motionUtil: IMotionUtil, _searchPath: SearchPath, _isWrap: bool) =
 
     let mutable _searchData = SearchData("", _searchPath, _isWrap)
-    let mutable _searchState = SearchState.NeverRun (SearchResult.NotFound (_searchData, CanFindWithWrap=false))
+    let mutable _searchState = SearchState.NeverRun(SearchResult.NotFound(_searchData, CanFindWithWrap = false))
     let mutable _sessionState = SessionState.NotStarted
     let _key = obj()
     let _globalSettings = _vimBufferData.Vim.GlobalSettings
@@ -48,22 +41,38 @@ type internal IncrementalSearchSession
 
     member x.Key = _key
     member x.IsWrap = _isWrap
-    member x.IsNotStarted = match _sessionState with | SessionState.NotStarted _ -> true | _ -> false
-    member x.IsStarted = match _sessionState with | SessionState.Started _ -> true | _ -> false
-    member x.IsCompleted = match _sessionState with | SessionState.Completed -> true | _ -> false
+
+    member x.IsNotStarted =
+        match _sessionState with
+        | SessionState.NotStarted _ -> true
+        | _ -> false
+
+    member x.IsStarted =
+        match _sessionState with
+        | SessionState.Started _ -> true
+        | _ -> false
+
+    member x.IsCompleted =
+        match _sessionState with
+        | SessionState.Completed -> true
+        | _ -> false
+
     member x.IsActive = x.IsStarted && not x.IsCompleted
     member x.SearchPath = _searchPath
     member x.SearchData = _searchData
-    member x.SearchResult = 
+
+    member x.SearchResult =
         match _searchState with
         | SearchState.NeverRun searchResult -> Some searchResult
         | SearchState.InProgress _ -> None
         | SearchState.Complete searchResult -> Some searchResult
-    member x.IsSearchInProgress = 
+
+    member x.IsSearchInProgress =
         match _searchState with
-        | SearchState.NeverRun _-> false
+        | SearchState.NeverRun _ -> false
         | SearchState.InProgress _ -> true
         | SearchState.Complete _ -> false
+
     member x.InPasteWait =
         match _sessionState with
         | SessionState.NotStarted -> false
@@ -73,7 +82,7 @@ type internal IncrementalSearchSession
     [<CLIEvent>]
     member x.SessionComplete = _sessionComplete.Publish
 
-    /// There is a big gap between the behavior and documentation of key mapping for an 
+    /// There is a big gap between the behavior and documentation of key mapping for an
     /// incremental search operation.  The documentation properly documents the language
     /// mapping in "help language-mapping" and 'help imsearch'.  But it doesn't document
     /// that command mapping should used when 'imsearch' doesn't apply although it's
@@ -81,101 +90,102 @@ type internal IncrementalSearchSession
     member x.RemapMode = KeyRemapMode.Command
 
     // Reset the view to it's original state.  We should only be doing this if the
-    // 'incsearch' option is set.  Otherwise the view shouldn't change during an 
+    // 'incsearch' option is set.  Otherwise the view shouldn't change during an
     // incremental search
-    member private x.ResetView () =
-        if _globalSettings.IncrementalSearch then
-             _operations.EnsureAtCaret ViewFlags.Standard
+    member private x.ResetView() =
+        if _globalSettings.IncrementalSearch then _operations.EnsureAtCaret ViewFlags.Standard
 
-    member x.ResetSearch pattern = 
+    member x.ResetSearch pattern =
         match _sessionState with
         | SessionState.NotStarted -> ()
         | SessionState.Started historySession -> EditableCommand(pattern) |> historySession.ResetCommand
         | SessionState.Completed -> ()
 
     /// Begin the incremental search along the specified path
-    member x.Start() = 
-        if not x.IsNotStarted then
-            raise (InvalidOperationException())
+    member x.Start() =
+        if not x.IsNotStarted then raise (InvalidOperationException())
 
         let start = TextViewUtil.GetCaretPoint _textView
         let vimBuffer = _vimBufferData.Vim.GetVimBuffer _textView
         let startPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
         let command = EditableCommand.Empty
-        let historySession = HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap _motionUtil
+        let historySession =
+            HistoryUtil.CreateHistorySession x startPoint command _vimBufferData.VimTextBuffer.LocalAbbreviationMap
+                _motionUtil
         _sessionState <- SessionState.Started historySession
         historySession.CreateBindDataStorage().CreateMappedBindData().ConvertToBindData()
 
     member x.GetSearchResultAsync() =
         match _searchState with
         | SearchState.NeverRun searchResult -> Task.FromResult(searchResult)
-        | SearchState.InProgress (_, tcs) -> tcs.Task
+        | SearchState.InProgress(_, tcs) -> tcs.Task
         | SearchState.Complete searchResult -> Task.FromResult(searchResult)
 
     member private x.RunActive defaultValue func =
-        if x.IsActive then func ()
-        else defaultValue
+        if x.IsActive then func() else defaultValue
 
-    /// Run the search for the specified text.  This will do the search, update the caret 
+    /// Run the search for the specified text.  This will do the search, update the caret
     /// position and raise events
     member private x.RunSearchSyncWithResult(searchPoint: ITrackingPoint, searchText) =
         let (point, _, searchData, searchService, wordNavigator) = x.RunSearchImplStart(searchPoint, searchText)
-        let searchResult = 
+
+        let searchResult =
             match point, StringUtil.IsNullOrEmpty searchText with
             | Some point, false -> searchService.FindNextPattern point searchData wordNavigator 1
             | _ -> x.RunSearchImplNotFound searchData
 
         // Search is completed now update the results
-        x.RunSearchImplEnd(searchResult, updateView=true)
+        x.RunSearchImplEnd(searchResult, updateView = true)
         searchResult
 
-    member private x.RunSearchSync(searchPoint: ITrackingPoint) searchText: unit =
+    member private x.RunSearchSync (searchPoint: ITrackingPoint) searchText: unit =
         x.RunSearchSyncWithResult(searchPoint, searchText) |> ignore
 
-    /// Run the search for the specified text in an asynchronous fashion. This should mimic 
+    /// Run the search for the specified text in an asynchronous fashion. This should mimic
     /// RunSearchSync in every way but the synchronous nature
     member private x.RunSearchAsync (searchPoint: ITrackingPoint) searchText: unit =
         let (point, searchKey, searchData, searchService, wordNavigator) = x.RunSearchImplStart(searchPoint, searchText)
 
         match point, StringUtil.IsNullOrEmpty searchText with
-        | Some point, false -> 
+        | Some point, false ->
             let context = SynchronizationContext.Current
 
             // This function runs back on the UI thread. It can safely access all available state
-            let searchDone searchResult = 
-                // Have to account for the possibility this search has already been handled 
-                // by the UI thread. In that case SearchEnd has already been raised with a 
+            let searchDone searchResult =
+                // Have to account for the possibility this search has already been handled
+                // by the UI thread. In that case SearchEnd has already been raised with a
                 // Cancelled value and there is no more work to do.
                 match _searchState with
-                | SearchState.InProgress (currentKey, _) when currentKey = searchKey -> x.RunSearchImplEnd(searchResult, updateView=true)
+                | SearchState.InProgress(currentKey, _) when currentKey = searchKey ->
+                    x.RunSearchImplEnd(searchResult, updateView = true)
                 | _ -> ()
 
             // This is used in the background and must be careful to use types which are immutable
             // or threading aware.
-            let searchAsync() = 
+            let searchAsync() =
                 let searchResult = searchService.FindNextPattern point searchData wordNavigator 1
                 context.Post((fun _ -> searchDone searchResult), null)
-                
+
             let task = new Task((fun _ -> searchAsync()))
             task.Start(TaskScheduler.Default)
-        | _ -> 
+        | _ ->
             // In this case we complete synchronously
             let searchResult = x.RunSearchImplNotFound searchData
-            x.RunSearchImplEnd(searchResult, updateView=true)
+            x.RunSearchImplEnd(searchResult, updateView = true)
 
-    member private x.RunSearchImplNotFound(searchData) = SearchResult.NotFound (_searchData, CanFindWithWrap=false)
+    member private x.RunSearchImplNotFound(searchData) = SearchResult.NotFound(_searchData, CanFindWithWrap = false)
 
-    member private x.RunSearchImplStart(searchPoint, searchText): (SnapshotPoint option * obj * SearchData * ISearchService * SnapshotWordNavigator) =
+    member private x.RunSearchImplStart(searchPoint, searchText): SnapshotPoint option * obj * SearchData * ISearchService * SnapshotWordNavigator =
 
-        // Don't update the view here. Let the next search do the view 
+        // Don't update the view here. Let the next search do the view
         // updating when it completes. Want to avoid chopiness here when
         // there is lots of typing.
-        x.MaybeCancelSearchInProgress(updateView=false)
+        x.MaybeCancelSearchInProgress(updateView = false)
 
         // Update all the data for the start of the search
         let searchKey = obj()
         _searchData <- SearchData.Parse searchText _searchData.Kind _searchData.Options
-        _searchState <- SearchState.InProgress (searchKey, (new TaskCompletionSource<SearchResult>()))
+        _searchState <- SearchState.InProgress(searchKey, (new TaskCompletionSource<SearchResult>()))
         _searchStart.Trigger x (SearchDataEventArgs(_searchData))
 
         // Get the data required to complete the search
@@ -185,17 +195,17 @@ type internal IncrementalSearchSession
 
     member private x.RunSearchImplEnd(searchResult, updateView) =
         match _searchState with
-        | SearchState.InProgress (_, tcs) -> tcs.SetResult(searchResult)
+        | SearchState.InProgress(_, tcs) -> tcs.SetResult(searchResult)
         | _ -> ()
 
-        // Update all of our internal state before we start raising events 
+        // Update all of our internal state before we start raising events
         _searchState <- SearchState.Complete searchResult
 
         // Update our state based on the SearchResult.  Only update the view if the 'incsearch'
         // option is set
         if _globalSettings.IncrementalSearch && updateView then
             match searchResult with
-            | SearchResult.Found (_, span, _, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
+            | SearchResult.Found(_, span, _, _) -> _operations.EnsureAtPoint span.Start ViewFlags.Standard
             | SearchResult.NotFound _ -> x.ResetView()
             | SearchResult.Cancelled _ -> x.ResetView()
             | SearchResult.Error _ -> x.ResetView()
@@ -206,7 +216,8 @@ type internal IncrementalSearchSession
     /// return the final SearchResult
     member private x.RunCompleted(startPoint, searchText) =
         let vimData = _vimBufferData.Vim.VimData
-        let searchResult = 
+
+        let searchResult =
 
             // The search result if the search completed and wasn't cancelled.
             let completedSearchResult searchState =
@@ -223,7 +234,7 @@ type internal IncrementalSearchSession
                 // search then we should be re-using the 'LastSearch' value.
                 x.RunSearchSyncWithResult(startPoint, vimData.LastSearchData.Pattern)
             else
-                
+
                 // Use a completed search result if possible.
                 match completedSearchResult _searchState with
                 | Some searchResult -> searchResult
@@ -240,7 +251,7 @@ type internal IncrementalSearchSession
         searchResult
 
     member private x.RunCancel() =
-        x.MaybeCancelSearchInProgress(updateView=true)
+        x.MaybeCancelSearchInProgress(updateView = true)
         x.RunCompleteSession()
 
     member private x.RunCompleteSession() =
@@ -264,10 +275,15 @@ type internal IncrementalSearchSession
         member x.RegisterMap = _vimBufferData.Vim.RegisterMap
         member x.RemapMode = x.RemapMode
         member x.Beep() = _operations.Beep()
-        member x.ProcessCommand searchPoint searchText = x.RunActive searchPoint (fun () -> 
-            x.RunSearchAsync searchPoint searchText.Text
-            searchPoint)
-        member x.Completed searchPoint searchText _ = x.RunActive (SearchResult.Error (_searchData, "Invalid Operation")) (fun () -> x.RunCompleted(searchPoint, searchText.Text))
+
+        member x.ProcessCommand searchPoint searchText =
+            x.RunActive searchPoint (fun () ->
+                x.RunSearchAsync searchPoint searchText.Text
+                searchPoint)
+
+        member x.Completed searchPoint searchText _ =
+            x.RunActive (SearchResult.Error(_searchData, "Invalid Operation"))
+                (fun () -> x.RunCompleted(searchPoint, searchText.Text))
         member x.Cancelled _ = x.RunActive () (fun () -> x.RunCancel())
 
     interface IIncrementalSearchSession with
@@ -280,19 +296,17 @@ type internal IncrementalSearchSession
         member x.Start() = x.Start()
         member x.Cancel() = x.Cancel()
         member x.GetSearchResultAsync() = x.GetSearchResultAsync()
+
         [<CLIEvent>]
         member x.SearchStart = _searchStart.Publish
+
         [<CLIEvent>]
         member x.SearchEnd = _searchEnd.Publish
+
         [<CLIEvent>]
         member x.SessionComplete = _sessionComplete.Publish
 
-type internal IncrementalSearch
-    (
-        _vimBufferData: IVimBufferData,
-        _operations: ICommonOperations,
-        _motionUtil: IMotionUtil
-    ) =
+type internal IncrementalSearch(_vimBufferData: IVimBufferData, _operations: ICommonOperations, _motionUtil: IMotionUtil) =
 
     // TODO: most of these aren't needed anymore.
     let _vimData = _vimBufferData.Vim.VimData
@@ -307,38 +321,39 @@ type internal IncrementalSearch
     let mutable _session: IncrementalSearchSession option = None
     let _sessionCreated = StandardEvent<IncrementalSearchSessionEventArgs>()
 
-    static member EmptySearchData = SearchData("", SearchPath.Forward, isWrap= false)
+    static member EmptySearchData = SearchData("", SearchPath.Forward, isWrap = false)
 
-    member x.CurrentSearchData = 
+    member x.CurrentSearchData =
         match _session with
         | Some session -> session.SearchData
         | None -> IncrementalSearch.EmptySearchData
 
     member x.CurrentSearchText = x.CurrentSearchData.Pattern
 
-    member x.InPasteWait = 
+    member x.InPasteWait =
         match _session with
-        | Some session -> session.InPasteWait 
+        | Some session -> session.InPasteWait
         | None -> false
 
-    member x.IsCurrentSession key = 
+    member x.IsCurrentSession key =
         match _session with
         | None -> false
         | Some session -> session.Key = key
 
-    member x.CreateSession searchPath = 
+    member x.CreateSession searchPath =
         match _session with
         | Some session -> session.Cancel()
         | None -> ()
 
         Debug.Assert(Option.isNone _session)
 
-        let session = IncrementalSearchSession(_vimBufferData, _operations, _motionUtil, searchPath, _globalSettings.WrapScan)
+        let session =
+            IncrementalSearchSession(_vimBufferData, _operations, _motionUtil, searchPath, _globalSettings.WrapScan)
 
-        // When the session completes need to clear out the active info if this is still 
+        // When the session completes need to clear out the active info if this is still
         // the active session.
         session.SessionComplete
-        |> Observable.add (fun _ -> 
+        |> Observable.add (fun _ ->
             match _session with
             | Some activeSession when activeSession.Key = session.Key -> _session <- None
             | _ -> ())
@@ -355,8 +370,11 @@ type internal IncrementalSearch
         member x.CurrentSearchData = x.CurrentSearchData
         member x.CurrentSearchText = x.CurrentSearchText
         member x.CreateSession searchPath = x.CreateSession searchPath :> IIncrementalSearchSession
-        member x.CancelSession() = match _session with | Some session -> session.Cancel() | None -> () 
+
+        member x.CancelSession() =
+            match _session with
+            | Some session -> session.Cancel()
+            | None -> ()
+
         [<CLIEvent>]
         member x.SessionCreated = _sessionCreated.Publish
-
-

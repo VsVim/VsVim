@@ -1,6 +1,5 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
@@ -9,7 +8,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     /// This is a map from letter to key.  The key is the key into the property collection
     /// of the ITextBuffer which holds the ITrackingLineColumn for the global mark.  We
     /// don't use just the plain old Letter here because that's used for local marks
-    let _letterToKeyMap = 
+    let _letterToKeyMap =
         Letter.All
         |> Seq.map (fun letter -> letter, obj())
         |> Map.ofSeq
@@ -41,17 +40,17 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     member x.GetGlobalMarkData letter =
         match Map.tryFind letter _globalMarkMap with
         | None -> None
-        | Some textBuffer -> 
+        | Some textBuffer ->
             let key = Map.find letter _letterToKeyMap
             match PropertyCollectionUtil.GetValue<ITrackingLineColumn> key textBuffer.Properties with
             | None -> None
-            | Some trackingLineColumn -> Some (letter, trackingLineColumn, key)
+            | Some trackingLineColumn -> Some(letter, trackingLineColumn, key)
 
     /// Delete a global mark if it exists
-    member x.RemoveGlobalMark letter = 
-        let result = 
+    member x.RemoveGlobalMark letter =
+        let result =
             match x.GetGlobalMarkData letter with
-            | Some (_, trackingLineColumn, key) ->
+            | Some(_, trackingLineColumn, key) ->
                 trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
                 trackingLineColumn.Close()
                 true
@@ -70,24 +69,26 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         |> Seq.map (fun letter ->
             match x.GetGlobalMarkData letter with
             | None -> None
-            | Some (_, trackingLineColumn, _) -> 
+            | Some(_, trackingLineColumn, _) ->
                 match trackingLineColumn.VirtualPoint with
                 | None -> None
-                | Some virtualPoint -> Some (letter, virtualPoint))
+                | Some virtualPoint -> Some(letter, virtualPoint))
         |> SeqUtil.filterToSome
 
     /// Get the global mark location
-    member x.GetGlobalMark letter = 
+    member x.GetGlobalMark letter =
         match x.GetGlobalMarkData letter with
         | None -> None
-        | Some (_, trackingLineColumn, _) -> trackingLineColumn.VirtualPoint
+        | Some(_, trackingLineColumn, _) -> trackingLineColumn.VirtualPoint
 
     /// Set the global mark to the value in question
     member x.SetGlobalMark letter (vimTextBuffer: IVimTextBuffer) lineNumber offset =
-        // First clear out the existing mark if it exists.  
+        // First clear out the existing mark if it exists.
         x.RemoveGlobalMark letter |> ignore
 
-        let trackingLineColumn = _bufferTrackingService.CreateLineOffset vimTextBuffer.TextBuffer lineNumber offset LineColumnTrackingMode.Default
+        let trackingLineColumn =
+            _bufferTrackingService.CreateLineOffset vimTextBuffer.TextBuffer lineNumber offset
+                LineColumnTrackingMode.Default
         let key = Map.find letter _letterToKeyMap
         vimTextBuffer.TextBuffer.Properties.AddProperty(key, trackingLineColumn)
 
@@ -97,27 +98,25 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     /// Get the given mark in the context of the given IVimTextBuffer
     member x.GetMark mark (vimBufferData: IVimBufferData) =
         match mark with
-        | Mark.GlobalMark letter -> 
+        | Mark.GlobalMark letter ->
 
             // A global mark can exist in any ITextBuffer, make sure we only return the global mark if it
             // exists in this ITextBuffer
-            x.GetGlobalMark letter |> OptionUtil.map2 (fun point -> 
-                if point.Position.Snapshot.TextBuffer = vimBufferData.TextBuffer then
-                    Some point
-                else 
-                    None)
-        | Mark.LocalMark localMark -> 
-            vimBufferData.VimTextBuffer.GetLocalMark localMark
-        | Mark.LastJump -> 
-            vimBufferData.JumpList.LastJumpLocation
+            x.GetGlobalMark letter
+            |> OptionUtil.map2 (fun point ->
+                if point.Position.Snapshot.TextBuffer = vimBufferData.TextBuffer
+                then Some point
+                else None)
+        | Mark.LocalMark localMark -> vimBufferData.VimTextBuffer.GetLocalMark localMark
+        | Mark.LastJump -> vimBufferData.JumpList.LastJumpLocation
         | Mark.LastExitedPosition ->
             let getZeroZero() =
                 let snapshot = SnapshotUtil.GetStartPoint vimBufferData.TextBuffer.CurrentSnapshot
-                Some (VirtualSnapshotPointUtil.OfPoint snapshot)
+                Some(VirtualSnapshotPointUtil.OfPoint snapshot)
 
             let line, offset =
-                match _globalLastExitedMap.TryFind (vimBufferData.Vim.VimHost.GetName vimBufferData.TextBuffer) with
-                | Some (line, offset) -> line, offset
+                match _globalLastExitedMap.TryFind(vimBufferData.Vim.VimHost.GetName vimBufferData.TextBuffer) with
+                | Some(line, offset) -> line, offset
                 | None -> 0, 0
 
             // not using TryGetPointInLine because None is returned when offset and lineLength are both 0,
@@ -129,7 +128,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                     getZeroZero()
                 else
                     let snapshot = snapshotLine.Start.Add(offset)
-                    Some (VirtualSnapshotPointUtil.OfPoint snapshot)
+                    Some(VirtualSnapshotPointUtil.OfPoint snapshot)
 
     /// Get the buffer name, line and offset associated with a mark
     member x.GetMarkInfo (mark: Mark) (vimBufferData: IVimBufferData) =
@@ -139,11 +138,15 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             let line = textLine.LineNumber
             let text = textLine.GetText()
             let offset = point.Position.Position - textLine.Start.Position
-            let offset = if point.IsInVirtualSpace then offset + point.VirtualSpaces else offset
+
+            let offset =
+                if point.IsInVirtualSpace then offset + point.VirtualSpaces else offset
+
             let name = vimBufferData.Vim.VimHost.GetName point.Position.Snapshot.TextBuffer
             /// distinguish what info we show. buffername(filename) for GlobalMarks,
             /// text at the mark for marks in the current buffer/tab
-            let markInfo = if useBuffername then name else text
+            let markInfo =
+                if useBuffername then name else text
             MarkInfo(mark.Char, markInfo, line, offset) |> Some
 
         match mark with
@@ -152,23 +155,23 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             | Some point -> getPointInfo (point, true)
             | None ->
                 match _globalUnloadedMarkMap.TryFind letter with
-                | Some (name, line, offset) -> MarkInfo(mark.Char, name, line, offset) |> Some
+                | Some(name, line, offset) -> MarkInfo(mark.Char, name, line, offset) |> Some
                 | None -> None
-        |_ ->
+        | _ ->
             match x.GetMark mark vimBufferData with
             | Some point -> getPointInfo (point, false)
             | None -> None
 
     /// Set the given mark to the specified line and offset in the context of the specified IVimBufferData
-    member x.SetMark mark (vimBufferData: IVimBufferData) line offset = 
+    member x.SetMark mark (vimBufferData: IVimBufferData) line offset =
         let vimTextBuffer = vimBufferData.VimTextBuffer
+
         let result =
             match mark with
-            | Mark.GlobalMark letter -> 
+            | Mark.GlobalMark letter ->
                 x.SetGlobalMark letter vimTextBuffer line offset
                 true
-            | Mark.LocalMark localMark -> 
-                vimTextBuffer.SetLocalMark localMark line offset
+            | Mark.LocalMark localMark -> vimTextBuffer.SetLocalMark localMark line offset
             | Mark.LastJump ->
                 vimBufferData.JumpList.SetLastJumpLocation line offset
                 true
@@ -176,26 +179,24 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
                 let bufferName = vimBufferData.VimTextBuffer.Name
                 if not (System.String.IsNullOrEmpty bufferName) then
                     _globalLastExitedMap <-
-                        _globalLastExitedMap.Remove bufferName
-                        |> Map.add bufferName (line, offset)
+                        _globalLastExitedMap.Remove bufferName |> Map.add bufferName (line, offset)
                     true
                 else
                     false
-        if result then
-            x.RaiseMarkSet mark vimBufferData.TextBuffer
+        if result then x.RaiseMarkSet mark vimBufferData.TextBuffer
         result
 
     /// Delete the given mark in the context of the specified IVimBufferData
     member x.DeleteMark mark (vimBufferData: IVimBufferData) =
         let vimTextBuffer = vimBufferData.VimTextBuffer
+
         let result =
-            match mark with 
+            match mark with
             | Mark.LocalMark localMark -> vimTextBuffer.RemoveLocalMark localMark
             | Mark.GlobalMark letter -> x.RemoveGlobalMark letter
             | Mark.LastJump -> false
             | Mark.LastExitedPosition -> false
-        if result then
-            x.RaiseMarkDeleted mark vimBufferData.TextBuffer
+        if result then x.RaiseMarkDeleted mark vimBufferData.TextBuffer
         result
 
     /// Unload the buffer recording the last exited position
@@ -206,17 +207,17 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
             let mark = Mark.GlobalMark letter
             match x.GetGlobalMarkData letter with
             | None -> ()
-            | Some (_, trackingLineColumn, key) ->
+            | Some(_, trackingLineColumn, key) ->
                 if not (System.String.IsNullOrEmpty bufferName) then
                     match trackingLineColumn.Point with
                     | None -> ()
                     | Some point ->
 
-                    // Add an unloaded mark corresponding to the current position.
-                    let line, offset = SnapshotPointUtil.GetLineAndOffset point
-                    _globalUnloadedMarkMap <-
-                        _globalUnloadedMarkMap.Remove letter
-                        |> Map.add letter (bufferName, line.LineNumber, offset)
+                        // Add an unloaded mark corresponding to the current position.
+                        let line, offset = SnapshotPointUtil.GetLineAndOffset point
+                        _globalUnloadedMarkMap <-
+                            _globalUnloadedMarkMap.Remove letter
+                            |> Map.add letter (bufferName, line.LineNumber, offset)
 
                 // Close the tracking item.
                 trackingLineColumn.TextBuffer.Properties.RemoveProperty(key) |> ignore
@@ -232,9 +233,7 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
         // Record the last exited position.
         if not (System.String.IsNullOrEmpty bufferName) then
-            _globalLastExitedMap <-
-                _globalLastExitedMap.Remove bufferName
-                |> Map.add bufferName (line, offset)
+            _globalLastExitedMap <- _globalLastExitedMap.Remove bufferName |> Map.add bufferName (line, offset)
             true
         else
             false
@@ -257,16 +256,14 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
 
         let result = unloadedMarks.Length <> 0
 
-        unloadedMarks
-        |> Seq.iter (fun (letter, line, offset) -> reloadGlobalMark letter line offset)
+        unloadedMarks |> Seq.iter (fun (letter, line, offset) -> reloadGlobalMark letter line offset)
 
         result
 
-    member x.Clear () = 
+    member x.Clear() =
 
         // Close all of the ITrackingLineColumn instances
-        Letter.All
-        |> Seq.iter (fun letter -> x.RemoveGlobalMark letter |> ignore)
+        Letter.All |> Seq.iter (fun letter -> x.RemoveGlobalMark letter |> ignore)
 
         _globalMarkMap <- Map.empty
         _globalUnloadedMarkMap <- Map.empty
@@ -276,10 +273,12 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
         member x.GetGlobalMark letter = x.GetGlobalMark letter
         member x.GetMark mark vimBufferData = x.GetMark mark vimBufferData
         member x.GetMarkInfo mark vimBufferData = x.GetMarkInfo mark vimBufferData
-        member x.SetGlobalMark letter vimTextBuffer lineNumber offset = x.SetGlobalMark letter vimTextBuffer lineNumber offset
+        member x.SetGlobalMark letter vimTextBuffer lineNumber offset =
+            x.SetGlobalMark letter vimTextBuffer lineNumber offset
         member x.SetMark mark vimBufferData lineNumber offset = x.SetMark mark vimBufferData lineNumber offset
         member x.DeleteMark mark vimBufferData = x.DeleteMark mark vimBufferData
-        member x.UnloadBuffer vimBufferData name lineNumber offset = x.UnloadBuffer vimBufferData name lineNumber offset
+        member x.UnloadBuffer vimBufferData name lineNumber offset =
+            x.UnloadBuffer vimBufferData name lineNumber offset
         member x.ReloadBuffer vimBufferData name = x.ReloadBuffer vimBufferData name
         member x.RemoveGlobalMark letter = x.RemoveGlobalMark letter
         member x.Clear() = x.Clear()

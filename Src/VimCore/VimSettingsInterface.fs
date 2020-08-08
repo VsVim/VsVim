@@ -1,4 +1,4 @@
-﻿namespace Vim
+namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
@@ -9,7 +9,7 @@ open System.Diagnostics
 open System.Runtime.CompilerServices
 open System.Collections.Generic
 
-module GlobalSettingNames = 
+module GlobalSettingNames =
     let AtomicInsertName = "vsvimatomicinsert"
     let BackspaceName = "backspace"
     let CaretOpacityName = "vsvimcaret"
@@ -23,13 +23,13 @@ module GlobalSettingNames =
     let ImeCommandName = "imcmdline"
     let ImeDisableName = "imdisable"
     let ImeInsertName = "iminsert"
-    let ImeSearchName= "imsearch"
+    let ImeSearchName = "imsearch"
     let IncrementalSearchName = "incsearch"
     let JoinSpacesName = "joinspaces"
     let KeyModelName = "keymodel"
     let LastStatusName = "laststatus"
     let MagicName = "magic"
-    let MaxMapDepth =  "maxmapdepth"
+    let MaxMapDepth = "maxmapdepth"
     let ModeLineName = "modeline"
     let ModeLinesName = "modelines"
     let MouseModelName = "mousemodel"
@@ -84,12 +84,12 @@ module WindowSettingNames =
 
 /// Qualifiers that options can have
 [<RequireQualifiedAccess>]
-type SettingOptions = 
+type SettingOptions =
     | None = 0
 
     /// A string setting that is used as a filename undergoes limited
     /// backslash escaping and expands environment variables
-    | FileName = 0x1 
+    | FileName = 1
 
 /// Types of number formats supported by CTRL-A CTRL-A
 [<RequireQualifiedAccess>]
@@ -103,26 +103,26 @@ type NumberFormat =
 
 /// The options which can be set in the 'clipboard' setting
 [<RequireQualifiedAccess>]
-type ClipboardOptions = 
+type ClipboardOptions =
     | None = 0
-    | Unnamed = 0x1 
-    | AutoSelect = 0x2
-    | AutoSelectMl = 0x4
+    | Unnamed = 1
+    | AutoSelect = 2
+    | AutoSelectMl = 4
 
 /// The options which can be set in the 'selectmode' setting
 [<RequireQualifiedAccess>]
 type SelectModeOptions =
     | None = 0
-    | Mouse = 0x1
-    | Keyboard = 0x2
-    | Command = 0x4
+    | Mouse = 1
+    | Keyboard = 2
+    | Command = 4
 
 /// The options which can be set in the 'keymodel' setting
 [<RequireQualifiedAccess>]
 type KeyModelOptions =
     | None = 0
-    | StartSelection = 0x1
-    | StopSelection = 0x2
+    | StartSelection = 1
+    | StopSelection = 2
 
 /// The type of path values which can appear for 'cdpath' or 'path'
 [<RequireQualifiedAccess>]
@@ -136,7 +136,7 @@ type PathOption =
     /// Use the current directory
     | CurrentDirectory
 
-    /// Use the directory of the current file 
+    /// Use the directory of the current file
     | CurrentFile
 
 [<RequireQualifiedAccess>]
@@ -161,24 +161,24 @@ type SettingValue =
     | String of String: string
     | Toggle of Toggle: bool
 
-    member x.Kind = 
+    member x.Kind =
         match x with
         | Number _ -> SettingKind.Number
         | String _ -> SettingKind.String
         | Toggle _ -> SettingKind.Toggle
 
-/// Allows for custom setting sources to be defined.  This is used by the vim host to 
+/// Allows for custom setting sources to be defined.  This is used by the vim host to
 /// add custom settings
 type IVimCustomSettingSource =
 
-    abstract GetDefaultSettingValue: name: string -> SettingValue
+    abstract GetDefaultSettingValue: name:string -> SettingValue
 
-    abstract GetSettingValue: name: string -> SettingValue
+    abstract GetSettingValue: name:string -> SettingValue
 
-    abstract SetSettingValue: name: string -> settingValue: SettingValue -> unit
+    abstract SetSettingValue: name:string -> settingValue:SettingValue -> unit
 
 /// This pairs both the current setting value and the default value into a single type safe
-/// value.  The first value in every tuple is the current value while the second is the 
+/// value.  The first value in every tuple is the current value while the second is the
 /// default
 [<RequireQualifiedAccess>]
 type LiveSettingValue =
@@ -189,71 +189,67 @@ type LiveSettingValue =
     | Custom of Value: string * DefaultValueSource: IVimCustomSettingSource
 
     /// Is this a calculated value
-    member x.IsCalculated = 
-        match x with 
+    member x.IsCalculated =
+        match x with
         | CalculatedNumber _ -> true
         | _ -> false
 
     member x.Value =
         match x with
-        | Number (value, _) -> SettingValue.Number value
-        | String (value, _) -> SettingValue.String value
-        | Toggle (value, _) -> SettingValue.Toggle value
-        | CalculatedNumber (value, func) ->
+        | Number(value, _) -> SettingValue.Number value
+        | String(value, _) -> SettingValue.String value
+        | Toggle(value, _) -> SettingValue.Toggle value
+        | CalculatedNumber(value, func) ->
             match value with
             | Some value -> SettingValue.Number value
             | None -> func() |> SettingValue.Number
-        | Custom (name, customSettingSource) -> customSettingSource.GetSettingValue name
+        | Custom(name, customSettingSource) -> customSettingSource.GetSettingValue name
 
     member x.DefaultValue =
         match x with
-        | Number (_, defaultValue) -> SettingValue.Number defaultValue
-        | String (_, defaultValue) -> SettingValue.String defaultValue
-        | Toggle (_, defaultValue) -> SettingValue.Toggle defaultValue
-        | CalculatedNumber (_, func) -> func() |> SettingValue.Number
-        | Custom (name, customSettingSource) -> customSettingSource.GetDefaultSettingValue name
+        | Number(_, defaultValue) -> SettingValue.Number defaultValue
+        | String(_, defaultValue) -> SettingValue.String defaultValue
+        | Toggle(_, defaultValue) -> SettingValue.Toggle defaultValue
+        | CalculatedNumber(_, func) -> func() |> SettingValue.Number
+        | Custom(name, customSettingSource) -> customSettingSource.GetDefaultSettingValue name
 
-    /// Is the value currently the default? 
+    /// Is the value currently the default?
     member x.IsValueDefault = x.Value = x.DefaultValue
 
-    member x.Kind = 
+    member x.Kind =
         match x with
         | Number _ -> SettingKind.Number
-        | String _ -> SettingKind.String 
+        | String _ -> SettingKind.String
         | Toggle _ -> SettingKind.Toggle
         | CalculatedNumber _ -> SettingKind.Number
-        | Custom (name, customSettingSource) -> (customSettingSource.GetDefaultSettingValue name).Kind
+        | Custom(name, customSettingSource) -> (customSettingSource.GetDefaultSettingValue name).Kind
 
     member x.UpdateValue value =
-        match x, value with 
-        | Number (_, defaultValue), SettingValue.Number value -> Number (value, defaultValue) |> Some
-        | String (_, defaultValue), SettingValue.String value -> String (value, defaultValue) |> Some
-        | Toggle (_, defaultValue), SettingValue.Toggle value -> Toggle (value, defaultValue) |> Some
-        | CalculatedNumber (_, func), SettingValue.Number value ->
-            if value = 0 then
-                CalculatedNumber (None, func)
-            else
-                CalculatedNumber (Some value, func)
+        match x, value with
+        | Number(_, defaultValue), SettingValue.Number value -> Number(value, defaultValue) |> Some
+        | String(_, defaultValue), SettingValue.String value -> String(value, defaultValue) |> Some
+        | Toggle(_, defaultValue), SettingValue.Toggle value -> Toggle(value, defaultValue) |> Some
+        | CalculatedNumber(_, func), SettingValue.Number value ->
+            if value = 0 then CalculatedNumber(None, func) else CalculatedNumber(Some value, func)
             |> Some
-        | Custom (name, customSettingSource), value -> 
+        | Custom(name, customSettingSource), value ->
             customSettingSource.SetSettingValue name value
             Some x
         | _ -> None
 
-    static member Create value = 
+    static member Create value =
         match value with
-        | SettingValue.Number value -> LiveSettingValue.Number (value, value)
-        | SettingValue.String value -> LiveSettingValue.String (value, value)
-        | SettingValue.Toggle value -> LiveSettingValue.Toggle (value, value)
+        | SettingValue.Number value -> LiveSettingValue.Number(value, value)
+        | SettingValue.String value -> LiveSettingValue.String(value, value)
+        | SettingValue.Toggle value -> LiveSettingValue.Toggle(value, value)
 
 [<DebuggerDisplay("{Name}={Value}")>]
-type Setting = {
-    Name: string
-    Abbreviation: string
-    LiveSettingValue: LiveSettingValue
-    IsGlobal: bool
-    SettingOptions: SettingOptions
-} with 
+type Setting =
+    { Name: string
+      Abbreviation: string
+      LiveSettingValue: LiveSettingValue
+      IsGlobal: bool
+      SettingOptions: SettingOptions }
 
     member x.Value = x.LiveSettingValue.Value
 
@@ -279,7 +275,7 @@ type SettingEventArgs(_setting: Setting, _isValueChanged: bool) =
     /// Determine if the value changed or not.  The event is raised for sets that don't change the
     /// value because there is a lot of vim specific behavior that depends on this (:noh).  This
     /// will help the handlers which want to look for actual changes
-    member x.IsValueChanged = _isValueChanged;
+    member x.IsValueChanged = _isValueChanged
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -289,24 +285,24 @@ type IVimSettings =
     /// Collection of settings owned by this IVimSettings instance
     abstract Settings: Setting list
 
-    /// Try and set a setting to the passed in value.  This can fail if the value does not 
+    /// Try and set a setting to the passed in value.  This can fail if the value does not
     /// have the correct type.  The provided name can be the full name or abbreviation
-    abstract TrySetValue: settingNameOrAbbrev: string -> value: SettingValue -> bool
+    abstract TrySetValue: settingNameOrAbbrev:string -> value:SettingValue -> bool
 
-    /// Try and set a setting to the passed in value which originates in string form.  This 
+    /// Try and set a setting to the passed in value which originates in string form.  This
     /// will fail if the setting is not found or the value cannot be converted to the appropriate
     /// value
-    abstract TrySetValueFromString: settingNameOrAbbrev: string -> strValue: string -> bool
+    abstract TrySetValueFromString: settingNameOrAbbrev:string -> strValue:string -> bool
 
-    /// Get the value for the named setting.  The name can be the full setting name or an 
+    /// Get the value for the named setting.  The name can be the full setting name or an
     /// abbreviation
-    abstract GetSetting: settingNameOrAbbrev: string -> Setting option
+    abstract GetSetting: settingNameOrAbbrev:string -> Setting option
 
     /// Raised when a Setting changes
     [<CLIEvent>]
     abstract SettingChanged: IDelegateEvent<System.EventHandler<SettingEventArgs>>
 
-and IVimGlobalSettings = 
+and IVimGlobalSettings =
 
     /// The local settings specified in the vim rc file, if any
     abstract VimRcLocalSettings: IVimLocalSettings option with get, set
@@ -315,13 +311,13 @@ and IVimGlobalSettings =
     abstract VimRcWindowSettings: IVimWindowSettings option with get, set
 
     /// Add a custom setting to the current collection
-    abstract AddCustomSetting: name: string -> abbrevation: string -> customSettingSource: IVimCustomSettingSource -> unit
+    abstract AddCustomSetting: name:string -> abbrevation:string -> customSettingSource:IVimCustomSettingSource -> unit
 
     /// When set, don't break inserts into multiple inserts when moving the cursor. Applies to all kinds of cursor movements, arrow keys,
     /// automatic movements from intellisense for example or mouse movements.
     abstract AtomicInsert: bool with get, set
 
-    /// The multi-value option for determining backspace behavior.  Valid values include 
+    /// The multi-value option for determining backspace behavior.  Valid values include
     /// indent, eol, start.  Usually accessed through the IsBackSpace helpers
     abstract Backspace: string with get, set
 
@@ -333,9 +329,9 @@ and IVimGlobalSettings =
     abstract CurrentDirectoryPath: string with get, set
 
     /// Strongly typed list of paths which will be searched by the :cd and :ld commands
-    abstract CurrentDirectoryPathList: PathOption list 
+    abstract CurrentDirectoryPathList: PathOption list
 
-    /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options 
+    /// The clipboard option.  Use the IsClipboard helpers for finding out if specific options
     /// are set
     abstract Clipboard: string with get, set
 
@@ -357,7 +353,7 @@ and IVimGlobalSettings =
     /// Whether or not we should be ignoring case in the ITextBuffer
     abstract IgnoreCase: bool with get, set
 
-    /// Whether or not incremental searches should be highlighted and focused 
+    /// Whether or not incremental searches should be highlighted and focused
     /// in the ITextBuffer
     abstract IncrementalSearch: bool with get, set
 
@@ -384,61 +380,61 @@ and IVimGlobalSettings =
     abstract ImeSearch: int with get, set
 
     /// Is the 'indent' option inside of Backspace set
-    abstract IsBackspaceIndent: bool with get
+    abstract IsBackspaceIndent: bool
 
     /// Is the 'eol' option inside of Backspace set
-    abstract IsBackspaceEol: bool with get
+    abstract IsBackspaceEol: bool
 
     /// Is the 'start' option inside of Backspace set
-    abstract IsBackspaceStart: bool with get
+    abstract IsBackspaceStart: bool
 
     /// Is the 'block' option inside of VirtualEdit set
-    abstract IsVirtualEditBlock: bool with get
+    abstract IsVirtualEditBlock: bool
 
     /// Is the 'insert' option inside of VirtualEdit set
-    abstract IsVirtualEditInsert: bool with get
+    abstract IsVirtualEditInsert: bool
 
     /// Is the 'all' option inside of VirtualEdit set
-    abstract IsVirtualEditAll: bool with get
+    abstract IsVirtualEditAll: bool
 
     /// Is the 'onemore' option inside of VirtualEdit set
-    abstract IsVirtualEditOneMore: bool with get
+    abstract IsVirtualEditOneMore: bool
 
     /// Is the 'b' option inside of WhichWrap set
-    abstract IsWhichWrapSpaceLeft: bool with get
+    abstract IsWhichWrapSpaceLeft: bool
 
     /// Is the 's' option inside of WhichWrap set
-    abstract IsWhichWrapSpaceRight: bool with get
+    abstract IsWhichWrapSpaceRight: bool
 
     /// Is the 'h' option inside of WhichWrap set
-    abstract IsWhichWrapCharLeft: bool with get
+    abstract IsWhichWrapCharLeft: bool
 
     /// Is the 'l' option inside of WhichWrap set
-    abstract IsWhichWrapCharRight: bool with get
+    abstract IsWhichWrapCharRight: bool
 
     /// Is the '<' option inside of WhichWrap set
-    abstract IsWhichWrapArrowLeft: bool with get
+    abstract IsWhichWrapArrowLeft: bool
 
     /// Is the '>' option inside of WhichWrap set
-    abstract IsWhichWrapArrowRight: bool with get
+    abstract IsWhichWrapArrowRight: bool
 
     /// Is the '~' option inside of WhichWrap set
-    abstract IsWhichWrapTilde: bool with get
+    abstract IsWhichWrapTilde: bool
 
     /// Is the '[' option inside of WhichWrap set
-    abstract IsWhichWrapArrowLeftInsert: bool with get
+    abstract IsWhichWrapArrowLeftInsert: bool
 
     /// Is the ']' option inside of WhichWrap set
-    abstract IsWhichWrapArrowRightInsert: bool with get
+    abstract IsWhichWrapArrowRightInsert: bool
 
-    /// Is the Selection setting set to a value which calls for inclusive 
-    /// selection.  This does not directly track if Setting = "inclusive" 
+    /// Is the Selection setting set to a value which calls for inclusive
+    /// selection.  This does not directly track if Setting = "inclusive"
     /// although that would cause this value to be true
-    abstract IsSelectionInclusive: bool with get
+    abstract IsSelectionInclusive: bool
 
     /// Is the Selection setting set to a value which permits the selection
     /// to extend past the line
-    abstract IsSelectionPastLine: bool with get
+    abstract IsSelectionPastLine: bool
 
     /// The characters which represent an identifier
     abstract IsIdent: string with get, set
@@ -446,7 +442,7 @@ and IVimGlobalSettings =
     /// Type safe representation of IsIdent
     abstract IsIdentCharSet: VimCharSet with get, set
 
-    /// Whether or not to insert two spaces after certain constructs in a 
+    /// Whether or not to insert two spaces after certain constructs in a
     /// join operation
     abstract JoinSpaces: bool with get, set
 
@@ -481,7 +477,7 @@ and IVimGlobalSettings =
     abstract Path: string with get, set
 
     /// Strongly typed list of path entries
-    abstract PathList: PathOption list 
+    abstract PathList: PathOption list
 
     /// The nrooff macros that separate sections
     abstract Sections: string with get, set
@@ -494,12 +490,12 @@ and IVimGlobalSettings =
 
     /// The 'showcmd' setting as in Vim
     abstract ShowCommand: bool with get, set
-    
+
     abstract StartOfLine: bool with get, set
 
     /// This option determines the content of the status line.
     abstract StatusLine: string with get, set
-    
+
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp: bool with get, set
 
@@ -526,7 +522,7 @@ and IVimGlobalSettings =
     abstract SelectionKind: SelectionKind
 
     /// Options for how select mode is entered
-    abstract SelectMode: string with get, set 
+    abstract SelectMode: string with get, set
 
     /// The options which are set via select mode
     abstract SelectModeOptions: SelectModeOptions with get, set
@@ -535,15 +531,15 @@ and IVimGlobalSettings =
     /// any upper case letters
     abstract SmartCase: bool with get, set
 
-    /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
+    /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load
     /// did not succeed or has not been tried
     abstract VimRc: string with get, set
 
-    /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the 
+    /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the
     /// load has not been attempted yet
     abstract VimRcPaths: string with get, set
 
-    /// Holds the VirtualEdit string.  
+    /// Holds the VirtualEdit string.
     abstract VirtualEdit: string with get, set
 
     /// Whether or not to use a visual indicator of errors instead of a beep
@@ -556,7 +552,7 @@ and IVimGlobalSettings =
     abstract WrapScan: bool with get, set
 
     /// The key binding which will cause all IVimBuffer instances to enter disabled mode
-    abstract DisableAllCommand: KeyInput;
+    abstract DisableAllCommand: KeyInput
 
     inherit IVimSettings
 
@@ -564,7 +560,7 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
-    abstract Defaults: IVimLocalSettings with get
+    abstract Defaults: IVimLocalSettings
 
     /// Whether or not to auto-indent
     abstract AutoIndent: bool with get, set
@@ -590,13 +586,13 @@ and IVimLocalSettings =
     /// Whether or not to put relative line numbers on the left column of the display
     abstract RelativeNumber: bool with get, set
 
-    /// The number of spaces a << or >> command will shift by 
+    /// The number of spaces a << or >> command will shift by
     abstract ShiftWidth: int with get, set
 
     /// Number of spaces a tab counts for when doing edit operations
     abstract SoftTabStop: int with get, set
 
-    /// How many spaces a tab counts for 
+    /// How many spaces a tab counts for
     abstract TabStop: int with get, set
 
     /// Whether list mode is enabled
@@ -623,9 +619,9 @@ and IVimLocalSettings =
     inherit IVimSettings
 
 /// Settings which are local to a given window.
-and IVimWindowSettings = 
+and IVimWindowSettings =
 
-    abstract Defaults: IVimWindowSettings with get
+    abstract Defaults: IVimWindowSettings
 
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine: bool with get, set
@@ -633,7 +629,7 @@ and IVimWindowSettings =
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings: IVimGlobalSettings
 
-    /// The scroll size 
+    /// The scroll size
     abstract Scroll: int with get, set
 
     /// Whether or not the window should be wrapping

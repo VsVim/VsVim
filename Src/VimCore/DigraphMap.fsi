@@ -1,8 +1,7 @@
-﻿
 namespace Vim
 
-type internal DigraphMap =
 
+type internal DigraphMap =
     interface IDigraphMap
 
-    new: unit -> DigraphMap 
+    new: unit -> DigraphMap

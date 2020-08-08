@@ -1,5 +1,3 @@
-﻿#light
-
 namespace Vim
 
 /// Utility class for converting Key notations into KeyInput and vice versa
@@ -7,7 +5,7 @@ namespace Vim
 module KeyNotationUtil =
 
     /// Try to convert the passed in string into a single KeyInput value according to the
-    /// guidelines specified in :help key-notation.  
+    /// guidelines specified in :help key-notation.
     val TryStringToKeyInput: string -> KeyInput option
 
     /// Convert the passed in string to a single KeyInput value.  In the case the string
@@ -18,18 +16,18 @@ module KeyNotationUtil =
     /// if the entire list succesfully parses
     val TryStringToKeyInputSet: string -> KeyInputSet option
 
-    /// Convert tho String to a KeyInputSet 
+    /// Convert tho String to a KeyInputSet
     val StringToKeyInputSet: string -> KeyInputSet
 
-    /// Try and convert the passed in KeyInput into a special key name the extra set of 
+    /// Try and convert the passed in KeyInput into a special key name the extra set of
     /// KeyModifiers on the original KeyInput
     val TryGetSpecialKeyName: KeyInput -> (string * VimKeyModifiers) option
 
     /// Get the display name for the specified KeyInput value
-    val GetDisplayName: keyInput: KeyInput -> string
+    val GetDisplayName: keyInput:KeyInput -> string
 
     /// Convert the specified KeyInput into a string using key notation
-    val KeyInputToString: keyInput: KeyInput -> string
+    val KeyInputToString: keyInput:KeyInput -> string
 
     /// Convert the specified KeyInputSet into a string using key notation
-    val KeyInputSetToString: keyInputSet: KeyInputSet -> string
+    val KeyInputSetToString: keyInputSet:KeyInputSet -> string

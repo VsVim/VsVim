@@ -1,61 +1,77 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text
 open System.Diagnostics
 
 /// Representation of StringData stored in a Register
 [<RequireQualifiedAccess>]
-type StringData = 
+type StringData =
     | Simple of Text: string
     | Block of BlockTexts: NonEmptyCollection<string>
-    with 
 
     member x.ApplyCount count =
-        match x with 
+        match x with
         | Simple str -> StringUtil.Repeat count str |> Simple
-        | Block col -> col |> NonEmptyCollectionUtil.Map (StringUtil.Repeat count) |> Block
+        | Block col ->
+            col
+            |> NonEmptyCollectionUtil.Map(StringUtil.Repeat count)
+            |> Block
 
-    /// Returns the first String in the StringData instance. 
-    member x.FirstString = 
+    /// Returns the first String in the StringData instance.
+    member x.FirstString =
         match x with
         | Simple str -> str
         | Block col -> col.Head
 
     member x.String =
-        match x with 
+        match x with
         | Simple str -> str
         | Block l -> l |> StringUtil.CombineWith System.Environment.NewLine
 
-    /// Append the specified string data to this StringData instance and return a 
-    /// combined value.  This is used when append operations are done wit the yank 
+    /// Append the specified string data to this StringData instance and return a
+    /// combined value.  This is used when append operations are done wit the yank
     /// and delete register operations
     member x.Append other =
         match x, other with
-        | Simple left, Simple right -> Simple (left + right)
-        | Simple left, Block right -> Block (NonEmptyCollection(left + right.Head, right.Rest))
-        | Block left, Simple right -> Block (NonEmptyCollectionUtil.Append [ right ] left)
-        | Block left, Block right -> Block (NonEmptyCollectionUtil.Append (right.All |> List.ofSeq) left)
+        | Simple left, Simple right -> Simple(left + right)
+        | Simple left, Block right -> Block(NonEmptyCollection(left + right.Head, right.Rest))
+        | Block left, Simple right -> Block(NonEmptyCollectionUtil.Append [ right ] left)
+        | Block left, Block right -> Block(NonEmptyCollectionUtil.Append (right.All |> List.ofSeq) left)
 
-    static member OfNormalizedSnasphotSpanCollection (col: NormalizedSnapshotSpanCollection) = 
+    static member OfNormalizedSnasphotSpanCollection(col: NormalizedSnapshotSpanCollection) =
         if col.Count = 0 then
             StringData.Simple StringUtil.Empty
-        elif col.Count = 1 then 
-            col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
+        elif col.Count = 1 then
+            col.[0]
+            |> SnapshotSpanUtil.GetText
+            |> StringData.Simple
         else
-            col |> Seq.map SnapshotSpanUtil.GetText |> NonEmptyCollectionUtil.OfSeq |> Option.get |> StringData.Block
+            col
+            |> Seq.map SnapshotSpanUtil.GetText
+            |> NonEmptyCollectionUtil.OfSeq
+            |> Option.get
+            |> StringData.Block
 
-    static member OfSpan span = span |> SnapshotSpanUtil.GetText |> StringData.Simple
+    static member OfSpan span =
+        span
+        |> SnapshotSpanUtil.GetText
+        |> StringData.Simple
 
-    static member OfSeq seq =  seq |> NormalizedSnapshotSpanCollectionUtil.OfSeq |> StringData.OfNormalizedSnasphotSpanCollection
+    static member OfSeq seq =
+        seq
+        |> NormalizedSnapshotSpanCollectionUtil.OfSeq
+        |> StringData.OfNormalizedSnasphotSpanCollection
 
     static member OfEditSpan editSpan =
         match editSpan with
         | EditSpan.Single span -> StringData.OfSpan span.Span
-        | EditSpan.Block col -> col |> NonEmptyCollectionUtil.Map (fun span -> span.GetText()) |> StringData.Block 
+        | EditSpan.Block col ->
+            col
+            |> NonEmptyCollectionUtil.Map(fun span -> span.GetText())
+            |> StringData.Block
 
 [<RequireQualifiedAccess>]
-type NumberedRegister = 
+type NumberedRegister =
     | Number0
     | Number1
     | Number2
@@ -66,10 +82,9 @@ type NumberedRegister =
     | Number7
     | Number8
     | Number9
-    with
 
-    member x.Char = 
-        match x with 
+    member x.Char =
+        match x with
         | Number0 -> '0'
         | Number1 -> '1'
         | Number2 -> '2'
@@ -81,8 +96,8 @@ type NumberedRegister =
         | Number8 -> '8'
         | Number9 -> '9'
 
-    member x.NextPositive = 
-        match x with 
+    member x.NextPositive =
+        match x with
         | Number0 -> None
         | Number1 -> Some Number2
         | Number2 -> Some Number3
@@ -94,7 +109,7 @@ type NumberedRegister =
         | Number8 -> Some Number9
         | Number9 -> None
 
-    static member OfChar c = 
+    static member OfChar c =
         match c with
         | '0' -> Some Number0
         | '1' -> Some Number1
@@ -108,7 +123,7 @@ type NumberedRegister =
         | '9' -> Some Number9
         | _ -> None
 
-    static member OfNumber n = 
+    static member OfNumber n =
         match n with
         | 0 -> Some Number0
         | 1 -> Some Number1
@@ -122,14 +137,14 @@ type NumberedRegister =
         | 9 -> Some Number9
         | _ -> None
 
-    static member All = 
-        ['0'..'9']
+    static member All =
+        [ '0' .. '9' ]
         |> Seq.map NumberedRegister.OfChar
         |> Seq.map Option.get
 
 /// The 52 named registers
 [<RequireQualifiedAccess>]
-type NamedRegister = 
+type NamedRegister =
     | Namea
     | Nameb
     | Namec
@@ -182,13 +197,12 @@ type NamedRegister =
     | NameX
     | NameY
     | NameZ
-    with 
 
     /// Is this an append register
     member x.IsAppend = CharUtil.IsUpper x.Char
 
     member x.Char =
-        match x with 
+        match x with
         | Namea -> 'a'
         | Nameb -> 'b'
         | Namec -> 'c'
@@ -242,8 +256,8 @@ type NamedRegister =
         | NameY -> 'Y'
         | NameZ -> 'Z'
 
-    static member OfChar c = 
-        match c with 
+    static member OfChar c =
+        match c with
         | 'a' -> Some Namea
         | 'b' -> Some Nameb
         | 'c' -> Some Namec
@@ -298,9 +312,9 @@ type NamedRegister =
         | 'Z' -> Some NameZ
         | _ -> None
 
-    static member All = 
-        ['a'..'z']
-        |> Seq.append ['A'..'Z']
+    static member All =
+        [ 'a' .. 'z' ]
+        |> Seq.append [ 'A' .. 'Z' ]
         |> Seq.map NamedRegister.OfChar
         |> Seq.map Option.get
 
@@ -310,16 +324,15 @@ type ReadOnlyRegister =
     | Dot
     | Colon
     | Pound
-    with
 
-    member x.Char = 
+    member x.Char =
         match x with
-        | Percent -> '%' 
+        | Percent -> '%'
         | Dot -> '.'
         | Colon -> ':'
         | Pound -> '#'
 
-    static member OfChar c = 
+    static member OfChar c =
         match c with
         | '%' -> Some Percent
         | '.' -> Some Dot
@@ -327,32 +340,31 @@ type ReadOnlyRegister =
         | '#' -> Some Pound
         | _ -> None
 
-    static member All = 
+    static member All =
         "%.:#"
         |> Seq.map ReadOnlyRegister.OfChar
         |> Seq.map Option.get
 
 [<RequireQualifiedAccess>]
 type SelectionAndDropRegister =
-    | Star 
+    | Star
     | Plus
     | Tilde
-    with
 
-    member x.Char = 
-        match x with 
+    member x.Char =
+        match x with
         | Star -> '*'
         | Plus -> '+'
         | Tilde -> '~'
 
     static member OfChar c =
-        match c with 
-        | '*' -> Some Star 
+        match c with
+        | '*' -> Some Star
         | '+' -> Some Plus
         | '~' -> Some Tilde
         | _ -> None
 
-    static member All = 
+    static member All =
         "*+~"
         |> Seq.map SelectionAndDropRegister.OfChar
         |> Seq.map Option.get
@@ -369,14 +381,13 @@ type RegisterName =
     | Named of NamedRegister: NamedRegister
     /// The 4 read only registers :, ., % and #
     | ReadOnly of ReadOnlyRegister: ReadOnlyRegister
-    | Expression 
+    | Expression
     | SelectionAndDrop of SelectionAndDropRegister: SelectionAndDropRegister
     | Blackhole
-    | LastSearchPattern 
-    with
+    | LastSearchPattern
 
-    member x.Char = 
-        match x with 
+    member x.Char =
+        match x with
         | Unnamed -> Some '"'
         | SmallDelete -> Some '-'
         | Blackhole -> Some '_'
@@ -389,7 +400,7 @@ type RegisterName =
 
     /// Is this one of the named append registers
     member x.IsAppend =
-        match x with 
+        match x with
         | Unnamed -> false
         | SmallDelete -> false
         | Blackhole -> false
@@ -400,19 +411,19 @@ type RegisterName =
         | ReadOnly r -> false
         | SelectionAndDrop _ -> false
 
-    static member OfChar c = 
+    static member OfChar c =
         match NumberedRegister.OfChar c with
-        | Some r -> Some (Numbered r)
+        | Some r -> Some(Numbered r)
         | None ->
             match NamedRegister.OfChar c with
-            | Some r -> Some (Named r)
+            | Some r -> Some(Named r)
             | None ->
                 match ReadOnlyRegister.OfChar c with
-                | Some r -> Some (ReadOnly r)
+                | Some r -> Some(ReadOnly r)
                 | None ->
                     match SelectionAndDropRegister.OfChar c with
-                    | Some r -> Some (SelectionAndDrop r)
-                    | None -> 
+                    | Some r -> Some(SelectionAndDrop r)
+                    | None ->
                         match c with
                         | '=' -> Some Expression
                         | '_' -> Some Blackhole
@@ -421,74 +432,68 @@ type RegisterName =
                         | '"' -> Some Unnamed
                         | _ -> None
 
-    static member All = 
-        NamedRegister.All |> Seq.map (fun n -> Named n)
+    static member All =
+        NamedRegister.All
+        |> Seq.map (fun n -> Named n)
         |> Seq.append (NumberedRegister.All |> Seq.map (fun n -> Numbered n))
         |> Seq.append (ReadOnlyRegister.All |> Seq.map (fun n -> ReadOnly n))
         |> Seq.append (SelectionAndDropRegister.All |> Seq.map (fun n -> SelectionAndDrop n))
-        |> Seq.append [Unnamed; Expression; Blackhole; LastSearchPattern; SmallDelete]
+        |> Seq.append [ Unnamed; Expression; Blackhole; LastSearchPattern; SmallDelete ]
 
-module RegisterNameUtil = 
+module RegisterNameUtil =
 
     /// All of the char values which represent register names
-    let RegisterNameChars = 
+    let RegisterNameChars =
         RegisterName.All
         |> Seq.map (fun n -> n.Char)
         |> SeqUtil.filterToSome
         |> List.ofSeq
 
     /// Mapping of the available char's to the appropriate RegisterName
-    let RegisterMap = 
+    let RegisterMap =
         RegisterName.All
-        |> Seq.map (fun r -> (r.Char),r)
+        |> Seq.map (fun r -> (r.Char), r)
         |> Seq.map OptionUtil.combine2
         |> SeqUtil.filterToSome
         |> Map.ofSeq
 
-    let CharToRegister c = Map.tryFind c RegisterMap 
-    let NumberToRegister n = 
+    let CharToRegister c = Map.tryFind c RegisterMap
+
+    let NumberToRegister n =
         match NumberedRegister.OfNumber n with
         | None -> None
         | Some numberedName -> RegisterName.Numbered numberedName |> Some
 
-/// Represents the data stored in a Register.  Registers need to store both string values 
-/// for cut and paste operations and KeyInput sequences for Macro recording.  There is not 
+/// Represents the data stored in a Register.  Registers need to store both string values
+/// for cut and paste operations and KeyInput sequences for Macro recording.  There is not
 /// 100% fidelity between these formats and hence we have to have this intermediate state
 /// to deal with.
 ///
 /// Quick Example:  There is no way to store <Left> or any arrow key as a char value (they
 /// simple don't have one associated and you can check ':help key-notation' for verification
-/// of this).  Trying to store '<Left>' in the register causes playback to be interpreted 
-/// not as the <Left> key but as the key sequence <, L, e, f, t, >.  
+/// of this).  Trying to store '<Left>' in the register causes playback to be interpreted
+/// not as the <Left> key but as the key sequence <, L, e, f, t, >.
 ///
 /// Unfortunately we are required to convert back and forth in different circumstances.  There
 /// will be fidelity loss in some
-type RegisterValue
-    (
-        _isString: bool,
-        _stringData: StringData,
-        _keyInputs: KeyInput list,
-        _operationKind: OperationKind
-    ) =
+type RegisterValue(_isString: bool, _stringData: StringData, _keyInputs: KeyInput list, _operationKind: OperationKind) =
 
     /// Once a line wise value is in a string form it should always end with a new line.  It's
     /// hard to guarantee this at all of the sites which produce register values though because
     /// of quirks in the editor.  This is a check to make sure we got it right
-    static let IsNormalized stringData operationKind = 
+    static let IsNormalized stringData operationKind =
         match stringData, operationKind with
         | StringData.Simple str, OperationKind.LineWise -> EditUtil.EndsWithNewLine str
         | _ -> true
-        
-    new (value: string, operationKind: OperationKind) =
-        RegisterValue(StringData.Simple value, operationKind)
 
-    new (stringData: StringData, operationKind: OperationKind) =
+    new(value: string, operationKind: OperationKind) = RegisterValue(StringData.Simple value, operationKind)
+
+    new(stringData: StringData, operationKind: OperationKind) =
         // TODO: Why do we allow an OperationKind here?  Can you ever have a line wise block StringData?
         Debug.Assert(IsNormalized stringData operationKind)
         RegisterValue(true, stringData, List.empty, operationKind)
 
-    new (keyInputs: KeyInput list) =
-        RegisterValue(false, StringData.Simple "", keyInputs, OperationKind.CharacterWise)
+    new(keyInputs: KeyInput list) = RegisterValue(false, StringData.Simple "", keyInputs, OperationKind.CharacterWise)
 
     /// Whether this register is natively a string
     member x.IsString = _isString
@@ -498,41 +503,51 @@ type RegisterValue
         if _isString then
             _stringData
         else
-            _keyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq |> StringData.Simple
+            _keyInputs
+            |> Seq.map (fun ki -> ki.Char)
+            |> StringUtil.OfCharSeq
+            |> StringData.Simple
 
     /// Get the RegisterData as a KeyInput list instance
     member x.KeyInputs =
         if _isString then
             match _stringData with
-            | StringData.Simple str -> 
+            | StringData.Simple str ->
                 // Just map every character to a KeyInput
-                str |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq
+                str
+                |> Seq.map KeyInputUtil.CharToKeyInput
+                |> List.ofSeq
 
-            | StringData.Block col -> 
+            | StringData.Block col ->
                 // Map every character in every string into a KeyInput and add a <Enter> at the
                 // end of every String
                 col
-                |> Seq.map (fun s -> s |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq)
+                |> Seq.map (fun s ->
+                    s
+                    |> Seq.map KeyInputUtil.CharToKeyInput
+                    |> List.ofSeq)
                 |> Seq.map (fun list -> list @ [ KeyInputUtil.EnterKey ])
                 |> List.concat
         else
             _keyInputs
 
-    /// Get the string which represents this RegisterValue.  This is an inherently lossy 
+    /// Get the string which represents this RegisterValue.  This is an inherently lossy
     /// operation (information is loss on converting a StringData.Block into a raw string
     /// value).  This function should be avoided for operations other than display purposes
-    member x.StringValue = 
+    member x.StringValue =
         if _isString then
             _stringData.String
         else
-            _keyInputs |> Seq.map (fun keyInput -> keyInput.Char) |> StringUtil.OfCharSeq
+            _keyInputs
+            |> Seq.map (fun keyInput -> keyInput.Char)
+            |> StringUtil.OfCharSeq
 
     /// The OperationKind which produced this value
-    member x.OperationKind = _operationKind 
+    member x.OperationKind = _operationKind
 
-    /// Append the provided RegisterValue to this one.  Used for append register operations (yank, 
+    /// Append the provided RegisterValue to this one.  Used for append register operations (yank,
     /// delete, etc ... with an upper case register)
-    member x.Append (value: RegisterValue) =
+    member x.Append(value: RegisterValue) =
         if _isString then
             let stringData = x.StringData.Append value.StringData
             RegisterValue(stringData, x.OperationKind)
@@ -543,52 +558,50 @@ type RegisterValue
     override x.ToString() = x.StringValue
 
 /// Backing of a register value
-type internal IRegisterValueBacking = 
+type internal IRegisterValueBacking =
 
     /// The RegisterValue to use
     abstract RegisterValue: RegisterValue with get, set
 
 /// Default implementation of IRegisterValueBacking.  Just holds the RegisterValue
 /// in a mutable field
-type internal DefaultRegisterValueBacking() = 
+type internal DefaultRegisterValueBacking() =
     let mutable _value = RegisterValue(StringUtil.Empty, OperationKind.CharacterWise)
     interface IRegisterValueBacking with
+
         member x.RegisterValue
-            with get() = _value
+            with get () = _value
             and set value = _value <- value
 
-/// Represents one of the register is Vim 
-type Register
-    internal 
-    ( 
-        _name: RegisterName,
-        _valueBacking: IRegisterValueBacking ) = 
+/// Represents one of the register is Vim
+type Register internal (_name: RegisterName, _valueBacking: IRegisterValueBacking) =
 
-    new (c:char) =
+    new(c: char) =
         let name = RegisterNameUtil.CharToRegister c |> Option.get
-        Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
+        Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking)
 
-    new (name) = Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
+    new(name) = Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking)
 
     member x.Name = _name
     member x.OperationKind = _valueBacking.RegisterValue.OperationKind
     member x.StringValue = _valueBacking.RegisterValue.StringValue
     member x.StringData = _valueBacking.RegisterValue.StringData
-    member x.RegisterValue 
-        with get () =  _valueBacking.RegisterValue
+
+    member x.RegisterValue
+        with get () = _valueBacking.RegisterValue
         and set value = _valueBacking.RegisterValue <- value
 
 /// Map containing the various VIM registers
-type IRegisterMap = 
+type IRegisterMap =
 
     /// Gets all of the available register name values
     abstract RegisterNames: seq<RegisterName>
 
     /// Get the register with the specified name
-    abstract GetRegister: registerName: RegisterName -> Register
+    abstract GetRegister: registerName:RegisterName -> Register
 
     /// Update the register with the specified value
-    abstract SetRegisterValue: registerName: RegisterName -> value: RegisterValue -> unit
+    abstract SetRegisterValue: registerName:RegisterName -> value:RegisterValue -> unit
 
 /// Map containing the Vim registers associated with the current caret index
 type ICaretRegisterMap =

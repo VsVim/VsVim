@@ -1,6 +1,5 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
@@ -13,25 +12,19 @@ open VimCoreExtensions
 
 [<Sealed>]
 [<Export(typeof<IVimBufferCreationListener>)>]
-type internal AutoCommandRunner
-    [<ImportingConstructor>]
-    (
-        _vim: IVim
-    ) as this =
+type internal AutoCommandRunner [<ImportingConstructor>] (_vim: IVim) as this =
 
     let _vimData = _vim.VimData
     let _vimHost = _vim.VimHost
     let _globalSettings = _vim.GlobalSettings
-    
-    do 
-        _vim.VimHost.ActiveTextViewChanged
-        |> Observable.add this.OnActiveTextViewChanged
+
+    do _vim.VimHost.ActiveTextViewChanged |> Observable.add this.OnActiveTextViewChanged
 
     /// Create the Regex for the specified pattern.  The allowed items are specified in ':help autocmd-patterns'
-    static let CreateFilePatternRegex (pattern: string) = 
+    static let CreateFilePatternRegex(pattern: string) =
         let builder = System.Text.StringBuilder()
-        let mutable i = 0 
-        while i < pattern.Length do 
+        let mutable i = 0
+        while i < pattern.Length do
             match pattern.[i] with
             | '*' -> builder.AppendString ".*"
             | '.' -> builder.AppendString "\."
@@ -41,8 +34,7 @@ type internal AutoCommandRunner
                     i <- i + 1
                 else
                     builder.AppendChar '\\'
-            | _ ->
-                builder.AppendChar pattern.[i]
+            | _ -> builder.AppendChar pattern.[i]
             i <- i + 1
 
         builder.AppendChar '$'
@@ -50,14 +42,13 @@ type internal AutoCommandRunner
         let bclPattern = builder.ToString()
         VimRegexFactory.CreateBcl bclPattern RegexOptions.None
 
-    static let FileNameEndsWithPattern fileName pattern = 
+    static let FileNameEndsWithPattern fileName pattern =
         try
             let regex = CreateFilePatternRegex pattern
-            match regex with 
+            match regex with
             | None -> false
             | Some regex -> regex.IsMatch fileName
-        with
-            _ -> false
+        with _ -> false
 
     member x.GetAutoCommands fileName eventKind =
         _vimData.AutoCommands
@@ -65,8 +56,8 @@ type internal AutoCommandRunner
         |> Seq.filter (fun autoCommand -> FileNameEndsWithPattern fileName autoCommand.Pattern)
         |> List.ofSeq
 
-    /// Run the specified AutoCommand against the IVimBuffer in question 
-    member x.RunAutoCommands (vimBuffer: IVimBuffer) eventKind = 
+    /// Run the specified AutoCommand against the IVimBuffer in question
+    member x.RunAutoCommands (vimBuffer: IVimBuffer) eventKind =
         if _vimHost.IsAutoCommandEnabled then
             let fileName = _vimHost.GetName vimBuffer.TextBuffer
             let autoCommandList = x.GetAutoCommands fileName eventKind
@@ -75,13 +66,13 @@ type internal AutoCommandRunner
                 let parser = Parser(_globalSettings, _vimData)
 
                 autoCommandList
-                |> Seq.iter (fun autoCommand -> 
-                    parser.ParseLineCommand autoCommand.LineCommandText 
+                |> Seq.iter (fun autoCommand ->
+                    parser.ParseLineCommand autoCommand.LineCommandText
                     |> vimInterpreter.RunLineCommand
                     |> ignore)
 
     /// Called when the active ITextView changes according to the host
-    member x.OnActiveTextViewChanged (e: TextViewChangedEventArgs) =
+    member x.OnActiveTextViewChanged(e: TextViewChangedEventArgs) =
         match OptionUtil.map2 _vim.GetVimBuffer e.OldTextView with
         | Some vimBuffer -> x.RunAutoCommands vimBuffer EventKind.BufLeave
         | None -> ()
@@ -90,11 +81,11 @@ type internal AutoCommandRunner
         | Some vimBuffer -> x.RunAutoCommands vimBuffer EventKind.BufEnter
         | None -> ()
 
-    /// VimBufferCreated is the closest event we have for BufEnter.   
-    member x.OnVimBufferCreated (vimBuffer: IVimBuffer) =
+    /// VimBufferCreated is the closest event we have for BufEnter.
+    member x.OnVimBufferCreated(vimBuffer: IVimBuffer) =
         // TODO: BufEnter should really be raised every time the text buffer gets edit
         // focus.  Hard to detect that in WPF / VS though because keyboard focus is very
-        // different than edit focus.  For now just raise it once here.  
+        // different than edit focus.  For now just raise it once here.
         x.RunAutoCommands vimBuffer EventKind.BufEnter
 
         x.RunAutoCommands vimBuffer EventKind.FileType
@@ -103,12 +94,10 @@ type internal AutoCommandRunner
 
         let bag = DisposableBag()
         vimBuffer.Closing
-        |> Observable.subscribe (fun _ -> 
+        |> Observable.subscribe (fun _ ->
             x.RunAutoCommands vimBuffer EventKind.BufWinLeave
             bag.DisposeAll())
         |> bag.Add
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated vimBuffer = x.OnVimBufferCreated vimBuffer
-
-    

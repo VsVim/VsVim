@@ -1,4 +1,3 @@
-﻿
 namespace Vim
 
 type internal MacroRecorder =

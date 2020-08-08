@@ -1,5 +1,3 @@
-﻿#light
-
 namespace Vim
 
 open Microsoft.VisualStudio.Text
@@ -7,17 +5,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Utilities
 
-type internal VimTextBuffer 
-    (
-        _textBuffer: ITextBuffer,
-        _localAbbreviationMap: IVimLocalAbbreviationMap,
-        _localKeyMap: IVimLocalKeyMap,
-        _localSettings: IVimLocalSettings,
-        _bufferTrackingService: IBufferTrackingService,
-        _undoRedoOperations: IUndoRedoOperations,
-        _wordUtil: WordUtil,
-        _vim: IVim
-    ) =
+type internal VimTextBuffer(_textBuffer: ITextBuffer, _localAbbreviationMap: IVimLocalAbbreviationMap, _localKeyMap: IVimLocalKeyMap, _localSettings: IVimLocalSettings, _bufferTrackingService: IBufferTrackingService, _undoRedoOperations: IUndoRedoOperations, _wordUtil: WordUtil, _vim: IVim) =
 
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
@@ -43,32 +31,32 @@ type internal VimTextBuffer
         let args = MarkTextBufferEventArgs(mark, _textBuffer)
         _markSetEvent.Trigger x args
 
-    member x.LastVisualSelection 
-        with get() =
+    member x.LastVisualSelection
+        with get () =
             match _lastVisualSelection with
             | None -> None
             | Some trackingVisualSelection -> trackingVisualSelection.VisualSelection
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _lastVisualSelection with
             | None -> ()
             | Some trackingVisualSelection -> trackingVisualSelection.Close()
 
-            _lastVisualSelection <- 
+            _lastVisualSelection <-
                 match value with
                 | None -> None
-                | Some visualSelection -> Some (_bufferTrackingService.CreateVisualSelection visualSelection)
+                | Some visualSelection -> Some(_bufferTrackingService.CreateVisualSelection visualSelection)
 
             x.RaiseMarkSet LocalMark.LastSelectionStart
             x.RaiseMarkSet LocalMark.LastSelectionEnd
 
     member x.InsertStartPoint
-        with get() = 
+        with get () =
             match _insertStartPoint with
             | None -> None
             | Some insertStartPoint -> insertStartPoint.Point
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _insertStartPoint with
@@ -78,17 +66,19 @@ type internal VimTextBuffer
             _insertStartPoint <-
                 match value with
                 | None -> None
-                | Some point -> 
+                | Some point ->
                     let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
+                    let trackingLineColumn =
+                        _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset
+                            LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
     member x.LastInsertExitPoint
-        with get() = 
+        with get () =
             match _lastInsertExitPoint with
             | None -> None
             | Some lastInsertExitPoint -> lastInsertExitPoint.Point
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _lastInsertExitPoint with
@@ -98,19 +88,21 @@ type internal VimTextBuffer
             _lastInsertExitPoint <-
                 match value with
                 | None -> None
-                | Some point -> 
+                | Some point ->
                     let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
+                    let trackingLineColumn =
+                        _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset
+                            LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastInsertExit
 
-     member x.LastEditPoint
-        with get() = 
+    member x.LastEditPoint
+        with get () =
             match _lastEditPoint with
             | None -> None
             | Some _lastEditPoint -> _lastEditPoint.Point
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _lastEditPoint with
@@ -120,19 +112,21 @@ type internal VimTextBuffer
             _lastEditPoint <-
                 match value with
                 | None -> None
-                | Some point -> 
+                | Some point ->
                     let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.LastEditPoint
+                    let trackingLineColumn =
+                        _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset
+                            LineColumnTrackingMode.LastEditPoint
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastEdit
 
-     member x.LastChangeOrYankStart
-        with get() = 
+    member x.LastChangeOrYankStart
+        with get () =
             match _lastChangeOrYankStart with
             | None -> None
             | Some trackingLineColumn -> trackingLineColumn.Point
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _lastChangeOrYankStart with
@@ -142,19 +136,21 @@ type internal VimTextBuffer
             _lastChangeOrYankStart <-
                 match value with
                 | None -> None
-                | Some point -> 
+                | Some point ->
                     let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
+                    let trackingLineColumn =
+                        _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset
+                            LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankStart
 
-     member x.LastChangeOrYankEnd
-        with get() = 
+    member x.LastChangeOrYankEnd
+        with get () =
             match _lastChangeOrYankEnd with
             | None -> None
             | Some trackingLineColumn -> trackingLineColumn.Point
-        and set value = 
+        and set value =
 
             // First clear out the previous information
             match _lastChangeOrYankEnd with
@@ -164,57 +160,56 @@ type internal VimTextBuffer
             _lastChangeOrYankEnd <-
                 match value with
                 | None -> None
-                | Some point -> 
+                | Some point ->
                     let lineNumber, offset = SnapshotPointUtil.GetLineNumberAndOffset point
-                    let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
+                    let trackingLineColumn =
+                        _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset
+                            LineColumnTrackingMode.Default
                     Some trackingLineColumn
 
             x.RaiseMarkSet LocalMark.LastChangeOrYankEnd
 
-     member x.InOneTimeCommand
-        with get() = _inOneTimeCommand
+    member x.InOneTimeCommand
+        with get () = _inOneTimeCommand
         and set value = _inOneTimeCommand <- value
 
     member x.InSelectModeOneTimeCommand
-        with get() = _inSelectModeOneCommand
+        with get () = _inSelectModeOneCommand
         and set value = _inSelectModeOneCommand <- value
 
-    member x.IsSoftTabStopValidForBackspace 
-        with get() = _isSoftTabStopValidForBackspace
+    member x.IsSoftTabStopValidForBackspace
+        with get () = _isSoftTabStopValidForBackspace
         and set value = _isSoftTabStopValidForBackspace <- value
 
     /// Get all of the local marks in the IVimTextBuffer.
-    member x.LocalMarks = 
+    member x.LocalMarks =
         LocalMark.All
         |> Seq.map (fun localMark ->
             match x.GetLocalMark localMark with
             | None -> None
-            | Some point -> Some (localMark, point))
+            | Some point -> Some(localMark, point))
         |> SeqUtil.filterToSome
 
     /// Whether to use virtual space
     member x.UseVirtualSpace =
         match _modeKind with
         | ModeKind.SelectBlock
-        | ModeKind.VisualBlock
-            -> _globalSettings.IsVirtualEditBlock
+        | ModeKind.VisualBlock -> _globalSettings.IsVirtualEditBlock
         | ModeKind.Insert
-        | ModeKind.Replace
-            -> _globalSettings.IsVirtualEditInsert
-        | _
-            -> _globalSettings.IsVirtualEditAll
+        | ModeKind.Replace -> _globalSettings.IsVirtualEditInsert
+        | _ -> _globalSettings.IsVirtualEditAll
 
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    member x.CheckModeLine windowSettings =
-        _modeLineInterpreter.CheckModeLine windowSettings
+    member x.CheckModeLine windowSettings = _modeLineInterpreter.CheckModeLine windowSettings
 
-    /// Clear out all of the cached data.  Essentially we need to dispose all of our marks 
+    /// Clear out all of the cached data.  Essentially we need to dispose all of our marks
     member x.Clear() =
         // First clear out the Letter based marks
         let properties = _textBuffer.Properties
-        Letter.All |> Seq.iter (fun letter ->
+        Letter.All
+        |> Seq.iter (fun letter ->
             match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter properties with
             | None -> ()
             | Some trackingLineColumn -> trackingLineColumn.Close())
@@ -238,30 +233,27 @@ type internal VimTextBuffer
         | LocalMark.Number _ ->
             // TODO: implement numbered mark support
             None
-        | LocalMark.LastInsertExit ->
-            x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
-        | LocalMark.LastEdit ->
-            x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastInsertExit -> x.LastInsertExitPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastEdit -> x.LastEditPoint |> Option.map VirtualSnapshotPointUtil.OfPoint
         | LocalMark.LastSelectionStart ->
-            x.LastVisualSelection 
-            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint) 
+            x.LastVisualSelection
+            |> Option.map (fun visualSelection -> visualSelection.VisualSpan.Start |> VirtualSnapshotPointUtil.OfPoint)
         | LocalMark.LastSelectionEnd ->
             x.LastVisualSelection
             |> Option.map (fun visualSelection -> visualSelection.VisualSpan.End |> VirtualSnapshotPointUtil.OfPoint)
-        | LocalMark.LastChangeOrYankStart ->
-            x.LastChangeOrYankStart |> Option.map VirtualSnapshotPointUtil.OfPoint
-        | LocalMark.LastChangeOrYankEnd ->
-            x.LastChangeOrYankEnd |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastChangeOrYankStart -> x.LastChangeOrYankStart |> Option.map VirtualSnapshotPointUtil.OfPoint
+        | LocalMark.LastChangeOrYankEnd -> x.LastChangeOrYankEnd |> Option.map VirtualSnapshotPointUtil.OfPoint
 
     /// Set the local mark at the given line number and offset
-    member x.SetLocalMark localMark lineNumber offset = 
+    member x.SetLocalMark localMark lineNumber offset =
         match localMark with
-        | LocalMark.Letter letter -> 
-            // Remove the mark.  This will take core of closing out the tracking data for us so that we don't 
+        | LocalMark.Letter letter ->
+            // Remove the mark.  This will take core of closing out the tracking data for us so that we don't
             // leak it
             x.RemoveLocalMark localMark |> ignore
 
-            let trackingLineColumn = _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
+            let trackingLineColumn =
+                _bufferTrackingService.CreateLineOffset _textBuffer lineNumber offset LineColumnTrackingMode.Default
             _textBuffer.Properties.[letter] <- trackingLineColumn
             true
         | LocalMark.Number _ -> false
@@ -272,13 +264,13 @@ type internal VimTextBuffer
         | LocalMark.LastChangeOrYankStart -> false
         | LocalMark.LastChangeOrYankEnd -> false
 
-    member x.RemoveLocalMark localMark = 
+    member x.RemoveLocalMark localMark =
         match localMark with
-        | LocalMark.Letter letter -> 
+        | LocalMark.Letter letter ->
             // Close out the existing mark at this location if it exists
             match PropertyCollectionUtil.GetValue<ITrackingLineColumn> letter _textBuffer.Properties with
             | None -> false
-            | Some trackingLineColumn -> 
+            | Some trackingLineColumn ->
                 trackingLineColumn.Close()
                 _textBuffer.Properties.RemoveProperty letter
         | LocalMark.Number _ -> false
@@ -300,33 +292,43 @@ type internal VimTextBuffer
         member x.TextBuffer = _textBuffer
         member x.GlobalSettings = _globalSettings
         member x.GlobalAbbreviationMap = _localAbbreviationMap.GlobalAbbreviationMap
-        member x.LastVisualSelection 
-            with get() = x.LastVisualSelection
+
+        member x.LastVisualSelection
+            with get () = x.LastVisualSelection
             and set value = x.LastVisualSelection <- value
+
         member x.InsertStartPoint
-            with get() = x.InsertStartPoint
+            with get () = x.InsertStartPoint
             and set value = x.InsertStartPoint <- value
+
         member x.IsSoftTabStopValidForBackspace
-            with get() = x.IsSoftTabStopValidForBackspace
+            with get () = x.IsSoftTabStopValidForBackspace
             and set value = x.IsSoftTabStopValidForBackspace <- value
+
         member x.LastInsertExitPoint
-            with get() = x.LastInsertExitPoint
+            with get () = x.LastInsertExitPoint
             and set value = x.LastInsertExitPoint <- value
+
         member x.LastEditPoint
-            with get() = x.LastEditPoint
+            with get () = x.LastEditPoint
             and set value = x.LastEditPoint <- value
+
         member x.LastChangeOrYankStart
-            with get() = x.LastChangeOrYankStart
+            with get () = x.LastChangeOrYankStart
             and set value = x.LastChangeOrYankStart <- value
+
         member x.LastChangeOrYankEnd
-            with get() = x.LastChangeOrYankEnd
+            with get () = x.LastChangeOrYankEnd
             and set value = x.LastChangeOrYankEnd <- value
+
         member x.InOneTimeCommand
-            with get() = x.InOneTimeCommand
+            with get () = x.InOneTimeCommand
             and set value = x.InOneTimeCommand <- value
+
         member x.InSelectModeOneTimeCommand
-            with get() = x.InSelectModeOneTimeCommand
+            with get () = x.InSelectModeOneTimeCommand
             and set value = x.InSelectModeOneTimeCommand <- value
+
         member x.LocalMarks = x.LocalMarks
         member x.LocalAbbreviationMap = _localAbbreviationMap
         member x.LocalKeyMap = _localKeyMap

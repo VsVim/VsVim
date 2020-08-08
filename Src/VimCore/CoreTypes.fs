@@ -1,10 +1,11 @@
-﻿namespace Vim
+namespace Vim
+
 open Microsoft.VisualStudio.Text
 open System.Diagnostics
 
 [<RequireQualifiedAccess>]
 [<NoComparison>]
-type WordKind = 
+type WordKind =
     | NormalWord
     | BigWord
 
@@ -15,29 +16,18 @@ type WordKind =
 [<StructuralComparison>]
 type KeyRemapMode =
     | None
-    | Normal 
-    | Visual 
-    | Select 
-    | OperatorPending 
-    | Insert 
-    | Command 
-    | Language 
+    | Normal
+    | Visual
+    | Select
+    | OperatorPending
+    | Insert
+    | Command
+    | Language
 
-    with 
-
-    static member All = [ 
-        None
-        Normal
-        Visual 
-        Select
-        OperatorPending
-        Insert
-        Command
-        Language 
-    ]
+    static member All = [ None; Normal; Visual; Select; OperatorPending; Insert; Command; Language ]
 
     override x.ToString() =
-        match x with 
+        match x with
         | None -> "None"
         | Normal -> "Normal"
         | Visual -> "Visual"
@@ -50,7 +40,7 @@ type KeyRemapMode =
 
 /// The different types of abbreviations as described in `:help abbreviations`
 [<RequireQualifiedAccess>]
-type AbbreviationKind = 
+type AbbreviationKind =
     | FullId
     | EndId
     | NonId
@@ -61,7 +51,7 @@ type AbbreviationMode =
     | Insert
     | Command
 
-    static member All = [Insert; Command]
+    static member All = [ Insert; Command ]
 
     override x.ToString() =
         match x with
@@ -69,7 +59,7 @@ type AbbreviationMode =
         | Command -> "Command"
 
 [<RequireQualifiedAccess>]
-type JoinKind = 
+type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
@@ -85,20 +75,16 @@ type SelectionSpan =
     val private _activePoint: VirtualSnapshotPoint
 
     /// Construct a zero-length selection representing a caret
-    new (caretPoint: VirtualSnapshotPoint) =
-        {
-            _caretPoint = caretPoint
-            _anchorPoint = caretPoint
-            _activePoint = caretPoint
-        }
+    new(caretPoint: VirtualSnapshotPoint) =
+        { _caretPoint = caretPoint
+          _anchorPoint = caretPoint
+          _activePoint = caretPoint }
 
     /// Construct a selection from a triple of caret, anchor and active points
-    new (caretPoint: VirtualSnapshotPoint, anchorPoint: VirtualSnapshotPoint, activePoint: VirtualSnapshotPoint) =
-        {
-            _caretPoint = caretPoint
-            _anchorPoint = anchorPoint
-            _activePoint = activePoint
-        }
+    new(caretPoint: VirtualSnapshotPoint, anchorPoint: VirtualSnapshotPoint, activePoint: VirtualSnapshotPoint) =
+        { _caretPoint = caretPoint
+          _anchorPoint = anchorPoint
+          _activePoint = activePoint }
 
     /// The selection's caret point
     member x.CaretPoint = x._caretPoint
@@ -114,10 +100,9 @@ type SelectionSpan =
 
     /// The forward snapshot span corresponding to the selection
     member x.Span =
-        if not x.IsReversed then
-            VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
-        else
-            VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
+        if not x.IsReversed
+        then VirtualSnapshotSpan(x._anchorPoint, x._activePoint)
+        else VirtualSnapshotSpan(x._activePoint, x._anchorPoint)
 
     /// The snapshot point at the start of the forward span
     member x.Start = x.Span.Start
@@ -139,40 +124,34 @@ type SelectionSpan =
     /// Create a selection span from the specified caret point and forward or
     /// reverse virtual snapshot span
     static member FromVirtualSpan(caretPoint: VirtualSnapshotPoint, span: VirtualSnapshotSpan, isReversed: bool) =
-        if not isReversed then
-            SelectionSpan(caretPoint, span.Start, span.End)
-        else
-            SelectionSpan(caretPoint, span.End, span.Start)
+        if not isReversed
+        then SelectionSpan(caretPoint, span.Start, span.End)
+        else SelectionSpan(caretPoint, span.End, span.Start)
 
     /// Convert a selection span to a helpful display string indicating the
     /// selected characters, the caret point and the active point
     override x.ToString() =
         let reversedString =
             if x.IsReversed then " (reversed)" else ""
+
         let displayString =
             let point = x.CaretPoint.Position
             let span = x.Span.SnapshotSpan
-            let text =
-                span.GetText()
-                |> StringUtil.GetDisplayString
+            let text = span.GetText() |> StringUtil.GetDisplayString
             if span.Contains(point) || span.End = point then
                 let offset = point.Position - span.Start.Position
                 text.Substring(0, offset) + "|" + text.Substring(offset)
             else
                 text
+
         let displayString =
-            if x.ActivePoint = x.End then
-                displayString + "*"
-            elif x.ActivePoint = x.Start then
-                "*" + displayString
-            else
-                displayString
-        System.String.Format("{0}: [{1}-{2}){3} '{4}'",
-            x._caretPoint.Position.Position,
-            x.Span.Start.Position.Position,
-            x.Span.End.Position.Position,
-            reversedString,
-            displayString)
+            if x.ActivePoint = x.End then displayString + "*"
+            elif x.ActivePoint = x.Start then "*" + displayString
+            else displayString
+
+        System.String.Format
+            ("{0}: [{1}-{2}){3} '{4}'", x._caretPoint.Position.Position, x.Span.Start.Position.Position,
+             x.Span.End.Position.Position, reversedString, displayString)
 
 type NavigationKind =
     | First = 0
@@ -185,107 +164,99 @@ type ListKind =
     | Location = 1
 
 /// One-based list item
-type ListItem
-    (
-        _itemNumber: int,
-        _listLength: int,
-        _message: string
-    ) =
+type ListItem(_itemNumber: int, _listLength: int, _message: string) =
     member x.ItemNumber = _itemNumber
     member x.ListLength = _listLength
     member x.Message = _message
 
 /// Flags for the sort command
 [<System.Flags>]
-type SortFlags = 
+type SortFlags =
     | None = 0
 
     /// Ignore case [i]
-    | IgnoreCase = 0x1
+    | IgnoreCase = 1
 
     /// Decimal [n]
-    | Decimal = 0x2
+    | Decimal = 2
 
     /// Float [f]
-    | Float = 0x4
+    | Float = 4
 
     /// Hexidecimal [h]
-    | Hexidecimal = 0x8
+    | Hexidecimal = 8
 
     /// Octal [o]
-    | Octal = 0x10
+    | Octal = 16
 
     /// Binary [b]
-    | Binary = 0x20
+    | Binary = 32
 
     // Unique [u]
-    | Unique = 0x40
+    | Unique = 64
 
     /// Match pattern [r]
-    | MatchPattern = 0x80
+    | MatchPattern = 128
 
 /// Flags for the substitute command
 [<System.Flags>]
-type SubstituteFlags = 
+type SubstituteFlags =
     | None = 0
 
     /// Replace all occurrences on the line
-    | ReplaceAll = 0x1
+    | ReplaceAll = 1
 
     /// Ignore case for the search pattern
-    | IgnoreCase = 0x2
+    | IgnoreCase = 2
 
-    /// Report only 
-    | ReportOnly = 0x4
-    | Confirm = 0x8
-    | UsePreviousFlags = 0x10
-    | UsePreviousSearchPattern = 0x20
-    | SuppressError = 0x40
-    | OrdinalCase = 0x80
-    | Magic = 0x100
-    | Nomagic = 0x200
+    /// Report only
+    | ReportOnly = 4
+    | Confirm = 8
+    | UsePreviousFlags = 16
+    | UsePreviousSearchPattern = 32
+    | SuppressError = 64
+    | OrdinalCase = 128
+    | Magic = 256
+    | Nomagic = 512
 
     /// The p option.  Print the last replaced line
-    | PrintLast = 0x400
+    | PrintLast = 1024
 
     /// The # option.  Print the last replaced line with the line number prepended
-    | PrintLastWithNumber = 0x800
+    | PrintLastWithNumber = 2048
 
     /// Print the last line as if :list was used
-    | PrintLastWithList = 0x1000
+    | PrintLastWithList = 4096
 
     /// Perform a literal replacement (not expanding special characters)
-    | LiteralReplacement = 0x2000
+    | LiteralReplacement = 8192
 
 /// Flags for the vimgrep command
 [<System.Flags>]
-type VimGrepFlags = 
+type VimGrepFlags =
     | None = 0
 
     /// AllMatchesPerFile [g]
-    | AllMatchesPerFile = 0x1
+    | AllMatchesPerFile = 1
 
     /// NoJumpToFirst [j]
-    | NoJumpToFirst = 0x2
+    | NoJumpToFirst = 2
 
-type SubstituteData = {
-    SearchPattern: string
-    Substitute: string
-    Flags: SubstituteFlags
-}
+type SubstituteData =
+    { SearchPattern: string
+      Substitute: string
+      Flags: SubstituteFlags }
 
 /// Represents the different type of operations that are available for Motions
 [<RequireQualifiedAccess>]
 [<DebuggerDisplay("{ToString(),nq}")>]
 [<NoComparison>]
-type OperationKind = 
-    | CharacterWise 
-    | LineWise 
-
-    with
+type OperationKind =
+    | CharacterWise
+    | LineWise
 
     override x.ToString() =
-        match x with 
+        match x with
         | CharacterWise -> "CharacterWise"
         | LineWise -> "LineWise"
 
@@ -319,8 +290,6 @@ type Letter =
     | X
     | Y
     | Z
-
-    with
 
     member x.Char =
         match x with
@@ -381,8 +350,8 @@ type Letter =
             yield Letter.Z
         }
 
-    static member OfChar c = 
-        match c with 
+    static member OfChar c =
+        match c with
         | 'a' -> Letter.A |> Some
         | 'b' -> Letter.B |> Some
         | 'c' -> Letter.C |> Some
@@ -414,7 +383,7 @@ type Letter =
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
-type NumberMark = 
+type NumberMark =
     | Item0
     | Item1
     | Item2
@@ -425,8 +394,6 @@ type NumberMark =
     | Item7
     | Item8
     | Item9
-
-    with
 
     member x.Char =
         match x with
@@ -441,8 +408,8 @@ type NumberMark =
         | Item8 -> '8'
         | Item9 -> '9'
 
-    static member All = 
-        seq { 
+    static member All =
+        seq {
             yield Item0
             yield Item1
             yield Item2
@@ -482,10 +449,8 @@ type LocalMark =
     | LastChangeOrYankStart
     | LastChangeOrYankEnd
 
-    with
-
     member x.Char =
-        match x with 
+        match x with
         | Letter letter -> letter.Char
         | Number number -> number.Char
         | LastSelectionStart -> '<'
@@ -511,12 +476,12 @@ type LocalMark =
 
     static member OfChar c =
         match Letter.OfChar c with
-        | Some letter -> Some (LocalMark.Letter letter)
+        | Some letter -> Some(LocalMark.Letter letter)
         | None ->
             match NumberMark.OfChar c with
-            | Some number -> Some (LocalMark.Number number)
-            | None -> 
-                match c with 
+            | Some number -> Some(LocalMark.Number number)
+            | None ->
+                match c with
                 | '<' -> Some LocalMark.LastSelectionStart
                 | '>' -> Some LocalMark.LastSelectionEnd
                 | '^' -> Some LocalMark.LastInsertExit
@@ -537,23 +502,24 @@ type Mark =
     | GlobalMark of Letter: Letter
 
     /// The last jump which is specific to a window
-    | LastJump 
+    | LastJump
 
     // The position when the current buffer was last exited
     | LastExitedPosition
 
-    with
-
     member x.Char =
-        match x with 
+        match x with
         | LocalMark localMark -> localMark.Char
         | GlobalMark letter -> CharUtil.ToUpper letter.Char
         | LastJump -> '\''
         | LastExitedPosition -> '"'
 
     static member OfChar c =
-        if CharUtil.IsUpper c then 
-            c |> CharUtil.ToLower |> Letter.OfChar |> Option.map GlobalMark
+        if CharUtil.IsUpper c then
+            c
+            |> CharUtil.ToLower
+            |> Letter.OfChar
+            |> Option.map GlobalMark
         elif c = '\'' || c = '`' then
             Some LastJump
         elif c = '"' then
@@ -562,25 +528,25 @@ type Mark =
             LocalMark.OfChar c |> Option.map LocalMark
 
 type Direction =
-    | Up        = 0
-    | Down      = 1
-    | Left      = 2
-    | Right     = 3
+    | Up = 0
+    | Down = 1
+    | Left = 2
+    | Right = 3
 
 type WindowKind =
-    | Up           = 0
-    | Down         = 1
-    | Left         = 2
-    | Right        = 3
-    | FarUp        = 4
-    | FarDown      = 5
-    | FarLeft      = 6
-    | FarRight     = 7
-    | Next         = 8
-    | Previous     = 9
-    | Recent       = 10
-    | Top          = 11
-    | Bottom       = 12
+    | Up = 0
+    | Down = 1
+    | Left = 2
+    | Right = 3
+    | FarUp = 4
+    | FarDown = 5
+    | FarLeft = 6
+    | FarRight = 7
+    | Next = 8
+    | Previous = 9
+    | Recent = 10
+    | Top = 11
+    | Bottom = 12
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
@@ -589,52 +555,47 @@ type SearchPath =
     | Forward
     | Backward
 
-    with
-
-    member x.IsSearchPathForward = 
+    member x.IsSearchPathForward =
         match x with
         | SearchPath.Forward -> true
         | SearchPath.Backward -> false
 
     member x.IsSearchPathBackward = not x.IsSearchPathForward
 
-    static member Reverse path = 
+    static member Reverse path =
         match path with
         | SearchPath.Forward -> SearchPath.Backward
         | SearchPath.Backward -> SearchPath.Forward
 
-    static member Create isForward = 
-        if isForward then SearchPath.Forward 
-        else SearchPath.Backward
+    static member Create isForward =
+        if isForward then SearchPath.Forward else SearchPath.Backward
 
 [<RequireQualifiedAccess>]
 [<StructuralEquality>]
 [<NoComparison>]
-type SearchKind = 
-     | Forward
-     | ForwardWithWrap
-     | Backward
-     | BackwardWithWrap
-
-    with
+type SearchKind =
+    | Forward
+    | ForwardWithWrap
+    | Backward
+    | BackwardWithWrap
 
     member x.IsAnyForward =
-        match x with 
-            | SearchKind.Forward -> true
-            | SearchKind.ForwardWithWrap -> true
-            | _ -> false
+        match x with
+        | SearchKind.Forward -> true
+        | SearchKind.ForwardWithWrap -> true
+        | _ -> false
 
     member x.IsAnyBackward = not (x.IsAnyForward)
 
     member x.IsWrap =
-        match x with 
+        match x with
         | SearchKind.BackwardWithWrap -> true
         | SearchKind.ForwardWithWrap -> true
         | _ -> false
 
     /// Get the Path value for this SearchKind
-    member x.Path = 
-        match x with 
+    member x.Path =
+        match x with
         | SearchKind.Forward -> SearchPath.Forward
         | SearchKind.ForwardWithWrap -> SearchPath.Forward
         | SearchKind.Backward -> SearchPath.Backward
@@ -656,13 +617,14 @@ type SearchKind =
         | SearchKind.Backward -> SearchKind.Backward
         | SearchKind.BackwardWithWrap -> SearchKind.Backward
 
-    static member OfPath path = 
-        match path with 
+    static member OfPath path =
+        match path with
         | SearchPath.Forward -> SearchKind.Forward
         | SearchPath.Backward -> SearchKind.Backward
 
     static member OfPathAndWrap path wrap =
         match path with
-        | SearchPath.Forward -> if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
-        | SearchPath.Backward -> if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
-
+        | SearchPath.Forward ->
+            if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+        | SearchPath.Backward ->
+            if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward

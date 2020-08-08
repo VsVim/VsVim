@@ -1,11 +1,10 @@
-﻿#light
-
 namespace Vim.Interpreter
+
 open System.Runtime.InteropServices
 open Microsoft.VisualStudio.Text
 open Vim
 
-/// Represents the scope that a name is attached to.  A "let" name for example can 
+/// Represents the scope that a name is attached to.  A "let" name for example can
 /// be attached to various scopes
 [<RequireQualifiedAccess>]
 type NameScope =
@@ -17,10 +16,9 @@ type NameScope =
     | Function
     | Vim
 
-type VariableName = { 
-    NameScope: NameScope
-    Name: string 
-}
+type VariableName =
+    { NameScope: NameScope
+      Name: string }
 
 [<RequireQualifiedAccess>]
 type VariableType =
@@ -42,8 +40,6 @@ type VariableValue =
     | Dictionary of Map: Map<string, VariableValue>
     | Error
 
-    with
-
     // TODO: Determine the appropriate values for List, Dictionary and Error
     member x.StringValue =
         match x with
@@ -52,10 +48,10 @@ type VariableValue =
         | String str -> str
         | FunctionRef name -> name
         | List _ -> "<list>"
-        | Dictionary _  -> "<dictionary>"
+        | Dictionary _ -> "<dictionary>"
         | Error -> "<error>"
 
-    member x.VariableType = 
+    member x.VariableType =
         match x with
         | Number _ -> VariableType.Number
         | Float _ -> VariableType.Float
@@ -68,16 +64,16 @@ type VariableValue =
 type VariableMap = System.Collections.Generic.Dictionary<string, VariableValue>
 
 [<RequireQualifiedAccess>]
-type EvaluateResult = 
+type EvaluateResult =
     | Succeeded of Value: VariableValue
     | Failed of Failed: string
 
 /// The set of events Vim supports.  Defined in ':help autocmd-events'
 ///
-/// Right now we only support a very limited set of autocmd events.  Enough to 
-/// alter ts, sw, etc ... when a new file is created 
+/// Right now we only support a very limited set of autocmd events.  Enough to
+/// alter ts, sw, etc ... when a new file is created
 [<RequireQualifiedAccess>]
-type EventKind = 
+type EventKind =
     | BufNewFile
     | BufReadPre
     | BufRead
@@ -161,33 +157,31 @@ type EventKind =
 [<RequireQualifiedAccess>]
 [<NoComparison>]
 [<StructuralEquality>]
-type AutoCommandGroup = 
+type AutoCommandGroup =
     | Default
-    | Named of Name: string 
+    | Named of Name: string
 
-type AutoCommand = {
-    Group: AutoCommandGroup
+type AutoCommand =
+    { Group: AutoCommandGroup
 
-    EventKind: EventKind
+      EventKind: EventKind
 
-    LineCommandText: string
+      LineCommandText: string
 
-    Pattern: string
-}    
+      Pattern: string }
 
-type AutoCommandDefinition = { 
-    Group: AutoCommandGroup
+type AutoCommandDefinition =
+    { Group: AutoCommandGroup
 
-    EventKinds: EventKind list
+      EventKinds: EventKind list
 
-    LineCommandText: string
+      LineCommandText: string
 
-    Patterns: string list
-}
+      Patterns: string list }
 
-/// A single line specifier in a range 
+/// A single line specifier in a range
 [<RequireQualifiedAccess>]
-type LineSpecifier = 
+type LineSpecifier =
 
     /// The line with the specified number
     | Number of Number: int
@@ -219,15 +213,15 @@ type LineSpecifier =
     /// LineSpecifier with the given line adjustment
     | LineSpecifierWithAdjustment of LineSpecifier: LineSpecifier * Adjustment: int
 
-/// A line range in the file 
+/// A line range in the file
 [<RequireQualifiedAccess>]
-type LineRangeSpecifier = 
+type LineRangeSpecifier =
 
     /// There is no specifier
     | None
 
     /// The entire buffer: '%'
-    | EntireBuffer 
+    | EntireBuffer
 
     /// A single line range
     | SingleLine of LineSpecifier: LineSpecifier
@@ -237,7 +231,7 @@ type LineRangeSpecifier =
     /// the LineSpecifier values)
     | Range of StartLineSpecifier: LineSpecifier * LastLineSpecifier: LineSpecifier * AdjustCaret: bool
 
-    /// The range is an end count on top of another LineRange value.  It's possible for the 
+    /// The range is an end count on top of another LineRange value.  It's possible for the
     /// end count to exist in the abscence a range
     | WithEndCount of LineRangeSpecifier: LineRangeSpecifier * Count: int
 
@@ -249,14 +243,14 @@ type LineRangeSpecifier =
 type FileOption =
     | FileFormat of FileFormat: string
     | Encoding of Encoding: string
-    | Binary 
+    | Binary
     | NoBinary
     | Bad
     | Edit
 
 /// Arguments which can be passed to the mapping functions
 [<RequireQualifiedAccess>]
-type KeyMapArgument = 
+type KeyMapArgument =
     | Buffer
     | Silent
     | Special
@@ -266,19 +260,19 @@ type KeyMapArgument =
 
 /// The ex-flags value
 [<RequireQualifiedAccess>]
-type LineCommandFlags = 
+type LineCommandFlags =
     | None = 0
-    | List = 0x1
-    | AddLineNumber = 0x2
-    | Print = 0x4
+    | List = 1
+    | AddLineNumber = 2
+    | Print = 4
 
 /// The set command can take a number of arguments.  This represents the allowed values
 [<RequireQualifiedAccess>]
-type SetArgument  =
+type SetArgument =
 
-    /// The 'all' argument. 
+    /// The 'all' argument.
     | DisplayAllButTerminal
-    
+
     /// The 'termcap' argument
     | DisplayAllTerminal
 
@@ -288,7 +282,7 @@ type SetArgument  =
     /// The 'all&' argument.  Resets all setting to their default value
     | ResetAllToDefault
 
-    /// Use the setting.  Produced when an setting name is used without arguments.  The behavior 
+    /// Use the setting.  Produced when an setting name is used without arguments.  The behavior
     /// depends on the type of the setting once it's bound
     | UseSetting of SettingName: string
 
@@ -308,13 +302,13 @@ type SetArgument  =
     | AddSetting of SettingName: string * Value: string
 
     /// Multiply the value of the setting with the value
-    | MultiplySetting of SettingName: string * Value: string 
+    | MultiplySetting of SettingName: string * Value: string
 
     /// Subtracte the value of the setting with the value
     | SubtractSetting of SettingName: string * Value: string
 
 [<RequireQualifiedAccess>]
-type BinaryKind = 
+type BinaryKind =
     | Add
     | Concatenate
     | Divide
@@ -327,36 +321,35 @@ type BinaryKind =
     | NotEqual
 
 /// Data for the :call command
-type CallInfo = {
-    Name: string
-    Arguments: string
-    LineRange: LineRangeSpecifier
-    IsScriptLocal: bool
-}
+type CallInfo =
+    { Name: string
+      Arguments: string
+      LineRange: LineRangeSpecifier
+      IsScriptLocal: bool }
 
-type FunctionDefinition = {
+type FunctionDefinition =
+    {
 
-    /// Name of the function
-    Name: string
+      /// Name of the function
+      Name: string
 
-    /// Arguments to the function
-    Parameters: string list
+      /// Arguments to the function
+      Parameters: string list
 
-    /// Is the function responsible for its ranges
-    IsRange: bool
+      /// Is the function responsible for its ranges
+      IsRange: bool
 
-    /// Is the function supposed to abort on the first error
-    IsAbort: bool
+      /// Is the function supposed to abort on the first error
+      IsAbort: bool
 
-    /// Is the function intended to be invoked from a dictionary
-    IsDictionary: bool
+      /// Is the function intended to be invoked from a dictionary
+      IsDictionary: bool
 
-    /// Is this a forced definition of the function
-    IsForced: bool
+      /// Is this a forced definition of the function
+      IsForced: bool
 
-    /// Is this a script local function (begins with s:)
-    IsScriptLocal: bool
-}
+      /// Is this a script local function (begins with s:)
+      IsScriptLocal: bool }
 
 /// See :help filename-modifiers
 [<RequireQualifiedAccess>]
@@ -408,31 +401,30 @@ type CommandOption =
     | StartAtPattern of Pattern: string
     | ExecuteLineCommand of LineCommand: LineCommand
 
-and Function = {
+and Function =
+    {
 
-    /// The definition of the function 
-    Definition: FunctionDefinition
+      /// The definition of the function
+      Definition: FunctionDefinition
 
-    // Line commands that compose the function
-    LineCommands: LineCommand list
-}
+      // Line commands that compose the function
+      LineCommands: LineCommand list }
 
 /// The ConditionalBlock type is used to represent if / else if / else blocks
-/// of commands.  
-and ConditionalBlock = {
+/// of commands.
+and ConditionalBlock =
+    {
 
-    /// The conditional which must be true in order for the LineCommand list
-    /// to be executed.  If there is no condition then the LineCommand list 
-    /// is unconditionally executed
-    Conditional: Expression option
+      /// The conditional which must be true in order for the LineCommand list
+      /// to be executed.  If there is no condition then the LineCommand list
+      /// is unconditionally executed
+      Conditional: Expression option
 
-    /// The LineCommand values that make up this conditional block
-    LineCommands: LineCommand list
-
-}
-
-with
-    static member Empty = { Conditional = None; LineCommands = List.Empty }
+      /// The LineCommand values that make up this conditional block
+      LineCommands: LineCommand list }
+    static member Empty =
+        { Conditional = None
+          LineCommands = List.Empty }
 
 and [<RequireQualifiedAccess>] Expression =
 
@@ -440,7 +432,7 @@ and [<RequireQualifiedAccess>] Expression =
     | Binary of BinaryKind: BinaryKind * Left: Expression * Right: Expression
 
     /// A constant value
-    | ConstantValue of Value: VariableValue 
+    | ConstantValue of Value: VariableValue
 
     /// The name of an option/setting
     | OptionName of OptionName: string
@@ -461,11 +453,11 @@ and [<RequireQualifiedAccess>] Expression =
     | List of Expressions: Expression list
 
 and [<RequireQualifiedAccess>] LineCommand =
-   
-    /// Add a new abbreviation 
+
+    /// Add a new abbreviation
     | Abbreviate of LeftKeyNotation: string * RightKeyNotation: string * AllowRemap: bool * AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
-    /// Remove all abbreviations for the specified modes 
+    /// Remove all abbreviations for the specified modes
     | AbbreviateClear of AbbreviationModes: AbbreviationMode list * IsLocal: bool
 
     /// Add a new AutoCommand to the set of existing AutoCommand values
@@ -474,7 +466,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :behave command to set common behaviors in certain environments
     | Behave of Text: string
 
-    /// The :call command to invoke a function.  The first string is the 
+    /// The :call command to invoke a function.  The first string is the
     | Call of CallInfo: CallInfo
 
     /// Change the current directory to the given value
@@ -486,14 +478,14 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Clear out the keyboard map for the given modes
     | ClearKeyMap of KeyRemapModes: KeyRemapMode list * KeyMapArguments: KeyMapArgument list
 
-    /// The :close command.  The bool value represents whether or not the 
+    /// The :close command.  The bool value represents whether or not the
     /// bang modifier was added
     | Close of HasBang: bool
 
     /// Compose two line commands
     | Compose of First: LineCommand * Second: LineCommand
 
-    /// Copy the specific line range to the given position.  The first line range is the 
+    /// Copy the specific line range to the given position.  The first line range is the
     /// source and the second is the destination.  The last entry is an optional count
     /// which can be specified
     | CopyTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
@@ -508,9 +500,9 @@ and [<RequireQualifiedAccess>] LineCommand =
     | DeleteMarks of Marks: Mark list
 
     /// Delete all of the marks except A-Z and 0-9
-    | DeleteAllMarks 
+    | DeleteAllMarks
 
-    /// Move the specific line range to the given position.  The first line range is the 
+    /// Move the specific line range to the given position.  The first line range is the
     /// source and the second is the destination
     | MoveTo of Source: LineRangeSpecifier * Destination: LineRangeSpecifier * Count: int option
 
@@ -524,17 +516,17 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :endfunc member
     | FunctionEnd
 
-    /// A complete function 
+    /// A complete function
     | Function of Function: Function
 
     /// Add the specified digraphs to the digraph mapping
     | Digraphs of Digraphs: (char * char * int) list
 
-    /// Display the contents of registers.  Unless a specific register name is 
+    /// Display the contents of registers.  Unless a specific register name is
     /// given all registers will be displayed
     | DisplayRegisters of RegisterNames: RegisterName list
 
-    /// Display the specified marks.  If no Mark values are provided then display 
+    /// Display the specified marks.  If no Mark values are provided then display
     /// all marks
     | DisplayMarks of Marks: Mark list
 
@@ -560,8 +552,8 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :edit command.  The values range as follows
     ///  - ! option present
     ///  - The provided ++opt
-    ///  - The provided +cmd 
-    ///  - The provided file to edit 
+    ///  - The provided +cmd
+    ///  - The provided file to edit
     | Edit of HasBang: bool * FileOptions: FileOption list * CommandOptions: CommandOption option * SymbolicPath: SymbolicPath
 
     /// List recent files
@@ -570,7 +562,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Fold the selected LineRange
     | Fold of LineRangeSpecifier: LineRangeSpecifier
 
-    /// Run the given command against all lines in the specified range (default is the 
+    /// Run the given command against all lines in the specified range (default is the
     /// entire buffer) which match the predicate pattern.  If the bool provided is false
     /// then it will be run on the lines which don't match the pattern
     | Global of LineRangeSpecifier: LineRangeSpecifier * Pattern: string * MatchPattern: bool * LineCommand: LineCommand
@@ -578,7 +570,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     // Executes the given key strokes as if they were typed in normal mode
     | Normal of LineRangeSpecifier: LineRangeSpecifier * KeyInputs: KeyInput list
 
-    /// Go to the first tab 
+    /// Go to the first tab
     | GoToFirstTab
 
     /// Go to the last tab
@@ -596,7 +588,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Get help on Vim
     | VimHelp of Subject: string
 
-    /// Print out the default history 
+    /// Print out the default history
     | History
 
     /// Run a host command.  The first string is the command and the second string is the argument
@@ -618,13 +610,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// The :endif definition
     | IfEnd
 
-    /// The :else definition 
+    /// The :else definition
     | Else
 
-    /// The :elseif definition 
+    /// The :elseif definition
     | ElseIf of Expression: Expression
 
-    /// Join the lines in the specified range.  Optionally provides a count of lines to 
+    /// Join the lines in the specified range.  Optionally provides a count of lines to
     /// start the join after the line range
     | Join of LineRangeSpecifier: LineRangeSpecifier * JoinKind: JoinKind
 
@@ -686,13 +678,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// option is present then don't warn about writing a dirty window
     | QuitAll of HasBang: bool
 
-    /// Quit the current window after writing out it's contents.  The values range as 
+    /// Quit the current window after writing out it's contents.  The values range as
     /// follows
     ///  - Range of lines to write.  All if no option present
     ///  - ! option present
     ///  - The provided ++opt
     ///  - The provided +cmd
-    | QuitWithWrite of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * FileOptions: FileOption list * FilePath: string option 
+    | QuitWithWrite of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * FileOptions: FileOption list * FilePath: string option
 
     /// Read the contents of the specified file and put it after the specified
     /// line range or the caret
@@ -739,7 +731,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// - optional pattern
     | Sort of LineRangeSpecifier: LineRangeSpecifier * HasBang: bool * SortFlags: SortFlags * Pattern: string option
 
-    /// Process the 'source' command.  
+    /// Process the 'source' command.
     | Source of HasBang: bool * FilePath: string
 
     /// Stop insert mode as soon as possible
@@ -748,7 +740,7 @@ and [<RequireQualifiedAccess>] LineCommand =
     // Close all tabs but this one
     | TabOnly
 
-    /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path 
+    /// Process the 'tabnew' / 'tabedit' commands.  The optional string represents the file path
     | TabNew of SymbolicPath: SymbolicPath
 
     /// The version command
@@ -774,13 +766,13 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Undo the last change
     | Undo
 
-    /// Unlet a value.  
+    /// Unlet a value.
     | Unlet of HasBang: bool * Names: string list
 
     /// Unmap the key notation in the given modes
     | UnmapKeys of KeyNotation: string * KeyRemapModes: KeyRemapMode list * KeyMapArguments: KeyMapArgument list
 
-    /// Write the 
+    /// Write the
     ///  - The line range to write out
     ///  - Whether or not a ! was provided
     ///  - The provided ++opt
@@ -793,15 +785,12 @@ and [<RequireQualifiedAccess>] LineCommand =
     /// Yank the line range into the given register with the specified count
     | Yank of LineRangeSpecifier: LineRangeSpecifier * RegisterNames: RegisterName option * Count: int option
 
-with 
-
-    member x.Succeeded = 
+    member x.Succeeded =
         match x with
         | ParseError _ -> false
         | _ -> true
 
-    member x.Failed = 
-        not x.Succeeded
+    member x.Failed = not x.Succeeded
 
 [<NoComparison>]
 [<NoEquality>]
@@ -815,25 +804,24 @@ type BuiltinFunctionCall =
 /// Engine which interprets Vim commands and expressions
 type IVimInterpreter =
 
-    /// Get the ITextSnapshotLine for the provided LineSpecifier if it's 
+    /// Get the ITextSnapshotLine for the provided LineSpecifier if it's
     /// applicable
-    abstract GetLine: lineSpecifier: LineSpecifier -> ITextSnapshotLine option
+    abstract GetLine: lineSpecifier:LineSpecifier -> ITextSnapshotLine option
 
     /// Get the specified LineRange in the IVimBuffer
-    abstract GetLineRange: lineRange: LineRangeSpecifier -> SnapshotLineRange option
+    abstract GetLineRange: lineRange:LineRangeSpecifier -> SnapshotLineRange option
 
     /// Run the LineCommand
-    abstract RunLineCommand: lineCommand: LineCommand -> unit
+    abstract RunLineCommand: lineCommand:LineCommand -> unit
 
     /// Run the Expression
-    abstract RunExpression: expression: Expression -> VariableValue
+    abstract RunExpression: expression:Expression -> VariableValue
 
     /// Evaluate the text as an expression and return its value
-    abstract EvaluateExpression: text: string -> EvaluateResult
+    abstract EvaluateExpression: text:string -> EvaluateResult
 
-    /// Run the given script 
-    abstract RunScript: lines: string[] -> unit
+    /// Run the given script
+    abstract RunScript: lines:string [] -> unit
 
     /// Try and expand the shortened command name to its full form
-    abstract TryExpandCommandName: shortCommandName: string * commandName: outref<string> -> bool
-
+    abstract TryExpandCommandName: shortCommandName:string * commandName:outref<string> -> bool

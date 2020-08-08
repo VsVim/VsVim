@@ -1,4 +1,4 @@
-﻿namespace Vim
+namespace Vim
 
 open Vim
 open Microsoft.VisualStudio.Text
@@ -13,7 +13,7 @@ open System.Threading
 open VimCoreExtensions
 
 /// Tagger for incremental searches
-type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
+type IncrementalSearchTaggerSource(_vimBuffer: IVimBuffer) as this =
 
     let _search = _vimBuffer.IncrementalSearch
     let _textBuffer = _vimBuffer.TextBuffer
@@ -22,10 +22,10 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
     let _changed = StandardEvent()
     let mutable _searchSpan: ITrackingSpan option = None
 
-    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([||])
 
-    do 
-        let raiseChanged () = _changed.Trigger this 
+    do
+        let raiseChanged() = _changed.Trigger this
 
         _search.SessionCreated
         |> Observable.subscribe (fun args ->
@@ -34,12 +34,14 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
 
             session.SearchEnd
             |> Observable.subscribe (fun args ->
-                // When the search is updated we need to update the result.  Make sure to do so before raising 
+                // When the search is updated we need to update the result.  Make sure to do so before raising
                 // the event.  The editor can and will call back into us synchronously and access a stale value
                 // if we don't
                 _searchSpan <-
                     match args.SearchResult with
-                    | SearchResult.Found (_, _, patternSpan, _) -> patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                    | SearchResult.Found(_, _, patternSpan, _) ->
+                        patternSpan.Snapshot.CreateTrackingSpan(patternSpan.Span, SpanTrackingMode.EdgeExclusive)
+                        |> Some
                     | SearchResult.NotFound _ -> None
                     | SearchResult.Cancelled _ -> _searchSpan
                     | SearchResult.Error _ -> None
@@ -49,8 +51,8 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
 
             // When the search is completed there is nothing left for us to tag.
             session.SessionComplete
-            |> Observable.subscribe (fun _ -> 
-                _searchSpan <- None    
+            |> Observable.subscribe (fun _ ->
+                _searchSpan <- None
                 bag.DisposeAll()
                 raiseChanged())
             |> bag.Add)
@@ -67,23 +69,26 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
         //
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
-        (_globalSettings :> IVimSettings).SettingChanged 
-        |> Observable.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.IncrementalSearchName)
+        (_globalSettings :> IVimSettings).SettingChanged
+        |> Observable.filter
+            (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.IncrementalSearchName)
         |> Observable.subscribe (fun _ -> raiseChanged())
         |> _eventHandlers.Add
 
     member x.GetTags span =
-        if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then 
+        if VisualKind.IsAnyVisualOrSelect _vimBuffer.ModeKind || not _globalSettings.IncrementalSearch then
             // If any of these are true then we shouldn't be displaying any tags
             EmptyTagList
         else
             let snapshot = SnapshotSpanUtil.GetSnapshot span
-            match _searchSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
-            | None -> 
+            match _searchSpan
+                  |> Option.map (TrackingSpanUtil.GetSpan snapshot)
+                  |> OptionUtil.collapse with
+            | None ->
                 // No search span or the search span doesn't map into the current ITextSnapshot so there
                 // is nothing to return
                 EmptyTagList
-            | Some span -> 
+            | Some span ->
                 // We have a span so return the tag
                 let tag = TextMarkerTag(VimConstants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
@@ -101,52 +106,42 @@ type IncrementalSearchTaggerSource (_vimBuffer: IVimBuffer) as this =
 [<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
-type internal IncrementalSearchTaggerProvider
-    [<ImportingConstructor>]
-    (
-        _vim: IVim
-    ) = 
+type internal IncrementalSearchTaggerProvider [<ImportingConstructor>] (_vim: IVim) =
 
     let _key = obj()
 
-    interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> (textView: ITextView, textBuffer) = 
+    interface IViewTaggerProvider with
+        member x.CreateTagger<'T when 'T :> ITag>(textView: ITextView, textBuffer) =
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let func () = 
+                    let func() =
                         let taggerSource = new IncrementalSearchTaggerSource(vimBuffer)
                         taggerSource :> IBasicTaggerSource<TextMarkerTag>
+
                     let tagger = TaggerUtil.CreateBasicTagger textView.Properties _key func
                     tagger :> obj :?> ITagger<'T>
             else
                 null
 
-type HighlightSearchData = {
-    Pattern: string
-    VimRegexOptions: VimRegexOptions
-}
+type HighlightSearchData =
+    { Pattern: string
+      VimRegexOptions: VimRegexOptions }
 
 /// Tagger for completed incremental searches
-type HighlightSearchTaggerSource
-    ( 
-        _textView: ITextView,
-        _globalSettings: IVimGlobalSettings,
-        _vimData: IVimData,
-        _vimHost: IVimHost
-    ) as this =
+type HighlightSearchTaggerSource(_textView: ITextView, _globalSettings: IVimGlobalSettings, _vimData: IVimData, _vimHost: IVimHost) as this =
 
     let _textBuffer = _textView.TextBuffer
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
 
-    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([||])
 
     /// Whether or not the ITextView is visible.  There is one setting which controls the tags for
-    /// all ITextView's in the system.  It's very wasteful to raise tags changed when we are not 
+    /// all ITextView's in the system.  It's very wasteful to raise tags changed when we are not
     /// visible.  Many components call immediately back into GetTags even if the ITextView is not
-    /// visible.  Even for an async tagger this can kill perf by the sheer work done in the 
+    /// visible.  Even for an async tagger this can kill perf by the sheer work done in the
     /// background.
     let mutable _isVisible = true
 
@@ -155,8 +150,9 @@ type HighlightSearchTaggerSource
         let cachedDisplayPattern = ref _vimData.DisplayPattern
 
         // If anything around how we display tags has changed then need to raise the Changed event
-        let maybeRaiseChanged () = 
-            if cachedIsProvidingTags.Value <> this.IsProvidingTags || cachedDisplayPattern.Value <> _vimData.DisplayPattern then
+        let maybeRaiseChanged() =
+            if cachedIsProvidingTags.Value <> this.IsProvidingTags
+               || cachedDisplayPattern.Value <> _vimData.DisplayPattern then
                 cachedDisplayPattern := _vimData.DisplayPattern
                 cachedIsProvidingTags := this.IsProvidingTags
 
@@ -172,26 +168,24 @@ type HighlightSearchTaggerSource
         // used and VS requests tags for a large section of the file.  This can and will happen
         _vimHost.IsVisibleChanged
         |> Observable.filter (fun args -> args.TextView = _textView)
-        |> Observable.subscribe (fun _ -> 
+        |> Observable.subscribe (fun _ ->
             _isVisible <- _vimHost.IsVisible _textView
             maybeRaiseChanged())
         |> _eventHandlers.Add
 
     /// Whether or not we are currently providing any tags.  Tags are surpressed in a
     /// number of scenarios
-    member x.IsProvidingTags = 
-        _isVisible && not (StringUtil.IsNullOrEmpty _vimData.DisplayPattern)
+    member x.IsProvidingTags = _isVisible && not (StringUtil.IsNullOrEmpty _vimData.DisplayPattern)
 
-    /// Get the search information for a background 
-    member x.GetDataForSnapshot() =  
-        let highlightSearchData = {
-            Pattern = _vimData.DisplayPattern
-            VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings
-        }
+    /// Get the search information for a background
+    member x.GetDataForSnapshot() =
+        let highlightSearchData =
+            { Pattern = _vimData.DisplayPattern
+              VimRegexOptions = VimRegexFactory.CreateRegexOptions _globalSettings }
 
         highlightSearchData
 
-    member x.GetTagsPrompt() = 
+    member x.GetTagsPrompt() =
         let searchData = x.GetDataForSnapshot()
         if not x.IsProvidingTags then
             // Not currently providing any tags.  Return an empty set here for any requests
@@ -205,56 +199,60 @@ type HighlightSearchTaggerSource
             None
 
     [<UsedInBackgroundThread>]
-    static member GetTagsInBackground (highlightSearchData: HighlightSearchData) span (cancellationToken: CancellationToken) = 
+    static member GetTagsInBackground (highlightSearchData: HighlightSearchData) span
+                  (cancellationToken: CancellationToken) =
 
         if StringUtil.IsNullOrEmpty highlightSearchData.Pattern then
             EmptyTagList
         else
 
-            // Note: We specifically avoid using ITextSearchService here.  It's a very inefficient search and 
-            // allocates a lot of memory (the FindAll function will bring the contents of the entire 
-            // ITextSnapshot into memory even if you are only searching a single line 
+            // Note: We specifically avoid using ITextSearchService here.  It's a very inefficient search and
+            // allocates a lot of memory (the FindAll function will bring the contents of the entire
+            // ITextSnapshot into memory even if you are only searching a single line
 
-            let spans = 
+            let spans =
                 match VimRegexFactory.Create highlightSearchData.Pattern highlightSearchData.VimRegexOptions with
                 | None -> Seq.empty
                 | Some vimRegex ->
                     try
                         let snapshot = SnapshotSpanUtil.GetSnapshot span
                         let text = SnapshotSpanUtil.GetText span
-                        let offset = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetPosition
+
+                        let offset =
+                            span
+                            |> SnapshotSpanUtil.GetStartPoint
+                            |> SnapshotPointUtil.GetPosition
+
                         let collection = vimRegex.Regex.Matches(text)
 
-                        if collection.Count >= span.Length && collection |> Seq.cast<System.Text.RegularExpressions.Match> |> Seq.forall (fun m -> m.Length = 0) then
-                            // If the user enters a regex which has a 0 match for every character in the 
+                        if collection.Count >= span.Length && collection
+                                                              |> Seq.cast<System.Text.RegularExpressions.Match>
+                                                              |> Seq.forall (fun m -> m.Length = 0) then
+                            // If the user enters a regex which has a 0 match for every character in the
                             // ITextBuffer then we special case this and just tag everything.  If we don't
-                            // then the user can essentially hang Visual Studio in a big file by searching 
-                            // for say '\|i'.  
-                            [span] |> Seq.ofList
+                            // then the user can essentially hang Visual Studio in a big file by searching
+                            // for say '\|i'.
+                            [ span ] |> Seq.ofList
                         else
                             collection
                             |> Seq.cast<System.Text.RegularExpressions.Match>
-                            |> Seq.map (fun m -> 
+                            |> Seq.map (fun m ->
                                 let start = m.Index + offset
-    
+
                                 // It's possible for the SnapshotSpan here to be a 0 length span since Regex expressions
-                                // can match 0 width text.  For example "\|i\>" from issue #480.  Vim handles this by 
-                                // treating the 0 width match as a 1 width match. 
-                                let length = 
-                                    if m.Length = 0 && start < snapshot.Length then 
-                                        1
-                                    else 
-                                        m.Length
-    
+                                // can match 0 width text.  For example "\|i\>" from issue #480.  Vim handles this by
+                                // treating the 0 width match as a 1 width match.
+                                let length =
+                                    if m.Length = 0 && start < snapshot.Length then 1 else m.Length
+
                                 SnapshotSpan(snapshot, start, length))
-                    with 
-                    | :? System.InvalidOperationException ->
+                    with :? System.InvalidOperationException ->
                         // Happens when we provide an invalid regular expression.  Just return empty list
                         Seq.empty
 
             let tag = TextMarkerTag(VimConstants.HighlightIncrementalSearchTagName)
             spans
-            |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
+            |> Seq.map (fun span -> TagSpan(span, tag) :> ITagSpan<TextMarkerTag>)
             |> ReadOnlyCollectionUtil.OfSeq
 
     interface IAsyncTaggerSource<HighlightSearchData, TextMarkerTag> with
@@ -262,7 +260,8 @@ type HighlightSearchTaggerSource
         member x.TextSnapshot = _textBuffer.CurrentSnapshot
         member x.TextView = Some _textView
         member x.GetDataForSnapshot _ = x.GetDataForSnapshot()
-        member x.GetTagsInBackground highlightSearchData span cancellationToken = HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
+        member x.GetTagsInBackground highlightSearchData span cancellationToken =
+            HighlightSearchTaggerSource.GetTagsInBackground highlightSearchData span cancellationToken
         member x.TryGetTagsPrompt _ = x.GetTagsPrompt()
         [<CLIEvent>]
         member x.Changed = _changed.Publish
@@ -274,59 +273,53 @@ type HighlightSearchTaggerSource
 [<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
-type HighlightIncrementalSearchTaggerProvider
-    [<ImportingConstructor>]
-    ( 
-        _vim: IVim
-    ) = 
+type HighlightIncrementalSearchTaggerProvider [<ImportingConstructor>] (_vim: IVim) =
 
     let _key = obj()
 
-    interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> ((textView: ITextView), textBuffer) = 
+    interface IViewTaggerProvider with
+        member x.CreateTagger<'T when 'T :> ITag>((textView: ITextView), textBuffer) =
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let func () = 
+                    let func() =
                         let wordNavigator = vimBuffer.WordNavigator
-                        let taggerSource = new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData, _vim.VimHost)
-                        taggerSource :> IAsyncTaggerSource<HighlightSearchData , TextMarkerTag>
+                        let taggerSource =
+                            new HighlightSearchTaggerSource(textView, vimBuffer.GlobalSettings, _vim.VimData,
+                                                            _vim.VimHost)
+                        taggerSource :> IAsyncTaggerSource<HighlightSearchData, TextMarkerTag>
+
                     let tagger = TaggerUtil.CreateAsyncTagger textView.Properties _key func
                     tagger :> obj :?> ITagger<'T>
             else
                 null
 
 /// Tagger for matches as they appear during a confirm substitute
-type SubstituteConfirmTaggerSource
-    ( 
-        _textBuffer: ITextBuffer,
-        _mode: ISubstituteConfirmMode
-    ) as this =
+type SubstituteConfirmTaggerSource(_textBuffer: ITextBuffer, _mode: ISubstituteConfirmMode) as this =
 
     let _changed = StandardEvent()
     let _eventHandlers = DisposableBag()
     let mutable _currentMatch: SnapshotSpan option = None
 
-    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([||])
 
-    do 
-        let raiseChanged () = _changed.Trigger this
+    do
+        let raiseChanged() = _changed.Trigger this
 
         _mode.CurrentMatchChanged
-        |> Observable.subscribe (fun data -> 
+        |> Observable.subscribe (fun data ->
             _currentMatch <- data
             raiseChanged())
         |> _eventHandlers.Add
 
-    member x.GetTags span = 
+    member x.GetTags span =
         match _currentMatch with
-        | Some currentMatch -> 
+        | Some currentMatch ->
             let tag = TextMarkerTag(VimConstants.HighlightIncrementalSearchTagName)
             let tagSpan = TagSpan(currentMatch, tag) :> ITagSpan<TextMarkerTag>
             ReadOnlyCollectionUtil.Single tagSpan
-        | None -> 
-            EmptyTagList
+        | None -> EmptyTagList
 
     interface IBasicTaggerSource<TextMarkerTag> with
         member x.GetTags span = x.GetTags span
@@ -340,23 +333,21 @@ type SubstituteConfirmTaggerSource
 [<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
-type SubstituteConfirmTaggerProvider
-    [<ImportingConstructor>]
-    ( 
-        _vim: IVim
-    ) = 
+type SubstituteConfirmTaggerProvider [<ImportingConstructor>] (_vim: IVim) =
 
     let _key = obj()
 
-    interface IViewTaggerProvider with 
-        member x.CreateTagger<'T when 'T :> ITag> ((textView: ITextView), textBuffer) = 
+    interface IViewTaggerProvider with
+        member x.CreateTagger<'T when 'T :> ITag>((textView: ITextView), textBuffer) =
             if textView.TextBuffer = textBuffer then
                 match _vim.GetOrCreateVimBufferForHost textView with
                 | None -> null
                 | Some vimBuffer ->
-                    let func () =
-                        let taggerSource = new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
+                    let func() =
+                        let taggerSource =
+                            new SubstituteConfirmTaggerSource(textBuffer, vimBuffer.SubstituteConfirmMode)
                         taggerSource :> IBasicTaggerSource<TextMarkerTag>
+
                     let tagger = TaggerUtil.CreateBasicTagger textView.Properties _key func
                     tagger :> obj :?> ITagger<'T>
             else
@@ -370,26 +361,24 @@ type internal FoldTaggerSource(_foldData: IFoldData) as this =
     let _textBuffer = _foldData.TextBuffer
     let _changed = StandardEvent()
 
-    do 
-        _foldData.FoldsUpdated 
-        |> Event.add (fun _ -> _changed.Trigger this)
+    do _foldData.FoldsUpdated |> Event.add (fun _ -> _changed.Trigger this)
 
     member x.GetTags span =
 
         // Get the description for the given SnapshotSpan.  This is the text displayed for
         // the folded lines.
-        let getDescription span = 
+        let getDescription span =
             let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
             sprintf "%d lines ---" ((lastLine.LineNumber - startLine.LineNumber) + 1)
 
         let snapshot = SnapshotSpanUtil.GetSnapshot span
         _foldData.Folds
-        |> Seq.filter ( fun span -> span.Snapshot = snapshot )
+        |> Seq.filter (fun span -> span.Snapshot = snapshot)
         |> Seq.map (fun span ->
             let description = getDescription span
             let hint = span.GetText()
             let tag = OutliningRegionTag(true, true, description, hint)
-            TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag> )
+            TagSpan<OutliningRegionTag>(span, tag) :> ITagSpan<OutliningRegionTag>)
         |> ReadOnlyCollectionUtil.OfSeq
 
     interface IBasicTaggerSource<OutliningRegionTag> with
@@ -404,19 +393,16 @@ type internal FoldTaggerSource(_foldData: IFoldData) as this =
 [<ContentType(VimConstants.AnyContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<OutliningRegionTag>)>]
-type FoldTaggerProvider
-    [<ImportingConstructor>]
-    (
-        _factory: IFoldManagerFactory
-    ) =
+type FoldTaggerProvider [<ImportingConstructor>] (_factory: IFoldManagerFactory) =
 
     let _key = obj()
 
-    interface ITaggerProvider with 
+    interface ITaggerProvider with
         member x.CreateTagger<'T when 'T :> ITag> textBuffer =
-            let func () =
+            let func() =
                 let foldData = _factory.GetFoldData textBuffer
                 let taggerSource = new FoldTaggerSource(foldData)
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>
+
             let tagger = TaggerUtil.CreateBasicTagger textBuffer.Properties _key func
             tagger :> obj :?> ITagger<'T>

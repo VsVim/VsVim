@@ -1,6 +1,5 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text.Editor
 open System.ComponentModel.Composition
 
@@ -15,7 +14,5 @@ module LineNumbersMarginOptions =
 [<Sealed>]
 type public VsVimLineNumbersMarginOption() =
     inherit EditorOptionDefinition<bool>()
-    override x.Default
-        with get() = false
-    override x.Key 
-        with get() = LineNumbersMarginOptions.LineNumbersMarginOptionId
+    override x.Default = false
+    override x.Key = LineNumbersMarginOptions.LineNumbersMarginOptionId

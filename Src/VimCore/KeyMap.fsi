@@ -1,16 +1,17 @@
-﻿
 namespace Vim
+
 open Vim.Interpreter
+
 
 type internal GlobalKeyMap =
     interface IVimGlobalKeyMap
 
-    new: variableMap: VariableMap -> GlobalKeyMap 
+    new: variableMap:VariableMap -> GlobalKeyMap
 
 type internal LocalKeyMap =
     interface IVimLocalKeyMap
 
-    new: globalKeyMap: IVimGlobalKeyMap * globalSettings: IVimGlobalSettings * variableMap: VariableMap -> LocalKeyMap 
+    new: globalKeyMap:IVimGlobalKeyMap * globalSettings:IVimGlobalSettings * variableMap:VariableMap -> LocalKeyMap
 
 type internal GlobalAbbreviationMap =
     interface IVimGlobalAbbreviationMap
@@ -20,6 +21,5 @@ type internal GlobalAbbreviationMap =
 type internal LocalAbbreviationMap =
     interface IVimLocalAbbreviationMap
 
-    new: keyMap: IVimLocalKeyMap * globalAbbreviationMap: IVimGlobalAbbreviationMap * wordUtil: WordUtil -> LocalAbbreviationMap
-
-
+    new: keyMap:IVimLocalKeyMap * globalAbbreviationMap:IVimGlobalAbbreviationMap * wordUtil:WordUtil
+         -> LocalAbbreviationMap

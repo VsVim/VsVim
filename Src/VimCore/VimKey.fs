@@ -1,8 +1,6 @@
-﻿#light
-
 namespace Vim
 
-/// Provides values for the well known key values used by Vim 
+/// Provides values for the well known key values used by Vim
 type VimKey =
     | None = 0
     | Back = 1
@@ -48,11 +46,11 @@ type VimKey =
     | KeypadDivide = 42
     | KeypadMultiply = 43
     | KeypadEnter = 44
-    | Nop = 45              // no-op.  Does nothing
-    | Null = 46             // (char)0
+    | Nop = 45 // no-op.  Does nothing
+    | Null = 46 // (char)0
     | LineFeed = 47
     | Tab = 48
-    | RawCharacter = 50     // A simple character to be processed
+    | RawCharacter = 50 // A simple character to be processed
     | LeftMouse = 51
     | LeftDrag = 52
     | LeftRelease = 53
@@ -72,7 +70,7 @@ type VimKey =
 module VimKeyUtil =
 
     /// Is this a number key from the Keypad
-    let IsKeypadNumberKey key = 
+    let IsKeypadNumberKey key =
         match key with
         | VimKey.Keypad0 -> true
         | VimKey.Keypad1 -> true
@@ -87,7 +85,7 @@ module VimKeyUtil =
         | _ -> false
 
     /// Is this a key from the Keypad
-    let IsKeypadKey key = 
+    let IsKeypadKey key =
         if IsKeypadNumberKey key then
             true
         else
@@ -100,7 +98,7 @@ module VimKeyUtil =
             | _ -> false
 
     /// Is this an arrow key?
-    let IsArrowKey key = 
+    let IsArrowKey key =
         match key with
         | VimKey.Left -> true
         | VimKey.Right -> true
@@ -109,7 +107,7 @@ module VimKeyUtil =
         | _ -> false
 
     /// Is this a function key
-    let IsFunctionKey key =    
+    let IsFunctionKey key =
         match key with
         | VimKey.F1 -> true
         | VimKey.F2 -> true
@@ -146,27 +144,27 @@ module VimKeyUtil =
         | _ -> false
 
 [<System.Flags>]
-type VimKeyModifiers = 
-    | None = 0x0
+type VimKeyModifiers =
+    | None = 0
 
-    /// The Alt or Meta Key 
-    | Alt = 0x1
+    /// The Alt or Meta Key
+    | Alt = 1
 
     /// The Control key
-    | Control = 0x2
+    | Control = 2
 
     /// The Shift key
-    | Shift = 0x4
+    | Shift = 4
 
-    /// The Command key.  This isn't actually used in VsVim but is a place holder 
+    /// The Command key.  This isn't actually used in VsVim but is a place holder
     /// for the command key notation <D-...> which is only valid on Mac's
-    | Command = 0x8
+    | Command = 8
 
     /// Double-click
-    | Double = 0x10
+    | Double = 16
 
     /// Triple-click
-    | Triple = 0x20
+    | Triple = 32
 
     /// Quadruple-click
-    | Quadruple = 0x40
+    | Quadruple = 64

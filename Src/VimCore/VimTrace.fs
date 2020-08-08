@@ -1,5 +1,5 @@
-﻿#light
 namespace Vim
+
 open System
 open System.Diagnostics
 
@@ -9,7 +9,7 @@ type VimTraceKind =
     | Error
     | Debug
 
-type VimTraceEventArgs (_message: string, _kind: VimTraceKind) =
+type VimTraceEventArgs(_message: string, _kind: VimTraceKind) =
     inherit System.EventArgs()
 
     member x.Message = _message
@@ -28,64 +28,60 @@ type VimTrace() =
     static member TraceSwitch = _traceSwitch
 
     [<Conditional("DEBUG")>]
-    static member BreakInDebug () =
-        if System.Diagnostics.Debugger.IsAttached then
-            System.Diagnostics.Debugger.Break()
+    static member BreakInDebug() =
+        if System.Diagnostics.Debugger.IsAttached then System.Diagnostics.Debugger.Break()
 
     [<Conditional("TRACE")>]
-    static member TraceInfo(msg: string) = 
+    static member TraceInfo(msg: string) =
         let msg = _prefixInfo + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceInfo, msg)
         VimTrace.Raise msg VimTraceKind.Info
 
     [<Conditional("TRACE")>]
-    static member TraceInfo(format: string, [<ParamArrayAttribute>] args: obj []) = 
+    static member TraceInfo(format: string, [<ParamArrayAttribute>] args: obj []) =
         let msg = String.Format(format, args)
         let msg = _prefixInfo + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceInfo, msg)
         VimTrace.Raise msg VimTraceKind.Info
 
     [<Conditional("TRACE")>]
-    static member TraceError(ex: Exception) = 
+    static member TraceError(ex: Exception) =
         let msg =
-            ex.GetType().Name + ": " + ex.Message + Environment.NewLine
-            + ex.StackTrace + Environment.NewLine
-            + "---" + Environment.NewLine
-            + (StackTrace(1, true).ToString())
+            ex.GetType().Name + ": " + ex.Message + Environment.NewLine + ex.StackTrace + Environment.NewLine + "---"
+            + Environment.NewLine + (StackTrace(1, true).ToString())
         VimTrace.TraceError(msg)
         VimTrace.BreakInDebug()
 
     [<Conditional("TRACE")>]
-    static member TraceError(msg: string) = 
+    static member TraceError(msg: string) =
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
 
     [<Conditional("TRACE")>]
-    static member TraceError(format: string, [<ParamArrayAttribute>] args: obj []) = 
+    static member TraceError(format: string, [<ParamArrayAttribute>] args: obj []) =
         let msg = String.Format(format, args)
         let msg = _prefixError + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceError, msg)
         VimTrace.Raise msg VimTraceKind.Error
 
     [<Conditional("DEBUG")>]
-    static member TraceDebug(msg: string) = 
+    static member TraceDebug(msg: string) =
         let msg = _prefixDebug + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceVerbose, msg)
         VimTrace.Raise msg VimTraceKind.Debug
 
     [<Conditional("DEBUG")>]
-    static member TraceDebug(format: string, [<ParamArrayAttribute>] args: obj []) = 
+    static member TraceDebug(format: string, [<ParamArrayAttribute>] args: obj []) =
         let msg = String.Format(format, args)
         let msg = _prefixDebug + msg
         Trace.WriteLineIf(VimTrace.TraceSwitch.TraceVerbose, msg)
         VimTrace.Raise msg VimTraceKind.Debug
 
-    static member private Raise msg kind = 
+    static member private Raise msg kind =
         let args = VimTraceEventArgs(msg, kind)
         _traceEvent.Trigger _traceSwitch args
 
     /// Raised when a tracing event occurs.
     [<CLIEvent>]
     static member Trace = _traceEvent.Publish
-

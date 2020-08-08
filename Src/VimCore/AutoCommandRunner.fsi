@@ -1,7 +1,7 @@
-﻿namespace Vim
+namespace Vim
+
+
 
 [<Sealed>]
-type internal AutoCommandRunner = 
-
+type internal AutoCommandRunner =
     interface IVimBufferCreationListener
-

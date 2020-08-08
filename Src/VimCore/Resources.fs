@@ -1,5 +1,3 @@
-﻿#light
-
 namespace Vim
 
 module internal Resources =
@@ -60,13 +58,14 @@ module internal Resources =
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
-    let CommandMode_NotSupported_KeyMapping lhs rhs = sprintf "The key mapping %s -> %s is not currently supported" lhs rhs
+    let CommandMode_NotSupported_KeyMapping lhs rhs =
+        sprintf "The key mapping %s -> %s is not currently supported" lhs rhs
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
     let CommandMode_NoSuchMapping = "No such mapping"
     let CommandMode_TrailingCharacters = "Trailing characters"
-    let CommandMode_NoPreviousSubstitute =  "No previous substitute regular expression"
+    let CommandMode_NoPreviousSubstitute = "No previous substitute regular expression"
     let CommandMode_NoFileName = "No file name"
     let CommandMode_RegisterBanner = "--- Registers ---"
 
@@ -112,7 +111,7 @@ module internal Resources =
     let Interpreter_OptionNotSupported x = sprintf "Option is not supported: '%s'" x
     let Interpreter_UnableToMapKeys lhs rhs = sprintf "Unable to map keys: %s %s" lhs rhs
     let Interpreter_UnknownOption msg = sprintf "Unknown option: %s" msg
-    let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg 
+    let Interpreter_InvalidArgument msg = sprintf "Invalid argument: %s" msg
     let Interpreter_ReadOnlyOptionIsSet = "'readonly' option is set (add ! to override)"
     let Interpreter_CantOpenFile filePath = sprintf "Can't open file %s" filePath
     let Interpreter_CantRunCommand command = sprintf "Can't run command %s" command
@@ -125,7 +124,8 @@ module internal Resources =
     let Interpreter_DivByZero = "Attempt to divide by zero. Not supported."
     let Interpreter_ModByZero = "Attempt to mod by zero. Not supported."
     let Interpreter_ErrorsSourcing path = sprintf "Errors sourcing \"%s\":" path
-    let Interpreter_ErrorSettingEnvironmentVariable lhs rhs = sprintf "Error setting environment variable '%s' = %s" lhs rhs
+    let Interpreter_ErrorSettingEnvironmentVariable lhs rhs =
+        sprintf "Error setting environment variable '%s' = %s" lhs rhs
     let Interpreter_NoMoreItems = "No more items"
 
     let Regex_Unknown = "Unknown error building regex"

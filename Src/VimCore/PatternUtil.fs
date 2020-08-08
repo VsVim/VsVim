@@ -1,4 +1,3 @@
-﻿#light
 namespace Vim
 
 module PatternUtil =
@@ -7,11 +6,10 @@ module PatternUtil =
     let IsWholeWord pattern = StringUtil.StartsWith "\<" pattern && StringUtil.EndsWith "\>" pattern
 
     /// Will return the whole word being wrapped if this is a whole word pattern
-    let GetUnderlyingWholeWord pattern = 
-        if IsWholeWord pattern then
-            Some (pattern.Substring(2, pattern.Length - 4))
-        else
-            None
+    let GetUnderlyingWholeWord pattern =
+        if IsWholeWord pattern
+        then Some(pattern.Substring(2, pattern.Length - 4))
+        else None
 
     /// Create a whole word pattern
     let CreateWholeWord pattern = "\<" + pattern + "\>"

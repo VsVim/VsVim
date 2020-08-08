@@ -1,6 +1,5 @@
-﻿#light
-
 namespace Vim
+
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
@@ -9,20 +8,14 @@ open System.ComponentModel.Composition
 
 /// Data relating to tracking changes to a line
 type internal LineChangeTrackingData =
-    {
-        LineNumber: int
-        SavedLine: string option
-    }
-    static member Empty = {
-        LineNumber = 0
-        SavedLine = None
-    }
+    { LineNumber: int
+      SavedLine: string option }
+    static member Empty =
+        { LineNumber = 0
+          SavedLine = None }
 
 /// Used to track changes to the current line of an individual IVimBuffer
-type internal LineChangeTracker
-    ( 
-        _vimBufferData: IVimBufferData
-    ) as x =
+type internal LineChangeTracker(_vimBufferData: IVimBufferData) as x =
 
     let _disposables = DisposableBag()
     let _textView = _vimBufferData.TextView
@@ -31,32 +24,31 @@ type internal LineChangeTracker
     let mutable _currentData = LineChangeTrackingData.Empty
     let mutable _changedData = LineChangeTrackingData.Empty
 
-    do
-        x.Initialize()
+    do x.Initialize()
 
     // Promote fields to members
     member x.TextView = _textView
     member x.TextBuffer = _textBuffer
     member x.UndoRedoOperations = _undoRedoOperations
     member x.Disposables = _disposables
+
     member x.CurrentData
-        with get() = _currentData
+        with get () = _currentData
         and set value = _currentData <- value
+
     member x.ChangedData
-        with get() = _changedData
+        with get () = _changedData
         and set value = _changedData <- value
 
     // Add a few utility members
     member x.CaretLine = TextViewUtil.GetCaretLine x.TextView
     member x.CaretLineNumber = x.CaretLine.LineNumber
-    member x.GetLine lineNumber =
-        x.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber)
-    member x.MoveCaretToPoint point =
-            TextViewUtil.MoveCaretToPoint x.TextView point
+    member x.GetLine lineNumber = x.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber)
+    member x.MoveCaretToPoint point = TextViewUtil.MoveCaretToPoint x.TextView point
 
     /// Initialize the line change tracker by registering for events
     /// and setting up the initial state
-    member x.Initialize () =
+    member x.Initialize() =
 
         // Listen to caret changes to detect line changes
         x.TextView.Caret.PositionChanged
@@ -69,32 +61,28 @@ type internal LineChangeTracker
         |> x.Disposables.Add
 
         // Unregister all our handles when the text view is closed
-        x.TextView.Closed 
-        |> Event.add (fun _ -> x.Disposables.DisposeAll())
+        x.TextView.Closed |> Event.add (fun _ -> x.Disposables.DisposeAll())
 
         // Safely attempt to record caret position on entry
-        if TextViewUtil.GetTextViewLines _textView |> Option.isSome then
-            x.OnCaretPositionChanged()
+        if TextViewUtil.GetTextViewLines _textView |> Option.isSome then x.OnCaretPositionChanged()
 
     /// Handler for caret position changes
-    member x.OnCaretPositionChanged () = 
+    member x.OnCaretPositionChanged() =
         if x.CaretLineNumber <> x.CurrentData.LineNumber then
             let line = x.GetLine x.CaretLineNumber
-            x.CurrentData <- {
-                LineNumber = x.CaretLineNumber
-                SavedLine = line.GetText() |> Some
-            }
+            x.CurrentData <-
+                { LineNumber = x.CaretLineNumber
+                  SavedLine = line.GetText() |> Some }
 
     /// Handler for text changes
-    member x.OnTextChanged args = 
+    member x.OnTextChanged args =
         x.ChangedData <-
-            if x.CaretLineNumber = x.CurrentData.LineNumber then
-                x.CurrentData
-            else
-                LineChangeTrackingData.Empty
+            if x.CaretLineNumber = x.CurrentData.LineNumber
+            then x.CurrentData
+            else LineChangeTrackingData.Empty
 
     /// Swap the most recently changed line with its saved copy
-    member x.Swap () =
+    member x.Swap() =
         match x.ChangedData.SavedLine with
         | Some savedLine ->
             let lineNumber = x.ChangedData.LineNumber
@@ -105,28 +93,23 @@ type internal LineChangeTracker
                 let line = x.GetLine lineNumber
                 let point = SnapshotLineUtil.GetFirstNonBlankOrEnd line
                 x.MoveCaretToPoint point
-            x.ChangedData <- {
-                LineNumber = lineNumber
-                SavedLine = Some changedLine
-            }
+            x.ChangedData <-
+                { LineNumber = lineNumber
+                  SavedLine = Some changedLine }
             true
-        | None ->
-            false
+        | None -> false
 
     /// Implement the ILineChangeTracker interface
-    interface ILineChangeTracker with 
+    interface ILineChangeTracker with
         member x.Swap() = x.Swap()
 
 [<Export(typeof<ILineChangeTrackerFactory>)>]
-type internal LineChangeTrackerFactory 
-    [<ImportingConstructor>]
-    (
-    )  =
+type internal LineChangeTrackerFactory [<ImportingConstructor>] () =
 
     let _key = System.Object()
-    
+
     interface ILineChangeTrackerFactory with
-        member x.GetLineChangeTracker (bufferData: IVimBufferData) =
+        member x.GetLineChangeTracker(bufferData: IVimBufferData) =
             let textView = bufferData.TextView
-            textView.Properties.GetOrCreateSingletonProperty(_key, (fun () -> 
-                LineChangeTracker(bufferData) :> ILineChangeTracker))
+            textView.Properties.GetOrCreateSingletonProperty
+                (_key, (fun () -> LineChangeTracker(bufferData) :> ILineChangeTracker))

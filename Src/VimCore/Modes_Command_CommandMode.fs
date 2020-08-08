@@ -1,16 +1,11 @@
-﻿#light
-
 namespace Vim.Modes.Command
+
 open Vim
 open Vim.Interpreter
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 
-type internal CommandMode
-    ( 
-        _buffer: IVimBuffer, 
-        _operations: ICommonOperations
-    ) =
+type internal CommandMode(_buffer: IVimBuffer, _operations: ICommonOperations) =
 
     let _commandChangedEvent = StandardEvent()
     let _commandRanEvent = StandardEvent<CommandEventArgs>()
@@ -19,10 +14,9 @@ type internal CommandMode
     let _parser = Parser(_buffer.Vim.GlobalSettings, _vimData)
     let _vimHost = _buffer.Vim.VimHost
 
-    static let BindDataError: MappedBindData<int> = {
-        KeyRemapMode = KeyRemapMode.None;
-        MappedBindFunction = fun _ -> MappedBindResult.Error
-    }
+    static let BindDataError: MappedBindData<int> =
+        { KeyRemapMode = KeyRemapMode.None
+          MappedBindFunction = fun _ -> MappedBindResult.Error }
 
     let mutable _command = EditableCommand.Empty
     let mutable _historySession: IHistorySession<int, int> option = None
@@ -30,32 +24,27 @@ type internal CommandMode
     let mutable _keepSelection = false
     let mutable _isPartialCommand = false
 
-    /// Currently queued up editable command
-    member x.EditableCommand 
-        with get() = _command
-        and set value = 
+    member x.EditableCommand
+        with get () = _command
+        and set value =
             if value <> _command then
                 _command <- value
                 _commandChangedEvent.Trigger x
 
-    /// Currently queued up command string
-    member x.Command 
-        with get() = x.EditableCommand.Text
+    member x.Command
+        with get () = x.EditableCommand.Text
         and set value = x.EditableCommand <- EditableCommand(value)
 
-    member x.InPasteWait = 
+    member x.InPasteWait =
         match _historySession with
         | Some historySession -> historySession.InPasteWait
         | None -> false
 
-    member x.ParseAndRunInput (command: string) (wasMapped: bool) = 
-        let command = 
-            if command.Length > 0 && command.[0] = ':' then
-                command.Substring(1)
-            else
-                command
+    member x.ParseAndRunInput (command: string) (wasMapped: bool) =
+        let command =
+            if command.Length > 0 && command.[0] = ':' then command.Substring(1) else command
 
-        let lineCommand = _parser.ParseLineCommand command 
+        let lineCommand = _parser.ParseLineCommand command
 
         // We clear the selection for all line commands except a host command,
         // which manages any selection clearing itself.
@@ -69,7 +58,7 @@ type internal CommandMode
             _vimData.LastCommandLine <- command
             _vimData.LastLineCommand <- Some lineCommand
 
-        let fullCommand = 
+        let fullCommand =
             match _parser.TryExpandCommandName command with
             | Some c -> c
             | None -> command
@@ -77,28 +66,27 @@ type internal CommandMode
 
     // Command mode can be validly entered with the selection active.  Consider
     // hitting ':' in Visual Mode.  The selection should be cleared when leaving
-    member x.MaybeClearSelection moveCaretToStart = 
+    member x.MaybeClearSelection moveCaretToStart =
         let selection = _buffer.TextView.Selection
-        if not selection.IsEmpty && not _buffer.TextView.IsClosed && not _keepSelection then 
+        if not selection.IsEmpty && not _buffer.TextView.IsClosed && not _keepSelection then
             if moveCaretToStart then
                 let point = selection.StreamSelectionSpan.SnapshotSpan.Start
                 TextViewUtil.ClearSelection _buffer.TextView
                 TextViewUtil.MoveCaretToPoint _buffer.TextView point
-            else 
+            else
                 TextViewUtil.ClearSelection _buffer.TextView
 
-    member x.Process (keyInputData: KeyInputData) =
+    member x.Process(keyInputData: KeyInputData) =
         match _bindData.MappedBindFunction keyInputData with
         | MappedBindResult.Complete _ ->
             _bindData <- BindDataError
 
-            // It is possible for the execution of the command to change the mode (say :s.../c) 
+            // It is possible for the execution of the command to change the mode (say :s.../c)
             if _buffer.ModeKind = ModeKind.Command then
-                if _isPartialCommand then
-                    ProcessResult.OfModeKind ModeKind.Normal
-                else
-                    ProcessResult.Handled ModeSwitch.SwitchPreviousMode
-            else 
+                if _isPartialCommand
+                then ProcessResult.OfModeKind ModeKind.Normal
+                else ProcessResult.Handled ModeSwitch.SwitchPreviousMode
+            else
                 ProcessResult.Handled ModeSwitch.NoSwitch
         | MappedBindResult.Cancelled ->
             _bindData <- BindDataError
@@ -113,8 +101,8 @@ type internal CommandMode
     member x.CreateHistorySession() =
 
         // The ProcessCommand call back just means a new command state was reached.  Until it's
-        // completed we just keep updating the current state 
-        let processCommand command = 
+        // completed we just keep updating the current state
+        let processCommand command =
             x.EditableCommand <- command
             0
 
@@ -126,24 +114,25 @@ type internal CommandMode
             0
 
         /// User cancelled input.  Reset the selection
-        let cancelled () = 
+        let cancelled() =
             x.EditableCommand <- EditableCommand.Empty
             x.MaybeClearSelection true
 
         // First key stroke.  Create a history client and get going
-        let historyClient = {
-            new IHistoryClient<int, int> with
+        let historyClient =
+            { new IHistoryClient<int, int> with
                 member this.HistoryList = _vimData.CommandHistory
                 member this.RegisterMap = _buffer.RegisterMap
                 member this.RemapMode = KeyRemapMode.Command
                 member this.Beep() = _operations.Beep()
                 member this.ProcessCommand _ command = processCommand command
                 member this.Completed _ command wasMapped = completed command.Text wasMapped
-                member this.Cancelled _ = cancelled ()
-            }
-        HistoryUtil.CreateHistorySession historyClient 0 _command _buffer.VimTextBuffer.LocalAbbreviationMap _buffer.MotionUtil
+                member this.Cancelled _ = cancelled() }
 
-    member x.OnEnter (arg: ModeArgument) = 
+        HistoryUtil.CreateHistorySession historyClient 0 _command _buffer.VimTextBuffer.LocalAbbreviationMap
+            _buffer.MotionUtil
+
+    member x.OnEnter(arg: ModeArgument) =
         let historySession = x.CreateHistorySession()
 
         _command <- EditableCommand.Empty
@@ -153,16 +142,16 @@ type internal CommandMode
         _isPartialCommand <- false
 
         arg.CompleteAnyTransaction()
-        let commandText = 
+        let commandText =
             match arg with
-            | ModeArgument.PartialCommand command -> _isPartialCommand <- true; command
+            | ModeArgument.PartialCommand command ->
+                _isPartialCommand <- true
+                command
             | _ -> StringUtil.Empty
 
-        if not (StringUtil.IsNullOrEmpty commandText) then
-            EditableCommand(commandText)
-            |> x.ChangeCommand
+        if not (StringUtil.IsNullOrEmpty commandText) then EditableCommand(commandText) |> x.ChangeCommand
 
-    member x.OnLeave() = 
+    member x.OnLeave() =
         x.MaybeClearSelection true
         _command <- EditableCommand.Empty
         _historySession <- None
@@ -170,37 +159,37 @@ type internal CommandMode
         _keepSelection <- false
         _isPartialCommand <- false
 
-    /// Called externally to update the command.  Do this by modifying the history 
-    /// session.  If we aren't in command mode currently then this is a no-op 
-    member x.ChangeCommand (command: EditableCommand) = 
+    /// Called externally to update the command.  Do this by modifying the history
+    /// session.  If we aren't in command mode currently then this is a no-op
+    member x.ChangeCommand(command: EditableCommand) =
         match _historySession with
         | None -> ()
         | Some historySession -> historySession.ResetCommand command
 
     interface ICommandMode with
         member x.VimTextBuffer = _buffer.VimTextBuffer
-        member x.EditableCommand 
-            with get() = x.EditableCommand
+
+        member x.EditableCommand
+            with get () = x.EditableCommand
             and set value = x.ChangeCommand value
+
         member x.Command
-            with get() = x.Command
+            with get () = x.Command
             and set value = EditableCommand(value) |> x.ChangeCommand
+
         member x.CommandNames = HistoryUtil.CommandNames |> Seq.map KeyInputSetUtil.Single
         member x.InPasteWait = x.InPasteWait
         member x.ModeKind = ModeKind.Command
         member x.CanProcess keyInput = KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
         member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter arg = x.OnEnter arg
-        member x.OnLeave () = x.OnLeave ()
+        member x.OnLeave() = x.OnLeave()
         member x.OnClose() = ()
 
-        member x.RunCommand command = 
-            x.ParseAndRunInput command true
+        member x.RunCommand command = x.ParseAndRunInput command true
 
         [<CLIEvent>]
         member x.CommandChanged = _commandChangedEvent.Publish
 
         [<CLIEvent>]
         member x.CommandRan = _commandRanEvent.Publish
-
-

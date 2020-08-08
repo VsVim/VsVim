@@ -1,27 +1,19 @@
-﻿namespace Vim.Modes.Visual
+namespace Vim.Modes.Visual
+
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open Vim
 open Vim.Modes
 
-type internal SelectMode
-    (
-        _vimBufferData: IVimBufferData,
-        _commonOperations: ICommonOperations,
-        _motionUtil: IMotionUtil,
-        _visualKind: VisualKind,
-        _runner: ICommandRunner,
-        _capture: IMotionCapture,
-        _undoRedoOperations: IUndoRedoOperations,
-        _selectionTracker: ISelectionTracker
-    ) = 
+type internal SelectMode(_vimBufferData: IVimBufferData, _commonOperations: ICommonOperations, _motionUtil: IMotionUtil, _visualKind: VisualKind, _runner: ICommandRunner, _capture: IMotionCapture, _undoRedoOperations: IUndoRedoOperations, _selectionTracker: ISelectionTracker) =
 
     let _globalSettings = _vimBufferData.LocalSettings.GlobalSettings
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _textBuffer = _vimBufferData.TextBuffer
     let _textView = _vimBufferData.TextView
-    let _modeKind = 
+
+    let _modeKind =
         match _visualKind with
         | VisualKind.Character -> ModeKind.SelectCharacter
         | VisualKind.Line -> ModeKind.SelectLine
@@ -46,18 +38,20 @@ type internal SelectMode
 
                 // Multi-selection bindings not in Vim.
                 yield ("<C-A-LeftMouse>", CommandFlags.Special, VisualCommand.AddCaretAtMousePoint)
-                yield ("<C-A-2-LeftMouse>", CommandFlags.Special, VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
+                yield ("<C-A-2-LeftMouse>", CommandFlags.Special,
+                       VisualCommand.AddWordOrMatchingTokenAtMousePointToSelection)
                 yield ("<C-A-Up>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Up)
                 yield ("<C-A-Down>", CommandFlags.Special, VisualCommand.AddSelectionOnAdjacentLine Direction.Down)
                 yield ("<C-A-n>", CommandFlags.Special, VisualCommand.StartMultiSelection)
-            } |> Seq.map (fun (str, flags, command) ->
+            }
+            |> Seq.map (fun (str, flags, command) ->
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.VisualBinding (keyInputSet, flags, command))
+                CommandBinding.VisualBinding(keyInputSet, flags, command))
         visualSeq
 
     /// A 'special key' is defined in :help keymodel as any of the following keys.  Depending
     /// on the value of the keymodel setting they can affect the selection
-    static let GetCaretMovement (keyInput: KeyInput) =
+    static let GetCaretMovement(keyInput: KeyInput) =
         let nonShiftModifiers = keyInput.KeyModifiers &&& ~~~VimKeyModifiers.Shift
         if nonShiftModifiers = VimKeyModifiers.None then
             match keyInput.Key with
@@ -83,9 +77,8 @@ type internal SelectMode
             None
 
     /// Whether a key input corresponds to normal text
-    static let IsTextKeyInput (keyInput: KeyInput) =
-        Option.isSome keyInput.RawChar
-        && not (CharUtil.IsControl keyInput.Char)
+    static let IsTextKeyInput(keyInput: KeyInput) =
+        Option.isSome keyInput.RawChar && not (CharUtil.IsControl keyInput.Char)
         && not (Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Alt)
 
     let mutable _builtCommands = false
@@ -95,26 +88,22 @@ type internal SelectMode
         _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
     member this.KeyRemapMode =
-        if _runner.IsWaitingForMoreInput then
-            _runner.KeyRemapMode
-        else
-            KeyRemapMode.Visual
+        if _runner.IsWaitingForMoreInput then _runner.KeyRemapMode else KeyRemapMode.Visual
 
     member x.EnsureCommandsBuilt() =
 
         /// Whether a command is bound to a key that is not insertable text
         let isNonTextCommand (command: CommandBinding) =
             match command.KeyInputSet.FirstKeyInput with
-            | None ->
-                true
-            | Some keyInput ->
-                not (IsTextKeyInput keyInput)
+            | None -> true
+            | Some keyInput -> not (IsTextKeyInput keyInput)
 
         if not _builtCommands then
             let factory = CommandFactory(_commonOperations, _capture)
 
             // Add in the standard non-conflicting movement commands
-            factory.CreateScrollCommands() |> Seq.filter isNonTextCommand
+            factory.CreateScrollCommands()
+            |> Seq.filter isNonTextCommand
             |> Seq.append Commands
             |> Seq.iter _runner.Add
 
@@ -128,15 +117,13 @@ type internal SelectMode
 
     member x.CurrentSnapshot = _textView.TextSnapshot
 
-    member x.ShouldStopSelection (keyInput: KeyInput) =
+    member x.ShouldStopSelection(keyInput: KeyInput) =
         let hasShift = Util.IsFlagSet keyInput.KeyModifiers VimKeyModifiers.Shift
         let hasStopSelection = Util.IsFlagSet _globalSettings.KeyModelOptions KeyModelOptions.StopSelection
         not hasShift && hasStopSelection
 
     member x.ProcessCaretMovement caretMovement keyInput =
-        fun () ->
-            x.ProcessCaretMovementCore caretMovement keyInput
-            |> ProcessResult.ToCommandResult
+        fun () -> x.ProcessCaretMovementCore caretMovement keyInput |> ProcessResult.ToCommandResult
         |> _commonOperations.RunForAllSelections
         |> ProcessResult.OfCommandResult
 
@@ -169,15 +156,13 @@ type internal SelectMode
             if shouldStopSelection then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             else
-                // The caret moved so we need to update the selection 
+                // The caret moved so we need to update the selection
                 _selectionTracker.UpdateSelectionWithAnchorPoint anchorPoint
                 ProcessResult.Handled ModeSwitch.NoSwitch
 
     /// Overwrite the selection with the specified text
     member x.ProcessInput text linked =
-        fun () ->
-            x.ProcessInputCore text linked
-            |> ProcessResult.ToCommandResult
+        fun () -> x.ProcessInputCore text linked |> ProcessResult.ToCommandResult
         |> _commonOperations.RunForAllSelections
         |> ProcessResult.OfCommandResult
 
@@ -200,8 +185,7 @@ type internal SelectMode
                 // we are tracking and we chose PointTrackingMode.Positive so
                 // this will push the point past the insert
                 edit.Apply() |> ignore
-                _commonOperations.MapPointPositiveToCurrentSnapshot span.End
-                |> TextViewUtil.MoveCaretToPoint _textView
+                _commonOperations.MapPointPositiveToCurrentSnapshot span.End |> TextViewUtil.MoveCaretToPoint _textView
 
             |> _undoRedoOperations.EditWithUndoTransaction "Replace" _textView
 
@@ -217,24 +201,22 @@ type internal SelectMode
             let transaction = _undoRedoOperations.CreateLinkedUndoTransaction "Replace"
             try
                 replaceSelection span text
-            with
-                | _ ->
-                    transaction.Dispose()
-                    reraise()
+            with _ ->
+                transaction.Dispose()
+                reraise()
             let arg = ModeArgument.InsertWithTransaction transaction
-            ProcessResult.Handled (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, arg))
+            ProcessResult.Handled(ModeSwitch.SwitchModeWithArgument(ModeKind.Insert, arg))
         else
             replaceSelection span text
-            ProcessResult.Handled (ModeSwitch.SwitchMode ModeKind.Insert)
+            ProcessResult.Handled(ModeSwitch.SwitchMode ModeKind.Insert)
 
-    member x.CanProcess (keyInput: KeyInput) =
-        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey
-        || _runner.DoesCommandStartWith keyInput
+    member x.CanProcess(keyInput: KeyInput) =
+        KeyInputUtil.IsCore keyInput && not keyInput.IsMouseKey || _runner.DoesCommandStartWith keyInput
 
-    member x.Process (keyInputData: KeyInputData) = 
+    member x.Process(keyInputData: KeyInputData) =
         let keyInput = keyInputData.KeyInput
 
-        let processResult = 
+        let processResult =
             if keyInput = KeyInputUtil.EscapeKey then
                 ProcessResult.Handled ModeSwitch.SwitchPreviousMode
             elif keyInput = KeyInputUtil.EnterKey then
@@ -248,19 +230,16 @@ type internal SelectMode
                 x.ProcessVisualModeOneCommand keyInput
             else
                 match GetCaretMovement keyInput with
-                | Some caretMovement ->
-                    x.ProcessCaretMovement caretMovement keyInput
+                | Some caretMovement -> x.ProcessCaretMovement caretMovement keyInput
                 | None ->
                     if IsTextKeyInput keyInput then
                         x.ProcessInput (StringUtil.OfChar keyInput.Char) true
                     else
                         match _runner.Run keyInput with
-                        | BindResult.NeedMoreInput _ ->
-                            ProcessResult.HandledNeedMoreInput
+                        | BindResult.NeedMoreInput _ -> ProcessResult.HandledNeedMoreInput
                         | BindResult.Complete commandRanData ->
                             match commandRanData.CommandResult with
-                            | CommandResult.Error ->
-                                _selectionTracker.UpdateSelection()
+                            | CommandResult.Error -> _selectionTracker.UpdateSelection()
                             | CommandResult.Completed modeSwitch ->
                                 match modeSwitch with
                                 | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
@@ -292,8 +271,7 @@ type internal SelectMode
             let modeKind = visualKind.VisualModeKind
             let modeSwitch = ModeSwitch.SwitchModeOneTimeCommand modeKind
             ProcessResult.Handled modeSwitch
-        | None ->
-            ProcessResult.Error
+        | None -> ProcessResult.Error
 
     member x.OnEnter modeArgument =
         x.EnsureCommandsBuilt()
@@ -316,10 +294,10 @@ type internal SelectMode
 
     interface IMode with
         member x.VimTextBuffer = _vimTextBuffer
-        member x.CommandNames =  Commands |> Seq.map (fun binding -> binding.KeyInputSet)
+        member x.CommandNames = Commands |> Seq.map (fun binding -> binding.KeyInputSet)
         member x.ModeKind = _modeKind
         member x.CanProcess keyInput = x.CanProcess keyInput
-        member x.Process keyInputData =  x.Process keyInputData
+        member x.Process keyInputData = x.Process keyInputData
         member x.OnEnter modeArgument = x.OnEnter modeArgument
-        member x.OnLeave () = x.OnLeave()
+        member x.OnLeave() = x.OnLeave()
         member x.OnClose() = x.OnClose()

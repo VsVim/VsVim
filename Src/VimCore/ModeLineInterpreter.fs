@@ -1,5 +1,3 @@
-﻿#light
-
 namespace Vim
 
 open System.Text.RegularExpressions
@@ -7,14 +5,11 @@ open Microsoft.VisualStudio.Text
 
 [<Sealed>]
 [<Class>]
-type internal ModeLineInterpreter
-    (
-        _textBuffer: ITextBuffer,
-        _localSettings: IVimLocalSettings
-    ) =
+type internal ModeLineInterpreter(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) =
 
     /// Regular expressions to parse the modeline
     static let _escapedModeLine = @"(([^:\\]|\\:?)*)"
+
     static let _firstFormRegex = new Regex(@"[ \t]vim:(.*)$", RegexOptions.Compiled)
     static let _secondFormRegex = new Regex(@"[ \t]vim:[ \t]*set[ \t]+" + _escapedModeLine + ":", RegexOptions.Compiled)
     static let _nextGroupRegex = new Regex(_escapedModeLine + @"(:|$)", RegexOptions.Compiled)
@@ -28,22 +23,16 @@ type internal ModeLineInterpreter
 
     /// List of insecure local setting names that could be used in a file with
     /// a malicious modeline to cause risk or harm to the user
-    static let _insecureLocalSettingNames =
-        Seq.empty
-        |> Seq.toArray
-        :> string seq
+    static let _insecureLocalSettingNames = Seq.empty |> Seq.toArray :> string seq
 
     /// List of insecure window setting names that could be used in a file with
     /// a malicious modeline to cause risk or harm to the user
-    static let _insecureWindowSettingNames =
-        Seq.empty
-        |> Seq.toArray
-        :> string seq
+    static let _insecureWindowSettingNames = Seq.empty |> Seq.toArray :> string seq
 
     /// Check the contents of the buffer for a modeline, returning a tuple of
     /// the line we used as a modeline, if any, and a string representing the
     /// first sub-option that produced an error if any
-    member x.CheckModeLine (windowSettings: IVimWindowSettings) =
+    member x.CheckModeLine(windowSettings: IVimWindowSettings) =
 
         // Whether we should ignore the setting
         let shouldIgnoreSetting settingName =
@@ -88,7 +77,7 @@ type internal ModeLineInterpreter
                 |> Seq.contains localSetting.Value.Name
                 |> not
 
-            elif Option.isSome  windowSetting then
+            elif Option.isSome windowSetting then
 
                 // Allow any window setting that isn't insecure.
                 _insecureWindowSettingNames
@@ -104,10 +93,9 @@ type internal ModeLineInterpreter
 
                 // Only set local settings the first time the buffer is
                 // checked.
-                if not _wasBufferChecked then
-                    _localSettings.TrySetValueFromString settingName settingValue
-                else
-                    true
+                if not _wasBufferChecked
+                then _localSettings.TrySetValueFromString settingName settingValue
+                else true
 
             elif windowSettings.GetSetting settingName |> Option.isSome then
                 windowSettings.TrySetValueFromString settingName settingValue
@@ -139,16 +127,12 @@ type internal ModeLineInterpreter
                     settingName, "True"
 
             // Check whether we should apply the setting.
-            if shouldIgnoreSetting settingName then
-                true
-            elif shouldAllowSetting settingName then
-                setSetting settingName settingValue
-            else
-                false
+            if shouldIgnoreSetting settingName then true
+            elif shouldAllowSetting settingName then setSetting settingName settingValue
+            else false
 
         // Split the options string into fields.
-        let splitFields (options: string) =
-            options.Replace(@"\:", ":").Split(' ', '\t')
+        let splitFields (options: string) = options.Replace(@"\:", ":").Split(' ', '\t')
 
         // Process the "first" format of modeline, i.e. "vim: ...".
         let processFirstForm modeLine =
@@ -169,8 +153,7 @@ type internal ModeLineInterpreter
             let m = _secondFormRegex.Match(modeLine)
             if m.Success then
                 let firstBadOption =
-                    splitFields m.Groups.[1].Value
-                    |> Seq.tryFind (fun option -> not (processOption option))
+                    splitFields m.Groups.[1].Value |> Seq.tryFind (fun option -> not (processOption option))
                 Some modeLine, firstBadOption
             else
                 None, None
@@ -181,8 +164,8 @@ type internal ModeLineInterpreter
             match result with
             | Some _, _ -> result
             | None, _ ->
-               let result = processFirstForm modeLine
-               result
+                let result = processFirstForm modeLine
+                result
 
         // Try to process the first few and last few lines as modelines.
         let tryProcessModeLines modeLines =
@@ -203,12 +186,10 @@ type internal ModeLineInterpreter
         try
             try
                 let modeLines = _globalSettings.ModeLines
-                if _globalSettings.ModeLine && modeLines > 0 then
-                    tryProcessModeLines modeLines
-                else
-                    None, None
-            with
-            | ex ->
+                if _globalSettings.ModeLine && modeLines > 0
+                then tryProcessModeLines modeLines
+                else None, None
+            with ex ->
 
                 // Empirically, exceptions may be silently caught by some
                 // caller in the call stack. As a result, we catch any

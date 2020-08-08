@@ -1,8 +1,7 @@
-﻿#light
-
-// Types which need a temporary home as public until we can merge the VimCore and 
+// Types which need a temporary home as public until we can merge the VimCore and
 // VimCorePort assemblies.
 namespace Vim
+
 open System
 open System.Globalization
 open System.Collections.ObjectModel
@@ -10,23 +9,20 @@ open System.IO
 open System.Text
 open System.Text.RegularExpressions
 
-type Contract = 
+type Contract =
 
-    static member Requires test = 
-        if not test then
-            raise (System.Exception("Contract failed"))
+    static member Requires test =
+        if not test then raise (System.Exception("Contract failed"))
 
     [<System.Diagnostics.Conditional("DEBUG")>]
-    static member Assert test = 
-        if not test then
-            raise (System.Exception("Contract failed"))
+    static member Assert test =
+        if not test then raise (System.Exception("Contract failed"))
 
-    static member GetInvalidEnumException<'T> (value: 'T): System.Exception =
+    static member GetInvalidEnumException<'T>(value: 'T): System.Exception =
         let msg = sprintf "The value %O is not a valid member of type %O" value typedefof<'T>
         System.Exception(msg)
 
-    static member FailEnumValue<'T> (value: 'T): unit = 
-        raise (Contract.GetInvalidEnumException value)
+    static member FailEnumValue<'T>(value: 'T): unit = raise (Contract.GetInvalidEnumException value)
 
 [<AttributeUsage(AttributeTargets.Class ||| AttributeTargets.Method ||| AttributeTargets.Interface)>]
 type internal UsedInBackgroundThread() =
@@ -38,8 +34,10 @@ type internal StandardEvent<'T when 'T :> System.EventArgs>() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender: obj) (args: 'T) = 
-        let argsArray = [| sender; args :> obj |]
+    member x.Trigger (sender: obj) (args: 'T) =
+        let argsArray =
+            [| sender
+               args :> obj |]
         _event.Trigger(argsArray)
 
 type internal StandardEvent() =
@@ -48,78 +46,77 @@ type internal StandardEvent() =
 
     member x.Publish = _event.Publish
 
-    member x.Trigger (sender: obj) =
-        let argsArray = [| sender; System.EventArgs.Empty :> obj |]
+    member x.Trigger(sender: obj) =
+        let argsArray =
+            [| sender
+               System.EventArgs.Empty :> obj |]
         _event.Trigger(argsArray)
 
-type internal DisposableBag() = 
+type internal DisposableBag() =
     let mutable _toDispose: System.IDisposable list = List.empty
-    member x.DisposeAll () = 
-        _toDispose |> List.iter (fun x -> x.Dispose()) 
-        _toDispose <- List.empty
-    member x.Add d = _toDispose <- d :: _toDispose 
 
-module internal NullableUtil = 
+    member x.DisposeAll() =
+        _toDispose |> List.iter (fun x -> x.Dispose())
+        _toDispose <- List.empty
+
+    member x.Add d = _toDispose <- d :: _toDispose
+
+module internal NullableUtil =
 
     let (|HasValue|Null|) (x: System.Nullable<_>) =
-        if x.HasValue then
-            HasValue (x.Value)
-        else
-            Null 
+        if x.HasValue then HasValue(x.Value) else Null
 
-    let Create (x: 'T) =
-        System.Nullable<'T>(x)
+    let Create(x: 'T) = System.Nullable<'T>(x)
 
-    let CreateNull<'T when 'T: (new: unit -> 'T) and 'T: struct and 'T :> System.ValueType> () =
-        System.Nullable<'T>()
+    let CreateNull<'T when 'T: (new: unit -> 'T) and 'T: struct and 'T :> System.ValueType>() = System.Nullable<'T>()
 
-    let ToOption (x: System.Nullable<_>) =
-        if x.HasValue then
-            Some x.Value
-        else
-            None
+    let ToOption(x: System.Nullable<_>) =
+        if x.HasValue then Some x.Value else None
 
 [<AbstractClass>]
 type internal ToggleHandler() =
     abstract Add: unit -> unit
     abstract Remove: unit -> unit
-   
-    static member Create<'T> (source:System.IObservable<'T>) (func: 'T -> unit) = ToggleHandler<'T>(source,func)
-    static member Empty = 
-        { new ToggleHandler() with 
+
+    static member Create<'T> (source: System.IObservable<'T>) (func: 'T -> unit) = ToggleHandler<'T>(source, func)
+    static member Empty =
+        { new ToggleHandler() with
             member x.Add() = ()
             member x.Remove() = () }
 
-and internal ToggleHandler<'T> 
-    ( 
-        _source: System.IObservable<'T>,
-        _func: 'T -> unit) =  
+and internal ToggleHandler<'T>(_source: System.IObservable<'T>, _func: 'T -> unit) =
     inherit ToggleHandler()
     let mutable _handler: System.IDisposable option = None
-    override x.Add() = 
+
+    override x.Add() =
         match _handler with
         | Some(_) -> failwith "Already subscribed"
-        | None -> _handler <- _source |> Observable.subscribe _func |> Option.Some
+        | None ->
+            _handler <-
+                _source
+                |> Observable.subscribe _func
+                |> Option.Some
+
     override x.Remove() =
         match _handler with
-        | Some(actual) -> 
+        | Some(actual) ->
             actual.Dispose()
             _handler <- None
         | None -> ()
 
-/// F# friendly typed wrapper around the WeakReference class 
-type internal WeakReference<'T>( _weak: System.WeakReference ) =
-    member x.Target = 
+/// F# friendly typed wrapper around the WeakReference class
+type internal WeakReference<'T>(_weak: System.WeakReference) =
+    member x.Target =
         let v = _weak.Target
         if v = null then
             None
-        else 
-            let v = v :?> 'T 
+        else
+            let v = v :?> 'T
             Some v
 
 module internal WeakReferenceUtil =
 
-    let Create<'T> (value: 'T) = 
+    let Create<'T>(value: 'T) =
         let weakReference = System.WeakReference(value)
         WeakReference<'T>(weakReference)
 
@@ -127,95 +124,90 @@ module internal ListUtil =
 
     let divide l = (l |> List.head), (l |> List.tail)
 
-    /// Try and get the head of the list.  Will return the head of list and tail 
+    /// Try and get the head of the list.  Will return the head of list and tail
     /// as separate elements.  Returns None if the list is empty
-    let tryHead l = 
-        if List.isEmpty l then None
-        else Some (divide l)
+    let tryHead l =
+        if List.isEmpty l then None else Some(divide l)
 
-    let tryHeadOnly l = 
-        if List.isEmpty l then None
-        else Some (List.head l)
+    let tryHeadOnly l =
+        if List.isEmpty l then None else Some(List.head l)
 
     let tryProcessHead l ifNonEmpty ifEmpty =
-        if List.isEmpty l then 
+        if List.isEmpty l then
             ifEmpty()
         else
-            let head,tail = divide l
+            let head, tail = divide l
             ifNonEmpty head tail
 
     let rec skip count l =
-        if count <= 0 then l
-        else 
-            let _,tail = l |> divide
-            skip (count - 1) tail
-
-    let rec skipMax count l = 
-        if count <= 0 then 
+        if count <= 0 then
             l
         else
-            match l with 
+            let _, tail = l |> divide
+            skip (count - 1) tail
+
+    let rec skipMax count l =
+        if count <= 0 then
+            l
+        else
+            match l with
             | [] -> []
             | _ :: tail -> skipMax (count - 1) tail
 
-    let rec skipWhile predicate l = 
+    let rec skipWhile predicate l =
         match l with
-        | h::t -> 
-            if predicate h then skipWhile predicate t
-            else l
+        | h :: t ->
+            if predicate h then skipWhile predicate t else l
         | [] -> l
 
-    let rec contentsEqual left right = 
-        if List.length left <> List.length right then false
+    let rec contentsEqual left right =
+        if List.length left <> List.length right then
+            false
         else
             let leftData = tryHead left
             let rightData = tryHead right
-            match leftData,rightData with
-            | None,None -> true
-            | Some(_),None -> false
-            | None,Some(_) -> false
-            | Some(leftHead,leftRest),Some(rightHead,rightRest) -> 
-                if leftHead = rightHead then contentsEqual leftRest rightRest
-                else false
+            match leftData, rightData with
+            | None, None -> true
+            | Some(_), None -> false
+            | None, Some(_) -> false
+            | Some(leftHead, leftRest), Some(rightHead, rightRest) ->
+                if leftHead = rightHead then contentsEqual leftRest rightRest else false
 
     let rec contains value l =
         match l with
-        | h::t -> 
-            if h = value then true
-            else contains value t
+        | h :: t ->
+            if h = value then true else contains value t
         | [] -> false
 
     /// Is the head of the list the specified value
-    let isHead value list = 
+    let isHead value list =
         match list with
         | [] -> false
         | head :: _ -> head = value
 
 module internal SeqUtil =
-    
-    /// Try and get the head of the Sequence.  Will return the head of list and tail 
+
+    /// Try and get the head of the Sequence.  Will return the head of list and tail
     /// as separate elements.  Returns None if the list is empty
-    let tryHead l = 
-        if Seq.isEmpty l then None
-        else 
+    let tryHead l =
+        if Seq.isEmpty l then
+            None
+        else
             let head = Seq.head l
-            let tail = l |> Seq.skip 1 
-            Some (head,tail)
+            let tail = l |> Seq.skip 1
+            Some(head, tail)
 
     /// Get the head element in the sequence.  Throws an ArgumentException if
     /// the sequence is empty
-    let head (s:'a seq) =
+    let head (s: 'a seq) =
         match tryHead s with
-        | Some (h, _) -> h
-        | None ->  invalidArg "s" "Sequence must not be empty"
+        | Some(h, _) -> h
+        | None -> invalidArg "s" "Sequence must not be empty"
 
     /// Try and get the head of the sequence
-    let tryHeadOnly (sequence: 'a seq) = 
+    let tryHeadOnly (sequence: 'a seq) =
         use e = sequence.GetEnumerator()
-        if e.MoveNext() then
-            Some e.Current
-        else
-            None
+        if e.MoveNext() then Some e.Current else None
 
     /// Get the head of the sequence or the default value if the sequence is empty
     let headOrDefault defaultValue l =
@@ -225,7 +217,7 @@ module internal SeqUtil =
 
     /// Get the last element in the sequence.  Returns the None if
     /// the sequence is empty
-    let tryLast (s:'a seq) =
+    let tryLast (s: 'a seq) =
         use e = s.GetEnumerator()
         if not (e.MoveNext()) then
             None
@@ -237,14 +229,14 @@ module internal SeqUtil =
 
     /// Get the last element in the sequence.  Throws an ArgumentException if
     /// the sequence is empty
-    let last (s:'a seq) =
+    let last (s: 'a seq) =
         match tryLast s with
         | Some h -> h
-        | None ->  invalidArg "s" "Sequence must not be empty"
+        | None -> invalidArg "s" "Sequence must not be empty"
 
     /// Get the last element in the sequence.  Returns the default value if
     /// the sequence is empty
-    let lastOrDefault defaultValue (s:'a seq) =
+    let lastOrDefault defaultValue (s: 'a seq) =
         match tryLast s with
         | Some h -> h
         | None -> defaultValue
@@ -253,20 +245,24 @@ module internal SeqUtil =
     let isNotEmpty s = not (s |> Seq.isEmpty)
 
     /// Returns if any of the elements in the sequence match the provided filter
-    let any filter s = s |> Seq.filter filter |> isNotEmpty
+    let any filter s =
+        s
+        |> Seq.filter filter
+        |> isNotEmpty
 
-    /// Returns if there exits an element in the collection which matches the specified 
+    /// Returns if there exits an element in the collection which matches the specified
     /// filter.  Identical to exists except it passes an index
-    let existsi filter s = 
+    let existsi filter s =
         s
         |> Seq.mapi (fun i e -> (i, e))
         |> Seq.exists (fun (i, e) -> filter i e)
 
-    /// Maps a seq of options to an option of list where None indicates at least one 
+    /// Maps a seq of options to an option of list where None indicates at least one
     /// entry was None and Some indicates all entries had values
     let allOrNone s =
         let rec inner s withNext =
-            if s |> Seq.isEmpty then withNext [] |> Some
+            if s |> Seq.isEmpty then
+                withNext [] |> Some
             else
                 match s |> Seq.head with
                 | None -> None
@@ -276,7 +272,7 @@ module internal SeqUtil =
         inner s (fun all -> all)
 
     /// Append a single element to the end of a sequence
-    let appendSingle element sequence = 
+    let appendSingle element sequence =
         let right = element |> Seq.singleton
         Seq.append sequence right
 
@@ -285,18 +281,17 @@ module internal SeqUtil =
     let tryFindOrDefault filter defaultValue sequence =
         match Seq.tryFind filter sequence with
         | Some(value) -> value
-        | None -> defaultValue 
+        | None -> defaultValue
 
-    let filter2 filter sequence = 
+    let filter2 filter sequence =
         seq {
             let index = ref 0
             for cur in sequence do
-                if filter index.Value cur then
-                    yield cur
+                if filter index.Value cur then yield cur
                 index.Value <- index.Value + 1
         }
 
-    /// Filter the list removing all None's 
+    /// Filter the list removing all None's
     let filterToSome sequence =
         seq {
             for cur in sequence do
@@ -307,16 +302,16 @@ module internal SeqUtil =
 
     /// Filters the list removing all of the first tuple arguments which are None
     let filterToSome2 (sequence: ('a option * 'b) seq) =
-        seq { 
+        seq {
             for cur in sequence do
-                let first,second = cur
+                let first, second = cur
                 match first with
-                | Some(value) -> yield (value,second)
+                | Some(value) -> yield (value, second)
                 | None -> ()
         }
 
-    let contentsEqual (left:'a seq) (right:'a seq) = 
-        use leftEnumerator = left.GetEnumerator()        
+    let contentsEqual (left: 'a seq) (right: 'a seq) =
+        use leftEnumerator = left.GetEnumerator()
         use rightEnumerator = right.GetEnumerator()
 
         let mutable areEqual = false
@@ -324,64 +319,61 @@ module internal SeqUtil =
         while not isDone do
             let leftMove = leftEnumerator.MoveNext()
             let rightMove = rightEnumerator.MoveNext()
-            isDone <- 
+            isDone <-
                 if not leftMove && not rightMove then
                     areEqual <- true
                     true
-                elif leftMove <> rightMove then true
-                elif leftEnumerator.Current <> rightEnumerator.Current then true
-                else false
+                elif leftMove <> rightMove then
+                    true
+                elif leftEnumerator.Current <> rightEnumerator.Current then
+                    true
+                else
+                    false
 
         areEqual
 
     /// Skip's a maximum of count elements.  If there are more than
-    /// count elements in the sequence then an empty sequence will be 
+    /// count elements in the sequence then an empty sequence will be
     /// returned
-    let skipMax count (sequence:'a seq) = 
-        let inner count = 
+    let skipMax count (sequence: 'a seq) =
+        let inner count =
             seq {
                 let count = ref count
                 use e = sequence.GetEnumerator()
                 while !count > 0 && e.MoveNext() do
                     count := !count - 1
                 while e.MoveNext() do
-                    yield e.Current }
+                    yield e.Current
+            }
         inner count
 
     /// Same functionality as Seq.tryFind except it allows you to pass
-    /// a state value along 
+    /// a state value along
     let tryFind initialState predicate (sequence: 'a seq) =
         use e = sequence.GetEnumerator()
-        let rec inner state = 
+
+        let rec inner state =
             match predicate e.Current state with
             | true, _ -> Some e.Current
-            | false, state -> 
-                if e.MoveNext() then
-                    inner state
-                else
-                    None
-        if e.MoveNext() then
-            inner initialState
-        else
-            None
+            | false, state ->
+                if e.MoveNext() then inner state else None
+        if e.MoveNext() then inner initialState else None
 
 module internal MapUtil =
 
     /// Get the set of keys in the Map
-    let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
+    let keys (map: Map<'TKey, 'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
-module internal GenericListUtil = 
+module internal GenericListUtil =
 
-    let OfSeq (col: 'T seq) = System.Collections.Generic.List<'T>(col)
+    let OfSeq(col: 'T seq) = System.Collections.Generic.List<'T>(col)
 
 [<RequireQualifiedAccess>]
 type CharComparer =
     | Exact
     | IgnoreCase
 
-    with
-
-    member x.IsEqual left right = 
+    member x.IsEqual left right =
         if left = right then
             true
         else
@@ -392,94 +384,82 @@ type CharComparer =
                 let right = System.Char.ToLower right
                 left = right
 
-    member x.Compare (left: char) (right: char) = 
+    member x.Compare (left: char) (right: char) =
         if left = right then
             0
         else
             match x with
-            | Exact -> 
-                left.CompareTo(right)
+            | Exact -> left.CompareTo(right)
             | IgnoreCase ->
                 let left = System.Char.ToLower left
                 let right = System.Char.ToLower right
                 left.CompareTo(right)
 
-    member x.GetHashCode (c: char) = 
-        let c = 
+    member x.GetHashCode(c: char) =
+        let c =
             match x with
             | Exact -> c
             | IgnoreCase -> System.Char.ToLower c
         int c
 
-/// Thin wrapper around System.String which allows us to compare values in a 
-/// case insensitive + allocation free manner.  
+/// Thin wrapper around System.String which allows us to compare values in a
+/// case insensitive + allocation free manner.
 [<Struct>]
 [<CustomComparison>]
 [<CustomEquality>]
-type internal CharSpan 
-    (
-        _value: string, 
-        _index: int,
-        _length: int,
-        _comparer: CharComparer
-    ) = 
+type internal CharSpan(_value: string, _index: int, _length: int, _comparer: CharComparer) =
 
-    new (value: string, comparer: CharComparer) = 
-        CharSpan(value, 0, value.Length, comparer)
+    new(value: string, comparer: CharComparer) = CharSpan(value, 0, value.Length, comparer)
 
     member x.Length = _length
 
-    member x.CharAt index: char = 
+    member x.CharAt index: char =
         let index = _index + index
         _value.[index]
 
-    member x.StringComparison = 
+    member x.StringComparison =
         match _comparer with
         | CharComparer.Exact -> System.StringComparison.Ordinal
         | CharComparer.IgnoreCase -> System.StringComparison.OrdinalIgnoreCase
 
-    member x.StringComparer = 
+    member x.StringComparer =
         match _comparer with
         | CharComparer.Exact -> System.StringComparer.Ordinal
         | CharComparer.IgnoreCase -> System.StringComparer.OrdinalIgnoreCase
 
-    member x.CompareTo (other: CharSpan) = 
+    member x.CompareTo(other: CharSpan) =
         let diff = x.Length - other.Length
         if diff <> 0 then
             diff
         else
-            let mutable index = 0 
-            let mutable value = 0 
+            let mutable index = 0
+            let mutable value = 0
             while index < x.Length && value = 0 do
                 let comp = _comparer.Compare (x.CharAt index) (other.CharAt index)
-                if comp <> 0 then
-                    value <- comp
+                if comp <> 0 then value <- comp
 
                 index <- index + 1
             value
 
-    member x.GetSubSpan index length = 
-        CharSpan(_value, index + _index, length, _comparer)
+    member x.GetSubSpan index length = CharSpan(_value, index + _index, length, _comparer)
 
-    member x.IndexOf (c: char) = 
+    member x.IndexOf(c: char) =
         let mutable index = 0
         let mutable found = -1
         while index < x.Length && found < 0 do
-            if _comparer.IsEqual c (x.CharAt index) then
-                found <- index
+            if _comparer.IsEqual c (x.CharAt index) then found <- index
             index <- index + 1
         found
 
-    member x.LastIndexOf c = 
+    member x.LastIndexOf c =
         let mutable index = x.Length - 1
         let mutable found = -1
         while index >= 0 && found < 0 do
-            if _comparer.IsEqual c (x.CharAt index) then
-                found <- index
+            if _comparer.IsEqual c (x.CharAt index) then found <- index
             index <- index - 1
         found
 
-    member x.EqualsString str = 
+    member x.EqualsString str =
         let other = CharSpan(str, _comparer)
         0 = x.CompareTo other
 
@@ -490,10 +470,10 @@ type internal CharSpan
 
     override x.ToString() = _value.Substring(_index, _length)
 
-    override x.GetHashCode() = 
+    override x.GetHashCode() =
         let mutable hashCode = 0
         for i = 0 to _length - 1 do
-            let current = _comparer.GetHashCode (x.CharAt i)
+            let current = _comparer.GetHashCode(x.CharAt i)
             hashCode <- hashCode ||| current
         hashCode
 
@@ -551,14 +531,13 @@ module CharUtil =
             yield UnicodeCategory.CurrencySymbol
             yield UnicodeCategory.ModifierSymbol
             yield UnicodeCategory.OtherSymbol
-            // Not unassigned
-            //yield UnicodeCategory.OtherNotAssigned
-        } |> set
+        }
+        |> set
 
     let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
-    let IsOctalDigit (c: char) = c >= '0' && c <= '7'
-    let IsHexDigit (c: char) = System.Char.IsDigit c || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
+    let IsOctalDigit(c: char) = c >= '0' && c <= '7'
+    let IsHexDigit(c: char) = System.Char.IsDigit c || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsControl x = System.Char.IsControl x
@@ -570,12 +549,14 @@ module CharUtil =
 
     /// Is this a non-blank character in Vim
     let IsNotBlank x = not (IsBlank x)
+
     let IsAlpha x = (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z')
     let IsLetter x = System.Char.IsLetter(x)
     let IsWordChar x = IsLetter x || x = '_'
     let IsHighSurrogate x = System.Char.IsHighSurrogate(x)
     let IsLowSurrogate x = System.Char.IsLowSurrogate(x)
-    let ConvertToCodePoint (highSurrogate: char) (lowSurrogate: char) = System.Char.ConvertToUtf32(highSurrogate, lowSurrogate)
+    let ConvertToCodePoint (highSurrogate: char) (lowSurrogate: char) =
+        System.Char.ConvertToUtf32(highSurrogate, lowSurrogate)
     let IsUpper x = System.Char.IsUpper(x)
     let IsUpperLetter x = IsUpper x && IsLetter x
     let IsLower x = System.Char.IsLower(x)
@@ -583,67 +564,66 @@ module CharUtil =
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
+
     let IsPrintable x =
         let category = CharUnicodeInfo.GetUnicodeCategory(x)
         PrintableCategories.Contains category
+
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
-    let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
-    let ChangeRot13 (x: char) = 
-        let isUpper = IsUpper x 
+
+    let ChangeCase x =
+        if IsUpper x then ToLower x else ToUpper x
+
+    let ChangeRot13(x: char) =
+        let isUpper = IsUpper x
         let x = ToLower x
         let index = int x - int 'a'
-        let index = (index + 13 ) % 26
+        let index = (index + 13) % 26
         let c = char (index + int 'a')
-        if isUpper then ToUpper c else c 
-    let LettersLower = ['a'..'z']
-    let LettersUpper = ['A'..'Z']
-    let Letters = Seq.append LettersLower LettersUpper 
-    let Digits = ['0'..'9']
+        if isUpper then ToUpper c else c
+
+    let LettersLower = [ 'a' .. 'z' ]
+    let LettersUpper = [ 'A' .. 'Z' ]
+    let Letters = Seq.append LettersLower LettersUpper
+    let Digits = [ '0' .. '9' ]
     let IsEqual left right = left = right
-    let IsEqualIgnoreCase left right = 
-        let func c = if IsLetter c then ToLower c else c
+
+    let IsEqualIgnoreCase left right =
+        let func c =
+            if IsLetter c then ToLower c else c
+
         let left = func left
-        let right  = func right
+        let right = func right
         left = right
 
     /// Get the Char value for the given ASCII code
-    let OfAsciiValue (value: byte) =
+    let OfAsciiValue(value: byte) =
         let asciiArray = [| value |]
         let charArray = System.Text.Encoding.ASCII.GetChars(asciiArray)
-        if charArray.Length > 0 then
-            charArray.[0]
-        else
-            MinValue
+        if charArray.Length > 0 then charArray.[0] else MinValue
 
     let (|WhiteSpace|NonWhiteSpace|) char =
-        if IsWhiteSpace char then
-            WhiteSpace
-        else
-            NonWhiteSpace
+        if IsWhiteSpace char then WhiteSpace else NonWhiteSpace
 
     /// Add 'count' to the given alpha value (a-z) and preserve case.  If the count goes
     /// past the a-z range then a or z will be returned
     let AlphaAdd count c =
         let isUpper = IsUpper c
-        let number = 
+
+        let number =
             let c = ToLower c
             let index = (int c) - (int 'a')
-            index + count 
+            index + count
 
-        let lowerBound, upperBound = 
-            if isUpper then 
-                'A', 'Z'
-            else 
-                'a', 'z'
-        if number < 0 then 
-            lowerBound
-        elif number >= 26 then 
-            upperBound
-        else
-            char ((int lowerBound) + number) 
+        let lowerBound, upperBound =
+            if isUpper then 'A', 'Z' else 'a', 'z'
 
-    let GetDigitValue c = 
+        if number < 0 then lowerBound
+        elif number >= 26 then upperBound
+        else char ((int lowerBound) + number)
+
+    let GetDigitValue c =
         match c with
         | '0' -> Some 0
         | '1' -> Some 1
@@ -660,7 +640,7 @@ module CharUtil =
 /// The .Net mapping for the keys defined in :help key-notation
 module internal CharCodes =
 
-    /// <Nul> 
+    /// <Nul>
     let Zero = char 0
 
     /// <CR> / <Return> / <Enter>
@@ -669,31 +649,27 @@ module internal CharCodes =
     /// <ESC>
     let Escape = CharUtil.OfAsciiValue 27uy
 
-    /// <BS> 
+    /// <BS>
     let Backspace = '\b'
 
 module internal StringBuilderExtensions =
 
     type StringBuilder with
-        member x.AppendChar (c: char) = 
-            x.Append(c) |> ignore
+        member x.AppendChar(c: char) = x.Append(c) |> ignore
 
-        member x.AppendCharCount (c: char) (count: int) = 
-            x.Append(c, count) |> ignore
+        member x.AppendCharCount (c: char) (count: int) = x.Append(c, count) |> ignore
 
-        member x.AppendString (str: string) =
-            x.Append(str) |> ignore
-            
+        member x.AppendString(str: string) = x.Append(str) |> ignore
+
         member x.AppendStringCount (str: string) (count: int) =
             for i = 0 to count - 1 do
                 x.Append(str) |> ignore
 
-        member x.AppendNumber (number: int) =
-            x.Append(number) |> ignore
+        member x.AppendNumber(number: int) = x.Append(number) |> ignore
 
-        member x.AppendCharSpan (charSpan: CharSpan) =
+        member x.AppendCharSpan(charSpan: CharSpan) =
             let mutable i = 0
-            while i < charSpan.Length do 
+            while i < charSpan.Length do
                 let c = charSpan.CharAt i
                 x.AppendChar c
                 i <- i + 1
@@ -702,23 +678,18 @@ module internal StringBuilderExtensions =
             let charSpan = CharSpan(str, start, length, CharComparer.Exact)
             x.AppendCharSpan charSpan
 
-module internal CollectionExtensions = 
+module internal CollectionExtensions =
 
     type System.Collections.Generic.Stack<'T> with
-        member x.PushRange (col: 'T seq) = 
-            col |> Seq.iter (fun item -> x.Push(item))
+        member x.PushRange(col: 'T seq) = col |> Seq.iter (fun item -> x.Push(item))
 
     type System.Collections.Generic.Queue<'T> with
-        member x.EnqueueRange (col: 'T seq) = 
-            col |> Seq.iter (fun item -> x.Enqueue(item))
+        member x.EnqueueRange(col: 'T seq) = col |> Seq.iter (fun item -> x.Enqueue(item))
 
     type System.Collections.Generic.Dictionary<'TKey, 'TValue> with
-        member x.TryGetValueEx (key: 'TKey) = 
+        member x.TryGetValueEx(key: 'TKey) =
             let found, value = x.TryGetValue key
-            if found then
-                Some value
-            else
-                None
+            if found then Some value else None
 
 module internal OptionUtil =
 
@@ -739,58 +710,51 @@ module internal OptionUtil =
     /// value and the passed in one
     let combine opt value =
         match opt with
-        | Some(optValue) -> Some (optValue,value)
+        | Some(optValue) -> Some(optValue, value)
         | None -> None
 
     /// Combine an option with another value.  Same as combine but takes a tupled argument
-    let combine2 (opt,value) = combine opt value
+    let combine2 (opt, value) = combine opt value
 
     /// Combine an option with another value.  If the option has no value then the result
     /// is None.  If the option has a value the result is an Option of a tuple of the original
     /// value and the passed in one
     let combineRev value opt =
         match opt with
-        | Some(optValue) -> Some (value, optValue)
+        | Some(optValue) -> Some(value, optValue)
         | None -> None
 
     /// Combine an option with another value.  Same as combine but takes a tuple'd argument
-    let combineRev2 (value,opt) = combine opt value
+    let combineRev2 (value, opt) = combine opt value
 
     /// Combine two options into a single option.  Only some if both are some
     let combineBoth left right =
-        match left,right with
-        | Some(left),Some(right) -> Some(left,right)
-        | Some(_),None -> None
-        | None,Some(_) -> None
-        | None,None -> None
+        match left, right with
+        | Some(left), Some(right) -> Some(left, right)
+        | Some(_), None -> None
+        | None, Some(_) -> None
+        | None, None -> None
 
     /// Combine two options into a single option.  Only some if both are some
-    let combineBoth2 (left,right) = combineBoth left right
+    let combineBoth2 (left, right) = combineBoth left right
 
     /// Get the value or the provided default
     let getOrDefault defaultValue opt =
-        match opt with 
+        match opt with
         | Some(value) -> value
         | None -> defaultValue
 
     /// Convert the Nullable<T> to an Option<T>
     let ofNullable (value: System.Nullable<'T>) =
-        if value.HasValue then
-            Some value.Value
-        else
-            None
+        if value.HasValue then Some value.Value else None
 
 /// Represents a collection which is guarantee to have at least a single element.  This
 /// is very useful when dealing with discriminated unions of values where one is an element
-/// and another is a collection where the collection has the constraint that it must 
+/// and another is a collection where the collection has the constraint that it must
 /// have at least a single element.  This collection type allows the developer to avoid
-/// the use of unsafe operations like List.head or SeqUtil.headOnly in favor of guaranteed 
+/// the use of unsafe operations like List.head or SeqUtil.headOnly in favor of guaranteed
 /// operations
-type NonEmptyCollection<'T> 
-    (
-        _head: 'T,
-        _rest: 'T list
-    ) = 
+type NonEmptyCollection<'T>(_head: 'T, _rest: 'T list) =
 
     /// Number of items in the collection
     member x.Count = 1 + _rest.Length
@@ -802,7 +766,7 @@ type NonEmptyCollection<'T>
     member x.Rest = _rest
 
     /// All of the items in the collection
-    member x.All = 
+    member x.All =
         seq {
             yield _head
             for cur in _rest do
@@ -810,10 +774,10 @@ type NonEmptyCollection<'T>
         }
 
     interface System.Collections.IEnumerable with
-        member x.GetEnumerator () = x.All.GetEnumerator() :> System.Collections.IEnumerator
+        member x.GetEnumerator() = x.All.GetEnumerator() :> System.Collections.IEnumerator
 
     interface System.Collections.Generic.IEnumerable<'T> with
-        member x.GetEnumerator () = x.All.GetEnumerator()
+        member x.GetEnumerator() = x.All.GetEnumerator()
 
 module NonEmptyCollectionUtil =
 
@@ -823,45 +787,41 @@ module NonEmptyCollectionUtil =
         NonEmptyCollection(col.Head, rest)
 
     /// Attempts to create a NonEmptyCollection from a raw sequence
-    let OfSeq seq = 
+    let OfSeq seq =
         match SeqUtil.tryHead seq with
         | None -> None
-        | Some (head, rest) -> NonEmptyCollection(head, rest |> List.ofSeq) |> Some
+        | Some(head, rest) -> NonEmptyCollection(head, rest |> List.ofSeq) |> Some
 
     /// Maps the elements in the NonEmptyCollection using the specified function
-    let Map mapFunc (col: NonEmptyCollection<'T>) = 
+    let Map mapFunc (col: NonEmptyCollection<'T>) =
         let head = mapFunc col.Head
         let rest = List.map mapFunc col.Rest
         NonEmptyCollection<_>(head, rest)
 
-module internal ReadOnlyCollectionUtil = 
+module internal ReadOnlyCollectionUtil =
 
-    let Single (item: 'T) = 
+    let Single(item: 'T) =
         let list = System.Collections.Generic.List<'T>()
         list.Add(item)
         ReadOnlyCollection<'T>(list)
 
-    let OfSeq (collection: 'T seq) = 
+    let OfSeq(collection: 'T seq) =
         let list = System.Collections.Generic.List<'T>(collection)
         ReadOnlyCollection<'T>(list)
 
-module internal HashSetUtil = 
+module internal HashSetUtil =
 
-    let OfSeq (collection: 'T seq) = System.Collections.Generic.HashSet<'T>(collection)
+    let OfSeq(collection: 'T seq) = System.Collections.Generic.HashSet<'T>(collection)
 
 module internal SystemUtil =
 
-    let TryGetEnvironmentVariable name = 
+    let TryGetEnvironmentVariable name =
         try
-            let value = System.Environment.GetEnvironmentVariable(name) 
-            if value = null then
-                None
-            else
-                Some value
-        with
-            | _ -> None
+            let value = System.Environment.GetEnvironmentVariable(name)
+            if value = null then None else Some value
+        with _ -> None
 
-    let GetEnvironmentVariable name = 
+    let GetEnvironmentVariable name =
         match TryGetEnvironmentVariable name with
         | Some name -> name
         | None -> ""
@@ -869,59 +829,50 @@ module internal SystemUtil =
     /// The IO.Path.Combine API has a lot of "features" which basically prevents it
     /// from being a reliable API.  The most notable is that if you pass it c:
     /// instead of c:\ it will silently fail.
-    let CombinePath (path1: string) (path2: string) = 
+    let CombinePath (path1: string) (path2: string) =
 
         // Work around the c: problem by adding a trailing slash to a drive specification
-        let path1 = 
-            if System.String.IsNullOrEmpty(path1) then
-                ""
-            elif path1.Length = 2 && CharUtil.IsLetter path1.[0] && path1.[1] = ':' then
-                path1 + @"\"
-            else
-                path1
+        let path1 =
+            if System.String.IsNullOrEmpty(path1) then ""
+            elif path1.Length = 2 && CharUtil.IsLetter path1.[0] && path1.[1] = ':' then path1 + @"\"
+            else path1
 
         // Remove the begining slash from the second path so that it will combine properly
         let path2 =
-            if System.String.IsNullOrEmpty(path2) then
-                ""
-            elif path2.[0] = '\\' then 
-                path2.Substring(1)
-            else
-                path2
+            if System.String.IsNullOrEmpty(path2) then ""
+            elif path2.[0] = '\\' then path2.Substring(1)
+            else path2
 
         Path.Combine(path1, path2)
 
-    /// Get the value of $HOME.  There is no explicit documentation that I could find 
+    /// Get the value of $HOME.  There is no explicit documentation that I could find
     /// for how this value is calculated.  However experimentation shows that gVim 7.1
-    /// calculates it in the following order 
+    /// calculates it in the following order
     ///     %HOME%
     ///     %HOMEDRIVE%%HOMEPATH%
     ///     c:\
-    let GetHome () = 
+    let GetHome() =
         match TryGetEnvironmentVariable "HOME" with
         | Some path -> path
-        | None -> 
+        | None ->
             match TryGetEnvironmentVariable "HOMEDRIVE", TryGetEnvironmentVariable "HOMEPATH" with
             | Some drive, Some path -> CombinePath drive path
             | _ -> @"c:\"
 
     /// Whether text starts with a leading tilde and is followed by either
     // nothing else or a directory separator
-    let StartsWithTilde (text: string) =
+    let StartsWithTilde(text: string) =
         if text.StartsWith("~") then
             if text.Length = 1 then
                 true
             else
                 let separator = text.Chars(1)
-                if separator = Path.DirectorySeparatorChar then
-                    true
-                elif separator = Path.AltDirectorySeparatorChar then
-                    true
-                else
-                    false
+                if separator = Path.DirectorySeparatorChar then true
+                elif separator = Path.AltDirectorySeparatorChar then true
+                else false
         else
             false
-                
+
     /// Expand environment variables leaving undefined variables "as is"
     ///
     /// This function considers a leading tilde as equivalent to "$HOME" or
@@ -933,10 +884,8 @@ module internal SystemUtil =
             if token.StartsWith("$") then
                 let variable = token.Substring(1)
                 match TryGetEnvironmentVariable variable with
-                | Some value ->
-                    value
-                | None ->
-                    token
+                | Some value -> value
+                | None -> token
             else
                 token
 
@@ -952,71 +901,65 @@ module internal SystemUtil =
             |> Seq.map processMatch
             |> String.concat ""
 
-        if StartsWithTilde text then
-            GetHome() + text.Substring(1)
-        else
-            text
+        if StartsWithTilde text then GetHome() + text.Substring(1) else text
 
     /// Try to expand all the referenced environment variables and leading tilde
-    /// values.  Returns true if the path was resolved according to Vim rules.  
+    /// values.  Returns true if the path was resolved according to Vim rules.
     let TryResolvePath text =
         let text = ResolvePath text
-        if StartsWithTilde text || text.Contains("$") then
-            None
-        else
-            Some text
+        if StartsWithTilde text || text.Contains("$")
+        then None
+        else Some text
 
-    let EnsureRooted currentDirectory text = 
-        if Path.IsPathRooted text || not (Path.IsPathRooted currentDirectory) then
-            text
-        else
-            CombinePath currentDirectory text
+    let EnsureRooted currentDirectory text =
+        if Path.IsPathRooted text || not (Path.IsPathRooted currentDirectory)
+        then text
+        else CombinePath currentDirectory text
 
     /// Like ResolvePath except it will always return a rooted path.  If the provided path
     /// isn't rooted it will be rooted inside of 'currentDirectory'
     ///
     /// This method can throw when provided paths with invalid path characters.
-    let ResolveVimPath currentDirectory text = 
+    let ResolveVimPath currentDirectory text =
         match text with
         | "." -> currentDirectory
         | ".." -> Path.GetPathRoot currentDirectory
-        | _ -> 
+        | _ ->
             let text = ResolvePath text
             EnsureRooted currentDirectory text
 
     /// Remove the prefix from the path.
     /// Note that directory separator chars are not compared, just the path directory components.
     /// The relative path returned is normalized to use the standard directory separator char.
-    /// 
+    ///
     /// E.g. ("C:\A\B\C", "C:/A/B/C/D/foo.bar") -> ("D\foo.bar")
     /// E.g. ("C:\A\B\C", "C:/A/B/C1/D/foo.bar") -> ("C:\A\B\C1\D\foo.bar")
     let StripPathPrefix prefix path =
-        let rec stripPrefix (p1: string list) (p2: string list) = 
-            if p1.Length = 0 || p2.Length = 0 || not (StringComparer.OrdinalIgnoreCase.Equals(p1.[0], p2.[0])) then
-                p1, p2
-            else
-                stripPrefix (List.tail p1) (List.tail p2)
+        let rec stripPrefix (p1: string list) (p2: string list) =
+            if p1.Length = 0 || p2.Length = 0 || not (StringComparer.OrdinalIgnoreCase.Equals(p1.[0], p2.[0]))
+            then p1, p2
+            else stripPrefix (List.tail p1) (List.tail p2)
+
         let splitPath (path: string) =
-            path.Split([| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |], StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
+            path.Split
+                ([| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |],
+                 StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
         let sep = System.String(Path.DirectorySeparatorChar, 1)
         let pathComponents = (splitPath path)
-        let remaining, pathPrefix = stripPrefix (splitPath prefix) pathComponents 
-        if remaining.IsEmpty then
-            String.concat sep pathPrefix
-        else
-            String.concat sep pathComponents
+        let remaining, pathPrefix = stripPrefix (splitPath prefix) pathComponents
+        if remaining.IsEmpty then String.concat sep pathPrefix else String.concat sep pathComponents
 
 // Simple hashing combination function taken from
 // https://stackoverflow.com/questions/1646807/quick-and-simple-hash-code-combinations
 module internal HashUtil =
 
-    let Combine2 (hash1: int) (hash2: int) = 
+    let Combine2 (hash1: int) (hash2: int) =
         let hash = 17
         let hash = (hash * 31) + hash1
         let hash = (hash * 31) + hash2
         hash
 
-    let Combine3 (hash1: int) (hash2: int) (hash3: int) = 
+    let Combine3 (hash1: int) (hash2: int) (hash3: int) =
         let hash = 17
         let hash = (hash * 31) + hash1
         let hash = (hash * 31) + hash2
@@ -1024,11 +967,12 @@ module internal HashUtil =
         hash
 
 type internal OptionBuilder() =
-    member x.Bind (value, cont) = 
-        match value with 
+
+    member x.Bind(value, cont) =
+        match value with
         | None -> None
         | Some value -> cont value
 
     member x.Return value = Some value
     member x.ReturnFrom o = o
-    member x.Zero () = None
+    member x.Zero() = None

@@ -1,27 +1,28 @@
-﻿#light
-
 namespace Vim.Interpreter
+
 open Vim
 
+
 [<RequireQualifiedAccess>]
-type internal ParseResult<'T> = 
+type internal ParseResult<'T> =
     | Succeeded of Value: 'T
     | Failed of Error: string
 
+
+
 [<Sealed>]
 [<Class>]
-type internal Parser = 
+type internal Parser =
+    new: vimData:IVimGlobalSettings * IVimData -> Parser
 
-    new: vimData: IVimGlobalSettings * IVimData -> Parser
-
-    new: vimData: IVimGlobalSettings * IVimData * lines: string[] -> Parser
+    new: vimData:IVimGlobalSettings * IVimData * lines:string [] -> Parser
 
     member IsDone: bool
 
     member ContextLineNumber: int
 
     /// Parse the next complete command from the source.  Command pairs like :func and :endfunc
-    /// will be returned as a single Function command.  
+    /// will be returned as a single Function command.
     member ParseNextCommand: unit -> LineCommand
 
     /// Parse the next line from the source.  Command pairs like :func and :endfunc will
@@ -29,14 +30,14 @@ type internal Parser =
     /// items
     member ParseNextLine: unit -> LineCommand
 
-    member ParseRange: rangeText: string -> LineRangeSpecifier * string
+    member ParseRange: rangeText:string -> LineRangeSpecifier * string
 
-    member ParseExpression: expressionText: string -> ParseResult<Expression>
+    member ParseExpression: expressionText:string -> ParseResult<Expression>
 
-    member ParseLineCommand: commandText: string -> LineCommand
+    member ParseLineCommand: commandText:string -> LineCommand
 
-    member ParseLineCommands: lines: string[] -> LineCommand list
+    member ParseLineCommands: lines:string [] -> LineCommand list
 
-    /// This will expand out an abbreviated command name to the full name. For example 
+    /// This will expand out an abbreviated command name to the full name. For example
     /// will expand 'e' to 'edit'.
-    member TryExpandCommandName: shortCommandName: string -> string option
+    member TryExpandCommandName: shortCommandName:string -> string option
