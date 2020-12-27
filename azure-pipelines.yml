@@ -1,5 +1,8 @@
 trigger:
-- master
+  branches:
+    include:
+    - master
+    - refs/tags/*
 
 pr:
 - dev/jaredpar/*
@@ -11,14 +14,34 @@ jobs:
   pool:
     vmImage: 'macOS-10.14'
   steps:
+  - script: VERSION_TAG=`git describe --tags` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
+    displayName: Set the tag name as an environment variable
+  - script: EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d "\"" -f2` && echo "##vso[task.setvariable variable=EXTENSION_VERSION]$EXTENSION_VERSION"
+    displayName: Set the version number of the extension as an environment variable
+
   - task: Bash@3
     displayName: Build 
     inputs:
       filePath: Scripts/build.sh
+
   - task: PublishBuildArtifacts@1
     inputs:
-      pathToPublish: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_2.8.0.8.mpack
+      pathToPublish: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
       artifactName: VSMacExtension
+
+  - task: GitHubRelease@0
+    condition: and(startsWith(variables['build.sourceBranch'], 'refs/tags/'), contains(variables['build.sourceBranch'], 'vsm'))
+    inputs:
+      displayName: 'Release VS Mac extension'
+      gitHubConnection: automationConnection
+      repositoryName: '$(Build.Repository.Name)' 
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: 'Visual Studio for Mac $(VERSION_TAG)'
+      assets: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+      assetUploadMode: 'replace'
+      isDraft: true
 
 - job: VsVim_Build_Test
   pool: 
