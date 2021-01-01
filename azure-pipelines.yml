@@ -41,7 +41,7 @@ jobs:
       title: 'Visual Studio for Mac $(VERSION_TAG)'
       assets: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
       assetUploadMode: 'replace'
-      isDraft: true
+      isDraft: false
 
 - job: VsVim_Build_Test
   pool: 
