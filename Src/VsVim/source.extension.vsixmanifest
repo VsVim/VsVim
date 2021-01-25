@@ -9,6 +9,7 @@
     <Icon>VsVim_large.png</Icon>
     <PreviewImage>VsVim_small.png</PreviewImage>
     <Tags>vsvim</Tags>
+    <AllowClientRole>true</AllowClientRole>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[14.0,17.0)" />

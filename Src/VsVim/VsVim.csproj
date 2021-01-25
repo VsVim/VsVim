@@ -113,7 +113,7 @@
   <PropertyGroup>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="15.9.3039" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.7.26" />
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Name>VimCore</Name>
       <IncludeOutputGroupsInVSIX>BuiltProjectOutputGroup%3bBuiltProjectOutputGroupDependencies%3bGetCopyToOutputDirectoryItems%3bSatelliteDllsProjectOutputGroup%3b</IncludeOutputGroupsInVSIX>
