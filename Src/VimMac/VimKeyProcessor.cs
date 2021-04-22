@@ -75,9 +75,32 @@ namespace Vim.UI.Cocoa
                 // Attempt to map the key information into a KeyInput value which can be processed
                 // by Vim.  If this works and the key is processed then the input is considered
                 // to be handled
+
                 if (_keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput))
                 {
+                    var bufferedKeyInputsWasEmpty = VimBuffer.BufferedKeyInputs.IsEmpty;
+
                     handled = TryProcess(keyInput);
+
+                    if (handled
+                        && BufferedKeysWasEmptyAndIsEmpty()
+                        && oldMode == ModeKind.Insert
+                        && CharTriggersCompletion(keyInput.Char)
+                        && !_completionBroker.IsCompletionActive(VimBuffer.TextView))
+                    {
+                        // Because VsVim handled the key press for us in insert mode,
+                        // we need to trigger the completion window to open.
+                        _completionBroker.TriggerCompletion(VimBuffer.TextView);
+                    }
+
+                    bool BufferedKeysWasEmptyAndIsEmpty()
+                    {
+                        // We don't want the completion window to appear if we
+                        // have something like `inoremap fd <esc>`
+                        // and we just typed the first 'f' or the 'd'
+                        return bufferedKeyInputsWasEmpty
+                        && VimBuffer.BufferedKeyInputs.IsEmpty;
+                    }
                 }
             }
 
@@ -92,6 +115,11 @@ namespace Vim.UI.Cocoa
             }
             IdeApp.Workbench.StatusBar.ShowMessage(text);
             e.Handled = handled;
+        }
+
+        private bool CharTriggersCompletion(char c)
+        {
+            return c == '_' || c == '.' || char.IsLetterOrDigit(c);
         }
 
         /// <summary>
