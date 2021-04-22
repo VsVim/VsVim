@@ -265,26 +265,6 @@ namespace Vim.Mac
 
         public void FindInFiles(string pattern, bool matchCase, string filesOfType, VimGrepFlags flags, FSharpFunc<Unit, Unit> action)
         {
-            var find = new FindReplace();
-
-            var options = new FilterOptions
-            {
-                CaseSensitive = matchCase,
-                RegexSearch = true,
-            };
-            var scope = new ShellWildcardSearchScope(_vim.VimData.CurrentDirectory, filesOfType);
-
-            using (var monitor = IdeApp.Workbench.ProgressMonitors.GetSearchProgressMonitor(true))
-            {
-                var results = find.FindAll(scope, monitor, pattern, null, options, System.Threading.CancellationToken.None);
-                foreach (var result in results)
-                {
-                    //TODO: Cancellation?
-                    monitor.ReportResult(result);
-                }
-            }
-
-            action.Invoke(null);
         }
 
         public void FormatLines(ITextView textView, SnapshotLineRange range)
