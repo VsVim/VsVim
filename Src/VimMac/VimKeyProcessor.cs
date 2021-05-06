@@ -41,6 +41,8 @@ namespace Vim.UI.Cocoa
             _inlineRenameListenerFactory = inlineRenameListenerFactory;
         }
 
+        public override bool IsInterestedInHandledEvents => true;
+
         /// <summary>
         /// This handler is necessary to intercept keyboard input which maps to Vim
         /// commands but doesn't map to text input.  Any combination which can be 
@@ -66,16 +68,7 @@ namespace Vim.UI.Cocoa
             bool canConvert = _keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput);
             if (canConvert)
             {
-                if (ShouldBeProcessedByVim(e, keyInput))
-                {
-
-                    handled = TryProcess(keyInput);
-                }
-                else
-                {
-                    // Needed to handle things like insert mode macro recording
-                    _vimBuffer.SimulateProcessed(keyInput);
-                }
+                handled = TryProcess(e, keyInput);
             }
 
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
@@ -91,11 +84,6 @@ namespace Vim.UI.Cocoa
             e.Handled = handled;
         }
 
-        private bool TryProcess(KeyInput keyInput)
-        {
-            return _vimBuffer.CanProcessAsCommand(keyInput) && _vimBuffer.Process(keyInput).IsAnyHandled;
-        }
-
         private bool KeyEventIsDeadChar(KeyEventArgs e)
         {
             return string.IsNullOrEmpty(e.Characters);
@@ -106,7 +94,7 @@ namespace Vim.UI.Cocoa
             return (NSKey)e.Event.KeyCode == NSKey.Escape;
         }
 
-        private bool ShouldBeProcessedByVim(KeyEventArgs e, KeyInput keyInput)
+        private bool TryProcess(KeyEventArgs e, KeyInput keyInput)
         {
             if (KeyEventIsDeadChar(e))
                 // When a dead key combination is pressed we will get the key down events in 
@@ -120,16 +108,15 @@ namespace Vim.UI.Cocoa
 
             if ((_vimBuffer.ModeKind.IsAnyInsert() || _vimBuffer.ModeKind.IsAnySelect()) &&
                 !_vimBuffer.CanProcessAsCommand(keyInput) &&
-                keyInput.Char > 0x1f)
+                keyInput.Char > 0x1f &&
+                _vimBuffer.BufferedKeyInputs.IsEmpty &&
+                !_vimBuffer.Vim.MacroRecorder.IsRecording)
                 return false;
 
-            if (IsEscapeKey(e))
-                return true;
-
-            if (_completionBroker.IsCompletionActive(_textView))
+            if (_completionBroker.IsCompletionActive(_textView) && !IsEscapeKey(e))
                 return false;
 
-            if (_signatureHelpBroker.IsSignatureHelpActive(_textView))
+            if (_signatureHelpBroker.IsSignatureHelpActive(_textView) && !IsEscapeKey(e))
                 return false;
 
             if (_inlineRenameListenerFactory.InRename)
@@ -137,9 +124,12 @@ namespace Vim.UI.Cocoa
 
             if (_vimBuffer.ModeKind.IsAnyInsert() && e.Characters == "\t")
                 // Allow tab key to work for snippet completion
+                //
+                // TODO: We should only really do this when the characters
+                // to the left of the caret form a valid snippet
                 return false;
 
-            return true;
+            return _vimBuffer.CanProcess(keyInput) && _vimBuffer.Process(keyInput).IsAnyHandled;
         }
     }
 }
