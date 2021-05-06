@@ -10,6 +10,7 @@ namespace Vim.Mac
     internal class CaretUtil : IVimBufferCreationListener
     {
         private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
+        private IVimBuffer _vimBuffer;
 
         [ImportingConstructor]
         public CaretUtil(InlineRenameListenerFactory inlineRenameListenerFactory)
@@ -18,14 +19,14 @@ namespace Vim.Mac
         }
 
 
-        private void SetCaret(IVimBuffer vimBuffer)
+        private void SetCaret()
         {
-            var textView = vimBuffer.TextView;
+            var textView = _vimBuffer.TextView;
 
             if (textView.IsClosed)
                 return;
 
-            if (vimBuffer.Mode.ModeKind == ModeKind.Insert || _inlineRenameListenerFactory.InRename)
+            if (_vimBuffer.Mode.ModeKind == ModeKind.Insert || _inlineRenameListenerFactory.InRename)
             {
                 //TODO: what's the minimum caret width for accessibility?
                 textView.Options.SetOptionValue(DefaultTextViewOptions.CaretWidthOptionName, 1.0);
@@ -46,9 +47,39 @@ namespace Vim.Mac
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer vimBuffer)
         {
-            SetCaret(vimBuffer);
-            vimBuffer.SwitchedMode += (_,__) => SetCaret(vimBuffer);
-            _inlineRenameListenerFactory.RenameUtil.IsRenameActiveChanged += (_, __) => SetCaret(vimBuffer);
+            _vimBuffer = vimBuffer;
+            SetCaret();
+            vimBuffer.SwitchedMode += VimBuffer_SwitchedMode;
+            vimBuffer.TextView.Options.GlobalOptions.OptionChanged += GlobalOptions_OptionChanged;
+            _inlineRenameListenerFactory.RenameUtil.IsRenameActiveChanged += RenameUtil_IsRenameActiveChanged;
+            vimBuffer.Closed += VimBuffer_Closed;
         }
+
+        void RenameUtil_IsRenameActiveChanged(object sender, EventArgs e)
+        {
+            SetCaret();
+        }
+
+        void VimBuffer_SwitchedMode(object sender, SwitchModeEventArgs e)
+        {
+            SetCaret();
+        }
+
+        void GlobalOptions_OptionChanged(object sender, EditorOptionChangedEventArgs e)
+        {
+            if(e.OptionId == DefaultCocoaViewOptions.ZoomLevelId.Name)
+            {
+                SetCaret();
+            }
+        }
+
+        void VimBuffer_Closed(object sender, EventArgs e)
+        {
+            _vimBuffer.SwitchedMode -= VimBuffer_SwitchedMode;
+            _vimBuffer.TextView.Options.GlobalOptions.OptionChanged -= GlobalOptions_OptionChanged;
+            _inlineRenameListenerFactory.RenameUtil.IsRenameActiveChanged -= RenameUtil_IsRenameActiveChanged;
+            _vimBuffer.Closed -= VimBuffer_Closed;
+        }
+
     }
 }
