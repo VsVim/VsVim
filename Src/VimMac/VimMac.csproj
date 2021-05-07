@@ -6,6 +6,8 @@
     <AssemblyName>Vim.Mac</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_MAC</DefineConstants>
+    <!--<Configuration>DebugMac</Configuration>-->
+    <!--<OutputPath>../../Binaries/$(Configuration)/VimMac</OutputPath>-->
   </PropertyGroup>
       
   <ItemGroup>
@@ -25,6 +27,8 @@
     <Folder Include="Resources\" />
     <Folder Include="FPFExtensions\" />
     <Folder Include="InlineRename\" />
+    <Folder Include="RelativeLineNumbers\" />
+    <Folder Include="RelativeLineNumbers\Util\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\beep.wav" />
