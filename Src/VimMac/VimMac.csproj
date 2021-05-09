@@ -6,8 +6,6 @@
     <AssemblyName>Vim.Mac</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_MAC</DefineConstants>
-    <!--<Configuration>DebugMac</Configuration>-->
-    <!--<OutputPath>../../Binaries/$(Configuration)/VimMac</OutputPath>-->
   </PropertyGroup>
       
   <ItemGroup>

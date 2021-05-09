@@ -22,7 +22,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
     internal sealed class RelativeLineNumbersMargin : NSView, ICocoaTextViewMargin
     {
         // Large enough that we shouldn't expect the view to reallocate the array.
-        private const int ExpectedNumberOfVisibleLines = 100;
+        const int ExpectedNumberOfVisibleLines = 100;
 
         #region Private Members
 
@@ -32,7 +32,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         readonly Queue<int> unusedChildIndicies = new Queue<int>(ExpectedNumberOfVisibleLines);
 
         ICocoaTextView _textView;
-        private readonly ICocoaTextViewMargin _marginContainer;
+        readonly ICocoaTextViewMargin _marginContainer;
         ICocoaClassificationFormatMap _classificationFormatMap;
         IClassificationTypeRegistryService _classificationTypeRegistry;
         internal NSStringAttributes _formatting;
@@ -46,6 +46,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 
         double _oldViewportTop;
         LineNumbersCalculator _lineNumbersCalculator;
+        IVimLocalSettings _localSettings;
         int lastLineNumber;
 
         #endregion // Private Members
@@ -73,6 +74,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             _oldViewportTop = 0.0;
 
             _lineNumbersCalculator = new LineNumbersCalculator(textView, vimLocalSettings);
+            _localSettings = vimLocalSettings;
             WantsLayer = true;
             Hidden = false;
             SetVisualStudioMarginVisibility(hidden: true);
@@ -104,7 +106,8 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
                 {
                     // Unregister from layout changes on the Text Editor
                     _textView.LayoutChanged -= OnEditorLayoutChanged;
-
+                    _textView.ZoomLevelChanged -= _textView_ZoomLevelChanged;
+                    _textView.Caret.PositionChanged -= Caret_PositionChanged;
                     // Unregister from classification format change events
                     _classificationFormatMap.ClassificationFormatMappingChanged -= OnClassificationFormatChanged;
                 }
@@ -121,30 +124,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
                 var element = lineNumberMargin.VisualElement;
                 element.Hidden = hidden;
                 element.RemoveFromSuperview();
-                //if(hidden)
-                //{ 
-                //    element.fr
-                //}
-                //if (element.Hidden != Hidden)
-                //{
-                //    if (!element.Hidden)
-                //    {
-                //        _width = element.wi.Width;
-                //        _minWidth = element.MinWidth;
-                //        _maxWidth = element.MaxWidth;
-                //        element.Width = 0.0;
-                //        element.MinWidth = 0.0;
-                //        element.MaxWidth = 0.0;
-                //    }
-                //    else
-                //    {
-                //        element.Width = _width;
-                //        element.MinWidth = _minWidth;
-                //        element.MaxWidth = _maxWidth;
-                //    }
-                //    element.Visibility = visibility;
-                //    element.UpdateLayout();
-                //}
             }
         }
 
@@ -228,7 +207,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         /// is larger than we can currently handle.
         /// </summary>
         /// <param name="lastVisibleLineNumber">The last (largest) visible number in the view</param>
-        internal void ResizeIfNecessary(int lastVisibleLineNumber)
+        void ResizeIfNecessary(int lastVisibleLineNumber)
         {
             // We are looking at lines base 1, not base 0
             lastVisibleLineNumber++;
@@ -262,9 +241,27 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             return (dict, 100 /* TODO */);
         }
 
-        internal void UpdateLineNumbers()
+        void UpdateLineNumbers()
         {
             _updateNeeded = false;
+
+            if (!Enabled)
+            {
+                if (recyclableVisuals.Count > 0)
+                {
+                    intrinsicContentSize = new CGSize(0, NoIntrinsicMetric);
+                    InvalidateIntrinsicContentSize();
+                    ClearLineNumbers();
+                }
+                return;
+            }
+            else
+            {
+                if (intrinsicContentSize.Width == 0)
+                {
+                    DetermineMarginWidth();
+                }
+            }
 
             if (_textView.IsClosed)
             {
@@ -348,13 +345,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             }
         }
 
-        //NSAttributedString MakeTextLine(int lineNumber)
-        //{
-        //    string numberAsString = lineNumber.ToString(CultureInfo.CurrentUICulture.NumberFormat);
-
-        //    return new NSAttributedString(numberAsString, _formatting);
-        //}
-
         #endregion
 
         #region Event Handlers
@@ -404,21 +394,12 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             get
             {
                 ThrowIfDisposed();
-                return _textView.Options.IsLineNumberMarginEnabled();
+                return _localSettings.Number || _localSettings.RelativeNumber;
+
             }
         }
-        //#region ICocoaTextViewMargin Implementation
+        #endregion
 
-        //NSView ICocoaTextViewMargin.VisualElement => this;
-
-        //double ITextViewMargin.MarginSize => throw new NotImplementedException();
-
-        //bool ITextViewMargin.Enabled => !Hidden;
-
-        //ITextViewMargin ITextViewMargin.GetTextViewMargin(string marginName)
-        //    => string.Compare(marginName, CocoaInfoBarMarginProvider.MarginName, StringComparison.OrdinalIgnoreCase) == 0 ? this : null;
-
-        //#endregion
         public override void UpdateTrackingAreas()
         {
             if (_trackingArea != null)
@@ -450,7 +431,5 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 
             base.Dispose(disposing);
         }
-
-        #endregion
     }
 }

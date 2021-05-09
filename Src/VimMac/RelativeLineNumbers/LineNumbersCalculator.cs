@@ -100,8 +100,6 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         {
             int numberToDisplay = GetNumberToDisplay(wpfLine, distanceToCaret, hasValidCaret);
 
-            //double verticalBaseline = wpfLine.TextTop - _textView.ViewportTop + wpfLine.Baseline;
-
             bool isCaretLine = hasValidCaret && distanceToCaret == 0;
 
             bool caretLineStyle = isCaretLine && _localSettings.RelativeNumber;
@@ -118,8 +116,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             //}
 
             var absoluteCaretLineNumber =
-
-                /*_localSettings.Number &&*/ hasValidCaret && distanceToCaret == 0;
+                _localSettings.Number && hasValidCaret && distanceToCaret == 0;
 
             var absoluteLineNumbers =
                 !hasValidCaret || !_localSettings.RelativeNumber;
