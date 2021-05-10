@@ -228,19 +228,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             }
         }
 
-        (Dictionary<int, Line> lines, int maxLineNumber) CalculateLineNumbers()
-        {
-            //TODO: return dictionary here
-            var lines = _lineNumbersCalculator.CalculateLineNumbers();
-            var dict = new Dictionary<int, Line>();
-            Line lastLine;
-            foreach(var line in lines)
-            {
-                dict.Add(line.LineNumber, line);
-            }
-            return (dict, 100 /* TODO */);
-        }
-
         void UpdateLineNumbers()
         {
             _updateNeeded = false;
@@ -275,7 +262,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
                 return;
             }
 
-            var (lines, maxLineNumber) = CalculateLineNumbers();
+            var (lines, maxLineNumber) = _lineNumbersCalculator.CalculateLineNumbers();
 
             // If there are no line numbers to display, quit
             if (lines == null || lines.Count == 0)

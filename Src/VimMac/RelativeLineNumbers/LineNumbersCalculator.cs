@@ -24,19 +24,21 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
                 ?? throw new ArgumentNullException(nameof(localSettings));
         }
 
-        public ICollection<Line> CalculateLineNumbers()
+        public (IDictionary<int, Line>, int) CalculateLineNumbers()
         {
             bool hasValidCaret = TryGetCaretIndex(out int caretIndex);
-
+            int maxLineNumber = 0;
             var result = GetLinesWithNumbers()
-                .Select((line, idx) =>
+                .Select((editorLine, idx) =>
                 {
                     var distanceToCaret = Math.Abs(idx - caretIndex);
-                    return MakeLine(line, distanceToCaret, hasValidCaret);
+                    var line = MakeLine(editorLine, distanceToCaret, hasValidCaret);
+                    maxLineNumber = Math.Max(maxLineNumber, line.LineNumber);
+                    return line;
                 })
-                .ToList();
+                .ToDictionary(line => line.LineNumber, line => line);
 
-            return result;
+            return (result, maxLineNumber);
         }
 
         private ICollection<ITextViewLine> TextViewLines
@@ -108,13 +110,6 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
         private int GetNumberToDisplay(ITextViewLine wpfLine, int distanceToCaret, bool hasValidCaret)
         {
-            //// Detect the phantom line.
-            //if (wpfLine.Start.Position == wpfLine.End.Position &&
-            //    wpfLine.Start.Position == wpfLine.Snapshot.Length)
-            //{
-            //    return -1;
-            //}
-
             var absoluteCaretLineNumber =
                 _localSettings.Number && hasValidCaret && distanceToCaret == 0;
 
