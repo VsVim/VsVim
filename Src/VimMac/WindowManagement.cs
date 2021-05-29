@@ -53,29 +53,48 @@ namespace Vim.Mac
             return fileName;
         }
 
-        private static Notebook ToNotebook(object obj)
+        private static Notebook ToNotebook(object container)
         {
-            var notebookType = obj.GetType();
-            var childrenProperty = notebookType.GetProperty("Children", instanceFlags);
-            var children = (object[])childrenProperty.GetValue(obj);
-            bool isActiveNotebook = false;
-            int currentTab = 0;
+            var notebookType = container.GetType();
+            bool isActiveNotebook = IsActiveNotebook(container, notebookType);
 
-            if (children.Length > 0)
-            {
-                var tabstrip = children[0];
-                var tabstripType = tabstrip.GetType();
-                isActiveNotebook = (bool)tabstripType.GetProperty("IsActiveNotebook").GetValue(tabstrip);
-            }
+            int currentTab = (int)notebookType.GetProperty("CurrentTabIndex", instanceFlags).GetValue(container);
 
-            currentTab = (int)notebookType.GetProperty("CurrentTabIndex", instanceFlags).GetValue(obj);
-
-            var tabs = (IEnumerable<object>)notebookType.GetProperty("Tabs", instanceFlags).GetValue(obj);
+            var tabs = (IEnumerable<object>)notebookType.GetProperty("Tabs", instanceFlags).GetValue(container);
 
             var files = tabs.Select(GetTabFileName).ToImmutableArray();
 
             return new Notebook(isActiveNotebook, currentTab, files);
         }
 
+        private static bool IsActiveNotebook(object container, Type notebookType)
+        {
+            var tabStripControllerProperty = notebookType.GetProperty("TabStripController", instanceFlags);
+
+            bool isActiveNotebook = false;
+            Type tabStripType;
+
+            if (tabStripControllerProperty != null)
+            {
+                var tabStripController = tabStripControllerProperty.GetValue(container);
+                // VSMac 8.10+
+                tabStripType = tabStripControllerProperty.PropertyType;
+                isActiveNotebook = (bool)tabStripType.GetProperty("IsActiveNotebook").GetValue(tabStripController);
+            }
+            else
+            {
+                // VSMac 8.9 and earlier
+                var childrenProperty = notebookType.GetProperty("Children", instanceFlags);
+                var children = (object[])childrenProperty.GetValue(container);
+
+                if (children.Length > 0)
+                {
+                    var tabStrip = children[0];
+                    tabStripType = tabStrip.GetType();
+                    isActiveNotebook = (bool)tabStripType.GetProperty("IsActiveNotebook").GetValue(tabStrip);
+                }
+            }
+            return isActiveNotebook;
+        }
     }
 }
