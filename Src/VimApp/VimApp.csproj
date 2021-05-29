@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCpu</PlatformTarget>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>VimApp</RootNamespace>
@@ -35,7 +35,7 @@
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\VimEditorHost\VimEditorHost.csproj" />
     <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
-    <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=17.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   </ItemGroup>
   <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

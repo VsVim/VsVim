@@ -14,10 +14,12 @@
   <PropertyGroup Condition="'$(VsVimSpecificTestHost)' == 'true'">
     <DefineConstants Condition="'$(VsVimTargetVersion)' == '14.0'">$(DefineConstants);VS_SPECIFIC_2015;VIM_SPECIFIC_TEST_HOST</DefineConstants>
     <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <!-- hack: force to 2022 instead of fixing the target version <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants> -->
+    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2022;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <DefineConstants Condition="'$(VsVimTargetVersion)' == '17.0'">$(DefineConstants);VS_SPECIFIC_2022;VIM_SPECIFIC_TEST_HOST</DefineConstants>
   </PropertyGroup>
 
-  <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
+  <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true' And '$(VsRunnablePropsFilePath)' != ''" />
 
   <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />
 </Project>

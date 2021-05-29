@@ -15,7 +15,7 @@
          current VS version but allow it to be changed via environment 
          variable for testing other versions --> 
     <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">$(VisualStudioVersion)</VsVimTargetVersion>
-    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">15.0</VsVimTargetVersion>
+    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">17.0</VsVimTargetVersion>
 
     <!-- Standard Calculation of NuGet package location -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
@@ -44,16 +44,28 @@
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</VsRunnablePropsFilePath>
   </PropertyGroup>
 
+<!--
   <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '16.0' ">
     <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2019\App.config</VsVimAppConfig>
     <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2019\Runnable.props</VsRunnablePropsFilePath>
   </PropertyGroup>
+  hack instead of figuring out how to change target version
+  -->
+
+  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '17.0' Or  '$(VsVimTargetVersion)' == '17.0' ">
+    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2022\App.config</VsVimAppConfig>
+    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2022\Runnable.props</VsRunnablePropsFilePath>
+  </PropertyGroup>
 
   <PropertyGroup> 
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Common</ReferencePath>
+    <!--
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2017</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2019</ReferencePath>
+    -->
+
+    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2022</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
 
     <!-- This controls the places MSBuild will consult to resolve assembly references.  This is 

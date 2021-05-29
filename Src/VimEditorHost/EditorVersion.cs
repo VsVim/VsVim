@@ -16,5 +16,6 @@ namespace Vim.EditorHost
         Vs2015,
         Vs2017,
         Vs2019,
+        Vs2022,
     }
 }

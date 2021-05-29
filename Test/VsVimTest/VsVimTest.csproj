@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCpu</PlatformTarget>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>VsVim.UnitTest</AssemblyName>
@@ -34,25 +34,16 @@
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
     <ProjectReference Include="..\..\Src\VsVim\VsVim.csproj" />
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2015\Vs2015.csproj">
-      <Aliases>VsVim2015</Aliases>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2017\Vs2017.csproj">
-      <Aliases>VsVim2017</Aliases>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2019\Vs2019.csproj">
-      <Aliases>VsVim2019</Aliases>
-    </ProjectReference>
   </ItemGroup>
 
   <!-- 
      This project must always target the latest, no matter if it's loaded in VS2017 or VS2019.
   --> 
   <ItemGroup>
-    <None Include="$(RepoPath)\References\VS2019\App.config">
+    <None Include="$(RepoPath)\References\VS2022\App.config">
       <Link>app.config</Link>
     </None>
   </ItemGroup>
 
-  <Import Project="$(RepoPath)\References\VS2019\Runnable.props" />
+  <Import Project="$(RepoPath)\References\VS2022\Runnable.props" />
 </Project>

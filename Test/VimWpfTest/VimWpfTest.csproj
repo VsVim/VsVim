@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCpu</PlatformTarget>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>

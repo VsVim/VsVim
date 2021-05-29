@@ -44,7 +44,7 @@ namespace Vim.EditorHost.Implementation.Misc
         {
         }
 
-#elif VS_SPECIFIC_2019
+#elif VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {

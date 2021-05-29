@@ -776,7 +776,7 @@ namespace Vim.UnitTest
                     Assert.Equal(3, _textView.GetCaretPoint().Position);
                 }
             }
-#elif VS_SPECIFIC_2019
+#elif VS_SPECIFIC_2019 || VS_SPECIFIC_2022
             // https://github.com/VsVim/VsVim/issues/2463
 #else
 #error Unsupported configuration

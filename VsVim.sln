@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28714.193
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31327.42
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7CD56D22-AAAA-4A93-8D98-1A014D9A6D39}"
 	ProjectSection(SolutionItems) = preProject
@@ -33,12 +33,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimApp", "Src\VimApp\VimApp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CleanVsix", "Src\CleanVsix\CleanVsix.csproj", "{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vs2015", "Src\VsSpecific\Vs2015\Vs2015.csproj", "{D8EB4054-F9EB-45DE-B07F-254E253028E7}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vs2017", "Src\VsSpecific\Vs2017\Vs2017.csproj", "{4BBEC6CF-089E-4F22-8649-5144388C655D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vs2019", "Src\VsSpecific\Vs2019\Vs2019.csproj", "{80595422-09E0-40AC-9573-1A1D210B04F3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimEditorHost", "Src\VimEditorHost\VimEditorHost.csproj", "{863A0141-59C5-481D-A3FC-A5812D973FEB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimTestUtils", "Src\VimTestUtils\VimTestUtils.csproj", "{6819AD26-901E-4261-95AA-9913D435296A}"
@@ -64,18 +58,16 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "VimCore", "Src\VimCore\VimC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimMac", "Src\VimMac\VimMac.csproj", "{33887119-3C41-4D8B-9A54-14AE8B2212B1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vs2022", "Src\VsSpecific\Vs2022\Vs2022.csproj", "{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{003af6b2-eb30-4494-b89f-15e1390fe47d}*SharedItemsImports = 13
 		Src\VimSpecific\VimSpecific.projitems*{33887119-3c41-4d8b-9a54-14ae8b2212b1}*SharedItemsImports = 5
-		Src\VimSpecific\VimSpecific.projitems*{4bbec6cf-089e-4f22-8649-5144388c655d}*SharedItemsImports = 5
-		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{4bbec6cf-089e-4f22-8649-5144388c655d}*SharedItemsImports = 5
 		Src\VimSpecific\VimSpecific.projitems*{6819ad26-901e-4261-95aa-9913d435296a}*SharedItemsImports = 5
-		Src\VimSpecific\VimSpecific.projitems*{80595422-09e0-40ac-9573-1a1d210b04f3}*SharedItemsImports = 5
-		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{80595422-09e0-40ac-9573-1a1d210b04f3}*SharedItemsImports = 5
 		Src\VimSpecific\VimSpecific.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
-		Src\VimSpecific\VimSpecific.projitems*{d8eb4054-f9eb-45de-b07f-254e253028e7}*SharedItemsImports = 5
-		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{d8eb4054-f9eb-45de-b07f-254e253028e7}*SharedItemsImports = 5
+		Src\VimSpecific\VimSpecific.projitems*{c6add64b-f89a-4a6a-a9ac-4a44d2c9cebb}*SharedItemsImports = 5
+		Src\VsSpecific\VsSpecific\VsSpecific.projitems*{c6add64b-f89a-4a6a-a9ac-4a44d2c9cebb}*SharedItemsImports = 5
 		Src\VimSpecific\VimSpecific.projitems*{de7e4031-d2e8-450e-8558-f00a6f19fa5c}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -282,75 +274,6 @@ Global
 		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
 		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
 		{04DA2433-0F43-42C0-AD53-DAA7F1B22E2D}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Debug|x86.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|x86.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.Release|x86.Build.0 = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{D8EB4054-F9EB-45DE-B07F-254E253028E7}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Debug|x86.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|x86.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.Release|x86.Build.0 = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{4BBEC6CF-089E-4F22-8649-5144388C655D}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Debug|x86.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|x86.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.Release|x86.Build.0 = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{80595422-09E0-40AC-9573-1A1D210B04F3}.ReleaseMac|x86.Build.0 = Release|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{863A0141-59C5-481D-A3FC-A5812D973FEB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -458,6 +381,30 @@ Global
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|x86.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Debug|x86.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|x86.ActiveCfg = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.DebugMac|x86.Build.0 = Debug|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|x86.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.Release|x86.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|Any CPU.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
+		{C6ADD64B-F89A-4A6A-A9AC-4A44D2C9CEBB}.ReleaseMac|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

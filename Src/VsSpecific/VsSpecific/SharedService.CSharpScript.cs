@@ -4,7 +4,7 @@ using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Specific
 {
-#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
+#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 
     internal partial class SharedService
     {
