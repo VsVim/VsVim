@@ -6,11 +6,14 @@ open System.ComponentModel.Composition
 /// Ensure view properties after external caret events
 type internal CaretChangeTracker
     ( 
-        _vimBuffer: IVimBuffer,
-        _commonOperations: ICommonOperations,
-        _mouseDevice: IMouseDevice
+        vimBuffer: IVimBuffer,
+        commonOperations: ICommonOperations,
+        mouseDevice: IMouseDevice
     ) as this =
 
+    let _vimBuffer = vimBuffer
+    let _commonOperations = commonOperations
+    let _mouseDevice = mouseDevice
     let _globalSettings = _vimBuffer.GlobalSettings
     let _textView = _vimBuffer.TextView
     let _vimHost = _vimBuffer.Vim.VimHost

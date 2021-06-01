@@ -12,14 +12,22 @@ open Microsoft.VisualStudio.Utilities
 /// need the same data provided by IVimBuffer.
 type VimBufferData 
     (
-        _vimTextBuffer: IVimTextBuffer,
-        _textView: ITextView,
-        _windowSettings: IVimWindowSettings,
-        _jumpList: IJumpList,
-        _statusUtil: IStatusUtil,
-        _selectionUtil: ISelectionUtil,
-        _caretRegisterMap: ICaretRegisterMap
+        vimTextBuffer: IVimTextBuffer,
+        textView: ITextView,
+        windowSettings: IVimWindowSettings,
+        jumpList: IJumpList,
+        statusUtil: IStatusUtil,
+        selectionUtil: ISelectionUtil,
+        caretRegisterMap: ICaretRegisterMap
     ) =
+
+    let _vimTextBuffer = vimTextBuffer
+    let _textView = textView
+    let _windowSettings = windowSettings
+    let _jumpList = jumpList
+    let _statusUtil = statusUtil
+    let _selectionUtil = selectionUtil
+    let _caretRegisterMap = caretRegisterMap
 
     let mutable _currentDirectory: string option = None
     let mutable _visualCaretStartPoint: ITrackingPoint option = None
@@ -178,13 +186,20 @@ type internal ModeMap
 
 type internal VimBuffer 
     (
-        _vimBufferData: IVimBufferData,
-        _incrementalSearch: IIncrementalSearch,
-        _motionUtil: IMotionUtil,
-        _wordNavigator: ITextStructureNavigator,
-        _windowSettings: IVimWindowSettings,
-        _commandUtil: ICommandUtil
+        vimBufferData: IVimBufferData,
+        incrementalSearch: IIncrementalSearch,
+        motionUtil: IMotionUtil,
+        textStructureNavigator: ITextStructureNavigator,
+        windowSettings: IVimWindowSettings,
+        commandUtil: ICommandUtil
     ) as this =
+
+    let _vimBufferData = vimBufferData
+    let _incrementalSearch = incrementalSearch
+    let _motionUtil = motionUtil
+    let _wordNavigator = textStructureNavigator
+    let _windowSettings = windowSettings
+    let _commandUtil = commandUtil
 
     /// Maximum number of maps which can occur for a key map.  This is not a standard vim or gVim
     /// setting.  It's a hueristic setting meant to prevent infinite recursion in the specific cases

@@ -284,7 +284,7 @@ and internal HistoryUtil ()  =
 
     static member KeyInputMap = _keyInputMap
 
-    static member CreateHistorySession<'TData, 'TResult> historyClient clientData command localAbbreviationMap motionUtil =
-        let historySession = HistorySession<'TData, 'TResult>(historyClient, clientData, command, localAbbreviationMap, motionUtil)
+    static member CreateHistorySession<'TData, 'TResult> historyClient initialClientData command localAbbreviationMap motionUtil =
+        let historySession = HistorySession<'TData, 'TResult>(historyClient, initialClientData, command, localAbbreviationMap, motionUtil)
         historySession :> IHistorySession<'TData, 'TResult>
 

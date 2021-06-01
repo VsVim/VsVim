@@ -37,18 +37,18 @@ type KeyInput
     /// This is demonstratable in a couple of areas.  One simple one is using the 
     /// the CTRL-F command (scroll down).  It has the same behavior with capital 
     /// or lower case F.
-    member x.CompareTo (right: KeyInput) =
-        if obj.ReferenceEquals(right, null) then
+    member x.CompareTo (other: KeyInput) =
+        if obj.ReferenceEquals(other, null) then
             1
         else 
             let left = x
-            let comp = compare left.KeyModifiers right.KeyModifiers
+            let comp = compare left.KeyModifiers other.KeyModifiers
             if comp <> 0 then 
                 comp
             else
-                let comp = compare left.Char right.Char
+                let comp = compare left.Char other.Char
                 if comp <> 0 then comp
-                else compare left.Key right.Key
+                else compare left.Key other.Key
                     
     override x.GetHashCode() = 
         HashUtil.Combine3 (x.Char.GetHashCode()) (x.Key.GetHashCode()) (x.KeyModifiers.GetHashCode())
@@ -309,8 +309,8 @@ module KeyInputUtil =
         | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
-    let ChangeKeyModifiersDangerous (ki:KeyInput) keyModifiers = 
-        KeyInput(ki.Key, keyModifiers, ki.RawChar)
+    let ChangeKeyModifiersDangerous (keyInput: KeyInput) modifiers = 
+        KeyInput(keyInput.Key, modifiers, keyInput.RawChar)
 
     let NullKey = VimKeyToKeyInput VimKey.Null
     let LineFeedKey = VimKeyToKeyInput VimKey.LineFeed
@@ -321,7 +321,7 @@ module KeyInputUtil =
     /// Apply the modifiers to the given KeyInput and determine the result.  This will
     /// not necessarily return a KeyInput with the modifier set.  It attempts to unify 
     /// certain ambiguous combinations.
-    let ApplyKeyModifiers (keyInput: KeyInput) (targetModifiers: VimKeyModifiers) =
+    let ApplyKeyModifiers (keyInput: KeyInput) (modifiers: VimKeyModifiers) =
 
         let normalizeToUpper (keyInput: KeyInput) =
             match keyInput.RawChar with
@@ -395,9 +395,9 @@ module KeyInputUtil =
                         let modifiers = Util.UnsetFlag keyInput.KeyModifiers VimKeyModifiers.Control
                         ChangeKeyModifiersDangerous keyInput modifiers
 
-        let keyInput = ChangeKeyModifiersDangerous keyInput (targetModifiers ||| keyInput.KeyModifiers)
+        let keyInput = ChangeKeyModifiersDangerous keyInput (modifiers ||| keyInput.KeyModifiers)
 
-        if Util.IsFlagSet targetModifiers VimKeyModifiers.Alt then
+        if Util.IsFlagSet modifiers VimKeyModifiers.Alt then
 
             // The alt key preserves all modifiers and converts the char to uppercase.
             normalizeToUpper keyInput
@@ -406,14 +406,14 @@ module KeyInputUtil =
 
             // First normalize the shift case.
             let keyInput = 
-                if Util.IsFlagSet targetModifiers VimKeyModifiers.Shift then
+                if Util.IsFlagSet modifiers VimKeyModifiers.Shift then
                     normalizeShift keyInput
                 else 
                     keyInput
 
             // Next normalize the control case.
             let keyInput = 
-                if Util.IsFlagSet targetModifiers VimKeyModifiers.Control then
+                if Util.IsFlagSet modifiers VimKeyModifiers.Control then
                     normalizeControl keyInput
                 else
                     keyInput

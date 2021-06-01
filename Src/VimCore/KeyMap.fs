@@ -206,8 +206,9 @@ type Mapper
 
         result.Value
 
-type internal GlobalKeyMap(_variableMap: VariableMap) =
+type internal GlobalKeyMap(variableMap: VariableMap) =
 
+    let _variableMap = variableMap
     let _map = MappingMap<KeyRemapMode, KeyMapping>(KeyRemapMode.All)
 
     static member ParseKeyNotation(notation: string, variableMap: VariableMap) =
@@ -236,11 +237,14 @@ type internal GlobalKeyMap(_variableMap: VariableMap) =
 
 type internal LocalKeyMap
     (
-        _globalKeyMap: IVimGlobalKeyMap,
-        _globalSettings: IVimGlobalSettings,
-        _variableMap: VariableMap
+        globalKeyMap: IVimGlobalKeyMap,
+        globalSettings: IVimGlobalSettings,
+        variableMap: VariableMap
     ) =
 
+    let _globalKeyMap = globalKeyMap
+    let _globalSettings = globalSettings
+    let _variableMap = variableMap
     let _map = MappingMap<KeyRemapMode, KeyMapping>(KeyRemapMode.All)
     let mutable _isZeroMappingEnabled = true
 
@@ -310,11 +314,14 @@ type internal GlobalAbbreviationMap() =
 
 type internal LocalAbbreviationMap
     (
-        _keyMap: IVimLocalKeyMap,
-        _globalAbbreviationMap: IVimGlobalAbbreviationMap,
-        _wordUtil : WordUtil
+        keyMap: IVimLocalKeyMap,
+        globalAbbreviationMap: IVimGlobalAbbreviationMap,
+        wordUtil : WordUtil
     ) = 
 
+    let _keyMap = keyMap
+    let _globalAbbreviationMap = globalAbbreviationMap
+    let _wordUtil = wordUtil
     let _map = MappingMap<AbbreviationMode, Abbreviation>(AbbreviationMode.All)
 
     member x.Map = _map

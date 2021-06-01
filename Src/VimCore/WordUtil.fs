@@ -9,7 +9,9 @@ open System.Diagnostics
 [<UsedInBackgroundThread()>]
 [<Sealed>]
 [<Class>]
-type SnapshotWordUtil(_keywordCharSet: VimCharSet) = 
+type SnapshotWordUtil(keywordCharSet: VimCharSet) = 
+
+    let _keywordCharSet = keywordCharSet
 
     member x.KeywordCharSet = _keywordCharSet
     member x.IsBigWordChar c = not (Char.IsWhiteSpace(c))
@@ -72,7 +74,7 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
     /// in the middle of a word the span of the entire word will be returned
     ///
     /// This can be called from a background thread via ITextSearchService.
-    member x.GetWordSpans kind path point = 
+    member x.GetWordSpans wordKind path point = 
 
         let snapshot = SnapshotPointUtil.GetSnapshot point
         let line = SnapshotPointUtil.GetContainingLine point
@@ -87,7 +89,7 @@ type SnapshotWordUtil(_keywordCharSet: VimCharSet) =
                 let offset = line.Start.Position
                 line.Extent
                 |> SnapshotSpanUtil.GetText 
-                |> x.GetWordSpansInText kind path 
+                |> x.GetWordSpansInText wordKind path 
                 |> Seq.map (fun span -> SnapshotSpan(snapshot, span.Start + offset, span.Length)))
         |> Seq.concat
         |> Seq.filter (fun span -> 
@@ -149,8 +151,10 @@ type SnapshotWordNavigator
 
 [<Sealed>]
 [<Class>]
-type WordUtil(_textBuffer: ITextBuffer, _localSettings: IVimLocalSettings) as this =
+type WordUtil(textBuffer: ITextBuffer, localSettings: IVimLocalSettings) as this =
 
+    let _textBuffer = textBuffer
+    let _localSettings = localSettings
     let mutable _snapshotWordUtil = SnapshotWordUtil(_localSettings.IsKeywordCharSet)
     let mutable _snapshotWordNavigator = Unchecked.defaultof<SnapshotWordNavigator>
     let mutable _wordNavigator = Unchecked.defaultof<ITextStructureNavigator>

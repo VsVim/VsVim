@@ -660,16 +660,16 @@ module CharUtil =
 /// The .Net mapping for the keys defined in :help key-notation
 module internal CharCodes =
 
-    /// <Nul> 
+    /// Nul key
     let Zero = char 0
 
-    /// <CR> / <Return> / <Enter>
+    /// CR / Return / Enter key
     let Enter = CharUtil.OfAsciiValue 13uy
 
-    /// <ESC>
+    /// ESC key
     let Escape = CharUtil.OfAsciiValue 27uy
 
-    /// <BS> 
+    /// BS key
     let Backspace = '\b'
 
 module internal StringBuilderExtensions =
