@@ -7,11 +7,14 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal MultiSelectionTracker
     ( 
-        _vimBuffer: IVimBuffer,
-        _commonOperations: ICommonOperations,
-        _mouseDevice: IMouseDevice
+        vimBuffer: IVimBuffer,
+        commonOperations: ICommonOperations,
+        mouseDevice: IMouseDevice
     ) as this =
 
+    let _vimBuffer = vimBuffer
+    let _commonOperations = commonOperations
+    let _mouseDevice = mouseDevice
     let _globalSettings = _vimBuffer.GlobalSettings
     let _localSettings = _vimBuffer.LocalSettings
     let _vimBufferData = _vimBuffer.VimBufferData

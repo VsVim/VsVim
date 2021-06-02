@@ -260,7 +260,7 @@ type VimRegex
     member x.Regex = _regex
     member x.IncludesNewLine = _includesNewLine
     member x.MatchesVisualSelection = _matchesVisualSelection
-    member x.IsMatch input = _regex.IsMatch(input)
+    member x.IsMatch pattern = _regex.IsMatch(pattern)
     member x.Replace (input: string) (replacement: string) (replaceData: VimRegexReplaceData) (registerMap: IRegisterMap) = 
         let collection = _regex.Matches(input)
         if collection.Count > 0 then
@@ -974,6 +974,6 @@ module VimRegexFactory =
         let options = CreateRegexOptions globalSettings
         Create pattern options
 
-    let CreateBcl pattern options =
-        VimRegexUtils.TryCreateRegex pattern options
+    let CreateBcl pattern regexOptions =
+        VimRegexUtils.TryCreateRegex pattern regexOptions
 

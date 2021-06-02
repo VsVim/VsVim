@@ -44,9 +44,12 @@ type internal SectionKind =
 
 type internal TextObjectUtil
     (
-        _globalSettings: IVimGlobalSettings,
-        _textBuffer: ITextBuffer
+        globalSettings: IVimGlobalSettings,
+        textBuffer: ITextBuffer
     ) = 
+
+    let _globalSettings = globalSettings
+    let _textBuffer = textBuffer
 
     /// List of characters which represent the end of a sentence. 
     static let SentenceEndChars = ['.'; '!'; '?']

@@ -17,12 +17,16 @@ open System.Collections.Generic
 /// inside on
 type internal SelectionChangeTracker
     ( 
-        _vimBuffer: IVimBuffer,
-        _commonOperations: ICommonOperations,
-        _selectionOverrideList: IVisualModeSelectionOverride list,
-        _mouseDevice: IMouseDevice
+        vimBuffer: IVimBuffer,
+        commonOperations: ICommonOperations,
+        selectionOverrideList: IVisualModeSelectionOverride list,
+        mouseDevice: IMouseDevice
     ) as this =
 
+    let _vimBuffer = vimBuffer
+    let _commonOperations = commonOperations
+    let _selectionOverrideList = selectionOverrideList
+    let _mouseDevice = mouseDevice
     let _globalSettings = _vimBuffer.GlobalSettings
     let _textView = _vimBuffer.TextView
     let _vimHost = _vimBuffer.Vim.VimHost

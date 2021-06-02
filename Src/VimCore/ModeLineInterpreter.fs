@@ -9,9 +9,12 @@ open Microsoft.VisualStudio.Text
 [<Class>]
 type internal ModeLineInterpreter
     (
-        _textBuffer: ITextBuffer,
-        _localSettings: IVimLocalSettings
+        textBuffer: ITextBuffer,
+        localSettings: IVimLocalSettings
     ) =
+
+    let _textBuffer = textBuffer
+    let _localSettings = localSettings
 
     /// Regular expressions to parse the modeline
     static let _escapedModeLine = @"(([^:\\]|\\:?)*)"

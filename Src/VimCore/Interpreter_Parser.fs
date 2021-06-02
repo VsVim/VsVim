@@ -108,10 +108,12 @@ and LineCommandBuilder
 
 and [<Sealed>] internal Parser
     (
-        _globalSettings: IVimGlobalSettings,
-        _vimData: IVimData
+        globalSettings: IVimGlobalSettings,
+        vimData: IVimData
     ) as this = 
 
+    let _globalSettings = globalSettings
+    let _vimData = vimData
     let _parseResultBuilder = ParseResultBuilder(this)
     let _lineCommandBuilder = LineCommandBuilder(this)
     let _tokenizer = Tokenizer("", TokenizerFlags.None)
@@ -460,14 +462,14 @@ and [<Sealed>] internal Parser
 
     /// Try and expand the possible abbreviation to a full line command name.  If it's 
     /// not an abbreviation then the original string will be returned
-    member x.TryExpandCommandName name =
+    member x.TryExpandCommandName shortCommandName =
 
-        // Is 'name' an abbreviation of the given command name and abbreviation
+        // Is 'shortCommandName' an abbreviation of the given command name and abbreviation
         let isAbbreviation (fullName: string) (abbreviation: string) = 
-            if name = fullName then
+            if shortCommandName = fullName then
                 true
             else 
-                name.StartsWith(abbreviation) && fullName.StartsWith(name)
+                shortCommandName.StartsWith(abbreviation) && fullName.StartsWith(shortCommandName)
 
         s_LineCommandNamePair
         |> Seq.filter (fun (name, abbreviation) -> isAbbreviation name abbreviation)

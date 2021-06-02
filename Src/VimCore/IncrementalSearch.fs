@@ -289,20 +289,17 @@ type internal IncrementalSearchSession
 
 type internal IncrementalSearch
     (
-        _vimBufferData: IVimBufferData,
-        _operations: ICommonOperations,
-        _motionUtil: IMotionUtil
+        vimBufferData: IVimBufferData,
+        commonOperations: ICommonOperations,
+        motionUtil: IMotionUtil
     ) =
 
-    // TODO: most of these aren't needed anymore.
-    let _vimData = _vimBufferData.Vim.VimData
-    let _statusUtil = _vimBufferData.StatusUtil
+    let _vimBufferData = vimBufferData
+    let _operations = commonOperations
+    let _motionUtil = motionUtil
     let _vimTextBuffer = _vimBufferData.VimTextBuffer
     let _wordNavigator = _vimTextBuffer.WordNavigator
-    let _localSettings = _vimTextBuffer.LocalSettings
-    let _globalSettings = _localSettings.GlobalSettings
-    let _textView = _operations.TextView
-    let _searchService = _vimBufferData.Vim.SearchService
+    let _globalSettings = _vimTextBuffer.GlobalSettings
 
     let mutable _session: IncrementalSearchSession option = None
     let _sessionCreated = StandardEvent<IncrementalSearchSessionEventArgs>()

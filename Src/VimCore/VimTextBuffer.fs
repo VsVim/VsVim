@@ -9,16 +9,24 @@ open Microsoft.VisualStudio.Utilities
 
 type internal VimTextBuffer 
     (
-        _textBuffer: ITextBuffer,
-        _localAbbreviationMap: IVimLocalAbbreviationMap,
-        _localKeyMap: IVimLocalKeyMap,
-        _localSettings: IVimLocalSettings,
-        _bufferTrackingService: IBufferTrackingService,
-        _undoRedoOperations: IUndoRedoOperations,
-        _wordUtil: WordUtil,
-        _vim: IVim
+        textBuffer: ITextBuffer,
+        localAbbreviationMap: IVimLocalAbbreviationMap,
+        localKeyMap: IVimLocalKeyMap,
+        localSettings: IVimLocalSettings,
+        bufferTrackingService: IBufferTrackingService,
+        undoRedoOperations: IUndoRedoOperations,
+        wordUtil: WordUtil,
+        vim: IVim
     ) =
 
+    let _textBuffer = textBuffer
+    let _localAbbreviationMap = localAbbreviationMap
+    let _localKeyMap = localKeyMap
+    let _localSettings = localSettings
+    let _bufferTrackingService = bufferTrackingService
+    let _undoRedoOperations = undoRedoOperations
+    let _wordUtil = wordUtil
+    let _vim = vim
     let _vimHost = _vim.VimHost
     let _globalSettings = _localSettings.GlobalSettings
     let _modeLineInterpreter = ModeLineInterpreter(_textBuffer, _localSettings)

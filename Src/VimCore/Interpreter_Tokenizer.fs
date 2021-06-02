@@ -193,10 +193,12 @@ type internal TokenStream() =
 [<DebuggerDisplay("{ToString(),nq}")>]
 type internal Tokenizer
     (
-        _text: string,
-        _tokenizerFlags: TokenizerFlags
+        text: string,
+        tokenizerFlags: TokenizerFlags
     ) as this =
 
+    let _text = text
+    let _tokenizerFlags = tokenizerFlags
     let _tokenStream = TokenStream()
     let mutable _text = _text
     let mutable _tokenizerFlags = _tokenizerFlags
