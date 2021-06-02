@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
+﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using System;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using System.Threading;
 using System.Windows.Threading;
-#if VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
 #endif
@@ -25,7 +25,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         private bool _isDismissed;
         private event EventHandler _dismissed;
         private readonly DispatcherTimer _tipTimer;
-#if VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
         private readonly IVsTextView _vsTextView;
 
         internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession, IVsEditorAdaptersFactoryService vsEditorAdaptersFactoryService = null)
@@ -41,6 +41,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             }
         }
 #endif
+
 #if VS_SPECIFIC_MAC
         internal WordAsyncCompletionSession(IAsyncCompletionSession asyncCompletionSession)
         {
@@ -85,7 +86,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
         {
             try
             {
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
 
                 var methodInfo = _vsTextView.GetType().BaseType.GetMethod(
                     "SetTipOpacity",
@@ -135,8 +136,10 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
     }
 }
 
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017 
 // Nothing to do
+#elif VS_SPECIFIC_2022
+// DEV17_TODO: need to think about implementing this for VS2022
 #else
 #error Unsupported configuration
 #endif

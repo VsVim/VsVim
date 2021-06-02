@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
+﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,7 +30,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
     internal sealed class WordAsyncCompletionSessionFactory
     {
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
         private readonly IVsEditorAdaptersFactoryService _vsEditorAdaptersFactoryService;
         internal WordAsyncCompletionSessionFactory(
             IAsyncCompletionBroker asyncCompletionBroker,
@@ -79,7 +79,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             }
 
             asyncCompletionSession.OpenOrUpdate(completionTrigger, wordSpan.Start, CancellationToken.None);
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
             return new WordAsyncCompletionSession(asyncCompletionSession, _vsEditorAdaptersFactoryService);
 #elif VS_SPECIFIC_MAC
             return new WordAsyncCompletionSession(asyncCompletionSession);
@@ -90,6 +90,8 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
 
 #elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
 // Nothing to do
+#elif VS_SPECIFIC_2022
+// DEV17_TODO: need to think about implementing this for VS2022
 #else
 #error Unsupported configuration
 #endif

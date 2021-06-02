@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2015
+﻿#if VS_SPECIFIC_2015 || VS_SPECIFIC_2022
 #else
 using Microsoft.VisualStudio.Telemetry;
 using Microsoft.VisualStudio.Text.Utilities;
@@ -44,7 +44,7 @@ namespace Vim.EditorHost.Implementation.Misc
         {
         }
 
-#elif VS_SPECIFIC_2019 || VS_SPECIFIC_2022
+#elif VS_SPECIFIC_2019
 
         void ILoggingServiceInternal.AdjustCounter(string key, string name, int delta)
         {

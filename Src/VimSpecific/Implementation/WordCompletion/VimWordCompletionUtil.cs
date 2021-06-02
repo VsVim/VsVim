@@ -9,7 +9,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Editor;
 
-#if VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
+#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Vim.VisualStudio.Specific.Implementation.WordCompletion.Async;
 #endif
@@ -28,7 +28,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
     [Export(typeof(IVimSpecificService))]
     internal sealed class VimWordCompletionUtil : VimSpecificService, IWordCompletionSessionFactory
     {
-#if VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
+#if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
         private readonly WordAsyncCompletionSessionFactory _asyncFactory;
         private readonly WordLegacyCompletionSessionFactory _legacyFactory;
@@ -38,7 +38,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
             Lazy<IVimHost> vimHost,
             IAsyncCompletionBroker asyncCompletionBroker,
             ICompletionBroker completionBroker,
-#if VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
             IIntellisenseSessionStackMapService intellisenseSessionStackMapService,
             [Import(AllowDefault = true)] IVsEditorAdaptersFactoryService vsEditorAdapterFactoryService = null)
 #elif VS_SPECIFIC_MAC
@@ -47,7 +47,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
             :base(vimHost)
         {
             _asyncCompletionBroker = asyncCompletionBroker;
-#if VS_SPECIFIC_2022
+#if VS_SPECIFIC_2019
             _asyncFactory = new WordAsyncCompletionSessionFactory(asyncCompletionBroker, vsEditorAdapterFactoryService);
 #elif VS_SPECIFIC_MAC
             _asyncFactory = new WordAsyncCompletionSessionFactory(asyncCompletionBroker);
@@ -62,7 +62,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
                 : _legacyFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward);
         }
 
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017 
 
         private readonly WordLegacyCompletionSessionFactory _legacyFactory;
 
@@ -81,6 +81,21 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
             return _legacyFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward);
         }
 
+#elif VS_SPECIFIC_2022
+// DEV17_TODO: need to think about implementing this for VS2022
+
+        [ImportingConstructor]
+        internal VimWordCompletionUtil(
+            Lazy<IVimHost> vimHost)
+            :base(vimHost)
+        {
+
+        }
+
+        private FSharpOption<IWordCompletionSession> CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
+        {
+            throw new Exception("");
+        }
 #else
 #error Unsupported configuration
 #endif
