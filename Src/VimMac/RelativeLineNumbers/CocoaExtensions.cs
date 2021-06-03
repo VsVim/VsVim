@@ -97,7 +97,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             return p;
         }
 
-        static readonly NSDictionary disableAnimations = new NSDictionary(
+        private static readonly NSDictionary disableAnimations = new NSDictionary(
             "actions", NSNull.Null,
             "contents", NSNull.Null,
             "hidden", NSNull.Null,
@@ -116,7 +116,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 
 namespace CoreGraphics
 {
-    static class CoreGraphicsExtensions
+    internal static class CoreGraphicsExtensions
     {
         public static CGSize InflateToIntegral(this CGSize size)
             => new CGSize(NMath.Ceiling(size.Width), NMath.Ceiling(size.Height));

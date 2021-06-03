@@ -12,10 +12,10 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 {
     internal sealed class CocoaLineNumberMarginDrawingVisual : CALayer, ICALayerDelegate
     {
-        NSStringAttributes stringAttributes;
-        CGRect lineBounds;
-        nfloat lineAscent;
-        CTLine ctLine;
+        private NSStringAttributes stringAttributes;
+        private CGRect lineBounds;
+        private nfloat lineAscent;
+        private CTLine ctLine;
 
         public int LineNumber { get; private set; }
         public int DisplayNumber { get; private set; }
@@ -78,7 +78,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         }
 
         [Export("drawLayer:inContext:")]
-        void Draw(CALayer _, CGContext context)
+        private void Draw(CALayer _, CGContext context)
         {
             if (ctLine == null)
                 return;

@@ -5,11 +5,11 @@ using Foundation;
 
 namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 {
-    static class CocoaTextManager
+    internal static class CocoaTextManager
     {
-        static readonly NSString AppleFontSmoothing = new NSString(nameof(AppleFontSmoothing));
-        static readonly IDisposable smoothingObserver;
-        static int smoothing;
+        private static readonly NSString AppleFontSmoothing = new NSString(nameof(AppleFontSmoothing));
+        private static readonly IDisposable smoothingObserver;
+        private static int smoothing;
 
         public static event EventHandler DefaultsChanged;
 
@@ -22,7 +22,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
                 change => UpdateSmoothing(change?.NewValue));
         }
 
-        static void UpdateSmoothing(NSObject value)
+        private static void UpdateSmoothing(NSObject value)
         {
             var newSmoothing = value is NSNumber number
                 ? number.Int32Value
