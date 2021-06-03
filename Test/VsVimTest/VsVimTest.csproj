@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PlatformTarget>AnyCpu</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>VsVim.UnitTest</AssemblyName>
