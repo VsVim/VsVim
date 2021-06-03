@@ -1,6 +1,8 @@
-﻿extern alias VsVim2015;
-extern alias VsVim2017;
-extern alias VsVim2019;
+﻿// DEV17_TODO: need to decide what to do with these
+// extern alias VsVim2015;
+// extern alias VsVim2017;
+// extern alias VsVim2019;
+extern alias VsVim2022;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +24,7 @@ namespace Vim.VisualStudio.UnitTest
             Vs2015 = 14,
             Vs2017 = 15,
             Vs2019 = 16,
+            Vs2022 = 17,
 
             MinimumSupported = Vs2015,
         }
@@ -97,9 +100,12 @@ namespace Vim.VisualStudio.UnitTest
             internal static readonly Assembly VsVimShared = typeof(VsVimHost).Assembly;
             internal static readonly Assembly VsInterfaces = typeof(ISharedService).Assembly;
             internal static readonly Assembly VsVim = typeof(ISharedService).Assembly;
+            /* DEV17_TODO: need to decide how to handle these
             internal static readonly Assembly VsVim2015 = typeof(VsVim2015::Vim.VisualStudio.Specific.SharedService).Assembly;
             internal static readonly Assembly VsVim2017 = typeof(VsVim2017::Vim.VisualStudio.Specific.SharedService).Assembly;
             internal static readonly Assembly VsVim2019 = typeof(VsVim2019::Vim.VisualStudio.Specific.SharedService).Assembly;
+            */
+            internal static readonly Assembly VsVim2022 = typeof(VsVim2022::Vim.VisualStudio.Specific.SharedService).Assembly;
 
             /// <summary>
             /// These are the core VsVim assemblies that load in every version of Visual Studio.
@@ -120,9 +126,12 @@ namespace Vim.VisualStudio.UnitTest
                     yield return assembly;
                 }
 
+                /* DEV17_TODO: need to decide how to handle these
                 yield return VsVim2015;
                 yield return VsVim2017;
                 yield return VsVim2019;
+                */
+                yield return VsVim2022;
             }
 
             internal static List<ReferenceData> GetTransitiveReferenceData(Assembly assembly)
@@ -328,6 +337,7 @@ namespace Vim.VisualStudio.UnitTest
             Assert.Empty(badList);
         }
 
+        /* DEV17_TODO: decide how to handle this
         [Fact]
         public void Ensure2015()
         {
@@ -344,6 +354,13 @@ namespace Vim.VisualStudio.UnitTest
         public void Ensure2019()
         {
             ValidateSpecific(VsVersion.Vs2019, AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2019));
+        }
+        */
+
+        [Fact]
+        public void Ensure2022()
+        {
+            ValidateSpecific(VsVersion.Vs2022, AssemblyData.GetTransitiveReferenceData(AssemblyData.VsVim2022));
         }
     }
 }

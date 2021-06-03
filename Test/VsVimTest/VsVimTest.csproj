@@ -34,6 +34,20 @@
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
     <ProjectReference Include="..\..\Src\VsVim\VsVim.csproj" />
+    <!-- DEV17_TODO: need to make a decision on how we handle the specific projects 
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2015\Vs2015.csproj">
+      <Aliases>VsVim2015</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2017\Vs2017.csproj">
+      <Aliases>VsVim2017</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2019\Vs2019.csproj">
+      <Aliases>VsVim2019</Aliases>
+    </ProjectReference>
+    -->
+    <ProjectReference Include="..\..\Src\VsSpecific\Vs2022\Vs2022.csproj">
+      <Aliases>VsVim2022</Aliases>
+    </ProjectReference>
   </ItemGroup>
 
   <!-- 
