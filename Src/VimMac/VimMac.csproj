@@ -25,6 +25,8 @@
     <Folder Include="Resources\" />
     <Folder Include="FPFExtensions\" />
     <Folder Include="InlineRename\" />
+    <Folder Include="RelativeLineNumbers\" />
+    <Folder Include="RelativeLineNumbers\Util\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Resources\beep.wav" />
