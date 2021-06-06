@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.Windows;
 using AppKit;
 using CoreAnimation;
 using CoreGraphics;
 using CoreText;
 using Foundation;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Editor.Implementation;
-using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
-using Microsoft.VisualStudio.Text.Formatting;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers.Util;
 
@@ -22,32 +16,31 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
     internal sealed class RelativeLineNumbersMargin : NSView, ICocoaTextViewMargin
     {
         // Large enough that we shouldn't expect the view to reallocate the array.
-        const int ExpectedNumberOfVisibleLines = 100;
+        private const int ExpectedNumberOfVisibleLines = 100;
 
         #region Private Members
 
-        readonly List<CocoaLineNumberMarginDrawingVisual> recyclableVisuals
+        private readonly List<CocoaLineNumberMarginDrawingVisual> recyclableVisuals
             = new List<CocoaLineNumberMarginDrawingVisual>(ExpectedNumberOfVisibleLines);
 
-        readonly Queue<int> unusedChildIndicies = new Queue<int>(ExpectedNumberOfVisibleLines);
+        private readonly Queue<int> unusedChildIndicies = new Queue<int>(ExpectedNumberOfVisibleLines);
 
-        ICocoaTextView _textView;
-        readonly ICocoaTextViewMargin _marginContainer;
-        ICocoaClassificationFormatMap _classificationFormatMap;
-        IClassificationTypeRegistryService _classificationTypeRegistry;
+        private ICocoaTextView _textView;
+        private ICocoaClassificationFormatMap _classificationFormatMap;
+        private IClassificationTypeRegistryService _classificationTypeRegistry;
         internal NSStringAttributes _formatting;
 
-        int _visibleDigits = 5;
+        private int _visibleDigits = 5;
 
         internal bool _updateNeeded = false;
-        bool _isDisposed = false;
+        private bool _isDisposed = false;
 
-        NSView _translatedCanvas;
+        private NSView _translatedCanvas;
 
-        double _oldViewportTop;
-        LineNumbersCalculator _lineNumbersCalculator;
-        IVimLocalSettings _localSettings;
-        int lastLineNumber;
+        private double _oldViewportTop;
+        private LineNumbersCalculator _lineNumbersCalculator;
+        private IVimLocalSettings _localSettings;
+        private int lastLineNumber;
 
         #endregion // Private Members
 
@@ -61,13 +54,11 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         /// <param name="classificationTypeRegistry">Used for retrieving the "line number" classification</param>
         public RelativeLineNumbersMargin(
             ICocoaTextView textView,
-            ICocoaTextViewMargin marginContainer,
             ICocoaClassificationFormatMap classificationFormatMap,
             IClassificationTypeRegistryService classificationTypeRegistry,
             IVimLocalSettings vimLocalSettings)
         {
             _textView = textView;
-            _marginContainer = marginContainer;
             _classificationFormatMap = classificationFormatMap;
             _classificationTypeRegistry = classificationTypeRegistry;
             _translatedCanvas = this;
@@ -77,7 +68,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             _localSettings = vimLocalSettings;
             WantsLayer = true;
             Hidden = false;
-            SetVisualStudioMarginVisibility(hidden: true);
         }
 
         public override bool IsFlipped => true;
@@ -111,19 +101,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
                     // Unregister from classification format change events
                     _classificationFormatMap.ClassificationFormatMappingChanged -= OnClassificationFormatChanged;
                 }
-            }
-        }
-
-        private void SetVisualStudioMarginVisibility(bool hidden)
-        {
-            var visualStudioMargin =
-                _marginContainer.GetTextViewMargin(PredefinedMarginNames.LineNumber);
-
-            if (visualStudioMargin is ICocoaTextViewMargin lineNumberMargin)
-            {
-                var element = lineNumberMargin.VisualElement;
-                element.Hidden = hidden;
-                element.RemoveFromSuperview();
             }
         }
 
@@ -197,7 +174,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             }
         }
 
-        CGSize intrinsicContentSize;
+        private CGSize intrinsicContentSize;
         private NSTrackingArea _trackingArea;
 
         public override CGSize IntrinsicContentSize => intrinsicContentSize;
@@ -207,7 +184,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         /// is larger than we can currently handle.
         /// </summary>
         /// <param name="lastVisibleLineNumber">The last (largest) visible number in the view</param>
-        void ResizeIfNecessary(int lastVisibleLineNumber)
+        private void ResizeIfNecessary(int lastVisibleLineNumber)
         {
             // We are looking at lines base 1, not base 0
             lastVisibleLineNumber++;
@@ -228,7 +205,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             }
         }
 
-        void UpdateLineNumbers()
+        private void UpdateLineNumbers()
         {
             _updateNeeded = false;
 
@@ -345,7 +322,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             }
         }
 
-        void OnClassificationFormatChanged(object sender, EventArgs e)
+        private void OnClassificationFormatChanged(object sender, EventArgs e)
         {
             this.SetFontFromClassification();
         }

@@ -8,7 +8,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 {
     [Name(RelativeLineNumbersMarginFactory.LineNumbersMarginName)]
     [Export(typeof(ICocoaTextViewMarginProvider))]
-    [Order(Before = PredefinedMarginNames.Spacer)]
+    [Order(Before = PredefinedMarginNames.LineNumber)]
     [MarginContainer(PredefinedMarginNames.LeftSelection)]
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
@@ -16,10 +16,9 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
     {
         private readonly ICocoaClassificationFormatMapService _formatMapService;
         private readonly IClassificationTypeRegistryService _typeRegistryService;
-        private readonly IProtectedOperations _protectedOperations;
         private readonly IVim _vim;
 
-        public const string LineNumbersMarginName = "vsvim_linenumbers2";
+        public const string LineNumbersMarginName = "vsvim_linenumbers";
 
         [ImportingConstructor]
         internal RelativeLineNumbersMarginFactory(
@@ -50,7 +49,6 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 
             return new RelativeLineNumbersMargin(
                 textView,
-                marginContainer,
                 formatMap,
                 _typeRegistryService,
                 vimBuffer.LocalSettings);
