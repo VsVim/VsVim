@@ -1,0 +1,11 @@
+Experiment in moving VsVim to shared project files. 
+
+This is a reaction to the recommended approach for Dev17 extension writing. 
+
+Order of operations
+- Move VsVimShared to a shared project
+- Move VsSpecific into VsVimShared
+- Delete VsSpecific
+- Add a document to the References directory to define what its role is going forward
+- Removed the ISharedService interface because it's not needed anymore
+- Remove support for older versions of Visual Studio. Just leave VS2019 and VS2017
