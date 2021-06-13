@@ -42,7 +42,6 @@
     <ProjectReference Include="..\..\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\VsInterfaces\VsInterfaces.csproj" />
-    <ProjectReference Include="..\..\VsVimShared\VsVimShared.csproj" />
   </ItemGroup>
   <Import Project="..\VsSpecific\VsSpecific.projitems" Label="Shared" />
   <Import Project="..\..\VimSpecific\VimSpecific.projitems" Label="Shared" />

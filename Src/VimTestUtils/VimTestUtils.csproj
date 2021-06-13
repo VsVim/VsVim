@@ -31,5 +31,4 @@
     <ProjectReference Include="..\VimEditorHost\VimEditorHost.csproj" />
     <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

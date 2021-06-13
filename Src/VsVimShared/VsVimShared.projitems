@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>6dbed15c-fc2c-46e9-914d-685518573f0d</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VsVimShared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CommandKeyBinding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandKeyBindingSnapshot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandListSnapshot.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DebugUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditCommandKind.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HostFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HostIdentifiers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ICommandDispatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ICommandTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ICSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IExtensionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IExternalEditAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IKeyBindingService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IKeyboardOptionsProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMargin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml.cs">
+      <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\EditorFormatDefinitions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditorManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\SnippetExternalEditAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\IInlineRenameUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\InlineRenameListenerFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\InlineRename\InlineRenameUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\CSharpAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\ExtensionAdapterBroker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\FallbackKeyProcessor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\FallbackKeyProcessorProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\KeyBindingService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\MindScape.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\PowerToolsUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\ReportDesignerUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\ScopeData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\StandardCommandTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\StatusBarAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\TextManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\UnwantedSelectionHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VimBufferCoordinator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VisualStudioCommandDispatcher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VsAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VsVimKeyProcessor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VsVimKeyProcessorProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\NavigateTo\IThreadCommunicator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\NavigateTo\NavigateToItemProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\NavigateTo\NavigateToItemProviderFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\ComboBoxTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\DefaultOptionPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyBindingData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyBindingHandledByOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyboardOptionPage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyboardOptionsProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyboardSettingsControl.xaml.cs">
+      <DependentUpon>KeyboardSettingsControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\PowerShellTools\IPowerShellToolsUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\PowerShellTools\PowerShellToolsExtensionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\PowerShellTools\PowerShellToolsUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\IResharperUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperExtensionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperExternalEditAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperKeyUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperTagDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ReSharperVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ReSharper\ResharperVersionutility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\SettingSerializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\VimApplicationSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\VimCollectionSettingsStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\SharedService\DefaultSharedServiceFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\SharedService\SharedServiceFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ToastNotification\ToastControl.xaml.cs">
+      <DependentUpon>ToastControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ToastNotification\ToastNotificationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ToastNotification\ToastNotificationServiceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\UpgradeNotification\ErrorBanner.xaml.cs">
+      <DependentUpon>ErrorBanner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\UpgradeNotification\LinkBanner.xaml.cs">
+      <DependentUpon>LinkBanner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\UpgradeNotification\VimRcLoadNotificationMarginProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\IVisualAssistUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistExtensionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistKeyProcessor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistMargin.xaml.cs">
+      <DependentUpon>VisualAssistMargin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IReportDesignerUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ISharedService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ITextManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IToastNotifaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVimApplicationSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVimBufferCoordinator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVsAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyBinding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyStroke.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OleCommandData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OleCommandUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Result.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimExtensionAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VisualStudioVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsCommandTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsFilterKeysAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVimHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVimJoinableTaskFactoryProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\OptionPages\KeyboardSettingsControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\ToastNotification\ToastControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\UpgradeNotification\ErrorBanner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\UpgradeNotification\LinkBanner.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistMargin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

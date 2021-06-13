@@ -19,6 +19,7 @@ namespace Vim.VisualStudio
 
     public static class VisualStudioVersionUtil
     {
+        // TODO_SHARED: is this still needed since we are  100% #if now?
         public static string GetHostIdentifier(VisualStudioVersion version)
         {
             switch (version)

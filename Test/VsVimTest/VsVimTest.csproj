@@ -29,20 +29,9 @@
     <PackageReference Include="xunit.runner.console" Version="2.4.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj" />
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
-    <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
     <ProjectReference Include="..\..\Src\VsVim\VsVim.csproj" />
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2015\Vs2015.csproj">
-      <Aliases>VsVim2015</Aliases>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2017\Vs2017.csproj">
-      <Aliases>VsVim2017</Aliases>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Src\VsSpecific\Vs2019\Vs2019.csproj">
-      <Aliases>VsVim2019</Aliases>
-    </ProjectReference>
   </ItemGroup>
 
   <!-- 
