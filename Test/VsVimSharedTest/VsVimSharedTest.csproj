@@ -45,10 +45,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Src\VimEditorHost\VimEditorHost.csproj" />
     <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
-    <ProjectReference Include="..\..\Src\VsInterfaces\VsInterfaces.csproj" />
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
-    <ProjectReference Include="..\..\Src\VsVimShared\VsVimShared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\VsCommands.txt" />

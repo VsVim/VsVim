@@ -41,5 +41,4 @@
       <Link>ClipboardDevice.cs</Link>
     </Compile>
   </ItemGroup>
-  <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" Condition="Exists('..\VimSpecific\VimSpecific.projitems')" />
 </Project>
