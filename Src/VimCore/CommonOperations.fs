@@ -1243,6 +1243,22 @@ type internal CommonOperations
             else
                 Result.Failed(Resources.Common_GotoDefFailed word)
 
+    member x.PeekDefinition() =
+        match x.WordUnderCursorOrEmpty with
+        | "" ->
+            Result.Failed(Resources.Common_GotoDefNoWordUnderCursor) 
+        | word when x.IsLink word ->
+            x.OpenLinkUnderCaret()
+        | word when x.IsVimLink word ->
+            x.OpenVimLinkUnderCaret()
+        | word ->
+            let before = TextViewUtil.GetCaretVirtualPoint _textView
+            if _vimHost.PeekDefinition() then
+                _jumpList.Add before
+                Result.Succeeded
+            else
+                Result.Failed(Resources.Common_GotoDefFailed word)
+
     member x.GoToLocalDeclaration() = 
         let caretPoint = x.CaretVirtualPoint
         if _vimHost.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty then
@@ -2881,6 +2897,7 @@ type internal CommonOperations
         member x.GoToFileInNewWindow() = x.GoToFileInNewWindow()
         member x.GoToFileInNewWindow name = x.GoToFileInNewWindow name
         member x.GoToDefinition() = x.GoToDefinition()
+        member x.PeekDefinition() = x.PeekDefinition()
         member x.GoToNextTab direction count = x.GoToNextTab direction count
         member x.GoToTab index = x.GoToTab index
         member x.GoToTagInNewWindow folder ident = x.GoToTagInNewWindow folder ident

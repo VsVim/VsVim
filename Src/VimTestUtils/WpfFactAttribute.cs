@@ -31,6 +31,20 @@ namespace Vim.UnitTest
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [XunitTestCaseDiscoverer("Vim.UnitTest.Utilities.WpfFactDiscoverer", "Vim.UnitTest.Utils")]
+    public class Vs2017AndAboveWpfFactAttribute : WpfFactAttribute
+    {
+        public override string Skip =>
+#if VS_SPECIFIC_2015
+            $"Test only supported in VS 2017 and above";
+#else
+            null;
+#endif
+
+        public Vs2017AndAboveWpfFactAttribute() { }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [XunitTestCaseDiscoverer("Vim.UnitTest.Utilities.WpfFactDiscoverer", "Vim.UnitTest.Utils")]
     public class AsyncCompletionWpfFactAttribute : WpfFactAttribute
     {
         public override string Skip => VimSpecificUtil.HasAsyncCompletion

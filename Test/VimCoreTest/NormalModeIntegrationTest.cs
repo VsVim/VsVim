@@ -214,12 +214,28 @@ namespace Vim.UnitTest
             public void ControlClick()
             {
                 Create("cat dog bear", "");
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
                 _vimBuffer.ProcessNotation("<C-LeftMouse>");
                 Assert.Equal(5, _textView.GetCaretPoint().Position); // 'o' in 'dog'
                 Assert.Equal(1, _vimHost.GoToDefinitionCount);
+                Assert.Equal(0, _vimHost.PeekDefinitionCount);
+            }
+
+            [Vs2017AndAboveWpfFact]
+            public void ControlClickPeek()
+            {
+                Create("cat dog bear", "");
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+                _textView.SetVisibleLineCount(2);
+                var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal(5, _textView.GetCaretPoint().Position); // 'o' in 'dog'
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
+                Assert.Equal(1, _vimHost.PeekDefinitionCount);
             }
         }
 
@@ -9659,6 +9675,7 @@ namespace Vim.UnitTest
             public void GoToLinkWithMouse()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 var point = _textView.GetPointInLine(0, 8);
                 var link = "";
                 _vimHost.OpenLinkFunc = arg =>
@@ -9671,6 +9688,27 @@ namespace Vim.UnitTest
                 Assert.Equal("https://github.com/VsVim/VsVim", link);
                 Assert.Equal(point, _textView.GetCaretPoint());
                 Assert.Equal(0, _vimHost.GoToDefinitionCount);
+                Assert.Equal(0, _vimHost.PeekDefinitionCount);
+            }
+
+            [Vs2017AndAboveWpfFact]
+            public void GoToLinkWithMousePeek()
+            {
+                Create("foo https://github.com/VsVim/VsVim bar", "");
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+                var point = _textView.GetPointInLine(0, 8);
+                var link = "";
+                _vimHost.OpenLinkFunc = arg =>
+                {
+                    link = arg;
+                    return true;
+                };
+                _testableMouseDevice.Point = point;
+                _vimBuffer.ProcessNotation("<C-LeftMouse>");
+                Assert.Equal("https://github.com/VsVim/VsVim", link);
+                Assert.Equal(point, _textView.GetCaretPoint());
+                Assert.Equal(0, _vimHost.GoToDefinitionCount);
+                Assert.Equal(0, _vimHost.PeekDefinitionCount);
             }
 
             [WpfFact]

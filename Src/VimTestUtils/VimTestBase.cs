@@ -596,6 +596,13 @@ namespace Vim.UnitTest
             host.HostControl.UpdateLayout();
         }
 
+        protected void SetVs2017AndAboveEditorOptionValue<T>(IEditorOptions options, EditorOptionKey<T> key, T value)
+        {
+#if !VS_SPECIFIC_2015
+            options.SetOptionValue(key, value);
+#endif
+        }
+
         /// <summary>
         /// This must be public static for xunit to pick it up as a Theory data source
         /// </summary>

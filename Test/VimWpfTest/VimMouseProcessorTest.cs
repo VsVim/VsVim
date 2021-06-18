@@ -43,12 +43,27 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void GoToDefinition()
             {
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
                 var point = _textView.GetPointInLine(0, 0);
                 _testableMouseDevice.Point = point;
                 VimHost.GoToDefinitionReturn = false;
                 _vimMouseProcessor.TryProcess(VimKey.LeftMouse);
                 Assert.Equal(1, VimHost.GoToDefinitionCount);
+                Assert.Equal(0, VimHost.PeekDefinitionCount);
+            }
+
+            [Vs2017AndAboveWpfFact]
+            public void PeekDefinition()
+            {
+                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+                _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
+                var point = _textView.GetPointInLine(0, 0);
+                _testableMouseDevice.Point = point;
+                VimHost.GoToDefinitionReturn = false;
+                _vimMouseProcessor.TryProcess(VimKey.LeftMouse);
+                Assert.Equal(0, VimHost.GoToDefinitionCount);
+                Assert.Equal(1, VimHost.PeekDefinitionCount);
             }
 
             [WpfFact]

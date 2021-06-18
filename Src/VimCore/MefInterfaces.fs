@@ -423,6 +423,10 @@ type ICommonOperations =
     /// be generated as appropriate
     abstract GoToDefinition: unit -> Result
 
+    /// Attempt to PeekDefinition on the current state of the buffer.  If this operation fails, an error message will
+    /// be generated as appropriate
+    abstract PeekDefinition: unit -> Result
+
     /// Go to the file named in the word under the cursor
     abstract GoToFile: unit -> unit
 

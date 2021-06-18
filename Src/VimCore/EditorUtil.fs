@@ -2895,6 +2895,10 @@ type MoveCaretFlags =
     | All = 0xffffffff
 
 module EditorOptionsUtil =
+    /// The option for peeking when clicking to go to a definition.
+    /// From Microsoft.VisualStudio.Text.EditorDefaultWpfViewOptions.ClickGoToDefOpensPeekId
+    /// This was introduced in v15, so recreating so we don't need to drop v14.
+    let public ClickGoToDefOpensPeekId = new EditorOptionKey<bool>("TextView/ClickGoToDefOpensPeek")
 
     /// Get the option value if it exists
     let GetOptionValue (opts: IEditorOptions) (key: EditorOptionKey<'a>) =

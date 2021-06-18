@@ -5180,6 +5180,9 @@ type IVimHost =
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition: unit -> bool
 
+    /// Peek at the definition of the value under the cursor
+    abstract PeekDefinition: unit -> bool
+
     /// Go to the local declaration of the value under the cursor
     abstract GoToLocalDeclaration: textView: ITextView -> identifier: string -> bool
 
