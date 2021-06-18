@@ -188,6 +188,8 @@ namespace Vim.UI.Wpf
 
         public abstract bool GoToDefinition();
 
+        public abstract bool PeekDefinition();
+
         public abstract bool GoToGlobalDeclaration(ITextView textView, string name);
 
         public abstract bool GoToLocalDeclaration(ITextView textView, string name);

@@ -119,6 +119,11 @@ namespace VimApp
             return false;
         }
 
+        public override bool PeekDefinition()
+        {
+            return false;
+        }
+
         public override bool GoToGlobalDeclaration(ITextView textView, string name)
         {
             return false;

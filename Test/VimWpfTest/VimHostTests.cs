@@ -57,6 +57,11 @@ namespace Vim.UI.Wpf.UnitTest
                 throw new NotImplementedException();
             }
 
+            public override bool PeekDefinition()
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool GoToGlobalDeclaration(ITextView textView, string name)
             {
                 throw new NotImplementedException();

@@ -235,6 +235,7 @@ namespace Vim.VisualStudio
         #endregion
 
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
+        internal const string CommandNamePeekDefinition = "Edit.PeekDefinition";
         internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
         private readonly IVsAdapter _vsAdapter;
@@ -536,6 +537,11 @@ namespace Vim.VisualStudio
         public override bool GoToDefinition()
         {
             return SafeExecuteCommand(_textManager.ActiveTextViewOptional, CommandNameGoToDefinition);
+        }
+
+        public override bool PeekDefinition()
+        {
+            return SafeExecuteCommand(_textManager.ActiveTextViewOptional, CommandNamePeekDefinition);
         }
 
         /// <summary>

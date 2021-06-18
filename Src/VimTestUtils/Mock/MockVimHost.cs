@@ -33,6 +33,7 @@ namespace Vim.UnitTest.Mock
         public bool ClosedOtherTabs { get; private set; }
         public Action<string, bool, string, VimGrepFlags, FSharpFunc<Unit, Unit>> FindInFilesFunc { get; set; }
         public int GoToDefinitionCount { get; set; }
+        public int PeekDefinitionCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public Func<ITextView, ITextSnapshotLine, ITextSnapshotLine, IVimLocalSettings, FSharpOption<int>> GetNewLineIndentFunc { get; set; }
@@ -103,6 +104,7 @@ namespace Vim.UnitTest.Mock
             FocusedTextView = null;
             GetNewLineIndentFunc = delegate { return FSharpOption<int>.None; };
             GoToDefinitionCount = 0;
+            PeekDefinitionCount = 0;
             GoToDefinitionReturn = true;
             GoToGlobalDeclarationFunc = delegate { throw new NotImplementedException(); };
             GoToLocalDeclarationFunc = delegate { throw new NotImplementedException(); };
@@ -145,6 +147,12 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.GoToDefinition()
         {
             GoToDefinitionCount++;
+            return GoToDefinitionReturn;
+        }
+
+        bool IVimHost.PeekDefinition()
+        {
+            PeekDefinitionCount++;
             return GoToDefinitionReturn;
         }
 

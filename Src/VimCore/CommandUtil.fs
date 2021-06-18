@@ -1487,10 +1487,20 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Peek at the definition of the word under the caret
+    member x.PeekDefinition () =
+        match _commonOperations.PeekDefinition() with
+        | Result.Succeeded -> ()
+        | Result.Failed(msg) -> _statusUtil.OnError msg
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Go to the definition of the word under the mouse
     member x.GoToDefinitionUnderMouse () =
         if x.MoveCaretToMouseUnconditionally() then
-            x.GoToDefinition()
+            match EditorOptionsUtil.GetOptionValue _options EditorOptionsUtil.ClickGoToDefOpensPeekId with
+                | Some true -> x.PeekDefinition()
+                | _ -> x.GoToDefinition()
         else
             CommandResult.Error
 

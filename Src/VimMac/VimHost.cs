@@ -350,6 +350,11 @@ namespace Vim.Mac
             return Dispatch(CommandNameGoToDefinition);
         }
 
+        public bool PeekDefinition()
+        {
+            throw new NotImplementedException();
+        }
+
         public bool GoToGlobalDeclaration(ITextView textView, string identifier)
         {
             return Dispatch(CommandNameGoToDefinition);
