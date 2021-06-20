@@ -13,8 +13,7 @@
     <StartArguments>/rootsuffix Exp</StartArguments>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <IsVsixProject>true</IsVsixProject>
-
-    <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0'">False</DeployExtension>
+    <DeployExtension Condition="'$(VisualStudioVersion)' != '15.0'">False</DeployExtension>
 
     <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
