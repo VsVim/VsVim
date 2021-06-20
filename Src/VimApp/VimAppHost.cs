@@ -13,7 +13,6 @@ using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
-using Vim.VisualStudio.Specific;
 using System.Collections.Generic;
 
 namespace VimApp
@@ -36,7 +35,7 @@ namespace VimApp
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
-        public override string HostIdentifier => VimSpecificUtil.HostIdentifier;
+        public override string HostIdentifier => "Vim App";
 
         internal IVimWindowManager VimWindowManager
         {
