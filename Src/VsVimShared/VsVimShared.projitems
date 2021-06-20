@@ -17,8 +17,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)EditCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditCommandKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Guids.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HostFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)HostIdentifiers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICommandDispatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICommandTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ICSharpScriptExecutor.cs" />
@@ -116,6 +116,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)NativeMethods.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OleCommandData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OleCommandUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PkgCmdID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Resources.Designer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Result.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimExtensionAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VisualStudioVersion.cs" />
@@ -123,6 +125,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)VsFilterKeysAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimJoinableTaskFactoryProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVimPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\VimSpecific\HostIdentifiers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml">
@@ -149,5 +153,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

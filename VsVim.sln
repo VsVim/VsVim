@@ -52,10 +52,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimMac", "Src\VimMac\VimMac
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VsVimShared", "Src\VsVimShared\VsVimShared.shproj", "{6DBED15C-FC2C-46E9-914D-685518573F0D}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimSpecific", "Src\VimSpecific\VimSpecific.shproj", "{DE7E4031-D2E8-450E-8558-F00A6F19FA5C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Src\VsVimShared\VsVimShared.projitems*{11710f28-88d6-44dd-99db-1f0aaa8cdaa0}*SharedItemsImports = 5
+		Src\VimSpecific\VimSpecific.projitems*{6819ad26-901e-4261-95aa-9913d435296a}*SharedItemsImports = 5
 		Src\VsVimShared\VsVimShared.projitems*{6dbed15c-fc2c-46e9-914d-685518573f0d}*SharedItemsImports = 13
+		Src\VimSpecific\VimSpecific.projitems*{de7e4031-d2e8-450e-8558-f00a6f19fa5c}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
