@@ -222,15 +222,15 @@ namespace Vim.VisualStudio.UnitTest
         private static VimEditorHost CreateVimEditorHost()
         {
             var editorHostFactory = new EditorHostFactory();
-            editorHostFactory.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.VimKeyProcessor).Assembly));
+            editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
+            editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(ISharedService).Assembly));
 
             var types = new List<Type>()
             {
-                typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
-                typeof(Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
+                typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
+                typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
                 typeof(VimErrorDetector)
             };
 

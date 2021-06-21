@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5f7f6c25-d91c-4143-ac7d-df29a0a831ef</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VsVimSharedTest</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AlternativeKeyUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CodeHygieneTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandIdTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandKeyBindingTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CSharpAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditCommandTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExtensionsTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExternalEditMonitorTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FallbackKeyProcessorTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HostFactoryTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InlineRenameListenerFactoryTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyBindingDataTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyBindingServiceTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyBindingTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyStrokeTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MemoryLeakTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MindScapeTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockEnumLineMarkers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockObjectFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OleCommandUtilTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PowerShellToolsExtensionAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReportDesignerUtilTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReSharperExtensionAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReSharperExternalEditAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ResultTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ScopeDataTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SettingSerializerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SnippetExternalEditAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TextManagerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ToastNotificationServiceTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTestExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\CharPointer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\ReSharperCommandTargetSimulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\VsSimulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimApplicationSettingsTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VisualAssistExtensionAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsCommandTargetTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsFilterKeysAdapterTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsIntegrationTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsKeyProcessorTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVimHostTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Resources\VsCommands.txt" />
+  </ItemGroup>
+</Project>
