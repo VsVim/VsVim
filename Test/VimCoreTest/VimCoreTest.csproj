@@ -5,8 +5,7 @@
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VsVimIsRunnable>true</VsVimIsRunnable>
-    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
+    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -32,15 +31,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />
-    <None Include="$(VsVimAppConfig)">
-      <Link>app.config</Link>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <Import Project="..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimTestUtils\VimTestUtils.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

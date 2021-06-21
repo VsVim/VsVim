@@ -6,4 +6,3 @@ it's the subset of the VsSpecific layer which can be used during our test hostin
 Projects which reference this need to do the following:
 
 - Ensure `IVimHost.HostIdentifier` is implemented as `VimSpecificUtil.HostIdentifier`.
-- Ensure `<VsVimSpecificTestHost>true<VsVimSpecificTestHost>` is specified in the project file.

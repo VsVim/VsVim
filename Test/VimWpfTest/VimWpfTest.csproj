@@ -5,8 +5,7 @@
     <RootNamespace>Vim.UI.Wpf.UnitTest</RootNamespace>
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VsVimIsRunnable>true</VsVimIsRunnable>
-    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
+    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -28,17 +27,9 @@
     <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="xunit.runner.console" Version="2.4.1" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="$(VsVimAppConfig)">
-      <Link>app.config</Link>
-    </None>
-  </ItemGroup>
-  <Import Project="..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimTestUtils\VimTestUtils.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

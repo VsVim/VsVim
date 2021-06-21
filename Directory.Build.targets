@@ -7,17 +7,32 @@
     <LangVersion Condition="'$(Language)' == 'C#'">Latest</LangVersion>
   </PropertyGroup>
 
-  <!-- 
-    This is set for projects which host the VimSpecific project as a part 
-    test hosting: VimApp or VimTestUtils
-    -->
-  <PropertyGroup Condition="'$(VsVimSpecificTestHost)' == 'true'">
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '14.0'">$(DefineConstants);VS_SPECIFIC_2015;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+  <PropertyGroup Condition=" '$(VisualStudioEditorHostVersion)' == '14.0' ">
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2015;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <_VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</_VsVimAppConfig>
+    <_VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</_VsRunnablePropsFilePath>
   </PropertyGroup>
 
-  <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
+  <PropertyGroup Condition=" '$(VisualStudioEditorHostVersion)' == '15.0' ">
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <_VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</_VsVimAppConfig>
+    <_VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</_VsRunnablePropsFilePath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(VisualStudioEditorHostVersion)' == '16.0' ">
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <_VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2019\App.config</_VsVimAppConfig>
+    <_VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2019\Runnable.props</_VsRunnablePropsFilePath>
+  </PropertyGroup>
+
+  <Import Project="$(_VsRunnablePropsFilePath)" Condition="'$(VisualStudioEditorHostVersion)' != ''" />
+  <Import Project="$(MSBuildThisFileDirectory)Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" Condition="'$(VisualStudioEditorHostVersion)' != ''" />
+
+  <ItemGroup Condition="'$(VisualStudioEditorHostVersion)' != ''">
+    <None Include="$(_VsVimAppConfig)">
+      <Link>app.config</Link>
+    </None>
+  </ItemGroup>
 
   <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />
 </Project>

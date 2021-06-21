@@ -15,6 +15,7 @@
     <IsVsixProject>true</IsVsixProject>
 
     <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0'">False</DeployExtension>
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
 
     <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
@@ -26,7 +27,7 @@
     <!-- Shared items -->
     <Content Include="..\VsVimShared\Metadata\Images_32bit.bmp" Link="Images_32bit.bmp" />
     <Content Include="..\VsVimShared\Metadata\KeyboardInputRouting.txt" Link="KeyboardInputRouting.txt" />
-    <Content Include="..\VsVimShared\Metadata\License.txt" Link="License.txt" >
+    <Content Include="..\VsVimShared\Metadata\License.txt" Link="License.txt">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -39,7 +40,7 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\VsVimShared\Metadata\Colors.pkgdef" Link="Colors.pkgdef" >
+    <Content Include="..\VsVimShared\Metadata\Colors.pkgdef" Link="Colors.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -119,4 +120,5 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\VsVimShared\VsVimShared.projitems" Label="Shared" />
+  <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

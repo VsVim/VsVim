@@ -126,7 +126,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)VsVimHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimJoinableTaskFactoryProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimPackage.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\VimSpecific\HostIdentifiers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginControl.xaml">
