@@ -7,7 +7,7 @@
     <AssemblyName>VimApp</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimIsRunnable>true</VsVimIsRunnable>
-    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
+    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -19,17 +19,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(VsVimAppConfig)">
-      <Link>app.config</Link>
-    </None>
-  <ApplicationDefinition Include="App.xaml">
-    <Generator>MSBuild:Compile</Generator>
-    <SubType>Designer</SubType>
-  </ApplicationDefinition>
-  <Page Include="MainWindow.xaml">
-    <Generator>MSBuild:Compile</Generator>
-    <SubType>Designer</SubType>
-  </Page>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
@@ -39,6 +36,5 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
   </ItemGroup>
-  <Import Project="..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

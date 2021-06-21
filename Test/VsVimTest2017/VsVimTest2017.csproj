@@ -5,7 +5,7 @@
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Shared.2017.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
+    <VisualStudioEditorHostVersion>15.0</VisualStudioEditorHostVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Resources\**" />
@@ -55,14 +55,6 @@
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVim2017\VsVim2017.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\References\Vs2017\App.config">
-      <Link>app.config</Link>
-    </None>
-  </ItemGroup>
   <Import Project="..\VsVimSharedTest\VsVimSharedTest.projitems" Label="Shared" />
-  <Import Project="..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimTestUtils\VimTestUtils.projitems" Label="Shared" />
-  <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
-  <Import Project="..\..\References\VS2017\Runnable.props" />
 </Project>
