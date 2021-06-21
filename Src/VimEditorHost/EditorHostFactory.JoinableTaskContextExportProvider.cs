@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Microsoft.VisualStudio.Threading;
 using System.Threading;
 using System.Windows.Threading;
+using Microsoft.VisualStudio.Shell;
 
 namespace Vim.EditorHost
 {
@@ -30,7 +31,11 @@ namespace Vim.EditorHost
             internal JoinableTaskContextExportProvider()
             {
                 _export = new Export(TypeFullName, GetValue);
+#if VS_SPECIFIC_2017
+                _context = ThreadHelper.JoinableTaskContext;
+#else
                 _context = new JoinableTaskContext(Thread.CurrentThread, new DispatcherSynchronizationContext());
+#endif
             }
 
             protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)

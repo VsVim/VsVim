@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>3ab92022-a1d2-4ded-a373-5b0aacfe2bc5</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VimTestUtils</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)EqualityUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\OutlinerTaggerProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\TestableClipboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\TestableKeyboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\TestableMouseDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\VimErrorHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exports\VimHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVimErrorDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyboardInputSimulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockKeyboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockNormalMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockObjectFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockPresentationSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockRegisterValueBacking.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockSelectionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockVimBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockVimHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Properties\AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestableSynchronizationContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\StaContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\StaTestFramework.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\StaTestFrameworkAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\StaTestFrameworkTypeDiscoverer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SynchronizationContextTaskScheduler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfFactDiscoverer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTestCase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTestCaseRunner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTestInvoker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTestRunner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTestSharedData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTheoryTestCase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\WpfTheoryTestCaseRunner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WpfFactAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WpfTextViewDisplay.cs" />
+  </ItemGroup>
+</Project>
