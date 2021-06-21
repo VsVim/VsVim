@@ -14,3 +14,4 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Vim.UI.Wpf.UnitTest")]
 [assembly: InternalsVisibleTo("Vim.UnitTest.Utils")]
 [assembly: InternalsVisibleTo("Vim.VisualStudio.Shared.2017.UnitTest")]
+[assembly: InternalsVisibleTo("Vim.VisualStudio.Shared.2019.UnitTest")]

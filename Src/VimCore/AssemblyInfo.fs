@@ -10,6 +10,7 @@ open System.Runtime.CompilerServices
 [<assembly:InternalsVisibleTo("Vim.UnitTest.Utils")>]
 [<assembly:InternalsVisibleTo("Vim.UI.Wpf.UnitTest")>]
 [<assembly:InternalsVisibleTo("Vim.VisualStudio.Shared.2017.UnitTest")>]
+[<assembly:InternalsVisibleTo("Vim.VisualStudio.Shared.2019.UnitTest")>]
 [<assembly:InternalsVisibleTo("DynamicProxyGenAssembly2")>] // Moq
 do()
 

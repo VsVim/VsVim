@@ -31,7 +31,7 @@ namespace Vim.EditorHost
             internal JoinableTaskContextExportProvider()
             {
                 _export = new Export(TypeFullName, GetValue);
-#if VS_SPECIFIC_2017
+#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
                 _context = ThreadHelper.JoinableTaskContext;
 #else
                 _context = new JoinableTaskContext(Thread.CurrentThread, new DispatcherSynchronizationContext());
