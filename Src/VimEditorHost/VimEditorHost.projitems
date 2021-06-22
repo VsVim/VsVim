@@ -30,7 +30,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)VimTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)app.config" />
     <None Include="$(MSBuildThisFileDirectory)README.md" />
   </ItemGroup>
 </Project>
