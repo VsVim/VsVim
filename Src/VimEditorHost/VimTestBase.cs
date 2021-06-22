@@ -568,7 +568,6 @@ namespace Vim.UnitTest
                 };
 
                 editorHostFactory.Add(new TypeCatalog(types));
-                editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
                 host = new VimEditorHost(compositionContainer);

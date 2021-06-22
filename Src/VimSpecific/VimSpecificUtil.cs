@@ -37,6 +37,8 @@ namespace Vim.VisualStudio.Specific
 #endif
         internal const string MefNamePrefix = HostIdentifier + " ";
 
+        // TODO_SHARED: this should just move to EditorHostFactory as that is the place where we 
+        // piecemeal together catalogs.
         internal static TypeCatalog GetTypeCatalog()
         {
             var list = new List<Type>()
@@ -58,6 +60,7 @@ namespace Vim.VisualStudio.Specific
         }
     }
 
+    // TODO_SHARED is this needed at all anymore
     internal abstract class VimSpecificService : IVimSpecificService
     {
         private readonly Lazy<IVimHost> _vimHost;
