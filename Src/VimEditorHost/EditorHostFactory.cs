@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.Win32;
+using Vim.VisualStudio.Specific;
 
 namespace Vim.EditorHost
 {
@@ -127,6 +128,7 @@ namespace Vim.EditorHost
             };
 
             _composablePartCatalogList.Add(new TypeCatalog(types));
+            _composablePartCatalogList.Add(VimSpecificUtil.GetTypeCatalog());
         }
 
         private void AppendEditorAssemblies(Version editorAssemblyVersion)

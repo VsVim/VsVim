@@ -23,6 +23,8 @@ namespace Vim.EditorHost
     /// testing. Any test base can derive from this and use the Create* methods to get
     /// ITextBuffer instances to run their tests against. 
     /// </summary>
+    // TODO_SHARED: get rid of this and merge with VimEditorHost cause this abstraction is
+    // useless in this repository. It just adds complication
     public class EditorHost
     {
         public CompositionContainer CompositionContainer { get; }
