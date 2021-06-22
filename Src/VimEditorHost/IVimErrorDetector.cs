@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 
-namespace Vim.UnitTest
+namespace Vim.EditorHost
 {
     /// <summary>
     /// Several portions of the Editor code will swallow exceptions from an extension 

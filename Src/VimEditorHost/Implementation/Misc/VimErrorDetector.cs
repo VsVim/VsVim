@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using Vim.Extensions;
 
-namespace Vim.UnitTest.Exports
+namespace Vim.EditorHost.Implementation.Misc
 {
     /// <summary>
     /// IVimErrorDetector MEF component.  Useful in tracking down errors which are silently
@@ -129,12 +129,11 @@ namespace Vim.UnitTest.Exports
             {
                 return;
             }
-
-
 #elif VS_SPECIFIC_2017 || VS_SPECIFIC_2015
 #else
 #error Unsupported configuration
 #endif
+
             _errorList.Add(exception);
         }
 

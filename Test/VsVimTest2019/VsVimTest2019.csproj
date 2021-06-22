@@ -6,6 +6,7 @@
     <AssemblyName>Vim.VisualStudio.Shared.2019.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VisualStudioEditorHostVersion>16.0</VisualStudioEditorHostVersion>
+    <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Resources\**" />
@@ -52,9 +53,9 @@
   </ItemGroup>
  <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVim2019\VsVim2019.csproj" />
   </ItemGroup>
   <Import Project="..\VsVimSharedTest\VsVimSharedTest.projitems" Label="Shared" />
-  <Import Project="..\..\Src\VimTestUtils\VimTestUtils.projitems" Label="Shared" />
 </Project>

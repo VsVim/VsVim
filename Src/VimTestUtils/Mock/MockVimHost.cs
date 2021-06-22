@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Vim.EditorHost;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;

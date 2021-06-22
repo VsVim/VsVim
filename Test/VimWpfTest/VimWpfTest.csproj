@@ -6,6 +6,7 @@
     <AssemblyName>Vim.UI.Wpf.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
+    <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -28,8 +29,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="xunit.runner.console" Version="2.4.1" />
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
+    <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
     <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <Import Project="..\..\Src\VimTestUtils\VimTestUtils.projitems" Label="Shared" />
   <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

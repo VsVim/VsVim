@@ -293,7 +293,7 @@ namespace Vim.VisualStudio.UnitTest
             /// Make sure that we allow keys like down to make it directly to Insert mode when there is
             /// an active IWordCompletionSession
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_Down()
             {
                 Create("c dog", "cat copter");
@@ -311,7 +311,7 @@ namespace Vim.VisualStudio.UnitTest
             /// When there is an active IWordCompletionSession we want to let even direct input go directly
             /// to insert mode.  
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_TypeChar()
             {
                 Create("c dog", "cat");

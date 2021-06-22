@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace Vim.VisualStudio.Specific
 {
+    // TODO_SHARED this type needs to be re-thought a lot
     internal static class VimSpecificUtil
     {
 #if VS_SPECIFIC_2015 || VS_SPECIFIC_2017

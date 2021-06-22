@@ -35,7 +35,6 @@ namespace VimApp
 
             editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VimKeyProcessor).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
 
             _editorHost = editorHostFactory.CreateEditorHost();
             _vim = _editorHost.CompositionContainer.GetExportedValue<IVim>();
