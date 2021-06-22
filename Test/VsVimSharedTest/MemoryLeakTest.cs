@@ -225,17 +225,14 @@ namespace Vim.VisualStudio.UnitTest
             editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(ISharedService).Assembly));
 
             var types = new List<Type>()
             {
                 typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(global::Vim.EditorHost.Implementation.Misc.VimErrorDetector)
             };
 
             editorHostFactory.Add(new TypeCatalog(types));
-            editorHostFactory.Add(VimSpecificUtil.GetTypeCatalog());
 
             return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
         }

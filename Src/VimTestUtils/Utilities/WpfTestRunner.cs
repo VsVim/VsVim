@@ -48,7 +48,10 @@ namespace Vim.UnitTest.Utilities
         protected override Task<decimal> InvokeTestMethodAsync(ExceptionAggregator aggregator)
         {
             SharedData.ExecutingTest(TestMethod);
-            Debug.Assert(StaTestFramework.IsCreated);
+            if (!StaTestFramework.IsCreated)
+            {
+                throw new Exception($"The {typeof(StaTestFrameworkAttribute)} was not applied to the test assembly");
+            }
 
             var taskScheduler = new SynchronizationContextTaskScheduler(StaContext.Default.DispatcherSynchronizationContext);
             return Task.Factory.StartNew(async () =>
