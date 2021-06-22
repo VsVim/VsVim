@@ -15,7 +15,7 @@ namespace Vim.EditorHost
     public sealed partial class EditorHostFactory
     {
 #if VS_SPECIFIC_2015
-        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
+        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2015;
         internal static Version VisualStudioVersion => new Version(14, 0, 0, 0);
         internal static Version VisualStudioThreadingVersion => new Version(14, 0, 0, 0);
 #elif VS_SPECIFIC_2017
@@ -63,8 +63,34 @@ namespace Vim.EditorHost
 
         public CompositionContainer CreateCompositionContainer()
         {
-            var catalog = new AggregateCatalog(_composablePartCatalogList.ToArray());
-            return new CompositionContainer(catalog, _exportProviderList.ToArray());
+            var aggregateCatalog = new AggregateCatalog(_composablePartCatalogList.ToArray());
+#if DEBUG
+            DumpExports();
+#endif
+
+            return new CompositionContainer(aggregateCatalog, _exportProviderList.ToArray());
+
+#if DEBUG
+            void DumpExports()
+            {
+                var exportNames = new List<string>();
+                foreach (var catalog in aggregateCatalog)
+                {
+                    foreach (var exportDefinition in catalog.ExportDefinitions)
+                    {
+                        exportNames.Add(exportDefinition.ContractName);
+                    }
+                }
+
+                exportNames.Sort();
+                var groupedExportNames = exportNames
+                    .GroupBy(x => x)
+                    .Select(x => (Count: x.Count(), x.Key))
+                    .OrderByDescending(x => x.Count)
+                    .Select(x => $"{x.Count} {x.Key}")
+                    .ToList();
+            }
+#endif
         }
 
         public EditorHost CreateEditorHost()
@@ -78,7 +104,29 @@ namespace Vim.EditorHost
             AppendEditorAssemblies(editorAssemblyVersion);
             AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
             _exportProviderList.Add(new JoinableTaskContextExportProvider());
-            _composablePartCatalogList.Add(new AssemblyCatalog(typeof(EditorHostFactory).Assembly));
+
+            // Other Exports needed to construct VsVim
+            var types = new List<Type>()
+            {
+                typeof(Implementation.BasicUndo.BasicTextUndoHistoryRegistry),
+                typeof(Implementation.Misc.BasicObscuringTipManager),
+                typeof(Implementation.Misc.VimErrorDetector),
+#if VS_SPECIFIC_2019
+                typeof(Implementation.Misc.BasicExperimentationServiceInternal),
+                typeof(Implementation.Misc.BasicLoggingServiceInternal),
+                typeof(Implementation.Misc.BasicObscuringTipManager),
+#elif VS_SPECIFIC_2017
+                typeof(Implementation.Misc.BasicLoggingServiceInternal),
+                typeof(Implementation.Misc.BasicObscuringTipManager),
+#elif VS_SPECIFIC_2015
+
+#else
+#error Unsupported configuration
+#endif
+
+            };
+
+            _composablePartCatalogList.Add(new TypeCatalog(types));
         }
 
         private void AppendEditorAssemblies(Version editorAssemblyVersion)

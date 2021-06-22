@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
-using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -11,11 +10,12 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest.Exports
 {
+    // TODO_SHARED move to editor host and make this internal again
     [Export(typeof(ITaggerProvider))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Structured)]
     [TagType(typeof(OutliningRegionTag))]
-    internal sealed class OutlinerTaggerProvider : ITaggerProvider
+    public sealed class OutlinerTaggerProvider : ITaggerProvider
     {
         ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {

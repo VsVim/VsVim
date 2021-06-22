@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace Vim.EditorHost
 {
-    public static class Extensions
+    public static partial class Extensions
     {
         #region ITextBufferFactoryService
 
@@ -106,11 +106,6 @@ namespace Vim.EditorHost
         public static SnapshotPoint GetCaretPoint(this ITextView textView)
         {
             return textView.Caret.Position.BufferPosition;
-        }
-
-        public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView textView)
-        {
-            return textView.Caret.Position.VirtualBufferPosition;
         }
 
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)
@@ -270,15 +265,6 @@ namespace Vim.EditorHost
         #endregion
 
         #region SnapshotPoint
-
-        /// <summary>
-        /// Get the column that this SnapshotPoint occupies
-        /// </summary>
-        public static int GetColumn(this SnapshotPoint point)
-        {
-            var line = point.GetContainingLine();
-            return point.Position - line.Start.Position;
-        }
 
         public static SnapshotSpan GetSpan(this SnapshotPoint point, int length)
         {

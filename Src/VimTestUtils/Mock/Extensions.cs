@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Moq.Language.Flow;
 using Vim.Extensions;
-using Vim.EditorHost;
 
 namespace Vim.UnitTest.Mock
 {
@@ -140,14 +139,6 @@ namespace Vim.UnitTest.Mock
                     .Returns(CommandResult.NewCompleted(ModeSwitch.SwitchPreviousMode))
                     .Verifiable();
             }
-        }
-
-        public static void SetupPut(this Mock<ICommonOperations> operations, ITextBuffer textBuffer, params string[] newText)
-        {
-            operations
-                .Setup(x => x.Put(It.IsAny<SnapshotPoint>(), It.IsAny<StringData>(), It.IsAny<OperationKind>()))
-                .Callback(() => textBuffer.SetText(newText))
-                .Verifiable();
         }
 
         public static void SetupProcess(this Mock<INormalMode> mode, string input)

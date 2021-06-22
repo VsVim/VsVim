@@ -13,9 +13,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)EditorHostFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorHostFactory.JoinableTaskContextExportProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorLocatorUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditorSpecificUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorVersionUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IBasicUndoHistoryRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />
@@ -24,6 +24,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicLoggingServiceInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicObscuringTipManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicWaitIndicator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VimErrorDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVimErrorDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)app.config" />

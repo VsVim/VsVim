@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
@@ -27,6 +28,7 @@ using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
 using Vim.VisualStudio.Specific;
+using Vim.EditorHost.Implementation.Misc;
 
 namespace Vim.UnitTest
 {
@@ -560,7 +562,6 @@ namespace Vim.UnitTest
                     typeof(TestableKeyboardDevice),
                     typeof(TestableMouseDevice),
                     typeof(global::Vim.UnitTest.Exports.VimHost),
-                    typeof(VimErrorDetector),
                     typeof(DisplayWindowBrokerFactoryService),
                     typeof(AlternateKeyUtil),
                     typeof(OutlinerTaggerProvider)
@@ -621,3 +622,4 @@ namespace Vim.UnitTest
         }
     }
 }
+#endif

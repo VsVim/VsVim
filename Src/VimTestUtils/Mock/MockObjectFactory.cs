@@ -1,5 +1,4 @@
 ﻿using System;
-using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
@@ -357,22 +356,23 @@ namespace Vim.UnitTest.Mock
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var snapshot = textBuffer.CurrentSnapshot;
             var endLineValue = endLine ?? startLine;
-            var caretPositionValue = caretPosition ?? textBuffer.GetLine(startLine).Start.Position;
+            var caretPositionValue = caretPosition ?? snapshot.GetLineFromLineNumber(startLine).Start.Position;
             var caret = factory.Create<ITextCaret>();
             caret.SetupGet(x => x.Position).Returns(
                 new CaretPosition(
-                    new VirtualSnapshotPoint(textBuffer.GetPoint(caretPositionValue)),
+                    new VirtualSnapshotPoint(snapshot, caretPositionValue),
                     factory.Create<IMappingPoint>().Object,
                     PositionAffinity.Predecessor));
 
             var firstLine = factory.Create<ITextViewLine>();
             firstLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
-            firstLine.SetupGet(x => x.Start).Returns(textBuffer.GetLine(startLine).Start);
+            firstLine.SetupGet(x => x.Start).Returns(snapshot.GetLineFromLineNumber(startLine).Start);
 
             var lastLine = factory.Create<ITextViewLine>();
             lastLine.SetupGet(x => x.VisibilityState).Returns(VisibilityState.FullyVisible);
-            lastLine.SetupGet(x => x.End).Returns(textBuffer.GetLine(endLineValue).End);
+            lastLine.SetupGet(x => x.End).Returns(snapshot.GetLineFromLineNumber(endLineValue).End);
 
             var lineList = new List<ITextViewLine>() { firstLine.Object, lastLine.Object };
 

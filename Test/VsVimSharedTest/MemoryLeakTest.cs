@@ -231,7 +231,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
                 typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-                typeof(VimErrorDetector)
+                typeof(global::Vim.EditorHost.Implementation.Misc.VimErrorDetector)
             };
 
             editorHostFactory.Add(new TypeCatalog(types));
