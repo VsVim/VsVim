@@ -7,22 +7,19 @@ using System.ComponentModel.Composition;
 
 namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
 {
-    [Name(VimSpecificUtil.MefNamePrefix + "Async Completion Source")]
+    [Name("Vim Async Completion Source")]
     [ContentType(VimConstants.AnyContentType)]
     [Export(typeof(IAsyncCompletionSourceProvider))]
     [Order(Before = "Roslyn Completion Source Provider")]
-    internal sealed class WordAsyncCompletionSourceProvider : VimSpecificService, IAsyncCompletionSourceProvider
+    internal sealed class WordAsyncCompletionSourceProvider : IAsyncCompletionSourceProvider
     {
         [ImportingConstructor]
-        internal WordAsyncCompletionSourceProvider(Lazy<IVimHost> vimHost)
-            : base(vimHost)
+        internal WordAsyncCompletionSourceProvider()
         {
         }
 
         IAsyncCompletionSource IAsyncCompletionSourceProvider.GetOrCreate(ITextView textView) =>
-            InsideValidHost
-                ? new WordAsyncCompletionSource(textView)
-                : null;
+            new WordAsyncCompletionSource(textView);
     }   
 }
 

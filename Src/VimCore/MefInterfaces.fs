@@ -689,19 +689,3 @@ type IEditorToSettingsSynchronizer =
     abstract StartSynchronizing: vimBuffer: IVimBuffer -> source: SettingSyncSource -> unit
 
     abstract SyncSetting: data: SettingSyncData -> unit
-
-// TODO_SHARED: delete this as there are no longer host specific services because we are 
-// getting rid of the plugin model
-
-/// There are some VsVim services which are only valid in specific host environments. These
-/// services will implement and export this interface. At runtime the identifier can be
-/// compared to the IVimHost.Identifier to see if it's valid
-type IVimSpecificService = 
-    abstract HostIdentifier: string
-
-
-/// This will look for an export of <see cref="IVimSpecificService"\> that is convertible to 
-/// 'T and return it
-type IVimSpecificServiceHost =
-
-    abstract GetService: unit -> 'T option

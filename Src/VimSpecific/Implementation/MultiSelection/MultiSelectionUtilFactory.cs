@@ -3,18 +3,14 @@
 
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using Vim;
-using Vim.VisualStudio.Specific;
 
 namespace Vim.Specific.Implementation.MultiSelection
 {
     [Export(typeof(ISelectionUtilFactory))]
-    [Export(typeof(IVimSpecificService))]
-    internal sealed class MultiSelectionUtilFactory : VimSpecificService, ISelectionUtilFactory
+    internal sealed class MultiSelectionUtilFactory : ISelectionUtilFactory
     {
         private static readonly object s_key = new object();
 
@@ -90,8 +86,7 @@ namespace Vim.Specific.Implementation.MultiSelection
         }
 
         [ImportingConstructor]
-        internal MultiSelectionUtilFactory(Lazy<IVimHost> vimHost)
-            : base(vimHost)
+        internal MultiSelectionUtilFactory()
         {
         }
 
