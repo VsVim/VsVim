@@ -73,7 +73,7 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
             // It's possible for the Start method to dismiss the ICompletionSession.  This happens when there
             // is an initialization error such as being unable to find a CompletionSet.  If this occurs we
             // just return the equivalent IWordCompletionSession (one which is dismissed)
-            if (asyncCompletionSession.IsDismissed)
+            if (asyncCompletionSession is null || asyncCompletionSession.IsDismissed)
             {
                 return FSharpOption<IWordCompletionSession>.None;
             }

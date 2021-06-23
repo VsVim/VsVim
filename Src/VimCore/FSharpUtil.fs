@@ -780,6 +780,10 @@ module internal OptionUtil =
         else
             None
 
+    let nullToOption<'a> (x: 'a) =
+        if obj.ReferenceEquals(x, null) then None
+        else Some x
+
 /// Represents a collection which is guarantee to have at least a single element.  This
 /// is very useful when dealing with discriminated unions of values where one is an element
 /// and another is a collection where the collection has the constraint that it must 

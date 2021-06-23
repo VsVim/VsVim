@@ -15,26 +15,20 @@ namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
     /// ITextView.  Ideally we don't want to provide any completion information unless we are actually
     /// starting a word completion session
     /// </summary>
-    [Name(VimSpecificUtil.MefNamePrefix + "Legacy Completion Source")]
+    [Name("Vim Legacy Completion Source")]
     [ContentType(VimConstants.AnyContentType)]
     [Export(typeof(ICompletionSourceProvider))]
-    internal sealed class WordLegacyCompletionSourceProvider: VimSpecificService, ICompletionSourceProvider
+    internal sealed class WordLegacyCompletionSourceProvider: ICompletionSourceProvider
     {
         [ImportingConstructor]
-        internal WordLegacyCompletionSourceProvider(Lazy<IVimHost> vimHost)
-            :base(vimHost)
+        internal WordLegacyCompletionSourceProvider()
         {
-
         }
 
         #region ICompletionSourceProvider
 
-        ICompletionSource ICompletionSourceProvider.TryCreateCompletionSource(ITextBuffer textBuffer)
-        {
-            return InsideValidHost
-                ? new WordLegacyCompletionSource(textBuffer)
-                : null;
-        }
+        ICompletionSource ICompletionSourceProvider.TryCreateCompletionSource(ITextBuffer textBuffer) =>
+            new WordLegacyCompletionSource(textBuffer);
 
         #endregion
     }

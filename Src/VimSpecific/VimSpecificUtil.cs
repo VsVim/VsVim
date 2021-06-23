@@ -59,19 +59,4 @@ namespace Vim.VisualStudio.Specific
             return new TypeCatalog(list);
         }
     }
-
-    // TODO_SHARED is this needed at all anymore
-    internal abstract class VimSpecificService : IVimSpecificService
-    {
-        private readonly Lazy<IVimHost> _vimHost;
-
-        internal bool InsideValidHost => _vimHost.Value.HostIdentifier == VimSpecificUtil.HostIdentifier;
-
-        protected VimSpecificService(Lazy<IVimHost> vimHost)
-        {
-            _vimHost = vimHost;
-        }
-
-        string IVimSpecificService.HostIdentifier => VimSpecificUtil.HostIdentifier;
-    }
 }

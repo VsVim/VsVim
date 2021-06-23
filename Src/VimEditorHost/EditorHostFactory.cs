@@ -47,9 +47,9 @@ namespace Vim.EditorHost
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
         private readonly List<ExportProvider> _exportProviderList = new List<ExportProvider>();
 
-        public EditorHostFactory()
+        public EditorHostFactory(bool includeSelf = true)
         {
-            BuildCatalog();
+            BuildCatalog(includeSelf);
         }
 
         public void Add(ComposablePartCatalog composablePartCatalog)
@@ -99,36 +99,41 @@ namespace Vim.EditorHost
             return new EditorHost(CreateCompositionContainer());
         }
 
-        private void BuildCatalog()
+        private void BuildCatalog(bool includeSelf)
         {
+            // TODO_SHARED move the IVim assembly in here, silly for it not to be
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
             AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
             _exportProviderList.Add(new JoinableTaskContextExportProvider());
 
-            // Other Exports needed to construct VsVim
-            var types = new List<Type>()
+            if (includeSelf)
             {
-                typeof(Implementation.BasicUndo.BasicTextUndoHistoryRegistry),
-                typeof(Implementation.Misc.BasicObscuringTipManager),
-                typeof(Implementation.Misc.VimErrorDetector),
-#if VS_SPECIFIC_2019
-                typeof(Implementation.Misc.BasicExperimentationServiceInternal),
-                typeof(Implementation.Misc.BasicLoggingServiceInternal),
-                typeof(Implementation.Misc.BasicObscuringTipManager),
-#elif VS_SPECIFIC_2017
-                typeof(Implementation.Misc.BasicLoggingServiceInternal),
-                typeof(Implementation.Misc.BasicObscuringTipManager),
-#elif VS_SPECIFIC_2015
+                // Other Exports needed to construct VsVim
+                var types = new List<Type>()
+                {
+                    typeof(Implementation.BasicUndo.BasicTextUndoHistoryRegistry),
+                    typeof(Implementation.Misc.BasicObscuringTipManager),
+                    typeof(Implementation.Misc.VimErrorDetector),
+    #if VS_SPECIFIC_2019
+                    typeof(Implementation.Misc.BasicExperimentationServiceInternal),
+                    typeof(Implementation.Misc.BasicLoggingServiceInternal),
+                    typeof(Implementation.Misc.BasicObscuringTipManager),
+    #elif VS_SPECIFIC_2017
+                    typeof(Implementation.Misc.BasicLoggingServiceInternal),
+                    typeof(Implementation.Misc.BasicObscuringTipManager),
+    #elif VS_SPECIFIC_2015
 
-#else
-#error Unsupported configuration
-#endif
+    #else
+    #error Unsupported configuration
+    #endif
 
-            };
+                };
 
-            _composablePartCatalogList.Add(new TypeCatalog(types));
-            _composablePartCatalogList.Add(VimSpecificUtil.GetTypeCatalog());
+                _composablePartCatalogList.Add(new TypeCatalog(types));
+                _composablePartCatalogList.Add(VimSpecificUtil.GetTypeCatalog());
+            }
+
         }
 
         private void AppendEditorAssemblies(Version editorAssemblyVersion)
