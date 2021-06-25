@@ -2,7 +2,7 @@
 
 using Vim.Interpreter;
 
-namespace Vim.VisualStudio.Specific
+namespace Vim.VisualStudio.Implementation.CSharpScript
 {
     public class CSharpScriptGlobals
     {

@@ -31,6 +31,10 @@
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ConflictingKey\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\CSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\CSharpScriptGlobals.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\NotSupportedCSharpScriptExecutor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CSharpScript\SharedService.CSharpScript.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ExternalEdit\ExternalEditorManager.cs" />

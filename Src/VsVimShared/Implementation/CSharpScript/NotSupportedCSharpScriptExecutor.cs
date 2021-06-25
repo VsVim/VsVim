@@ -1,6 +1,6 @@
 ﻿using Vim.Interpreter;
 
-namespace Vim.VisualStudio.Specific
+namespace Vim.VisualStudio.Implementation.CSharpScript
 {
     internal sealed class NotSupportedCSharpScriptExecutor : ICSharpScriptExecutor
     {

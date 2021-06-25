@@ -9,8 +9,10 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Vim.Interpreter;
 
-namespace Vim.VisualStudio.Specific
+namespace Vim.VisualStudio.Implementation.CSharpScript
 {
+    using CSharpScript = Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript;
+
     internal sealed partial class CSharpScriptExecutor : ICSharpScriptExecutor
     {
         private const string ScriptFolder = "vsvimscripts";

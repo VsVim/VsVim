@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Vim.Interpreter;
 
-namespace Vim.VisualStudio.Specific
+namespace Vim.VisualStudio.Implementation.CSharpScript
 {
 #if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
 

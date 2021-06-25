@@ -16,7 +16,6 @@ Order of operations
 - Clean up all the #if options for old VS versions
 - Delete all of the uses of "Specific" in namespaces (sign of the old code pattern)
 - Release file needs to check consistentcy of all source.extension.manifest file constants
-- Delete VimSpecific (doesn't seem needed anymore)
 - Remove all exports from VimTestUtils (this is a test utility DLL only, all exports to VimEditorHost)
 - Remove the reference VimApp -> VimTestUtils
 - Remove IVT from VimCore -> VimApp
