@@ -48,5 +48,7 @@
     <ProjectReference Include="..\..\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\VsInterfaces\VsInterfaces.csproj" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.10.1055" />
   </ItemGroup>
+  <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" />
 </Project>

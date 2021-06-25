@@ -1,6 +1,30 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" Condition="'$(VsVimProjectType)' == 'EditorHost'" />
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
+    <DefineConstants Condition="'$(VsVimProjectType)' == 'EditorHost'">$(DefineConstants);VIM_SPECIFIC_TEST_HOST</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Sdk" Version="15.0.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="2.0.0" />
+    <!-- Centralize this version as it doesn't need to be VS specific -->
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.10.1055" Condition="'$(VsVimProjectType)' == 'Vsix'" />
+    <PackageReference Include="Microsoft.VisualStudio.TextManager.Interop.10.0" Version="16.7.30328.74" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(VsVimProjectType)' == 'EditorHost'">
+    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="15.3.58" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="15.3.20" />
+    <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Platform.VSEditor, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Internal, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Telemetry, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <!--
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Editor, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Text.Data, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
@@ -13,11 +37,17 @@
     <Reference Include="Microsoft.VisualStudio.Platform.VSEditor, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Platform.VSEditor.Interop, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Imaging, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.Telemetry, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Threading, Version=15.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Validation, Version=15.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL" />
-  </ItemGroup> 
+    -->
+
+    <None Include="$(MSBuildThisFileDirectory)App.config">
+      <Link>app.config</Link>
+    </None>
+  </ItemGroup>
+
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VsVimProjectType)' == 'Vsix' AND '$(VSToolsPath)' != ''" />
 </Project>

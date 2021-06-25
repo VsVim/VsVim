@@ -7,7 +7,9 @@
     <AssemblyName>VimApp</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_VIM_APP</DefineConstants>
-    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
+    <VsVimProjectType>EditorHost</VsVimProjectType>
+    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />

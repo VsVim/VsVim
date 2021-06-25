@@ -5,7 +5,7 @@
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
+    <VsVimProjectType>EditorHost</VsVimProjectType>
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
