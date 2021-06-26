@@ -3,7 +3,6 @@
   <Import Project="$(MSBuildThisFileDirectory)\Binaries\User.props" Condition="Exists('$(MSBuildThisFileDirectory)\Binaries\User.props')" />
 
   <PropertyGroup>
-    <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimEmptyAppConfig>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <DebugType>full</DebugType>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
@@ -13,7 +12,7 @@
 
     <!-- The version of VS that should be targetted for testing for host agnostic projects. Prefer
          the lowest supported Visual Studio version but allow changing via environment variable -->
-    <VisualStudioTestVersionDefault Condition="'$(VisualStudioTestVersionDefault)' == ''">16.0</VisualStudioTestVersionDefault>
+    <VsVimVisualStudioTargetVersion Condition="'$(VsVimVisualStudioTargetVersion)' == ''">16.0</VsVimVisualStudioTargetVersion>
 
     <!-- Standard Calculation of NuGet package location -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->

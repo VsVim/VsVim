@@ -113,7 +113,6 @@ namespace Vim.EditorHost
                 var types = new List<Type>()
                 {
                     typeof(Implementation.BasicUndo.BasicTextUndoHistoryRegistry),
-                    typeof(Implementation.Misc.BasicObscuringTipManager),
                     typeof(Implementation.Misc.VimErrorDetector),
     #if VS_SPECIFIC_2019
                     typeof(Implementation.Misc.BasicExperimentationServiceInternal),

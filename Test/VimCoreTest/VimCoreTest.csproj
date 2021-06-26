@@ -5,8 +5,10 @@
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VisualStudioEditorHostVersion>$(VisualStudioTestVersionDefault)</VisualStudioEditorHostVersion>
+    <VsVimProjectType>EditorHost</VsVimProjectType>
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
+    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />

@@ -26,12 +26,10 @@ namespace Vim.EditorHost.Implementation.Misc
         private readonly List<IVimBuffer> _activeVimBufferList = new List<IVimBuffer>();
         private readonly ITextBufferUndoManagerProvider _textBufferUndoManagerProvider;
         private readonly IBufferTrackingService _bufferTrackingService;
-        private readonly IVim _vim;
 
         [ImportingConstructor]
-        internal VimErrorDetector(IVim vim, IBufferTrackingService bufferTrackingService, ITextBufferUndoManagerProvider textBufferUndoManagerProvider)
+        internal VimErrorDetector(IBufferTrackingService bufferTrackingService, ITextBufferUndoManagerProvider textBufferUndoManagerProvider)
         {
-            _vim = vim;
             _textBufferUndoManagerProvider = textBufferUndoManagerProvider;
             _bufferTrackingService = bufferTrackingService;
         }
@@ -125,7 +123,7 @@ namespace Vim.EditorHost.Implementation.Misc
             // Working around several bugs thrown during core MEF composition
             if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService") ||
                 exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.mefRegisteredCodeCleanupProviders") ||
-                exception.StackTrace.Contains("Microsoft.VisualStudio.UI.Text.Wpf.FileHealthIndicator.Implementation.FileHealthIndicatorButton..ctor"))
+                exception.StackTrace?.Contains("Microsoft.VisualStudio.UI.Text.Wpf.FileHealthIndicator.Implementation.FileHealthIndicatorButton..ctor") == true)
             {
                 return;
             }

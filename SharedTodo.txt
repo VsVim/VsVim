@@ -19,6 +19,9 @@ Order of operations
 - Remove all exports from VimTestUtils (this is a test utility DLL only, all exports to VimEditorHost)
 - Remove the reference VimApp -> VimTestUtils
 - Remove IVT from VimCore -> VimApp
+- Move to the Microsoft.VisualStudio.VsSDK package for each of the VSIX projects
 
 https://docs.microsoft.com/en-us/visualstudio/extensibility/migration/update-visual-studio-extension?view=vs-2022#use-shared-projects-for-multi-targeting
+
+
 

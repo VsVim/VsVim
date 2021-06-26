@@ -16,6 +16,7 @@ namespace Vim.VisualStudio.Specific
 #endif
         internal static bool HasLegacyCompletion => !HasAsyncCompletion;
 
+// TODO_SHARED this entire constant may not be needed
 #if VIM_SPECIFIC_TEST_HOST
         internal const string HostIdentifier = HostIdentifiers.TestHost;
 #else
