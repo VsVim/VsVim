@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio</RootNamespace>
     <AssemblyName>VsVim</AssemblyName>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <StartAction>Program</StartAction>
     <UseCodebase>true</UseCodebase>
     <StartProgram>$(DevEnvDir)\devenv.exe</StartProgram>
@@ -53,8 +53,6 @@
       <SubType>Designer</SubType>
     </VSCTCompile>
 
-    <!-- Non shared items -->
-    <None Include="app.config" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>

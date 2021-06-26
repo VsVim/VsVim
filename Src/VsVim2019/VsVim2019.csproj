@@ -18,7 +18,7 @@
     <!-- TODO_SHARED should undo this but suppressing for now. -->
     <RunAnalyzers>false</RunAnalyzers>
 
-    <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0'">False</DeployExtension>
+    <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0' OR '$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>
 
     <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
@@ -55,8 +55,6 @@
       <SubType>Designer</SubType>
     </VSCTCompile>
 
-    <!-- Non shared items -->
-    <None Include="app.config" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
