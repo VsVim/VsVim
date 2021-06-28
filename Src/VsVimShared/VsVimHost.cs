@@ -25,6 +25,14 @@ using System.Windows.Threading;
 using System.Diagnostics;
 using Vim.Interpreter;
 
+#if VS_SPECIFIC_2019
+using Microsoft.VisualStudio.Platform.WindowManagement;
+using Microsoft.VisualStudio.PlatformUI.Shell;
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#else
+#error Unsupported configuration
+#endif
+
 namespace Vim.VisualStudio
 {
     /// <summary>
@@ -295,7 +303,7 @@ namespace Vim.VisualStudio
 
         public override int TabCount
         {
-            get { return _sharedService.GetWindowFrameState().WindowFrameCount; }
+            get { return GetWindowFrameState().WindowFrameCount; }
         }
 
         public override bool UseDefaultCaret
@@ -732,14 +740,86 @@ namespace Vim.VisualStudio
         {
             // TODO: Should look for the actual index instead of assuming this is called on the 
             // active ITextView.  They may not actually be equal
-            var windowFrameState = _sharedService.GetWindowFrameState();
+            var windowFrameState = GetWindowFrameState();
             return windowFrameState.ActiveWindowFrameIndex;
         }
 
+#if VS_SPECIFIC_2019
+
+        /// <summary>
+        /// Get the state of the active tab group in Visual Studio
+        /// </summary>
         public override void GoToTab(int index)
         {
-            _sharedService.GoToTab(index);
+            GetActiveViews()[index].ShowInFront();
+        // TODO_SHARED: consider changing underlying code to be gt and gT specific so the primary 
+        // case can use VS commands like Window.NextTab instead of relying on the non-SDK shell code
         }
+
+        internal WindowFrameState GetWindowFrameState()
+        {
+            var activeView = ViewManager.Instance.ActiveView;
+            if (activeView == null)
+            {
+                return WindowFrameState.Default;
+            }
+
+            var list = GetActiveViews();
+            var index = list.IndexOf(activeView);
+            if (index < 0)
+            {
+                return WindowFrameState.Default;
+            }
+
+            return new WindowFrameState(index, list.Count);
+        }
+
+        /// <summary>
+        /// Get the list of View's in the current ViewManager DocumentGroup
+        /// </summary>
+        private static List<View> GetActiveViews()
+        {
+            var activeView = ViewManager.Instance.ActiveView;
+            if (activeView == null)
+            {
+                return new List<View>();
+            }
+
+            var group = activeView.Parent as DocumentGroup;
+            if (group == null)
+            {
+                return new List<View>();
+            }
+
+            return group.VisibleChildren.OfType<View>().ToList();
+        }
+
+        /// <summary>
+        /// Is this the active IVsWindow frame which has focus?  This method is used during macro
+        /// running and hence must account for view changes which occur during a macro run.  Say by the
+        /// macro containing the 'gt' command.  Unfortunately these don't fully process through Visual
+        /// Studio until the next UI thread pump so we instead have to go straight to the view controller
+        /// </summary>
+        internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
+        {
+            var frame = vsWindowFrame as WindowFrame;
+            return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
+        }
+
+#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+        internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
+
+        // TODO_SHARED: consider calling into IWpfTextView and checking if it's focused or 
+        // maybe through IVsTextManager.GetActiveView
+        internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame) => false;
+
+        public override void GoToTab(int index)
+        {
+            // TODO_SHARED: possibly this should error? 
+        }
+#else
+#error Unsupported configuration
+#endif
 
         /// <summary>
         /// Open the window for the specified list
@@ -987,7 +1067,7 @@ namespace Vim.VisualStudio
                 return false;
             }
 
-            var activeWindowFrame = result.Value.FirstOrDefault(_sharedService.IsActiveWindowFrame);
+            var activeWindowFrame = result.Value.FirstOrDefault(IsActiveWindowFrame);
             if (activeWindowFrame == null)
             {
                 textView = null;

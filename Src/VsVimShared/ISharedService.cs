@@ -33,24 +33,6 @@ namespace Vim.VisualStudio
     public interface ISharedService
     {
         /// <summary>
-        /// Is this the active IVsWindow frame which has focus?  This method is used during macro
-        /// running and hence must account for view changes which occur during a macro run.  Say by the
-        /// macro containing the 'gt' command.  Unfortunately these don't fully process through Visual
-        /// Studio until the next UI thread pump so we instead have to go straight to the view controller
-        /// </summary>
-        bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame);
-
-        /// <summary>
-        /// Get the state of the active tab group in Visual Studio
-        /// </summary>
-        WindowFrameState GetWindowFrameState();
-
-        /// <summary>
-        /// Go to the tab with the specified index
-        /// </summary>
-        void GoToTab(int index);
-
-        /// <summary>
         /// Run C# Script.
         /// </summary>
         /// <returns></returns>

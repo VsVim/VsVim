@@ -12,20 +12,6 @@ namespace Vim.VisualStudio.Implementation.SharedService
     {
         private sealed class DefaultSharedService : ISharedService
         {
-            WindowFrameState ISharedService.GetWindowFrameState()
-            {
-                return WindowFrameState.Default;
-            }
-
-            void ISharedService.GoToTab(int index)
-            {
-            }
-
-            bool ISharedService.IsActiveWindowFrame(IVsWindowFrame vsWindowFrame)
-            {
-                return false;
-            }
-
             void ISharedService.RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
             {
                 vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
