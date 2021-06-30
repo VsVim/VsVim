@@ -221,7 +221,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private static VimEditorHost CreateVimEditorHost()
         {
-            var editorHostFactory = new EditorHostFactory();
+            var editorHostFactory = new VimEditorHostFactory();
             editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));

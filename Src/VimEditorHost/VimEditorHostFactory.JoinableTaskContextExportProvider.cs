@@ -16,7 +16,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace Vim.EditorHost
 {
-    public sealed partial class EditorHostFactory
+    public sealed partial class VimEditorHostFactory
     {
         /// <summary>
         /// Beginning in 15.0 the editor took a dependency on JoinableTaskContext.  Need to provide that 

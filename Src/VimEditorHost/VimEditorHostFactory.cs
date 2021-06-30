@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.Win32;
 using Vim.VisualStudio.Specific;
 
 namespace Vim.EditorHost
 {
-    public sealed partial class EditorHostFactory
+    public sealed partial class VimEditorHostFactory
     {
 #if VS_SPECIFIC_2015
         internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2015;
@@ -47,7 +43,7 @@ namespace Vim.EditorHost
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
         private readonly List<ExportProvider> _exportProviderList = new List<ExportProvider>();
 
-        public EditorHostFactory(bool includeSelf = true)
+        public VimEditorHostFactory(bool includeSelf = true)
         {
             BuildCatalog(includeSelf);
         }
@@ -94,9 +90,9 @@ namespace Vim.EditorHost
 #endif
         }
 
-        public EditorHost CreateEditorHost()
+        public VimEditorHost CreateVimEditorHost()
         {
-            return new EditorHost(CreateCompositionContainer());
+            return new VimEditorHost(CreateCompositionContainer());
         }
 
         private void BuildCatalog(bool includeSelf)

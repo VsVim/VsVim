@@ -552,7 +552,7 @@ namespace Vim.UnitTest
             var key = Thread.CurrentThread.ManagedThreadId;
             if (!s_cachedVimEditorHostMap.TryGetValue(key, out VimEditorHost host))
             {
-                var editorHostFactory = new EditorHostFactory();
+                var editorHostFactory = new VimEditorHostFactory();
                 editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
                 // Other Exports needed to construct VsVim

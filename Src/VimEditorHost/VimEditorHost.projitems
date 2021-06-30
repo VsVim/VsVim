@@ -9,13 +9,10 @@
     <Import_RootNamespace>VimEditorHost</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)EditorHost.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EditorHostFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EditorHostFactory.JoinableTaskContextExportProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EditorLocatorUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.JoinableTaskContextExportProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorSpecificUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorVersion.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EditorVersionUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IBasicUndoHistoryRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />

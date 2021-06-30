@@ -12,10 +12,10 @@ namespace VimApp
 {
     sealed class VimComponentHost 
     {
-        private readonly EditorHost _editorHost;
+        private readonly VimEditorHost _editorHost;
         private readonly IVim _vim;
 
-        public EditorHost EditorHost
+        public VimEditorHost EditorHost
         {
             get { return _editorHost; }
         }
@@ -32,12 +32,12 @@ namespace VimApp
 
         internal VimComponentHost()
         {
-            var editorHostFactory = new EditorHostFactory(includeSelf: false);
+            var editorHostFactory = new VimEditorHostFactory(includeSelf: false);
 
             editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
-            _editorHost = editorHostFactory.CreateEditorHost();
+            _editorHost = editorHostFactory.CreateVimEditorHost();
             _vim = _editorHost.CompositionContainer.GetExportedValue<IVim>();
         }
     }
