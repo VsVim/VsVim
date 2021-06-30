@@ -84,7 +84,7 @@ namespace Vim.VisualStudio.UnitTest
                 _editorOperationsFactoryService.Object,
                 _factory.Create<ISmartIndentationService>().Object,
                 _textManager.Object,
-                _factory.Create<ISharedServiceFactory>(MockBehavior.Loose).Object,
+                _factory.Create<ICSharpScriptExecutor>(MockBehavior.Loose).Object,
                 _vimApplicationSettings.Object,
                 _extensionAdapterBroker.Object,
                 ProtectedOperations,

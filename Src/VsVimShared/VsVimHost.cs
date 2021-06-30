@@ -251,7 +251,7 @@ namespace Vim.VisualStudio
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
         private readonly IVsExtensibility _vsExtensibility;
-        private readonly ISharedService _sharedService;
+        private readonly ICSharpScriptExecutor _csharpScriptExecutor;
         private readonly IVsMonitorSelection _vsMonitorSelection;
         private readonly IVimApplicationSettings _vimApplicationSettings;
         private readonly ISmartIndentationService _smartIndentationService;
@@ -322,7 +322,7 @@ namespace Vim.VisualStudio
             IEditorOperationsFactoryService editorOperationsFactoryService,
             ISmartIndentationService smartIndentationService,
             ITextManager textManager,
-            ISharedServiceFactory sharedServiceFactory,
+            ICSharpScriptExecutor csharpScriptExecutor,
             IVimApplicationSettings vimApplicationSettings,
             IExtensionAdapterBroker extensionAdapterBroker,
             IProtectedOperations protectedOperations,
@@ -343,7 +343,7 @@ namespace Vim.VisualStudio
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
             _textManager = textManager;
-            _sharedService = sharedServiceFactory.Create();
+            _csharpScriptExecutor = csharpScriptExecutor;
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _vimApplicationSettings = vimApplicationSettings;
             _smartIndentationService = smartIndentationService;
@@ -815,7 +815,7 @@ namespace Vim.VisualStudio
 
         public override void GoToTab(int index)
         {
-            // TODO_SHARED: possibly this should error? 
+            // TODO_SHARED: possibly this should error?
         }
 #else
 #error Unsupported configuration
@@ -1095,7 +1095,7 @@ namespace Vim.VisualStudio
 
         public override void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            _sharedService.RunCSharpScript(vimBuffer, callInfo, createEachTime);
+            _csharpScriptExecutor.Execute(vimBuffer, callInfo, createEachTime);
         }
 
         public override void RunHostCommand(ITextView textView, string command, string argument)

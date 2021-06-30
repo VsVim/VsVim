@@ -1,9 +1,6 @@
-﻿#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
-
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -11,13 +8,23 @@ using Vim.Interpreter;
 
 namespace Vim.VisualStudio.Implementation.CSharpScript
 {
+#if VS_SPECIFIC_2017 || VS_SPECIFIC_2019
+    using Microsoft.CodeAnalysis.CSharp.Scripting;
+    using Microsoft.CodeAnalysis.Scripting;
     using CSharpScript = Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript;
 
+    [Export(typeof(ICSharpScriptExecutor))]
     internal sealed partial class CSharpScriptExecutor : ICSharpScriptExecutor
     {
         private const string ScriptFolder = "vsvimscripts";
         private Dictionary<string, Script<object>> _scripts = new Dictionary<string, Script<object>>(StringComparer.OrdinalIgnoreCase);
         private ScriptOptions _scriptOptions = null;
+
+        [ImportingConstructor]
+        public CSharpScriptExecutor()
+        {
+
+        }
 
         private async Task ExecuteAsync(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
@@ -101,7 +108,7 @@ namespace Vim.VisualStudio.Implementation.CSharpScript
             return true;
         }
 
-#region ICSharpScriptExecutor
+        #region ICSharpScriptExecutor
 
         void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
@@ -109,8 +116,23 @@ namespace Vim.VisualStudio.Implementation.CSharpScript
             VimTrace.TraceInfo("CSharptScript:Execute {0}", callInfo.Name);
         }
 
-#endregion
+        #endregion
 
     }
-}
+
+#elif VS_SPECIFIC_2015
+
+    [Export(typeof(ICSharpScriptExecutor))]
+    internal sealed class NotSupportedCSharpScriptExecutor : ICSharpScriptExecutor
+    {
+        internal static readonly ICSharpScriptExecutor Instance = new NotSupportedCSharpScriptExecutor();
+
+        void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
+        {
+            vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
+        }
+    }
+#else
+#error Unsupported configuration
 #endif
+}
