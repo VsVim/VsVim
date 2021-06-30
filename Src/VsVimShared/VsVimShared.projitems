@@ -107,7 +107,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistSelectionAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\VisualAssist\VisualAssistUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IReportDesignerUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ISharedService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WindowFrameState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ITextManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IToastNotifaction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IVimApplicationSettings.cs" />
