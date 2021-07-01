@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Editor;
 #endif
 using System.Reflection;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
 {
     /// <summary>
     /// Implementation of the IWordCompletionSession interface.  

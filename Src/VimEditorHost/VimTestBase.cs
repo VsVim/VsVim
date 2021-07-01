@@ -12,8 +12,6 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
-using Vim.UI.Wpf;
-using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest.Exports;
 using Vim.UnitTest.Mock;
 using System.Windows;
@@ -27,8 +25,9 @@ using Vim.UnitTest.Utilities;
 using System.Windows.Threading;
 using Xunit.Sdk;
 using Vim.Extensions;
-using Vim.VisualStudio.Specific;
 using Vim.EditorHost.Implementation.Misc;
+using Vim.UI.Wpf;
+using Vim.UI.Wpf.Implementation.Misc;
 
 namespace Vim.UnitTest
 {
@@ -130,7 +129,7 @@ namespace Vim.UnitTest
         public VimRcState VimRcState
         {
             get { return Vim.VimRcState; }
-            set { ((global::Vim.Vim)Vim).VimRcState = value; }
+            set { ((VimImpl)Vim).VimRcState = value; }
         }
 
         public IVimData VimData

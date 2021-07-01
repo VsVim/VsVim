@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Legacy
 {
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView

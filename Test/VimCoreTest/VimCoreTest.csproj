@@ -38,7 +38,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
-    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <Import Project="..\..\Src\VimSpecific\VimSpecific.projitems" Label="Shared" />
+  <Import Project="..\..\Src\VimWpf\VimWpf.projitems" Label="Shared" />
 </Project>

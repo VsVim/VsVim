@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
 {
     internal sealed class WordAsyncCompletionSource : IAsyncCompletionSource
     {

@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 #pragma warning disable 649
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Legacy
 {
     /// <summary>
     /// This class is responsible for creating IIntellisensePresenter instances for presented 

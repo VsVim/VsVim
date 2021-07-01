@@ -32,8 +32,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
-    <ProjectReference Include="..\..\Src\VimWpf\VimWpf.csproj" />
     <ProjectReference Include="..\..\Src\VsVim2017\VsVim2017.csproj" />
   </ItemGroup>
   <Import Project="..\VsVimSharedTest\VsVimSharedTest.projitems" Label="Shared" />
+  <Import Project="..\VimWpfTest\VimWpfTest.projitems" Label="Shared" />
 </Project>

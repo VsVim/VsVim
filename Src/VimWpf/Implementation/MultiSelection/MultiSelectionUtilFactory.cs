@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 
-namespace Vim.Specific.Implementation.MultiSelection
+namespace Vim.UI.Wpf.Implementation.MultiSelection
 {
     [Export(typeof(ISelectionUtilFactory))]
     internal sealed class MultiSelectionUtilFactory : ISelectionUtilFactory

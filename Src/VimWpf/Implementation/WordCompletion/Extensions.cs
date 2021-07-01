@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
+namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
     internal static class Extensions
     {

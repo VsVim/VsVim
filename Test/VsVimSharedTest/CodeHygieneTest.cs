@@ -63,7 +63,6 @@ namespace Vim.VisualStudio.UnitTest
             var assemblyList = new[]
             {
                 typeof(IVimHost).Assembly,
-                typeof(VimHost).Assembly,
                 typeof(VsVimHost).Assembly
             };
 

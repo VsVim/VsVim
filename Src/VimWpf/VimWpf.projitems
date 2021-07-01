@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>648972d9-1a17-46d8-80c6-6810c5b8b4ae</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VimWpf</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IBlockCaret.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ICommandMarginUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IControlCharUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IDirectoryUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IJoinableTaskFactoryProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IKeyUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IMarkDisplayUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\BlockCaret.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\BlockCaretController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\BlockCaretFactoryService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\BlockCaretFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\PrimaryCaretFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\SecondaryCaretFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CharDisplay\CharDisplayTaggerSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CharDisplay\CharDisplayTaggerSourceFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CharDisplay\ControlCharFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CharDisplay\ControlCharUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMargin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginControl.xaml.cs">
+      <DependentUpon>CommandMarginControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginResources.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryContentType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryFormatDefinition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryKeyProcessor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryKeyProcessorProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryTaggerSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryTaggerSourceFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Directory\DirectoryUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\ImeCoordinator\ImeCoordinator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkDisplayUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphFactoryProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphTag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphTaggerSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphTaggerSourceFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\AlternateKeyUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\ClipboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\DisplayWindowBroker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\EditorFormatDefinitions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\KeyboardDeviceImpl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\KeyMappingTimeoutHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\MouseDeviceImpl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Mouse\VimMouseProcessor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Mouse\VimMouseProcessorProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\MultiSelection\MultiSelectionUtilFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Paste\PasteAdornment.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Paste\PasteController.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Paste\PasteFactoryService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\ILineFormatTracker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\Line.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumberDrawer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumberFormatTracker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumbersCalculator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumbersTracker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumberTextSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumberVisual.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\LineNumberVisualStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\RelativeLineNumbersMargin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\RelativeLineNumbersMarginFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\Util\TextViewExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\Util\TextViewLineExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\RelativeLineNumbers\VerticalCanvasMargin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Async\WordAsyncCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionPresenterProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSessionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\Legacy\WordLegacyCompletionSourceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\WordCompletion\VimWordCompletionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NativeMethods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimKeyProcessor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)Implementation\CommandMargin\CommandMarginControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

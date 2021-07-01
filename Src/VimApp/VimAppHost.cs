@@ -35,8 +35,6 @@ namespace VimApp
         private IVimWindowManager _vimWindowManager;
         private IVim _vim;
 
-        public override string HostIdentifier => "Vim App";
-
         internal IVimWindowManager VimWindowManager
         {
             get { return _vimWindowManager; }

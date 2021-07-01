@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Legacy
 {
     internal sealed class WordLegacyCompletionSource : ICompletionSource
     {

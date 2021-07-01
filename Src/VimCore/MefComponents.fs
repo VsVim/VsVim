@@ -487,7 +487,7 @@ type internal ProtectedOperations =
 type internal VimWordCompletionSessionFactoryService 
     [<ImportingConstructor>]
     (
-        [<Import(AllowDefault=true)>] _wordCompletionSessionFactory: IWordCompletionSessionFactory
+        _wordCompletionSessionFactory: IWordCompletionSessionFactory
     ) =
 
     let _created = StandardEvent<WordCompletionSessionEventArgs>()

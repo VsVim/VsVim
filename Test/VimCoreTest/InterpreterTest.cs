@@ -287,7 +287,7 @@ namespace Vim.UnitTest
                 Create();
                 _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
                 _interpreter._fileSystem = _fileSystem.Object;
-                ((Vim)Vim).FileSystem = _fileSystem.Object;
+                ((VimImpl)Vim).FileSystem = _fileSystem.Object;
             }
 
             private void SetText(string fileName, params string[] lines)

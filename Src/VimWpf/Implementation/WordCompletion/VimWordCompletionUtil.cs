@@ -4,17 +4,17 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Vim.VisualStudio.Specific.Implementation.WordCompletion.Legacy;
+using Vim.UI.Wpf.Implementation.WordCompletion.Legacy;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Editor;
 
 #if VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
-using Vim.VisualStudio.Specific.Implementation.WordCompletion.Async;
+using Vim.UI.Wpf.Implementation.WordCompletion.Async;
 #endif
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion
+namespace Vim.UI.Wpf.Implementation.WordCompletion
 {
     /// <summary>
     /// This type is responsible for providing word completion sessions over a given ITextView

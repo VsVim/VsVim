@@ -23,7 +23,6 @@ using Xunit;
 using System.Threading;
 using EnvDTE;
 using Thread = System.Threading.Thread;
-using Vim.VisualStudio.Specific;
 
 namespace Vim.VisualStudio.UnitTest
 {
@@ -221,9 +220,8 @@ namespace Vim.VisualStudio.UnitTest
 
         private static VimEditorHost CreateVimEditorHost()
         {
-            var editorHostFactory = new VimEditorHostFactory();
+            var editorHostFactory = new VimEditorHostFactory(includeWpf: false);
             editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.UI.Wpf.VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
 
             var types = new List<Type>()

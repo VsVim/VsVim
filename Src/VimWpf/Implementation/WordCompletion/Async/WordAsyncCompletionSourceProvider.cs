@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Utilities;
 using System;
 using System.ComponentModel.Composition;
 
-namespace Vim.VisualStudio.Specific.Implementation.WordCompletion.Async
+namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
 {
     [Name("Vim Async Completion Source")]
     [ContentType(VimConstants.AnyContentType)]

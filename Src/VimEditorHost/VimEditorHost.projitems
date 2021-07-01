@@ -9,6 +9,7 @@
     <Import_RootNamespace>VimEditorHost</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)KeyboardInputSimulation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.JoinableTaskContextExportProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorSpecificUtil.cs" />

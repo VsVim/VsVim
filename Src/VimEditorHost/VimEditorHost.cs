@@ -4,7 +4,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text.Classification;
-using Vim.UI.Wpf;
 using Vim.UnitTest.Mock;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,6 +11,7 @@ using Microsoft.VisualStudio.Text.Projection;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
+using Vim.UI.Wpf;
 
 namespace Vim.EditorHost
 {

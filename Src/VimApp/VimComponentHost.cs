@@ -10,7 +10,7 @@ using Vim.UnitTest.Exports;
 
 namespace VimApp
 {
-    sealed class VimComponentHost 
+    public sealed class VimComponentHost 
     {
         private readonly VimEditorHost _editorHost;
         private readonly IVim _vim;
@@ -32,10 +32,9 @@ namespace VimApp
 
         internal VimComponentHost()
         {
-            var editorHostFactory = new VimEditorHostFactory(includeSelf: false);
+            var editorHostFactory = new VimEditorHostFactory(includeSelf: false, includeWpf: false);
 
             editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(VimKeyProcessor).Assembly));
             editorHostFactory.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
             _editorHost = editorHostFactory.CreateVimEditorHost();
             _vim = _editorHost.CompositionContainer.GetExportedValue<IVim>();

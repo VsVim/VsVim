@@ -162,12 +162,12 @@ namespace Vim.UnitTest
         {
             private readonly Mock<IFileSystem> _fileSystem;
             private readonly IFileSystem _originalFileSystem;
-            private readonly Vim _vim;
+            private readonly VimImpl _vim;
             private readonly IVimGlobalSettings _globalSettings;
 
             public VimRcTest()
             {
-                _vim = (Vim)Vim;
+                _vim = (VimImpl)Vim;
                 _globalSettings = Vim.GlobalSettings;
                 _fileSystem = new Mock<IFileSystem>();
                 _fileSystem.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { });

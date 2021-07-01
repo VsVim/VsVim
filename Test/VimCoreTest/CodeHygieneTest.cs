@@ -15,7 +15,7 @@ namespace Vim.UnitTest
     public abstract class CodeHygieneTest
     {
         private readonly Assembly _testAssembly = typeof(CodeHygieneTest).Assembly;
-        private readonly Assembly _sourceAssembly = typeof(Vim).Assembly;
+        private readonly Assembly _sourceAssembly = typeof(VimImpl).Assembly;
 
         private static bool IsDiscriminatedUnion(Type type)
         {

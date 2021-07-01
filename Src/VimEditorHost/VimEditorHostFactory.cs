@@ -5,7 +5,6 @@ using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Vim.VisualStudio.Specific;
 
 namespace Vim.EditorHost
 {
@@ -43,9 +42,9 @@ namespace Vim.EditorHost
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
         private readonly List<ExportProvider> _exportProviderList = new List<ExportProvider>();
 
-        public VimEditorHostFactory(bool includeSelf = true)
+        public VimEditorHostFactory(bool includeSelf = true, bool includeWpf = true)
         {
-            BuildCatalog(includeSelf);
+            BuildCatalog(includeSelf, includeWpf);
         }
 
         public void Add(ComposablePartCatalog composablePartCatalog)
@@ -95,7 +94,7 @@ namespace Vim.EditorHost
             return new VimEditorHost(CreateCompositionContainer());
         }
 
-        private void BuildCatalog(bool includeSelf)
+        private void BuildCatalog(bool includeSelf, bool includeWpf)
         {
             // TODO_SHARED move the IVim assembly in here, silly for it not to be
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
@@ -126,7 +125,28 @@ namespace Vim.EditorHost
                 };
 
                 _composablePartCatalogList.Add(new TypeCatalog(types));
-                _composablePartCatalogList.Add(VimSpecificUtil.GetTypeCatalog());
+            }
+
+            if (includeWpf)
+            {
+                // TODO_SHARED: consider registering the assembly that contains VimWordCompletionUtil here. That 
+                // is more correct and scalable
+                var types = new List<Type>()
+                {
+#if VS_SPECIFIC_2019
+                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Async.WordAsyncCompletionSourceProvider),
+#elif !VS_SPECIFIC_MAC
+                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Legacy.WordLegacyCompletionPresenterProvider),
+#endif
+                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Legacy.WordLegacyCompletionSourceProvider),
+                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.VimWordCompletionUtil),
+#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#else
+                    typeof(Vim.UI.Wpf.Implementation.MultiSelection.MultiSelectionUtilFactory),
+#endif
+                };
+
+                _composablePartCatalogList.Add(new TypeCatalog(types));
             }
 
         }

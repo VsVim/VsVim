@@ -31,6 +31,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-    <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
   </ItemGroup>
 </Project>

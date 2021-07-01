@@ -7,7 +7,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim.Extensions;
-using Vim.UI.Wpf.Properties;
 using System.Text;
 using System.Diagnostics;
 using WpfKeyboard = System.Windows.Input.Keyboard;
