@@ -13,7 +13,11 @@ namespace Vim.UI.Wpf.UnitTest
     {
         private readonly Mock<ICompletionBroker> _completionBroker;
         private readonly Mock<ISignatureHelpBroker> _signatureBroker;
+#if VS_SPECIFIC_2017
         private readonly Mock<IQuickInfoBroker> _quickInfoBroker;
+#else
+        private readonly Mock<IAsyncQuickInfoBroker> _quickInfoBroker;
+#endif
         private readonly Mock<ITextView> _textView;
         private readonly DisplayWindowBroker _brokerRaw;
         private readonly IDisplayWindowBroker _broker;
@@ -22,7 +26,11 @@ namespace Vim.UI.Wpf.UnitTest
         {
             _completionBroker = new Mock<ICompletionBroker>();
             _signatureBroker = new Mock<ISignatureHelpBroker>();
+#if VS_SPECIFIC_2017
             _quickInfoBroker = new Mock<IQuickInfoBroker>();
+#else
+            _quickInfoBroker = new Mock<IAsyncQuickInfoBroker>();
+#endif
             _textView = new Mock<ITextView>();
             _brokerRaw = new DisplayWindowBroker(
                 _textView.Object,
@@ -32,6 +40,7 @@ namespace Vim.UI.Wpf.UnitTest
             _broker = _brokerRaw;
         }
 
+#if VS_SPECIFIC_2017
         [Fact]
         public void DismissDisplayWindows1()
         {
@@ -40,5 +49,6 @@ namespace Vim.UI.Wpf.UnitTest
             _broker.DismissDisplayWindows();
             _quickInfoBroker.Verify();
         }
+#endif
     }
 }

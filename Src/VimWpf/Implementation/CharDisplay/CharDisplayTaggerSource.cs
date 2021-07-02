@@ -117,7 +117,8 @@ namespace Vim.UI.Wpf.Implementation.CharDisplay
                         FlowDirection.LeftToRight,
                         typeface,
                         fontSize,
-                        Brushes.Black);
+                        Brushes.Black,
+                        pixelsPerDip: 1);
                     var width = formattedText.Width;
                     var height = formattedText.Height;
                     var textBlock = new TextBlock

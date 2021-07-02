@@ -5,6 +5,8 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 
+#pragma warning disable 649
+
 namespace Vim.UI.Wpf.Implementation.Directory
 {
     internal sealed class DirectoryContentType

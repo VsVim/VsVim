@@ -13,8 +13,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly ITextView _textView;
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
+#if VS_SPECIFIC_2017
         private readonly IQuickInfoBroker _quickInfoBroker;
+#else
+        private readonly IAsyncQuickInfoBroker _quickInfoBroker;
+#endif
 
+#if VS_SPECIFIC_2017
         internal DisplayWindowBroker(
             ITextView textView,
             ICompletionBroker completionBroker,
@@ -26,6 +31,20 @@ namespace Vim.UI.Wpf.Implementation.Misc
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
         }
+#else
+        internal DisplayWindowBroker(
+            ITextView textView,
+            ICompletionBroker completionBroker,
+            ISignatureHelpBroker signatureHelpBroker,
+            IAsyncQuickInfoBroker quickInfoBroker)
+        {
+            _textView = textView;
+            _completionBroker = completionBroker;
+            _signatureHelpBroker = signatureHelpBroker;
+            _quickInfoBroker = quickInfoBroker;
+        }
+
+#endif
 
         #region IDisplayWindowBroker
 
@@ -63,14 +82,22 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
             if (_quickInfoBroker.IsQuickInfoActive(_textView))
             {
+#if VS_SPECIFIC_2017
                 foreach (var session in _quickInfoBroker.GetSessions(_textView))
                 {
                     session.Dismiss();
                 }
+#else
+                var session = _quickInfoBroker.GetSession(_textView);
+                if (session is object)
+                {
+                    session.DismissAsync().Wait();
+                }
+#endif
             }
         }
 
-        #endregion
+#endregion
     }
 
     [Export(typeof(IDisplayWindowBrokerFactoryService))]
@@ -80,8 +107,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
+#if VS_SPECIFIC_2017
         private readonly IQuickInfoBroker _quickInfoBroker;
+#else
+        private readonly IAsyncQuickInfoBroker _quickInfoBroker;
+#endif
 
+#if VS_SPECIFIC_2017
         [ImportingConstructor]
         internal DisplayWindowBrokerFactoryService(
             ICompletionBroker completionBroker,
@@ -92,6 +124,18 @@ namespace Vim.UI.Wpf.Implementation.Misc
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
         }
+#else
+        [ImportingConstructor]
+        internal DisplayWindowBrokerFactoryService(
+            ICompletionBroker completionBroker,
+            ISignatureHelpBroker signatureHelpBroker,
+            IAsyncQuickInfoBroker quickInfoBroker)
+        {
+            _completionBroker = completionBroker;
+            _signatureHelpBroker = signatureHelpBroker;
+            _quickInfoBroker = quickInfoBroker;
+        }
+#endif
 
         IDisplayWindowBroker IDisplayWindowBrokerFactoryService.GetDisplayWindowBroker(ITextView textView)
         {
