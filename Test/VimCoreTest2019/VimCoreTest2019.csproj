@@ -3,9 +3,10 @@
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.UnitTest</RootNamespace>
-    <AssemblyName>Vim.Core.UnitTest</AssemblyName>
+    <AssemblyName>Vim.Core.2019.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <VsVimProjectType>EditorHost</VsVimProjectType>
+    <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
     <!-- TODO_SHARED should undo this but suppressing for now. -->
     <RunAnalyzers>false</RunAnalyzers>
@@ -33,11 +34,9 @@
     <PackageReference Include="xunit.runner.console" Version="2.4.1" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Todo.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Src\VimCore\VimCore.fsproj" />
     <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
   </ItemGroup>
   <Import Project="..\..\Src\VimWpf\VimWpf.projitems" Label="Shared" />
+  <Import Project="..\VimCoreTest\VimCoreTest.projitems" Label="Shared" />
 </Project>
