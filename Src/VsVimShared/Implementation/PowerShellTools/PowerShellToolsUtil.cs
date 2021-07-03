@@ -20,7 +20,7 @@ namespace Vim.VisualStudio.Implementation.PowerShellTools
         internal PowerShellToolsUtil(SVsServiceProvider serviceProvider)
         {
             var dte = serviceProvider.GetService<SDTE, _DTE>();
-            var version = dte.GetVisualStudioVersion();
+            var version = VsVimHost.VisualStudioVersion;
             var guid = (version == VisualStudioVersion.Vs2015) ? s_powerShellToolsPackageIdDev14 : s_powerShellToolsPackageIdDev15;
             var vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
 

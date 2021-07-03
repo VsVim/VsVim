@@ -246,6 +246,16 @@ namespace Vim.VisualStudio
         internal const string CommandNamePeekDefinition = "Edit.PeekDefinition";
         internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
+#if VS_SPECIFIC_2015
+        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2015;
+#elif VS_SPECIFIC_2017
+        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2017;
+#elif VS_SPECIFIC_2019
+        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2019;
+#else
+#error Unsupported configuration
+#endif
+
         private readonly IVsAdapter _vsAdapter;
         private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
@@ -750,8 +760,6 @@ namespace Vim.VisualStudio
         public override void GoToTab(int index)
         {
             GetActiveViews()[index].ShowInFront();
-        // TODO_SHARED: consider changing underlying code to be gt and gT specific so the primary 
-        // case can use VS commands like Window.NextTab instead of relying on the non-SDK shell code
         }
 
         internal WindowFrameState GetWindowFrameState()
@@ -804,16 +812,14 @@ namespace Vim.VisualStudio
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
+        // TODO_SHARED 2017 shouldn't be included here
 #elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
         internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
 
-        // TODO_SHARED: consider calling into IWpfTextView and checking if it's focused or 
-        // maybe through IVsTextManager.GetActiveView
         internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame) => false;
 
         public override void GoToTab(int index)
         {
-            // TODO_SHARED: possibly this should error?
         }
 #else
 #error Unsupported configuration
@@ -1487,7 +1493,7 @@ namespace Vim.VisualStudio
             }
         }
 
-        #region IVsSelectionEvents
+#region IVsSelectionEvents
 
         int IVsSelectionEvents.OnCmdUIContextChanged(uint dwCmdUICookie, int fActive)
         {
@@ -1586,6 +1592,6 @@ namespace Vim.VisualStudio
             return VSConstants.S_OK;
         }
 
-        #endregion
+#endregion
     }
 }

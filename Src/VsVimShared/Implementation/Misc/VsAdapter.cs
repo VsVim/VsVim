@@ -41,7 +41,6 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IServiceProvider _serviceProvider;
         private readonly IVsMonitorSelection _monitorSelection;
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
-        private readonly VisualStudioVersion _visualStudioVersion;
 
         internal bool InDebugMode
         {
@@ -90,7 +89,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
             _vsFindManager = _serviceProvider.GetService<SVsFindManager, IVsFindManager>();
             _extensionAdapterBroker = extensionAdapterBroker;
-            _visualStudioVersion = vsServiceProvider.GetVisualStudioVersion();
         }
 
         internal Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)

@@ -23,8 +23,6 @@ namespace Vim.UnitTest.Mock
         public bool AutoSynchronizeSettings { get; set; }
         public bool IsAutoCommandEnabled { get; set; }
         public bool IsUndoRedoExpected { get; set; }
-        // TODO_SHARED delete this nonsense
-        public string HostIdentifier { get; } = "VsVim Test Host";
         public DefaultSettings DefaultSettings { get; set; }
         public bool EnsuredPackageLoaded { get; private set; }
         public int BeepCount { get; set; }

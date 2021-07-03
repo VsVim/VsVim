@@ -96,7 +96,15 @@ namespace Vim.EditorHost
 
         private void BuildCatalog(bool includeSelf, bool includeWpf)
         {
-            // TODO_SHARED move the IVim assembly in here, silly for it not to be
+            // https://github.com/VsVim/VsVim/issues/2905
+            // Once VimEditorUtils is broken up correctly the composition code here should be 
+            // reconsidered: particularly all of the ad-hoc exports below. Really need to move 
+            // to a model where we export everything in the assemblies and provide a filter to 
+            // exclude types at the call site when necessary for the given test.
+            //
+            // The ad-hoc export here is just too difficult to maintain and reason about. It's also
+            // likely leading to situations where our test code is executing different than 
+            // production because the test code doesn't have the same set of exports as production
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
             AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
@@ -129,8 +137,6 @@ namespace Vim.EditorHost
 
             if (includeWpf)
             {
-                // TODO_SHARED: consider registering the assembly that contains VimWordCompletionUtil here. That 
-                // is more correct and scalable
                 var types = new List<Type>()
                 {
 #if VS_SPECIFIC_2019

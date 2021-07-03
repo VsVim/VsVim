@@ -84,8 +84,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\SettingSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\VimApplicationSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Settings\VimCollectionSettingsStore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Implementation\SharedService\DefaultSharedServiceFactory.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Implementation\SharedService\SharedServiceFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\ToastNotification\ToastControl.xaml.cs">
       <DependentUpon>ToastControl.xaml</DependentUpon>
     </Compile>

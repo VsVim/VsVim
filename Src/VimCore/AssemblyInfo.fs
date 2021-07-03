@@ -10,7 +10,6 @@ open System.Runtime.CompilerServices
 [<assembly:InternalsVisibleTo("Vim.Core.2019.UnitTest")>]
 [<assembly:InternalsVisibleTo("Vim.VisualStudio.Shared.2017.UnitTest")>]
 [<assembly:InternalsVisibleTo("Vim.VisualStudio.Shared.2019.UnitTest")>]
-// TODO_SHARED this should be deleted
 [<assembly:InternalsVisibleTo("Vim.UnitTest.Utils")>]
 [<assembly:InternalsVisibleTo("VimApp")>]
 [<assembly:InternalsVisibleTo("DynamicProxyGenAssembly2")>] // Moq

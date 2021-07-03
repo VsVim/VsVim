@@ -10,7 +10,8 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UnitTest.Exports
 {
-    // TODO_SHARED move to editor host and make this internal again
+    // https://github.com/VsVim/VsVim/issues/2905
+    // All of the exports here should move to VimEditorHost
     [Export(typeof(ITaggerProvider))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Structured)]
