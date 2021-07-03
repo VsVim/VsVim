@@ -15,7 +15,7 @@
     <VsVimProjectType>Vsix</VsVimProjectType>
     <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
 
-    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>
 
     <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0' OR '$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>

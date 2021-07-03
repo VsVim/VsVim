@@ -8,7 +8,7 @@
     <VsVimProjectType>EditorHost</VsVimProjectType>
     <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
-    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <ItemGroup>

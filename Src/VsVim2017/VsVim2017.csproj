@@ -16,7 +16,7 @@
     <VsVimVisualStudioTargetVersion>15.0</VsVimVisualStudioTargetVersion>
     <DeployExtension Condition="'$(VisualStudioVersion)' != '15.0'">False</DeployExtension>
 
-    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>
 
     <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->

@@ -8,7 +8,7 @@
     <TargetFramework>net472</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_VIM_APP</DefineConstants>
     <VsVimProjectType>EditorHost</VsVimProjectType>
-    <!-- TODO_SHARED should undo this but suppressing for now. -->
+    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
   <ItemGroup>
