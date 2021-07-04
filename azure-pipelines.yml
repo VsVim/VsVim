@@ -47,26 +47,13 @@ jobs:
   pool: 
     vmImage: 'vs2017-win2016'
 
-  strategy:
-    maxParallel: 3
-    matrix:
-      Vs2015:
-        _testConfig: 14.0
-        _name: Vs2015
-      Vs2017:
-        _testConfig: 15.0
-        _name: Vs2017
-      Vs2019:
-        _testConfig: 16.0
-        _name: Vs2019
-
   steps:
 
   - task: PowerShell@2
     displayName: Build 
     inputs:
       filePath: Scripts\Build.ps1
-      arguments: -ci -config Debug -build -testConfig $(_testConfig)
+      arguments: -ci -config Debug -build 
 
   - task: PowerShell@2
     displayName: Test
@@ -84,7 +71,7 @@ jobs:
     displayName: Publish Logs
     inputs:
       targetPath: '$(Build.SourcesDirectory)\Binaries\Logs'
-      artifactName: 'Logs $(_name)'
+      artifactName: 'Logs Windows'
     condition: always()
 
   - task: PublishTestResults@2
@@ -93,7 +80,7 @@ jobs:
       testRunner: XUnit
       testResultsFiles: '$(Build.SourcesDirectory)\Binaries\xUnitResults\*.xml'
       mergeTestResults: true
-      testRunTitle: 'VsVim Test Results $(_name)'
+      testRunTitle: 'VsVim Test Results'
     condition: always()
 
 # This job is meant for building a Release VSIX for consumption and 
