@@ -224,7 +224,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimHost.PeekDefinitionCount);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void ControlClickPeek()
             {
                 Create("cat dog bear", "");
@@ -9691,7 +9691,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimHost.PeekDefinitionCount);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void GoToLinkWithMousePeek()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
