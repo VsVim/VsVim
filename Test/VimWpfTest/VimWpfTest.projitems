@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)BlockCaretControllerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BlockCaretTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CharDisplayTaggerSourceTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)CodeHygieneTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandLineEditIntegrationTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandMarginControllerIntegrationTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandMarginControllerTest.cs" />

@@ -24,7 +24,6 @@ namespace Vim.VisualStudio.Implementation.Misc
         private readonly IServiceProvider _serviceProvider;
         private readonly ITextDocumentFactoryService _textDocumentFactoryService;
         private readonly ITextBufferFactoryService _textBufferFactoryService;
-        private readonly ISharedService _sharedService;
         private readonly IPeekBroker _peekBroker;
         private IVsRunningDocumentTable4 _runningDocumentTable4;
 
@@ -53,17 +52,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             IVsAdapter adapter,
             ITextDocumentFactoryService textDocumentFactoryService,
             ITextBufferFactoryService textBufferFactoryService,
-            ISharedServiceFactory sharedServiceFactory,
-            IPeekBroker peekBroker,
-            SVsServiceProvider serviceProvider) : this(adapter, textDocumentFactoryService, textBufferFactoryService, sharedServiceFactory.Create(), peekBroker, serviceProvider)
-        {
-        }
-
-        internal TextManager(
-            IVsAdapter adapter,
-            ITextDocumentFactoryService textDocumentFactoryService,
-            ITextBufferFactoryService textBufferFactoryService,
-            ISharedService sharedService,
             IPeekBroker peekBroker,
             SVsServiceProvider serviceProvider)
         {
@@ -73,7 +61,6 @@ namespace Vim.VisualStudio.Implementation.Misc
             _textDocumentFactoryService = textDocumentFactoryService;
             _textBufferFactoryService = textBufferFactoryService;
             _runningDocumentTable = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
-            _sharedService = sharedService;
             _peekBroker = peekBroker;
         }
 

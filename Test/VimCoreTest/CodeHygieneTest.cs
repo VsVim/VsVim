@@ -40,14 +40,19 @@ namespace Vim.UnitTest
 
         public sealed class NamingTest : CodeHygieneTest
         {
-            // TODO_SHARED need to re-think this with the new hosting model
-            // [Fact]
+            [Fact]
             private void TestNamespace()
             {
-                const string prefix = "Vim.UnitTest.";
                 foreach (var type in _testAssembly.GetTypes().Where(x => x.IsPublic))
                 {
-                    Assert.StartsWith(prefix, type.FullName, StringComparison.Ordinal);
+                    if (type.FullName.StartsWith("Vim.UnitTest.", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Vim.EditorHost.", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Vim.UI.Wpf.", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    Assert.False(true, $"Type {type.FullName} has incorrect namespace");
                 }
             }
 

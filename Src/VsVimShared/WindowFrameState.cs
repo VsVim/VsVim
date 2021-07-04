@@ -25,42 +25,4 @@ namespace Vim.VisualStudio
             WindowFrameCount = windowFrameCount;
         }
     }
-
-    /// <summary>
-    /// Factory for producing IVersionService instances.  This is an interface for services which
-    /// need to vary in implementation between versions of Visual Studio
-    /// </summary>
-    public interface ISharedService
-    {
-        /// <summary>
-        /// Run C# Script.
-        /// </summary>
-        /// <returns></returns>
-        void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime);
-    }
-
-    /// <summary>
-    /// Factory which is associated with a specific version of Visual Studio
-    /// </summary>
-    public interface ISharedServiceVersionFactory
-    {
-        /// <summary>
-        /// Version of Visual Studio this implementation is tied to
-        /// </summary>
-        VisualStudioVersion Version { get; }
-
-        ISharedService Create();
-    }
-
-    /// <summary>
-    /// Consumable interface which will provide an ISharedService implementation.  This is a MEF 
-    /// importable component
-    /// </summary>
-    public interface ISharedServiceFactory
-    {
-        /// <summary>
-        /// Create an instance of IVsSharedService if it's applicable for the current version
-        /// </summary>
-        ISharedService Create();
-    }
 }

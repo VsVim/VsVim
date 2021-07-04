@@ -70,8 +70,6 @@ namespace Vim.VisualStudio.Implementation.CSharpScript
             var asm = new Assembly[]
             {
                 typeof(Vim.IVim).Assembly,                        // VimCore.dll
-                typeof(Vim.UI.Wpf.IBlockCaret).Assembly,          // VimWpf.dll
-                typeof(Vim.VisualStudio.ISharedService).Assembly, // Vim.VisualStudio.VsInterfaces.dll
                 typeof(Vim.VisualStudio.Extensions).Assembly      // Vim.VisualStudio.Shared.dll
             };
 

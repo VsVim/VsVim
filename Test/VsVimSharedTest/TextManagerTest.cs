@@ -18,7 +18,6 @@ namespace Vim.VisualStudio.UnitTest
         private readonly Mock<IVsAdapter> _adapter;
         private readonly Mock<SVsServiceProvider> _serviceProvider;
         private readonly Mock<IVsRunningDocumentTable> _table;
-        private readonly Mock<ISharedService> _sharedService;
         private readonly Mock<IPeekBroker> _peekBroker;
         private readonly TextManager _managerRaw;
         private readonly ITextManager _manager;
@@ -37,13 +36,11 @@ namespace Vim.VisualStudio.UnitTest
             _serviceProvider
                 .Setup(x => x.GetService(typeof(SVsRunningDocumentTable)))
                 .Returns(_table.Object);
-            _sharedService = _factory.Create<ISharedService>();
             _peekBroker = _factory.Create<IPeekBroker>();
             _managerRaw = new TextManager(
                 _adapter.Object,
                 _factory.Create<ITextDocumentFactoryService>().Object,
                 _factory.Create<ITextBufferFactoryService>().Object,
-                _sharedService.Object,
                 _peekBroker.Object,
                 _serviceProvider.Object);
             _manager = _managerRaw;

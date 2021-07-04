@@ -7,7 +7,6 @@
     <TargetFramework>net472</TargetFramework>
     <VsVimVisualStudioTargetVersion>15.0</VsVimVisualStudioTargetVersion>
     <VsVimProjectType>EditorHost</VsVimProjectType>
-    <!-- TODO_SHARED do we really need this define anymore? -->
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
     <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>

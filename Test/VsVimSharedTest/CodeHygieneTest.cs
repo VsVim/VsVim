@@ -15,40 +15,40 @@ namespace Vim.VisualStudio.UnitTest
     {
         private readonly Assembly _assembly = typeof(CodeHygieneTest).Assembly;
 
-        // TODO_SHARED need to think about this test now
-        //[Fact]
-        private void TestNamespace()
+        [Fact]
+        public void TestNamespace()
         {
-            const string prefix = "Vim.VisualStudio.UnitTest.";
             foreach (var type in _assembly.GetTypes().Where(x => x.IsPublic))
             {
-                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Wrong namespace prefix on {type.FullName}");
+                if (type.FullName.StartsWith("Vim.VisualStudio.UnitTest.", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Vim.EditorHost.", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Vim.UnitTest.", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Vim.UI.Wpf.UnitTest.", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Assert.False(true, $"Type {type.FullName} has incorrect namespace");
             }
         }
 
-        // TODO_SHARED re-think this test a bit
-        // [Fact]
-        private void CodeNamespace()
+        [Fact]
+        public void CodeNamespace()
         {
             const string prefix = "Vim.VisualStudio.";
-            var assemblies = new[]
-                {
-                    typeof(ISharedService).Assembly,
-                    typeof(IVsAdapter).Assembly
-                };
-            foreach (var assembly in assemblies)
+            var assembly = typeof(IVsAdapter).Assembly;
+            foreach (var type in assembly.GetTypes())
             {
-                foreach (var type in assembly.GetTypes())
+                if (type.FullName.StartsWith("Xaml", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Microsoft.CodeAnalysis.EmbeddedAttribute", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("System.Runtime.CompilerServices.IsReadOnlyAttribute", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Vim.VisualStudio", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("Vim.UI.Wpf", StringComparison.Ordinal))
                 {
-                    if (type.FullName.StartsWith("Xaml", StringComparison.Ordinal) ||
-                        type.FullName.StartsWith("Microsoft.CodeAnalysis.EmbeddedAttribute", StringComparison.Ordinal) ||
-                        type.FullName.StartsWith("System.Runtime.CompilerServices.IsReadOnlyAttribute", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Wrong namespace prefix on {type.FullName}");
+                    continue;
                 }
+
+                Assert.True(type.FullName.StartsWith(prefix, StringComparison.Ordinal), $"Wrong namespace prefix on {type.FullName}");
             }
         }
 

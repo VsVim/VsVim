@@ -812,7 +812,6 @@ namespace Vim.VisualStudio
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
-        // TODO_SHARED 2017 shouldn't be included here
 #elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
         internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
 
