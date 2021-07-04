@@ -45,7 +45,7 @@ jobs:
 
 - job: VsVim_Build_Test
   pool: 
-    vmImage: 'vs2017-win2016'
+    vmImage: 'vs2019-win2016'
 
   steps:
 
@@ -89,7 +89,7 @@ jobs:
 #   - The Open VSIX gallery during CI
 - job: Produce_Vsix
   pool: 
-    vmImage: 'vs2017-win2016'
+    vmImage: 'vs2019-win2016'
 
   steps:
   - task: PowerShell@2
