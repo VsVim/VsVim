@@ -596,7 +596,7 @@ namespace Vim.UnitTest
         }
 
         // TODO_2015 change the name of this as 2017 is the minimum now so we are good
-        protected void SetVs2017AndAboveEditorOptionValue<T>(IEditorOptions options, EditorOptionKey<T> key, T value)
+        protected void SetEditorOptionValue<T>(IEditorOptions options, EditorOptionKey<T> key, T value)
         {
             options.SetOptionValue(key, value);
         }

@@ -214,7 +214,7 @@ namespace Vim.UnitTest
             public void ControlClick()
             {
                 Create("cat dog bear", "");
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
             public void ControlClickPeek()
             {
                 Create("cat dog bear", "");
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 _textView.SetVisibleLineCount(2);
                 var point = _textView.GetPointInLine(0, 5); // 'o' in 'dog'
                 _testableMouseDevice.Point = point;
@@ -9675,7 +9675,7 @@ namespace Vim.UnitTest
             public void GoToLinkWithMouse()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 var point = _textView.GetPointInLine(0, 8);
                 var link = "";
                 _vimHost.OpenLinkFunc = arg =>
@@ -9695,7 +9695,7 @@ namespace Vim.UnitTest
             public void GoToLinkWithMousePeek()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 var point = _textView.GetPointInLine(0, 8);
                 var link = "";
                 _vimHost.OpenLinkFunc = arg =>
