@@ -21,7 +21,6 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
-#elif VS_SPECIFIC_2015
 #else
 #error Unsupported configuration
 #endif

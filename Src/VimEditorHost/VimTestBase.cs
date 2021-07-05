@@ -595,11 +595,10 @@ namespace Vim.UnitTest
             host.HostControl.UpdateLayout();
         }
 
+        // TODO_2015 change the name of this as 2017 is the minimum now so we are good
         protected void SetVs2017AndAboveEditorOptionValue<T>(IEditorOptions options, EditorOptionKey<T> key, T value)
         {
-#if !VS_SPECIFIC_2015
             options.SetOptionValue(key, value);
-#endif
         }
 
         /// <summary>

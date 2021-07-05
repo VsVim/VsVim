@@ -10,11 +10,7 @@ namespace Vim.EditorHost
 {
     public sealed partial class VimEditorHostFactory
     {
-#if VS_SPECIFIC_2015
-        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2015;
-        internal static Version VisualStudioVersion => new Version(14, 0, 0, 0);
-        internal static Version VisualStudioThreadingVersion => new Version(14, 0, 0, 0);
-#elif VS_SPECIFIC_2017
+#if VS_SPECIFIC_2017
         internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
         internal static Version VisualStudioVersion => new Version(15, 0, 0, 0);
         internal static Version VisualStudioThreadingVersion => new Version(15, 3, 0, 0);
@@ -124,8 +120,6 @@ namespace Vim.EditorHost
     #elif VS_SPECIFIC_2017
                     typeof(Implementation.Misc.BasicLoggingServiceInternal),
                     typeof(Implementation.Misc.BasicObscuringTipManager),
-    #elif VS_SPECIFIC_2015
-
     #else
     #error Unsupported configuration
     #endif
@@ -146,7 +140,7 @@ namespace Vim.EditorHost
 #endif
                     typeof(Vim.UI.Wpf.Implementation.WordCompletion.Legacy.WordLegacyCompletionSourceProvider),
                     typeof(Vim.UI.Wpf.Implementation.WordCompletion.VimWordCompletionUtil),
-#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#if VS_SPECIFIC_2017
 #else
                     typeof(Vim.UI.Wpf.Implementation.MultiSelection.MultiSelectionUtilFactory),
 #endif

@@ -6,7 +6,7 @@ namespace Vim.EditorHost
 {
     public static class EditorSpecificUtil
     {
-#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#if VS_SPECIFIC_2017
         public const bool HasAsyncCompletion = false;
 #elif VS_SPECIFIC_2019 || VS_SPECIFIC_MAC
         public const bool HasAsyncCompletion = true;
