@@ -233,27 +233,28 @@ function Test-Version() {
 
 function Test-UnitTests() { 
   Write-Host "Running unit tests"
-  $resultsDir = Join-Path $binariesDir "xunitResults"
-  Create-Directory $resultsDir
+  foreach ($vsVersion in $vsVersions) {
+    Write-Host "Running $vsVersion"
+    $resultsDir = Join-Path $binariesDir "xunitResults"
+    Create-Directory $resultsDir
 
-  $all = 
-    "VimCoreTest\net472\Vim.Core.UnitTest.dll",
-    "VimWpfTest\net472\Vim.UI.Wpf.UnitTest.dll",
-    "VsVimSharedTest\net472\Vim.VisualStudio.Shared.UnitTest.dll"
-    "VsVimTestn\net472\VsVim.UnitTest.dll"
-  $xunit = Join-Path (Get-PackagesDir) "xunit.runner.console\2.4.1\tools\net472\xunit.console.x86.exe"
-  $anyFailed = $false
+    $all = @(
+      "VimCoreTest$($vsVersion)\net472\Vim.Core.$($vsVersion).UnitTest.dll",
+      "VsVimTest$($vsVersion)\net472\Vim.VisualStudio.Shared.$($vsVersion).UnitTest.dll")
+    $xunit = Join-Path (Get-PackagesDir) "xunit.runner.console\2.4.1\tools\net472\xunit.console.x86.exe"
+    $anyFailed = $false
 
-  foreach ($filePath in $all) { 
-    $filePath = Join-Path $configDir $filePath
-    $fileName = [IO.Path]::GetFileNameWithoutExtension($filePath)
-    $logFilePath = Join-Path $resultsDir "$($fileName).xml"
-    $arg = "$filePath -xml $logFilePath"
-    try {
-      Exec-Console $xunit $arg
-    }
-    catch {
-      $anyFailed = $true
+    foreach ($filePath in $all) { 
+      $filePath = Join-Path $configDir $filePath
+      $fileName = [IO.Path]::GetFileNameWithoutExtension($filePath)
+      $logFilePath = Join-Path $resultsDir "$($fileName).xml"
+      $arg = "$filePath -xml $logFilePath"
+      try {
+        Exec-Console $xunit $arg
+      }
+      catch {
+        $anyFailed = $true
+      }
     }
   }
 
