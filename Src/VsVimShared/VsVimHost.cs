@@ -28,7 +28,7 @@ using Vim.Interpreter;
 #if VS_SPECIFIC_2019
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2017
 #else
 #error Unsupported configuration
 #endif
@@ -246,9 +246,7 @@ namespace Vim.VisualStudio
         internal const string CommandNamePeekDefinition = "Edit.PeekDefinition";
         internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
-#if VS_SPECIFIC_2015
-        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2015;
-#elif VS_SPECIFIC_2017
+#if VS_SPECIFIC_2017
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2017;
 #elif VS_SPECIFIC_2019
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2019;
@@ -378,7 +376,7 @@ namespace Vim.VisualStudio
         {
             // The output window is not guaraneed to be accessible on startup. On certain configurations of VS2015
             // it can throw an exception. Delaying the creation of the Window until after startup has likely 
-            // completed. Additionally using IProtectedOperations to guard against exeptions 
+            // completed. Additionally using IProtectedOperations to guard against exceptions 
             // https://github.com/VsVim/VsVim/issues/2249
 
             _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
@@ -812,7 +810,7 @@ namespace Vim.VisualStudio
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2017
         internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
 
         internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame) => false;

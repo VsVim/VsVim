@@ -432,18 +432,7 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void SearchCacheDoesntHoldTheBuffer()
         {
-#if VS_SPECIFIC_2015
-            // Using explicit roles here to avoid the default set which includes analyzable. In VS2015
-            // the LightBulbController type uses an explicitly delayed task (think Thread.Sleep) in 
-            // order to refresh state. That task holds a strong reference to ITextView which creates
-            // the appearance of a memory leak. 
-            //
-            // There is no way to easily wait for this operation to complete. Instead create an ITextBuffer
-            // without the analyzer role to avoid the problem.
-            var vimBuffer = CreateVimBuffer(new[] { PredefinedTextViewRoles.Editable, PredefinedTextViewRoles.Document, PredefinedTextViewRoles.PrimaryDocument });
-#else
             var vimBuffer = CreateVimBuffer();
-#endif
             vimBuffer.TextBuffer.SetText("hello world");
             vimBuffer.Process("/world", enter: true);
 

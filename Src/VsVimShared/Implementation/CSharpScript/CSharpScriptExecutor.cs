@@ -118,18 +118,6 @@ namespace Vim.VisualStudio.Implementation.CSharpScript
 
     }
 
-#elif VS_SPECIFIC_2015
-
-    [Export(typeof(ICSharpScriptExecutor))]
-    internal sealed class NotSupportedCSharpScriptExecutor : ICSharpScriptExecutor
-    {
-        internal static readonly ICSharpScriptExecutor Instance = new NotSupportedCSharpScriptExecutor();
-
-        void ICSharpScriptExecutor.Execute(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
-        {
-            vimBuffer.VimBufferData.StatusUtil.OnError("csx not supported");
-        }
-    }
 #else
 #error Unsupported configuration
 #endif

@@ -60,7 +60,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 : _legacyFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward);
         }
 
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2017
 
         private readonly WordLegacyCompletionSessionFactory _legacyFactory;
 

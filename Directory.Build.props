@@ -33,7 +33,6 @@
 
   <PropertyGroup> 
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Common</ReferencePath>
-    <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2015</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2017</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2019</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>

@@ -754,7 +754,7 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-#if VS_SPECIFIC_2017 || VS_SPECIFIC_2015
+#if VS_SPECIFIC_2017
             // https://github.com/VsVim/VsVim/issues/2463
             /// <summary>
             /// If the caret is in the selection exclusive and we're in visual mode then we should leave
@@ -1220,7 +1220,7 @@ namespace Vim.UnitTest
             public void GoToDefinition1()
             {
                 Create("foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 var res = _commonOperations.GoToDefinition();
                 Assert.True(res.IsSucceeded);
                 Assert.Equal(1, VimHost.GoToDefinitionCount);
@@ -1231,7 +1231,7 @@ namespace Vim.UnitTest
             public void GoToDefinition2()
             {
                 Create("foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.GoToDefinition();
                 Assert.True(res.IsFailed);
@@ -1245,7 +1245,7 @@ namespace Vim.UnitTest
             public void GoToDefinition3()
             {
                 Create("      foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.GoToDefinition();
                 Assert.True(res.IsFailed);
@@ -1255,7 +1255,7 @@ namespace Vim.UnitTest
             public void GoToDefinition4()
             {
                 Create("  foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.GoToDefinition();
                 Assert.True(res.IsFailed);
@@ -1266,7 +1266,7 @@ namespace Vim.UnitTest
             public void GoToDefinition5()
             {
                 Create("foo bar baz");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.GoToDefinition();
                 Assert.True(res.IsFailed);
@@ -1277,7 +1277,7 @@ namespace Vim.UnitTest
             public void PeekDefinition1()
             {
                 Create("foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 var res = _commonOperations.PeekDefinition();
                 Assert.True(res.IsSucceeded);
                 Assert.Equal(1, VimHost.PeekDefinitionCount);
@@ -1288,7 +1288,7 @@ namespace Vim.UnitTest
             public void PeekDefinition2()
             {
                 Create("foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.PeekDefinition();
                 Assert.True(res.IsFailed);
@@ -1302,7 +1302,7 @@ namespace Vim.UnitTest
             public void PeekDefinition3()
             {
                 Create("      foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.PeekDefinition();
                 Assert.True(res.IsFailed);
@@ -1312,7 +1312,7 @@ namespace Vim.UnitTest
             public void PeekDefinition4()
             {
                 Create("  foo");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.PeekDefinition();
                 Assert.True(res.IsFailed);
@@ -1323,7 +1323,7 @@ namespace Vim.UnitTest
             public void PeekDefinition5()
             {
                 Create("foo bar baz");
-                SetVs2017AndAboveEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_commonOperations.EditorOptions, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 VimHost.GoToDefinitionReturn = false;
                 var res = _commonOperations.PeekDefinition();
                 Assert.True(res.IsFailed);

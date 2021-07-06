@@ -62,7 +62,7 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
 }
 }
 
-#elif VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+#elif VS_SPECIFIC_2017
 // Nothing to do
 #else
 #error Unsupported configuration

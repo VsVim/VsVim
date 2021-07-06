@@ -1,4 +1,4 @@
-﻿#if VS_SPECIFIC_2015 || VS_SPECIFIC_2017
+﻿#if VS_SPECIFIC_2017
 #else
 
 using Microsoft.VisualStudio.Text;

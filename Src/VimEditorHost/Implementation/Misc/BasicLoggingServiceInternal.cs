@@ -1,6 +1,4 @@
-﻿#if VS_SPECIFIC_2015
-#else
-using Microsoft.VisualStudio.Telemetry;
+﻿using Microsoft.VisualStudio.Telemetry;
 using Microsoft.VisualStudio.Text.Utilities;
 using System;
 using System.Collections.Generic;
@@ -92,5 +90,3 @@ namespace Vim.EditorHost.Implementation.Misc
 #endif
     }
 }
-
-#endif

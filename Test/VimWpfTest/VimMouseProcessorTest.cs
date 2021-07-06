@@ -43,7 +43,7 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void GoToDefinition()
             {
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, false);
                 _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
                 var point = _textView.GetPointInLine(0, 0);
                 _testableMouseDevice.Point = point;
@@ -56,7 +56,7 @@ namespace Vim.UI.Wpf.UnitTest
             [WpfFact]
             public void PeekDefinition()
             {
-                SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
+               SetEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);
                 _keyboardDevice.SetupGet(x => x.KeyModifiers).Returns(VimKeyModifiers.Control);
                 var point = _textView.GetPointInLine(0, 0);
                 _testableMouseDevice.Point = point;

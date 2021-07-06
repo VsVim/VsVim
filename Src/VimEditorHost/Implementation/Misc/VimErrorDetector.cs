@@ -127,7 +127,7 @@ namespace Vim.EditorHost.Implementation.Misc
             {
                 return;
             }
-#elif VS_SPECIFIC_2017 || VS_SPECIFIC_2015
+#elif VS_SPECIFIC_2017
 #else
 #error Unsupported configuration
 #endif
