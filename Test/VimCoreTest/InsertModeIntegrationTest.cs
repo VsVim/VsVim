@@ -2687,6 +2687,7 @@ namespace Vim.UnitTest
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
 
+#if false
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
@@ -2700,6 +2701,7 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-N><C-Y>");
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
+#endif
 
             /// <summary>
             /// Simulate Aborting / Exiting a completion
