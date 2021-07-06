@@ -42,7 +42,7 @@ namespace Vim.UnitTest
         private readonly SimpleListener _simpleListener;
         private readonly IVimBufferFactory _bufferFactory;
         private readonly Dictionary<string, VariableValue> _variableMap;
-        private Vim _vimRaw;
+        private VimImpl _vimRaw;
         private IVim _vim;
 
         protected VimTest(bool createVim = true)
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
             markMap.Setup(x => x.SetMark(Mark.LastJump, It.IsAny<IVimBufferData>(), 0, 0)).Returns(true);
             markMap.Setup(x => x.UnloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs", 0, 0)).Returns(true);
             markMap.Setup(x => x.ReloadBuffer(It.IsAny<IVimBufferData>(), "VimTest.cs")).Returns(true);
-            _vimRaw = new Vim(
+            _vimRaw = new VimImpl(
                 _vimHost.Object,
                 _bufferFactory,
                 CompositionContainer.GetExportedValue<IVimInterpreterFactory>(),

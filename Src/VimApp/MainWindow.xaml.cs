@@ -89,7 +89,7 @@ namespace VimApp
         private readonly IClassificationFormatMapService _classificationFormatMapService;
         private readonly IVimAppOptions _vimAppOptions;
         private readonly IVimWindowManager _vimWindowManager;
-        private readonly EditorHost _editorHost;
+        private readonly VimEditorHost _editorHost;
         private readonly IEditorOperationsFactoryService _editorOperationsFactoryService;
         private readonly ITextUndoHistoryRegistry _textUndoHistoryRegistry;
 

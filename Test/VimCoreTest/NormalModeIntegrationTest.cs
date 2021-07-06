@@ -224,7 +224,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimHost.PeekDefinitionCount);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void ControlClickPeek()
             {
                 Create("cat dog bear", "");
@@ -2124,7 +2124,7 @@ namespace Vim.UnitTest
 
         public sealed class EditAlternateFileTest : NormalModeIntegrationTest
         {
-            private readonly Vim _vimRaw;
+            private readonly VimImpl _vimRaw;
 
             private string _name;
             private FSharpOption<int> _line;
@@ -2132,7 +2132,7 @@ namespace Vim.UnitTest
 
             public EditAlternateFileTest()
             {
-                _vimRaw = (Vim)Vim;
+                _vimRaw = (VimImpl)Vim;
             }
 
             protected override void Create(params string[] lines)
@@ -9691,7 +9691,7 @@ namespace Vim.UnitTest
                 Assert.Equal(0, _vimHost.PeekDefinitionCount);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void GoToLinkWithMousePeek()
             {
                 Create("foo https://github.com/VsVim/VsVim bar", "");

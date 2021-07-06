@@ -7,17 +7,11 @@
     <LangVersion Condition="'$(Language)' == 'C#'">Latest</LangVersion>
   </PropertyGroup>
 
-  <!-- 
-    This is set for projects which host the VimSpecific project as a part 
-    test hosting: VimApp or VimTestUtils
-    -->
-  <PropertyGroup Condition="'$(VsVimSpecificTestHost)' == 'true'">
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '14.0'">$(DefineConstants);VS_SPECIFIC_2015;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '15.0'">$(DefineConstants);VS_SPECIFIC_2017;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-    <DefineConstants Condition="'$(VsVimTargetVersion)' == '16.0'">$(DefineConstants);VS_SPECIFIC_2019;VIM_SPECIFIC_TEST_HOST</DefineConstants>
-  </PropertyGroup>
+  <Import 
+    Project="$(MSBuildThisFileDirectory)References\Vs2017\Vs2017.Build.targets"
+    Condition="'$(VsVimVisualStudioTargetVersion)' == '15.0' AND '$(VsVimProjectType)' != ''" />
 
-  <Import Project="$(VsRunnablePropsFilePath)" Condition="'$(VsVimIsRunnable)' == 'true'" />
-
-  <Import Project="$(VsSDKInstall)\Microsoft.VsSDK.targets" Condition="Exists('$(VsSDKInstall)\Microsoft.VsSDK.targets') and '$(IsVsixProject)' == 'true'" />
+  <Import 
+    Project="$(MSBuildThisFileDirectory)References\Vs2019\Vs2019.Build.targets"
+    Condition="'$(VsVimVisualStudioTargetVersion)' == '16.0' AND '$(VsVimProjectType)' != ''" />
 </Project>

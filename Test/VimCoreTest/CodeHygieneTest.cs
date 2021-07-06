@@ -15,7 +15,7 @@ namespace Vim.UnitTest
     public abstract class CodeHygieneTest
     {
         private readonly Assembly _testAssembly = typeof(CodeHygieneTest).Assembly;
-        private readonly Assembly _sourceAssembly = typeof(Vim).Assembly;
+        private readonly Assembly _sourceAssembly = typeof(VimImpl).Assembly;
 
         private static bool IsDiscriminatedUnion(Type type)
         {
@@ -41,12 +41,18 @@ namespace Vim.UnitTest
         public sealed class NamingTest : CodeHygieneTest
         {
             [Fact]
-            public void TestNamespace()
+            private void TestNamespace()
             {
-                const string prefix = "Vim.UnitTest.";
                 foreach (var type in _testAssembly.GetTypes().Where(x => x.IsPublic))
                 {
-                    Assert.StartsWith(prefix, type.FullName, StringComparison.Ordinal);
+                    if (type.FullName.StartsWith("Vim.UnitTest.", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Vim.EditorHost.", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("Vim.UI.Wpf.", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    Assert.False(true, $"Type {type.FullName} has incorrect namespace");
                 }
             }
 

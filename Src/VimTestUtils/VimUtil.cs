@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Vim.EditorHost;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,7 +11,7 @@ using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
-    internal static class VimUtil
+    public static class VimUtil
     {
         internal static readonly FSharpOption<RegisterName> MissingRegisterName = FSharpOption<RegisterName>.None;
 
@@ -304,7 +303,7 @@ namespace Vim.UnitTest
             return StringData.NewBlock(NonEmptyCollectionUtil.OfSeq(values).Value);
         }
 
-        internal static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
+        public static VisualSpan CreateVisualSpanCharacter(SnapshotSpan span)
         {
             return VisualSpan.NewCharacter(new CharacterSpan(span));
         }

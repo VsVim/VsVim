@@ -8,15 +8,12 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.CommandMargin;
-using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
 using Vim.UnitTest;
 using Vim.UnitTest.Exports;
 
 namespace Vim.UI.Wpf.UnitTest
 {
-    using Resources = global::Vim.UI.Wpf.Properties.Resources;
-
     public abstract class CommandMarginControllerTest : VimTestBase
     {
         private readonly MockRepository _factory;
@@ -171,7 +168,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var mode = new Mock<IMode>();
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
                 _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object, ModeArgument.None));
-                Assert.Equal(Resources.InsertBanner, _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(CommandMarginResources.InsertBanner, _marginControl.CommandLineTextBox.Text);
             }
 
             /// <summary>
@@ -202,7 +199,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _vimBuffer.RaiseSwitchedMode(new SwitchModeEventArgs(_vimBuffer.NormalMode, mode.Object, ModeArgument.None));
                 Assert.Equal(string.Empty, _marginControl.CommandLineTextBox.Text);
                 _vimBuffer.RaiseKeyInputEnd(ki);
-                Assert.Equal(Resources.InsertBanner, _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(CommandMarginResources.InsertBanner, _marginControl.CommandLineTextBox.Text);
             }
 
             /// <summary>
@@ -241,7 +238,7 @@ namespace Vim.UI.Wpf.UnitTest
                 var mode = new Mock<IMode>();
                 mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
                 _vimBuffer.RaiseSwitchedMode(mode.Object);
-                Assert.Equal(Resources.ReplaceBanner, _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(CommandMarginResources.ReplaceBanner, _marginControl.CommandLineTextBox.Text);
             }
 
             [WpfFact]
@@ -252,7 +249,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _vimBuffer.InOneTimeCommandImpl = FSharpOption.Create(ModeKind.Insert);
                 _vimBuffer.NormalModeImpl = mode.Object;
                 _vimBuffer.RaiseSwitchedMode(mode.Object);
-                Assert.Equal(string.Format(Resources.NormalOneTimeCommandBanner, "insert"), _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(string.Format("-- {0} --", "insert"), _marginControl.CommandLineTextBox.Text);
             }
 
             [WpfFact]
@@ -264,7 +261,7 @@ namespace Vim.UI.Wpf.UnitTest
                 _vimBuffer.SubstituteConfirmModeImpl = mode.Object;
                 _vimBuffer.RaiseSwitchedMode(mode.Object);
 
-                Assert.Equal(string.Format(Resources.SubstituteConfirmBannerFormat, "here"), _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(string.Format(CommandMarginResources.SubstituteConfirmBanner, "here"), _marginControl.CommandLineTextBox.Text);
                 _factory.Verify();
             }
 
@@ -539,7 +536,7 @@ namespace Vim.UI.Wpf.UnitTest
                 SimulateKeystroke();
                 _search.SetupGet(x => x.HasActiveSession).Returns(false);
                 SimulateKeystroke();
-                Assert.Equal(Resources.VisualCharacterBanner, _marginControl.CommandLineTextBox.Text);
+                Assert.Equal(CommandMarginResources.VisualCharacterBanner, _marginControl.CommandLineTextBox.Text);
             }
         }
     }

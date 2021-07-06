@@ -1273,7 +1273,7 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Error);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition1()
             {
                 Create("foo");
@@ -1284,7 +1284,7 @@ namespace Vim.UnitTest
                 Assert.Equal(_textView.GetCaretVirtualPoint(), _vimBuffer.JumpList.LastJumpLocation.Value);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition2()
             {
                 Create("foo");
@@ -1298,7 +1298,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Make sure we don't crash when nothing is under the cursor
             /// </summary>
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition3()
             {
                 Create("      foo");
@@ -1308,7 +1308,7 @@ namespace Vim.UnitTest
                 Assert.True(res.IsFailed);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition4()
             {
                 Create("  foo");
@@ -1319,7 +1319,7 @@ namespace Vim.UnitTest
                 Assert.Equal(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Error);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition5()
             {
                 Create("foo bar baz");

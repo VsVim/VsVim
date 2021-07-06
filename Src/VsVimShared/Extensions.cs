@@ -1168,12 +1168,6 @@ namespace Vim.VisualStudio
 
         #region SVsServiceProvider
 
-        public static VisualStudioVersion GetVisualStudioVersion(this SVsServiceProvider vsServiceProvider)
-        {
-            var dte = vsServiceProvider.GetService<SDTE, _DTE>();
-            return dte.GetVisualStudioVersion();
-        }
-
         public static WritableSettingsStore GetWritableSettingsStore(this SVsServiceProvider vsServiceProvider)
         {
             var shellSettingsManager = new ShellSettingsManager(vsServiceProvider);

@@ -32,7 +32,6 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
         private readonly bool _isVisualAssistInstalled;
         private readonly object _toastKey = new object();
         private readonly IToastNotificationServiceProvider _toastNotificationServiceProvider;
-        private readonly VisualStudioVersion _visualStudioVersion;
         private readonly bool _isRegistryFixedNeeded;
 
         [ImportingConstructor]
@@ -49,14 +48,12 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             if (_isVisualAssistInstalled)
             {
                 var dte = serviceProvider.GetService<SDTE, _DTE>();
-                _visualStudioVersion = dte.GetVisualStudioVersion();
-                _isRegistryFixedNeeded = !CheckRegistryKey(_visualStudioVersion);
+                _isRegistryFixedNeeded = !CheckRegistryKey(VsVimHost.VisualStudioVersion);
             }
             else
             {
                 // If Visual Assist isn't installed then don't do any extra work
                 _isRegistryFixedNeeded = false;
-                _visualStudioVersion = VisualStudioVersion.Unknown;
             }
         }
 
@@ -66,12 +63,6 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
             switch (version)
             {
                 // Visual Assist settings stored in registry using the Visual Studio major version number
-                case VisualStudioVersion.Vs2012:
-                    subKey = "VANet11";
-                    break;
-                case VisualStudioVersion.Vs2013:
-                    subKey = "VANet12";
-                    break;
                 case VisualStudioVersion.Vs2015:
                     subKey = "VANet14";
                     break;
@@ -81,7 +72,6 @@ namespace Vim.VisualStudio.Implementation.VisualAssist
                 case VisualStudioVersion.Vs2019:
                     subKey = "VANet16";
                     break;
-                case VisualStudioVersion.Unknown:
                 default:
                     // Default to the latest version
                     subKey = "VANet16";

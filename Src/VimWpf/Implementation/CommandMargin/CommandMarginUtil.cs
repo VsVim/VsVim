@@ -2,7 +2,6 @@
 using System.ComponentModel.Composition;
 using System.Linq;
 using Vim.Extensions;
-using Vim.UI.Wpf.Properties;
 
 namespace Vim.UI.Wpf.Implementation.CommandMargin
 {
@@ -118,7 +117,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                 case ModeKind.Normal:
                     status = string.IsNullOrEmpty(oneTimeArgument)
                         ? string.Empty
-                        : string.Format(Resources.NormalOneTimeCommandBanner, oneTimeArgument);
+                        : string.Format("-- {0} --", oneTimeArgument);
                     break;
                 case ModeKind.Command:
                     {
@@ -126,43 +125,43 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
                         return new EditableCommand(":" + command.Text, command.CaretPosition + 1);
                     }
                 case ModeKind.Insert:
-                    status = Resources.InsertBanner;
+                    status = CommandMarginResources.InsertBanner;
                     break;
                 case ModeKind.Replace:
-                    status = Resources.ReplaceBanner;
+                    status = CommandMarginResources.ReplaceBanner;
                     break;
                 case ModeKind.VisualBlock:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualBlockBanner
-                        : string.Format(Resources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
+                        ? CommandMarginResources.VisualBlockBanner
+                        : string.Format(CommandMarginResources.VisualBlockOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualCharacter:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualCharacterBanner
-                        : string.Format(Resources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
+                        ? CommandMarginResources.VisualCharacterBanner
+                        : string.Format(CommandMarginResources.VisualCharacterOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.VisualLine:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.VisualLineBanner
-                        : string.Format(Resources.VisualLineOneTimeCommandBanner, oneTimeArgument);
+                        ? CommandMarginResources.VisualLineBanner
+                        : string.Format(CommandMarginResources.VisualLineOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.SelectBlock:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.SelectBlockBanner
-                        : string.Format(Resources.SelectBlockOneTimeCommandBanner, oneTimeArgument);
+                        ? CommandMarginResources.SelectBlockBanner
+                        : string.Format(CommandMarginResources.SelectBlockOneTimeCommandBanner, oneTimeArgument);
                     break;
                 case ModeKind.SelectCharacter:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.SelectCharacterBanner
-                        : string.Format(Resources.SelectCharacterOneTimeCommandBanner, oneTimeArgument); 
+                        ? CommandMarginResources.SelectCharacterBanner
+                        : string.Format(CommandMarginResources.SelectCharacterOneTimeCommandBanner, oneTimeArgument); 
                     break;
                 case ModeKind.SelectLine:
                     status = string.IsNullOrEmpty(oneTimeArgument)
-                        ? Resources.SelectLineBanner
-                        : string.Format(Resources.SelectLineOneTimeCommandBanner, oneTimeArgument); 
+                        ? CommandMarginResources.SelectLineBanner
+                        : string.Format(CommandMarginResources.SelectLineOneTimeCommandBanner, oneTimeArgument); 
                     break;
                 case ModeKind.ExternalEdit:
-                    status = Resources.ExternalEditBanner;
+                    status = CommandMarginResources.ExternalEditBanner;
                     break;
                 case ModeKind.Disabled:
                     status = vimBuffer.DisabledMode.HelpMessage;
@@ -181,7 +180,7 @@ namespace Vim.UI.Wpf.Implementation.CommandMargin
         private static string GetStatusSubstituteConfirm(ISubstituteConfirmMode mode)
         {
             var replace = mode.CurrentSubstitute.SomeOrDefault("");
-            return string.Format(Resources.SubstituteConfirmBannerFormat, replace);
+            return string.Format(CommandMarginResources.SubstituteConfirmBanner, replace);
         }
 
         #region ICommandMarginUtil

@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>a24506e5-0602-4472-94d2-fb02772438a6</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VimWpfTest</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AlternateKeyUtilTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BlockCaretControllerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BlockCaretTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CharDisplayTaggerSourceTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandLineEditIntegrationTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandMarginControllerIntegrationTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandMarginControllerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandMarginProviderTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CommandMarginUtilTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DisplayWindowBrokerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyboardDeviceImplTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)KeyMappingTimeoutHandlerTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimHostTests.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimKeyProcessorTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimMouseProcessorTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WpfIntegrationTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Properties\" />
+  </ItemGroup>
+</Project>

@@ -3,7 +3,6 @@
   <Import Project="$(MSBuildThisFileDirectory)\Binaries\User.props" Condition="Exists('$(MSBuildThisFileDirectory)\Binaries\User.props')" />
 
   <PropertyGroup>
-    <VsVimEmptyAppConfig>$(MSBuildThisFileDirectory)References\Vs2012\App.config</VsVimEmptyAppConfig>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <DebugType>full</DebugType>
     <BinariesPath>$(RepoPath)Binaries\</BinariesPath>
@@ -11,11 +10,9 @@
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
-    <!-- The version of VS that should be targetted for testing. Prefer the
-         current VS version but allow it to be changed via environment 
-         variable for testing other versions --> 
-    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">$(VisualStudioVersion)</VsVimTargetVersion>
-    <VsVimTargetVersion Condition="'$(VsVimTargetVersion)' == ''">15.0</VsVimTargetVersion>
+    <!-- The version of VS that should be targetted for testing for host agnostic projects. Prefer
+         the lowest supported Visual Studio version but allow changing via environment variable -->
+    <VsVimVisualStudioTargetVersion Condition="'$(VsVimVisualStudioTargetVersion)' == ''">16.0</VsVimVisualStudioTargetVersion>
 
     <!-- Standard Calculation of NuGet package location -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
@@ -32,21 +29,6 @@
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.tmp_proj'">
     <Language>C#</Language>
     <LanguageTargets>$(MSBuildToolsPath)\Microsoft.CSharp.targets</LanguageTargets>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '14.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2015\App.config</VsVimAppConfig>
-    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2015\Runnable.props</VsRunnablePropsFilePath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '15.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2017\App.config</VsVimAppConfig>
-    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2017\Runnable.props</VsRunnablePropsFilePath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(VsVimTargetVersion)' == '16.0' ">
-    <VsVimAppConfig>$(MSBuildThisFileDirectory)References\Vs2019\App.config</VsVimAppConfig>
-    <VsRunnablePropsFilePath>$(MSBuildThisFileDirectory)References\VS2019\Runnable.props</VsRunnablePropsFilePath>
   </PropertyGroup>
 
   <PropertyGroup> 

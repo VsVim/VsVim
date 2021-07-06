@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PlatformTarget>x86</PlatformTarget>
     <OutputType>Library</OutputType>
@@ -6,8 +6,6 @@
     <RootNamespace>Vim.UnitTest</RootNamespace>
     <AssemblyName>Vim.UnitTest.Utils</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VsVimIsRunnable>true</VsVimIsRunnable>
-    <VsVimSpecificTestHost>true</VsVimSpecificTestHost>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -21,6 +19,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
     <Reference Include="Microsoft.VisualStudio.TextManager.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Data, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.Logic, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <PackageReference Include="Castle.Core" Version="4.0.0-beta002" />
     <PackageReference Include="Moq" Version="4.5.28" />
     <PackageReference Include="xunit" Version="2.4.1" />
@@ -28,8 +31,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-    <ProjectReference Include="..\VimEditorHost\VimEditorHost.csproj" />
-    <ProjectReference Include="..\VimWpf\VimWpf.csproj" />
   </ItemGroup>
-  <Import Project="..\VimSpecific\VimSpecific.projitems" Label="Shared" />
 </Project>

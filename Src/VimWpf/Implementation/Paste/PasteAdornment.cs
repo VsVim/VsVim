@@ -98,7 +98,8 @@ namespace Vim.UI.Wpf.Implementation.Paste
                 FlowDirection.LeftToRight,
                 typeface,
                 fontSize,
-                Brushes.Black);
+                Brushes.Black,
+                pixelsPerDip: 1);
             var width = formattedText.Width;
             var height = formattedText.Height;
 

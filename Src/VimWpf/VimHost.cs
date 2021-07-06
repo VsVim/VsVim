@@ -59,11 +59,6 @@ namespace Vim.UI.Wpf
             get;
         }
 
-        public abstract string HostIdentifier
-        {
-            get;
-        }
-
         public virtual bool IsAutoCommandEnabled
         {
             get { return true; }
@@ -630,11 +625,6 @@ namespace Vim.UI.Wpf
         bool IVimHost.AutoSynchronizeSettings
         {
             get { return AutoSynchronizeSettings; }
-        }
-
-        string IVimHost.HostIdentifier
-        {
-            get { return HostIdentifier; }
         }
 
         bool IVimHost.IsAutoCommandEnabled

@@ -141,11 +141,6 @@ namespace Vim.UI.Wpf.UnitTest
             {
                 throw new NotImplementedException();
             }
-
-            public override string HostIdentifier
-            {
-                get { throw new NotImplementedException(); }
-            }
         }
 
         #endregion

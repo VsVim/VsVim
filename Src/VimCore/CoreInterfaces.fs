@@ -183,8 +183,7 @@ type WordCompletionSessionEventArgs(_wordCompletionSession: IWordCompletionSessi
 
     member x.WordCompletionSession = _wordCompletionSession
 
-/// Factory for creating a IWordCompletionSession instance. This type cannot be MEF imported
-/// but instead is available via IVimHost
+/// Factory for creating a IWordCompletionSession instance.
 type IWordCompletionSessionFactory = 
 
     /// Create a session with the given set of words
@@ -5106,9 +5105,6 @@ type IVimHost =
 
     /// What settings defaults should be used when there is no vimrc file present
     abstract DefaultSettings: DefaultSettings
-
-    /// The identifier that represents this specific host
-    abstract HostIdentifier: string
 
     /// Is auto-command enabled for this host
     abstract IsAutoCommandEnabled: bool

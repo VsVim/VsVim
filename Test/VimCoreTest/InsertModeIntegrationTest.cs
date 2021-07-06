@@ -6,7 +6,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Modes.Insert;
 using Xunit;
-using Vim.VisualStudio.Specific;
 using Vim.UnitTest.Exports;
 using System.Linq;
 
@@ -2605,7 +2604,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion action which accepts the first match
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_Simple_Legacy()
             {
                 Create("c dog", "cat");
@@ -2615,7 +2614,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat", _textView.GetLine(0).GetText());
             }
 
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Simple_Async()
             {
                 Create("c dog", "cat");
@@ -2629,7 +2628,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion that is committed with space
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_Legacy_Commit_Space()
             {
                 Create("c dog", "cat");
@@ -2639,7 +2638,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat  dog", _textView.GetLine(0).GetText());
             }
             
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Async_Commit_Space()
             {
                 Create("c dog", "cat");
@@ -2653,7 +2652,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simple word completion that is accepted with ctrl+y
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_Legacy_Commit_CtrlY()
             {
                 Create("c dog", "cat");
@@ -2663,7 +2662,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cat dog", _textView.GetLine(0).GetText());
             }
             
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Async_Commit_CtrlY()
             {
                 Create("c dog", "cat");
@@ -2678,7 +2677,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_ChooseNext_Legacy()
             {
                 Create("c dog", "cat copter");
@@ -2688,11 +2687,12 @@ namespace Vim.UnitTest
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
 
+#if false
             /// <summary>
             /// Simulate choosing the second possibility in the completion list
             /// </summary>
-            [AsyncCompletionWpfFact]
-            public void WordCompletion_ChooseNext_Async()
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion, Skip = "Flaky test")]
+            private void WordCompletion_ChooseNext_Async()
             {
                 Create("c dog", "cat copter");
                 _textView.MoveCaretTo(1);
@@ -2701,11 +2701,12 @@ namespace Vim.UnitTest
                 _vimBuffer.ProcessNotation("<C-N><C-Y>");
                 Assert.Equal("copter dog", _textView.GetLine(0).GetText());
             }
+#endif
 
             /// <summary>
             /// Simulate Aborting / Exiting a completion
             /// </summary>
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Abort_Legacy()
             {
                 Create("c dog", "cat copter");
@@ -2720,7 +2721,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Simulate Aborting / Exiting a completion
             /// </summary>
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Abort_Async()
             {
                 Create("c dog", "cat copter");
@@ -2737,7 +2738,7 @@ namespace Vim.UnitTest
             /// Typing a char while the completion list is up should cancel it out and 
             /// cause the char to be added to the IVimBuffer
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_TypeAfter_Legacy()
             {
                 Create("c dog", "cat");
@@ -2747,7 +2748,7 @@ namespace Vim.UnitTest
                 Assert.Equal("cats dog", _textView.GetLine(0).GetText());
             }
 
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_TypeAfter_Async()
             {
                 Create("c dog", "cat");
@@ -2760,7 +2761,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
-            [LegacyCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
             public void WordCompletion_Escape_Legacy()
             {
                 Create("c dog", "cat");
@@ -2775,7 +2776,7 @@ namespace Vim.UnitTest
             /// <summary>
             /// Esacpe should both stop word completion and leave insert mode.
             /// </summary>
-            [AsyncCompletionWpfFact]
+            [ConditionalWpfFact(EditorSpecificUtil.HasAsyncCompletion)]
             public void WordCompletion_Escape_Async()
             {
                 Create("c dog", "cat");

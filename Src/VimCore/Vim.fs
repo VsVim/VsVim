@@ -335,7 +335,7 @@ type internal VimBufferFactory
 
 /// Default implementation of IVim 
 [<Export(typeof<IVim>)>]
-type internal Vim
+type internal VimImpl
     (
         _vimHost: IVimHost,
         _bufferFactoryService: IVimBufferFactory,
@@ -446,7 +446,7 @@ type internal Vim
         let vimData = VimData(globalSettings) :> IVimData
         let variableMap = VariableMap()
         let listeners = bufferCreationListeners |> List.ofSeq
-        Vim(
+        VimImpl(
             host,
             bufferFactoryService,
             interpreterFactory,

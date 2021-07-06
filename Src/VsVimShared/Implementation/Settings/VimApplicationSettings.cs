@@ -50,11 +50,11 @@ namespace Vim.VisualStudio.Implementation.Settings
         internal VimApplicationSettings(
             SVsServiceProvider vsServiceProvider,
             IProtectedOperations protectedOperations)
-            : this(vsServiceProvider.GetVisualStudioVersion(), vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
+            : this(vsServiceProvider.GetWritableSettingsStore(), protectedOperations)
         {
         }
 
-        internal VimApplicationSettings(VisualStudioVersion visualStudioVersion, WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
+        internal VimApplicationSettings(WritableSettingsStore settingsStore, IProtectedOperations protectedOperations)
         {
             _settingsStore = new VimCollectionSettingsStore(CollectionPath, settingsStore, protectedOperations);
         }

@@ -53,7 +53,7 @@ namespace Vim.UI.Wpf.UnitTest
                 Assert.Equal(0, VimHost.PeekDefinitionCount);
             }
 
-            [Vs2017AndAboveWpfFact]
+            [WpfFact]
             public void PeekDefinition()
             {
                 SetVs2017AndAboveEditorOptionValue(_textView.Options, EditorOptionsUtil.ClickGoToDefOpensPeekId, true);

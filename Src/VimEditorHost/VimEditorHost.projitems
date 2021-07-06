@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5e2e483e-6d89-4c17-b4a6-7153654b06bf</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>VimEditorHost</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)KeyboardInputSimulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.JoinableTaskContextExportProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditorSpecificUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EditorVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IBasicUndoHistoryRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistoryRegistry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoTransaction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicExperimentationServiceInternal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicLoggingServiceInternal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicObscuringTipManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\BasicWaitIndicator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VimErrorDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IVimErrorDetector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimEditorHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimTestBase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
+</Project>

@@ -20,7 +20,7 @@ namespace Vim.VisualStudio.UnitTest.Mock
 
         public static Mock<SVsServiceProvider> CreateVsServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
         {
-            var mock = Vim.UnitTest.Mock.MockObjectFactory.CreateServiceProvider(factory, serviceList);
+            var mock = global::Vim.UnitTest.Mock.MockObjectFactory.CreateServiceProvider(factory, serviceList);
             return mock.As<SVsServiceProvider>();
         }
 
