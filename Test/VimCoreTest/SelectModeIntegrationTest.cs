@@ -3,7 +3,7 @@ using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 
 namespace Vim.UnitTest
 {

@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim.Extensions;
 using Vim.Modes.Insert;
 using Xunit;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using System.Linq;
 
 namespace Vim.UnitTest

@@ -1,18 +1,20 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.ComponentModel.Composition;
 using Vim.UnitTest.Mock;
 
-namespace Vim.UnitTest.Exports
+namespace Vim.UnitTest
 {
     [Export(typeof(IVimHost))]
-    public sealed class VimHost : MockVimHost
+    public sealed class TestableVimHost : MockVimHost
     {
         [ImportingConstructor]
-        public VimHost()
+        public TestableVimHost()
         {
         }
     }
 }
+#endif

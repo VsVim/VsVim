@@ -12,14 +12,21 @@ namespace Vim.UI.Wpf.Implementation.Misc
     [Export(typeof(IVimBufferCreationListener))]
     internal sealed class KeyMappingTimeoutHandler : IVimBufferCreationListener
     {
+        private readonly static object Key = new object();
+
         #region TimerData
 
-        private sealed class TimerData
+        internal sealed class TimerData
         {
             private readonly IVimBuffer _vimBuffer;
             private readonly DispatcherTimer _timer;
             private readonly IProtectedOperations _protectedOperations;
             private readonly KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
+
+            /// <summary>
+            /// This event is raised whenever the timer fires
+            /// </summary>
+            internal event EventHandler Tick;
 
             internal TimerData(IVimBuffer vimBuffer, IProtectedOperations protectedOperations, KeyMappingTimeoutHandler keyMappingTimeoutHandler)
             {
@@ -51,7 +58,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         _vimBuffer.ProcessBufferedKeyInputs();
                     }
 
-                    _keyMappingTimeoutHandler.RaiseTick();
+                    Tick?.Invoke(this, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
@@ -104,27 +111,24 @@ namespace Vim.UI.Wpf.Implementation.Misc
 
         private readonly IProtectedOperations _protectedOperations;
 
-        /// <summary>
-        /// This event is raised whenever any of the timers for the underlying IVimBuffer values
-        /// expires
-        /// </summary>
-        internal event EventHandler Tick;
-
         [ImportingConstructor]
         internal KeyMappingTimeoutHandler(IProtectedOperations protectedOperations)
         {
             _protectedOperations = protectedOperations;
         }
 
+        internal static bool TryGetTimerData(IVimBuffer vimBuffer, out TimerData timerData) =>
+            vimBuffer.Properties.TryGetProperty<TimerData>(Key, out timerData);
+
         internal void OnVimBufferCreated(IVimBuffer vimBuffer)
         {
             var timerData = new TimerData(vimBuffer, _protectedOperations, this);
-            vimBuffer.Closed += (sender, e) => timerData.Close();
-        }
-
-        private void RaiseTick()
-        {
-            Tick?.Invoke(this, EventArgs.Empty);
+            vimBuffer.Properties.AddProperty(Key, timerData);
+            vimBuffer.Closed += (sender, e) =>
+            {
+                timerData.Close();
+                vimBuffer.Properties.RemoveProperty(Key);
+            };
         }
 
         #region IVimBufferCreationListener

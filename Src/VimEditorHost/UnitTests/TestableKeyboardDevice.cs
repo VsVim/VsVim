@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.Composition;
+﻿#if VS_UNIT_TEST_HOST
+using System.ComponentModel.Composition;
 
-namespace Vim.UnitTest.Exports
+namespace Vim.UnitTest
 {
     [Export(typeof(IKeyboardDevice))]
     public sealed class TestableKeyboardDevice : IKeyboardDevice
@@ -16,3 +17,4 @@ namespace Vim.UnitTest.Exports
         }
     }
 }
+#endif

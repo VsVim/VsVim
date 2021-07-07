@@ -32,4 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Exports\" />
+  </ItemGroup>
 </Project>

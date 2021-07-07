@@ -83,6 +83,39 @@ namespace Vim.UnitTest
                     var span = GetSpanFromSpaceAndCount(_textBuffer.GetLine(0), start: 1, count: 3, tabStop: 12);
                     Assert.Equal("   ", span.GetText());
                 }
+
+                [WpfFact]
+                public void AcrossTabBoundary()
+                {
+                    Create("a\tdog");
+                    var span = new SnapshotOverlapColumnSpan(
+                        SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 1, tabStop: 4).Value,
+                        SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 4, tabStop: 4).Value,
+                        tabStop: 4);
+                    Assert.Equal("\t", span.GetText());
+                }
+
+                [WpfFact]
+                public void AcrossTabBoundary2()
+                {
+                    Create("a\tdog");
+                    var span = new SnapshotOverlapColumnSpan(
+                        SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 2, tabStop: 4).Value,
+                        SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 4, tabStop: 4).Value,
+                        tabStop: 4);
+                    Assert.Equal("  ", span.GetText());
+                }
+
+                [WpfFact]
+                public void AcrossTabBoundary3()
+                {
+                    Create("a\tdog");
+                    var span = new SnapshotOverlapColumnSpan(
+                        SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 4, tabStop: 8).Value,
+                        new SnapshotOverlapColumn(new SnapshotColumn(_textBuffer.GetPointInLine(0, 2)), tabStop: 8),
+                        tabStop: 8);
+                    Assert.Equal("    ", span.GetText());
+                }
             }
 
             public sealed class WideCharacterTest : GetTextTest

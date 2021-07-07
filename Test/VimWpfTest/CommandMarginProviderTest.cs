@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest

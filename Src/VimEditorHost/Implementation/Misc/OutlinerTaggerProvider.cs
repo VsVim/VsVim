@@ -8,15 +8,13 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UnitTest.Exports
+namespace Vim.EditorHost.Implementation.Misc
 {
-    // https://github.com/VsVim/VsVim/issues/2905
-    // All of the exports here should move to VimEditorHost
     [Export(typeof(ITaggerProvider))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Structured)]
     [TagType(typeof(OutliningRegionTag))]
-    public sealed class OutlinerTaggerProvider : ITaggerProvider
+    internal sealed class OutlinerTaggerProvider : ITaggerProvider
     {
         ITagger<T> ITaggerProvider.CreateTagger<T>(ITextBuffer textBuffer)
         {

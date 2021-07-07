@@ -17,7 +17,6 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
 using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
 using System.Threading;
@@ -220,9 +219,7 @@ namespace Vim.VisualStudio.UnitTest
 
         private static VimEditorHost CreateVimEditorHost()
         {
-            var editorHostFactory = new VimEditorHostFactory(includeWpf: false);
-            editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
+            var editorHostFactory = new VimEditorHostFactory();
 
             var types = new List<Type>()
             {

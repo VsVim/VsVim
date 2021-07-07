@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using Vim.Extensions;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;

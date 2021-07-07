@@ -10,7 +10,6 @@ using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UnitTest.Mock;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
 
 namespace Vim.UI.Wpf.UnitTest
 {

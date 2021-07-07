@@ -1,11 +1,12 @@
-﻿using Microsoft.FSharp.Core;
+﻿#if VS_UNIT_TEST_HOST
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition;
 using System.Windows;
 using Vim;
 
-namespace Vim.UnitTest.Exports
+namespace Vim.UnitTest
 {
     [Export(typeof(IMouseDevice))]
     public sealed class TestableMouseDevice : IMouseDevice
@@ -55,3 +56,4 @@ namespace Vim.UnitTest.Exports
         }
     }
 }
+#endif

@@ -10,7 +10,7 @@ using Vim.UnitTest.Mock;
 using Xunit;
 using Xunit.Extensions;
 using System.Collections.Generic;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using System.Threading.Tasks;
 
 namespace Vim.UnitTest

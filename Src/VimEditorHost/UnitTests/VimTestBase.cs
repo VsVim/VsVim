@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using System.Windows;
 using Microsoft.VisualStudio.Text.Projection;
@@ -552,20 +552,6 @@ namespace Vim.UnitTest
             if (!s_cachedVimEditorHostMap.TryGetValue(key, out VimEditorHost host))
             {
                 var editorHostFactory = new VimEditorHostFactory();
-
-                // Other Exports needed to construct VsVim
-                var types = new List<Type>()
-                {
-                    typeof(TestableClipboardDevice),
-                    typeof(TestableKeyboardDevice),
-                    typeof(TestableMouseDevice),
-                    typeof(global::Vim.UnitTest.Exports.VimHost),
-                    typeof(AlternateKeyUtil),
-                    typeof(OutlinerTaggerProvider)
-                };
-
-                editorHostFactory.Add(new TypeCatalog(types));
-
                 var compositionContainer = editorHostFactory.CreateCompositionContainer();
                 host = new VimEditorHost(compositionContainer);
                 s_cachedVimEditorHostMap[key] = host;
