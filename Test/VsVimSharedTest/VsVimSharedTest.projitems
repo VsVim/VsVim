@@ -19,6 +19,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)ExternalEditMonitorTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FallbackKeyProcessorTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HostFactoryTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\TestableEditorAdaptersFactoryService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\TestableServiceProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InlineRenameListenerFactoryTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KeyBindingDataTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KeyBindingServiceTest.cs" />
@@ -51,6 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VsIntegrationTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsKeyProcessorTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimHostTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VsVimTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Resources\VsCommands.txt" />

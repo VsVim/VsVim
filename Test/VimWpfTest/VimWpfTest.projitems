@@ -26,7 +26,4 @@
     <Compile Include="$(MSBuildThisFileDirectory)VimMouseProcessorTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WpfIntegrationTest.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Properties\" />
-  </ItemGroup>
 </Project>

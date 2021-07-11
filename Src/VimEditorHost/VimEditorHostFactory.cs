@@ -93,21 +93,6 @@ namespace Vim.EditorHost
 
         private void BuildCatalog(Func<Type, bool> typeFilter)
         {
-#if VS_UNIT_TEST_HOST
-            // The unit test host exports several replacement components to facilitate
-            // better testing. For example it exports TestableClipboard which doesn't use
-            // the real clipboard (would make testing flaky). Have to exclude the real components
-            // here to avoid export conflicts
-            Func<Type, bool> unitTestTypeFilter = type =>
-                type != typeof(Vim.UI.Wpf.Implementation.Misc.ClipboardDevice) &&
-                type != typeof(Vim.UI.Wpf.Implementation.Misc.KeyboardDeviceImpl) &&
-                type != typeof(Vim.UI.Wpf.Implementation.Misc.MouseDeviceImpl) &&
-                type.FullName != "Vim.VisualStudio.VsVimHost";
-            var originalTypeFilter = typeFilter;
-
-            typeFilter = type => originalTypeFilter(type) && unitTestTypeFilter(type);
-#endif
-
             // https://github.com/VsVim/VsVim/issues/2905
             // Once VimEditorUtils is broken up correctly the composition code here should be 
             // reconsidered: particularly all of the ad-hoc exports below. Really need to move 

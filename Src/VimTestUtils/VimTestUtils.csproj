@@ -8,6 +8,11 @@
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Exports\**" />
+    <EmbeddedResource Remove="Exports\**" />
+    <None Remove="Exports\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -31,8 +36,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Exports\" />
   </ItemGroup>
 </Project>
