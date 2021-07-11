@@ -10,6 +10,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\OutlinerTaggerProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockKeyboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockNormalMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockObjectFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockPresentationSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockRegisterValueBacking.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockSelectionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockVimBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockVimHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableClipboardDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableKeyboardDevice.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableMouseDevice.cs" />

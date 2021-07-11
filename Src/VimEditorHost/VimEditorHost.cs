@@ -4,7 +4,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text.Classification;
-using Vim.UnitTest.Mock;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
@@ -12,6 +11,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
+using Vim.UnitTest;
 
 namespace Vim.EditorHost
 {
@@ -51,7 +51,7 @@ namespace Vim.EditorHost
         public IClassificationFormatMapService ClassificationFormatMapService {get;}
 
         public IVimData VimData => Vim.VimData;
-        public MockVimHost VimHost => (MockVimHost)Vim.VimHost;
+        public IVimHost VimHost => Vim.VimHost;
         public IVimGlobalKeyMap GlobalKeyMap => Vim.GlobalKeyMap;
 
         public VimEditorHost(CompositionContainer compositionContainer)

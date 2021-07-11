@@ -39,7 +39,7 @@ namespace Vim.VisualStudio.UnitTest
             for (var i = 0; i < (int)(MARKERTYPE.DEF_MARKER_COUNT); i++)
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
-                var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
+                var marker = MockObjectFactory2.CreateVsTextLineMarker(span, i, _factory);
                 Assert.False(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }
@@ -52,7 +52,7 @@ namespace Vim.VisualStudio.UnitTest
             foreach (var item in array)
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
-                var marker = MockObjectFactory.CreateVsTextLineMarker(span, item, _factory);
+                var marker = MockObjectFactory2.CreateVsTextLineMarker(span, item, _factory);
                 Assert.True(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }
@@ -65,7 +65,7 @@ namespace Vim.VisualStudio.UnitTest
             foreach (var item in array)
             {
                 var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
-                var marker = MockObjectFactory.CreateVsTextLineMarker(span, item, _factory);
+                var marker = MockObjectFactory2.CreateVsTextLineMarker(span, item, _factory);
                 Assert.False(_adapterRaw.IsExternalEditMarker(marker.Object));
             }
         }

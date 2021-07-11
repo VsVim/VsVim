@@ -103,7 +103,7 @@ namespace Vim.VisualStudio.UnitTest
             foreach (var span in spans)
             {
                 var textSpan = span.ToTextSpan();
-                list.Add(MockObjectFactory.CreateVsTextLineMarker(textSpan, tagType, _factory).Object);
+                list.Add(MockObjectFactory2.CreateVsTextLineMarker(textSpan, tagType, _factory).Object);
             }
 
             var markerEnum = new MockEnumLineMarkers(list);

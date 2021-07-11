@@ -29,7 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MemoryLeakTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MindScapeTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mock\MockEnumLineMarkers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockObjectFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mock\MockObjectFactory2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OleCommandUtilTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PowerShellToolsExtensionAdapterTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ReportDesignerUtilTest.cs" />

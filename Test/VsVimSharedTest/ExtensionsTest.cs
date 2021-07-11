@@ -30,7 +30,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void GetKeyBindings1()
             {
-                var com = MockObjectFactory.CreateCommand(0, "name", "::f");
+                var com = MockObjectFactory2.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Single(list);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -40,7 +40,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void GetKeyBindings2()
             {
-                var com = MockObjectFactory.CreateCommand(0, "name", "foo::f", "bar::b");
+                var com = MockObjectFactory2.CreateCommand(0, "name", "foo::f", "bar::b");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Equal(2, list.Count);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -55,7 +55,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void GetKeyBindings3()
             {
-                var com = MockObjectFactory.CreateCommand(0, "name", "::f");
+                var com = MockObjectFactory2.CreateCommand(0, "name", "::f");
                 var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Single(list);
                 Assert.Equal('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
@@ -68,7 +68,7 @@ namespace Vim.VisualStudio.UnitTest
             [Fact]
             public void GetKeyBindings4()
             {
-                var com = MockObjectFactory.CreateCommand(0, "name", "::notavalidkey");
+                var com = MockObjectFactory2.CreateCommand(0, "name", "::notavalidkey");
                 var e = Extensions.GetCommandKeyBindings(com.Object).ToList();
                 Assert.Empty(e);
             }

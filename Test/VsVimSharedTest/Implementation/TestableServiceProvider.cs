@@ -56,10 +56,10 @@ namespace Vim.VisualStudio.UnitTest
             _serviceMap[typeof(SVsShell)] = _factory.Create<IVsShell>().Object;
             _serviceMap[typeof(SVsTextManager)] = _factory.Create<IVsTextManager>().Object;
             _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
-            _serviceMap[typeof(SVsUIShell)] = MockObjectFactory.CreateVsUIShell4(MockBehavior.Strict).Object;
+            _serviceMap[typeof(SVsUIShell)] = MockObjectFactory2.CreateVsUIShell4(MockBehavior.Strict).Object;
             _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
             _serviceMap[typeof(IVsExtensibility)] = _factory.Create<IVsExtensibility>().Object;
-            var dte = MockObjectFactory.CreateDteWithCommands();
+            var dte = MockObjectFactory2.CreateDteWithCommands();
             _serviceMap[typeof(_DTE)] = dte.Object;
             _serviceMap[typeof(SVsStatusbar)] = _factory.Create<IVsStatusbar>().Object;
             _serviceMap[typeof(SDTE)] = dte.Object;

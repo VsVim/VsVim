@@ -27,12 +27,12 @@ namespace Vim.VisualStudio.UnitTest
 
         private void Create(params string[] args)
         {
-            Create(MockObjectFactory.CreateCommandList(args).Select(x => x.Object).ToArray());
+            Create(MockObjectFactory2.CreateCommandList(args).Select(x => x.Object).ToArray());
         }
 
         protected virtual void Create(params EnvDTE.Command[] args)
         {
-            _dte = MockObjectFactory.CreateDteWithCommands(args);
+            _dte = MockObjectFactory2.CreateDteWithCommands(args);
             _commandListSnapshot = new CommandListSnapshot(_dte.Object);
             _keyboardOptionsProvider = new Mock<IKeyboardOptionsProvider>(MockBehavior.Strict);
             _vimApplicationSettings = new Mock<IVimApplicationSettings>(MockBehavior.Strict);
@@ -70,7 +70,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void FixEnter()
             {
-                var enterCommand = MockObjectFactory.CreateCommand(
+                var enterCommand = MockObjectFactory2.CreateCommand(
                     VSConstants.VSStd2K,
                     (int)VSConstants.VSStd2KCmdID.RETURN,
                     "");
@@ -83,7 +83,7 @@ namespace Vim.VisualStudio.UnitTest
             [WpfFact]
             public void FixBackspace()
             {
-                var enterCommand = MockObjectFactory.CreateCommand(
+                var enterCommand = MockObjectFactory2.CreateCommand(
                     VSConstants.VSStd2K,
                     (int)VSConstants.VSStd2KCmdID.BACKSPACE,
                     "");

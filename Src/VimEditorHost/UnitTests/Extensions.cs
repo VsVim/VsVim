@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Linq;
 using System.Windows;
 using Microsoft.FSharp.Core;
@@ -164,3 +165,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

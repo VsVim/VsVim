@@ -588,7 +588,7 @@ namespace Vim.UnitTest
             {
                 _textView = CreateTextView(lines);
                 _textView.MoveCaretTo(0);
-                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "VimBufferTest.cs");
+                _textView.TextBuffer.Properties.AddProperty(MockVimHost.FileNameKey, "VimBufferTest.cs");
                 _vimBufferData = CreateVimBufferData(_textView, statusUtil: _statusUtil);
                 _vimBuffer = CreateVimBuffer(_vimBufferData);
                 _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);

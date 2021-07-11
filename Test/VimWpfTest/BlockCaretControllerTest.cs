@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim.Extensions;
 using Vim.UI.Wpf.Implementation.BlockCaret;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;
 

@@ -2183,7 +2183,7 @@ namespace Vim.UnitTest
             {
                 var vimBuffers = new IVimBuffer[3];
                 Create("buffer0", "cat", "dog");
-                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
+                _textView.TextBuffer.Properties.AddProperty(MockVimHost.FileNameKey, "buffer0.cs");
                 vimBuffers[0] = _vimBuffer;
                 vimBuffers[0].TextView.MoveCaretToLine(0, 1);
                 vimBuffers[1] = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");

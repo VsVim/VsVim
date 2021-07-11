@@ -8,10 +8,11 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
+using Vim.UnitTest;
 
 namespace Vim.VisualStudio.UnitTest.Mock
 {
-    public static class MockObjectFactory
+    public static class MockObjectFactory2
     {
         public static Mock<SVsServiceProvider> CreateVsServiceProvider(params Tuple<Type, object>[] serviceList)
         {
@@ -20,7 +21,7 @@ namespace Vim.VisualStudio.UnitTest.Mock
 
         public static Mock<SVsServiceProvider> CreateVsServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
         {
-            var mock = global::Vim.UnitTest.Mock.MockObjectFactory.CreateServiceProvider(factory, serviceList);
+            var mock = MockObjectFactory.CreateServiceProvider(factory, serviceList);
             return mock.As<SVsServiceProvider>();
         }
 
