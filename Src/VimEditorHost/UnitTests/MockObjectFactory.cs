@@ -11,6 +11,7 @@ using Moq;
 using System.Collections.Generic;
 using Vim.Interpreter;
 using System.Windows.Media;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

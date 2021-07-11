@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Moq.Language.Flow;
+using Vim.EditorHost;
 using Vim.Extensions;
 
 namespace Vim.UnitTest.Mock

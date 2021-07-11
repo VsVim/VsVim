@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Vim;
+using Vim.EditorHost;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;

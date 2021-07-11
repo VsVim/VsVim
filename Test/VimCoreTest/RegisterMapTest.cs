@@ -1,5 +1,6 @@
 ﻿using System;
 using Moq;
+using Vim.EditorHost;
 using Vim.UnitTest.Mock;
 using Xunit;
 

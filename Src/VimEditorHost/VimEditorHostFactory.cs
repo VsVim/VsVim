@@ -93,15 +93,6 @@ namespace Vim.EditorHost
 
         private void BuildCatalog(Func<Type, bool> typeFilter)
         {
-            // https://github.com/VsVim/VsVim/issues/2905
-            // Once VimEditorUtils is broken up correctly the composition code here should be 
-            // reconsidered: particularly all of the ad-hoc exports below. Really need to move 
-            // to a model where we export everything in the assemblies and provide a filter to 
-            // exclude types at the call site when necessary for the given test.
-            //
-            // The ad-hoc export here is just too difficult to maintain and reason about. It's also
-            // likely leading to situations where our test code is executing different than 
-            // production because the test code doesn't have the same set of exports as production
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
             AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);

@@ -4,6 +4,7 @@ using Microsoft.FSharp.Core;
 using Xunit;
 using Vim.Extensions;
 using Moq;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

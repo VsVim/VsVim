@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using Xunit;
 using Vim.Extensions;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

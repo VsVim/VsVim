@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

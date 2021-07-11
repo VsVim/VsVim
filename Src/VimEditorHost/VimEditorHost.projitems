@@ -9,6 +9,8 @@
     <Import_RootNamespace>VimEditorHost</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\OutlinerTaggerProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockKeyboardDevice.cs" />
@@ -40,6 +42,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)IVimErrorDetector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnitTests\VimTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" />

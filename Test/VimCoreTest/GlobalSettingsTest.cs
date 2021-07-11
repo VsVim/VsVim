@@ -2,6 +2,7 @@
 using System.Linq;
 using Xunit;
 using System.Collections.Generic;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

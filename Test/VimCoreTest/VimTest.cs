@@ -14,6 +14,7 @@ using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

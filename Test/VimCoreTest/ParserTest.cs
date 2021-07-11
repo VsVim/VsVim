@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Text.StructuredPrintfImpl;
+using Vim.EditorHost;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;

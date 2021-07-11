@@ -3,6 +3,7 @@ using Vim.Extensions;
 using Xunit;
 using System;
 using System.Collections.Generic;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

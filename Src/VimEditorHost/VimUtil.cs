@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
 using Vim.Interpreter;
 
-namespace Vim.UnitTest
+namespace Vim.EditorHost
 {
     public static class VimUtil
     {

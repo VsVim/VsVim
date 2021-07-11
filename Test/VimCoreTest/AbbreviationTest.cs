@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Vim.Extensions;
+using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 
 namespace Vim.UnitTest
