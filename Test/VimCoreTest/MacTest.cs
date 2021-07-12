@@ -7,7 +7,7 @@ using Vim.UI.Wpf.Implementation.Misc;
 using Vim.UnitTest;
 using Xunit;
 
-namespace VimCoreTest
+namespace Vim.UnitTest
 {
     /// <summary>
     /// Test that we don't break the Vim Mac implementation as much as possible until we can get
