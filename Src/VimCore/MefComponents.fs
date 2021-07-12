@@ -487,17 +487,20 @@ type internal ProtectedOperations =
 type internal VimWordCompletionSessionFactoryService 
     [<ImportingConstructor>]
     (
-        _wordCompletionSessionFactory: IWordCompletionSessionFactory
+        [<Import(AllowDefault=true)>] _wordCompletionSessionFactory: IWordCompletionSessionFactory
     ) =
 
     let _created = StandardEvent<WordCompletionSessionEventArgs>()
 
     member x.CreateWordCompletionSession textView wordSpan words isForward =
-        match _wordCompletionSessionFactory.CreateWordCompletionSession textView wordSpan words isForward with
+        match OptionUtil.nullToOption _wordCompletionSessionFactory with
         | None -> None
-        | Some session -> 
-            _created.Trigger x (WordCompletionSessionEventArgs(session))
-            Some session
+        | Some factory ->
+            match factory.CreateWordCompletionSession textView wordSpan words isForward with
+            | None -> None
+            | Some session -> 
+                _created.Trigger x (WordCompletionSessionEventArgs(session))
+                Some session
 
     interface IWordCompletionSessionFactoryService with
         member x.CreateWordCompletionSession textView wordSpan words isForward = x.CreateWordCompletionSession textView wordSpan words isForward     

@@ -69,8 +69,8 @@ namespace Vim.EditorHost
             ContentTypeRegistryService = CompositionContainer.GetExportedValue<IContentTypeRegistryService>();
             ClassificationTypeRegistryService = CompositionContainer.GetExportedValue<IClassificationTypeRegistryService>();
             BasicUndoHistoryRegistry = CompositionContainer.GetExportedValue<IBasicUndoHistoryRegistry>();
-            Vim = CompositionContainer.GetExportedValue<IVim>();
             VimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
+            Vim = CompositionContainer.GetExportedValue<IVim>();
             VimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
             CommonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();
             BufferTrackingService = CompositionContainer.GetExportedValue<IBufferTrackingService>();

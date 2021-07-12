@@ -65,6 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)LineRangeTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LocalSettingsTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MacroIntegrationTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MacTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MarkMapTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MatchingTokenUtilTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MatchUtil.cs" />
