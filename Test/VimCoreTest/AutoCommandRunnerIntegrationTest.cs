@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Vim.EditorHost;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;

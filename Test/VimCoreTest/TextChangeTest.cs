@@ -4,6 +4,7 @@ using Moq;
 using Xunit;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
+using Vim.EditorHost;
 
 namespace Vim.UnitTest
 {

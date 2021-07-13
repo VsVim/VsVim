@@ -10,17 +10,19 @@ namespace Vim.UI.Wpf.UnitTest
 {
     public sealed class KeyMappingTimeoutHandlerTest : VimTestBase
     {
-        private readonly KeyMappingTimeoutHandler _keyMappingTimeoutHandler;
+        private readonly KeyMappingTimeoutHandler.TimerData _timerData;
         private readonly IVimBuffer _vimBuffer;
 
         public KeyMappingTimeoutHandlerTest()
         {
-            _keyMappingTimeoutHandler = new KeyMappingTimeoutHandler(ProtectedOperations);
             Vim.GlobalSettings.Timeout = true;
             Vim.GlobalSettings.TimeoutLength = 100;
 
             _vimBuffer = CreateVimBuffer("");
-            _keyMappingTimeoutHandler.OnVimBufferCreated(_vimBuffer);
+            if (!KeyMappingTimeoutHandler.TryGetTimerData(_vimBuffer, out _timerData))
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         /// <summary>
@@ -32,7 +34,7 @@ namespace Vim.UI.Wpf.UnitTest
             var happened = false;
             var count = 0;
             EventHandler handler = delegate { happened = true; };
-            _keyMappingTimeoutHandler.Tick += handler;
+            _timerData.Tick += handler;
 
             while (!happened && count < 20)
             {
@@ -41,7 +43,7 @@ namespace Vim.UI.Wpf.UnitTest
                 count++;
             }
 
-            _keyMappingTimeoutHandler.Tick -= handler;
+            _timerData.Tick -= handler;
             Assert.True(happened);
         }
 

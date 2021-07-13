@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Vim.EditorHost;
 using Vim.UI.Wpf.Implementation.Mouse;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest

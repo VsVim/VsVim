@@ -2,6 +2,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.EditorHost;
 using Xunit;
 
 namespace Vim.UnitTest

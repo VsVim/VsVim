@@ -1,7 +1,8 @@
 ﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Vim.UnitTest.Exports;
+using Vim.EditorHost;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;
 

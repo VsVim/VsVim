@@ -29,7 +29,4 @@
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-  </ItemGroup>
 </Project>

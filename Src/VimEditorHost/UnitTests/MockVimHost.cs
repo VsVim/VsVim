@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -8,7 +9,7 @@ using Vim.Extensions;
 using Vim.Interpreter;
 using System.Collections.Generic;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public class MockVimHost : IVimHost
     {
@@ -443,3 +444,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

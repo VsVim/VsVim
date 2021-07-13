@@ -6,7 +6,6 @@ using Vim.EditorHost;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Vim.UI.Wpf;
-using Vim.UnitTest.Exports;
 
 namespace VimApp
 {
@@ -32,10 +31,8 @@ namespace VimApp
 
         internal VimComponentHost()
         {
-            var editorHostFactory = new VimEditorHostFactory(includeSelf: false, includeWpf: false);
+            var editorHostFactory = new VimEditorHostFactory();
 
-            editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(VimComponentHost).Assembly));
             _editorHost = editorHostFactory.CreateVimEditorHost();
             _vim = _editorHost.CompositionContainer.GetExportedValue<IVim>();
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Collections.Generic;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
@@ -6,7 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     /// <summary>
     /// There is either a bug in F# or Moq which prevents the raising of events through an IMock if 
@@ -432,3 +433,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

@@ -45,7 +45,7 @@ namespace Vim.VisualStudio.UnitTest
                 for (var i = 0; i < (int)(MARKERTYPE.DEF_MARKER_COUNT); i++)
                 {
                     var span = _textBuffer.GetLineRange(0).Extent.ToTextSpan();
-                    var marker = MockObjectFactory.CreateVsTextLineMarker(span, i, _factory);
+                    var marker = MockObjectFactory2.CreateVsTextLineMarker(span, i, _factory);
                     Assert.False(_editAdapter.IsExternalEditMarker(marker.Object));
                 }
             }

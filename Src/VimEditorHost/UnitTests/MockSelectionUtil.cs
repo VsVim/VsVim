@@ -1,10 +1,12 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿#if VS_UNIT_TEST_HOST
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Vim.EditorHost;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public class MockSelectionUtil : ISelectionUtil
     {
@@ -167,3 +169,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

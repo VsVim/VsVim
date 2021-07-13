@@ -1,8 +1,9 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Collections.Generic;
 using Microsoft.FSharp.Core;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public class MockNormalMode : INormalMode
     {
@@ -91,3 +92,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

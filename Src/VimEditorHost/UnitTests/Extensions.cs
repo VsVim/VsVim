@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Linq;
 using System.Windows;
 using Microsoft.FSharp.Core;
@@ -7,6 +8,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Moq.Language.Flow;
+using Vim.EditorHost;
 using Vim.Extensions;
 
 namespace Vim.UnitTest.Mock
@@ -164,3 +166,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

@@ -1,9 +1,10 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public sealed class MockKeyboardDevice : KeyboardDevice
     {
@@ -233,3 +234,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

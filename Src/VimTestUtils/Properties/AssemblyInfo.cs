@@ -10,8 +10,3 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("6819ad26-901e-4261-95aa-9913d435296a")]
 
-// https://github.com/VsVim/VsVim/issues/2905
-// Remove these when fixing that issue. Everything left in VimTestUtils should be public
-[assembly: InternalsVisibleTo("Vim.Core.2017.UnitTest")]
-[assembly: InternalsVisibleTo("Vim.Core.2019.UnitTest")]
-[assembly: InternalsVisibleTo("Vim.VisualStudio.Shared.UnitTest")]

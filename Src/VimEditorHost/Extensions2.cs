@@ -78,29 +78,9 @@ namespace Vim.EditorHost
 
         #region ITextView
 
-        public static SnapshotPoint GetPoint(this ITextView textView, int position)
-        {
-            return new SnapshotPoint(textView.TextSnapshot, position);
-        }
-
-        public static SnapshotPoint GetEndPoint(this ITextView textView)
-        {
-            return textView.TextSnapshot.GetEndPoint();
-        }
-
         public static ITextSnapshotLine GetLine(this ITextView textView, int line)
         {
             return textView.TextSnapshot.GetLineFromLineNumber(line);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int length)
-        {
-            return GetLineSpan(textView, lineNumber, 0, length);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int column, int length)
-        {
-            return GetLineSpan(textView.TextBuffer, lineNumber, column, length);
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView textView)
@@ -162,11 +142,6 @@ namespace Vim.EditorHost
 
         #region ITextBuffer
 
-        public static ITextSnapshotLine GetLineFromLineNumber(this ITextBuffer buffer, int line)
-        {
-            return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
-        }
-
         public static ITextSnapshotLine GetLine(this ITextBuffer buffer, int line)
         {
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
@@ -175,12 +150,6 @@ namespace Vim.EditorHost
         public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int length)
         {
             return GetLineSpan(buffer, lineNumber, 0, length);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int column, int length)
-        {
-            var line = buffer.GetLine(lineNumber);
-            return new SnapshotSpan(line.Start.Add(column), length);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -197,11 +166,6 @@ namespace Vim.EditorHost
         {
             var snapshotLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line);
             return new VirtualSnapshotPoint(snapshotLine, column);
-        }
-
-        public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
-        {
-            return buffer.CurrentSnapshot.GetEndPoint();
         }
 
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)

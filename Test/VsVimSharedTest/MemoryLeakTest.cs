@@ -17,7 +17,6 @@ using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
 using Vim.VisualStudio.UnitTest.Mock;
 using Xunit;
 using System.Threading;
@@ -32,160 +31,20 @@ namespace Vim.VisualStudio.UnitTest
     /// integration without starting Visual Studio.  But this should at least help me catch
     /// a portion of them. 
     /// </summary>
-    public sealed class MemoryLeakTest : IDisposable
+    public sealed class MemoryLeakTest : VsVimTestBase
     {
         #region Exports
 
-        /// <summary>
-        /// This smooths out the nonsense type equality problems that come with having NoPia
-        /// enabled on only some of the assemblies.  
-        /// </summary>
-        private sealed class TypeEqualityComparer : IEqualityComparer<Type>
-        {
-            public bool Equals(Type x, Type y)
-            {
-                return
-                    x.FullName == y.FullName &&
-                    x.GUID == y.GUID;
-            }
-
-            public int GetHashCode(Type obj)
-            {
-                return obj != null ? obj.GUID.GetHashCode() : 0;
-            }
-        }
-
-        [Export(typeof(SVsServiceProvider))]
-        private sealed class ServiceProvider : SVsServiceProvider
-        {
-            private MockRepository _factory = new MockRepository(MockBehavior.Loose);
-            private readonly Dictionary<Type, object> _serviceMap = new Dictionary<Type, object>(new TypeEqualityComparer());
-
-            public ServiceProvider()
-            {
-                _serviceMap[typeof(SVsShell)] = _factory.Create<IVsShell>().Object;
-                _serviceMap[typeof(SVsTextManager)] = _factory.Create<IVsTextManager>().Object;
-                _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
-                _serviceMap[typeof(SVsUIShell)] = MockObjectFactory.CreateVsUIShell4(MockBehavior.Strict).Object;
-                _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
-                _serviceMap[typeof(IVsExtensibility)] = _factory.Create<IVsExtensibility>().Object;
-                var dte = MockObjectFactory.CreateDteWithCommands();
-                _serviceMap[typeof(_DTE)] = dte.Object;
-                _serviceMap[typeof(SVsStatusbar)] = _factory.Create<IVsStatusbar>().Object;
-                _serviceMap[typeof(SDTE)] = dte.Object;
-                _serviceMap[typeof(SVsSettingsManager)] = CreateSettingsManager().Object;
-                _serviceMap[typeof(SVsFindManager)] = _factory.Create<IVsFindManager>().Object;
-            }
-
-            private Mock<IVsSettingsManager> CreateSettingsManager()
-            {
-                var settingsManager = _factory.Create<IVsSettingsManager>();
-
-                var writableSettingsStore = _factory.Create<IVsWritableSettingsStore>();
-                var local = writableSettingsStore.Object;
-                settingsManager.Setup(x => x.GetWritableSettingsStore(It.IsAny<uint>(), out local)).Returns(VSConstants.S_OK);
-
-                return settingsManager;
-            }
-
-            public object GetService(Type serviceType)
-            {
-                return _serviceMap[serviceType];
-            }
-        }
-
-        [Export(typeof(IVsEditorAdaptersFactoryService))]
-        private sealed class VsEditorAdaptersFactoryService : IVsEditorAdaptersFactoryService
-        {
-            private MockRepository _factory = new MockRepository(MockBehavior.Loose);
-            public IVsCodeWindow CreateVsCodeWindowAdapter(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextBuffer CreateVsTextBufferAdapter(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider, Microsoft.VisualStudio.Utilities.IContentType contentType)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextBuffer CreateVsTextBufferAdapter(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextBuffer CreateVsTextBufferAdapterForSecondaryBuffer(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider, Microsoft.VisualStudio.Text.ITextBuffer secondaryBuffer)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextBufferCoordinator CreateVsTextBufferCoordinatorAdapter()
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextView CreateVsTextViewAdapter(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider, ITextViewRoleSet roles)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextView CreateVsTextViewAdapter(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextBuffer GetBufferAdapter(ITextBuffer textBuffer)
-            {
-                var lines = _factory.Create<IVsTextLines>();
-                IVsEnumLineMarkers markers;
-                lines
-                    .Setup(x => x.EnumMarkers(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<uint>(), out markers))
-                    .Returns(VSConstants.E_FAIL);
-                return lines.Object;
-            }
-
-            public Microsoft.VisualStudio.Text.ITextBuffer GetDataBuffer(IVsTextBuffer bufferAdapter)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Microsoft.VisualStudio.Text.ITextBuffer GetDocumentBuffer(IVsTextBuffer bufferAdapter)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IVsTextView GetViewAdapter(ITextView textView)
-            {
-                return null;
-            }
-
-            public IWpfTextView GetWpfTextView(IVsTextView viewAdapter)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IWpfTextViewHost GetWpfTextViewHost(IVsTextView viewAdapter)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void SetDataBuffer(IVsTextBuffer bufferAdapter, Microsoft.VisualStudio.Text.ITextBuffer dataBuffer)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         #endregion
 
-        private readonly VimEditorHost _vimEditorHost;
         private readonly TestableSynchronizationContext _synchronizationContext;
 
         public MemoryLeakTest()
         {
-            _vimEditorHost = CreateVimEditorHost();
             _synchronizationContext = new TestableSynchronizationContext();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             try
             {
@@ -195,6 +54,7 @@ namespace Vim.VisualStudio.UnitTest
             {
                 _synchronizationContext.Dispose();
             }
+            base.Dispose();
         }
 
         private void RunGarbageCollector()
@@ -212,32 +72,15 @@ namespace Vim.VisualStudio.UnitTest
 
         private void ClearHistory(ITextBuffer textBuffer)
         {
-            if (_vimEditorHost.BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out IBasicUndoHistory basicUndoHistory))
+            if (VimEditorHost.BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out IBasicUndoHistory basicUndoHistory))
             {
                 basicUndoHistory.Clear();
             }
         }
 
-        private static VimEditorHost CreateVimEditorHost()
+        private new IVimBuffer CreateVimBuffer(string[] roles = null)
         {
-            var editorHostFactory = new VimEditorHostFactory(includeWpf: false);
-            editorHostFactory.Add(new AssemblyCatalog(typeof(global::Vim.IVim).Assembly));
-            editorHostFactory.Add(new AssemblyCatalog(typeof(VsCommandTarget).Assembly));
-
-            var types = new List<Type>()
-            {
-                typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.ServiceProvider),
-                typeof(global::Vim.VisualStudio.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
-            };
-
-            editorHostFactory.Add(new TypeCatalog(types));
-
-            return new VimEditorHost(editorHostFactory.CreateCompositionContainer());
-        }
-
-        private IVimBuffer CreateVimBuffer(string[] roles = null)
-        {
-            var factory = _vimEditorHost.CompositionContainer.GetExport<ITextEditorFactoryService>().Value;
+            var factory = VimEditorHost.CompositionContainer.GetExport<ITextEditorFactoryService>().Value;
             ITextView textView;
             if (roles is null)
             {
@@ -245,13 +88,13 @@ namespace Vim.VisualStudio.UnitTest
             }
             else
             {
-                var bufferFactory = _vimEditorHost.CompositionContainer.GetExport<ITextBufferFactoryService>().Value;
+                var bufferFactory = VimEditorHost.CompositionContainer.GetExport<ITextBufferFactoryService>().Value;
                 var textViewRoles = factory.CreateTextViewRoleSet(roles);
                 textView = factory.CreateTextView(bufferFactory.CreateTextBuffer(), textViewRoles);
             }
 
             // Verify we actually created the IVimBuffer instance 
-            var vimBuffer = _vimEditorHost.Vim.GetOrCreateVimBuffer(textView);
+            var vimBuffer = VimEditorHost.Vim.GetOrCreateVimBuffer(textView);
             Assert.NotNull(vimBuffer);
 
             // Do one round of DoEvents since several services queue up actions to 
@@ -282,7 +125,7 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void RespectHostCreationPolicy()
         {
-            var container = _vimEditorHost.CompositionContainer;
+            var container = VimEditorHost.CompositionContainer;
             var vsVimHost = container.GetExportedValue<VsVimHost>();
             vsVimHost.DisableVimBufferCreation = true;
             try
@@ -310,7 +153,7 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void TextViewOnly()
         {
-            var container = _vimEditorHost.CompositionContainer;
+            var container = VimEditorHost.CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
             var weakReference = new WeakReference(textView);
@@ -329,7 +172,7 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void TextViewHostOnly()
         {
-            var container = _vimEditorHost.CompositionContainer;
+            var container = VimEditorHost.CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
             var textViewHost = factory.CreateTextViewHost(textView, setFocus: true);
@@ -345,7 +188,7 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void VimWpfDoesntHoldBuffer()
         {
-            var container = _vimEditorHost.CompositionContainer;
+            var container = VimEditorHost.CompositionContainer;
             var factory = container.GetExport<ITextEditorFactoryService>().Value;
             var textView = factory.CreateTextView();
 

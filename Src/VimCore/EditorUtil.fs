@@ -439,7 +439,10 @@ type SnapshotCodePoint =
 
     /// Debugger display
     override x.ToString() =
-        sprintf "CodePoint: %s Text: %s Line: %d Offset: %d" (x.CodePointText) (x.GetText()) (x.Line.LineNumber) (x.Offset)
+        if x.Length = 1 then
+            sprintf "Character: %s Position: %d" (x.CharacterText) (x.StartPosition)
+        else
+            sprintf "Character: %s Position: [%d, %d)" (x.CharacterText) (x.StartPosition) (x.EndPosition)
 
     override x.GetHashCode() = 
         HashUtil.Combine2 x.Line.LineNumber x.Offset
@@ -1297,7 +1300,10 @@ type SnapshotOverlapColumnSpan =
     new (startColumn: SnapshotOverlapColumn, endColumn: SnapshotOverlapColumn, tabStop: int) = 
         let startColumn = startColumn.WithTabStop tabStop
         let endColumn = endColumn.WithTabStop tabStop
-        if startColumn.Column.StartPosition + startColumn.SpacesBefore > endColumn.Column.StartPosition + endColumn.SpacesBefore then
+        if startColumn.Column = endColumn.Column then
+            if startColumn.Column.StartPosition + startColumn.SpacesBefore > endColumn.Column.StartPosition + endColumn.SpacesBefore then
+                invalidArg "endColumn" "End cannot be before the start"
+        if startColumn.Column.StartPosition > endColumn.Column.StartPosition then
             invalidArg "endColumn" "End cannot be before the start"
         { _start = startColumn; _end = endColumn }
 

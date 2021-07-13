@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VS_UNIT_TEST_HOST
+using System;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
@@ -10,8 +11,9 @@ using Moq;
 using System.Collections.Generic;
 using Vim.Interpreter;
 using System.Windows.Media;
+using Vim.EditorHost;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public static class MockObjectFactory
     {
@@ -560,3 +562,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

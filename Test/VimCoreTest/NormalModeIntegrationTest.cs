@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Projection;
 using Vim.Extensions;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
@@ -2183,7 +2183,7 @@ namespace Vim.UnitTest
             {
                 var vimBuffers = new IVimBuffer[3];
                 Create("buffer0", "cat", "dog");
-                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "buffer0.cs");
+                _textView.TextBuffer.Properties.AddProperty(MockVimHost.FileNameKey, "buffer0.cs");
                 vimBuffers[0] = _vimBuffer;
                 vimBuffers[0].TextView.MoveCaretToLine(0, 1);
                 vimBuffers[1] = CreateVimBufferWithName("buffer1.cs", "buffer1", "foo", "bar");

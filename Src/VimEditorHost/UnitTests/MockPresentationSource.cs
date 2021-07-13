@@ -1,7 +1,8 @@
-﻿using System.Windows;
+﻿#if VS_UNIT_TEST_HOST
+using System.Windows;
 using System.Windows.Media;
 
-namespace Vim.UnitTest.Mock
+namespace Vim.UnitTest
 {
     public class MockPresentationSource : PresentationSource
     {
@@ -24,3 +25,4 @@ namespace Vim.UnitTest.Mock
         }
     }
 }
+#endif

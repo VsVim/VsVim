@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
+using Vim.EditorHost;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using Xunit;

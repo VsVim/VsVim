@@ -136,6 +136,15 @@ namespace Vim.UnitTest
                     new[] { "uck", "  d" },
                     blockSpan.BlockOverlapColumnSpans.Select(x => x.GetText()));
             }
+
+            [WpfFact]
+            public void SpanRegression()
+            {
+                Create("trucker", "\tdog", "tester");
+                var blockSpan = new BlockSpan(_textBuffer.GetPoint(3), tabStop: 4, spaces: 1, height: 3, endOfLine: false);
+                Assert.Equal(3, blockSpan.BlockSpans.Count);
+                Assert.Equal(3, blockSpan.BlockOverlapColumnSpans.Count);
+            }
         }
     }
 }

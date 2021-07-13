@@ -5,6 +5,7 @@ using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Vim.UI.Wpf;
 
 namespace Vim.EditorHost
 {
@@ -38,9 +39,9 @@ namespace Vim.EditorHost
         private readonly List<ComposablePartCatalog> _composablePartCatalogList = new List<ComposablePartCatalog>();
         private readonly List<ExportProvider> _exportProviderList = new List<ExportProvider>();
 
-        public VimEditorHostFactory(bool includeSelf = true, bool includeWpf = true)
+        public VimEditorHostFactory(Func<Type, bool> typeFilter = null)
         {
-            BuildCatalog(includeSelf, includeWpf);
+            BuildCatalog(typeFilter ?? (_ => true));
         }
 
         public void Add(ComposablePartCatalog composablePartCatalog)
@@ -90,65 +91,33 @@ namespace Vim.EditorHost
             return new VimEditorHost(CreateCompositionContainer());
         }
 
-        private void BuildCatalog(bool includeSelf, bool includeWpf)
+        private void BuildCatalog(Func<Type, bool> typeFilter)
         {
-            // https://github.com/VsVim/VsVim/issues/2905
-            // Once VimEditorUtils is broken up correctly the composition code here should be 
-            // reconsidered: particularly all of the ad-hoc exports below. Really need to move 
-            // to a model where we export everything in the assemblies and provide a filter to 
-            // exclude types at the call site when necessary for the given test.
-            //
-            // The ad-hoc export here is just too difficult to maintain and reason about. It's also
-            // likely leading to situations where our test code is executing different than 
-            // production because the test code doesn't have the same set of exports as production
             var editorAssemblyVersion = new Version(VisualStudioVersion.Major, 0);
             AppendEditorAssemblies(editorAssemblyVersion);
             AppendEditorAssembly("Microsoft.VisualStudio.Threading", VisualStudioThreadingVersion);
             _exportProviderList.Add(new JoinableTaskContextExportProvider());
 
-            if (includeSelf)
+            AddAssembly(typeof(IVim).Assembly);
+
+            var wpfAssembly = typeof(IBlockCaret).Assembly;
+            AddAssembly(wpfAssembly);
+
+            var hostAssembly = typeof(VimEditorHostFactory).Assembly;
+            if (hostAssembly != wpfAssembly)
             {
-                // Other Exports needed to construct VsVim
-                var types = new List<Type>()
-                {
-                    typeof(Implementation.BasicUndo.BasicTextUndoHistoryRegistry),
-                    typeof(Implementation.Misc.VimErrorDetector),
-    #if VS_SPECIFIC_2019
-                    typeof(Implementation.Misc.BasicExperimentationServiceInternal),
-                    typeof(Implementation.Misc.BasicLoggingServiceInternal),
-                    typeof(Implementation.Misc.BasicObscuringTipManager),
-    #elif VS_SPECIFIC_2017
-                    typeof(Implementation.Misc.BasicLoggingServiceInternal),
-                    typeof(Implementation.Misc.BasicObscuringTipManager),
-    #else
-    #error Unsupported configuration
-    #endif
-
-                };
-
-                _composablePartCatalogList.Add(new TypeCatalog(types));
+                AddAssembly(hostAssembly);
             }
 
-            if (includeWpf)
+            void AddAssembly(Assembly assembly)
             {
-                var types = new List<Type>()
-                {
-#if VS_SPECIFIC_2019
-                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Async.WordAsyncCompletionSourceProvider),
-#elif !VS_SPECIFIC_MAC
-                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Legacy.WordLegacyCompletionPresenterProvider),
-#endif
-                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.Legacy.WordLegacyCompletionSourceProvider),
-                    typeof(Vim.UI.Wpf.Implementation.WordCompletion.VimWordCompletionUtil),
-#if VS_SPECIFIC_2017
-#else
-                    typeof(Vim.UI.Wpf.Implementation.MultiSelection.MultiSelectionUtilFactory),
-#endif
-                };
-
+                var types = assembly
+                    .GetTypes()
+                    .Where(typeFilter)
+                    .OrderBy(x => x.Name)
+                    .ToList();
                 _composablePartCatalogList.Add(new TypeCatalog(types));
             }
-
         }
 
         private void AppendEditorAssemblies(Version editorAssemblyVersion)

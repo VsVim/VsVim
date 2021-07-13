@@ -9,6 +9,22 @@
     <Import_RootNamespace>VimEditorHost</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\OutlinerTaggerProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockKeyboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockNormalMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockObjectFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockPresentationSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockRegisterValueBacking.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockSelectionUtil.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockVimBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\MockVimHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableClipboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableKeyboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableMouseDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\TestableVimHost.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KeyboardInputSimulation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.JoinableTaskContextExportProvider.cs" />
@@ -25,7 +41,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\VimErrorDetector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IVimErrorDetector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHost.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)VimTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnitTests\VimTestBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VimUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" />

@@ -588,7 +588,7 @@ namespace Vim.UnitTest
             {
                 _textView = CreateTextView(lines);
                 _textView.MoveCaretTo(0);
-                _textView.TextBuffer.Properties.AddProperty(Mock.MockVimHost.FileNameKey, "VimBufferTest.cs");
+                _textView.TextBuffer.Properties.AddProperty(MockVimHost.FileNameKey, "VimBufferTest.cs");
                 _vimBufferData = CreateVimBufferData(_textView, statusUtil: _statusUtil);
                 _vimBuffer = CreateVimBuffer(_vimBufferData);
                 _vimBuffer.SwitchMode(ModeKind.Command, ModeArgument.None);
@@ -737,6 +737,7 @@ namespace Vim.UnitTest
                 var normal = CreateAndAddNormalMode();
                 var insert = CreateAndAddInsertMode();
                 normal.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
+                normal.Setup(x => x.InReplace).Returns(false);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 normal.Verify();
                 normal.Setup(x => x.OnLeave());
@@ -1083,6 +1084,7 @@ namespace Vim.UnitTest
                 var normalMode = CreateAndAddNormalMode();
                 normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
                 normalMode.Setup(x => x.CanProcess(KeyInputUtil.CharToKeyInput('/'))).Returns(true);
+                normalMode.Setup(x => x.InReplace).Returns(false);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 Assert.True(_vimBuffer.CanProcess(VimKey.KeypadDivide));
             }
@@ -1108,6 +1110,7 @@ namespace Vim.UnitTest
                 var normalMode = CreateAndAddNormalMode();
                 normalMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
                 normalMode.Setup(x => x.CanProcess(KeyInputUtil.CharToKeyInput('/'))).Returns(true);
+                normalMode.Setup(x => x.InReplace).Returns(false);
                 _vimBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                 Assert.True(_vimBuffer.CanProcess(VimKey.KeypadDivide));
             }

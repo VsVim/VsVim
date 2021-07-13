@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Vim.UI.Wpf.Implementation.CommandMargin;
 using Vim.UnitTest;
-using Vim.UnitTest.Exports;
+using Vim.EditorHost;
 using Xunit;
 
 namespace Vim.UI.Wpf.UnitTest

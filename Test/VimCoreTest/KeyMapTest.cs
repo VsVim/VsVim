@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Vim.EditorHost;
 using Vim.Extensions;
 using Vim.Interpreter;
 using Xunit;
@@ -563,7 +564,7 @@ namespace Vim.UnitTest
             {
                 Assert.True(_map.AddKeyMapping("a", "b", allowRemap: true, KeyRemapMode.Normal));
                 Assert.True(_map.AddKeyMapping("b", "a", allowRemap: true, KeyRemapMode.Normal));
-                var ret = Extensions.Map(_map, 'a', KeyRemapMode.Normal);
+                var ret = global::Vim.EditorHost.Extensions.Map(_map, 'a', KeyRemapMode.Normal);
                 Assert.True(ret.IsRecursive);
             }
 

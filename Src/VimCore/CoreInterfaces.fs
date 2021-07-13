@@ -1913,7 +1913,7 @@ type BlockSpan =
         BlockSpan(x.VirtualStart, x.TabStop, x.SpacesLength, x.Height, endOfLine)
 
     override x.ToString() =
-        sprintf "Point: %s Spaces: %d Height: %d EndOfLine: %b" (x.Start.ToString()) x._spaces x._height x._endOfLine
+        sprintf "Line Position: (%d, %d) Spaces: %d Height: %d EndOfLine: %b" (x.Start.LineNumber) (x.Start.Offset) x._spaces x._height x._endOfLine
 
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<BlockSpan>.Default.Equals(this,other))

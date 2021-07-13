@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.FSharp.Core;
+using Vim.EditorHost;
 using Vim.Extensions;
 using Xunit;
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Moq;
+using Vim.EditorHost;
 using Vim.Interpreter;
 using Xunit;
 

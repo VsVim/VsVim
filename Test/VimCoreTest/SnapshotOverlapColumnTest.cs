@@ -172,6 +172,14 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void AfterTab()
+            {
+                Create("d\tog", "extra");
+                var column = SnapshotOverlapColumn.GetColumnForSpaces(_textBuffer.GetLine(0), spaces: 4, tabStop: 4);
+                AssertColumn(column, expected: _textBuffer.GetColumnFromPosition(2), spacesBefore: 0, spacesAfter: 0, spacesTotal: 1);
+            }
+
+            [WpfFact]
             public void AtLineBreak()
             {
                 Create("dog", "cat");

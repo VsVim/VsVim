@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Interpreter;
-using Vim.UnitTest.Exports;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using System.Windows;
 using Microsoft.VisualStudio.Text.Projection;
@@ -45,7 +45,7 @@ namespace Vim.UnitTest
         /// Cache of composition containers. This is indexed on thread id as the underlying objects in the container
         /// can, and often do, have thread affinity. 
         /// </summary>
-        private static readonly Dictionary<int, VimEditorHost> s_cachedVimEditorHostMap = new Dictionary<int, VimEditorHost>();
+        private static readonly Dictionary<(Type, int), VimEditorHost> s_cachedVimEditorHostMap = new Dictionary<(Type, int), VimEditorHost>();
 
         public StaContext StaContext { get; }
         public Dispatcher Dispatcher => StaContext.Dispatcher;
@@ -546,30 +546,50 @@ namespace Vim.UnitTest
                 lineChangeTracker);
         }
 
-        private static VimEditorHost GetOrCreateVimEditorHost()
+        protected virtual Type GetVimHostExportType() => typeof(TestableVimHost);
+
+        public static Func<Type, bool> GetVimEditorHostTypeFilter(Type vimHostExportType)
         {
-            var key = Thread.CurrentThread.ManagedThreadId;
+            // The unit test host exports several replacement components to facilitate
+            // better testing. For example it exports TestableClipboard which doesn't use
+            // the real clipboard (would make testing flaky). Have to exclude the real components
+            // here to avoid export conflicts
+            var iVimHostType = typeof(IVimHost);
+            Func<Type, bool> typeFilter = type =>
+            {
+                if (type == typeof(Vim.UI.Wpf.Implementation.Misc.ClipboardDevice) ||
+                    type == typeof(Vim.UI.Wpf.Implementation.Misc.KeyboardDeviceImpl) ||
+                    type == typeof(Vim.UI.Wpf.Implementation.Misc.MouseDeviceImpl))
+                {
+                    return false;
+                }
+
+                if (iVimHostType.IsAssignableFrom(type) && type != vimHostExportType)
+                {
+                    return false;
+                }
+
+                return true;
+            };
+
+            return typeFilter;
+        }
+
+        protected VimEditorHost CreateVimEditorHost(Type vimHostExportType)
+        {
+            var typeFilter = GetVimEditorHostTypeFilter(vimHostExportType);
+            var editorHostFactory = new VimEditorHostFactory(typeFilter);
+            var compositionContainer = editorHostFactory.CreateCompositionContainer();
+            return new VimEditorHost(compositionContainer);
+        }
+
+        private VimEditorHost GetOrCreateVimEditorHost()
+        {
+            var vimHostExportType = GetVimHostExportType();
+            var key = (vimHostExportType, Thread.CurrentThread.ManagedThreadId);
             if (!s_cachedVimEditorHostMap.TryGetValue(key, out VimEditorHost host))
             {
-                var editorHostFactory = new VimEditorHostFactory();
-                editorHostFactory.Add(new AssemblyCatalog(typeof(IVim).Assembly));
-
-                // Other Exports needed to construct VsVim
-                var types = new List<Type>()
-                {
-                    typeof(TestableClipboardDevice),
-                    typeof(TestableKeyboardDevice),
-                    typeof(TestableMouseDevice),
-                    typeof(global::Vim.UnitTest.Exports.VimHost),
-                    typeof(DisplayWindowBrokerFactoryService),
-                    typeof(AlternateKeyUtil),
-                    typeof(OutlinerTaggerProvider)
-                };
-
-                editorHostFactory.Add(new TypeCatalog(types));
-
-                var compositionContainer = editorHostFactory.CreateCompositionContainer();
-                host = new VimEditorHost(compositionContainer);
+                host = CreateVimEditorHost(vimHostExportType);
                 s_cachedVimEditorHostMap[key] = host;
             }
 
