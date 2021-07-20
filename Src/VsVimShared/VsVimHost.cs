@@ -250,6 +250,8 @@ namespace Vim.VisualStudio
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2017;
 #elif VS_SPECIFIC_2019
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2019;
+#elif VS_SPECIFIC_2022
+        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2022;
 #else
 #error Unsupported configuration
 #endif
