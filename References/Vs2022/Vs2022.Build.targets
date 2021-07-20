@@ -10,7 +10,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Sdk" Version="17.0.0-previews-2-31512-422" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.0.0-1.final" />
-    <PackageReference Include="Microsoft.VisualStudio.Sdk.EmbedInteropTypes" Version="15.0.36" ExcludeAssets="all" />
 
     <!--
       These are private assemblies and not typically considered as a part of the official VS SDK. But

@@ -12,7 +12,7 @@
     <StartArguments>/rootsuffix Exp</StartArguments>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <VsVimProjectType>Vsix</VsVimProjectType>
-    <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
+    <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
 
     <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
     <RunAnalyzers>false</RunAnalyzers>

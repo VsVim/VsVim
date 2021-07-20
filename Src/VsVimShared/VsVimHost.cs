@@ -25,7 +25,7 @@ using System.Windows.Threading;
 using System.Diagnostics;
 using Vim.Interpreter;
 
-#if VS_SPECIFIC_2019
+#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
 #elif VS_SPECIFIC_2017
@@ -752,7 +752,7 @@ namespace Vim.VisualStudio
             return windowFrameState.ActiveWindowFrameIndex;
         }
 
-#if VS_SPECIFIC_2019
+#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 
         /// <summary>
         /// Get the state of the active tab group in Visual Studio

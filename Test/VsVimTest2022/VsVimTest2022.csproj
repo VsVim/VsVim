@@ -4,7 +4,7 @@
     <RootNamespace>Vim.VisualStudio.UnitTest</RootNamespace>
     <AssemblyName>Vim.VisualStudio.Shared.2022.UnitTest</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
+    <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
     <VsVimProjectType>EditorHost</VsVimProjectType>
     <DefineConstants>$(DefineConstants);VS_UNIT_TEST_HOST</DefineConstants>
     <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
