@@ -142,7 +142,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
         internal sealed class SimulationCommandTarget : IOleCommandTarget
         {
             private readonly ITextView _textView;
-            private readonly IEditorOperations _editorOperatins;
+            private readonly IEditorOperations _editorOperations;
             private EditCommand _lastExecEditCommand;
             private EditCommand _lastQueryStatusEditCommand;
 
@@ -159,7 +159,7 @@ namespace Vim.VisualStudio.UnitTest.Utils
             internal SimulationCommandTarget(ITextView textView, IEditorOperations editorOperations)
             {
                 _textView = textView;
-                _editorOperatins = editorOperations;
+                _editorOperations = editorOperations;
             }
 
             /// <summary>
@@ -170,35 +170,35 @@ namespace Vim.VisualStudio.UnitTest.Utils
                 switch (keyInput.Key)
                 {
                     case VimKey.Left:
-                        _editorOperatins.MoveToPreviousCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
+                        _editorOperations.MoveToPreviousCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Right:
-                        _editorOperatins.MoveToNextCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
+                        _editorOperations.MoveToNextCharacter(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Up:
-                        _editorOperatins.MoveLineUp(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
+                        _editorOperations.MoveLineUp(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Down:
-                        _editorOperatins.MoveLineDown(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
+                        _editorOperations.MoveLineDown(extendSelection: keyInput.KeyModifiers == VimKeyModifiers.Shift);
                         return true;
                     case VimKey.Back:
-                        _editorOperatins.Backspace();
+                        _editorOperations.Backspace();
                         return true;
                     case VimKey.Tab:
                         if (keyInput.KeyModifiers == VimKeyModifiers.Shift)
                         {
-                            _editorOperatins.Unindent();
+                            _editorOperations.Unindent();
                         }
                         else
                         {
-                            _editorOperatins.Indent();
+                            _editorOperations.Indent();
                         }
                         return true;
                 }
 
                 if (char.IsLetterOrDigit(keyInput.Char))
                 {
-                    _editorOperatins.InsertText(keyInput.Char.ToString());
+                    _editorOperations.InsertText(keyInput.Char.ToString());
                     return true;
                 }
 
