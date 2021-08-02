@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System.Reflection;
 using System.Diagnostics;
 
-namespace VsVimShared.Implementation.IntelliCode
+namespace Vim.VisualStudio.Implementation.IntelliCode
 {
     internal sealed class IntelliCodeCommandTarget : ICommandTarget
     {
