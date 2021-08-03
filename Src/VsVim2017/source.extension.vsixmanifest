@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Publisher="Jared Parsons" Version="2.9.0.0" Id="VsVim.Microsoft.ce6b18b9-bd0d-4da0-a312-250beeacdb54" Language="en-US" />
+    <Identity Publisher="Jared Parsons" Version="2.10.0.1" Id="VsVim.Microsoft.ce6b18b9-bd0d-4da0-a312-250beeacdb54" Language="en-US" />
     <DisplayName>VsVim for 2017</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
     <MoreInfo>https://github.com/VsVim/VsVim</MoreInfo>
