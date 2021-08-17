@@ -35,6 +35,10 @@ namespace Vim.VisualStudio.Implementation.Misc
 
         internal void PostAction()
         {
+            // Disable mode change (into vim mode)
+            if (_vim.IsDisabled)
+                return;
+
             // Once the host action is stopped, clear out all of the new
             // selections in active buffers.  Leaving the  selection puts us
             // into Visual Mode.  Don't force any document loads here.  If the
