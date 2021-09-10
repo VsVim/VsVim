@@ -179,7 +179,7 @@ namespace Vim.UI.Cocoa.Implementation.Misc
             NSEventModifierMask modifierKeys = theEvent.ModifierFlags;
             if (s_CocoaKeyToKeyInputMap.TryGetValue(key, out keyInput))
             {
-                var keyModifiers = ConvertToKeyModifiers(modifierKeys); 
+                var keyModifiers = ConvertToKeyModifiers(modifierKeys);
                 keyInput = KeyInputUtil.ApplyKeyModifiers(keyInput, keyModifiers);
                 return true;
             }
@@ -192,46 +192,42 @@ namespace Vim.UI.Cocoa.Implementation.Misc
                 return true;
             }
 
-            // If the key is not a pure alt or shift key combination and doesn't
-            // correspond to an ASCII control key (like <C-^>), we need to convert it here.
+            // If the key doesn't correspond to an ASCII control key (like <C-^>), we need to convert it here.
             // This is needed because key combinations like <C-;> won't be passed to
             // TextInput, because they can't be represented as system or control text.
             // We just have to be careful not to shadow any keys that produce text when
             // combined with the AltGr key.
-            if (modifierKeys != NSEventModifierMask.AlternateKeyMask
-                && modifierKeys != NSEventModifierMask.ShiftKeyMask)
+  
+            switch (key)
             {
-                switch (key)
-                {
-                    case NSKey.Option:
-                    case NSKey.RightOption:
-                    case NSKey.Control:
-                    case NSKey.RightControl:
-                    case NSKey.Shift:
-                    case NSKey.RightShift:
-                    case NSKey.Command:
-                        // Avoid work for common cases.
-                        break;
+                case NSKey.Option:
+                case NSKey.RightOption:
+                case NSKey.Control:
+                case NSKey.RightControl:
+                case NSKey.Shift:
+                case NSKey.RightShift:
+                case NSKey.Command:
+                    // Avoid work for common cases.
+                    break;
 
-                    default:
-                        VimTrace.TraceInfo("AlternateKeyUtil::TryConvertSpecialKeyToKeyInput {0} {1}",
-                            key, modifierKeys);
-                        if (GetKeyInputFromKey(theEvent, modifierKeys, out keyInput))
+                default:
+                    VimTrace.TraceInfo("AlternateKeyUtil::TryConvertSpecialKeyToKeyInput {0} {1}",
+                        key, modifierKeys);
+                    if (GetKeyInputFromKey(theEvent, modifierKeys, out keyInput))
+                    {
+                        // Only produce a key input here if the key input we
+                        // found is *not* an ASCII control character.
+                        // Control characters will be handled by TextInput
+                        // as control text.
+
+
+                        // Commented out because we are not using TextInput
+                        //if (!System.Char.IsControl(keyInput.Char))
                         {
-                            // Only produce a key input here if the key input we
-                            // found is *not* an ASCII control character.
-                            // Control characters will be handled by TextInput
-                            // as control text.
-
-
-                            // Commented out because we are not using TextInput
-                            //if (!System.Char.IsControl(keyInput.Char))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
-                        break;
-                }
+                    }
+                    break;
             }
 
             keyInput = null;
