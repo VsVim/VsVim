@@ -11,7 +11,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
     [Order(Before = PredefinedMarginNames.LineNumber)]
     [MarginContainer(PredefinedMarginNames.LeftSelection)]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
     internal sealed class RelativeLineNumbersMarginFactory : ICocoaTextViewMarginProvider
     {
         private readonly ICocoaClassificationFormatMapService _formatMapService;
