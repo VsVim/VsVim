@@ -136,7 +136,7 @@ function Get-MSBuildPath() {
 function Test-VsixContents() { 
   Write-Host "Verifying the Vsix Contents"
   foreach ($vsVersion in $vsVersions) {
-    Write-Host "Verifying $vsVersion"
+    Write-Host "`tVerifying $vsVersion"
     $vsixPath = Join-Path $deployDir $vsVersion
     $vsixPath = Join-Path $vsixPath "VsVim.vsix"
     if (-not (Test-Path $vsixPath)) {
@@ -285,7 +285,7 @@ function Build-Solution(){
   try { 
     Remove-Item -re -fo "$deployDir\*"
     foreach ($vsVersion in $vsVersions) {
-      Write-Host "Cleaning $vsVersion"
+      Write-Host "`tCleaning $vsVersion"
       $vsVersionDir = Join-Path $deployDir $vsVersion 
       Create-Directory $vsVersionDir
       Set-Location $vsVersionDir
