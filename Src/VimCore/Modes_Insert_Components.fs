@@ -89,11 +89,17 @@ type internal TextChangeTracker
 
     let mutable (_effectiveChangeData: EffectiveChangeData option) = None
 
+    let mutable _caretPointInChanging : SnapshotPoint option = None
+
     do
         // Listen to text buffer change events in order to track edits.  Don't respond to changes
         // while disabled though
         _textView.TextBuffer.Changed
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
+        |> _bag.Add
+
+        _textView.TextBuffer.Changing
+        |> Observable.subscribe (fun args -> this.OnTextChanging args)
         |> _bag.Add
 
         // Dispose handlers when the text view is closed.
@@ -168,7 +174,11 @@ type internal TextChangeTracker
         let convert () = 
 
             let getDelete () = 
-                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                let caretPoint =
+                    match _caretPointInChanging with
+                    | Some point when point.Snapshot = beforeSnapshot -> point
+                    | _ -> TextViewUtil.GetCaretPoint _textView
+
                 let isCaretAtStart = 
                     caretPoint.Snapshot = beforeSnapshot &&
                     caretPoint.Position = change.OldPosition
@@ -208,6 +218,9 @@ type internal TextChangeTracker
         else 
             convert ()
 
+    member x.OnTextChanging (args: TextContentChangingEventArgs) = 
+        _caretPointInChanging <- Some (TextViewUtil.GetCaretPoint _textView)
+
     member x.OnTextChanged (args: TextContentChangedEventArgs) = 
 
         if x.TrackCurrentChange then
@@ -217,6 +230,7 @@ type internal TextChangeTracker
             x.UpdateEffectiveChange args
 
         x.UpdateMarks args
+        _caretPointInChanging <- None
 
     member x.UpdateCurrentChange (args: TextContentChangedEventArgs) = 
 

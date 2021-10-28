@@ -53,6 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\MarkGlyph\MarkGlyphTaggerSourceFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\AlternateKeyUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\ClipboardDevice.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\DebugUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\DisplayWindowBroker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\EditorFormatDefinitions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\Misc\KeyboardDeviceImpl.cs" />

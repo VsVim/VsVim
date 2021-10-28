@@ -185,6 +185,10 @@ namespace Vim.UnitTest
         public void DeleteRight_Simple()
         {
             Create("cat dog");
+            _textView.Caret.PositionChanged += delegate
+            {
+                System.Console.WriteLine("");
+            };
             _textBuffer.Delete(new Span(0, 3));
             Assert.True(_tracker.CurrentChange.Value.IsDeleteRight(3));
         }

@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 
 #if DEBUG
-namespace Vim.VisualStudio
+namespace Vim.UI.Wpf.Implementation.Misc
 {
     /// <summary>
     /// This type exists purely to help during active debugging of VsVim.
@@ -62,8 +62,11 @@ namespace Vim.VisualStudio
 
         private void OnSelectionChanged(IWpfTextView textView)
         {
-            var span = textView.Selection.StreamSelectionSpan;
-            var text = span.GetText();
+            var text = textView
+                .Selection
+                .SelectedSpans
+                .Select(x => x.GetText())
+                .Aggregate((x, y) => x + y);
             Use(text);
         }
 
