@@ -4,6 +4,7 @@ using Xunit;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Vim.EditorHost;
+using System.Runtime.CompilerServices;
 
 namespace Vim.UnitTest
 {
@@ -29,10 +30,8 @@ namespace Vim.UnitTest
             basicUndoHistory.Clear();
         }
 
-        private void DoWork(Action action)
-        {
-            action();
-        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private WeakReference DoWork(Func<WeakReference> func) => func();
 
         /// <summary>
         /// Ensure the undo history doesn't keep the ITextView alive due to a simple transaction
@@ -40,24 +39,24 @@ namespace Vim.UnitTest
         [WpfFact]
         public void UndoTransactionSimple()
         {
-            var textBuffer = CreateTextBuffer("");
-            var textView = TextEditorFactoryService.CreateTextView(textBuffer);
-            var weakTextView = new WeakReference(textView);
-            DoWork(
+            var weakReference = DoWork(
                 () =>
                 {
+                    var textBuffer = CreateTextBuffer("");
+                    var textView = TextEditorFactoryService.CreateTextView(textBuffer);
+                    var weakTextView = new WeakReference(textView);
                     var undoManager = TextBufferUndoManagerProvider.GetTextBufferUndoManager(textBuffer);
                     using (var transaction = undoManager.TextBufferUndoHistory.CreateTransaction("Test Edit"))
                     {
                         textBuffer.SetText("hello world");
                         transaction.Complete();
                     }
+                    textView.Close();
+                    return weakTextView;
                 });
 
-            textView.Close();
-            textView = null;
             RunGarbageCollector();
-            Assert.Null(weakTextView.Target);
+            Assert.Null(weakReference.Target);
         }
 
         /// <summary>
@@ -67,12 +66,12 @@ namespace Vim.UnitTest
         [WpfFact]
         public void UndoTransactionWithCaretPrimitive()
         {
-            var textBuffer = CreateTextBuffer("");
-            var textView = TextEditorFactoryService.CreateTextView(textBuffer);
-            var weakTextView = new WeakReference(textView);
-            DoWork(
+            var weakReference = DoWork(
                 () =>
                 {
+                    var textBuffer = CreateTextBuffer("");
+                    var textView = TextEditorFactoryService.CreateTextView(textBuffer);
+                    var weakTextView = new WeakReference(textView);
                     var undoManager = TextBufferUndoManagerProvider.GetTextBufferUndoManager(textBuffer);
                     using (var transaction = undoManager.TextBufferUndoHistory.CreateTransaction("Test Edit"))
                     {
@@ -81,17 +80,18 @@ namespace Vim.UnitTest
                         textBuffer.SetText("hello world");
                         transaction.Complete();
                     }
+                    textView.Close();
+
+                    // The AddBeforeTextBufferChangePrimitive put the ITextView into the undo stack 
+                    // so we need to clear it out here
+                    ClearUndoHistory(textBuffer);
+
+                    return weakTextView;
                 });
 
-            textView.Close();
-            textView = null;
-
-            // The AddBeforeTextBufferChangePrimitive put the ITextView into the undo stack 
-            // so we need to clear it out here
-            ClearUndoHistory(textBuffer);
 
             RunGarbageCollector();
-            Assert.Null(weakTextView.Target);
+            Assert.Null(weakReference.Target);
         }
     }
 }

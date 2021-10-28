@@ -355,6 +355,32 @@ namespace VimApp
 
         #endregion
 
+        private void OnCustomScenarioClick(object sender, RoutedEventArgs e)
+        {
+            var vimBuffer = ActiveVimBufferOpt;
+            var textView = vimBuffer.TextView;
+            var textBuffer = textView.TextBuffer;
+
+            // Scenario here
+            textBuffer.SetText("trucker", "\tcat");
+            var blockSpan = new BlockSpan(textBuffer.GetPoint(1), tabStop: 2, spaces: 2, height: 2);
+            var visualSpan = VisualSpan.NewBlock(blockSpan);
+            visualSpan.Select(textView, SearchPath.Forward);
+            /*
+            DoEvents();
+
+            // It may seem odd for the second span to start on column 1 since the tab is partially
+            // included in the line.  However Visual Studio has this behavior.  It won't select a 
+            // character at the start / end of a selection unless it's completely included 
+            var spans = new[]
+            {
+                _textBuffer.GetLineSpan(0, 1, 2),
+                _textBuffer.GetLineSpan(1, 1, 1)
+            };
+            Assert.Equal(spans, _textView.Selection.SelectedSpans);
+            */
+        }
+
         private void OnInsertControlCharactersClick(object sender, RoutedEventArgs e)
         {
             var builder = new StringBuilder();

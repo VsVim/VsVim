@@ -277,16 +277,23 @@ namespace Vim.UnitTest
                     visualSpan.Select(_textView, SearchPath.Forward);
                     DoEvents();
 
+#if VS_SPECIFIC_2022
+                    var spans = new[]
+                    {
+                        _textBuffer.GetLineSpan(0, 1, 4),
+                        _textBuffer.GetLineSpan(1, 0, 2)
+                    };
+#else
                     // It may seem odd for the second span to start on column 1 since the tab is partially
                     // included in the line.  However Visual Studio has this behavior.  It won't select a 
                     // character at the start / end of a selection unless it's completely included 
-                    Assert.Equal(
-                        new[]
-                        {
-                            _textBuffer.GetLineSpan(0, 1, 2),
-                            _textBuffer.GetLineSpan(1, 1, 1)
-                        },
-                        _textView.Selection.SelectedSpans);
+                    var spans = new[]
+                    {
+                        _textBuffer.GetLineSpan(0, 1, 2),
+                        _textBuffer.GetLineSpan(1, 1, 1)
+                    };
+#endif
+                    Assert.Equal(spans, _textView.Selection.SelectedSpans);
                 }
 
                 [WpfFact]
@@ -297,13 +304,20 @@ namespace Vim.UnitTest
                     var visualSpan = VisualSpan.NewBlock(blockSpan);
                     visualSpan.Select(_textView, SearchPath.Forward);
                     DoEvents();
-                    Assert.Equal(
-                        new[]
-                        {
-                            _textBuffer.GetLineSpan(0, 1, 3),
-                            _textBuffer.GetLineSpan(1, 1, 2)
-                        },
-                        _textView.Selection.SelectedSpans);
+#if VS_SPECIFIC_2022
+                    var spans = new[]
+                    {
+                        _textBuffer.GetLineSpan(0, 1, 5),
+                        _textBuffer.GetLineSpan(1, 0, 3)
+                    };
+#else
+                    var spans = new[]
+                    {
+                        _textBuffer.GetLineSpan(0, 1, 3),
+                        _textBuffer.GetLineSpan(1, 1, 2)
+                    };
+#endif
+                    Assert.Equal(spans, _textView.Selection.SelectedSpans);
                 }
 
                 /// <summary>

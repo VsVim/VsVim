@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CommandKeyBindingSnapshot.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandListSnapshot.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DebugUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditCommandKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions.cs" />

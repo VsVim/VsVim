@@ -23,6 +23,7 @@
                 <MenuItem Header="type ö" Click="OnLeaderTypeClick" />
 
                 <MenuItem Header="Insert Control Characters" Click="OnInsertControlCharactersClick" />
+                <MenuItem Header="Run Custom Scenario" Click="OnCustomScenarioClick" />
                 <MenuItem Header="Run GC" Click="OnRunGarbageCollectorClick" />
             </MenuItem>
             <MenuItem Header="Options">
