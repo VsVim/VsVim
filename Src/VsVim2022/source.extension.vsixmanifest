@@ -2,7 +2,7 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
     <!-- DEV17_TODO -->
-    <Identity Publisher="Jared Parsons" Version="2.10.0.2" Id="VsVim.Microsoft.e97cd707-324b-4e35-a669-eef8dae4b8cf" Language="en-US" />
+    <Identity Publisher="Jared Parsons" Version="2.10.0.3" Id="VsVim.Microsoft.e97cd707-324b-4e35-a669-eef8dae4b8cf" Language="en-US" />
     <DisplayName>VsVim 2022</DisplayName>
     <Description>VIM emulation layer for Visual Studio</Description>
     <MoreInfo>https://github.com/VsVim/VsVim</MoreInfo>
