@@ -13,16 +13,18 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Reflection;
 using System.Diagnostics;
+using Microsoft.VisualStudio.Text;
 
 namespace Vim.VisualStudio.Implementation.IntelliCode
 {
     internal sealed class IntelliCodeCommandTarget : ICommandTarget
     {
-        private object? _cascadingCompletionSource;
-        private bool _lookedForCascadingCompletionSource;
+        private (object CascadingCompletionSource, FieldInfo CurrentPrediction, FieldInfo CompletionState)? _data;
+        private bool _lookedForData;
 
         internal IVimBufferCoordinator VimBufferCoordinator { get; }
         internal IAsyncCompletionBroker AsyncCompletionBroker { get; }
+        internal ITextDocumentFactoryService TextDocumentFactoryService { get; }
 
         internal IVimBuffer VimBuffer => VimBufferCoordinator.VimBuffer;
         internal ITextView TextView => VimBuffer.TextView;
@@ -30,27 +32,74 @@ namespace Vim.VisualStudio.Implementation.IntelliCode
         {
             get
             {
-                if (!_lookedForCascadingCompletionSource)
-                {
-                    _lookedForCascadingCompletionSource = true;
-                    _cascadingCompletionSource = TextView
-                        .Properties
-                        .PropertyList
-                        .Where(pair => pair.Key is Type { Name: "CascadingCompletionSource" })
-                        .Select(x => x.Value)
-                        .FirstOrDefault();
-                }
-
-                return _cascadingCompletionSource;
+                EnsureLookedForData();
+                return _data?.CascadingCompletionSource;
             }
         }
 
         internal IntelliCodeCommandTarget(
             IVimBufferCoordinator vimBufferCoordinator,
-            IAsyncCompletionBroker asyncCompletionBroker)
+            IAsyncCompletionBroker asyncCompletionBroker,
+            ITextDocumentFactoryService textDocumentFactoryService)
         {
             VimBufferCoordinator = vimBufferCoordinator;
             AsyncCompletionBroker = asyncCompletionBroker;
+            TextDocumentFactoryService = textDocumentFactoryService;
+        }
+
+        private void EnsureLookedForData()
+        {
+            if (_lookedForData)
+            {
+                return;
+            }
+
+            _lookedForData = true;
+            try
+            {
+                var cascadingCompletionSource = TextView
+                    .Properties
+                    .PropertyList
+                    .Where(pair => pair.Key is Type { Name: "CascadingCompletionSource" })
+                    .Select(x => x.Value)
+                    .FirstOrDefault();
+                if (cascadingCompletionSource is object)
+                {
+                    var type = cascadingCompletionSource.GetType();
+                    var currentPrediction = type.GetField("_currentPrediction", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var completionState = type.GetField("_completionState", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (currentPrediction is object && completionState is object)
+                    {
+                        _data = (cascadingCompletionSource, currentPrediction, completionState);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                VimTrace.TraceInfo($"IntelliCodeCommandTarget::EnsureLookedForData error {ex.Message}");
+                Debug.Assert(false);
+            }
+        }
+
+        private bool IsIntelliCodeHandlingEscape()
+        {
+            EnsureLookedForData();
+            if (_data is { } data)
+            {
+                try
+                {
+                    var completionState = data.CompletionState.GetValue(data.CascadingCompletionSource);
+                    var currentPrediction = data.CurrentPrediction.GetValue(data.CascadingCompletionSource);
+                    return completionState is object || currentPrediction is object;
+                }
+                catch (Exception ex)
+                {
+                    VimTrace.TraceInfo($"IntelliCodeCommandTarget::IsIntelliCodeHandlingEscape error {ex.Message}");
+                    Debug.Assert(false);
+                }
+            }
+
+            return false;
         }
 
         private bool Exec(EditCommand editCommand, out Action? preAction, out Action? postAction)
@@ -65,32 +114,13 @@ namespace Vim.VisualStudio.Implementation.IntelliCode
             if (editCommand.HasKeyInput &&
                 editCommand.KeyInput == KeyInputUtil.EscapeKey && 
                 VimBuffer.CanProcess(editCommand.KeyInput) &&
-                IsIntelliCodeLineCompletionEnabled())
+                IsIntelliCodeHandlingEscape())
             {
+                VimTrace.TraceInfo($"IntelliCodeCommandTarget::QueryStatus handling escape");
                 VimBuffer.Process(editCommand.KeyInput);
             }
 
             return CommandStatus.PassOn;
-        }
-
-        private bool IsIntelliCodeLineCompletionEnabled()
-        {
-            if (CascadingCompletionSource is not { } source)
-            {
-                return false;
-            }
-
-            try
-            {
-                var property = source.GetType().GetProperty("ShowGrayText", BindingFlags.NonPublic | BindingFlags.Instance);
-                var value = property.GetValue(source, null);
-                return value is bool b && b;
-            }
-            catch (Exception)
-            {
-                Debug.Assert(false);
-                return false;
-            }
         }
 
         #region ICommandTarget
@@ -110,15 +140,19 @@ namespace Vim.VisualStudio.Implementation.IntelliCode
     internal sealed class IntelliCodeCommandTargetFactory : ICommandTargetFactory
     {
         internal IAsyncCompletionBroker AsyncCompletionBroker { get; }
+        internal ITextDocumentFactoryService TextDocumentFactoryService { get; }
 
         [ImportingConstructor]
-        public IntelliCodeCommandTargetFactory(IAsyncCompletionBroker asyncCompletionBroker)
+        public IntelliCodeCommandTargetFactory(
+            IAsyncCompletionBroker asyncCompletionBroker,
+            ITextDocumentFactoryService textDocumentFactoryService)
         {
             AsyncCompletionBroker = asyncCompletionBroker;
+            TextDocumentFactoryService = textDocumentFactoryService;
         }
 
         ICommandTarget ICommandTargetFactory.CreateCommandTarget(IOleCommandTarget nextCommandTarget, IVimBufferCoordinator vimBufferCoordinator) =>
-            new IntelliCodeCommandTarget(vimBufferCoordinator, AsyncCompletionBroker);
+            new IntelliCodeCommandTarget(vimBufferCoordinator, AsyncCompletionBroker, TextDocumentFactoryService);
     }
 }
 
