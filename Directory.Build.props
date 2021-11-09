@@ -9,7 +9,7 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <MicrosoftVsSdkBuildToolsVersion>17.0.2155-preview2</MicrosoftVsSdkBuildToolsVersion>
+    <MicrosoftVsSdkBuildToolsVersion>17.0.5232</MicrosoftVsSdkBuildToolsVersion>
 
     <!-- Standard Calculation of NuGet package location -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->

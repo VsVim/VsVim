@@ -1,4 +1,4 @@
-$src = "C:\Program Files\Microsoft Visual Studio\2022\Public Preview"
+$src = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
 $all = @(
   "Common7\IDE\Microsoft.VisualStudio.Platform.WindowManagement.dll",
   "Common7\IDE\Microsoft.VisualStudio.Shell.ViewManager.dll",
