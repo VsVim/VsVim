@@ -36,5 +36,6 @@
     <ProjectReference Include="..\..\Src\VimTestUtils\VimTestUtils.csproj" />
   </ItemGroup>
   <Import Project="..\..\Src\VimWpf\VimWpf.projitems" Label="Shared" />
+  <Import Project="..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
   <Import Project="..\VimCoreTest\VimCoreTest.projitems" Label="Shared" />
 </Project>

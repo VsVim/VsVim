@@ -38,4 +38,5 @@
     </Reference>
   </ItemGroup>
   <Import Project="..\VimWpf\VimWpf.projitems" Label="Shared" />
+  <Import Project="..\VimEditorHost\VimEditorHost.projitems" Label="Shared" />
 </Project>
