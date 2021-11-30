@@ -1,7 +1,5 @@
 <Project>
 
-  <Import Project="$(MSBuildThisFileDirectory)..\..\Src\VimEditorHost\VimEditorHost.projitems" Label="Shared" Condition="'$(VsVimProjectType)' == 'EditorHost'" />
-
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_2017</DefineConstants>
     <DefineConstants Condition="'$(VsVimProjectType)' == 'EditorHost'">$(DefineConstants);VIM_SPECIFIC_TEST_HOST</DefineConstants>

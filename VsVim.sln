@@ -68,8 +68,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest2022", "Test\VsVim
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Src\VimEditorHost\VimEditorHost.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
 		Test\VimWpfTest\VimWpfTest.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
-		Test\VsVimSharedTest\VsVimSharedTest.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
 		Test\VimCoreTest\VimCoreTest.projitems*{1746bb8d-387d-40ab-a9f9-084a7a0676ea}*SharedItemsImports = 13
 		Src\VimWpf\VimWpf.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
 		Src\VsVimShared\VsVimShared.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
@@ -79,18 +79,24 @@ Global
 		Test\VsVimSharedTest\VsVimSharedTest.projitems*{5f7f6c25-d91c-4143-ac7d-df29a0a831ef}*SharedItemsImports = 13
 		Src\VimWpf\VimWpf.projitems*{648972d9-1a17-46d8-80c6-6810c5b8b4ae}*SharedItemsImports = 13
 		Src\VsVimShared\VsVimShared.projitems*{6dbed15c-fc2c-46e9-914d-685518573f0d}*SharedItemsImports = 13
+		Src\VimEditorHost\VimEditorHost.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
 		Src\VimWpf\VimWpf.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
 		Test\VimCoreTest\VimCoreTest.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
 		Src\VimWpf\VimWpf.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
 		Test\VimWpfTest\VimWpfTest.projitems*{a24506e5-0602-4472-94d2-fb02772438a6}*SharedItemsImports = 13
+		Src\VimEditorHost\VimEditorHost.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
 		Src\VimWpf\VimWpf.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
 		Test\VimCoreTest\VimCoreTest.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
 		Src\VimWpf\VimWpf.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
 		Test\VimCoreTest\VimCoreTest.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
 		Src\VimWpf\VimWpf.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
 		Src\VsVimShared\VsVimShared.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
 		Test\VimWpfTest\VimWpfTest.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
 		Test\VsVimSharedTest\VsVimSharedTest.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
 		Test\VimWpfTest\VimWpfTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
 		Test\VsVimSharedTest\VsVimSharedTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
 	EndGlobalSection
