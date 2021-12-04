@@ -56,6 +56,7 @@ namespace Vim.VisualStudio.Implementation.CSharpScript
 
             var searchPaths = new string[]
             {
+                baseDirectory,
                 Path.Combine(baseDirectory, "PublicAssemblies"),
                 Path.Combine(baseDirectory, "PrivateAssemblies"),
                 Path.Combine(baseDirectory, @"CommonExtensions\Microsoft\Editor"),
