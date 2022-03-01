@@ -11,6 +11,7 @@ using CoreAnimation;
 using CoreGraphics;
 using CoreText;
 using Foundation;
+using ObjCRuntime;
 
 namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 {

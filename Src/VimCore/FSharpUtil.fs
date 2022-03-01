@@ -584,7 +584,7 @@ module CharUtil =
     let IsTagNameChar x = System.Char.IsLetterOrDigit(x) || x = ':' || x = '.' || x = '_' || x = '-'
     let IsFileNameChar x = IsTagNameChar x
     let IsPrintable x =
-        let category = CharUnicodeInfo.GetUnicodeCategory(x)
+        let category = CharUnicodeInfo.GetUnicodeCategory(x: char)
         PrintableCategories.Contains category
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
@@ -970,7 +970,7 @@ module internal SystemUtil =
         else
             Some text
 
-    let EnsureRooted currentDirectory text = 
+    let EnsureRooted (currentDirectory: string) (text: string) = 
         if Path.IsPathRooted text || not (Path.IsPathRooted currentDirectory) then
             text
         else
@@ -980,7 +980,7 @@ module internal SystemUtil =
     /// isn't rooted it will be rooted inside of 'currentDirectory'
     ///
     /// This method can throw when provided paths with invalid path characters.
-    let ResolveVimPath currentDirectory text = 
+    let ResolveVimPath (currentDirectory: string) text = 
         match text with
         | "." -> currentDirectory
         | ".." -> Path.GetPathRoot currentDirectory

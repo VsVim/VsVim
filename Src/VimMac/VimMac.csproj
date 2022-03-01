@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Mac</RootNamespace>
     <AssemblyName>Vim.Mac</AssemblyName>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_MAC</DefineConstants>
   </PropertyGroup>
       
@@ -12,13 +12,8 @@
     <AddinReference Include="MonoDevelop.TextEditor.Cocoa" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.ComponentModel.Composition" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="MonoDevelop.Addins" Version="0.4.7" />
+    <PackageReference Include="Microsoft.VisualStudioMac.Sdk" Version="17.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

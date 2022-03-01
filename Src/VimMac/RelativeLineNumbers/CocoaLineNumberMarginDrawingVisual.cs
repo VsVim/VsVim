@@ -6,6 +6,7 @@ using CoreAnimation;
 using CoreGraphics;
 using CoreText;
 using Foundation;
+using ObjCRuntime;
 using Vim.UI.Wpf.Implementation.RelativeLineNumbers;
 
 namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
