@@ -13,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
-    <PackageReference Include="Microsoft.VisualStudioMac.Sdk" Version="17.0.0" />
+    <PackageReference Include="Microsoft.VisualStudioMac.Sdk" Version="17.0.0-preview.7955" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
