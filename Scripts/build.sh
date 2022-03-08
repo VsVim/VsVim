@@ -1,7 +1,7 @@
 echo "Downloading VSMac"
 wget --quiet https://download.visualstudio.microsoft.com/download/pr/40d0790a-f7b7-44d3-a6e5-9bc5677fb1d7/28697450215d02cbec72e943d988f51f/visualstudioformacpreviewinstaller-17.0.0.149.dmg
 
-sudo hdiutil attach visualstudioformac-17.0.0.149.dmg
+sudo hdiutil attach visualstudioformacpreviewinstaller-17.0.0.149.dmg
 
 echo "Removing pre-installed VSMac"
 sudo rm -rf "/Applications/Visual Studio.app"
@@ -20,4 +20,4 @@ ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore /t:Build
 
 # Generate Vim.Mac.VsVim_2.8.0.0.mpack extension artifact
-msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
+dotnet msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
