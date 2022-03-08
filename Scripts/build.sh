@@ -15,9 +15,9 @@ rm -rf ~/Library/Developer/Xamarin
 rm -rf ~/Library/Application\ Support/VisualStudio
 
 echo "Installing VSMac 17.0 Preview"
-ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
+ditto -rsrc "/Volumes/Visual Studio for Mac Preview Installer/" /Applications/
 
 dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore /t:Build
 
-# Generate Vim.Mac.VsVim_2.8.0.0.mpack extension artifact
+# Generate mpack extension artifact
 dotnet msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
