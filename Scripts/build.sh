@@ -17,7 +17,13 @@ rm -rf ~/Library/Application\ Support/VisualStudio
 echo "Installing VSMac 17.0 Preview"
 ditto -rsrc "/Volumes/Visual Studio for Mac Preview Installer/" /Applications/
 
+echo "Installing dotnet 6.0.1xx"
+wget https://dot.net/v1/dotnet-install.sh
+bash dotnet-install.sh --channel 6.0.1xx
+
+echo "Building the extension"
 dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore /t:Build
 
+echo "Creating and installing Extension"
 # Generate mpack extension artifact
 dotnet msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
