@@ -19,8 +19,10 @@ wget https://dot.net/v1/dotnet-install.sh
 bash dotnet-install.sh --channel 6.0.1xx
 
 echo "Building the extension"
-dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore /t:Build
+dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
+cd Src/VimMac
+dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build
 
 echo "Creating and installing Extension"
 # Generate mpack extension artifact
-dotnet msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
+dotnet msbuild VimMac.csproj /t:InstallAddin
