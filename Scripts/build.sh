@@ -3,9 +3,6 @@ wget --quiet https://download.visualstudio.microsoft.com/download/pr/a643750b-86
 
 sudo hdiutil attach visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
 
-echo "Removing pre-installed VSMac"
-sudo rm -rf "/Applications/Visual Studio.app"
-rm -rf ~/Library/Caches/VisualStudio
 rm -rf ~/Library/Preferences/VisualStudio
 rm -rf ~/Library/Preferences/Visual\ Studio
 rm -rf ~/Library/Logs/VisualStudio
@@ -14,8 +11,8 @@ rm -rf ~/Library/Preferences/Xamarin/
 rm -rf ~/Library/Developer/Xamarin
 rm -rf ~/Library/Application\ Support/VisualStudio
 
-echo "Installing VSMac 17.0 Preview"
-ditto -rsrc "/Volumes/Visual Studio for Mac Preview Installer/" /Applications/
+cho "Installing VSMac 17.0 Preview"
+ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 
 echo "Installing dotnet 6.0.1xx"
 wget https://dot.net/v1/dotnet-install.sh
