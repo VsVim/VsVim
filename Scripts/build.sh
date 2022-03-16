@@ -11,7 +11,7 @@ rm -rf ~/Library/Preferences/Xamarin/
 rm -rf ~/Library/Developer/Xamarin
 rm -rf ~/Library/Application\ Support/VisualStudio
 
-cho "Installing VSMac 17.0 Preview"
+echo "Installing VSMac 17.0 Preview"
 ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 
 echo "Installing dotnet 6.0.1xx"
