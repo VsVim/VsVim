@@ -683,7 +683,7 @@ type VimInterpreter
             // cd is given no options
             _statusUtil.OnStatus x.CurrentDirectory
         | _ ->
-            let directoryPath = x.InterpretSymbolicPath symbolicPath
+            let (directoryPath: string) = x.InterpretSymbolicPath symbolicPath
             let directoryPath = 
                 if not (Path.IsPathRooted directoryPath) then
                     Path.GetFullPath(Path.Combine(_vimData.CurrentDirectory, directoryPath))
@@ -1440,7 +1440,7 @@ type VimInterpreter
     member x.RunVimHelp (subject: string) = 
         let subject = subject.Replace("*", "star")
 
-        let extractFolderVersion = fun pathName ->
+        let extractFolderVersion = fun (pathName: string) ->
             let folder = System.IO.Path.GetFileName(pathName)
             let m = System.Text.RegularExpressions.Regex.Match(folder, "^vim(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
             match m with

@@ -8,11 +8,11 @@ pr:
 - dev/jaredpar/*
 - master
 
-# Standard CI loop (build and test). This will run against VS2017 and VS2019
+# Standard CI loop (build and test). This will run against VSMac 17.0
 jobs:
 - job: macOS
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   steps:
   - script: VERSION_TAG=`git describe --tags` && echo "##vso[task.setvariable variable=VERSION_TAG]$VERSION_TAG"
     displayName: Set the tag name as an environment variable
@@ -26,7 +26,7 @@ jobs:
 
   - task: PublishBuildArtifacts@1
     inputs:
-      pathToPublish: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+      pathToPublish: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
       artifactName: VSMacExtension
 
   - task: GitHubRelease@0
@@ -39,13 +39,14 @@ jobs:
       target: '$(Build.SourceVersion)'
       tagSource: 'auto'
       title: 'Visual Studio for Mac $(VERSION_TAG)'
-      assets: Binaries/Debug/VimMac/net472/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+      assets: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
       assetUploadMode: 'replace'
       isDraft: false
 
+# Standard CI loop (build and test). This will run against VS2017 and VS2019
 - job: VsVim_Build_Test
   pool: 
-    vmImage: 'windows-2019'
+    vmImage: 'windows-2022'
 
   steps:
 
@@ -89,7 +90,7 @@ jobs:
 #   - The Open VSIX gallery during CI
 - job: Produce_Vsix
   pool: 
-    vmImage: 'windows-2019'
+    vmImage: 'windows-2022'
 
   steps:
   - task: PowerShell@2

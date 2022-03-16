@@ -1,16 +1,8 @@
-echo "Downloading Mono"
-wget --quiet https://download.visualstudio.microsoft.com/download/pr/2516b6e5-6965-4f5b-af68-d1959a446e7a/443346a56436b5e2682b7c5b5b25e990/monoframework-mdk-6.12.0.125.macos10.xamarin.universal.pkg
-
-sudo installer -pkg monoframework-mdk-6.12.0.125.macos10.xamarin.universal.pkg -target /
-
 echo "Downloading VSMac"
-wget --quiet https://download.visualstudio.microsoft.com/download/pr/e5b7cb77-1248-4fb7-a3fe-532ca3335f78/777b586636b0cdba9db15d69bf8d8b1f/visualstudioformac-8.9.7.8.dmg
+wget --quiet https://download.visualstudio.microsoft.com/download/pr/a643750b-8690-4e7b-a088-9dfc3b2865ba/f315ac486e00a8c3954df7127c0bf526/visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
 
-sudo hdiutil attach visualstudioformac-8.9.7.8.dmg
+sudo hdiutil attach visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
 
-echo "Removing pre-installed VSMac"
-sudo rm -rf "/Applications/Visual Studio.app"
-rm -rf ~/Library/Caches/VisualStudio
 rm -rf ~/Library/Preferences/VisualStudio
 rm -rf ~/Library/Preferences/Visual\ Studio
 rm -rf ~/Library/Logs/VisualStudio
@@ -19,10 +11,18 @@ rm -rf ~/Library/Preferences/Xamarin/
 rm -rf ~/Library/Developer/Xamarin
 rm -rf ~/Library/Application\ Support/VisualStudio
 
-echo "Installing VSMac 8.9"
-ditto -rsrc "/Volumes/Visual Studio/" /Applications/
+echo "Installing VSMac 17.0 Preview"
+ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 
-msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore /t:Build
+echo "Installing dotnet 6.0.1xx"
+wget https://dot.net/v1/dotnet-install.sh
+bash dotnet-install.sh --channel 6.0.1xx
 
-# Generate Vim.Mac.VsVim_2.8.0.0.mpack extension artifact
-msbuild Src/VimMac/VimMac.csproj /t:InstallAddin
+echo "Building the extension"
+dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
+cd Src/VimMac
+dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build
+
+echo "Creating and installing Extension"
+# Generate mpack extension artifact
+dotnet msbuild VimMac.csproj /t:InstallAddin
