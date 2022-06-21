@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
+open Microsoft.VisualStudio.Threading
 open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.Diagnostics
@@ -436,18 +437,22 @@ type internal ChangeTracker
 type internal ProtectedOperations =
 
     val _errorHandlers: List<Lazy<IExtensionErrorHandler>>
+    val _joinableTaskContext: JoinableTaskContext
 
     [<ImportingConstructor>]
-    new ([<ImportMany>] errorHandlers: Lazy<IExtensionErrorHandler> seq) = 
-        { _errorHandlers = errorHandlers |> GenericListUtil.OfSeq }
+    new (joinableTaskContext: JoinableTaskContext, [<ImportMany>] errorHandlers: Lazy<IExtensionErrorHandler> seq) = 
+        { 
+            _joinableTaskContext = joinableTaskContext
+            _errorHandlers = errorHandlers |> GenericListUtil.OfSeq
+        }
 
-    new (errorHandler: IExtensionErrorHandler) = 
+    new (joinableTaskContext: JoinableTaskContext, errorHandler: IExtensionErrorHandler) = 
         let l = Lazy<IExtensionErrorHandler>(fun _ -> errorHandler)
         let list = l |> Seq.singleton |> GenericListUtil.OfSeq
-        { _errorHandlers = list }
-
-    new () =
-        { _errorHandlers = Seq.empty |> GenericListUtil.OfSeq }
+        {
+            _joinableTaskContext = joinableTaskContext
+            _errorHandlers = list
+        }
 
     /// Produce a delegate that can safely execute the given action.  If it throws an exception 
     /// then make sure to alert the error handlers
@@ -479,6 +484,7 @@ type internal ProtectedOperations =
             | e -> Debug.Fail((sprintf "Error handler threw: %O" e))
 
     interface IProtectedOperations with
+        member x.JoinableTaskContext = x._joinableTaskContext
         member x.GetProtectedAction action = x.GetProtectedAction action
         member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
         member x.Report ex = x.AlertAll ex

@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UI.Wpf;
 using Vim.UnitTest;
+using Microsoft.VisualStudio.Threading;
 
 namespace Vim.EditorHost
 {
@@ -49,6 +50,7 @@ namespace Vim.EditorHost
         internal IBulkOperations BulkOperations {get;}
         public IEditorFormatMapService EditorFormatMapService {get;}
         public IClassificationFormatMapService ClassificationFormatMapService {get;}
+        public JoinableTaskContext JoinableTaskContext { get; }
 
         public IVimData VimData => Vim.VimData;
         public IVimHost VimHost => Vim.VimHost;
@@ -83,6 +85,7 @@ namespace Vim.EditorHost
             ClipboardDevice = CompositionContainer.GetExportedValue<IClipboardDevice>();
             EditorFormatMapService = CompositionContainer.GetExportedValue<IEditorFormatMapService>();
             ClassificationFormatMapService = CompositionContainer.GetExportedValue<IClassificationFormatMapService>();
+            JoinableTaskContext = CompositionContainer.GetExportedValue<JoinableTaskContext>();
         }
 
         /// <summary>

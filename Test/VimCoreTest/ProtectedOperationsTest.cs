@@ -9,7 +9,7 @@ using Vim.UI.Wpf;
 
 namespace Vim.UnitTest
 {
-    public sealed class ProtectedOperationsTest
+    public sealed class ProtectedOperationsTest : VimTestBase
     {
         private readonly Mock<IExtensionErrorHandler> _errorHandler;
         private readonly ProtectedOperations _protectedOperationsRaw;
@@ -18,14 +18,14 @@ namespace Vim.UnitTest
         public ProtectedOperationsTest()
         {
             _errorHandler = new Mock<IExtensionErrorHandler>(MockBehavior.Strict);
-            _protectedOperationsRaw = new ProtectedOperations(_errorHandler.Object);
+            _protectedOperationsRaw = new ProtectedOperations(JoinableTaskContext, _errorHandler.Object);
             _protectedOperations = _protectedOperationsRaw;
         }
 
         /// <summary>
         /// Verify the returned action will execute the original one
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedAction_Standard()
         {
             var didRun = false;
@@ -38,7 +38,7 @@ namespace Vim.UnitTest
         /// Verify that when the original action throws that it is passed on to the
         /// listed IExtensionErrorHandlers
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedAction_Throws()
         {
             var exception = new Exception("hello world");
@@ -51,7 +51,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Verify the returned EventHandler will execute the original one
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedEventHandler_Standard()
         {
             var didRun = false;
@@ -64,7 +64,7 @@ namespace Vim.UnitTest
         /// Verify that when the original EventHandler throws that it is passed on to the
         /// listed IExtensionErrorHandlers
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void GetProtectedEventHandler_Throws()
         {
             var exception = new Exception("hello world");
@@ -77,7 +77,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Verify that the BeginInvoke will actually schedule the original action
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void BeginInvoke_Priority_Standard()
         {
             var didRun = false;
@@ -90,7 +90,7 @@ namespace Vim.UnitTest
         /// Verify that when an exception is thrown during processing that it makes it's way to the 
         /// IExtensionErrorHandler
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void BeginInvoke_Priority_Throws()
         {
             var exception = new Exception("hello world");
@@ -103,7 +103,7 @@ namespace Vim.UnitTest
         /// <summary>
         /// Verify that the BeginInvoke will actually schedule the original action
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void BeginInvoke_NoPriority_Standard()
         {
             var didRun = false;
@@ -116,7 +116,7 @@ namespace Vim.UnitTest
         /// Verify that when an exception is thrown during processing that it makes it's way to the 
         /// IExtensionErrorHandler
         /// </summary>
-        [Fact]
+        [WpfFact]
         public void BeginInvoke_NoPriority_Throws()
         {
             var exception = new Exception("hello world");

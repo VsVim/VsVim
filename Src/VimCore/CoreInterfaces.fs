@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Text.Tagging
+open Microsoft.VisualStudio.Threading
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 open System.IO
@@ -6126,6 +6127,8 @@ module internal VimCoreExtensions =
 /// dispatched operation will go directly to the dispatch loop and crash the host
 /// application
 type IProtectedOperations = 
+
+    abstract member JoinableTaskContext: JoinableTaskContext
 
     /// Get an Action delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
