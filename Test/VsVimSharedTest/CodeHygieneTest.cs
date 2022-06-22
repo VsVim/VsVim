@@ -57,7 +57,7 @@ namespace Vim.VisualStudio.UnitTest
         /// the Vim.Core assembly and not an actual reference. Too many ways that VS ships the DLL that
         /// it makes referencing it too difficult. Embedding is much more reliably.
         /// </summary>
-        [Fact]
+        [Fact(Skip = "https://github.com/VsVim/VsVim/issues/2976")]
         public void FSharpCoreReferences()
         {
             var assemblyList = new[]
