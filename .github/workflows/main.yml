@@ -81,18 +81,26 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: VSMacExtension
-          path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+          path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack
 
-  - task: GitHubRelease@0
-    condition: and(startsWith(variables['build.sourceBranch'], 'refs/tags/'), contains(variables['build.sourceBranch'], 'vsm'))
-    inputs:
-      displayName: 'Release VS Mac extension'
-      gitHubConnection: automationConnection
-      repositoryName: '$(Build.Repository.Name)' 
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'auto'
-      title: 'Visual Studio for Mac $(VERSION_TAG)'
-      assets: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
-      assetUploadMode: 'replace'
-      isDraft: false
+      - name: Create VS Mac extension release
+        uses: actions/create-release@v1
+        id: vsmac_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        with:
+          release_name: 'Visual Studio for Mac $(VERSION_TAG)'
+          draft: false
+          tag_name: ${{ github.ref }}
+        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
+
+      - name: Upload VS Mac extension artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.vsmac_release.outputs.upload_url }}
+          asset_path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack
+          asset_name: VsVim_${{ env.EXTENSION_VERSION}}.mpack
+        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
+
