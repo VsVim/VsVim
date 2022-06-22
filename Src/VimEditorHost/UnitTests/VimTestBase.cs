@@ -28,6 +28,7 @@ using Vim.Extensions;
 using Vim.EditorHost.Implementation.Misc;
 using Vim.UI.Wpf;
 using Vim.UI.Wpf.Implementation.Misc;
+using Microsoft.VisualStudio.Threading;
 
 namespace Vim.UnitTest
 {
@@ -50,6 +51,11 @@ namespace Vim.UnitTest
         public StaContext StaContext { get; }
         public Dispatcher Dispatcher => StaContext.Dispatcher;
         public DispatcherSynchronizationContext DispatcherSynchronizationContext { get; }
+
+        public JoinableTaskContext JoinableTaskContext
+        {
+            get { return _vimEditorHost.JoinableTaskContext; }
+        }
 
         public CompositionContainer CompositionContainer
         {
