@@ -70,14 +70,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Display  VERSION_TAG
-        run: echo "VERSION_TAG=`git describe --tags`"
-
       - name: Set VERSION_TAG
         run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
-
-      - name: Display EXTENSION_VERSION
-        run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d '\"' -f2`"
 
       - name: Set EXTENSION_VERSION
         run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d '\"' -f2`" >> $GITHUB_ENV
