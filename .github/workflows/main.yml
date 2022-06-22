@@ -65,14 +65,14 @@ jobs:
 
   macos-build:
     name: MacOS Build and Publish
-    runs-on: 'macOS-10.15'
+    runs-on: macOS-10.15
 
     steps:
       - name: Set VERSION_TAG
-      - run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
+        run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
 
       - name: Set EXTENSION_VERSION
-      - run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d "\"" -f2`" >> $GITHUB_ENV
+        run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d "\"" -f2`" >> $GITHUB_ENV
 
       - name: Build
         run: Scripts/build.sh
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: VSMacExtension
-          path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack
+          path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
 
       - name: Create VS Mac extension release
         uses: actions/create-release@v1
@@ -100,7 +100,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.vsmac_release.outputs.upload_url }}
-          asset_path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack
-          asset_name: VsVim_${{ env.EXTENSION_VERSION}}.mpack
+          asset_path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
+          asset_name: 'VsVim_${{ env.EXTENSION_VERSION}}.mpack'
         if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
 
