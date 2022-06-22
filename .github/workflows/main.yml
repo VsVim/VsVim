@@ -69,6 +69,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Test VERSION_TAG
         run: git describe --tags
