@@ -68,6 +68,7 @@ jobs:
     runs-on: macOS-10.15
 
     steps:
+      # Must use fetch-depth 0 because the workflow requires that tags be present
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -90,20 +91,14 @@ jobs:
           name: VSMacExtension
           path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
 
-      - name: Generate Changelog
-        uses: scottbrenner/generate-changelog-action@master
-        id: changelog
-        env:
-          REPO: ${{ github.repository }}
-
       - name: Create VS Mac extension release
         uses: actions/create-release@v1
         id: vsmac_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
-          tag_name: 'Test ${{ github.ref }}'
-          release_name: 'Visual Studio for Mac ${{ env.VERSION_TAG }}'
+          tag_name: ${{ env.VERSION_TAG }}
+          release_name: 'Test Visual Studio for Mac ${{ env.VERSION_TAG }}'
           draft: true
           body: ${{ steps.changelog.outputs.changelog }}
 #        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
