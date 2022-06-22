@@ -12,7 +12,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  windows-build:
+    name: Windows Build and Test
     runs-on: windows-2022
 
     steps:
@@ -30,7 +31,34 @@ jobs:
         shell: powershell
         run: Scripts\Build.ps1 -ci -config Debug -testExtra
 
-      - uses: actions/upload-artifact@v3
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: Upload Artifacts
+          name: Logs
           path: Binaries\Logs
+
+  # This job is meant for building a Release VSIX for consumption and 
+  # publishing it to two locations:
+  #   - An Azure DevOps artifact for easy download / use on PR or CI
+  #   - The Open VSIX gallery during CI
+  windows-publish:
+    name: Publish VSIX
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build VSIX
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -build -updateVsixVersion -config Release
+
+      - name: Upload VSIX Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Vsix
+          path: Binaries\Deploy
+
+      - name: Publish VSIX to Open VSIX Gallery
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -uploadVsix -config Release
+        if: ${{ success() && github.ref == 'refs/heads/master' }}
