@@ -97,7 +97,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
-          tag_name: ${{ env.VERSION_TAG }}
+          # TODO delete Test below
+          tag_name: 'Test ${{ env.VERSION_TAG }}'
           release_name: 'Test Visual Studio for Mac ${{ env.VERSION_TAG }}'
           draft: true
           body: ${{ steps.changelog.outputs.changelog }}
