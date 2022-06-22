@@ -62,3 +62,37 @@ jobs:
         shell: powershell
         run: Scripts\Build.ps1 -ci -uploadVsix -config Release
         if: ${{ success() && github.ref == 'refs/heads/master' }}
+
+  macos-build:
+    name: MacOS Build and Publish
+    runs-on: 'macOS-10.15'
+
+    steps:
+      - name: Set VERSION_TAG
+      - run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
+
+      - name: Set EXTENSION_VERSION
+      - run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d "\"" -f2`" >> $GITHUB_ENV
+
+      - name: Build
+        run: Scripts/build.sh
+
+      - name: Publish mpack
+        uses: actions/upload-artifact@v3
+        with:
+          name: VSMacExtension
+          path: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+
+  - task: GitHubRelease@0
+    condition: and(startsWith(variables['build.sourceBranch'], 'refs/tags/'), contains(variables['build.sourceBranch'], 'vsm'))
+    inputs:
+      displayName: 'Release VS Mac extension'
+      gitHubConnection: automationConnection
+      repositoryName: '$(Build.Repository.Name)' 
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: 'Visual Studio for Mac $(VERSION_TAG)'
+      assets: Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_$(EXTENSION_VERSION).mpack
+      assetUploadMode: 'replace'
+      isDraft: false
