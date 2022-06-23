@@ -54,11 +54,11 @@ function Write-TaskError([string]$message) {
 # Meant to mimic the OpenVsix Gallery script for changing the VSIX version based
 # on the Azure DevOps build environment
 function Update-VsixVersion() {
-  if ($env:BUILD_BUILDID -eq $null) {
-    throw "The environment variable %BUILD_BUILDID% is not set"
+  if ($env:GITHUB_RUN_NUMBER -eq $null) {
+    throw "The environment variable %GITHUB_RUN_NUMBER% is not set"
   }
 
-  Write-Host "Updating VSIX version to include $($env:BUILD_BUILDID)"
+  Write-Host "Updating VSIX version to include $($env:GITHUB_RUN_NUMBER)"
 
   foreach ($vsVersion in $vsVersions) {
     Write-Host "Updating $vsVersion"
@@ -69,7 +69,7 @@ function Update-VsixVersion() {
 
     $attrVersion = $vsixXml.SelectSingleNode("//ns:Identity", $ns).Attributes["Version"]
     [Version]$version = $attrVersion.Value
-    $version = New-Object Version ([int]$version.Major),([int]$version.Minor),$env:BUILD_BUILDID
+    $version = New-Object Version ([int]$version.Major),([int]$version.Minor),$env:GITHUB_RUN_NUMBER
     $attrVersion.InnerText = $version
     $vsixXml.Save($vsixManifest) | Out-Null
   }
@@ -77,7 +77,7 @@ function Update-VsixVersion() {
 
 # Meant to mimic the OpenVsix Gallery script for uploading the VSIX 
 function Upload-Vsix() {
-  if ($env:BUILD_BUILDID -eq $null) {
+  if ($env:GITHUB_RUN_NUMBER -eq $null) {
     throw "This is only meant to run in Azure DevOps"
   }
 
