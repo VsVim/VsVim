@@ -92,26 +92,15 @@ jobs:
           path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
 
       - name: Create VS Mac extension release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         id: vsmac_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           # TODO delete Test below
           tag_name: 'Test ${{ env.VERSION_TAG }}'
-          release_name: 'Test Visual Studio for Mac ${{ env.VERSION_TAG }}'
+          name: 'Test Visual Studio for Mac ${{ env.VERSION_TAG }}'
           draft: true
-          body: ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: true
+          files: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
 #        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
-
-      - name: Upload VS Mac extension artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.vsmac_release.outputs.upload_url }}
-          asset_path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
-          asset_name: 'VsVim_${{ env.EXTENSION_VERSION}}.mpack'
-          asset_content_type: application/zip
-#        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
-
