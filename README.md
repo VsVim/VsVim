@@ -2,7 +2,7 @@ VsVim
 ===
 VsVim is a free vim emulator for Visual Studio 2017 through to 2022.
 
-[![Build Status](https://dev.azure.com/VsVim/VsVim/_apis/build/status/VsVim-CI?branchName=master)](https://dev.azure.com/VsVim/VsVim/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://github.com/VsVim/VsVim/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/VsVim/VsVim/actions/workflows/main.yml?branch=master)
 
 ## Developing
 VsVim can be developed using Visual Studio 2017 or 2019. The details of the 
