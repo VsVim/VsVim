@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: VsVim CI
 
 on:
   push:
@@ -62,3 +62,41 @@ jobs:
         shell: powershell
         run: Scripts\Build.ps1 -ci -uploadVsix -config Release
         if: ${{ success() && github.ref == 'refs/heads/master' }}
+
+  macos-build:
+    name: MacOS Build and Publish
+    runs-on: macOS-10.15
+
+    steps:
+      # Must use fetch-depth 0 because the workflow requires that tags be present
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set VERSION_TAG
+        run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
+
+      - name: Set EXTENSION_VERSION
+        run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d '\"' -f2`" >> $GITHUB_ENV
+
+      - name: Build
+        run: Scripts/build.sh
+
+      - name: Publish mpack
+        uses: actions/upload-artifact@v3
+        with:
+          name: VSMacExtension
+          path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
+
+      - name: Create VS Mac extension release
+        uses: softprops/action-gh-release@v1
+        id: vsmac_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        with:
+          tag_name: ${{ env.VERSION_TAG }}
+          name: 'Visual Studio for Mac ${{ env.VERSION_TAG }}'
+          draft: true
+          generate_release_notes: true
+          files: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
+        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
