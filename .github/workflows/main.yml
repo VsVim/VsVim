@@ -99,4 +99,4 @@ jobs:
           draft: true
           generate_release_notes: true
           files: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
-          if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
+        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
