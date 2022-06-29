@@ -1,7 +1,7 @@
 VsVim
 ===
 
-VsVim 是一个可以在 **Visual Studio 2012** 到 **Visual Studio 2022** 上使用的免费 Vim 模拟插件。
+VsVim 是一个可以在 **Visual Studio 2012** 到 **Visual Studio 2022** 上免费使用的 Vim 模拟插件。
 
 [![Build Status](https://github.com/VsVim/VsVim/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/VsVim/VsVim/actions/workflows/main.yml?branch=master)
 
