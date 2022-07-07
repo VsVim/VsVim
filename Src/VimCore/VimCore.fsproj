@@ -4,7 +4,6 @@
     <RootNamespace>Vim.Core</RootNamespace>
     <AssemblyName>Vim.Core</AssemblyName>
     <TargetFrameworks>net472;net6.0</TargetFrameworks>
-    <OtherFlags>--standalone</OtherFlags>
     <NoWarn>2011</NoWarn>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
     <DebugType>portable</DebugType>
@@ -139,12 +138,7 @@
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Using element form vs. attributes to work around NuGet restore bug
-         https://github.com/NuGet/Home/issues/6367 
-         https://github.com/dotnet/project-system/issues/3493 -->
-    <PackageReference Include="FSharp.Core" Version="6.0.3">
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="FSharp.Core" Version="6.0.3" />
     <PackageReference Include="System.ComponentModel.Composition" Version="6.0.0" />
     <Reference Include="Microsoft.VisualStudio.Threading, Version=15.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.CoreUtility, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />

@@ -44,22 +44,22 @@ namespace CleanVsix
         {
             foreach (var filePath in Directory.GetFiles(path))
             {
-                var fileName = Path.GetFileNameWithoutExtension(filePath);
+                var fileName = Path.GetFileName(filePath);
                 var delete = false;
                 switch (fileName.ToLower())
                 {
-                    case "fsharp.core":
-                    case "system.xml":
-                    case "newtonsoft.json":
-                    case "envdte":
-                    case "envdte80":
-                    case "stdole":
-                    case "system.collections.immutable":
-                    case "system.threading.tasks.extensions":
-                    case "microsoft.codeanalysis.scripting":
-                    case "microsoft.codeanalysis":
-                    case "microsoft.codeanalysis.csharp.scripting":
-                    case "microsoft.codeanalysis.csharp":
+                    case "system.xml.dll":
+                    case "fsharp.core.xml":
+                    case "newtonsoft.json.dll":
+                    case "envdte.dll":
+                    case "envdte80.dll":
+                    case "stdole.dll":
+                    case "system.collections.immutable.dll":
+                    case "system.threading.tasks.extensions.dll":
+                    case "microsoft.codeanalysis.scripting.dll":
+                    case "microsoft.codeanalysis.dll":
+                    case "microsoft.codeanalysis.csharp.scripting.dll":
+                    case "microsoft.codeanalysis.csharp.dll":
                         delete = true;
                         break;
                     default:

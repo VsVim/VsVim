@@ -84,7 +84,7 @@ namespace Vim.UnitTest
         public void AssertData(FSharpOption<MotionResult> data, SnapshotSpan? span = null, MotionKind motionKind = null, bool? isForward = null, CaretColumn caretColumn = null)
         {
             Assert.True(data.IsSome());
-            AssertData(data.value, span, motionKind, isForward, caretColumn);
+            AssertData(data.Value, span, motionKind, isForward, caretColumn);
         }
 
         public sealed class AdjustMotionResult : MotionUtilTest

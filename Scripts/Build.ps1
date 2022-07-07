@@ -147,6 +147,7 @@ function Test-VsixContents() {
       "Colors.pkgdef",
       "extension.vsixmanifest",
       "License.txt",
+      "FSharp.Core.dll",
       "Vim.Core.dll",
       "VsVim.dll",
       "VsVim.pkgdef",
@@ -167,14 +168,14 @@ function Test-VsixContents() {
     if ($foundFiles.Count -ne $expectedFiles.Count) { 
       Write-TaskError "Found $($foundFiles.Count) but expected $($expectedFiles.Count)"
       Write-TaskError "Wrong number of foundFiles in VSIX." 
-      Write-TaskError "Extra foundFiles"
+      Write-TaskError "Extra Files"
       foreach ($file in $foundFiles) {
         if (-not $expectedFiles.Contains($file)) {
           Write-TaskError "`t$file"
         }
       }
 
-      Write-Host "Missing foundFiles"
+      Write-Host "Missing Files"
       foreach ($file in $expectedFiles) {
         if (-not $foundFiles.Contains($file)) {
           Write-TaskError "`t$file"

@@ -78,6 +78,11 @@
       <IncludeOutputGroupsInVSIXLocalOnly>DebugSymbolsProjectOutputGroup%3b</IncludeOutputGroupsInVSIXLocalOnly>
       <ForceIncludeInVSIX>true</ForceIncludeInVSIX>
     </ProjectReference>
+
+    <PackageReference Include="FSharp.Core" Version="6.0.3" GeneratePathProperty="true" />
+    <Content Include="$(PkgFSharp_Core)\lib\netstandard2.0\FSharp.Core.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>		  
+    </Content>
   </ItemGroup>
   <Import Project="..\VsVimShared\VsVimShared.projitems" Label="Shared" />
   <Import Project="..\VimWpf\VimWpf.projitems" Label="Shared" />
