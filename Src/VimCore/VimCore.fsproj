@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Core</RootNamespace>
     <AssemblyName>Vim.Core</AssemblyName>
-    <TargetFrameworks>net472;net6.0</TargetFrameworks>
+    <TargetFrameworks>net472;net6.0-macos</TargetFrameworks>
     <OtherFlags>--standalone</OtherFlags>
     <NoWarn>2011</NoWarn>
     <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
