@@ -1,7 +1,7 @@
 echo "Downloading VSMac"
-wget --quiet https://download.visualstudio.microsoft.com/download/pr/a643750b-8690-4e7b-a088-9dfc3b2865ba/f315ac486e00a8c3954df7127c0bf526/visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
+wget --quiet https://download.visualstudio.microsoft.com/download/pr/abec5a47-e411-463e-9668-cf62db9ac526/6d94780d075d9ac6db45f8b9570fb873/visualstudioformac-preview-17.3.0.1038-pre.2.1-x64.dmg
 
-sudo hdiutil attach visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
+sudo hdiutil attach visualstudioformac-preview-17.3.0.1038-pre.2.1-x64.dmg
 
 rm -rf ~/Library/Preferences/VisualStudio
 rm -rf ~/Library/Preferences/Visual\ Studio
@@ -11,12 +11,13 @@ rm -rf ~/Library/Preferences/Xamarin/
 rm -rf ~/Library/Developer/Xamarin
 rm -rf ~/Library/Application\ Support/VisualStudio
 
-echo "Installing VSMac 17.0 Preview"
+echo "Installing VSMac 17.3 Preview"
 ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 
-echo "Installing dotnet 6.0.1xx"
+echo "Installing dotnet 6.0.3xx"
 wget https://dot.net/v1/dotnet-install.sh
-bash dotnet-install.sh --channel 6.0.1xx
+bash dotnet-install.sh --channel 6.0.3xx
+dotnet workload install macos
 
 echo "Building the extension"
 dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
