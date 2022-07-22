@@ -1,7 +1,7 @@
 echo "Downloading VSMac"
-wget --quiet https://download.visualstudio.microsoft.com/download/pr/abec5a47-e411-463e-9668-cf62db9ac526/6d94780d075d9ac6db45f8b9570fb873/visualstudioformac-preview-17.3.0.1038-pre.2.1-x64.dmg
+wget --quiet https://download.visualstudio.microsoft.com/download/pr/bc5903bb-4aab-497e-a097-1eb1a5e02645/3ff8f8cb722e81e2538bece0b82fa44f/visualstudioformac-preview-17.3.0.2012-pre.4-x64.dmg
 
-sudo hdiutil attach visualstudioformac-preview-17.3.0.1038-pre.2.1-x64.dmg
+sudo hdiutil attach visualstudioformac-preview-17.3.0.2012-pre.4-x64.dmg
 
 rm -rf ~/Library/Preferences/VisualStudio
 rm -rf ~/Library/Preferences/Visual\ Studio
