@@ -70,6 +70,23 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
+        private void RunScenario(Func<WeakReference> func)
+        {
+            var weakReference = func();
+            RunGarbageCollector();
+            Assert.Null(weakReference.Target);
+        }
+
+        private void RunScenario(Func<IEnumerable<WeakReference>> func)
+        {
+            var list = func();
+            RunGarbageCollector();
+            foreach (var weakReference in list)
+            {
+                Assert.Null(weakReference.Target);
+            }
+        }
+
         private void ClearHistory(ITextBuffer textBuffer)
         {
             if (VimEditorHost.BasicUndoHistoryRegistry.TryGetBasicUndoHistory(textBuffer, out IBasicUndoHistory basicUndoHistory))
@@ -153,15 +170,15 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void TextViewOnly()
         {
-            var container = VimEditorHost.CompositionContainer;
-            var factory = container.GetExport<ITextEditorFactoryService>().Value;
-            var textView = factory.CreateTextView();
-            var weakReference = new WeakReference(textView);
-            textView.Close();
-            textView = null;
-
-            RunGarbageCollector();
-            Assert.Null(weakReference.Target);
+            RunScenario(() =>
+            {
+                var container = VimEditorHost.CompositionContainer;
+                var factory = container.GetExport<ITextEditorFactoryService>().Value;
+                var textView = factory.CreateTextView();
+                var weakReference = new WeakReference(textView);
+                textView.Close();
+                return weakReference;
+            });
         }
 
         /// <summary>
@@ -172,78 +189,76 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void TextViewHostOnly()
         {
-            var container = VimEditorHost.CompositionContainer;
-            var factory = container.GetExport<ITextEditorFactoryService>().Value;
-            var textView = factory.CreateTextView();
-            var textViewHost = factory.CreateTextViewHost(textView, setFocus: true);
-            var weakReference = new WeakReference(textViewHost);
-            textViewHost.Close();
-            textView = null;
-            textViewHost = null;
-
-            RunGarbageCollector();
-            Assert.Null(weakReference.Target);
+            RunScenario(() =>
+            {
+                var container = VimEditorHost.CompositionContainer;
+                var factory = container.GetExport<ITextEditorFactoryService>().Value;
+                var textView = factory.CreateTextView();
+                var textViewHost = factory.CreateTextViewHost(textView, setFocus: true);
+                var weakReference = new WeakReference(textViewHost);
+                textViewHost.Close();
+                return weakReference;
+            });
         }
 
         [WpfFact]
         public void VimWpfDoesntHoldBuffer()
         {
-            var container = VimEditorHost.CompositionContainer;
-            var factory = container.GetExport<ITextEditorFactoryService>().Value;
-            var textView = factory.CreateTextView();
+            RunScenario(() =>
+            {
+                var container = VimEditorHost.CompositionContainer;
+                var factory = container.GetExport<ITextEditorFactoryService>().Value;
+                var textView = factory.CreateTextView();
 
-            // Verify we actually created the IVimBuffer instance 
-            var vim = container.GetExport<IVim>().Value;
-            var vimBuffer = vim.GetOrCreateVimBuffer(textView);
-            Assert.NotNull(vimBuffer);
+                // Verify we actually created the IVimBuffer instance 
+                var vim = container.GetExport<IVim>().Value;
+                var vimBuffer = vim.GetOrCreateVimBuffer(textView);
+                Assert.NotNull(vimBuffer);
 
-            var weakVimBuffer = new WeakReference(vimBuffer);
-            var weakTextView = new WeakReference(textView);
+                var weakVimBuffer = new WeakReference(vimBuffer);
+                var weakTextView = new WeakReference(textView);
 
-            // Clean up 
-            ClearHistory(textView.TextBuffer);
-            textView.Close();
-            textView = null;
-            Assert.True(vimBuffer.IsClosed);
-            vimBuffer = null;
+                // Clean up 
+                ClearHistory(textView.TextBuffer);
+                textView.Close();
+                Assert.True(vimBuffer.IsClosed);
 
-            RunGarbageCollector();
-            Assert.Null(weakVimBuffer.Target);
-            Assert.Null(weakTextView.Target);
+                return new[] { weakVimBuffer, weakTextView };
+            });
         }
 
         [WpfFact]
         public void VsVimDoesntHoldBuffer()
         {
-            var vimBuffer = CreateVimBuffer();
-            var weakVimBuffer = new WeakReference(vimBuffer);
-            var weakTextView = new WeakReference(vimBuffer.TextView);
+            RunScenario(() =>
+            {
+                var vimBuffer = CreateVimBuffer();
+                var weakVimBuffer = new WeakReference(vimBuffer);
+                var weakTextView = new WeakReference(vimBuffer.TextView);
 
-            // Clean up 
-            vimBuffer.TextView.Close();
-            vimBuffer = null;
+                // Clean up 
+                vimBuffer.TextView.Close();
 
-            RunGarbageCollector();
-            Assert.Null(weakVimBuffer.Target);
-            Assert.Null(weakTextView.Target);
+                return new[] { weakVimBuffer, weakTextView };
+            });
         }
 
         [WpfFact]
         public void SetGlobalMarkAndClose()
         {
-            var vimBuffer = CreateVimBuffer();
-            vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, vimBuffer.VimBufferData, 0, 0);
-            vimBuffer.MarkMap.SetMark(Mark.OfChar('A').Value, vimBuffer.VimBufferData, 0, 0);
-            var weakVimBuffer = new WeakReference(vimBuffer);
-            var weakTextView = new WeakReference(vimBuffer.TextView);
+            RunScenario(() =>
+            {
+                var vimBuffer = CreateVimBuffer();
+                vimBuffer.MarkMap.SetMark(Mark.OfChar('a').Value, vimBuffer.VimBufferData, 0, 0);
+                vimBuffer.MarkMap.SetMark(Mark.OfChar('A').Value, vimBuffer.VimBufferData, 0, 0);
+                var weakVimBuffer = new WeakReference(vimBuffer);
+                var weakTextView = new WeakReference(vimBuffer.TextView);
 
-            // Clean up 
-            vimBuffer.TextView.Close();
-            vimBuffer = null;
+                // Clean up 
+                vimBuffer.TextView.Close();
 
-            RunGarbageCollector();
-            Assert.Null(weakVimBuffer.Target);
-            Assert.Null(weakTextView.Target);
+                return new[] { weakVimBuffer, weakTextView }; 
+            });
         }
 
         /// <summary>
@@ -253,20 +268,20 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void ChangeTrackerDoesntHoldTheBuffer()
         {
-            var vimBuffer = CreateVimBuffer();
-            vimBuffer.TextBuffer.SetText("hello world");
-            vimBuffer.Process("dw");
-            var weakVimBuffer = new WeakReference(vimBuffer);
-            var weakTextView = new WeakReference(vimBuffer.TextView);
+            RunScenario(() =>
+            {
+                var vimBuffer = CreateVimBuffer();
+                vimBuffer.TextBuffer.SetText("hello world");
+                vimBuffer.Process("dw");
+                var weakVimBuffer = new WeakReference(vimBuffer);
+                var weakTextView = new WeakReference(vimBuffer.TextView);
 
-            // Clean up 
-            ClearHistory(vimBuffer.TextBuffer);
-            vimBuffer.TextView.Close();
-            vimBuffer = null;
+                // Clean up 
+                ClearHistory(vimBuffer.TextBuffer);
+                vimBuffer.TextView.Close();
 
-            RunGarbageCollector();
-            Assert.Null(weakVimBuffer.Target);
-            Assert.Null(weakTextView.Target);
+                return new[] { weakVimBuffer, weakTextView };
+            });
         }
 
         /// <summary>
@@ -275,32 +290,33 @@ namespace Vim.VisualStudio.UnitTest
         [WpfFact]
         public void SearchCacheDoesntHoldTheBuffer()
         {
-            var vimBuffer = CreateVimBuffer();
-            vimBuffer.TextBuffer.SetText("hello world");
-            vimBuffer.Process("/world", enter: true);
-
-            // This will kick off five search items on the thread pool, each of which
-            // has a strong reference. Need to wait until they have all completed.
-            var count = 0;
-            while (count < 5)
+            RunScenario(() =>
             {
-                while (_synchronizationContext.PostedCallbackCount > 0)
+                var vimBuffer = CreateVimBuffer();
+                vimBuffer.TextBuffer.SetText("hello world");
+                vimBuffer.Process("/world", enter: true);
+
+                // This will kick off five search items on the thread pool, each of which
+                // has a strong reference. Need to wait until they have all completed.
+                var count = 0;
+                while (count < 5)
                 {
-                    _synchronizationContext.RunOne();
-                    count++;
+                    while (_synchronizationContext.PostedCallbackCount > 0)
+                    {
+                        _synchronizationContext.RunOne();
+                        count++;
+                    }
+
+                    Thread.Yield();
                 }
 
-                Thread.Yield();
-            }
+                var weakTextBuffer = new WeakReference(vimBuffer.TextBuffer);
 
-            var weakTextBuffer = new WeakReference(vimBuffer.TextBuffer);
+                // Clean up 
+                vimBuffer.TextView.Close();
 
-            // Clean up 
-            vimBuffer.TextView.Close();
-            vimBuffer = null;
-
-            RunGarbageCollector();
-            Assert.Null(weakTextBuffer.Target);
+                return weakTextBuffer;
+            });
         }
     }
 }
