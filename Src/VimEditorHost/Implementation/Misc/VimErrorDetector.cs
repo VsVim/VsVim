@@ -118,7 +118,6 @@ namespace Vim.EditorHost.Implementation.Misc
 
         void IExtensionErrorHandler.HandleError(object sender, Exception exception)
         {
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
             // https://github.com/VsVim/VsVim/issues/2463
             // Working around several bugs thrown during core MEF composition
             if (exception.Message.Contains("Microsoft.VisualStudio.Language.CodeCleanUp.CodeCleanUpFixerRegistrationService.ProfileService") ||
@@ -127,10 +126,6 @@ namespace Vim.EditorHost.Implementation.Misc
             {
                 return;
             }
-#elif VS_SPECIFIC_2017
-#else
-#error Unsupported configuration
-#endif
 
             _errorList.Add(exception);
         }

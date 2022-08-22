@@ -1,5 +1,4 @@
-﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
-using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
+﻿using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -62,8 +61,3 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
 }
 }
 
-#elif VS_SPECIFIC_2017
-// Nothing to do
-#else
-#error Unsupported configuration
-#endif

@@ -1,5 +1,4 @@
-﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
-using System;
+﻿using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Language.Intellisense.Utilities;
@@ -23,7 +22,3 @@ namespace Vim.EditorHost.Implementation.Misc
         }
     }
 }
-#elif VS_SPECIFIC_2017
-#else
-#error Unsupported configuration
-#endif

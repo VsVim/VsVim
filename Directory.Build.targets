@@ -12,10 +12,6 @@
   </ItemGroup>
 
   <Import 
-    Project="$(MSBuildThisFileDirectory)References\Vs2017\Vs2017.Build.targets"
-    Condition="'$(VsVimVisualStudioTargetVersion)' == '15.0' AND '$(VsVimProjectType)' != ''" />
-
-  <Import 
     Project="$(MSBuildThisFileDirectory)References\Vs2019\Vs2019.Build.targets"
     Condition="'$(VsVimVisualStudioTargetVersion)' == '16.0' AND '$(VsVimProjectType)' != ''" />
 

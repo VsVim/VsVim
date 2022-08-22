@@ -28,7 +28,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)KeyboardInputSimulation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimEditorHostFactory.JoinableTaskContextExportProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)EditorSpecificUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EditorVersion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IBasicUndoHistoryRegistry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BasicUndo\BasicUndoHistory.cs" />

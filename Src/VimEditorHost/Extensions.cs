@@ -1381,7 +1381,7 @@ namespace Vim.EditorHost
                 .Single(x => x.Name == "PerformLayout" && x.GetParameters().Length == 0);
             method.Invoke(wpfTextView, Array.Empty<object>());
             Dispatcher.CurrentDispatcher.DoEvents();
-#elif VS_SPECIFIC_2017 || VS_SPECIFIC_2019
+#elif VS_SPECIFIC_2019
             var method = wpfTextView
                 .GetType()
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)

@@ -4,7 +4,7 @@ When developing please follow the
 [coding guidelines](https://github.com/VsVim/VsVim/blob/master/Documentation/CodingGuidelines.md)
 
 ## Requirements
-VsVim can be developed using Visual Studio 2017 or 2019. The required workloads
+VsVim can be developed using Visual Studio 2022. The required workloads
 are:
 
 - .NET Desktop Development
