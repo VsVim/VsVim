@@ -16,7 +16,7 @@ sudo ~/.dotnet/dotnet workload install macos
 echo "Building the extension"
 ~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
 cd Src/VimMac
-~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build
+~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build /v:diag
 
 echo "Creating and installing Extension"
 # Generate mpack extension artifact
