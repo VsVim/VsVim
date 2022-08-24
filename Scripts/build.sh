@@ -1,28 +1,23 @@
 echo "Downloading VSMac"
-wget --quiet https://download.visualstudio.microsoft.com/download/pr/a643750b-8690-4e7b-a088-9dfc3b2865ba/f315ac486e00a8c3954df7127c0bf526/visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
+url="https://download.visualstudio.microsoft.com/download/pr/e81e04d3-768a-4310-9c9b-f32e8ba00eaa/889c20580d7989524e9b42726510452e/visualstudioformac-17.3.0.2102-x64.dmg"
+wget --quiet $url
 
-sudo hdiutil attach visualstudioformac-preview-17.0.0.8001-pre.7-x64.dmg
+hdiutil attach `basename $url`
 
-rm -rf ~/Library/Preferences/VisualStudio
-rm -rf ~/Library/Preferences/Visual\ Studio
-rm -rf ~/Library/Logs/VisualStudio
-rm -rf ~/Library/VisualStudio
-rm -rf ~/Library/Preferences/Xamarin/
-rm -rf ~/Library/Developer/Xamarin
-rm -rf ~/Library/Application\ Support/VisualStudio
+echo "Installing VSMac 17.3"
+ditto -rsrc "/Volumes/Visual Studio/" /Applications/
+ls -la /Applications/
 
-echo "Installing VSMac 17.0 Preview"
-ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
-
-echo "Installing dotnet 6.0.1xx"
+echo "installing dotnet 6.0.3xx"
 wget https://dot.net/v1/dotnet-install.sh
-bash dotnet-install.sh --channel 6.0.1xx
+bash dotnet-install.sh --channel 6.0.3xx
+sudo ~/.dotnet/dotnet workload install macos
 
 echo "Building the extension"
-dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
+~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
 cd Src/VimMac
-dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build
+~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Build
 
 echo "Creating and installing Extension"
 # Generate mpack extension artifact
-dotnet msbuild VimMac.csproj /t:InstallAddin
+~/.dotnet/dotnet msbuild VimMac.csproj /t:InstallAddin
