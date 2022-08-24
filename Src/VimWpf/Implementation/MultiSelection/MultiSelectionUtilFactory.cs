@@ -1,7 +1,4 @@
-﻿#if VS_SPECIFIC_2017
-#else
-
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -98,5 +95,3 @@ namespace Vim.UI.Wpf.Implementation.MultiSelection
         }
     }
 }
-
-#endif

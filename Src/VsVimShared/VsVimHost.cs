@@ -24,14 +24,8 @@ using EnvDTE80;
 using System.Windows.Threading;
 using System.Diagnostics;
 using Vim.Interpreter;
-
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 using Microsoft.VisualStudio.Platform.WindowManagement;
 using Microsoft.VisualStudio.PlatformUI.Shell;
-#elif VS_SPECIFIC_2017
-#else
-#error Unsupported configuration
-#endif
 
 namespace Vim.VisualStudio
 {
@@ -246,9 +240,7 @@ namespace Vim.VisualStudio
         internal const string CommandNamePeekDefinition = "Edit.PeekDefinition";
         internal const string CommandNameGoToDeclaration = "Edit.GoToDeclaration";
 
-#if VS_SPECIFIC_2017
-        internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2017;
-#elif VS_SPECIFIC_2019
+#if VS_SPECIFIC_2019
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2019;
 #elif VS_SPECIFIC_2022
         internal const VisualStudioVersion VisualStudioVersion = global::Vim.VisualStudio.VisualStudioVersion.Vs2022;
@@ -812,14 +804,6 @@ namespace Vim.VisualStudio
             return frame != null && frame.FrameView == ViewManager.Instance.ActiveView;
         }
 
-#elif VS_SPECIFIC_2017
-        internal WindowFrameState GetWindowFrameState() => WindowFrameState.Default;
-
-        internal bool IsActiveWindowFrame(IVsWindowFrame vsWindowFrame) => false;
-
-        public override void GoToTab(int index)
-        {
-        }
 #else
 #error Unsupported configuration
 #endif

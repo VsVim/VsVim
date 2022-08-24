@@ -292,40 +292,6 @@ namespace Vim.VisualStudio.UnitTest
             }
 
             /// <summary>
-            /// Make sure that we allow keys like down to make it directly to Insert mode when there is
-            /// an active IWordCompletionSession
-            /// </summary>
-            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
-            private void WordCompletion_Down()
-            {
-                Create("c dog", "cat copter");
-                using (CreateTextViewDisplay(_textView))
-                {
-                    _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                    _textView.MoveCaretTo(1);
-                    _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
-                    _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<Down>"));
-                    Assert.Equal("copter dog", _textView.GetLine(0).GetText());
-                }
-            }
-
-            /// <summary>
-            /// When there is an active IWordCompletionSession we want to let even direct input go directly
-            /// to insert mode.  
-            /// </summary>
-            [ConditionalWpfFact(EditorSpecificUtil.HasLegacyCompletion)]
-            private void WordCompletion_TypeChar()
-            {
-                Create("c dog", "cat");
-                _vimBuffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
-                _textView.MoveCaretTo(1);
-                _vsSimulation.Run(KeyNotationUtil.StringToKeyInput("<C-n>"));
-                _vsSimulation.Run('s');
-                Assert.Equal("cats dog", _textView.GetLine(0).GetText());
-                Assert.True(_vimBuffer.InsertMode.ActiveWordCompletionSession.IsNone());
-            }
-
-            /// <summary>
             /// Ensure that we don't scroll when selecting text in another text
             /// view
             /// </summary>

@@ -36,15 +36,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimMac", "Src\VimMac\VimMac
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VsVimShared", "Src\VsVimShared\VsVimShared.shproj", "{6DBED15C-FC2C-46E9-914D-685518573F0D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVim2017", "Src\VsVim2017\VsVim2017.csproj", "{2E2A2014-666C-4B22-83F2-4A94102247C6}"
-EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VsVimSharedTest", "Test\VsVimSharedTest\VsVimSharedTest.shproj", "{5F7F6C25-D91C-4143-AC7D-DF29A0A831EF}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimEditorHost", "Src\VimEditorHost\VimEditorHost.shproj", "{5E2E483E-6D89-4C17-B4A6-7153654B06BF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVim2019", "Src\VsVim2019\VsVim2019.csproj", "{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest2017", "Test\VsVimTest2017\VsVimTest2017.csproj", "{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest2019", "Test\VsVimTest2019\VsVimTest2019.csproj", "{FF0EE51E-BF6D-4A81-A5D3-7EF572F68303}"
 EndProject
@@ -53,8 +49,6 @@ EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimWpf", "Src\VimWpf\VimWpf.shproj", "{648972D9-1A17-46D8-80C6-6810C5B8B4AE}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "VimWpfTest", "Test\VimWpfTest\VimWpfTest.shproj", "{A24506E5-0602-4472-94D2-FB02772438A6}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimCoreTest2017", "Test\VimCoreTest2017\VimCoreTest2017.csproj", "{D4E5690F-7D39-4429-8786-D135DAEC7BFE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VimCoreTest2019", "Test\VimCoreTest2019\VimCoreTest2019.csproj", "{CDC4A709-78AB-4C1F-949E-39870F9657EC}"
 EndProject
@@ -67,39 +61,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VsVimTest2022", "Test\VsVimTest2022\VsVimTest2022.csproj", "{0751FFC7-8DBA-4DBB-BCF6-AE29F4045B29}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Src\VimEditorHost\VimEditorHost.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
-		Test\VimWpfTest\VimWpfTest.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
-		Test\VimCoreTest\VimCoreTest.projitems*{1746bb8d-387d-40ab-a9f9-084a7a0676ea}*SharedItemsImports = 13
-		Src\VimWpf\VimWpf.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
-		Src\VsVimShared\VsVimShared.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{2e2a2014-666c-4b22-83f2-4a94102247c6}*SharedItemsImports = 5
-		Src\VsVimShared\VsVimShared.projitems*{2e2a2014-666c-4b22-83f2-4a94102247c6}*SharedItemsImports = 5
-		Src\VimEditorHost\VimEditorHost.projitems*{5e2e483e-6d89-4c17-b4a6-7153654b06bf}*SharedItemsImports = 13
-		Test\VsVimSharedTest\VsVimSharedTest.projitems*{5f7f6c25-d91c-4143-ac7d-df29a0a831ef}*SharedItemsImports = 13
-		Src\VimWpf\VimWpf.projitems*{648972d9-1a17-46d8-80c6-6810c5b8b4ae}*SharedItemsImports = 13
-		Src\VsVimShared\VsVimShared.projitems*{6dbed15c-fc2c-46e9-914d-685518573f0d}*SharedItemsImports = 13
-		Src\VimEditorHost\VimEditorHost.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
-		Test\VimCoreTest\VimCoreTest.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
-		Src\VimEditorHost\VimEditorHost.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
-		Test\VimWpfTest\VimWpfTest.projitems*{a24506e5-0602-4472-94d2-fb02772438a6}*SharedItemsImports = 13
-		Src\VimEditorHost\VimEditorHost.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
-		Test\VimCoreTest\VimCoreTest.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
-		Src\VimEditorHost\VimEditorHost.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
-		Test\VimCoreTest\VimCoreTest.projitems*{d4e5690f-7d39-4429-8786-d135daec7bfe}*SharedItemsImports = 5
-		Src\VimWpf\VimWpf.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
-		Src\VsVimShared\VsVimShared.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
-		Src\VimEditorHost\VimEditorHost.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
-		Test\VimWpfTest\VimWpfTest.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
-		Test\VsVimSharedTest\VsVimSharedTest.projitems*{e9fb3820-5279-4489-b9c7-6fdbf44f07f2}*SharedItemsImports = 5
-		Src\VimEditorHost\VimEditorHost.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
-		Test\VimWpfTest\VimWpfTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
-		Test\VsVimSharedTest\VsVimSharedTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -198,30 +159,6 @@ Global
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
 		{33887119-3C41-4D8B-9A54-14AE8B2212B1}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Debug|x86.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|x86.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.Release|x86.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|Any CPU.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{2E2A2014-666C-4B22-83F2-4A94102247C6}.ReleaseMac|x86.Build.0 = Release|Any CPU
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -246,30 +183,6 @@ Global
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
 		{1AACC1AC-A8C6-4281-A080-91A4A3C5F21D}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Debug|x86.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|x86.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.Release|x86.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|Any CPU.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{E9FB3820-5279-4489-B9C7-6FDBF44F07F2}.ReleaseMac|x86.Build.0 = Release|Any CPU
 		{FF0EE51E-BF6D-4A81-A5D3-7EF572F68303}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FF0EE51E-BF6D-4A81-A5D3-7EF572F68303}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF0EE51E-BF6D-4A81-A5D3-7EF572F68303}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -318,30 +231,6 @@ Global
 		{AFA7BF34-3687-453F-80A0-46396ACE5E78}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
 		{AFA7BF34-3687-453F-80A0-46396ACE5E78}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
 		{AFA7BF34-3687-453F-80A0-46396ACE5E78}.ReleaseMac|x86.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Debug|x86.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|Any CPU.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|x86.ActiveCfg = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.DebugMac|x86.Build.0 = Debug|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|x86.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.Release|x86.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|Any CPU.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|Any CPU.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|Mixed Platforms.Build.0 = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|x86.ActiveCfg = Release|Any CPU
-		{D4E5690F-7D39-4429-8786-D135DAEC7BFE}.ReleaseMac|x86.Build.0 = Release|Any CPU
 		{CDC4A709-78AB-4C1F-949E-39870F9657EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CDC4A709-78AB-4C1F-949E-39870F9657EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDC4A709-78AB-4C1F-949E-39870F9657EC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -447,6 +336,31 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E627ED8F-1A4B-4324-826C-77B96CB9CB83}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Src\VimEditorHost\VimEditorHost.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
+		Test\VimWpfTest\VimWpfTest.projitems*{0751ffc7-8dba-4dbb-bcf6-ae29f4045b29}*SharedItemsImports = 5
+		Test\VimCoreTest\VimCoreTest.projitems*{1746bb8d-387d-40ab-a9f9-084a7a0676ea}*SharedItemsImports = 13
+		Src\VimWpf\VimWpf.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
+		Src\VsVimShared\VsVimShared.projitems*{1aacc1ac-a8c6-4281-a080-91a4a3c5f21d}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{5e2e483e-6d89-4c17-b4a6-7153654b06bf}*SharedItemsImports = 13
+		Test\VsVimSharedTest\VsVimSharedTest.projitems*{5f7f6c25-d91c-4143-ac7d-df29a0a831ef}*SharedItemsImports = 13
+		Src\VimWpf\VimWpf.projitems*{648972d9-1a17-46d8-80c6-6810c5b8b4ae}*SharedItemsImports = 13
+		Src\VsVimShared\VsVimShared.projitems*{6dbed15c-fc2c-46e9-914d-685518573f0d}*SharedItemsImports = 13
+		Src\VimEditorHost\VimEditorHost.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
+		Src\VimWpf\VimWpf.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
+		Test\VimCoreTest\VimCoreTest.projitems*{7882df47-5dd7-4bc3-b559-0a5c0ff10b6a}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
+		Src\VimWpf\VimWpf.projitems*{8db1c327-21a1-448b-a7a1-23eef6baa785}*SharedItemsImports = 5
+		Test\VimWpfTest\VimWpfTest.projitems*{a24506e5-0602-4472-94d2-fb02772438a6}*SharedItemsImports = 13
+		Src\VimEditorHost\VimEditorHost.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
+		Src\VimWpf\VimWpf.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
+		Test\VimCoreTest\VimCoreTest.projitems*{cdc4a709-78ab-4c1f-949e-39870f9657ec}*SharedItemsImports = 5
+		Src\VimWpf\VimWpf.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
+		Src\VsVimShared\VsVimShared.projitems*{e6552def-32c8-407c-9940-52a2cc54e521}*SharedItemsImports = 5
+		Src\VimEditorHost\VimEditorHost.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
+		Test\VimWpfTest\VimWpfTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
+		Test\VsVimSharedTest\VsVimSharedTest.projitems*{ff0ee51e-bf6d-4a81-a5d3-7ef572f68303}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = VsVim.vsmdi

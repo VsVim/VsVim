@@ -28,7 +28,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
     [Export(typeof(IWordCompletionSessionFactory))]
     internal sealed class VimWordCompletionUtil: IWordCompletionSessionFactory
     {
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
         private readonly IAsyncCompletionBroker _asyncCompletionBroker;
         private readonly WordAsyncCompletionSessionFactory _asyncFactory;
         private readonly WordLegacyCompletionSessionFactory _legacyFactory;
@@ -59,27 +58,6 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion
                 ? _asyncFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward)
                 : _legacyFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward);
         }
-
-#elif VS_SPECIFIC_2017
-
-        private readonly WordLegacyCompletionSessionFactory _legacyFactory;
-
-        [ImportingConstructor]
-        internal VimWordCompletionUtil(
-            ICompletionBroker completionBroker,
-            IIntellisenseSessionStackMapService intellisenseSessionStackMapService)
-        {
-            _legacyFactory = new WordLegacyCompletionSessionFactory(completionBroker, intellisenseSessionStackMapService);
-        }
-
-        private FSharpOption<IWordCompletionSession> CreateWordCompletionSession(ITextView textView, SnapshotSpan wordSpan, IEnumerable<string> wordCollection, bool isForward)
-        {
-            return _legacyFactory.CreateWordCompletionSession(textView, wordSpan, wordCollection, isForward);
-        }
-
-#else
-#error Unsupported configuration
-#endif
 
         #region IWordCompletionSessionFactory
 

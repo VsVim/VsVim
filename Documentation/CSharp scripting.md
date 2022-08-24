@@ -2,7 +2,7 @@ C# Scripting
 ===
 
 VsVim 2.7.0 adds the feature to run C# scripts.  
-This feature is supported in Visual Studio 2017 and later.
+This feature is supported in Visual Studio 2019 and later.
 
 ## Execution method
 

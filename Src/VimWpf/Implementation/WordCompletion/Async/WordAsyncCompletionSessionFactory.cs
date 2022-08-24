@@ -1,5 +1,4 @@
-﻿#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022 || VS_SPECIFIC_MAC
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
@@ -88,8 +87,3 @@ namespace Vim.UI.Wpf.Implementation.WordCompletion.Async
     }
 }
 
-#elif VS_SPECIFIC_2017
-// Nothing to do
-#else
-#error Unsupported configuration
-#endif

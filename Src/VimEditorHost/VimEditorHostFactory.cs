@@ -11,11 +11,7 @@ namespace Vim.EditorHost
 {
     public sealed partial class VimEditorHostFactory
     {
-#if VS_SPECIFIC_2017
-        internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2017;
-        internal static Version VisualStudioVersion => new Version(15, 0, 0, 0);
-        internal static Version VisualStudioThreadingVersion => new Version(15, 3, 0, 0);
-#elif VS_SPECIFIC_2019
+#if VS_SPECIFIC_2019
         internal static EditorVersion DefaultEditorVersion => EditorVersion.Vs2019;
         internal static Version VisualStudioVersion => new Version(16, 0, 0, 0);
         internal static Version VisualStudioThreadingVersion => new Version(16, 0, 0, 0);

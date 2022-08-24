@@ -758,34 +758,6 @@ namespace Vim.UnitTest
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
 
-#if VS_SPECIFIC_2017
-            // https://github.com/VsVim/VsVim/issues/2463
-            /// <summary>
-            /// If the caret is in the selection exclusive and we're in visual mode then we should leave
-            /// the caret in the line break.  It's needed to let motions like v$ get the appropriate 
-            /// selection
-            /// </summary>
-            [WpfFact]
-            public void ExclusiveSelectionAndVisual()
-            {
-                Create("cat", "dog");
-                _globalSettings.Selection = "old";
-                Assert.Equal(SelectionKind.Exclusive, _globalSettings.SelectionKind);
-
-                foreach (var modeKind in new[] { ModeKind.VisualBlock, ModeKind.VisualCharacter, ModeKind.VisualLine })
-                {
-                    _vimBuffer.SwitchMode(modeKind, ModeArgument.None);
-                    _textView.MoveCaretTo(3);
-                    _commonOperationsRaw.AdjustCaretForVirtualEdit();
-                    Assert.Equal(3, _textView.GetCaretPoint().Position);
-                }
-            }
-#elif VS_SPECIFIC_2019 || VS_SPECIFIC_2022
-            // https://github.com/VsVim/VsVim/issues/2463
-#else
-#error Unsupported configuration
-#endif
-
             /// <summary>
             /// In a non-visual mode setting the exclusive selection setting shouldn't be a factor
             /// </summary>

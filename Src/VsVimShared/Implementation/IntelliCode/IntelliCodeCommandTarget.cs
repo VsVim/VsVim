@@ -1,5 +1,4 @@
 ﻿#nullable enable
-#if VS_SPECIFIC_2019 || VS_SPECIFIC_2022
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -155,8 +154,3 @@ namespace Vim.VisualStudio.Implementation.IntelliCode
             new IntelliCodeCommandTarget(vimBufferCoordinator, AsyncCompletionBroker, TextDocumentFactoryService);
     }
 }
-
-#elif VS_SPECIFIC_2017
-#else
-#error Unsupported configurationi
-#endif
