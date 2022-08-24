@@ -6130,6 +6130,8 @@ type IProtectedOperations =
 
     abstract member JoinableTaskContext: JoinableTaskContext
 
+    abstract member JoinableTaskFactory: JoinableTaskFactory
+
     /// Get an Action delegate which invokes the original action and handles any
     /// thrown Exceptions by passing them off the the available IExtensionErrorHandler
     /// values

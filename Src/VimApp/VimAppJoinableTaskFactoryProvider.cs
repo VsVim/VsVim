@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using System.ComponentModel.Composition;
+using System.Threading;
 using Vim.UI.Wpf;
 
 namespace VimApp
@@ -23,7 +24,7 @@ namespace VimApp
             {
                 if (s_joinableTaskContext == null)
                 {
-                    s_joinableTaskContext = ThreadHelper.JoinableTaskContext;
+                    s_joinableTaskContext = new JoinableTaskContext(Thread.CurrentThread, SynchronizationContext.Current);
                 }
             }
             _joinableTaskFactory = s_joinableTaskContext.Factory;

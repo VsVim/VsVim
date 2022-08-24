@@ -10,6 +10,9 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using Vim.VisualStudio.Implementation.Misc;
 
+// Have to use SynchronizationContext due to the implementation details of NavigateTo
+#pragma warning disable VSTHRD001
+
 namespace Vim.VisualStudio.Implementation.NavigateTo
 {
     /// <summary>

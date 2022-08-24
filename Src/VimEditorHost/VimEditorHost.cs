@@ -72,6 +72,7 @@ namespace Vim.EditorHost
             ClassificationTypeRegistryService = CompositionContainer.GetExportedValue<IClassificationTypeRegistryService>();
             BasicUndoHistoryRegistry = CompositionContainer.GetExportedValue<IBasicUndoHistoryRegistry>();
             VimBufferFactory = CompositionContainer.GetExportedValue<IVimBufferFactory>();
+
             Vim = CompositionContainer.GetExportedValue<IVim>();
             VimErrorDetector = CompositionContainer.GetExportedValue<IVimErrorDetector>();
             CommonOperationsFactory = CompositionContainer.GetExportedValue<ICommonOperationsFactory>();

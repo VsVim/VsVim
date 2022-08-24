@@ -304,7 +304,7 @@ namespace Vim.VisualStudio.Implementation.ExternalEdit
                 PerformCheck(saved);
             }
 
-            _protectedOperations.BeginInvoke(doCheck, DispatcherPriority.Loaded);
+            _ = _protectedOperations.RunAsync(doCheck, DispatcherPriority.Loaded);
         }
 
         internal List<SnapshotSpan> GetExternalEditSpans(CheckKind kind)

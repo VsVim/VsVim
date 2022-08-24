@@ -128,7 +128,7 @@ namespace Vim.VisualStudio
             // view.  Occurs for aspx and .js pages
             void install() => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, vimBuffer);
 
-            _protectedOperations.BeginInvoke(install);
+            _ = _protectedOperations.RunAsync(install);
         }
 
         /// <summary>
@@ -146,7 +146,7 @@ namespace Vim.VisualStudio
         /// </summary>
         private void ConnectToOleCommandTargetDelayed(IVimBuffer vimBuffer, ITextView textView, IVsTextView vsTextView)
         {
-            void connectInBackground() => _protectedOperations.BeginInvoke(
+            void connectInBackground() => _protectedOperations.RunAsync(
                 () => ConnectToOleCommandTarget(vimBuffer, textView, vsTextView),
                 DispatcherPriority.Background);
 
@@ -191,7 +191,7 @@ namespace Vim.VisualStudio
             // fire for ever IWpfTextView.  If the IWpfTextView doesn't have any shims it won't fire.  So
             // we post a simple action as a backup mechanism to catch this case.  
             _toSyncSet.Add(vimBuffer);
-            _protectedOperations.BeginInvoke(() => BeginSettingSynchronization(vimBuffer), DispatcherPriority.Loaded);
+            _ = _protectedOperations.RunAsync(() => BeginSettingSynchronization(vimBuffer), DispatcherPriority.Loaded);
         }
 
         #endregion

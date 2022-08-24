@@ -14,9 +14,6 @@
     <VsVimProjectType>Vsix</VsVimProjectType>
     <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
 
-    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
-    <RunAnalyzers>false</RunAnalyzers>
-
     <DeployExtension Condition="'$(VisualStudioVersion)' != '17.0' OR '$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>
 
     <!-- This is needed to prevent forced migrations when opening the project in Vs2017 -->

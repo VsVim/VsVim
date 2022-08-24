@@ -412,7 +412,7 @@ namespace Vim.VisualStudio.Implementation.Misc
 
             // Don't block startup by immediately running a key binding check.  Schedule it 
             // for the future
-            _protectedOperations.BeginInvoke(doCheck);
+            _ = _protectedOperations.RunAsync(doCheck);
         }
 
         #endregion
