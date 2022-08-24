@@ -86,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: VSMacExtension
-          path: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
+          path: 'Binaries/Debug/VimMac/net6.0-macos/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
 
       - name: Create VS Mac extension release
         uses: softprops/action-gh-release@v1
