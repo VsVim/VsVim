@@ -1,5 +1,5 @@
 echo "Downloading VSMac"
-url="https://download.visualstudio.microsoft.com/download/pr/bc5903bb-4aab-497e-a097-1eb1a5e02645/3ff8f8cb722e81e2538bece0b82fa44f/visualstudioformac-preview-17.3.0.2012-pre.4-x64.dmg"
+url="https://download.visualstudio.microsoft.com/download/pr/e81e04d3-768a-4310-9c9b-f32e8ba00eaa/889c20580d7989524e9b42726510452e/visualstudioformac-17.3.0.2102-x64.dmg"
 wget --quiet $url
 
 hdiutil attach `basename $url`
