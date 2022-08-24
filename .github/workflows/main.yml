@@ -5,6 +5,8 @@ name: VsVim CI
 on:
   push:
     branches: [ "master", "main" ]
+    tags:
+      - '*'
   pull_request:
     branches: [ "master", "main", "dev/gha" ]
 
