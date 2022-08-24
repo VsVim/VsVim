@@ -98,5 +98,5 @@ jobs:
           name: 'Visual Studio for Mac ${{ env.VERSION_TAG }}'
           draft: true
           generate_release_notes: true
-          files: 'Binaries/Debug/VimMac/net6.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
+          files: 'Binaries/Debug/VimMac/net6.0-macos/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
         if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
