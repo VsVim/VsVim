@@ -12,21 +12,10 @@
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
     <PackageReference Include="Microsoft.VisualStudioMac.Sdk" Version="17.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="4.3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.TextEditor" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-    <Folder Include="Resources\" />
-    <Folder Include="FPFExtensions\" />
-    <Folder Include="InlineRename\" />
-    <Folder Include="RelativeLineNumbers\" />
-    <Folder Include="RelativeLineNumbers\Util\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Resources\beep.wav" />
-    <None Remove="Resources\KeyBindingSchemeVim.xml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\beep.wav" />

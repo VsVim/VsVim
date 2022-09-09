@@ -11,12 +11,10 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Utilities;
-using MonoDevelop.Components.Commands;
 using MonoDevelop.Core;
 using MonoDevelop.Ide;
 using MonoDevelop.Ide.CodeFormatting;
 using MonoDevelop.Ide.Commands;
-using MonoDevelop.Ide.FindInFiles;
 using MonoDevelop.Ide.Gui;
 using MonoDevelop.Projects;
 using Vim.Extensions;
@@ -36,6 +34,7 @@ namespace Vim.Mac
         private readonly ICocoaTextEditorFactoryService _textEditorFactoryService;
         private readonly ISmartIndentationService _smartIndentationService;
         private readonly IExtensionAdapterBroker _extensionAdapterBroker;
+        private readonly ICSharpScriptExecutor _scriptExecutor;
         private IVim _vim;
 
         internal const string CommandNameGoToDefinition = "MonoDevelop.Refactoring.RefactoryCommands.GotoDeclaration";
@@ -45,7 +44,8 @@ namespace Vim.Mac
             ITextBufferFactoryService textBufferFactoryService,
             ICocoaTextEditorFactoryService textEditorFactoryService,
             ISmartIndentationService smartIndentationService,
-            IExtensionAdapterBroker extensionAdapterBroker)
+            IExtensionAdapterBroker extensionAdapterBroker,
+            ICSharpScriptExecutor scriptExecutor)
         {
             VimTrace.TraceSwitch.Level = System.Diagnostics.TraceLevel.Verbose;
             Console.WriteLine("Loaded");
@@ -53,6 +53,7 @@ namespace Vim.Mac
             _textEditorFactoryService = textEditorFactoryService;
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
+            _scriptExecutor = scriptExecutor;
         }
 
         public bool AutoSynchronizeSettings => false;
@@ -647,7 +648,7 @@ namespace Vim.Mac
 
         public void RunCSharpScript(IVimBuffer vimBuffer, CallInfo callInfo, bool createEachTime)
         {
-            throw new NotImplementedException();
+            _scriptExecutor.Execute(vimBuffer, callInfo, createEachTime);
         }
 
         public void RunHostCommand(ITextView textView, string commandName, string argument)
