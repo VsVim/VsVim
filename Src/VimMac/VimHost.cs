@@ -83,7 +83,24 @@ namespace Vim.Mac
 
         private Document DocumentFromTextBuffer(ITextBuffer textBuffer)
         {
-            return IdeApp.Workbench.Documents.FirstOrDefault(doc => doc.TextBuffer == textBuffer);
+            // If this is an IProjectionBuffer then we need to dig into the actual ITextBuffer values
+            // which make it up.  
+            foreach (var sourceTextBuffer in TextBufferUtil.GetSourceBuffersRecursive(textBuffer))
+            {
+                // The inert buffer doesn't need to be considered.  It's used as a fake buffer by web applications
+                // in order to render projected content
+                if (sourceTextBuffer.ContentType == _textBufferFactoryService.InertContentType)
+                {
+                    continue;
+                }
+
+                var doc = IdeApp.Workbench.Documents.FirstOrDefault(doc => doc.TextBuffer == sourceTextBuffer);
+                if(doc != null)
+                {
+                    return doc;
+                }
+            }
+            return null;
         }
 
         private static NSSound GetBeepSound()
