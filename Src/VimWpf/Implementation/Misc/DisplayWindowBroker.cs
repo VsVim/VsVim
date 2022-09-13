@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Threading;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {
@@ -14,17 +15,20 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly IAsyncQuickInfoBroker _quickInfoBroker;
+        private readonly JoinableTaskFactory _joinableTaskFactory;
 
         internal DisplayWindowBroker(
             ITextView textView,
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            IAsyncQuickInfoBroker quickInfoBroker)
+            IAsyncQuickInfoBroker quickInfoBroker,
+            JoinableTaskFactory joinableTaskFactory)
         {
             _textView = textView;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
+            _joinableTaskFactory = joinableTaskFactory;
         }
 
         #region IDisplayWindowBroker
@@ -66,7 +70,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                 var session = _quickInfoBroker.GetSession(_textView);
                 if (session is object)
                 {
-                    session.DismissAsync().Wait();
+                    _joinableTaskFactory.Run(() => session.DismissAsync());
                 }
             }
         }
@@ -82,16 +86,19 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly IAsyncQuickInfoBroker _quickInfoBroker;
+        private readonly JoinableTaskContext _joinableTaskContext;
 
         [ImportingConstructor]
         internal DisplayWindowBrokerFactoryService(
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
-            IAsyncQuickInfoBroker quickInfoBroker)
+            IAsyncQuickInfoBroker quickInfoBroker,
+            JoinableTaskContext joinableTaskContext)
         {
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
+            _joinableTaskContext = joinableTaskContext;
         }
 
         IDisplayWindowBroker IDisplayWindowBrokerFactoryService.GetDisplayWindowBroker(ITextView textView)
@@ -102,7 +109,8 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         textView,
                         _completionBroker,
                         _signatureHelpBroker,
-                        _quickInfoBroker));
+                        _quickInfoBroker,
+                        _joinableTaskContext.Factory));
         }
     }
 }

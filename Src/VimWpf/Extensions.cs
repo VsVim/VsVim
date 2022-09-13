@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Threading;
 
 namespace Vim.UI.Wpf
 {
@@ -52,16 +54,34 @@ namespace Vim.UI.Wpf
 
         #region IProtectedOperations
 
-        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action)
+        public static JoinableTask RunAsync(this IProtectedOperations protectedOperations, Action action)
         {
             var protectedAction = protectedOperations.GetProtectedAction(action);
-            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, null);
+
+            // This is meant to emulate Dispatcher.CurrentDispatcher.BeginInvok as closely as possible 
+            // using JoinableTaskFactory. This is the pattern recommended by the library
+            // https://github.com/microsoft/vs-threading/discussions/1056
+            return protectedOperations.JoinableTaskFactory.RunAsync(
+                async () =>
+                {
+                    await Task.Yield();
+                    protectedAction();
+                });
         }
 
-        public static void BeginInvoke(this IProtectedOperations protectedOperations, Action action, DispatcherPriority dispatcherPriority)
+        public static JoinableTask RunAsync(this IProtectedOperations protectedOperations, Action action, DispatcherPriority dispatcherPriority)
         {
             var protectedAction = protectedOperations.GetProtectedAction(action);
-            Dispatcher.CurrentDispatcher.BeginInvoke(protectedAction, dispatcherPriority, null);
+
+            // This is meant to emulate Dispatcher.CurrentDispatcher.BeginInvok as closely as possible 
+            // using JoinableTaskFactory. This is the pattern recommended by the library
+            // https://github.com/microsoft/vs-threading/discussions/1056
+            return protectedOperations.JoinableTaskFactory.WithPriority(Dispatcher.CurrentDispatcher, dispatcherPriority).RunAsync(
+                async () =>
+                {
+                    await Task.Yield();
+                    protectedAction();
+                });
         }
 
         #endregion

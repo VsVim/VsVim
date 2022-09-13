@@ -485,6 +485,7 @@ type internal ProtectedOperations =
 
     interface IProtectedOperations with
         member x.JoinableTaskContext = x._joinableTaskContext
+        member x.JoinableTaskFactory = x._joinableTaskContext.Factory
         member x.GetProtectedAction action = x.GetProtectedAction action
         member x.GetProtectedEventHandler eventHandler = x.GetProtectedEventHandler eventHandler
         member x.Report ex = x.AlertAll ex

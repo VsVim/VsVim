@@ -340,8 +340,8 @@ namespace Vim.VisualStudio
         {
             _vsAdapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
-            _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _vsExtensibility = (IVsExtensibility)serviceProvider.GetService(typeof(IVsExtensibility));
+            _dte = serviceProvider.GetService<_DTE>();
+            _vsExtensibility = serviceProvider.GetService<IVsExtensibility>();
             _textManager = textManager;
             _csharpScriptExecutor = csharpScriptExecutor;
             _vsMonitorSelection = serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
@@ -349,7 +349,7 @@ namespace Vim.VisualStudio
             _smartIndentationService = smartIndentationService;
             _extensionAdapterBroker = extensionAdapterBroker;
             _runningDocumentTable = serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
-            _vsShell = (IVsShell)serviceProvider.GetService(typeof(SVsShell));
+            _vsShell = serviceProvider.GetService<SVsShell, IVsShell>();
             _protectedOperations = protectedOperations;
             _commandDispatcher = commandDispatcher;
             _clipboardDevice = clipboardDevice;
@@ -373,7 +373,7 @@ namespace Vim.VisualStudio
             // completed. Additionally using IProtectedOperations to guard against exceptions 
             // https://github.com/VsVim/VsVim/issues/2249
 
-            _protectedOperations.BeginInvoke(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
+            _ = _protectedOperations.RunAsync(initOutputPaneCore, DispatcherPriority.ApplicationIdle);
 
             void initOutputPaneCore()
             {

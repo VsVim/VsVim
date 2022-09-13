@@ -256,7 +256,7 @@ namespace Vim.UI.Wpf
                 }
 
                 // Then schedule the action.
-                _protectedOperations.BeginInvoke(doAction, DispatcherPriority.Loaded);
+                _ = _protectedOperations.RunAsync(doAction, DispatcherPriority.Loaded);
             }
 
             if (textView is IWpfTextView wpfTextView && !wpfTextView.VisualElement.IsLoaded)
@@ -360,15 +360,27 @@ namespace Vim.UI.Wpf
                 var process = Process.Start(startInfo);
                 if (doRedirect)
                 {
-                    var stdin = process.StandardInput;
-                    var stdout = process.StandardOutput;
-                    var stderr = process.StandardError;
-                    var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
-                    var stdoutTask = Task.Run(() => stdout.ReadToEnd());
-                    var stderrTask = Task.Run(() => stderr.ReadToEnd());
-                    if (process.WaitForExit(timeout))
+                    var result = _protectedOperations.JoinableTaskFactory.Run(async () =>
                     {
-                        return new RunCommandResults(process.ExitCode, stdoutTask.Result, stderrTask.Result);
+                        var stdin = process.StandardInput;
+                        var stdout = process.StandardOutput;
+                        var stderr = process.StandardError;
+                        var stdinTask = Task.Run(() => { stdin.Write(input); stdin.Close(); });
+                        var stdoutTask = Task.Run(() => stdout.ReadToEnd());
+                        var stderrTask = Task.Run(() => stderr.ReadToEnd());
+                        if (process.WaitForExit(timeout))
+                        {
+                            var stdoutText = await stdoutTask;
+                            var stderrText = await stderrTask;
+                            return new RunCommandResults(process.ExitCode, stdoutText, stderrText);
+                        }
+
+                        return null;
+                    });
+
+                    if (result is not null)
+                    {
+                        return result;
                     }
                 }
                 else

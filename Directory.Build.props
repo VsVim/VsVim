@@ -15,6 +15,11 @@
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' == 'Windows_NT'">$(UserProfile)/.nuget/packages/</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.nuget/packages/</NuGetPackageRoot>
+
+    <!-- 
+      VSTHRD010: this warning is extremely noisy and in practice has not found any issues
+    -->
+    <NoWarn>$(NoWarn);VSTHRD010</NoWarn>
   </PropertyGroup>
 
   <!--

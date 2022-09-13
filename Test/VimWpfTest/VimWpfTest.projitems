@@ -18,7 +18,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CommandMarginControllerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandMarginProviderTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CommandMarginUtilTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DisplayWindowBrokerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KeyboardDeviceImplTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)KeyMappingTimeoutHandlerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VimHostTests.cs" />

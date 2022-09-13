@@ -14,6 +14,8 @@ using Microsoft.FSharp.Core;
 using Vim.Extensions;
 using Vim.Interpreter;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.Threading;
+using System.Threading.Tasks;
 
 namespace VimApp
 {
@@ -29,6 +31,7 @@ namespace VimApp
         private const string ErrorInvalidDirection = "Invalid direction";
 
         private readonly IProtectedOperations _protectedOperations;
+        private readonly JoinableTaskFactory _idleFactory;
         private readonly IFileSystem _fileSystem;
         private readonly IDirectoryUtil _directoryUtil;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
@@ -73,6 +76,7 @@ namespace VimApp
             _contentTypeRegistryService = contentTypeRegistryService;
             _fileSystem = fileSystem;
             _directoryUtil = directoryUtil;
+            _idleFactory = protectedOperations.JoinableTaskFactory.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.ApplicationIdle);
         }
 
         public override void VimCreated(IVim vim)
@@ -152,15 +156,14 @@ namespace VimApp
                 var wpfTextViewHost = MainWindow.CreateTextViewHost(createdTextView);
                 vimWindow.Clear();
                 vimWindow.AddVimViewInfo(wpfTextViewHost);
-                Dispatcher.CurrentDispatcher.BeginInvoke(
-                    (Action)(() =>
-                    {
-                        var control = wpfTextViewHost.TextView.VisualElement;
-                        control.IsEnabled = true;
-                        control.Focusable = true;
-                        control.Focus();
-                    }),
-                    DispatcherPriority.ApplicationIdle);
+                _ = _idleFactory.RunAsync(async () =>
+                {
+                    var control = wpfTextViewHost.TextView.VisualElement;
+                    control.IsEnabled = true;
+                    control.Focusable = true;
+                    control.Focus();
+                    await Task.Yield();
+                });
 
                 return true;
             }
@@ -268,28 +271,30 @@ namespace VimApp
                 {
                     if (vimViewInfo.TextView.TextBuffer == textBuffer)
                     {
-                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
-                            {
-                                // Select the tab.
-                                vimWindow.TabItem.IsSelected = true;
-                            }),
-                            DispatcherPriority.ApplicationIdle);
-                        Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
-                            {
-                                // Move caret to point.
-                                var textView = vimViewInfo.TextViewHost.TextView;
-                                textView.Caret.MoveTo(point);
+                        _ = _idleFactory.RunAsync(async () =>
+                        {
+                            // Select the tab.
+                            vimWindow.TabItem.IsSelected = true;
+                            await Task.Yield();
+                        });
 
-                                // Center the caret line in the window.
-                                var caretLine = textView.GetCaretLine();
-                                var span = caretLine.ExtentIncludingLineBreak;
-                                var option = EnsureSpanVisibleOptions.AlwaysCenter;
-                                textView.ViewScroller.EnsureSpanVisible(span, option);
+                        _ = _idleFactory.RunAsync(async () =>
+                        {
+                            // Move caret to point.
+                            var textView = vimViewInfo.TextViewHost.TextView;
+                            textView.Caret.MoveTo(point);
 
-                                // Focus the window.
-                                Keyboard.Focus(textView.VisualElement);
-                            }),
-                            DispatcherPriority.ApplicationIdle);
+                            // Center the caret line in the window.
+                            var caretLine = textView.GetCaretLine();
+                            var span = caretLine.ExtentIncludingLineBreak;
+                            var option = EnsureSpanVisibleOptions.AlwaysCenter;
+                            textView.ViewScroller.EnsureSpanVisible(span, option);
+
+                            // Focus the window.
+                            Keyboard.Focus(textView.VisualElement);
+
+                            await Task.Yield();
+                        });
                         return true;
                     }
                 }

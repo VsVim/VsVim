@@ -24,7 +24,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace Vim.VisualStudio
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", productId: VimConstants.VersionNumber, IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.DefaultOptionPage), categoryName: "VsVim", pageName: "Defaults", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
@@ -43,8 +43,8 @@ namespace Vim.VisualStudio
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            object componentModel = await GetServiceAsync(typeof(SComponentModel));
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            object componentModel = await GetServiceAsync(typeof(SComponentModel));
 
             // The cast to IComponentModel MUST occur after the call to SwitchToMainThreadAsync. The 
             // call to GetServiceAsync can occur on any thread but the cast to the actual service 

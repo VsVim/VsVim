@@ -81,7 +81,7 @@ namespace Vim.UnitTest
         public void BeginInvoke_Priority_Standard()
         {
             var didRun = false;
-            _protectedOperations.BeginInvoke(delegate { didRun = true; }, DispatcherPriority.Normal);
+            _protectedOperations.RunAsync(delegate { didRun = true; }, DispatcherPriority.Normal);
             Dispatcher.CurrentDispatcher.DoEvents();
             Assert.True(didRun);
         }
@@ -95,7 +95,7 @@ namespace Vim.UnitTest
         {
             var exception = new Exception("hello world");
             _errorHandler.Setup(x => x.HandleError(It.IsAny<object>(), exception)).Verifiable();
-            _protectedOperations.BeginInvoke(delegate { throw exception; }, DispatcherPriority.Normal);
+            _protectedOperations.RunAsync(delegate { throw exception; }, DispatcherPriority.Normal);
             Dispatcher.CurrentDispatcher.DoEvents();
             _errorHandler.Verify();
         }
@@ -107,7 +107,7 @@ namespace Vim.UnitTest
         public void BeginInvoke_NoPriority_Standard()
         {
             var didRun = false;
-            _protectedOperations.BeginInvoke(delegate { didRun = true; });
+            _protectedOperations.RunAsync(delegate { didRun = true; });
             Dispatcher.CurrentDispatcher.DoEvents();
             Assert.True(didRun);
         }
@@ -121,7 +121,7 @@ namespace Vim.UnitTest
         {
             var exception = new Exception("hello world");
             _errorHandler.Setup(x => x.HandleError(It.IsAny<object>(), exception)).Verifiable();
-            _protectedOperations.BeginInvoke(delegate { throw exception; });
+            _protectedOperations.RunAsync(delegate { throw exception; });
             Dispatcher.CurrentDispatcher.DoEvents();
             _errorHandler.Verify();
         }

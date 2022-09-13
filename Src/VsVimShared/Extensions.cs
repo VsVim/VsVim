@@ -684,6 +684,9 @@ namespace Vim.VisualStudio
 
         #region IServiceProvider
 
+        public static TInterface GetService<TInterface>(this System.IServiceProvider sp) =>
+            GetService<TInterface, TInterface>(sp);
+
         public static TInterface GetService<TService, TInterface>(this System.IServiceProvider sp)
         {
             return (TInterface)sp.GetService(typeof(TService));

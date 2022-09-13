@@ -8,8 +8,12 @@
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_VIM_APP</DefineConstants>
     <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
     <VsVimProjectType>EditorHost</VsVimProjectType>
-    <!-- Enabling tracked by https://github.com/VsVim/VsVim/issues/2904 -->
-    <RunAnalyzers>false</RunAnalyzers>
+
+    <!-- 
+	    Disabling the VS threading analyzers here. This is a run of the mill WPF project and 
+		doesn't benefit from these analyzers.
+    -->
+    <NoWarn>$(NoWarn);VSTHRD110;VSTHRD001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
