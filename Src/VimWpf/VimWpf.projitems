@@ -15,7 +15,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ICommandMarginUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IControlCharUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IDirectoryUtil.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IJoinableTaskFactoryProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IKeyUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IMarkDisplayUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Implementation\BlockCaret\BlockCaret.cs" />

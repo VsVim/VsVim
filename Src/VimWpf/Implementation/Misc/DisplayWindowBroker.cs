@@ -22,13 +22,13 @@ namespace Vim.UI.Wpf.Implementation.Misc
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
             IAsyncQuickInfoBroker quickInfoBroker,
-            IJoinableTaskFactoryProvider joinableTaskFactoryProvider)
+            JoinableTaskFactory joinableTaskFactory)
         {
             _textView = textView;
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
-            _joinableTaskFactory = joinableTaskFactoryProvider.JoinableTaskFactory;
+            _joinableTaskFactory = joinableTaskFactory;
         }
 
         #region IDisplayWindowBroker
@@ -86,19 +86,19 @@ namespace Vim.UI.Wpf.Implementation.Misc
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly IAsyncQuickInfoBroker _quickInfoBroker;
-        private readonly IJoinableTaskFactoryProvider _joinableTaskFactoryProvider;
+        private readonly JoinableTaskContext _joinableTaskContext;
 
         [ImportingConstructor]
         internal DisplayWindowBrokerFactoryService(
             ICompletionBroker completionBroker,
             ISignatureHelpBroker signatureHelpBroker,
             IAsyncQuickInfoBroker quickInfoBroker,
-            IJoinableTaskFactoryProvider joinableTaskFactoryProvider)
+            JoinableTaskContext joinableTaskContext)
         {
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _quickInfoBroker = quickInfoBroker;
-            _joinableTaskFactoryProvider = joinableTaskFactoryProvider;
+            _joinableTaskContext = joinableTaskContext;
         }
 
         IDisplayWindowBroker IDisplayWindowBrokerFactoryService.GetDisplayWindowBroker(ITextView textView)
@@ -110,7 +110,7 @@ namespace Vim.UI.Wpf.Implementation.Misc
                         _completionBroker,
                         _signatureHelpBroker,
                         _quickInfoBroker,
-                        _joinableTaskFactoryProvider));
+                        _joinableTaskContext.Factory));
         }
     }
 }

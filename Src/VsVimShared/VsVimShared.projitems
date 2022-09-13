@@ -124,7 +124,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)VsCommandTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsFilterKeysAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimHost.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)VsVimJoinableTaskFactoryProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VsVimPackage.cs" />
   </ItemGroup>
   <ItemGroup>
