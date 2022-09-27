@@ -6,6 +6,7 @@ using Vim.UI.Cocoa.Implementation.InlineRename;
 
 namespace Vim.UI.Cocoa
 {
+
     /// <summary>
     /// The morale of the history surrounding this type is translating key input is
     /// **hard**.  Anytime it's done manually and expected to be 100% correct it 
@@ -24,6 +25,7 @@ namespace Vim.UI.Cocoa
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
+        private readonly InvisibleTextView _invisibleTextView;
 
         public VimKeyProcessor(
             IVimBuffer vimBuffer,
@@ -39,6 +41,7 @@ namespace Vim.UI.Cocoa
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _inlineRenameListenerFactory = inlineRenameListenerFactory;
+            _invisibleTextView = new InvisibleTextView(_textView);
         }
 
         public override bool IsInterestedInHandledEvents => true;
@@ -62,15 +65,36 @@ namespace Vim.UI.Cocoa
 
             bool handled = false;
 
-            // Attempt to map the key information into a KeyInput value which can be processed
-            // by Vim.  If this works and the key is processed then the input is considered
-            // to be handled
-            bool canConvert = _keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput);
-            if (canConvert)
+            _invisibleTextView.InterpretEvent(e.Event);
+            if (KeyEventIsDeadChar(e))
             {
-                handled = TryProcess(e, keyInput);
+                // Although there is nothing technically left to do, we still
+                // need to make sure that the event is processed by the
+                // underlying NSView so that InterpretKeyEvents is called
+                handled = false;
             }
-
+            else
+            {
+                if (_invisibleTextView.ConvertedDeadCharacters != null)
+                {
+                    foreach (var c in _invisibleTextView.ConvertedDeadCharacters)
+                    {
+                        var key = KeyInputUtil.ApplyKeyModifiersToChar(c, VimKeyModifiers.None);
+                        handled &= TryProcess(null, key);
+                    }
+                }
+                else
+                {
+                    // Attempt to map the key information into a KeyInput value which can be processed
+                    // by Vim.  If this works and the key is processed then the input is considered
+                    // to be handled
+                    bool canConvert = _keyUtil.TryConvertSpecialToKeyInput(e.Event, out KeyInput keyInput);
+                    if (canConvert)
+                    {
+                        handled = TryProcess(e, keyInput);
+                    }
+                }
+            }
             VimTrace.TraceInfo("VimKeyProcessor::KeyDown Handled = {0}", handled);
 
             var status = Mac.StatusBar.GetStatus(_vimBuffer);
@@ -96,7 +120,7 @@ namespace Vim.UI.Cocoa
 
         private bool TryProcess(KeyEventArgs e, KeyInput keyInput)
         {
-            if (KeyEventIsDeadChar(e))
+            if (e != null && KeyEventIsDeadChar(e))
                 // When a dead key combination is pressed we will get the key down events in 
                 // sequence after the combination is complete.  The dead keys will come first
                 // and be followed the final key which produces the char.  That final key 
@@ -122,7 +146,7 @@ namespace Vim.UI.Cocoa
             if (_inlineRenameListenerFactory.InRename)
                 return false;
 
-            if (_vimBuffer.ModeKind.IsAnyInsert() && e.Characters == "\t")
+            if (_vimBuffer.ModeKind.IsAnyInsert() && e?.Characters == "\t")
                 // Allow tab key to work for snippet completion
                 //
                 // TODO: We should only really do this when the characters
