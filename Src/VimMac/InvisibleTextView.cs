@@ -26,7 +26,7 @@ namespace Vim.UI.Cocoa
 
         private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
         {
-            if(_processingDeadChar)
+            if(_lastEventWasDeadChar || _processingDeadChar)
             {
                 // We need the dead key press event to register so that we get the correct
                 // subsequent keypress vents, but we don't want to modify the textbuffer contents.
