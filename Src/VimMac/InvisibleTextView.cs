@@ -24,16 +24,6 @@ namespace Vim.UI.Cocoa
             textView.Closed += TextView_Closed;
         }
 
-        private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
-        {
-            if(_lastEventWasDeadChar || _processingDeadChar)
-            {
-                // We need the dead key press event to register so that we get the correct
-                // subsequent keypress vents, but we don't want to modify the textbuffer contents.
-                e.Cancel();
-            }
-        }
-
         public string ConvertedDeadCharacters => _convertedDeadCharacters;
 
         public void InterpretEvent(NSEvent keyPress)
@@ -54,6 +44,16 @@ namespace Vim.UI.Cocoa
                 // This is where we find out how the combination of keypresses
                 // has been interpreted.
                 _convertedDeadCharacters = text.ToString();
+            }
+        }
+
+        private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
+        {
+            if(_lastEventWasDeadChar || _processingDeadChar)
+            {
+                // We need the dead key press event to register so that we get the correct
+                // subsequent keypress events, but we don't want to modify the textbuffer contents.
+                e.Cancel();
             }
         }
 
