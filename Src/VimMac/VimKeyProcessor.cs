@@ -79,7 +79,7 @@ namespace Vim.UI.Cocoa
                 {
                     foreach (var c in _invisibleTextView.ConvertedDeadCharacters)
                     {
-                        var key = KeyInputUtil.ApplyKeyModifiersToChar(c, VimKeyModifiers.None);
+                        var key = KeyInputUtil.CharToKeyInput(c);
                         handled &= TryProcess(null, key);
                     }
                 }
