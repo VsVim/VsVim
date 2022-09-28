@@ -15,7 +15,7 @@ namespace Vim.UI.Cocoa
         private bool _lastEventWasDeadChar;
         private bool _processingDeadChar;
         private string _convertedDeadCharacters;
-        private ITextBuffer _textBuffer;
+        private readonly ITextBuffer _textBuffer;
 
         public InvisibleTextView(ITextView textView)
         {
@@ -28,13 +28,24 @@ namespace Vim.UI.Cocoa
 
         public void InterpretEvent(NSEvent keyPress)
         {
-            _convertedDeadCharacters = null;
-            _lastEventWasDeadChar = _processingDeadChar;
-            _processingDeadChar = string.IsNullOrEmpty(keyPress.Characters);
+            if (_convertedDeadCharacters != null)
+            {
+                // reset state
+                _convertedDeadCharacters = null;
+                _processingDeadChar = false;
+            }
 
-            var keypressCloned = NSEvent.KeyEvent(keyPress.Type, keyPress.LocationInWindow, keyPress.ModifierFlags, keyPress.Timestamp, keyPress.WindowNumber, keyPress.Context, keyPress.Characters, keyPress.CharactersIgnoringModifiers, keyPress.IsARepeat, keyPress.KeyCode);
+            _lastEventWasDeadChar = _processingDeadChar;
+
+            _processingDeadChar = KeyEventIsDeadChar(keyPress);
+
+            if (!_processingDeadChar && !_lastEventWasDeadChar)
+            {
+                return;
+            }
+
             // Send the cloned key press to this NSTextView
-            InterpretKeyEvents(new[] { keypressCloned });
+            InterpretKeyEvents(new[] { CloneEvent(keyPress) });
         }
 
         public override void InsertText(NSObject text, NSRange replacementRange)
@@ -43,17 +54,47 @@ namespace Vim.UI.Cocoa
             {
                 // This is where we find out how the combination of keypresses
                 // has been interpreted.
-                _convertedDeadCharacters = text.ToString();
+                _convertedDeadCharacters = (text as NSString)?.ToString();
             }
+        }
+
+        private NSEvent CloneEvent(NSEvent keyPress)
+        {
+            return NSEvent.KeyEvent(
+                keyPress.Type,
+                keyPress.LocationInWindow,
+                keyPress.ModifierFlags,
+                keyPress.Timestamp,
+                keyPress.WindowNumber,
+                keyPress.Context,
+                keyPress.Characters,
+                keyPress.CharactersIgnoringModifiers,
+                keyPress.IsARepeat,
+                keyPress.KeyCode);
+        }
+
+        private bool ShouldProcess(NSEvent keyPress)
+        {
+            return _lastEventWasDeadChar || KeyEventIsDeadChar(keyPress);
+        }
+
+        private bool KeyEventIsDeadChar(NSEvent e)
+        {
+            return string.IsNullOrEmpty(e.Characters);
         }
 
         private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
         {
             if(_lastEventWasDeadChar || _processingDeadChar)
             {
-                // We need the dead key press event to register so that we get the correct
-                // subsequent keypress events, but we don't want to modify the textbuffer contents.
+                // We need the dead key press event to register in the editor so
+                // that we get the correct subsequent keypress events, but we 
+                // don't want to modify the textbuffer contents.
                 e.Cancel();
+            }
+            else
+            {
+                System.Console.WriteLine("wtd");
             }
         }
 
