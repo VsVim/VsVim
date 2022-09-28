@@ -12,50 +12,46 @@ namespace Vim.UI.Cocoa
     /// </summary>
     internal sealed class InvisibleTextView : NSTextView
     {
-        private bool _lastEventWasDeadChar;
-        private bool _processingDeadChar;
-        private string _convertedDeadCharacters;
+        private readonly DeadCharHandler _deadCharHandler;
         private readonly ITextBuffer _textBuffer;
 
-        public InvisibleTextView(ITextView textView)
+        public InvisibleTextView(DeadCharHandler deadCharHandler, ITextView textView)
         {
+            _deadCharHandler = deadCharHandler;
             _textBuffer = textView.TextBuffer;
             textView.TextBuffer.Changing += TextBuffer_Changing;
             textView.Closed += TextView_Closed;
         }
 
-        public string ConvertedDeadCharacters => _convertedDeadCharacters;
-
-        public void InterpretEvent(NSEvent keyPress)
+        public void InterpretEvent(NSEvent keypress)
         {
-            if (_convertedDeadCharacters != null)
-            {
-                // reset state
-                _convertedDeadCharacters = null;
-                _processingDeadChar = false;
-            }
-
-            _lastEventWasDeadChar = _processingDeadChar;
-
-            _processingDeadChar = KeyEventIsDeadChar(keyPress);
-
-            if (!_processingDeadChar && !_lastEventWasDeadChar)
-            {
-                return;
-            }
-
-            // Send the cloned key press to this NSTextView
-            InterpretKeyEvents(new[] { CloneEvent(keyPress) });
+            InterpretKeyEvents(new[] { CloneEvent(keypress) });
         }
 
         public override void InsertText(NSObject text, NSRange replacementRange)
         {
-            if (_lastEventWasDeadChar && !_processingDeadChar)
+            if (_deadCharHandler.LastEventWasDeadChar && !_deadCharHandler.ProcessingDeadChar)
             {
                 // This is where we find out how the combination of keypresses
                 // has been interpreted.
-                _convertedDeadCharacters = (text as NSString)?.ToString();
+                _deadCharHandler.SetConvertedDeadCharacters((text as NSString)?.ToString());
             }
+        }
+
+        private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
+        {
+            if (_deadCharHandler.LastEventWasDeadChar || _deadCharHandler.ProcessingDeadChar)
+            {
+                // We need the dead key press event to register in the editor so
+                // that we get the correct subsequent keypress events, but we 
+                // don't want to modify the textbuffer contents.
+                e.Cancel();
+            }
+        }
+
+        private void TextView_Closed(object sender, System.EventArgs e)
+        {
+            _textBuffer.Changing -= TextBuffer_Changing;
         }
 
         private NSEvent CloneEvent(NSEvent keyPress)
@@ -71,36 +67,6 @@ namespace Vim.UI.Cocoa
                 keyPress.CharactersIgnoringModifiers,
                 keyPress.IsARepeat,
                 keyPress.KeyCode);
-        }
-
-        private bool ShouldProcess(NSEvent keyPress)
-        {
-            return _lastEventWasDeadChar || KeyEventIsDeadChar(keyPress);
-        }
-
-        private bool KeyEventIsDeadChar(NSEvent e)
-        {
-            return string.IsNullOrEmpty(e.Characters);
-        }
-
-        private void TextBuffer_Changing(object sender, TextContentChangingEventArgs e)
-        {
-            if(_lastEventWasDeadChar || _processingDeadChar)
-            {
-                // We need the dead key press event to register in the editor so
-                // that we get the correct subsequent keypress events, but we 
-                // don't want to modify the textbuffer contents.
-                e.Cancel();
-            }
-            else
-            {
-                System.Console.WriteLine("wtd");
-            }
-        }
-
-        private void TextView_Closed(object sender, System.EventArgs e)
-        {
-            _textBuffer.Changing -= TextBuffer_Changing;
         }
     }
 }

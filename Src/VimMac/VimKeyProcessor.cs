@@ -6,7 +6,6 @@ using Vim.UI.Cocoa.Implementation.InlineRename;
 
 namespace Vim.UI.Cocoa
 {
-
     /// <summary>
     /// The morale of the history surrounding this type is translating key input is
     /// **hard**.  Anytime it's done manually and expected to be 100% correct it 
@@ -25,7 +24,7 @@ namespace Vim.UI.Cocoa
         private readonly ICompletionBroker _completionBroker;
         private readonly ISignatureHelpBroker _signatureHelpBroker;
         private readonly InlineRenameListenerFactory _inlineRenameListenerFactory;
-        private readonly InvisibleTextView _invisibleTextView;
+        private readonly DeadCharHandler _deadCharHandler;
 
         public VimKeyProcessor(
             IVimBuffer vimBuffer,
@@ -41,7 +40,7 @@ namespace Vim.UI.Cocoa
             _completionBroker = completionBroker;
             _signatureHelpBroker = signatureHelpBroker;
             _inlineRenameListenerFactory = inlineRenameListenerFactory;
-            _invisibleTextView = new InvisibleTextView(_textView);
+            _deadCharHandler = new DeadCharHandler(_textView);
         }
 
         public override bool IsInterestedInHandledEvents => true;
@@ -65,7 +64,7 @@ namespace Vim.UI.Cocoa
 
             bool handled = false;
 
-            _invisibleTextView.InterpretEvent(e.Event);
+            _deadCharHandler.InterpretEvent(e.Event);
             if (KeyEventIsDeadChar(e))
             {
                 // Although there is nothing technically left to do, we still
@@ -75,9 +74,9 @@ namespace Vim.UI.Cocoa
             }
             else
             {
-                if (_invisibleTextView.ConvertedDeadCharacters != null)
+                if (_deadCharHandler.ConvertedDeadCharacters != null)
                 {
-                    foreach (var c in _invisibleTextView.ConvertedDeadCharacters)
+                    foreach (var c in _deadCharHandler.ConvertedDeadCharacters)
                     {
                         var key = KeyInputUtil.CharToKeyInput(c);
                         handled &= TryProcess(null, key);
