@@ -29,6 +29,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         private ICocoaClassificationFormatMap _classificationFormatMap;
         private IClassificationTypeRegistryService _classificationTypeRegistry;
         internal NSStringAttributes _formatting;
+        private NSStringAttributes _currentLineFormatting;
 
         private int _visibleDigits = 5;
 
@@ -135,7 +136,12 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
 
             var font = _classificationFormatMap.GetTextProperties(lineNumberClassificaiton);
 
+            IClassificationType currentLineNumberClassification = _classificationTypeRegistry.GetClassificationType("Selected Line Number");
+
+            var currentLineNumberFont = _classificationFormatMap.GetTextProperties(currentLineNumberClassification);
+
             _formatting = font;
+            _currentLineFormatting = currentLineNumberFont;
 
             this.DetermineMarginWidth();
             Layer.BackgroundColor = (font.BackgroundColor ?? NSColor.Clear).CGColor;
@@ -208,6 +214,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         private void UpdateLineNumbers()
         {
             _updateNeeded = false;
+            int currentLineNumber = _textView.Caret.Position.BufferPosition.GetContainingLine().LineNumber + 1;
 
             if (!Enabled)
             {
@@ -302,8 +309,16 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             void UpdateVisual(CocoaLineNumberMarginDrawingVisual visual, Line line)
             {
                 visual.InUse = true;
+
+                var formatting = _formatting;
+
+                if (line.LineNumber == currentLineNumber)
+                {
+                    formatting = _currentLineFormatting;
+                }
+
                 visual.Update(
-                    _formatting,
+                    formatting,
                     line,
                     intrinsicContentSize.Width);
             }
