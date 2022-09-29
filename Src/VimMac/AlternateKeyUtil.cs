@@ -236,10 +236,18 @@ namespace Vim.UI.Cocoa.Implementation.Misc
 
         private bool GetKeyInputFromKey(NSEvent theEvent, NSEventModifierMask modifierKeys, out KeyInput keyInput)
         {
-            if(!string.IsNullOrEmpty(theEvent.CharactersIgnoringModifiers))
+            if(!string.IsNullOrEmpty(theEvent.Characters))
             {
-                var keyModifiers = ConvertToKeyModifiers(modifierKeys);
-                keyInput = KeyInputUtil.ApplyKeyModifiersToChar(theEvent.CharactersIgnoringModifiers[0], keyModifiers);
+                VimKeyModifiers keyModifiers = VimKeyModifiers.None;
+                // With some keyboard layouts, Option + 4 produces the '$' symbol
+                // We don't want to convert this to Alt+$ as the modifier has already been applied here. 
+                // In this case, CharactersIgnoringModifiers = "4" and Characters = "$"
+                if (theEvent.CharactersIgnoringModifiers == theEvent.Characters)
+                {
+                    keyModifiers = ConvertToKeyModifiers(modifierKeys);
+                }
+
+                keyInput = KeyInputUtil.ApplyKeyModifiersToChar(theEvent.Characters[0], keyModifiers);
                 return true;
             }
             keyInput = null;
