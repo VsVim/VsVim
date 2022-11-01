@@ -4436,5 +4436,232 @@ namespace Vim.UnitTest
                 }
             }
         }
+
+        /// <summary>
+        /// Test bracket text object if caret is before (not inside or on) the text object
+        /// In this case the next bracket text object is searched and used if found
+        /// </summary>
+        public sealed class SelectNextBracketTextObjectTest : VisualModeIntegrationTest
+        {
+            List<string> openBrackets = new List<string> { "(", "[", "{", "<" };
+            List<string> closeBrackets = new List<string> { ")", "]", "}", ">" };
+            List<string> textObject = new List<string> { "b", "]", "B", ">" };
+
+            /// <summary>
+            /// Select next inner block single line
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNextInnerBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(7, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select next all block single line
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNextAllBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process("va" + textObject[i]);
+                    string expectedSelection = String.Format("{0}dog{1}", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(8, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select next inner block multi line
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNextInnerBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    Assert.Equal("dog", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(11, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select next all block multi line
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNextAllBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                    _textView.MoveCaretTo(0);
+                    _vimBuffer.Process("va" + textObject[i]);
+                    string expectedSelection = String.Format("{0}\r\ndog\r\n{1}", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(13, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select current inner block single line (no search next block if within a block)
+            /// </summary>
+            [WpfFact]
+            public void SelectCurrentInnerBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("{0}cat {0}dog{1} fish{1}", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(1); //[c]at
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    string expectedSelection = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(14, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select current all block single line (no search next block if within a block)
+            /// </summary>
+            [WpfFact]
+            public void SelectCurrentAllBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("{0}cat {0}dog{1} fish{1}", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(1); //[c]at
+                    _vimBuffer.Process("va" + textObject[i]);
+                    string expectedSelection = String.Format("{0}cat {0}dog{1} fish{1}", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(15, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select current inner block multi line (no search next block if within a block)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectCurrentInnerBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create(openBrackets[i], "cat", openBrackets[i], "dog", closeBrackets[i], "fish", closeBrackets[i]);
+                    _textView.MoveCaretToLine(1); //[c]at
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    string expectedSelection = String.Format("cat\r\n{0}\r\ndog\r\n{1}\r\nfish", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(23, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select current all block multi line (no search next block if within a block)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectCurrentAllBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create(openBrackets[i], "cat", openBrackets[i], "dog", closeBrackets[i], "fish", closeBrackets[i]);
+                    _textView.MoveCaretToLine(1); //[c]at
+                    _vimBuffer.Process("va" + textObject[i]);
+                    string expectedSelection = String.Format("{0}\r\ncat\r\n{0}\r\ndog\r\n{1}\r\nfish\r\n{1}", openBrackets[i], closeBrackets[i]);
+                    Assert.Equal(expectedSelection, _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(25, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select no next inner block single line (no next block exists)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNoNextInnerBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(10);
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    Assert.Equal("f", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(10, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select no next all block single line (no next block exists)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNoNextAllBlockSingleLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                    Create(line);
+                    _textView.MoveCaretTo(10);
+                    _vimBuffer.Process("va" + textObject[i]);
+                    Assert.Equal("f", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(10, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select no next inner block multi line (no next block exists)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNoNextInnerBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                    _textView.MoveCaretToLine(4);
+                    _vimBuffer.Process("vi" + textObject[i]);
+                    Assert.Equal("f", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(16, _textView.GetCaretPoint().Position);
+                }
+            }
+
+            /// <summary>
+            /// Select no next all block multi line (no next block exists)
+            /// character
+            /// </summary>
+            [WpfFact]
+            public void SelectNoNextAllBlockMultiLine()
+            {
+                for (int i = 0; i < openBrackets.Count; i++)
+                {
+                    Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                    _textView.MoveCaretToLine(4);
+                    _vimBuffer.Process("va" + textObject[i]);
+                    Assert.Equal("f", _textView.GetSelectionSpan().GetText());
+                    Assert.Equal(16, _textView.GetCaretPoint().Position);
+                }
+
+            }
+
+        }
     }
 }
