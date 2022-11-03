@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.5232" Condition="'$(VsVimProjectType)' == 'Vsix'" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.4.2118" Condition="'$(VsVimProjectType)' == 'Vsix'" />
   </ItemGroup>
 
   <Import 
