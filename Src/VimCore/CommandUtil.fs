@@ -979,15 +979,31 @@ type internal CommandUtil
         //
         // Now execute 'd/  ' (2 spaces after the /).  This will delete the entire cat and dog
         // line
+        //
+        //
+        // In the next case an emtpy line remain which also leads to linewise motion
+        //
+        // cat
+        // (  <--- Caret
+        // dog
+        // )
+        // fish
+        // 
+        // Now execute 'dab'. Result with empty line removed:
+        // cat
+        // fish
+        //
         let span, operationKind =
             let span = result.Span
             if result.LineRange.Count > 1 && result.OperationKind = OperationKind.CharacterWise then
                 let startLine, lastLine = SnapshotSpanUtil.GetStartAndLastLine span
-                let lastPoint =
-                    if result.IsExclusive then result.End
-                    else result.LastOrStart
+
+                let firstPointAfterSpan =
+                      if result.IsExclusive then span.End
+                      else span.End.Add(1)
+
                 let endsInWhiteSpace =
-                    lastPoint
+                    firstPointAfterSpan
                     |> SnapshotPointUtil.GetPoints SearchPath.Forward
                     |> Seq.takeWhile (fun point -> point.Position < lastLine.End.Position)
                     |> Seq.forall SnapshotPointUtil.IsWhiteSpace
