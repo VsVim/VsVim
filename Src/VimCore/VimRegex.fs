@@ -260,7 +260,7 @@ type VimRegex
     member x.Regex = _regex
     member x.IncludesNewLine = _includesNewLine
     member x.MatchesVisualSelection = _matchesVisualSelection
-    member x.IsMatch pattern = _regex.IsMatch(pattern)
+    member x.IsMatch (pattern: string) = _regex.IsMatch(pattern)
     member x.Replace (input: string) (replacement: string) (replaceData: VimRegexReplaceData) (registerMap: IRegisterMap) = 
         let collection = _regex.Matches(input)
         if collection.Count > 0 then

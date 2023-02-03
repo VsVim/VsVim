@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Mac</RootNamespace>
     <AssemblyName>Vim.Mac</AssemblyName>
-    <TargetFramework>net6.0-macos</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_MAC</DefineConstants>
     <!-- Suppress warning CA1416 -->
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
