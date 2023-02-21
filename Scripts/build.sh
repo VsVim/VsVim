@@ -1,17 +1,17 @@
-echo "Downloading VSMac"
-url="https://download.visualstudio.microsoft.com/download/pr/e81e04d3-768a-4310-9c9b-f32e8ba00eaa/889c20580d7989524e9b42726510452e/visualstudioformac-17.3.0.2102-x64.dmg"
-wget --quiet $url
+ echo "Downloading VSMac"
+ url="https://download.visualstudio.microsoft.com/download/pr/93f43532-c75a-43bf-a335-9c62d3ad7c56/a0c1df1aa17141472362c80cef1a2581/visualstudioformac-preview-17.6.0.402-pre.1-x64.dmg"
+ wget --quiet $url
 
-hdiutil attach `basename $url`
+ hdiutil attach `basename $url`
 
-echo "Installing VSMac 17.3"
-ditto -rsrc "/Volumes/Visual Studio/" /Applications/
-ls -la /Applications/
+ echo "Installing VSMac 17.6"
+ ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
+ ls -la /Applications/
 
-echo "installing dotnet 6.0.3xx"
-wget https://dot.net/v1/dotnet-install.sh
-bash dotnet-install.sh --channel 6.0.3xx
-sudo ~/.dotnet/dotnet workload install macos
+ echo "installing dotnet 6.0.3xx"
+ wget https://dot.net/v1/dotnet-install.sh
+ bash dotnet-install.sh --channel 6.0.3xx
+ sudo ~/.dotnet/dotnet workload install macos
 
 echo "Building the extension"
 ~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
