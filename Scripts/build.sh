@@ -4,6 +4,9 @@
 
  hdiutil attach `basename $url`
 
+echo "Removing existing VSMac installation"
+sudo rm -rf "/Applications/Visual Studio"
+
 echo "Installing VSMac 17.6"
 ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
 ls -la /Applications/
