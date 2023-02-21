@@ -12,7 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj" />
     <PackageReference Include="Microsoft.VisualStudioMac.Sdk" Version="17.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="4.3.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="4.5.0-2.final" />
   </ItemGroup>
   <ItemGroup>
     <AddinReference Include="MonoDevelop.TextEditor" />
