@@ -4,14 +4,14 @@
 
  hdiutil attach `basename $url`
 
- echo "Installing VSMac 17.6"
- ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
- ls -la /Applications/
+echo "Installing VSMac 17.6"
+ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
+ls -la /Applications/
 
- echo "installing dotnet 6.0.3xx"
- wget https://dot.net/v1/dotnet-install.sh
- bash dotnet-install.sh --channel 6.0.3xx
- sudo ~/.dotnet/dotnet workload install macos
+echo "installing dotnet 7.0.2xx"
+wget https://dot.net/v1/dotnet-install.sh
+bash dotnet-install.sh --channel 7.0.2xx
+~/.dotnet/dotnet workload install macos
 
 echo "Building the extension"
 ~/.dotnet/dotnet msbuild /p:Configuration=ReleaseMac /p:Platform="Any CPU" /t:Restore
