@@ -9,7 +9,7 @@ sudo rm -rf "/Applications/Visual Studio.app"
 
 echo "Installing VSMac 17.6"
 ditto -rsrc "/Volumes/Visual Studio (Preview)/" /Applications/
-mv "/Applications/Visual Studio (Preview)" "/Applications/Visual Studio"
+mv "/Applications/Visual Studio (Preview).app" "/Applications/Visual Studio.app"
 ls -la /Applications/
 
 echo "installing dotnet 7.0.2xx"
