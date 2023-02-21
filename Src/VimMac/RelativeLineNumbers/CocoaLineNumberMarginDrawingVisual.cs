@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Globalization;
-
+using System.Runtime.InteropServices;
 using AppKit;
 using CoreAnimation;
 using CoreGraphics;
@@ -15,7 +15,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
     {
         private NSStringAttributes stringAttributes;
         private CGRect lineBounds;
-        private nfloat lineAscent;
+        private NFloat lineAscent;
         private CTLine ctLine;
 
         public int LineNumber { get; private set; }
@@ -37,7 +37,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
         internal void Update(
             NSStringAttributes stringAttributes,
             Line line,
-            nfloat lineWidth)
+            NFloat lineWidth)
         {
             // NOTE: keep this in sync with CocoaRenderedLineVisual regarding any font
             // metric handling, transforms, etc. Ensure that line numbers are always
@@ -63,7 +63,7 @@ namespace Vim.UI.Cocoa.Implementation.RelativeLineNumbers
             AffineTransform = new CGAffineTransform(
                 1, 0,
                 0, 1,
-                0, (nfloat)line.TextTop);
+                0, (NFloat)line.TextTop);
 
             var transformRect = AffineTransform.TransformRect(new CGRect(
                 line.IsCaretLine ? 0 : lineWidth - lineBounds.Width, // right justify
