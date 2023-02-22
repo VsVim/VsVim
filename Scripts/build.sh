@@ -1,8 +1,8 @@
- echo "Downloading VSMac"
+echo "Downloading VSMac"
  url="https://download.visualstudio.microsoft.com/download/pr/93f43532-c75a-43bf-a335-9c62d3ad7c56/a0c1df1aa17141472362c80cef1a2581/visualstudioformac-preview-17.6.0.402-pre.1-x64.dmg"
- wget --quiet $url
+wget --quiet $url
 
- hdiutil attach `basename $url`
+hdiutil attach `basename $url`
 
 echo "Removing existing VSMac installation"
 sudo rm -rf "/Applications/Visual Studio.app"
