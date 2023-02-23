@@ -50,7 +50,7 @@ type internal AutoCommandRunner
         let bclPattern = builder.ToString()
         VimRegexFactory.CreateBcl bclPattern RegexOptions.None
 
-    static let FileNameEndsWithPattern fileName pattern = 
+    static let FileNameEndsWithPattern (fileName: string) pattern = 
         try
             let regex = CreateFilePatternRegex pattern
             match regex with 
