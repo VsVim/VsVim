@@ -1451,8 +1451,7 @@ type internal CommandUtil
             }
             |> Seq.filter (fun (_, numberFormat) ->
                 _localSettings.IsNumberFormatSupported numberFormat)
-            |> Seq.map (fun (func, _) -> func())
-            |> SeqUtil.filterToSome
+            |> Seq.choose (fun (func, _) -> func())
             |> Seq.sortByDescending (fun (_, span) -> span.Length)
             |> Seq.sortBy (fun (_, span) -> span.Start.Position)
             |> SeqUtil.tryHeadOnly

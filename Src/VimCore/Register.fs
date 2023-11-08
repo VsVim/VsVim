@@ -433,16 +433,14 @@ module RegisterNameUtil =
     /// All of the char values which represent register names
     let RegisterNameChars = 
         RegisterName.All
-        |> Seq.map (fun n -> n.Char)
-        |> SeqUtil.filterToSome
+        |> Seq.choose (fun n -> n.Char)
         |> List.ofSeq
 
     /// Mapping of the available char's to the appropriate RegisterName
     let RegisterMap = 
         RegisterName.All
         |> Seq.map (fun r -> (r.Char),r)
-        |> Seq.map OptionUtil.combine2
-        |> SeqUtil.filterToSome
+        |> Seq.choose OptionUtil.combine2
         |> Map.ofSeq
 
     let CharToRegister c = Map.tryFind c RegisterMap 

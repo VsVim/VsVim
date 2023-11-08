@@ -267,13 +267,11 @@ type internal GlobalSettings() =
     member x.SetCommaOptions name mappingList options testFunc = 
         let settingValue = 
             mappingList
-            |> Seq.ofList
-            |> Seq.map (fun (name, value) ->
+            |> List.choose (fun (name, value) ->
                 if testFunc options value then 
                     Some name
                 else 
                     None)
-            |> SeqUtil.filterToSome
             |> String.concat ","
         _map.TrySetValue name (SettingValue.String settingValue) |> ignore
 

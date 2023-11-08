@@ -194,11 +194,10 @@ type internal VimTextBuffer
     /// Get all of the local marks in the IVimTextBuffer.
     member x.LocalMarks = 
         LocalMark.All
-        |> Seq.map (fun localMark ->
+        |> Seq.choose (fun localMark ->
             match x.GetLocalMark localMark with
             | None -> None
             | Some point -> Some (localMark, point))
-        |> SeqUtil.filterToSome
 
     /// Whether to use virtual space
     member x.UseVirtualSpace =

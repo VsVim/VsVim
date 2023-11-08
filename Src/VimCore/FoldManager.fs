@@ -32,8 +32,7 @@ type internal FoldData
     member x.Folds = 
         _folds 
         |> Seq.ofList 
-        |> Seq.map (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot) 
-        |> SeqUtil.filterToSome
+        |> Seq.choose (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot) 
         |> Seq.sortBy (fun span -> span.Start.Position)
 
     /// Create a fold over the given line range
@@ -55,8 +54,7 @@ type internal FoldData
         let data = 
             _folds
             |> Seq.map (fun span -> TrackingSpanUtil.GetSpan snapshot span,span)
-            |> Seq.map OptionUtil.combine2
-            |> SeqUtil.filterToSome
+            |> Seq.choose OptionUtil.combine2
             |> Seq.sortBy (fun (span,_) -> span.Start.Position)
         let ret = 
             match data |> Seq.tryFind (fun (span,_) -> span.Contains(point)) with
@@ -71,8 +69,7 @@ type internal FoldData
     member x.DeleteAllFolds (span: SnapshotSpan) =
         _folds <-
             _folds
-            |> Seq.map (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot)
-            |> SeqUtil.filterToSome
+            |> Seq.choose (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot)
             |> Seq.filter (fun s -> not (span.IntersectsWith(s)))
             |> Seq.map (fun span -> _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive))
             |> List.ofSeq

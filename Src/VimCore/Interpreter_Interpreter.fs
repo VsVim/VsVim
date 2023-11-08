@@ -1074,13 +1074,12 @@ type VimInterpreter
         // Build up the status string messages
         let lines = 
             displayNames 
-            |> Seq.map (fun name -> 
+            |> Seq.choose (fun name -> 
                 let register = _registerMap.GetRegister name
                 match register.Name.Char, StringUtil.IsNullOrEmpty register.StringValue with
                 | None, _ -> None
                 | Some c, true -> None
                 | Some c, false -> Some (c, normalizeDisplayString register.RegisterValue))
-            |> SeqUtil.filterToSome
             |> Seq.map (fun (name, value) -> sprintf "\"%c   %s" name value)
         let lines = Seq.append (Seq.singleton Resources.CommandMode_RegisterBanner) lines
         _statusUtil.OnStatusLong lines
