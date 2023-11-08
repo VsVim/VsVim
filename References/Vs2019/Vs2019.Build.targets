@@ -32,5 +32,5 @@
     </None>
   </ItemGroup>
 
-  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VsVimProjectType)' == 'Vsix' AND '$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VsVimProjectType)' == 'Vsix' AND '$(VSToolsPath)' != ''" />
 </Project>
