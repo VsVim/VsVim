@@ -65,6 +65,7 @@ namespace Vim.UnitTest
                     if (type.FullName.StartsWith("<Startup", StringComparison.Ordinal) ||
                         type.FullName.StartsWith("Microsoft.FSharp", StringComparison.Ordinal) ||
                         type.FullName.StartsWith("Microsoft.BuildSettings", StringComparison.Ordinal) ||
+                        type.FullName.StartsWith("System.Diagnostics.CodeAnalysis", StringComparison.Ordinal) ||
                         type.FullName.StartsWith("FSharp.BuildProperties", StringComparison.Ordinal))
                     {
                         continue;
