@@ -296,15 +296,6 @@ module internal SeqUtil =
                 index.Value <- index.Value + 1
         }
 
-    /// Filter the list removing all None's 
-    let filterToSome sequence =
-        seq {
-            for cur in sequence do
-                match cur with
-                | Some(value) -> yield value
-                | None -> ()
-        }
-
     /// Filters the list removing all of the first tuple arguments which are None
     let filterToSome2 (sequence: ('a option * 'b) seq) =
         seq { 

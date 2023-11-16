@@ -249,8 +249,7 @@ module KeyInputUtil =
 
     let VimKeyCharSet =
         VimKeyInputList
-        |> Seq.map (fun ki -> ki.RawChar)
-        |> SeqUtil.filterToSome
+        |> Seq.choose (fun ki -> ki.RawChar)
         |> Set.ofSeq
 
     let VimKeyCharList =
@@ -268,8 +267,7 @@ module KeyInputUtil =
     let CharToKeyInputMap = 
         let inputs = 
             VimKeyInputList
-            |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )
-            |> SeqUtil.filterToSome
+            |> Seq.choose (fun ki -> OptionUtil.combine ki.RawChar ki )
             |> Seq.filter (fun (_,ki) -> 
                 match ki.Key with
                 | VimKey.Back -> false

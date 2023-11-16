@@ -578,11 +578,10 @@ type internal TrackingCacheData<'TTag when 'TTag :> ITag>
         // Mapping gave us at least partial information.  Will work for the transition
         // period
         x.TrackingList
-        |> Seq.map (fun (span, tag) ->
+        |> Seq.choose (fun (span, tag) ->
             match TrackingSpanUtil.GetSpan snapshot span with
             | None -> None
             | Some span -> TagSpan<'TTag>(span, tag) :> ITagSpan<'TTag> |> Some)
-        |> SeqUtil.filterToSome
         |> ReadOnlyCollectionUtil.OfSeq
 
 /// This holds the set of data which is currently known from the background thread.  Data in 

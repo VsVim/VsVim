@@ -67,14 +67,13 @@ type MarkMap(_bufferTrackingService: IBufferTrackingService) =
     member x.GlobalMarks =
         _globalMarkMap
         |> Seq.map (fun keyValuePair -> keyValuePair.Key)
-        |> Seq.map (fun letter ->
+        |> Seq.choose (fun letter ->
             match x.GetGlobalMarkData letter with
             | None -> None
             | Some (_, trackingLineColumn, _) -> 
                 match trackingLineColumn.VirtualPoint with
                 | None -> None
                 | Some virtualPoint -> Some (letter, virtualPoint))
-        |> SeqUtil.filterToSome
 
     /// Get the global mark location
     member x.GetGlobalMark letter = 

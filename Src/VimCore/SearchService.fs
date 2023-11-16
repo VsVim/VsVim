@@ -81,7 +81,7 @@ type internal EditorSearchService
     member private x.FindNextInCache (findData: FindData) (position: int) =
         lock (_cacheArray) (fun () -> 
             _cacheArray
-            |> SeqUtil.filterToSome
+            |> Seq.choose id
             |> Seq.tryFind (fun cacheEntry -> cacheEntry.Matches findData position)
             |> Option.map (fun cacheEntry -> SnapshotSpan(findData.TextSnapshotToSearch, cacheEntry.FoundSpan)))
 
