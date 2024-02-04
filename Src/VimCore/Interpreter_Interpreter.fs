@@ -2424,7 +2424,7 @@ type VimInterpreter
         | LineCommand.Execute expression -> x.RunExecute expression
         | LineCommand.Function func -> x.RunFunction func
         | LineCommand.FunctionStart _ -> cantRun ()
-        | LineCommand.FunctionEnd _ -> cantRun ()
+        | LineCommand.FunctionEnd -> cantRun ()
         | LineCommand.Files -> x.RunFiles()
         | LineCommand.Fold lineRange -> x.RunFold lineRange
         | LineCommand.Global (lineRange, pattern, matchPattern, lineCommand) -> x.RunGlobal lineRange pattern matchPattern lineCommand

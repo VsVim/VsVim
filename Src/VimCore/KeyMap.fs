@@ -382,7 +382,7 @@ type internal LocalAbbreviationMap
                     | KeyMappingResult.NeedsMoreInput _ -> abbreviation.Replacement
                     | KeyMappingResult.Mapped keyInputSet -> keyInputSet
                     | KeyMappingResult.PartiallyMapped (l, r) -> l.AddRange r
-                    | KeyMappingResult.Recursive _ -> abbreviation.Replacement
+                    | KeyMappingResult.Recursive -> abbreviation.Replacement
                     | KeyMappingResult.Unmapped _ -> abbreviation.Replacement
                 (replacement, Some result)
             else 

@@ -924,7 +924,7 @@ and [<Sealed>] internal Parser
             | LineCommand.Files -> noRangeCommand
             | LineCommand.Fold lineRange -> LineCommand.Fold lineRange
             | LineCommand.Function _ -> noRangeCommand
-            | LineCommand.FunctionEnd _ -> noRangeCommand
+            | LineCommand.FunctionEnd -> noRangeCommand
             | LineCommand.FunctionStart _ -> noRangeCommand
             | LineCommand.Global (_, pattern, matchPattern, lineCommand) -> LineCommand.Global (lineRange, pattern, matchPattern, lineCommand)
             | LineCommand.GoToFirstTab -> noRangeCommand
