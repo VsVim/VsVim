@@ -463,7 +463,7 @@ type internal InsertMode
         | ActiveEditItem.None -> None
         | ActiveEditItem.OverwriteReplace -> None
         | ActiveEditItem.WordCompletion _ -> None
-        | ActiveEditItem.Special _ -> None
+        | ActiveEditItem.Special -> None
 
     member x.IsInPaste = x.PasteCharacter.IsSome
 

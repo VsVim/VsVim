@@ -599,7 +599,7 @@ type internal BlockUtil() =
                 |> isInStringLiteral referencePoint
                 with
                 | true, Some adjustedReferencePoint -> adjustedReferencePoint, false
-                | true, None _ -> referencePoint, true
+                | true, None -> referencePoint, true
                 | _ -> referencePoint, false
 
         // A literal point can answer whether a snapshot point is part of a
@@ -1111,7 +1111,7 @@ type internal MotionUtil
     /// Apply the 'startofline' option to the given MotionResult.  This function must be 
     /// called with the MotionData mapped back to the edit snapshot
     member x.ApplyStartOfLineOption (motionData: MotionResult) =
-        Contract.Assert(match motionData.MotionKind with MotionKind.LineWise _ -> true | _ -> false)
+        Contract.Assert(match motionData.MotionKind with MotionKind.LineWise -> true | _ -> false)
         Contract.Assert(motionData.Span.Snapshot = x.CurrentSnapshot)
         if not _globalSettings.StartOfLine then 
             motionData 
@@ -3284,7 +3284,7 @@ type internal MotionUtil
         match motionResult.MotionKind with
         | MotionKind.CharacterWiseExclusive -> adjust()
         | MotionKind.CharacterWiseInclusive -> motionResult
-        | MotionKind.LineWise _ -> motionResult
+        | MotionKind.LineWise -> motionResult
 
     /// Run the specified motion and return it's result
     member x.GetMotion motion (motionArgument: MotionArgument): MotionResult option = 

@@ -830,7 +830,7 @@ type MotionResult = {
         match x.MotionKind with
         | MotionKind.CharacterWiseExclusive -> OperationKind.CharacterWise
         | MotionKind.CharacterWiseInclusive -> OperationKind.CharacterWise
-        | MotionKind.LineWise _ -> OperationKind.LineWise
+        | MotionKind.LineWise -> OperationKind.LineWise
 
     /// Is this a word motion 
     member x.IsAnyWordMotion = Util.IsFlagSet x.MotionResultFlags MotionResultFlags.AnyWord
@@ -840,7 +840,7 @@ type MotionResult = {
         match x.MotionKind with
         | MotionKind.CharacterWiseExclusive -> true
         | MotionKind.CharacterWiseInclusive -> false
-        | MotionKind.LineWise _ -> false
+        | MotionKind.LineWise -> false
 
     /// Is this an inclusive motion
     member x.IsInclusive = not x.IsExclusive
@@ -1294,21 +1294,21 @@ type VisualKind =
     /// The TextSelectionMode this VisualKind would require
     member x.TextSelectionMode = 
         match x with
-        | Character _ -> TextSelectionMode.Stream
-        | Line _ -> TextSelectionMode.Stream
-        | Block _ -> TextSelectionMode.Box
+        | Character -> TextSelectionMode.Stream
+        | Line -> TextSelectionMode.Stream
+        | Block -> TextSelectionMode.Box
 
     member x.VisualModeKind = 
         match x with
-        | Character _ -> ModeKind.VisualCharacter
-        | Line _ -> ModeKind.VisualLine
-        | Block _ -> ModeKind.VisualBlock
+        | Character -> ModeKind.VisualCharacter
+        | Line -> ModeKind.VisualLine
+        | Block -> ModeKind.VisualBlock
 
     member x.SelectModeKind = 
         match x with
-        | Character _ -> ModeKind.SelectCharacter
-        | Line _ -> ModeKind.SelectLine
-        | Block _ -> ModeKind.SelectBlock
+        | Character -> ModeKind.SelectCharacter
+        | Line -> ModeKind.SelectLine
+        | Block -> ModeKind.SelectBlock
 
     static member All = [ Character; Line; Block ] |> Seq.ofList
 
@@ -2727,7 +2727,7 @@ with
         | ModeArgument.InsertWithTransaction transaction -> Some transaction
         | ModeArgument.Substitute _ -> Option.None
         | ModeArgument.PartialCommand _ -> Option.None
-        | ModeArgument.CancelOperation _ -> Option.None
+        | ModeArgument.CancelOperation -> Option.None
 
 
     /// Complete any embedded linked undo transaction
@@ -3265,7 +3265,7 @@ type NormalCommand =
         // Non-motion commands
         | NormalCommand.AddCaretAtMousePoint -> None
         | NormalCommand.AddCaretOnAdjacentLine _ -> None
-        | NormalCommand.AddToWord _ -> None
+        | NormalCommand.AddToWord -> None
         | NormalCommand.CancelOperation -> None
         | NormalCommand.ChangeCaseCaretLine _ -> None
         | NormalCommand.ChangeCaseCaretPoint _ -> None
@@ -3296,7 +3296,7 @@ type NormalCommand =
         | NormalCommand.GoToLocalDeclaration -> None
         | NormalCommand.GoToNextTab _ -> None
         | NormalCommand.GoToWindow _ -> None
-        | NormalCommand.GoToRecentView _ -> None
+        | NormalCommand.GoToRecentView -> None
         | NormalCommand.InsertAfterCaret -> None
         | NormalCommand.InsertBeforeCaret -> None
         | NormalCommand.InsertAtEndOfLine -> None

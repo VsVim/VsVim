@@ -48,7 +48,7 @@ type internal IncrementalSearchSession
 
     member x.Key = _key
     member x.IsWrap = _isWrap
-    member x.IsNotStarted = match _sessionState with | SessionState.NotStarted _ -> true | _ -> false
+    member x.IsNotStarted = match _sessionState with | SessionState.NotStarted -> true | _ -> false
     member x.IsStarted = match _sessionState with | SessionState.Started _ -> true | _ -> false
     member x.IsCompleted = match _sessionState with | SessionState.Completed -> true | _ -> false
     member x.IsActive = x.IsStarted && not x.IsCompleted

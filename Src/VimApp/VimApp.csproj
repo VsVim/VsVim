@@ -8,7 +8,8 @@
     <DefineConstants>$(DefineConstants);VS_SPECIFIC_VIM_APP</DefineConstants>
     <VsVimVisualStudioTargetVersion>17.0</VsVimVisualStudioTargetVersion>
     <VsVimProjectType>EditorHost</VsVimProjectType>
-
+    <!-- Temporary fix for https://github.com/dotnet/sdk/issues/34438 -->
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
     <!-- 
 	    Disabling the VS threading analyzers here. This is a run of the mill WPF project and 
 		doesn't benefit from these analyzers.
