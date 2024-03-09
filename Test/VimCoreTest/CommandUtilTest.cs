@@ -2100,7 +2100,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 5));
                 UnnamedRegister.UpdateValue("dog");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, updateRegister: false, visualSpan: visualSpan);
                 Assert.Equal("dog world", _textView.GetLine(0).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
             }
@@ -2114,7 +2114,7 @@ namespace Vim.UnitTest
                 Create("hello world");
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 0, 5));
                 UnnamedRegister.UpdateValue("dog");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: true, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: true, updateRegister: false, visualSpan: visualSpan);
                 Assert.Equal("dog world", _textView.GetLine(0).GetText());
                 Assert.Equal(3, _textView.GetCaretPoint().Position);
             }
@@ -2129,7 +2129,7 @@ namespace Vim.UnitTest
                 Create("dog");
                 var visualSpan = VimUtil.CreateVisualSpanCharacter(_textView.GetLineSpan(0, 1, 1));
                 UnnamedRegister.UpdateValue("pig" + Environment.NewLine, OperationKind.LineWise);
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, updateRegister: true, visualSpan: visualSpan);
                 Assert.Equal("d", _textView.GetLine(0).GetText());
                 Assert.Equal("pig", _textView.GetLine(1).GetText());
                 Assert.Equal("g", _textView.GetLine(2).GetText());
@@ -2147,7 +2147,7 @@ namespace Vim.UnitTest
                 Create("the cat", "chased", "the dog");
                 var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
                 UnnamedRegister.UpdateValue("dog");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, updateRegister: false, visualSpan: visualSpan);
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
                 Assert.Equal("the dog", _textView.GetLine(1).GetText());
                 Assert.Equal(0, _textView.GetCaretPoint().Position);
@@ -2163,7 +2163,7 @@ namespace Vim.UnitTest
                 Create("the cat", "chased", "the dog");
                 var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
                 UnnamedRegister.UpdateValue("dog");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: true, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: true, updateRegister: false, visualSpan: visualSpan);
                 Assert.Equal("dog", _textView.GetLine(0).GetText());
                 Assert.Equal("the dog", _textView.GetLine(1).GetText());
                 Assert.Equal(_textView.GetLine(1).Start, _textView.GetCaretPoint());
@@ -2179,7 +2179,7 @@ namespace Vim.UnitTest
                 Create("dog", "cat");
                 var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0));
                 UnnamedRegister.UpdateValue("pig");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, updateRegister: true, visualSpan: visualSpan);
                 Assert.Equal("dog" + Environment.NewLine, UnnamedRegister.StringValue);
                 Assert.Equal(OperationKind.LineWise, UnnamedRegister.OperationKind);
             }
@@ -2194,7 +2194,7 @@ namespace Vim.UnitTest
                 Create("cat", "dog");
                 var visualSpan = VisualSpan.NewBlock(_textView.GetBlockSpan(1, 1, 0, 2));
                 UnnamedRegister.UpdateValue("z");
-                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, visualSpan: visualSpan);
+                _commandUtil.PutOverSelection(VimUtil.MissingRegisterName, 1, moveCaretAfterText: false, updateRegister: false, visualSpan: visualSpan);
                 Assert.Equal("czt", _textView.GetLine(0).GetText());
                 Assert.Equal(1, _textView.GetCaretPoint().Position);
             }

@@ -278,7 +278,7 @@ namespace Vim.UnitTest
         public void Bind_PutOverSelection()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false, true));
             _mode.Process('p');
             _commandUtil.Verify();
         }
@@ -287,7 +287,7 @@ namespace Vim.UnitTest
         public void Bind_PutOverCaret_WithCaretMove()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true, true));
             _mode.Process("gp");
             _commandUtil.Verify();
         }
@@ -314,7 +314,7 @@ namespace Vim.UnitTest
         public void Bind_PutOverSelection_ViaP()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false, false));
             _mode.Process('P');
             _commandUtil.Verify();
         }
@@ -332,7 +332,7 @@ namespace Vim.UnitTest
         public void Bind_PutPutOverSelection_WithCaretMoveViaP()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true, false));
             _mode.Process("gP");
             _commandUtil.Verify();
         }

@@ -3622,6 +3622,7 @@ namespace Vim.UnitTest
                 Assert.Equal("pigg", _textView.GetLine(0).GetText());
                 Assert.Equal("cat", _textView.GetLine(1).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("do", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
             [WpfFact]
@@ -3649,6 +3650,7 @@ namespace Vim.UnitTest
                 Assert.Equal("pig", _textView.GetLine(0).GetText());
                 Assert.Equal("cat", _textView.GetLine(1).GetText());
                 Assert.Equal(2, _textView.GetCaretPoint().Position);
+                Assert.Equal("pig", _vimBuffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
             }
 
             /// <summary>
