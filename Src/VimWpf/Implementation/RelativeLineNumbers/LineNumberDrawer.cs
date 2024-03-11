@@ -12,7 +12,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly ILineFormatTracker _formatTracker;
         private readonly LineNumberVisualStore _store;
 
-        internal LineNumberDrawer(Canvas canvas, ILineFormatTracker formatTracker)
+        internal LineNumberDrawer(Canvas canvas, ILineFormatTracker formatTracker, bool isRelative)
         {
             _canvas = canvas
                 ?? throw new ArgumentNullException(nameof(canvas));
@@ -20,7 +20,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             _formatTracker = formatTracker
                 ?? throw new ArgumentNullException(nameof(formatTracker));
 
-            _store = new LineNumberVisualStore(formatTracker);
+            _store = new LineNumberVisualStore(formatTracker, isRelative);
         }
 
         public void UpdateLines(IEnumerable<Line> lines)
@@ -30,12 +30,12 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             _canvas.Children.Clear();
 
             double width = _canvas.Width;
-            foreach (var numberTargets in lines.GroupBy(x => x.Number))
-            {
-                var visual = _store[numberTargets.Key];
-            
-                visual.ReplaceRenderTargets(numberTargets, width);
 
+            // Group by line number & caret line
+            foreach (var line in lines.GroupBy(x => x))
+            {
+                var visual = _store[line.Key];
+                visual.ReplaceRenderTargets(line, width);
                 _canvas.Children.Add(visual);
             }
         }

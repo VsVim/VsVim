@@ -5,30 +5,31 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 {
     internal sealed class LineNumberVisualStore
     {
-        private readonly Dictionary<int, LineNumberVisual> _cache;
+        private readonly Dictionary<Line, LineNumberVisual> _cache;
 
         private readonly ILineFormatTracker _formatTracker;
+        private readonly bool _isRelative;
 
-        internal LineNumberVisualStore(ILineFormatTracker formatTracker)
+        internal LineNumberVisualStore(ILineFormatTracker formatTracker, bool isRelative)
         {
             _formatTracker = formatTracker
                 ?? throw new ArgumentNullException(nameof(formatTracker));
-
-            _cache = new Dictionary<int, LineNumberVisual>();
+            _isRelative = isRelative;
+            _cache = new Dictionary<Line, LineNumberVisual>();
         }
 
-        public LineNumberVisual this[int lineNumber]
+        public LineNumberVisual this[Line line]
         {
             get
             {
-                if (_cache.TryGetValue(lineNumber, out var visual))
+                if (_cache.TryGetValue(line, out var visual))
                 {
                     return visual;
                 }
 
-                var line = _formatTracker.MakeTextLine(lineNumber);
-                visual = new LineNumberVisual(line);
-                _cache[lineNumber] = visual;
+                var textLine = _formatTracker.MakeTextLine(line.Number, line.IsCaretLine);
+                visual = new LineNumberVisual(textLine, _isRelative);
+                _cache[line] = visual;
 
                 return visual;
             }

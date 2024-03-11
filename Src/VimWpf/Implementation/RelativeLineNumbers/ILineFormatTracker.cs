@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.Text.Editor;
 using System.Windows.Media;
 
 // Disambiguate WPF TextLine with Vim.TextLine
@@ -9,7 +10,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
     {
         Brush Background { get; }
 
-        WpfTextLine MakeTextLine(int number);
+        WpfTextLine MakeTextLine(int number, bool isCurrentLineNumber);
 
         double NumberWidth { get; }
 
