@@ -63,6 +63,18 @@ namespace Vim.UI.Wpf
         internal const string LayoutFrench = "0000040C";
 
         [DllImport("user32.dll")]
+        public static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+        [DllImport("user32.dll")]
+        public static extern bool CloseClipboard();
+
+        [DllImport("user32.dll")]
+        public static extern bool EmptyClipboard();
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+        [DllImport("user32.dll")]
         internal static extern uint GetCaretBlinkTime();
 
         [DllImport("user32.dll")]
