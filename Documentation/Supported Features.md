@@ -3,20 +3,20 @@ Each section has the set of sorted commands listed alphabetically. Aliases for t
 ## Operators
 These operators are supported. They work with all motions and text objects in the next paragraphs.
 
-- c
-- d
-- gU
-- gu
-- g?
-- g~
-- y
-- zf
-- &lt;
-- &gt;
-- !
-- =
-- gq
-- gw
+- c : Change (replace text between motion or object)
+- d : Delete (delete text between motion or object)
+- gU : Uppercase (uppercase text between motion or object)
+- gu : Lowercase (lowercase text between motion or object)
+- g? : Rot13 (encode text in rot13 between motion or object)
+- g~ : Swap case (invert case of text between motion or object)
+- y : Yank (copy text between motion or object)
+- zf : Fold (create fold based on motion)
+- &lt; : Shift left (indent text to the left based on motion)
+- &gt; : Shift right (indent text to the right based on motion)
+- ! : Filter (run an external command on the text selected by motion)
+- = : Format (auto-indent the text based on motion)
+- gq : Format text (format based on the motion or text object)
+- gw : Wrap lines (wrap the lines of text based on the motion)
 
 ## Motions
 
@@ -27,30 +27,30 @@ This is the set of motions which are currently supported listed alphabetically. 
 - e : End of normal word
 - E : End of big word 
 - f : move forward to character
-- F
+- F : Move backward to a specific character in the line
 - ge : Backward to end of word
 - gE : Backward to end of WORD
-- gg
-- G 
+- gg : Go to the top of the file
+- G : Go to the bottom of the file
 - gn : operate on next match
-- gN
-- g* 
-- g#
+- gN : Operate on the previous search match
+- g* : Search for the word under the cursor forward
+- g# : Search for the word under the cursor backward
 - g_ : Last non white space on the line 
 - g0 : First character of screen line
 - g^ : First visible character on line
 - g$ : Last visible character on line
 - h / &lt;Left&gt; / &lt;Bs&gt; / &lt;C-H&gt; : character left
-- H
+- H : Go to the top of the screen
 - j / &lt;Down&gt; / &lt;C-N&gt; / &lt;C-J&gt; : line down
 - k / &lt;Up&gt; / &lt;C-P&gt;: line up
 - l / &lt;Right&gt; / &lt;Space&gt; : character right
-- L
-- M
-- n
-- N
-- t
-- T
+- L : Go to the bottom of the screen
+- M : Go to the middle of the screen
+- n : Repeat the last search forward
+- N : Repeat the last search backward
+- t : Move forward until character (stops just before the character)
+- T : Move backward until character (stops just after the character)
 - v : modifier to a motion to act as in visual mode. Together with operator. Example: dvb.
 - w / &lt;S-Right&gt; : Normal Word 
 - W / &lt;C-Right&gt; : Big Word
@@ -63,14 +63,14 @@ This is the set of motions which are currently supported listed alphabetically. 
 - ) : Sentence forward 
 - { : Paragraph backward
 - } : Paragraph forward
-- ]]
-- [[
-- []
-- ][
-- ; 
-- %
-- \* 
-- \# 
+- ]] : Jump to next section
+- [[ : Jump to previous section
+- [] : Move to previous function (or block)
+- ][ : Move to next function (or block)
+- ; : Repeat the last f, F, t, or T command forward
+- % : Jump between matching brackets, parentheses, or tags
+- \* : Search forward for the word under the cursor
+- \# : Search backward for the word under the cursor
 
 ## Text Objects
 
@@ -78,57 +78,57 @@ All text objects: words, sentences, paragraphs, strings (",'), pair delimited ( 
 
 ## Normal Mode 
 
-- a
-- A
-- C
-- cc
-- dd
-- D
-- ga
+- a : Append after the cursor
+- A : Append at the end of the line
+- C : Change to the end of the line
+- cc : Change the entire line
+- dd : Delete the entire line
+- D : Delete from cursor to the end of the line
+- ga : Display character under cursor (ASCII or Unicode)
 - gd : using Goto.Definition from visual studio
-- gf
-- gJ
-- gh
-- gH
+- gf : Go to the file under the cursor
+- gJ : Join lines without space
+- gh : Insert text at the beginning of the line (ignores leading whitespace)
+- gH 
 - g&lt;C-h&gt;
-- gI
-- gp
-- gP
-- gt
-- gT
-- gv
-- gn
+- gI : Insert text at the beginning of the line (ignores leading whitespace)
+- gp : Put (paste) text after the cursor (without moving cursor)
+- gP : Put (paste) text before the cursor (without moving cursor)
+- gt : Go to the next tab
+- gT : Go to the previous tab
+- gv : Reselect the last visual selection
+- gn 
 - gN
-- gugu
-- guu
-- gUgU
-- gUU
-- g~ g~
+- gugu 
+- guu : Lowercase the entire line
+- gUgU 
+- gUU : Swap case for the entire line
+- g~ g~ : Swap case for the entire line
 - g~~
-- g?g?
-- g??
-- g&
+- g?g? : Encode the entire line in rot13
+- g?? 
+- g& : Repeat the last substitute command
 - g8
-- i
-- I
-- J
-- o
-- O
-- p
-- P
+- i : Insert text before the cursor
+- I : Insert text at the beginning of the line
+- J : Join the next line with the current line
+- o : Open a new line below the current line
+- O : Open a new line above the current line
+- p : Paste after the cursor
+- P : Paste before the cursor
 - q : macro recording
-- r
+- r : Replace the character under the cursor
 - R : Replace mode
-- s
-- S
-- u
-- U
-- v
-- V
-- x
-- X
-- Y
-- yy
+- s : Substitute one character
+- S : Substitute the entire line
+- u : Undo the last change
+- U : Redo (undo all changes on the line)
+- v : Visual mode
+- V : Visual line mode
+- x : Delete the character under the cursor
+- X : Delete the character before the cursor
+- Y : Yank the entire line
+- yy : Yank the entire line
 - za
 - zA
 - zo
