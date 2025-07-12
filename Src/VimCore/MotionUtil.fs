@@ -309,6 +309,8 @@ type DirectiveKind =
     | Elif
     | Else
     | EndIf
+    | Region
+    | EndRegion
 
 type Directive = { 
     Kind: DirectiveKind;
@@ -699,6 +701,8 @@ type MatchingTokenUtil() =
                 | "elif" -> all DirectiveKind.Elif tokenizer.CurrentToken
                 | "else" -> func DirectiveKind.Else tokenizer.CurrentToken
                 | "endif" -> func DirectiveKind.EndIf tokenizer.CurrentToken
+                | "region" -> all DirectiveKind.Region tokenizer.CurrentToken
+                | "endregion" -> func DirectiveKind.EndRegion tokenizer.CurrentToken
                 | _ -> None
             | _ -> None
         else
@@ -724,61 +728,94 @@ type MatchingTokenUtil() =
                 | Some directive -> directive.AdjustStart line.Start.Position |> Some
 
         let allBlocksList = List<DirectiveBlock>()
+        let allDirectivesList = List<Directive>()
 
-        // Parse out the remainder of a directive given an initial directive value.  Then
-        // return the line number after the completion of this block 
-        let rec parseBlockRemainder (startDirective: Directive) lineNumber = 
+        // Parses all directives upfront to not repeat work for nested #if/#region blocks
+        let rec parseAllDirectives () =
+            let rec inner lineNumber =
+                let parseNext () = inner (lineNumber + 1)
+                match getDirective lineNumber with
+                | None ->
+                    if lineNumber < lastLineNumber then
+                        parseNext ()
+                | Some directive ->
+                    allDirectivesList.Add directive
+                    parseNext ()
+
+            inner 0
+
+        parseAllDirectives ()
+
+        // Parse out the remainder of a directive given an initial directive value.
+        // Returns index after the end of provided block
+        let rec parseBlockRemainder (directiveIndex: int) = 
+            let startDirective = allDirectivesList[directiveIndex]
             let list = List<Directive>()
             list.Add(startDirective)
 
-            let rec inner lineNumber =
-
-                // Parse the next line 
-                let parseNext () = inner (lineNumber + 1)
-                match getDirective lineNumber with
-                | None -> 
-                    if lineNumber >= lastLineNumber then
-                        let block = { Directives = list; IsComplete = false }
-                        allBlocksList.Add block
-                        lineNumber
+            let rec inner (directiveIndex: int) =
+                let nextIndex () = inner (directiveIndex + 1)
+                let directive =
+                    if directiveIndex < allDirectivesList.Count then
+                        Some allDirectivesList[directiveIndex]
                     else
-                        parseNext ()
+                        None
+                match directive with
+                | None -> 
+                    let block = { Directives = list; IsComplete = false }
+                    allBlocksList.Add block
+                    (directiveIndex + 1)
                 | Some directive ->
-                    match directive.Kind with
-                    | DirectiveKind.If -> 
-                        let lineNumber = parseBlockRemainder directive (lineNumber + 1)
-                        inner lineNumber
-                    | DirectiveKind.Elif ->
-                        list.Add directive
-                        parseNext ()
-                    | DirectiveKind.Else ->
-                        list.Add directive
-                        parseNext ()
-                    | DirectiveKind.EndIf ->
-                        list.Add directive
-                        let block = { Directives = list; IsComplete = true }
-                        allBlocksList.Add block
-                        lineNumber + 1
+                    match startDirective.Kind with
+                    | DirectiveKind.If ->
+                        match directive.Kind with
+                        | DirectiveKind.If -> 
+                            let directiveIndex = parseBlockRemainder directiveIndex
+                            inner directiveIndex
+                        | DirectiveKind.Elif ->
+                            list.Add directive
+                            nextIndex ()
+                        | DirectiveKind.Else ->
+                            list.Add directive
+                            nextIndex ()
+                        | DirectiveKind.EndIf ->
+                            list.Add directive
+                            let block = { Directives = list; IsComplete = true }
+                            allBlocksList.Add block
+                            (directiveIndex + 1)
+                        | _ ->
+                            nextIndex ()
+                    | DirectiveKind.Region ->
+                        match directive.Kind with
+                        | DirectiveKind.Region ->
+                            let directiveIndex = parseBlockRemainder directiveIndex
+                            inner directiveIndex
+                        | DirectiveKind.EndRegion ->
+                            list.Add directive
+                            let block = { Directives = list; IsComplete = true }
+                            allBlocksList.Add block
+                            (directiveIndex + 1)
+                        | _ ->
+                            nextIndex ()
+                    | _ ->
+                        failwith $"Invalid start directive kind: {startDirective.Kind}, \
+                                   expected {nameof(DirectiveKind.If)} or {nameof(DirectiveKind.Region)}."
 
-            inner lineNumber
+            inner (directiveIndex + 1)
 
-        // Go through every line and drive the parsing of the directives
-        let rec parseAll lineNumber = 
-            if lineNumber <= lastLineNumber then
-                match getDirective lineNumber with
-                | None -> parseAll (lineNumber + 1)
-                | Some directive ->
-                    match directive.Kind with
-                    | DirectiveKind.If -> 
-                        let nextLineNumber = parseBlockRemainder directive (lineNumber + 1)
-                        parseAll nextLineNumber
-                    | _ -> 
-                        let list = List<Directive>(1)
-                        list.Add(directive)
-                        let block = { Directives = list; IsComplete = false }
-                        allBlocksList.Add block
+        // Go through every directive and construct blocks
+        let rec parseAll directiveKind directiveIndex = 
+            if directiveIndex < allDirectivesList.Count then
+                let directive = allDirectivesList[directiveIndex]
+                if directive.Kind = directiveKind then
+                    let nextIndex = parseBlockRemainder directiveIndex
+                    parseAll directiveKind nextIndex
+                else
+                    parseAll directiveKind (directiveIndex + 1)
 
-        parseAll 0
+        // Multiple passes are needed to correctly handle nesting
+        parseAll DirectiveKind.If 0
+        parseAll DirectiveKind.Region 0
         allBlocksList
 
     /// Get the directive blocks for the specified ITextSnapshot
