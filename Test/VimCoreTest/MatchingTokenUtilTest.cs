@@ -210,6 +210,53 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void TagSimple()
+            {
+                var line = "<foo></foo>";
+                Create(line);
+                AssertMatch(line.IndexOf("foo"), line.IndexOf("/foo"), 1);
+                AssertMatch(line.IndexOf("/foo"), line.IndexOf("foo"), 1);
+
+                AssertMatch(line.IndexOf("foo") + 1, line.IndexOf("/foo"), 1);
+                AssertMatch(line.IndexOf("/foo") + 1, line.IndexOf("foo"), 1);
+            }
+
+            [WpfFact]
+            public void TagChevrons()
+            {
+                var line = " <foo>";
+                Create(line);
+                AssertMatch(0, line.IndexOf('>'), 1);
+                AssertMatch(line.IndexOf('>'), line.IndexOf('<'), 1);
+                AssertMatch(line.IndexOf('<'), line.IndexOf('>'), 1);
+            }
+
+            [WpfFact]
+            public void TagNested()
+            {
+                var line = "<foo><bar></bar></foo>";
+                Create(line);
+                AssertMatch(line.IndexOf("foo"), line.IndexOf("/foo"), 1);
+                AssertMatch(line.IndexOf("/foo"), line.IndexOf("foo"), 1);
+                AssertMatch(line.IndexOf("bar"), line.IndexOf("/bar"), 1);
+                AssertMatch(line.IndexOf("/bar"), line.IndexOf("bar"), 1);
+            }
+
+            [WpfFact]
+            public void TagMultiline()
+            {
+                Create(
+                    "<foo",
+                    "  attribute1=\"value\"",
+                    "  attribute2=\"value\">",
+                    "  content",
+                    "</foo>");
+
+                AssertMatch(_textBuffer.GetPointInLine(0, 1), _textBuffer.GetPointInLine(4, 1), 1);
+                AssertMatch(_textBuffer.GetPointInLine(4, 1), _textBuffer.GetPointInLine(0, 1), 1);
+            }
+
+            [WpfFact]
             public void Mixed()
             {
                 Create("{ { (( } /* a /*) b */ })");
