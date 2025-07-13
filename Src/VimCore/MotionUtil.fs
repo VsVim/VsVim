@@ -844,6 +844,7 @@ type MatchingTokenUtil() =
                 else None
 
         // Finds a potential tag.
+        //
         // Returns MatchingTokenKind.Chevrons when either:
         // 1) Cursor is not inside a tag (searching for '<' and '>' forward)
         // 2) Cursor is on top of either '<' or '>'
@@ -864,24 +865,24 @@ type MatchingTokenUtil() =
                     elif current = c then Some index
                     else lastIndexOfProhibitChar c (index - 1) str prohibit
 
-            if lineText.[column] = '<' then
+            let mapWhiteSpaceToChevronsOption index offset =
                 if
-                    StringUtil.CharAtOption (column + 1) lineText
+                    StringUtil.CharAtOption (index + offset) lineText
                     |> Option.exists CharUtil.IsWhiteSpace
                 then None
-                else Some (column, MatchingTokenKind.Chevrons)
-            elif lineText.[column] = '>' then
-                if
-                    StringUtil.CharAtOption (column - 1) lineText
-                    |> Option.exists CharUtil.IsWhiteSpace
-                then None
-                else Some (column, MatchingTokenKind.Chevrons)
+                else Some (index, MatchingTokenKind.Chevrons)
+
+            if lineText.[column] = '<' then mapWhiteSpaceToChevronsOption column +1
+            elif lineText.[column] = '>' then mapWhiteSpaceToChevronsOption column -1
             else
                 match lastIndexOfProhibitChar '<' column lineText '>' with
                 | None ->
                     match StringUtil.IndexOfCharAt '<' column lineText with
-                    | None -> None
-                    | Some index -> Some (index, MatchingTokenKind.Chevrons)
+                    | None ->
+                        match StringUtil.IndexOfCharAt '>' column lineText with
+                        | None -> None
+                        | Some index -> mapWhiteSpaceToChevronsOption index -1
+                    | Some index -> mapWhiteSpaceToChevronsOption index +1
                 | Some index -> Some (index, MatchingTokenKind.Tag)
 
         // Parse out all the possibilities and find the one that is closest to the 

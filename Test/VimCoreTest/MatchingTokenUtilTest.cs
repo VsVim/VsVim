@@ -121,6 +121,13 @@ namespace Vim.UnitTest
                 Assert.Equal(matchLength, result.Value.Length);
             }
 
+            private void AssertNoMatch(int index)
+            {
+                var point = new SnapshotPoint(_textBuffer.CurrentSnapshot, index);
+                var result = _matchingTokenUtil.FindMatchingToken(point);
+                Assert.True(result.IsNone());
+            }
+
             [WpfFact]
             public void ParenSimple()
             {
@@ -229,6 +236,28 @@ namespace Vim.UnitTest
                 AssertMatch(0, line.IndexOf('>'), 1);
                 AssertMatch(line.IndexOf('>'), line.IndexOf('<'), 1);
                 AssertMatch(line.IndexOf('<'), line.IndexOf('>'), 1);
+            }
+
+            [WpfFact]
+            public void TagChevronsMultiline()
+            {
+                Create(
+                    "<tag",
+                    "attr=\"foo\">",
+                    "</tag>");
+                AssertMatch(_textBuffer.GetPointInLine(1, 0), _textBuffer.GetPointInLine(0, 0), 1);
+            }
+
+            [WpfFact]
+            public void TagChevronsRespectWhiteSpace()
+            {
+                Create(
+                    "if (",
+                    "  a < b && b > c",
+                    ")");
+                AssertNoMatch(_textBuffer.GetPointInLine(1, 0));
+                AssertNoMatch(_textBuffer.GetPointInLine(1, 4));
+                AssertNoMatch(_textBuffer.GetPointInLine(1, 13));
             }
 
             [WpfFact]
