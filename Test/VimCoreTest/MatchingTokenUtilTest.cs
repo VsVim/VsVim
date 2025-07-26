@@ -121,6 +121,15 @@ namespace Vim.UnitTest
                 Assert.Equal(matchLength, result.Value.Length);
             }
 
+            private void AssertMatchLine(int fromLine, int toLine, int matchLength)
+            {
+                AssertMatch(
+                    _textBuffer.GetPointInLine(fromLine, 0).Position,
+                    _textBuffer.GetPointInLine(toLine, 0).Position,
+                    matchLength
+                );
+            }
+
             [WpfFact]
             public void ParenSimple()
             {
@@ -190,15 +199,15 @@ namespace Vim.UnitTest
             public void ConditionalSimple()
             {
                 Create("#if", "#endif");
-                AssertMatch(0, _textBuffer.GetPointInLine(1, 0).Position, 6);
-                AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, 0, 3);
+                AssertMatchLine(0, 1, "#endif".Length);
+                AssertMatchLine(1, 0, "#if".Length);
             }
 
             [WpfFact]
             public void ConditionalFromElse()
             {
                 Create("#if", "#else", "#endif");
-                AssertMatch(_textBuffer.GetPointInLine(1, 0).Position, _textBuffer.GetPointInLine(2, 0).Position, 6);
+                AssertMatchLine(1, 2, "#endif".Length);
             }
 
             [WpfFact]
@@ -207,6 +216,71 @@ namespace Vim.UnitTest
                 Create("#if", "#endif");
                 AssertMatch(1, _textBuffer.GetPointInLine(1, 0).Position, 6);
                 AssertMatch(_textBuffer.GetPointInLine(1, 3).Position, 0, 3);
+            }
+            
+            [WpfFact]
+            public void ConditionalNested()
+            {
+                Create("#if", "#if", "#else", "#endif", "#endif");
+                AssertMatchLine(0, 4, "#endif".Length);
+                AssertMatchLine(4, 0, "#if".Length);
+
+                AssertMatchLine(1, 2, "#else".Length);
+                AssertMatchLine(2, 3, "#endif".Length);
+                AssertMatchLine(3, 1, "#if".Length);
+            }
+
+            [WpfFact]
+            public void RegionSimple()
+            {
+                Create("#region", "#endregion");
+                AssertMatchLine(0, 1, "#endregion".Length);
+                AssertMatchLine(1, 0, "#region".Length);
+            }
+
+            [WpfFact]
+            public void RegionNested()
+            {
+                Create("#region", "#region", "#endregion", "#endregion");
+                AssertMatchLine(0, 3, "#endregion".Length);
+                AssertMatchLine(3, 0, "#region".Length);
+
+                AssertMatchLine(1, 2, "#endregion".Length);
+                AssertMatchLine(2, 1, "#region".Length);
+            }
+
+            [WpfFact]
+            public void RegionInsideConditional()
+            {
+                Create("#if", "#region", "#endregion", "#endif");
+                AssertMatchLine(0, 3, "#endif".Length);
+                AssertMatchLine(3, 0, "#if".Length);
+
+                AssertMatchLine(1, 2, "#endregion".Length);
+                AssertMatchLine(2, 1, "#region".Length);
+            }
+
+            [WpfFact]
+            public void ConditionalInsideRegion()
+            {
+                Create("#region", "#if", "#endif", "#endregion");
+                AssertMatchLine(0, 3, "#endregion".Length);
+                AssertMatchLine(3, 0, "#region".Length);
+
+                AssertMatchLine(1, 2, "#endif".Length);
+                AssertMatchLine(2, 1, "#if".Length);
+            }
+
+            [WpfFact]
+            public void RegionInsideConditionalElseInsideRegion()
+            {
+                Create("#if", "#region", "#else", "#endregion", "#endif");
+                AssertMatchLine(0, 2, "#else".Length);
+                AssertMatchLine(2, 4, "#endif".Length);
+                AssertMatchLine(4, 0, "#if".Length);
+
+                AssertMatchLine(1, 3, "#endregion".Length);
+                AssertMatchLine(3, 1, "#region".Length);
             }
 
             [WpfFact]
