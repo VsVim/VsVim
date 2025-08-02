@@ -67,7 +67,7 @@ jobs:
 
   macos-build:
     name: MacOS Build and Publish
-    runs-on: macOS-11
+    runs-on: macOS-latest
 
     steps:
       # Must use fetch-depth 0 because the workflow requires that tags be present
