@@ -10,6 +10,7 @@ using Vim.UnitTest.Mock;
 using Xunit;
 using Microsoft.FSharp.Core;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Vim.UnitTest
 {
@@ -9880,5 +9881,169 @@ namespace Vim.UnitTest
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Test bracket text object if caret is before (not inside or on) the text object
+    /// In this case the next bracket text object is searched and used if found
+    /// </summary>
+    public sealed class UseNextBracketTextObjectTest  : NormalModeIntegrationTest
+    {
+        List<string> openBrackets = new List<string> { "(", "[", "{", "<" };
+        List<string> closeBrackets = new List<string> { ")", "]", "}", ">" };
+        List<string> textObject = new List<string> { "b", "]", "B", ">" };
+
+        /// <summary>
+        /// Delete next innner block on single line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void DeleteNextInnerBlockSingleLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                Create(line);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("di" + textObject[i]);
+                string expectedText = String.Format("cat {0}{1} fish", openBrackets[i], closeBrackets[i]);
+                Assert.Equal(expectedText, _textBuffer.GetLine(0).GetText());
+                Assert.Equal(5, _textView.GetCaretPoint());
+            }
+
+        }
+
+        /// <summary>
+        /// Delete next all block on single line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void DeleteNextAllBlockSingleLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                Create(line);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("da" + textObject[i]);
+                Assert.Equal("cat  fish", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(4, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Delete next innner block on multi line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void DeleteNextInnerBlockMultiLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("di" + textObject[i]);
+                string expectedText = String.Format("cat\r\n{0}\r\n{1}\r\nfish", openBrackets[i], closeBrackets[i]);
+                string acutalText = _textBuffer.CurrentSnapshot.GetText().ToString();
+                Assert.Equal(expectedText, acutalText);
+                Assert.Equal(8, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Delete next all block on multi line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void DeleteNextAllBlockMultiLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("da" + textObject[i]);
+                string expectedText = String.Format("cat\r\n\r\nfish", openBrackets[i], closeBrackets[i]);
+                string acutalText = _textBuffer.CurrentSnapshot.GetText().ToString();
+                Assert.Equal(expectedText, acutalText);
+                Assert.Equal(5, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Change next inner block single line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void ChangeNextInnerBlockSingleLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                Create(line);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("ci" + textObject[i] + "zebra");
+                string expectedText = String.Format("cat {0}zebra{1} fish", openBrackets[i], closeBrackets[i]);
+                Assert.Equal(expectedText, _textBuffer.GetLine(0).GetText());
+                Assert.Equal(10, _textView.GetCaretPoint());
+            }
+
+        }
+
+        /// <summary>
+        /// Change next All block single line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void ChangeNextAllBlockSingleLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                string line = String.Format("cat {0}dog{1} fish", openBrackets[i], closeBrackets[i]);
+                Create(line);
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("ca" + textObject[i] + "zebra");
+                Assert.Equal("cat zebra fish", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(9, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Change next inner block multi line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void ChangeNextInnerBlockMultiLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("ci" + textObject[i] + "zebra");
+                string expectedText = String.Format("cat\r\n{0}\r\nzebra\r\n{1}\r\nfish", openBrackets[i], closeBrackets[i]);
+                string acutalText = _textBuffer.CurrentSnapshot.GetText().ToString();
+                Assert.Equal(expectedText, acutalText);
+                Assert.Equal(13, _textView.GetCaretPoint());
+            }
+        }
+
+        /// <summary>
+        /// Change next all block multi line
+        /// character
+        /// </summary>
+        [WpfFact]
+        public void ChangeNextAllBlockMultiLine()
+        {
+            for (int i = 0; i < openBrackets.Count; i++)
+            {
+                Create("cat", openBrackets[i], "dog", closeBrackets[i], "fish");
+                _textView.MoveCaretTo(0);
+                _vimBuffer.Process("ca" + textObject[i] + "zebra");
+                string expectedText = String.Format("cat\r\nzebra\r\nfish", openBrackets[i], closeBrackets[i]);
+                string acutalText = _textBuffer.CurrentSnapshot.GetText().ToString();
+                Assert.Equal(expectedText, acutalText);
+                Assert.Equal(10, _textView.GetCaretPoint());
+            }
+        }
+
     }
 }
