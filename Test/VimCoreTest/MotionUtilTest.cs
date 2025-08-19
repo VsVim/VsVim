@@ -310,6 +310,17 @@ namespace Vim.UnitTest
             }
 
             /// <summary>
+            /// Simple matched bracket test from the start
+            /// </summary>
+            [WpfFact]
+            public void Simple_FromStart()
+            {
+                Create("dog [cat]");
+                var span = GetBlockSpan(BlockKind.Bracket, _textBuffer.GetPoint(0));
+                Assert.Equal(_textBuffer.GetSpan(4, 5), span);
+            }
+
+            /// <summary>
             /// Make sure that we can process the nested block when the caret is before it
             /// </summary>
             [WpfFact]
@@ -383,10 +394,18 @@ namespace Vim.UnitTest
             }
 
             [WpfFact]
+            public void EscapeTrap_BeforeBlock()
+            {
+                Create(@"\[cat [dog]");
+                var span = GetBlockSpan(BlockKind.Bracket, _textBuffer.GetPoint(0));
+                Assert.Equal(_textBuffer.GetSpan(6, 5), span);
+            }
+
+            [WpfFact]
             public void StringTrap_BeforeString()
             {
                 Create("fun(a, \" (\", b) # bar");
-                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(3));
+                var span = GetBlockSpan(BlockKind.Paren, _textBuffer.GetPoint(1));
                 Assert.Equal(_textBuffer.GetSpan(3, 12), span);
             }
 
