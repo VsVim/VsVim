@@ -34,7 +34,7 @@ jobs:
         run: Scripts\Build.ps1 -ci -config Debug -testExtra
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Logs
           path: Binaries\Logs
@@ -55,7 +55,7 @@ jobs:
         run: Scripts\Build.ps1 -ci -build -updateVsixVersion -config Release
 
       - name: Upload VSIX Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Vsix
           path: Binaries\Deploy
@@ -67,7 +67,7 @@ jobs:
 
   macos-build:
     name: MacOS Build and Publish
-    runs-on: macOS-11
+    runs-on: macOS-latest
 
     steps:
       # Must use fetch-depth 0 because the workflow requires that tags be present
@@ -85,7 +85,7 @@ jobs:
         run: Scripts/build.sh
 
       - name: Publish mpack
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: VSMacExtension
           path: 'Binaries/Debug/VimMac/net7.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
