@@ -19,9 +19,9 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         private readonly IProtectedOperations _protectedOperations;
 
         private readonly LineNumbersTracker _linesTracker;
-        private readonly LineNumberDrawer _lineNumberDrawer;
         private readonly LineNumbersCalculator _lineNumbersCalculator;
 
+        private LineNumberDrawer _lineNumberDrawer;
         private double _width = double.NaN;
         private double _minWidth = 0.0;
         private double _maxWidth = double.PositiveInfinity;
@@ -56,7 +56,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             _lineNumbersCalculator = new LineNumbersCalculator(_textView, _localSettings);
 
-            _lineNumberDrawer = new LineNumberDrawer(Canvas, _formatTracker);
+            _lineNumberDrawer = new LineNumberDrawer(Canvas, _formatTracker, _localSettings.RelativeNumber);
 
             _linesTracker = new LineNumbersTracker(_textView);
 
@@ -112,7 +112,11 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
             SetVisualStudioMarginVisibility(Visibility.Hidden);
             if (_localSettings.Number || _localSettings.RelativeNumber)
             {
-                RedrawLines();
+                if (eventArgs.Setting.Name == "relativenumber" || eventArgs.Setting.Name == "number")
+                {
+                    _lineNumberDrawer = new LineNumberDrawer(Canvas, _formatTracker, _localSettings.RelativeNumber);
+                    RedrawLines();
+                } 
             }
         }
 
