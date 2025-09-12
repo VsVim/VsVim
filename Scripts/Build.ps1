@@ -112,7 +112,12 @@ function Get-PackagesDir() {
     $d = $env:NUGET_PACKAGES
   }
   else {
-    $d = Join-Path $env:UserProfile ".nuget\packages\"
+    if ($IsMacOS) {
+      $d = Join-Path $env:HOME ".nuget/packages/"
+    }
+    else {
+      $d = Join-Path $env:UserProfile ".nuget\packages\"
+    }
   }
 
   Create-Directory $d
@@ -309,7 +314,7 @@ function Build-Solution(){
 
 Push-Location $rootDir
 try {
-  . "Scripts\Common-Utils.ps1"
+. "Scripts/Common-Utils.ps1"
 
   if ($help -or ($properties -ne $null)) {
     Print-Usage

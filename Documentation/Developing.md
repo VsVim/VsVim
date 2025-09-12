@@ -53,3 +53,25 @@ Azure DevOps Links:
 
 - [VsVim Builds](https://dev.azure.com/VsVim/VsVim/_build?definitionId=1&_a=summary)
 - [Vsvim Project](https://dev.azure.com/VsVim/VsVim)
+
+## Setup on macOS
+
+To develop on macOS, install the following prerequisites:
+
+- Install [Visual Studio for Mac](https://visualstudio.microsoft.com/vs/mac/)
+- Install [.NET SDK](https://dotnet.microsoft.com/download)
+- Install PowerShell Core (`pwsh`) via Homebrew: `brew install --cask powershell`
+- Ensure `pwsh` is in your PATH
+
+Build and test using PowerShell Core:
+
+- Run `pwsh ./Build.ps1 -build` to build the solution
+- Run `pwsh ./Build.ps1 -test` to run unit tests
+- Run `pwsh ./Build.ps1 -testExtra` for extra verification
+
+Troubleshooting:
+
+- If tests fail due to missing dependencies, ensure NuGet packages are restored
+- Use `pwsh ./Build.ps1 -help` for script usage information
+
+Please refer to the [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.

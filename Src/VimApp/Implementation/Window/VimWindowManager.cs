@@ -9,6 +9,9 @@ using Vim;
 
 namespace VimApp.Implementation.Window
 {
+    /// <summary>
+    /// Manages Vim windows within the application.
+    /// </summary>
     [Export(typeof(IVimWindowManager))]
     internal sealed class VimWindowManager : IVimWindowManager
     {
@@ -24,22 +27,38 @@ namespace VimApp.Implementation.Window
 
         #region IVimWindowManager
 
+        /// <summary>
+        /// Gets the list of Vim windows.
+        /// </summary>
         ReadOnlyCollection<IVimWindow> IVimWindowManager.VimWindowList
         {
             get { return new ReadOnlyCollection<IVimWindow>(_map.Values.Cast<IVimWindow>().ToList()); }
         }
 
+        /// <summary>
+        /// Occurs when a Vim window is created.
+        /// </summary>
         event EventHandler<VimWindowEventArgs> IVimWindowManager.VimWindowCreated
         {
             add { _vimWindowCreated += value; }
             remove { _vimWindowCreated -= value; }
         }
 
+        /// <summary>
+        /// Gets the Vim window associated with the specified TabItem.
+        /// </summary>
         IVimWindow IVimWindowManager.GetVimWindow(TabItem tabItem)
         {
-            return _map[tabItem];
+            if (_map.TryGetValue(tabItem, out var vimWindow))
+            {
+                return vimWindow;
+            }
+            throw new KeyNotFoundException("The specified TabItem does not have an associated VimWindow.");
         }
 
+        /// <summary>
+        /// Creates a new Vim window for the specified TabItem.
+        /// </summary>
         IVimWindow IVimWindowManager.CreateVimWindow(TabItem tabItem)
         {
             var vimWindow = new VimWindow(_vim, tabItem);
