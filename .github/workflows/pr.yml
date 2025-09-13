@@ -1,0 +1,52 @@
+name: VsVim PR
+
+on:
+  pull_request:
+    branches: [ "master", "main", "dev/gha" ]
+
+jobs:
+  windows-build:
+    name: Debug build
+    runs-on: windows-2022
+    outputs:
+      tag_name: ${{ steps.tag_name.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+
+      - uses: dotnet/nbgv@master
+        id: nbgv
+
+      - name: Build
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -config Debug -build 
+
+      - name: Test
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -config Debug -test
+
+      - name: Test Extra
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -config Debug -testExtra
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Logs
+          path: Binaries\Logs
+
+      - name: Prepare VSIXes for artifact
+        shell: powershell
+        run: |
+          mkdir Binaries/ReleaseStaging
+          mv Binaries/Deploy/Release/2022/VsVim.vsix Binaries/ReleaseStaging/VsVim_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
+          mv Binaries/Deploy/Release/2019/VsVim.vsix Binaries/ReleaseStaging/VsVim2019_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
+
+      - name: Upload VSIX Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vsix
+          path: Binaries\ReleaseStaging

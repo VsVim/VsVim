@@ -4,101 +4,110 @@ name: VsVim CI
 
 on:
   push:
-    branches: [ "master", "main" ]
+    branches: [ "master", "main" ] # Branch builds with names starting with 'ma' will be published to this repo's releases feed
     tags:
       - '*'
-  pull_request:
-    branches: [ "master", "main", "dev/gha" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  windows-build:
-    name: Windows Build and Test
-    runs-on: windows-2022
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Build
-        shell: powershell
-        run: Scripts\Build.ps1 -ci -config Debug -build 
-
-      - name: Test
-        shell: powershell
-        run: Scripts\Build.ps1 -ci -config Debug -test
-
-      - name: Test Extra
-        shell: powershell
-        run: Scripts\Build.ps1 -ci -config Debug -testExtra
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Logs
-          path: Binaries\Logs
-
-  # This job is meant for building a Release VSIX for consumption and 
-  # publishing it to two locations:
-  #   - An Azure DevOps artifact for easy download / use on PR or CI
-  #   - The Open VSIX gallery during CI
   windows-publish:
-    name: Publish VSIX
+    name: Build and publish
     runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+
+      - uses: dotnet/nbgv@master
+        id: nbgv
 
       - name: Build VSIX
         shell: powershell
-        run: Scripts\Build.ps1 -ci -build -updateVsixVersion -config Release
+        run: Scripts\Build.ps1 -ci -build -config Release
+
+      - name: Test
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -config Release -test
+
+      - name: Test Extra
+        shell: powershell
+        run: Scripts\Build.ps1 -ci -config Release -testExtra
+
+      # The vsix is currently not listed on the Open VSIX Gallery: #3002
+      # - name: Publish VSIX to Open VSIX Gallery
+      #   shell: powershell
+      #   run: Scripts\Build.ps1 -ci -uploadVsix -config Release
+      #   if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'gallery') }} # If a tag is pushed and its name contains 'gallery', publish it there
+
+      - name: Prepare VSIXes for artifact
+        shell: powershell
+        run: |
+          mkdir Binaries/ReleaseStaging
+          mv Binaries/Deploy/Release/2022/VsVim.vsix Binaries/ReleaseStaging/VsVim_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
+          mv Binaries/Deploy/Release/2019/VsVim.vsix Binaries/ReleaseStaging/VsVim2019_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
 
       - name: Upload VSIX Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Vsix
-          path: Binaries\Deploy
+          path: Binaries\ReleaseStaging
 
-      - name: Publish VSIX to Open VSIX Gallery
+      - id: tag_name
+        name: Compose tag name
         shell: powershell
-        run: Scripts\Build.ps1 -ci -uploadVsix -config Release
-        if: ${{ success() && github.ref == 'refs/heads/master' }}
+        if: ${{ success() && startswith(github.ref, 'refs/heads/ma') }}
+        run: |
+          $commitDate = "${{ steps.nbgv.outputs.GitCommitDate }}"
+          $commitDate = [DateTime]::parse($commitDate)
+          $commitDate = $commitDate.ToString("yyyyMMdd")
+          $simpleVersion = "${{ steps.nbgv.outputs.SimpleVersion }}"
+          $tag = "ci-$commitDate-$simpleVersion-vsix"
+          echo "Tag: $tag"
+          echo "tag=$tag`n" >> $env:GITHUB_OUTPUT
+      - name: Create CI release tag
+        if: ${{ success() && startswith(github.ref, 'refs/heads/ma') }}
+        run: |
+          echo "creating tag: ${{ steps.tag_name.outputs.tag }}"
+          git tag ${{ steps.tag_name.outputs.tag }}
+          git push origin ${{ steps.tag_name.outputs.tag }}
 
-  macos-build:
-    name: MacOS Build and Publish
-    runs-on: macOS-latest
+      - name: Build VSIX feed
+        shell: powershell
+        if: ${{ success() && startswith(github.ref, 'refs/heads/ma') }}
+        run: |
+          $zipName = "PrivateGalleryCreator.zip"
+          Invoke-WebRequest -Uri https://github.com/madskristensen/PrivateGalleryCreator/releases/download/1.0.64/PrivateGalleryCreator.zip -OutFile $zipName
+          $zipHash = (Get-FileHash $zipName).Hash
+          $expectedZipHash = "B410F7C9B93D319F5B7791687DEDA08378955AE45B7B5BD7EFC65D937FC160CA"
+          if ($zipHash -ne $expectedZipHash) {
+            Write-Error "$zipName integrity check failed; expected $expectedZipHash, got $zipHash"
+            exit 1
+          }
+ 
+          Expand-Archive PrivateGalleryCreator.zip -DestinationPath .
+          $tool = Resolve-Path ./PrivateGalleryCreator.exe
+          pushd Binaries/ReleaseStaging
+          $tag = "${{ steps.tag_name.outputs.tag }}"
+          $ghRepo = "${{ github.repository }}"
+          & $tool --input=$(pwd) --source="https://github.com/$ghRepo/releases/download/$tag/" -t
+          cat feed.xml
 
-    steps:
-      # Must use fetch-depth 0 because the workflow requires that tags be present
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Set VERSION_TAG
-        run: echo "VERSION_TAG=`git describe --tags`" >> $GITHUB_ENV
-
-      - name: Set EXTENSION_VERSION
-        run: echo "EXTENSION_VERSION=`grep Version Src/VimMac/Properties/AddinInfo.cs | cut -d '\"' -f2`" >> $GITHUB_ENV
-
-      - name: Build
-        run: Scripts/build.sh
-
-      - name: Publish mpack
-        uses: actions/upload-artifact@v4
-        with:
-          name: VSMacExtension
-          path: 'Binaries/Debug/VimMac/net7.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
-
-      - name: Create VS Mac extension release
+      - name: Create VS extension release
         uses: softprops/action-gh-release@v1
-        id: vsmac_release
+        if: ${{ success() && startswith(github.ref, 'refs/heads/ma') }}
+        id: vsix_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
-          tag_name: ${{ env.VERSION_TAG }}
-          name: 'Visual Studio for Mac ${{ env.VERSION_TAG }}'
+          name: 'VSVim ${{ steps.nbgv.outputs.AssemblyInformationalVersion }}'
+          tag_name: '${{ steps.tag_name.outputs.tag }}'
           draft: false
           generate_release_notes: true
-          files: 'Binaries/Debug/VimMac/net7.0/Vim.Mac.VsVim_${{ env.EXTENSION_VERSION }}.mpack'
-        if: ${{ success() && startsWith(github.ref, 'refs/tags') && contains(github.ref, 'vsm') }}
+          fail_on_unmatched_files: true
+          files: |
+            Binaries/ReleaseStaging/VsVim_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
+            Binaries/ReleaseStaging/VsVim2019_${{ steps.nbgv.outputs.AssemblyFileVersion }}.vsix
+            Binaries/ReleaseStaging/feed.xml
