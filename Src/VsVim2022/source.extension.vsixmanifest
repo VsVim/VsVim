@@ -36,6 +36,9 @@
     <InstallationTarget Version="[17.0,18.0)" Id="Microsoft.VisualStudio.Enterprise">
       <ProductArchitecture>arm64</ProductArchitecture>
     </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Ssms" Version="[17.0,)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
   </Installation>
   <Assets>
     <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="VimCore" Path="|VimCore|" />
