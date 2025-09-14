@@ -2,6 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Windows;
+using System.Runtime.InteropServices;
 
 namespace Vim.UI.Wpf.Implementation.Misc
 {
@@ -35,11 +36,23 @@ namespace Vim.UI.Wpf.Implementation.Misc
             return text;
         }
 
+        private void SetTextWin32(string text)
+        {
+            if (!NativeMethods.OpenClipboard(IntPtr.Zero))
+                return;
+
+            NativeMethods.EmptyClipboard();
+            IntPtr hGlobal = Marshal.StringToHGlobalUni(text);
+            const int CF_UNICODETEXT = 13;
+            NativeMethods.SetClipboardData(CF_UNICODETEXT, hGlobal);
+            NativeMethods.CloseClipboard();
+        }
+
         private void SetText(string text)
         {
             void action()
             {
-                Clipboard.SetText(text);
+                SetTextWin32(text);
             }
 
             TryAccessClipboard(action);
