@@ -2395,7 +2395,7 @@ type internal CommandUtil
 
     /// Put the contents of the specified register over the selection.  This is used for all
     /// visual mode put commands.
-    member x.PutOverSelection registerName count moveCaretAfterText visualSpan =
+    member x.PutOverSelection registerName count moveCaretAfterText updateRegister visualSpan =
 
         // Build up the common variables
         let register =x .GetRegister registerName
@@ -2516,9 +2516,10 @@ type internal CommandUtil
             |> (fun visualSelection -> visualSelection.AdjustForSelectionKind selectionKind)
             |> Some
 
-        // Update the unnamed register with the deleted text
-        let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
-        _commonOperations.SetRegisterValue (Some RegisterName.Unnamed) RegisterOperation.Delete value
+        if updateRegister then
+            // Update the unnamed register with the deleted text
+            let value = x.CreateRegisterValue (StringData.OfEditSpan deletedSpan) operationKind
+            _commonOperations.SetRegisterValue (Some RegisterName.Unnamed) RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -3233,7 +3234,7 @@ type internal CommandUtil
         | VisualCommand.OpenFoldInSelection -> x.OpenFoldInSelection visualSpan
         | VisualCommand.OpenAllFoldsInSelection -> x.OpenAllFoldsInSelection visualSpan
         | VisualCommand.OpenLinkInSelection -> x.OpenLinkInSelection visualSpan
-        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection registerName count moveCaretAfterText visualSpan
+        | VisualCommand.PutOverSelection (moveCaretAfterText, updateRegister) -> x.PutOverSelection registerName count moveCaretAfterText updateRegister visualSpan
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.SelectBlock -> x.SelectBlock()
         | VisualCommand.SelectLine -> x.SelectLine()

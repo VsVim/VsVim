@@ -3478,7 +3478,7 @@ type VisualCommand =
 
     /// Put the contents af the register after the selection.  The bool is for whether or not the
     // caret should be placed after the inserted text
-    | PutOverSelection of PlaceCaretAfterInsertedText: bool
+    | PutOverSelection of PlaceCaretAfterInsertedText: bool * UpdateRegister: bool
 
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput: KeyInput
