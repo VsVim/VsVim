@@ -12,14 +12,14 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
     internal class LineNumberVisual : UIElement
     {
         private readonly WpfTextLine _textLine;
-
+        private readonly bool _isRelative;
         private readonly List<Point> _renderTargets;
 
-        internal LineNumberVisual(WpfTextLine textLine)
+        internal LineNumberVisual(WpfTextLine textLine, bool isRelative)
         {
             _textLine = textLine
                 ?? throw new ArgumentNullException(nameof(textLine));
-
+            _isRelative = isRelative;
             _renderTargets = new List<Point>();
 
             IsHitTestVisible = false;
@@ -49,7 +49,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
         {
             var verticalOffset = line.Baseline - _textLine.TextBaseline;
 
-            var horizontalOffset = line.IsCaretLine
+            var horizontalOffset = line.IsCaretLine || !_isRelative
                                        ? 0
                                        : width - _textLine.Width;
 
