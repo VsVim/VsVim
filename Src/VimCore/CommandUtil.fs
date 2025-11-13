@@ -1953,6 +1953,18 @@ type internal CommandUtil
             else
                 CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Search for next open bracket after current caret position and return bracket text object if found
+    member x.GetNextBracketTextObject(motion: Motion) =
+        match motion with
+        | (Motion.AllBlock blockKind | Motion.InnerBlock blockKind) -> 
+            let startChar, _ = blockKind.Characters
+            let searchdata = SearchData(startChar.ToString(), SearchPath.Forward, false)
+            let searchResult = _vimTextBuffer.Vim.SearchService.FindNextPattern x.CaretPoint searchdata _wordUtil.SnapshotWordNavigator 1 
+            match searchResult with
+            | SearchResult.Found  (_, span, _, _)-> _motionUtil.GetTextObject motion span.Start
+            |_ -> None
+        |_ -> None
+
     /// Move the caret to the result of the text object selection
     member x.MoveCaretToTextObject count motion textObjectKind (visualSpan: VisualSpan) =
 
@@ -2037,7 +2049,6 @@ type internal CommandUtil
         let moveBlock blockKind motion =
             let argument = MotionArgument(MotionContext.Movement, operatorCount = None, motionCount = Some count)
             match _motionUtil.GetMotion motion argument with
-            | None -> onError ()
             | Some motionResult ->
                 let blockVisualSpan = VisualSpan.CreateForSpan motionResult.Span desiredVisualKind _localSettings.TabStop
                 if motionResult.Span.Length = 0 || visualSpan <> blockVisualSpan then
@@ -2056,6 +2067,14 @@ type internal CommandUtil
                     match contextPoint |> OptionUtil.map2 (fun point -> _motionUtil.GetTextObject motion point) with
                     | None -> onError()
                     | Some motionResult -> setSelection motionResult.Span
+            | None ->
+                match isInitialSelection with
+                | true ->
+                    //If no bracket text object found search for next open bracket and return found text object
+                    match x.GetNextBracketTextObject(motion) with
+                    | None -> onError()
+                    | Some motionResult -> setSelection motionResult.Span
+                | false-> onError()
 
         match motion with
         | Motion.AllBlock blockKind -> moveBlock blockKind motion
@@ -3259,11 +3278,16 @@ type internal CommandUtil
     /// if found to the provided function
     member x.RunWithMotion (motion: MotionData) func =
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None ->
-            _commonOperations.Beep()
-            CommandResult.Error
         | Some data ->
             func data
+        | None ->
+                //If no block/bracket text object found search for next open bracket and return found text object
+                match x.GetNextBracketTextObject(motion.Motion) with
+                | None -> 
+                    _commonOperations.Beep()
+                    CommandResult.Error
+                | Some motionResult ->
+                    func motionResult
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c =
