@@ -347,6 +347,12 @@ type MatchingTokenKind =
     // Curly braces
     | Braces
 
+    // Angled brackets
+    | Chevrons
+
+    // XML tag
+    | Tag
+
 /// Determine whether a given point is in a string literal by parsing forward
 /// from the beginning of the containing line
 type internal StringLiteralTestPoint
@@ -837,6 +843,48 @@ type MatchingTokenUtil() =
                 if directive.Span.Start = column then Some (column, MatchingTokenKind.Directive)
                 else None
 
+        // Finds a potential tag.
+        //
+        // Returns MatchingTokenKind.Chevrons when either:
+        // 1) Cursor is not inside a tag (searching for '<' and '>' forward)
+        // 2) Cursor is on top of either '<' or '>'
+        //
+        // It only returns Some when there is no whitespace on the "inside".  This is to prevent
+        // conditions like "foo < 10 && foo > 0" being matched, but is heavily dependant on codestyle,
+        // resulting in both false positives and negatives.
+        //
+        // In the future tag matching should be filetype dependant.
+        let findTag () =
+            // Finds char like string.LastIndexOf but prohibits certain char in between
+            let rec lastIndexOfProhibitChar (c: char) (index: int) (str: string) (prohibit: char) =
+                if index < 0 then
+                    None
+                else
+                    let current = str.[index]
+                    if current = prohibit then None
+                    elif current = c then Some index
+                    else lastIndexOfProhibitChar c (index - 1) str prohibit
+
+            let mapWhiteSpaceToChevronsOption index offset =
+                if
+                    StringUtil.CharAtOption (index + offset) lineText
+                    |> Option.exists CharUtil.IsWhiteSpace
+                then None
+                else Some (index, MatchingTokenKind.Chevrons)
+
+            if lineText.[column] = '<' then mapWhiteSpaceToChevronsOption column +1
+            elif lineText.[column] = '>' then mapWhiteSpaceToChevronsOption column -1
+            else
+                match lastIndexOfProhibitChar '<' column lineText '>' with
+                | None ->
+                    match StringUtil.IndexOfCharAt '<' column lineText with
+                    | None ->
+                        match StringUtil.IndexOfCharAt '>' column lineText with
+                        | None -> None
+                        | Some index -> mapWhiteSpaceToChevronsOption index -1
+                    | Some index -> mapWhiteSpaceToChevronsOption index +1
+                | Some index -> Some (index, MatchingTokenKind.Tag)
+
         // Parse out all the possibilities and find the one that is closest to the 
         // column position
         let found = 
@@ -859,7 +907,7 @@ type MatchingTokenUtil() =
             // Lastly if there are no tokens that match on the current line but the line is a directive
             // block then it the match is the directive
             match directive with
-            | None -> None
+            | None -> findTag ()
             | Some directive -> Some (directive.Span.Start, MatchingTokenKind.Directive)
 
     member x.FindMatchingTokenKind lineText column =
@@ -953,6 +1001,21 @@ type MatchingTokenUtil() =
 
             found
 
+        // Find the matching tag starting from the buffer position 'target'
+        let findMatchingTag (target: int) =
+            let contextPoint = new SnapshotPoint(snapshot, target)
+            // Note that this approach results in "false positives" for <SelfClosingTags/>,
+            // cursor jumps to parent opening tag.
+            match TagBlockUtil.GetTagBlockForPoint contextPoint with
+            | None -> None
+            | Some tag ->
+                if target < tag.InnerSpan.Start then
+                    // End is exclusive but we want to go to '/' character of a </ClosingTag>
+                    Span(tag.InnerSpan.End + 1, 1) |> Some
+                else
+                    // Goes to first character of a tag, e.g. 'F' in <Foo>
+                    Span(tag.FullSpan.Start + 1, 1) |> Some
+
         let line, column = 
             let data = SnapshotColumn(point)
             let line = data.Line
@@ -976,8 +1039,10 @@ type MatchingTokenUtil() =
                 | MatchingTokenKind.Braces -> findMatchingTokenChar position BlockKind.CurlyBracket
                 | MatchingTokenKind.Brackets -> findMatchingTokenChar position BlockKind.Bracket
                 | MatchingTokenKind.Parens -> findMatchingTokenChar position BlockKind.Paren
+                | MatchingTokenKind.Chevrons -> findMatchingTokenChar position BlockKind.AngleBracket
                 | MatchingTokenKind.Directive -> findMatchingDirective position
                 | MatchingTokenKind.Comment -> findMatchingComment position
+                | MatchingTokenKind.Tag -> findMatchingTag position
 
         match found with
         | None -> None
