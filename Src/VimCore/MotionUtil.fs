@@ -574,7 +574,17 @@ type internal BlockUtil() =
             if isChar startChar contextPoint then
                 SnapshotPointUtil.AddOneOrCurrent contextPoint
             else
-                contextPoint
+                // If the caret is before the first block on the line it is
+                // moved forward to inside that block
+                let firstStartChar =
+                    SnapshotPointUtil.GetContainingLine contextPoint
+                        |> SnapshotLineUtil.GetExtent
+                        |> SnapshotSpanUtil.GetPoints SearchPath.Forward
+                        |> Seq.tryFind (isChar startChar)
+                match firstStartChar with
+                | Some startPoint when contextPoint.Position < startPoint.Position ->
+                    SnapshotPointUtil.AddOneOrCurrent startPoint
+                | _ -> contextPoint
 
         // We now have to decide whether we are searching inside string
         // literals or outside of them.  As a special case, if we are inside a
@@ -628,7 +638,7 @@ type internal BlockUtil() =
             |> SnapshotSpanUtil.GetPoints SearchPath.Backward
             |> filterToContext
             |> SeqUtil.tryFind 1 (findMatched endChar startChar)
-
+        
         // Then search forward for the character that ends this block.
         let endPoint =
             match startPoint with
