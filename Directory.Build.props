@@ -1,7 +1,5 @@
 <Project>
-
   <Import Project="$(MSBuildThisFileDirectory)\Binaries\User.props" Condition="Exists('$(MSBuildThisFileDirectory)\Binaries\User.props')" />
-
   <PropertyGroup>
     <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
     <DebugType>full</DebugType>
@@ -10,18 +8,16 @@
     <OutputPath>$(BinariesPath)$(Configuration)\$(MSBuildProjectName)</OutputPath>
     <BaseIntermediateOutputPath>$(BinariesPath)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <MicrosoftVsSdkBuildToolsVersion>17.0.5232</MicrosoftVsSdkBuildToolsVersion>
-
     <!-- Standard Calculation of NuGet package location -->
-    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot> <!-- Respect environment variable if set -->
+    <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == ''">$(NUGET_PACKAGES)</NuGetPackageRoot>
+    <!-- Respect environment variable if set -->
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' == 'Windows_NT'">$(UserProfile)/.nuget/packages/</NuGetPackageRoot>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)' == '' AND '$(OS)' != 'Windows_NT'">$(HOME)/.nuget/packages/</NuGetPackageRoot>
-
     <!-- 
       VSTHRD010: this warning is extremely noisy and in practice has not found any issues
     -->
     <NoWarn>$(NoWarn);VSTHRD010</NoWarn>
   </PropertyGroup>
-
   <!--
       When building WPF projects MSBuild will create a temporary project with an extension of
       tmp_proj.  In that case the SDK is unable to determine the target language and cannot pick
@@ -32,13 +28,11 @@
     <Language>C#</Language>
     <LanguageTargets>$(MSBuildToolsPath)\Microsoft.CSharp.targets</LanguageTargets>
   </PropertyGroup>
-
-  <PropertyGroup> 
+  <PropertyGroup>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Common</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2019</ReferencePath>
     <ReferencePath>$(ReferencePath);$(MSBuildThisFileDirectory)References\Vs2022</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(MSBuildThisFileDirectory)</SolutionDir>
-
     <!-- This controls the places MSBuild will consult to resolve assembly references.  This is 
          kept as minimal as possible to make our build reliable from machine to machine.  Global
          locations such as GAC, AssemblyFoldersEx, etc ... are deliberately removed from this 
@@ -49,5 +43,13 @@
       $(ReferencePath);  
     </AssemblySearchPaths>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <IncludePackageReferencesDuringMarkupCompilation>true</IncludePackageReferencesDuringMarkupCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Condition="!Exists('packages.config')">
+      <PrivateAssets>all</PrivateAssets>
+      <Version>3.7.115</Version>
+    </PackageReference>
+  </ItemGroup>
 </Project>

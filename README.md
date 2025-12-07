@@ -19,6 +19,13 @@ is available in the same directory under the name License.txt.
 
 ## Latest Builds
 
+Build of the latest source code can be downloaded from https://github.com/vsvim/VsVim/releases.
+
+If you would like to get the latest updates automatically, you can add the following feed url to Visual Studio as an Additional Extension Gallery:
+```
+https://github.com/vsvim/VsVim/releases/latest/download/feed.xml
+```
+
 The build representing the latest source code can be downloaded from the
 [Open Vsix Gallery](http://vsixgallery.com/extension/VsVim.Microsoft.e214908b-0458-4ae2-a583-4310f29687c3/).  
 

@@ -3,6 +3,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.Core</RootNamespace>
     <AssemblyName>Vim.Core</AssemblyName>
+    <NBGV_ThisAssemblyNamespace>Vim</NBGV_ThisAssemblyNamespace>
     <TargetFrameworks>net472;net7.0</TargetFrameworks>
     <OtherFlags>--standalone</OtherFlags>
     <LangVersion>8</LangVersion>

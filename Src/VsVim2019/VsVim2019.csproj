@@ -5,6 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputType>Library</OutputType>
     <RootNamespace>Vim.VisualStudio</RootNamespace>
+    <NBGV_ThisAssemblyNamespace>$(RootNamespace)</NBGV_ThisAssemblyNamespace>
     <AssemblyName>VsVim</AssemblyName>
     <TargetFramework>net472</TargetFramework>
     <StartAction>Program</StartAction>
@@ -14,6 +15,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <VsVimProjectType>Vsix</VsVimProjectType>
     <VsVimVisualStudioTargetVersion>16.0</VsVimVisualStudioTargetVersion>
+    <UseWPF>true</UseWPF>
 
     <DeployExtension Condition="'$(VisualStudioVersion)' != '16.0' OR '$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>
 
