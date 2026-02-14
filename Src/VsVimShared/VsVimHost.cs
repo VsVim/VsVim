@@ -1105,13 +1105,64 @@ namespace Vim.VisualStudio
         {
             try
             {
-                _dte.ExecuteCommand("Window.NewWindow");
-                _dte.ExecuteCommand("Window.NewVerticalTabGroup");
+                try
+                {
+                    // VS 2022 and earlier: Window.NewWindow creates a duplicate tab,
+                    // then Window.NewVerticalTabGroup moves it to a vertical tab group.
+                    _dte.ExecuteCommand("Window.NewWindow");
+                    _dte.ExecuteCommand("Window.NewVerticalTabGroup");
+                }
+                catch
+                {
+                    // VS 2026+: Window.NewWindow was removed. Use the "Duplicate Tab"
+                    // menu command to create a duplicate tab, then move to vertical tab group.
+                    ExecuteDuplicateTabCommand();
+                    _dte.ExecuteCommand("Window.NewVerticalTabGroup");
+                }
             }
             catch (Exception e)
             {
                 _vim.ActiveStatusUtil.OnError(e.Message);
             }
+        }
+
+        /// <summary>
+        /// Execute the "Duplicate Tab" command from the Window menu. This is needed for
+        /// VS 2026+ where Window.NewWindow was replaced with a menu-only command.
+        /// Uses reflection to access CommandBars to avoid a dependency on Microsoft.CSharp.
+        /// </summary>
+        private void ExecuteDuplicateTabCommand()
+        {
+            var flags = System.Reflection.BindingFlags.Default | System.Reflection.BindingFlags.InvokeMethod |
+                        System.Reflection.BindingFlags.GetProperty;
+
+            object bars = _dte.CommandBars;
+            object menuBar = bars.GetType().InvokeMember("Item", flags, null, bars, new object[] { "MenuBar" });
+            object controls = menuBar.GetType().InvokeMember("Controls", flags, null, menuBar, null);
+
+            foreach (object ctrl in (System.Collections.IEnumerable)controls)
+            {
+                string caption = ((string)ctrl.GetType().InvokeMember("Caption", flags, null, ctrl, null)).Replace("&", "");
+                if (caption == "Window")
+                {
+                    object popup = ctrl.GetType().InvokeMember("CommandBar", flags, null, ctrl, null);
+                    object popupControls = popup.GetType().InvokeMember("Controls", flags, null, popup, null);
+
+                    foreach (object item in (System.Collections.IEnumerable)popupControls)
+                    {
+                        string itemCaption = ((string)item.GetType().InvokeMember("Caption", flags, null, item, null)).Replace("&", "");
+                        bool enabled = (bool)item.GetType().InvokeMember("Enabled", flags, null, item, null);
+
+                        if (itemCaption == "Duplicate Tab" && enabled)
+                        {
+                            item.GetType().InvokeMember("Execute", flags, null, item, null);
+                            return;
+                        }
+                    }
+                    break;
+                }
+            }
+            throw new InvalidOperationException("Could not find the Duplicate Tab command in the Window menu.");
         }
 
         /// <summary>

@@ -421,6 +421,40 @@ namespace Vim.VisualStudio.UnitTest
             }
         }
 
+        public sealed class SplitViewVerticallyTest : VsVimHostTest
+        {
+            /// <summary>
+            /// VS 2022 and earlier: Window.NewWindow + Window.NewVerticalTabGroup succeeds
+            /// </summary>
+            [WpfFact]
+            public void LegacyApproach()
+            {
+                Create();
+                var textView = CreateTextView("");
+                _dte.Setup(x => x.ExecuteCommand("Window.NewWindow", "")).Verifiable();
+                _dte.Setup(x => x.ExecuteCommand("Window.NewVerticalTabGroup", "")).Verifiable();
+                _host.SplitViewVertically(textView);
+                _dte.Verify(x => x.ExecuteCommand("Window.NewWindow", ""), Times.Once());
+                _dte.Verify(x => x.ExecuteCommand("Window.NewVerticalTabGroup", ""), Times.Once());
+            }
+
+            /// <summary>
+            /// VS 2026+: When Window.NewWindow fails (removed), the code falls back to
+            /// ExecuteDuplicateTabCommand + Window.NewVerticalTabGroup. Since the
+            /// CommandBar menu access can't be mocked here, we verify that when
+            /// Window.NewWindow throws, the error is handled gracefully.
+            /// </summary>
+            [WpfFact]
+            public void FallbackWhenLegacyFails()
+            {
+                Create();
+                _hostRaw.VimCreated(Vim);
+                var textView = CreateTextView("");
+                _dte.Setup(x => x.ExecuteCommand("Window.NewWindow", "")).Throws(new Exception("Command 'Window.NewWindow' is not valid."));
+                _host.SplitViewVertically(textView);
+            }
+        }
+
         public sealed class MiscTest : VsVimHostTest
         {
             [WpfFact]
