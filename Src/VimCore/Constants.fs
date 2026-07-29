@@ -37,11 +37,9 @@ module VimConstants =
     let MainKeyProcessorName = "VsVim";
 
 #if DEBUG
-    [<Literal>]
-    let VersionNumber = "2.10.99.99 Debug"
+    let VersionNumber = $"{ThisAssembly.AssemblyInformationalVersion} Debug";
 #else
-    [<Literal>]
-    let VersionNumber = "2.10.0.5"
+    let VersionNumber = ThisAssembly.AssemblyInformationalVersion;
 #endif
 
 

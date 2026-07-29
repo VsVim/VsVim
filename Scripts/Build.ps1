@@ -121,10 +121,14 @@ function Get-PackagesDir() {
 
 function Get-MSBuildPath() {
   $vsWhere = Join-Path $toolsDir "vswhere.exe"
-  $vsInfo = Exec-Command $vsWhere "-latest -format json -requires Microsoft.Component.MSBuild" | Out-String | ConvertFrom-Json
+  $vsInfoStr = Exec-Command $vsWhere "-latest -format json -requires Microsoft.Component.MSBuild" | Out-String
+  $vsInfo = $vsInfoStr | ConvertFrom-Json
 
   # use first matching instance
   $vsInfo = $vsInfo[0]
+  if (-not $vsInfo) {
+    throw "Failed to locate VS using $vsWhere.`n`nvswhere output:`n$vsInfoStr"
+  }
   $vsInstallDir = $vsInfo.installationPath
   $vsMajorVersion = $vsInfo.installationVersion.Split('.')[0]
   $msbuildVersionDir = if ([int]$vsMajorVersion -lt 16) { "$vsMajorVersion.0" } else { "Current" }
@@ -191,42 +195,6 @@ function Test-VsixContents() {
     $itemPath = Join-Path $target $item
     if ($item.EndsWith("dll") -and ((get-item $itemPath).Length -lt 5kb)) {
       throw "Small file detected $item in the zip file ($target)"
-    }
-  }
-}
-
-# Make sure that the version number is the same in all locations.  
-function Test-Version() {
-  Write-Host "Testing Version Numbers"
-  $version = $null;
-  foreach ($line in Get-Content "Src\VimCore\Constants.fs") {
-    if ($line -match 'let VersionNumber = "([\d.]*)"') {
-      $version = $matches[1]
-      break
-    }
-  }
-
-  if ($version -eq $null) {
-    throw "Couldn't determine the version from Constants.fs"
-  }
-
-  $foundPackageVersion = $false
-  foreach ($line in Get-Content "Src\VsVimShared\VsVimPackage.cs") {
-    if ($line -match 'productId: VimConstants.VersionNumber') {
-      $foundPackageVersion = $true
-      break
-    }
-  }
-
-  if (-not $foundPackageVersion) {
-    throw "Could not verify the version of VsVimPackage.cs"
-  }
-
-  foreach ($vsVersion in $vsVersions) {
-    $data = [xml](Get-Content "Src\VsVim$($vsVersion)\source.extension.vsixmanifest")
-    $manifestVersion = $data.PackageManifest.Metadata.Identity.Version
-    if ($manifestVersion -ne $version) { 
-      throw "The version $version doesn't match up with the manifest version of $manifestVersion" 
     }
   }
 }
@@ -299,6 +267,11 @@ function Build-Solution(){
       $cleanUtil = Join-Path $configDir "CleanVsix\net472\CleanVsix.exe"
       Exec-Console $cleanUtil (Join-Path $vsVersionDir "VsVim.vsix")
       Copy-Item "VsVim.vsix" "VsVim.zip"
+      if ($ci) {
+          # Clean up temporary files
+          Remove-Item "VsVim.orig.vsix"
+          Remove-Item "VsVim.zip"
+      }
       Set-Location ..
     }
   }
@@ -330,7 +303,6 @@ try {
 
   if ($testExtra) {
     Test-VsixContents
-    Test-Version
   }
 
   if ($uploadVsix) {

@@ -25,7 +25,7 @@ using Task = System.Threading.Tasks.Task;
 namespace Vim.VisualStudio
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("#110", "#112", productId: VimConstants.VersionNumber, IconResourceID = 400)]
+    [InstalledProductRegistration("#110", "#112", productId: ThisAssembly.AssemblyInformationalVersion, IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.DefaultOptionPage), categoryName: "VsVim", pageName: "Defaults", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
     [ProvideOptionPage(typeof(Vim.VisualStudio.Implementation.OptionPages.KeyboardOptionPage), categoryName: "VsVim", pageName: "Keyboard", categoryResourceID: 0, pageNameResourceID: 0, supportsAutomation: true)]
