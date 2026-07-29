@@ -10,6 +10,7 @@ param (
   # Settings
   [switch]$ci = $false,
   [string]$config = "Debug",
+  [string]$msbuild = "",
 
   [parameter(ValueFromRemainingArguments=$true)][string[]]$properties)
 
@@ -120,6 +121,10 @@ function Get-PackagesDir() {
 }
 
 function Get-MSBuildPath() {
+  if ($msbuild -ne "") {
+    return $msbuild
+  }
+
   $vsWhere = Join-Path $toolsDir "vswhere.exe"
   $vsInfo = Exec-Command $vsWhere "-latest -format json -requires Microsoft.Component.MSBuild" | Out-String | ConvertFrom-Json
 
