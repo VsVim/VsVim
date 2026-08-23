@@ -18,6 +18,8 @@ module GlobalSettingNames =
     let DigraphName = "digraph"
     let GlobalDefaultName = "gdefault"
     let HighlightSearchName = "hlsearch"
+    let HighlightYankName = "highlightyank"
+    let HighlightYankDurationName = "highlightyankduration"
     let HistoryName = "history"
     let IgnoreCaseName = "ignorecase"
     let ImeCommandName = "imcmdline"
@@ -350,6 +352,12 @@ and IVimGlobalSettings =
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch: bool with get, set
+
+    /// Whether or not to highlight yanked text
+    abstract HighlightYank: bool with get, set
+
+    /// The length of time, in milliseconds, that a yank highlight is displayed
+    abstract HighlightYankDuration: int with get, set
 
     /// The number of items to keep in the history lists
     abstract History: int with get, set

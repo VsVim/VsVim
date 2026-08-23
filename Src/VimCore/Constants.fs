@@ -30,6 +30,9 @@ module VimConstants =
     [<Literal>]
     let HighlightIncrementalSearchTagName = "vsvim_highlightsearch"
 
+    [<Literal>]
+    let HighlightYankTagName = "vsvim_highlightyank"
+
     /// <summary>
     /// Name of the main Key Processor
     /// </summary>
