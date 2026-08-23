@@ -151,7 +151,4 @@
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Todo.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)Directory.Build.props" />
-  </ItemGroup>
 </Project>
