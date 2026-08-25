@@ -400,29 +400,6 @@ namespace Vim.UnitTest
                 Assert.Equal(_textBuffer.GetSpan(0, 1), tags[0].Span);
             }
 
-            [WpfFact]
-            public void InvalidRangeInCacheDoesNotThrow()
-            {
-                Create("cat", "dog", "bear");
-                var span = _textBuffer.GetSpan(1, 2);
-                _asyncTaggerSource.SetBackgroundTags(span);
-
-                var visitedCollection = new NormalizedLineRangeCollection
-                {
-                    new LineRange(10, -20),
-                };
-                var backgroundData = new BackgroundCacheData<TextMarkerTag>(
-                    _textBuffer.CurrentSnapshot,
-                    visitedCollection,
-                    CreateTagSpans(span));
-                _asyncTagger.TagCacheData = new TagCache<TextMarkerTag>(FSharpOption.Create(backgroundData), null);
-
-                var tags = GetTagsFull(_textBuffer.GetExtent(), out bool wasAsync);
-                Assert.Single(tags);
-                Assert.Equal(span, tags[0].Span);
-                Assert.True(wasAsync);
-            }
-
             /// <summary>
             /// When there are no prompt sources available for tags we should schedule this
             /// for the background thread

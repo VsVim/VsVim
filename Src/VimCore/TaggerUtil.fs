@@ -413,19 +413,13 @@ type internal NormalizedLineRangeCollection() =
         lineRange.Count > 0 && lineRange.LastLineNumber >= lineRange.StartLineNumber
 
     member x.OverarchingLineRange =
-        let mutable startLine = Int32.MaxValue
-        let mutable lastLine = Int32.MinValue
-        let mutable index = 0
-        while index < _list.Count do
-            let lineRange = _list.[index]
-            if isValid lineRange then
-                startLine <- min startLine lineRange.StartLineNumber
-                lastLine <- max lastLine lineRange.LastLineNumber
-            index <- index + 1
-        if startLine <= lastLine then
+        match _list.Count with
+        | 0 -> None
+        | 1 -> _list.[0] |> Some
+        | _ -> 
+            let startLine = _list.[0].StartLineNumber
+            let lastLine = _list.[_list.Count - 1].LastLineNumber
             LineRange.CreateFromBounds startLine lastLine |> Some
-        else
-            None
     member x.Count = _list.Count    
     member x.Item
         with get(index) = _list.[index]
@@ -449,39 +443,36 @@ type internal NormalizedLineRangeCollection() =
         
     member x.Clear () = _list.Clear()
 
-    member x.Contains lineRange = isValid lineRange && (_list |> Seq.exists (fun x -> x.Contains lineRange))
+    member x.Contains lineRange = _list |> Seq.exists (fun x -> x.Contains lineRange)
 
     member x.Copy () = NormalizedLineRangeCollection.Create _list
 
     /// Get the unvisited lines in the specified range
     member x.GetUnvisited lineRange = 
-        if not (isValid lineRange) then
-            None
-        else
-            let mutable value = Some lineRange
-            let mutable index = 0
-            while index < _list.Count do
-                let current = _list.[index]
-                if current.Intersects lineRange then
+        let mutable value = Some lineRange
+        let mutable index = 0
+        while index < _list.Count do
+            let current = _list.[index]
+            if current.Intersects lineRange then
 
-                    if current.Contains(lineRange) then
-                        // Already have a LineRange which completely contains the provided 
-                        // value.  No unvisited values
-                        value <- None
-                        index <- _list.Count
-                    elif current.StartLineNumber <= lineRange.StartLineNumber then
-                        // The found range starts before and intersects.  The unvisited section 
-                        // is the range below
-                        value <- LineRange.CreateFromBounds (current.LastLineNumber + 1) (lineRange.LastLineNumber) |> Some
-                        index <- _list.Count
-                    elif current.StartLineNumber > lineRange.StartLineNumber then
-                        // The found range starts below and intersects.  The unvisited section 
-                        // is the line range above
-                        value <- LineRange.CreateFromBounds lineRange.StartLineNumber (current.StartLineNumber - 1) |> Some
-                        index <- _list.Count
-                else
-                    index <- index + 1
-            value
+                if current.Contains(lineRange) then
+                    // Already have a LineRange which completely contains the provided 
+                    // value.  No unvisited values
+                    value <- None
+                    index <- _list.Count
+                elif current.StartLineNumber <= lineRange.StartLineNumber then
+                    // The found range starts before and intersects.  The unvisited section 
+                    // is the range below
+                    value <- LineRange.CreateFromBounds (current.LastLineNumber + 1) (lineRange.LastLineNumber) |> Some
+                    index <- _list.Count
+                elif current.StartLineNumber > lineRange.StartLineNumber then
+                    // The found range starts below and intersects.  The unvisited section 
+                    // is the line range above
+                    value <- LineRange.CreateFromBounds lineRange.StartLineNumber (current.StartLineNumber - 1) |> Some
+                    index <- _list.Count
+            else
+                index <- index + 1
+        value
 
     /// This is the helper method for Add which will now collapse elements that intersect.   We only have
     /// to look at the item before the insert and all items after and not the entire collection.
