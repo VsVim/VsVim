@@ -21,7 +21,7 @@ namespace Vim.VisualStudio
             false;
 
         protected virtual bool UseDefaultCaret =>
-            false;
+            true;
 
         private bool? Unless(bool expected, bool value)
         {
@@ -42,6 +42,6 @@ namespace Vim.VisualStudio
             Unless(false, IsIncrementalSearchActive(textView));
 
         bool? IExtensionAdapter.UseDefaultCaret =>
-            Unless(false, UseDefaultCaret);
+            Unless(true, UseDefaultCaret);
     }
 }

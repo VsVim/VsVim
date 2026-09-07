@@ -76,7 +76,7 @@ namespace Vim.UI.Wpf
 
         public virtual bool UseDefaultCaret
         {
-            get { return false; }
+            get { return true; }
         }
 
         protected VimHost(
