@@ -584,6 +584,11 @@ type ICommonOperations =
     [<CLIEvent>]
     abstract SelectedSpansSet: IDelegateEvent<System.EventHandler<System.EventArgs>>
 
+    /// Raised when a yank operation is recorded
+    [<CLIEvent>]
+    abstract Yanked: IDelegateEvent<System.EventHandler<SnapshotSpanEventArgs>>
+
+
 /// Factory for getting ICommonOperations instances
 type ICommonOperationsFactory =
 

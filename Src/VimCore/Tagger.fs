@@ -420,3 +420,106 @@ type FoldTaggerProvider
                 taggerSource :> IBasicTaggerSource<OutliningRegionTag>
             let tagger = TaggerUtil.CreateBasicTagger textBuffer.Properties _key func
             tagger :> obj :?> ITagger<'T>
+
+// Tagger for highlighting the yanked text
+type HighlightYankTaggerSource
+    (
+        _globalSettings: IVimGlobalSettings,
+        _textBuffer: ITextBuffer,
+        _commonOperations: ICommonOperations
+    ) as this =
+
+    let _changed = StandardEvent()
+    let _eventHandlers = DisposableBag()
+    let _synchronizationContext = SynchronizationContext.Current
+    let _tag = TextMarkerTag(VimConstants.HighlightYankTagName)
+    let mutable _trackingSpan: ITrackingSpan option = None
+    let mutable _timer: Threading.Timer option = None
+
+    static let EmptyTagList = ReadOnlyCollection<ITagSpan<TextMarkerTag>>([| |])
+
+    let clearHighlight () =
+        _trackingSpan <- None
+        _changed.Trigger this
+
+    let clearHighlightOnUIThread () =
+        match _synchronizationContext with
+        | null -> clearHighlight()
+        | context -> context.Post((fun _ -> clearHighlight()), null)
+
+    do
+        let raiseChanged () = _changed.Trigger this
+
+        _commonOperations.Yanked
+        |> Observable.subscribe (fun args ->
+            let span = args.Span
+            _trackingSpan <- span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+            raiseChanged()
+
+            _timer |> Option.iter (fun t -> t.Dispose())
+            let timerCallback = Threading.TimerCallback(fun _ -> clearHighlightOnUIThread())
+            let duration = int64 _globalSettings.HighlightYankDuration
+            _timer <- Some (new Threading.Timer(timerCallback, null, duration, Threading.Timeout.Infinite)))
+        |> _eventHandlers.Add
+
+        // When the 'highlightyank' setting is changed it impacts our tag display (similar to incsearch)
+        //
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        (_globalSettings :> IVimSettings).SettingChanged 
+        |> Observable.filter (fun args -> StringUtil.IsEqual args.Setting.Name GlobalSettingNames.HighlightYankName)
+        |> Observable.subscribe (fun _ -> raiseChanged())
+        |> _eventHandlers.Add
+
+    member x.GetTags (span: SnapshotSpan) =
+        if not _globalSettings.HighlightYank then
+            EmptyTagList
+        else
+            let snapshot = span.Snapshot
+            match _trackingSpan |> Option.map (TrackingSpanUtil.GetSpan snapshot) |> OptionUtil.collapse with
+            | None -> EmptyTagList
+            | Some currentSpan ->
+                if currentSpan.IntersectsWith(span) then
+                    let tagSpan = TagSpan(currentSpan, _tag) :> ITagSpan<TextMarkerTag>
+                    ReadOnlyCollectionUtil.Single tagSpan
+                else
+                    EmptyTagList
+
+    interface IBasicTaggerSource<TextMarkerTag> with
+        member x.GetTags span = x.GetTags span
+        [<CLIEvent>]
+        member x.Changed = _changed.Publish
+
+    interface System.IDisposable with
+        member x.Dispose() =
+            _timer |> Option.iter (fun t -> t.Dispose())
+            _eventHandlers.DisposeAll()
+
+
+[<Export(typeof<IViewTaggerProvider>)>]
+[<ContentType(VimConstants.AnyContentType)>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
+[<TagType(typeof<TextMarkerTag>)>]
+type HighlightYankTaggerProvider
+    [<ImportingConstructor>]
+    (
+        _vim: IVim,
+        _commonOperationsFactory: ICommonOperationsFactory
+    ) =
+
+    let _key = obj()
+
+    interface IViewTaggerProvider with
+        member x.CreateTagger<'T when 'T :> ITag> ((textView: ITextView), textBuffer) =
+            if textView.TextBuffer = textBuffer then
+                match _vim.GetOrCreateVimBufferForHost textView with
+                | None -> null
+                | Some vimBuffer ->
+                    let func () =
+                        let commonOperations = _commonOperationsFactory.GetCommonOperations vimBuffer.VimBufferData
+                        let taggerSource = new HighlightYankTaggerSource(vimBuffer.GlobalSettings, textBuffer, commonOperations)
+                        taggerSource :> IBasicTaggerSource<TextMarkerTag>
+                    let tagger = TaggerUtil.CreateBasicTagger textView.Properties _key func
+                    tagger :> obj :?> ITagger<'T>
+            else
+                null

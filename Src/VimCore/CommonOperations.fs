@@ -67,6 +67,7 @@ type internal CommonOperations
     let _eventHandlers = new DisposableBag()
 
     let _selectedSpansSetEvent = StandardEvent<EventArgs>()
+    let _yankedEvent = StandardEvent<SnapshotSpanEventArgs>()
 
     do
         _textView.Caret.PositionChanged
@@ -2245,6 +2246,7 @@ type internal CommonOperations
                 TextViewUtil.MoveCaretToPoint _textView caretPoint
 
         x.RecordLastChangeOrYank span span
+        _yankedEvent.Trigger x (SnapshotSpanEventArgs(span))
 
     /// Record last change or yankstart and end positions
     /// (it is a yank if the old span and the new span are the same)
@@ -2942,6 +2944,8 @@ type internal CommonOperations
 
         [<CLIEvent>]
         member x.SelectedSpansSet = _selectedSpansSetEvent.Publish
+        [<CLIEvent>]
+        member x.Yanked = _yankedEvent.Publish
 
 [<Export(typeof<ICommonOperationsFactory>)>]
 type CommonOperationsFactory

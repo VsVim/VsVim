@@ -169,6 +169,8 @@ type internal GlobalSettings() =
             (DigraphName, "dg", SettingValue.Toggle false, SettingOptions.None)
             (GlobalDefaultName, "gd", SettingValue.Toggle false, SettingOptions.None)
             (HighlightSearchName, "hls", SettingValue.Toggle false, SettingOptions.None)
+            (HighlightYankName, "hy", SettingValue.Toggle false, SettingOptions.None)
+            (HighlightYankDurationName, "hyd", SettingValue.Number 200, SettingOptions.None)
             (HistoryName, "hi", SettingValue.Number(VimConstants.DefaultHistoryLength), SettingOptions.None)
             (IgnoreCaseName,"ic", SettingValue.Toggle false, SettingOptions.None)
             (ImeCommandName, "imc", SettingValue.Toggle false, SettingOptions.None)
@@ -369,6 +371,12 @@ type internal GlobalSettings() =
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (SettingValue.Toggle value) |> ignore
+        member x.HighlightYank
+             with get() = _map.GetBoolValue HighlightYankName 
+             and set value = _map.TrySetValue HighlightYankName (SettingValue.Toggle value) |> ignore
+        member x.HighlightYankDuration
+             with get() = _map.GetNumberValue HighlightYankDurationName
+             and set value = _map.TrySetValue HighlightYankDurationName (SettingValue.Number value) |> ignore
         member x.History
             with get () = _map.GetNumberValue HistoryName
             and set value = _map.TrySetValue HistoryName (SettingValue.Number value) |> ignore

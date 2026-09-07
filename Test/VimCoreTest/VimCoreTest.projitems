@@ -47,6 +47,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FuncUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GlobalSettingsTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HighlightSearchTaggerSourceTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HighlightYankTaggerSourceTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HistoryListTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)HistorySessionTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IEditorOperationsTest.cs" />
