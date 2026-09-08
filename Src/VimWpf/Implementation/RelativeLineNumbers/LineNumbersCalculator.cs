@@ -104,7 +104,7 @@ namespace Vim.UI.Wpf.Implementation.RelativeLineNumbers
 
             bool isCaretLine = hasValidCaret && distanceToCaret == 0;
 
-            bool caretLineStyle = isCaretLine && _localSettings.RelativeNumber;
+            bool caretLineStyle = isCaretLine;
             return new Line(numberToDisplay, verticalBaseline, caretLineStyle);
         }
 
