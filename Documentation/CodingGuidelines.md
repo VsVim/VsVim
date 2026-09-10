@@ -3,30 +3,51 @@ Coding Guidelines
 
 ## Style
 
-The C# code in this project follows the DotNet organization [coding style](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/coding-style.md).  
+The C# code in this project follows the .NET Foundation's [coding style guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md).
 
-The F# code is the following:
+The F# code follows these conventions:
 
-- **DO** prefix private field names with an underscore (`_`)
-- **DO** add a space between
-    - Values and arithmic operators and comparisions
-    - Names and Values in record initializer expressions
-    - Names and explicit types `(text: string)`
-    - Keywords and open parens `with get (`, `if (`, `elif (`
-    - Discriminated Union Names and open parens
+- **Prefix** private field names with an underscore (`_`).
+- **Add** a space between:
+  - Values and arithmetic operators and comparisons.
+  - Names and values in record initializer expressions.
+  - Names and explicit types `(text: string)`.
+  - Keywords and open parentheses, e.g., `with get (`, `if (`, `elif (`.
+  - Discriminated Union names and open parentheses.
 
- - **DO NOT** use ; for multi-line object initializers
+- **Do not** use semicolons (`;`) for multi-line object initializers.
 
- ## Naming / Terminology
+## Naming and Terminology
 
- The following patterns are used in the VsVim code base, and often the editor as well.  When at all possible
- the two code bases should use the same pattern to make it simpler to understand the code.
+The following patterns are used consistently in the VsVim codebase and often align with the Visual Studio editor:
 
-- Last is inclusive
-- End is exclusive
-- Util classes should contain Create methods to create 
-- Editor APIs 
-    - APIs taking a count should return an option or explicitly guard against count being too large.  Users
-      too often control this number
-    - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
-      by the user
+- "Last" is inclusive.
+- "End" is exclusive.
+- Utility classes should contain `Create` methods to instantiate objects.
+- Editor APIs:
+  - APIs taking a count should return an option or explicitly guard against counts being too large, as users often control this number.
+  - APIs taking a line number should consider returning an option, as line numbers are less likely to be user-controlled.
+
+## Comments and Documentation
+
+- Use XML documentation comments (`///`) for public APIs.
+- Write clear and concise comments explaining the purpose and behavior of complex code.
+- Avoid redundant comments that restate the obvious.
+
+## Error Handling and Logging
+
+- Use exceptions for unexpected errors.
+- Validate inputs and provide meaningful error messages.
+- Log important events and errors to assist in debugging.
+
+## Testing
+
+- Write unit tests for all new features and bug fixes.
+- Follow existing test patterns and naming conventions.
+- Ensure tests are deterministic and independent.
+
+## Code Reviews and Contributions
+
+- Follow the project's [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines.
+- Ensure code adheres to style and quality standards before submitting.
+- Provide clear descriptions and rationale in pull requests.

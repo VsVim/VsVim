@@ -19,6 +19,9 @@ using System.Threading.Tasks;
 
 namespace VimApp
 {
+    /// <summary>
+    /// Host for the Vim application, managing windows and editor interactions.
+    /// </summary>
     [Export(typeof(IVimHost))]
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(VimAppHost))]
