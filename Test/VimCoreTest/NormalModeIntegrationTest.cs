@@ -8852,6 +8852,91 @@ namespace Vim.UnitTest
                 _vimBuffer.Process("d/  ", enter: true);
                 Assert.Equal(1, _textBuffer.CurrentSnapshot.LineCount);
                 Assert.Equal(" fish", _textBuffer.GetLine(0).GetText());
+            } 
+            
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// In this test case the remaining empty line will also removed
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotionSpecialCaseABracketBlock()
+            {
+                Create("cat", "(", "dog", ")", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("dab", enter: true);
+                Assert.Equal(2, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// In this test case the remaining empty line and whitespaces will be removed
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotionSpecialCaseABracketBlockWithhitespace()
+            {
+                Create("cat", "(", "dog    ", ")", "fish");
+                _textView.MoveCaretToLine(1);
+                _vimBuffer.Process("dab", enter: true);
+                Assert.Equal(2, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal("cat", _textBuffer.GetLine(0).GetText());
+                Assert.Equal("fish", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// This test case hase no whitespace before the span
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotionSpecialCaseNoWhiteSpaceBeforeSpan()
+            {
+                Create(" Acat", " dog    ", " fish");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("d/  ", enter: true);
+                Assert.Equal(2, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(" A    ", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(" fish", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// This test case hase no whitespace after the span
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotionSpecialCaseNoWhiteSpaceAfterSpan()
+            {
+                Create(" cat", " dogZ    ", " fish");
+                _textView.MoveCaretTo(1);
+                _vimBuffer.Process("d/Z", enter: true);
+                Assert.Equal(2, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(" Z    ", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(" fish", _textBuffer.GetLine(1).GetText());
+            }
+
+            /// <summary>
+            /// At the end of the ':help d{motion}` entry it lists a special case where the command
+            /// becomes linewise.  When it's a multiline delete and there is whitespace before / after
+            /// the span.  
+            /// This test case hase no whitespace before and after the span
+            /// </summary>
+            [WpfFact]
+            public void DeleteMotionSpecialCaseNoWhiteSpaceBeforeAndAfterSpan()
+            {
+                Create(" Acat", " dogZ    ", " fish");
+                _textView.MoveCaretTo(2);
+                _vimBuffer.Process("d/Z    ", enter: true);
+                Assert.Equal(2, _textBuffer.CurrentSnapshot.LineCount);
+                Assert.Equal(" AZ    ", _textBuffer.GetLine(0).GetText());
+                Assert.Equal(" fish", _textBuffer.GetLine(1).GetText());
             }
 
             /// <summary>
